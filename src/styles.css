@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@plugin "daisyui" {
+  themes: winter --default, dim --prefersdark;
+  root: ":root";
+  include: ;
+  exclude: ;
+  logs: true;
+}
+
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  overflow: hidden;
+}
+
+.titlebar {
+  background: #f0f0f0;
+}
+
+.taskbar {
+  background: #f3f3f3;
+}
