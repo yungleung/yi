@@ -27,6 +27,7 @@
     },
     "os:default",
     "dialog:default",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "mcp-bridge:default"
   ]
 }

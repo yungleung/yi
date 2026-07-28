@@ -10,7 +10,6 @@ declare global {
 function initializeUI() {
   window.UI = window.UI || {};
   window.UI.platformName = window.UI.platformName || platform().toLowerCase();
-  const platformName = window.UI.platformName;
 
   // const titleBar = window.UI.titleBar || new TitleBar();
   // window.UI.titleBar = titleBar
