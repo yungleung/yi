@@ -16,7 +16,8 @@
         "title": "Yi",
         "width": 1200,
         "height": 800,
-        "titleBarStyle": "Overlay"
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {

@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/daisyui/SKILL.md",
       "computedHash": "a7379c5c8ca1f4bb6c1dfbaccf42d0b1ce86e8a4a8d541a74902081931027476"
+    },
+    "tauri-mcp-cli": {
+      "source": "hypothesi/mcp-server-tauri",
+      "sourceType": "github",
+      "skillPath": "packages/cli/skills/tauri-mcp-cli/SKILL.md",
+      "computedHash": "8e6c5f71bdc4a205559d7b6b13db1c97e92d38c4fc76b595450ab16269eef60a"
     }
   }
 }

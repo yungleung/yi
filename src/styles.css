@@ -24,6 +24,24 @@
   overflow: hidden;
 }
 
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+}
+
 .titlebar {
   background: #f0f0f0;
 }
