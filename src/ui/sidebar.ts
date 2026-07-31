@@ -1,10 +1,12 @@
 import { BaseComponent } from './component';
+import { WorkspaceTree } from './workspace_tree';
 
 export class Sidebar extends BaseComponent {
   private readonly content: HTMLDivElement;
   private readonly toggleButton: HTMLButtonElement;
+  private readonly workspaceTree: WorkspaceTree;
   private isOpen = true;
-  private width = 288;
+  private width = 200;
 
   constructor() {
     super('aside', ['flex', 'flex-col', 'border-r', 'border-base-300', 'bg-base-200', 'h-full', 'shrink-0', 'transition-all']);
@@ -12,6 +14,8 @@ export class Sidebar extends BaseComponent {
 
     this.content = document.createElement('div');
     this.content.className = 'flex-1 overflow-auto p-3';
+
+    this.workspaceTree = new WorkspaceTree();
 
     this.toggleButton = document.createElement('button');
     this.toggleButton.className = 'btn btn-ghost btn-sm m-2 relative z-10';
@@ -38,24 +42,11 @@ export class Sidebar extends BaseComponent {
     }
 
     const title = document.createElement('div');
-    title.className = 'text-xs uppercase tracking-wide opacity-70 mb-3';
+    title.className = 'text-xs uppercase tracking-wide opacity-70';
     title.textContent = 'Workspace';
 
-    const pathLabel = document.createElement('div');
-    pathLabel.className = 'text-sm font-semibold mb-4 break-all';
-    pathLabel.textContent = path;
-
-    const tree = document.createElement('ul');
-    tree.className = 'menu menu-sm bg-base-100 rounded-box p-2';
-
-    const rootItem = document.createElement('li');
-    const rootLink = document.createElement('a');
-    rootLink.className = 'font-medium';
-    rootLink.textContent = '📁 ' + this.basename(path);
-    rootItem.appendChild(rootLink);
-    tree.appendChild(rootItem);
-
-    this.content.append(title, pathLabel, tree);
+    this.content.append(title, this.workspaceTree.element);
+    this.workspaceTree.setWorkspace(path);
   }
 
   attachToTitleBar(titleBar: HTMLElement): void {
@@ -85,7 +76,4 @@ export class Sidebar extends BaseComponent {
     this.content.appendChild(empty);
   }
 
-  private basename(path: string): string {
-    return path.split('/').filter(Boolean).pop() ?? path;
-  }
 }

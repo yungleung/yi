@@ -72,11 +72,10 @@ function initializeUI() {
 }
 
 function initializeEventListeners() {
-  window.UI.eventManager.on('open_file', (event: any) => {
-    const payload = event?.payload ?? event;
-    const workspacePath = payload?.path ?? payload?.file ?? payload?.folder ?? null;
+  window.UI.eventManager.on('open_folder', (event: any) => {
+    const workspacePath = event?.payload ?? event;
     window.UI.sidebar?.setWorkspace?.(workspacePath);
-    console.log('Open file event triggered:', event);
+    console.log('Open folder event triggered:', event);
   });
 }
 

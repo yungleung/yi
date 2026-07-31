@@ -20,7 +20,7 @@ export class ResizeHandle extends BaseComponent {
       'select-none'
     ]);
 
-    this.element.style.width = '10px';
+    this.element.style.width = '5px';
     this.element.style.height = '100%';
     this.element.style.marginLeft = '-3px';
     this.element.style.opacity = '0';

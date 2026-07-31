@@ -24,4 +24,8 @@ export class MarkdownEditor extends BaseComponent {
 
     this.element.appendChild(this.textarea);
   }
+
+  setContent(content: string): void {
+    this.textarea.value = content;
+  }
 }
