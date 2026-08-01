@@ -1,31 +1,20 @@
 import { BaseComponent } from './component';
+import { WysiwygMarkdownEditor } from '../markdown/markdown_editor';
 
 export class MarkdownEditor extends BaseComponent {
-  readonly textarea: HTMLTextAreaElement;
+  private innerEditor: WysiwygMarkdownEditor;
 
   constructor() {
-    super('div', ['flex', 'flex-1', 'min-h-0', 'bg-base-100', 'p-3']);
-
-    this.textarea = document.createElement('textarea');
-    this.textarea.className = [
-      'textarea',
-      'textarea-bordered',
-      'w-full',
-      'h-full',
-      'min-h-0',
-      'bg-base-100',
-      'text-base-content',
-      'font-mono',
-      'text-sm',
-      'leading-6'
-    ].join(' ');
-    this.textarea.placeholder = 'Write your markdown here...';
-    this.textarea.value = '# Welcome\n\nStart writing your document here.';
-
-    this.element.appendChild(this.textarea);
+    super('div', ['flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
+    this.innerEditor = new WysiwygMarkdownEditor();
+    this.element.appendChild(this.innerEditor.element);
   }
 
   setContent(content: string): void {
-    this.textarea.value = content;
+    this.innerEditor.setContent(content);
+  }
+
+  getContent(): string {
+    return this.innerEditor.getContent();
   }
 }

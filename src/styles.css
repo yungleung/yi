@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
+@import "highlight.js/styles/github.css";
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui" {
@@ -22,6 +24,29 @@
   -webkit-text-size-adjust: 100%;
 
   overflow: hidden;
+}
+
+/* Reduced vertical spacing for prose content (paragraphs and list items) */
+.prose-tight p {
+  margin-top: 0;
+  margin-bottom: 0.5rem; /* ~8px */
+}
+
+/* Remove paragraph margins inside list items to avoid double spacing */
+.prose-tight li p {
+  margin: 0;
+}
+
+/* Slightly tighter spacing between list items */
+.prose-tight ul > li,
+.prose-tight ol > li {
+  margin-top: 0.25rem; /* ~4px */
+  margin-bottom: 0.25rem;
+}
+
+/* Slightly reduce blockquote spacing */
+.prose-tight blockquote p {
+  margin: 0;
 }
 
 html,
