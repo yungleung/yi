@@ -8,6 +8,9 @@ export class Sidebar extends BaseComponent {
   private isOpen = true;
   private width = 200;
 
+  private readonly toggleButtonOpenIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M6 21a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3zM18 5h-8v14h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1"/></svg>';
+  private readonly toggleButtonCloseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="1.5em" height="1.5em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm5-2v16"/></svg>';
+
   constructor() {
     super('aside', ['flex', 'flex-col', 'border-r', 'border-base-300', 'bg-base-200', 'h-full', 'shrink-0', 'transition-all']);
     this.element.style.width = `${this.width}px`;
@@ -22,7 +25,7 @@ export class Sidebar extends BaseComponent {
     this.toggleButton.style.marginLeft = '150px';
     this.toggleButton.style.marginRight = '0';
     this.toggleButton.style.flexShrink = '0';
-    this.toggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M3 6.75A.75.75 0 0 1 3.75 6h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.75Zm0 5.25a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Zm0 5.25A.75.75 0 0 1 3.75 16h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 17.25Z"/></svg>';
+    this.toggleButton.innerHTML = this.isOpen ? this.toggleButtonOpenIcon : this.toggleButtonCloseIcon;
     this.toggleButton.title = 'Toggle workspace sidebar';
     this.toggleButton.addEventListener('click', () => this.toggle());
 
@@ -66,7 +69,7 @@ export class Sidebar extends BaseComponent {
     this.isOpen = !this.isOpen;
     this.element.classList.toggle('hidden', !this.isOpen);
     this.element.style.width = this.isOpen ? `${this.width}px` : '0px';
-    this.toggleButton.classList.toggle('btn-active', !this.isOpen);
+    this.toggleButton.innerHTML = this.isOpen ? this.toggleButtonOpenIcon : this.toggleButtonCloseIcon;
   }
 
   private renderEmptyState(): void {

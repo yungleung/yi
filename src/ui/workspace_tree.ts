@@ -15,6 +15,11 @@ class TreeNode {
   private expanded = false;
   private loaded = false;
 
+  private readonly fileIconStyle = 'text-center text-xs opacity-70';
+
+  private readonly folderExpandedIconStyle = 'arrow-down-rounded text-center text-xs opacity-70';
+  private readonly folderCollapsedIconStyle = 'arrow-forward-rounded text-center text-xs opacity-70';
+
   constructor(tree: WorkspaceTree, info: FileInfo, level: number) {
     this.tree = tree;
     this.info = info;
@@ -48,7 +53,7 @@ class TreeNode {
     });
 
     this.arrow = document.createElement('span');
-    this.arrow.className = this.info.is_file ? 'text-center text-xs opacity-70' : 'arrow-forward-rounded text-center text-xs opacity-70';
+    this.arrow.className = this.info.is_file ? this.fileIconStyle : this.folderCollapsedIconStyle;
 
     this.label = document.createElement('span');
     this.label.className = 'truncate';
@@ -98,13 +103,13 @@ class TreeNode {
 
   private updateArrow(): void {
     if (this.info.is_file) {
-      this.arrow.className = 'w-3 text-center text-xs opacity-70';
+      this.arrow.className = this.fileIconStyle;
       this.arrow.removeAttribute('style');
       return;
     }
     this.arrow.className = this.expanded
-      ? 'arrow-down-rounded w-3 text-center text-xs opacity-70'
-      : 'arrow-forward-rounded w-3 text-center text-xs opacity-70';
+      ? this.folderExpandedIconStyle
+      : this.folderCollapsedIconStyle;
     this.arrow.removeAttribute('style');
   }
 
