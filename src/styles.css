@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
-@import "highlight.js/styles/github.css";
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui" {
