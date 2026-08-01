@@ -294,7 +294,8 @@ function renderDescriptionDetails(node: any): HTMLElement {
 
 function renderFootnoteDefinition(node: any): HTMLElement {
   const wrapper = document.createElement('div');
-  wrapper.className = 'mt-3 text-sm';
+  // Use flex so the footnote reference and content sit on the same line
+  wrapper.className = 'mt-3 text-sm flex items-start gap-2';
 
   const id = String(node.identifier || node.label || 'note');
   const anchor = document.createElement('a');

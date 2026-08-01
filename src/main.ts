@@ -79,11 +79,7 @@ function initializeEventListeners() {
   });
 }
 
-import { initHighlightTheme } from './ui/highlightTheme';
-
 window.addEventListener('DOMContentLoaded', () => {
-  // initialize dynamic highlight.js theme loader before UI mounts
-  initHighlightTheme();
   initializeUI();
   initializeEventListeners();
   console.log('DOM fully loaded and parsed');
