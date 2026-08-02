@@ -1,5 +1,5 @@
 import type { Root } from 'mdast';
-import { BaseComponent } from '../ui/component';
+import { BaseComponent } from '../component';
 import { parseMarkdown, serializeMarkdown } from './parser';
 import { renderMarkdownAst } from './renderer';
 

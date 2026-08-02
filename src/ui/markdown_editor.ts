@@ -1,5 +1,5 @@
 import { BaseComponent } from './component';
-import { WysiwygMarkdownEditor } from '../markdown/markdown_editor';
+import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 
 export class MarkdownEditor extends BaseComponent {
   private innerEditor: WysiwygMarkdownEditor;

@@ -6,7 +6,8 @@ let eventManager: EventManager | null = null;
  * It allows you to register event listeners and emit events with payloads.
  */
 export class EventManager {
-  private listeners: { [eventName: string]: Array<(event: any) => void> } = {};
+  private listeners: Record<string, Array<(event: any) => void>> = {};
+  private unlistenByEvent: Record<string, (() => void) | undefined> = {};
 
   constructor() {
     if(!eventManager){
@@ -18,14 +19,32 @@ export class EventManager {
   async on(eventName: string, callback: (event: any) => void) {
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
-      await listen(eventName, (event) => {
-        this.listeners[eventName].forEach((cb) => cb(event));
+
+      // Register exactly one Tauri listener per eventName
+      this.unlistenByEvent[eventName] = await listen(eventName, (event) => {
+        // Forward to all registered callbacks
+        this.listeners[eventName]?.forEach((cb) => cb(event));
       });
     }
+
     this.listeners[eventName].push(callback);
   }
 
   async emit(eventName: string, payload: any = null) {
     await emit(eventName, payload);
+  }
+
+  off(eventName: string, callback: (event: any) => void) {
+    const arr = this.listeners[eventName];
+    if (!arr) return;
+
+    this.listeners[eventName] = arr.filter((cb) => cb !== callback);
+
+    // Optional: remove Tauri listener when no callbacks remain
+    if (this.listeners[eventName].length === 0) {
+      this.unlistenByEvent[eventName]?.();
+      delete this.listeners[eventName];
+      delete this.unlistenByEvent[eventName];
+    }
   }
 }
