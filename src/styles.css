@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 @import "highlight.js/styles/tokyo-night-dark.css";
+@import "./assets/fonts/font.css";
 @plugin "@tailwindcss/typography";
 
 @plugin "daisyui" {
@@ -47,6 +48,10 @@
 /* Slightly reduce blockquote spacing */
 .prose-tight blockquote p {
   margin: 0;
+}
+
+.prose {
+  font-family: 'Crimson', serif;
 }
 
 html,
