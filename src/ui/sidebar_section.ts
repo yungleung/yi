@@ -8,7 +8,7 @@ export class SidebarSection extends BaseComponent {
   private readonly title: HTMLElement;
 
   constructor(title: string, initiallyOpen = true) {
-    super('details', ['collapse', 'collapse-arrow', 'shrink-0', 'bg-base-200']);
+    super('details', ['collapse', 'collapse-arrow', 'shrink-0', 'min-w-0', 'bg-base-200']);
     (this.element as HTMLDetailsElement).open = initiallyOpen;
 
     this.title = document.createElement('summary');

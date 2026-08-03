@@ -42,7 +42,7 @@ class TreeNode {
       'hover:bg-base-300',
       'transition-colors'
     ].join(' ');
-    this.row.style.marginLeft = `${this.level * 6}px`;
+    this.row.style.paddingLeft = `${8 + this.level * 10}px`;
     this.row.addEventListener('click', () => {
       if (this.info.is_file) {
         void this.openFile();
@@ -62,7 +62,7 @@ class TreeNode {
     this.row.append(this.arrow, this.label);
 
     this.childrenContainer = document.createElement('ul');
-    this.childrenContainer.className = 'ml-1';
+    this.childrenContainer.className = 'min-w-0';
     this.childrenContainer.style.display = 'none';
 
     this.element.append(this.row, this.childrenContainer);
