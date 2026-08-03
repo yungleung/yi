@@ -1,6 +1,6 @@
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { listFolderFiles, type FileInfo } from '../api/files';
-import { BaseComponent } from './component';
+import { SidebarSection } from './sidebar_section';
 
 class TreeNode {
   private readonly tree: WorkspaceTree;
@@ -125,17 +125,18 @@ class TreeNode {
   }
 }
 
-export class WorkspaceTree extends BaseComponent {
+export class WorkspaceTree extends SidebarSection {
   private rootNode: TreeNode | null = null;
 
   constructor() {
-    super('div', ['w-full']);
-    this.element.className = 'w-full';
+    super('Workspace');
+    this.renderEmptyState();
   }
 
   setWorkspace(path: string | null): void {
-    this.clearChildren();
+    this.content.replaceChildren();
     if (!path) {
+      this.renderEmptyState();
       return;
     }
 
@@ -147,6 +148,13 @@ export class WorkspaceTree extends BaseComponent {
 
     this.rootNode.render(this.element);
     void this.rootNode.toggle();
+  }
+
+  private renderEmptyState(): void {
+    const empty = document.createElement('div');
+    empty.className = 'text-sm text-base-content/70';
+    empty.textContent = 'Open a folder to view the workspace structure.';
+    this.content.appendChild(empty);
   }
 
   private basename(path: string): string {

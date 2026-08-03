@@ -5,6 +5,7 @@ import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
 import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/markdown_editor';
 import { Sidebar } from './ui/sidebar';
+import { WorkspaceTree } from './ui/workspace_tree';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
@@ -34,6 +35,7 @@ function createAppShell() {
   const statusBar = new StatusBar();
   const wordsCount = new WordsCountStatus();
   const sidebar = new Sidebar();
+  const workspaceTree = new WorkspaceTree();
   const contentShell = new ContentShell();
   const resizeHandle = new ResizeHandle((width) => {
     sidebar.setWidth(width);
@@ -41,6 +43,7 @@ function createAppShell() {
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
+  sidebar.addSection(workspaceTree);
   resizeHandle.mount(contentShell.element);
   editor.mount(contentShell.element);
   contentShell.mount(root);
@@ -59,6 +62,7 @@ function createAppShell() {
   window.UI.statusBar = statusBar;
   window.UI.editor = editor;
   window.UI.sidebar = sidebar;
+  window.UI.workspaceTree = workspaceTree;
   window.UI.resizeHandle = resizeHandle;
   window.UI.wordsCount = wordsCount;
   window.UI.appRoot = root;
@@ -75,7 +79,7 @@ function initialize() {
 async function initializeEventListeners() {
   await window.UI.eventManager.on('open_folder', (event: any) => {
     const workspacePath = event?.payload ?? event;
-    window.UI.sidebar?.setWorkspace?.(workspacePath);
+    window.UI.workspaceTree?.setWorkspace?.(workspacePath);
     console.log('Open folder event triggered:', event);
   });
 

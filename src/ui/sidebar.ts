@@ -1,10 +1,9 @@
 import { BaseComponent } from './component';
-import { WorkspaceTree } from './workspace_tree';
+import { SidebarSection } from './sidebar_section';
 
 export class Sidebar extends BaseComponent {
   private readonly content: HTMLDivElement;
   private readonly toggleButton: HTMLButtonElement;
-  private readonly workspaceTree: WorkspaceTree;
   private isOpen = true;
   private width = 200;
 
@@ -16,9 +15,7 @@ export class Sidebar extends BaseComponent {
     this.element.style.width = `${this.width}px`;
 
     this.content = document.createElement('div');
-    this.content.className = 'flex-1 overflow-auto p-3';
-
-    this.workspaceTree = new WorkspaceTree();
+    this.content.className = 'flex flex-1 flex-col gap-1 overflow-auto py-2';
 
     this.toggleButton = document.createElement('button');
     this.toggleButton.className = 'btn btn-ghost btn-sm m-2 relative z-10';
@@ -37,19 +34,8 @@ export class Sidebar extends BaseComponent {
     return this;
   }
 
-  setWorkspace(path: string | null): void {
-    this.content.replaceChildren();
-    if (!path) {
-      this.renderEmptyState();
-      return;
-    }
-
-    const title = document.createElement('div');
-    title.className = 'text-xs uppercase tracking-wide opacity-70';
-    title.textContent = 'Workspace';
-
-    this.content.append(title, this.workspaceTree.element);
-    this.workspaceTree.setWorkspace(path);
+  addSection(section: SidebarSection): void {
+    this.content.appendChild(section.element);
   }
 
   attachToTitleBar(titleBar: HTMLElement): void {
@@ -70,13 +56,6 @@ export class Sidebar extends BaseComponent {
     this.element.classList.toggle('hidden', !this.isOpen);
     this.element.style.width = this.isOpen ? `${this.width}px` : '0px';
     this.toggleButton.innerHTML = this.isOpen ? this.toggleButtonOpenIcon : this.toggleButtonCloseIcon;
-  }
-
-  private renderEmptyState(): void {
-    const empty = document.createElement('div');
-    empty.className = 'text-sm opacity-70';
-    empty.textContent = 'Open a folder to view the workspace structure.';
-    this.content.appendChild(empty);
   }
 
 }
