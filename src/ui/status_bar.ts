@@ -3,7 +3,6 @@ import { BaseComponent, type Renderable } from './component';
 export class StatusBar extends BaseComponent {
   private readonly leftGroup: HTMLDivElement;
   private readonly rightGroup: HTMLDivElement;
-  private readonly centerGroup: HTMLDivElement;
 
   constructor() {
     super('div', [
@@ -22,14 +21,13 @@ export class StatusBar extends BaseComponent {
     ]);
 
     this.leftGroup = this.createGroup('flex', 'items-center', 'gap-1');
-    this.centerGroup = this.createGroup('flex', 'items-center', 'justify-center', 'flex-1', 'gap-1');
     this.rightGroup = this.createGroup('flex', 'items-center', 'gap-1', 'ml-auto');
 
-    this.element.append(this.leftGroup, this.centerGroup, this.rightGroup);
+    this.element.append(this.leftGroup, this.rightGroup);
   }
 
-  addComponent(component: Renderable, placement: 'left' | 'center' | 'right' = 'right', index?: number): void {
-    const target = placement === 'left' ? this.leftGroup : placement === 'center' ? this.centerGroup : this.rightGroup;
+  addComponent(component: Renderable, placement: 'left' | 'right' = 'right', index?: number): void {
+    const target = placement === 'left' ? this.leftGroup : this.rightGroup;
     const node = this.toNode(component);
 
     if (typeof index === 'number' && index > 0) {

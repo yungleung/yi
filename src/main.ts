@@ -3,10 +3,11 @@ import { platform } from '@tauri-apps/plugin-os';
 import { EventManager } from './events/event_manager';
 import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
-import { MarkdownEditor } from './ui/markdown_editor';
+import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/markdown_editor';
 import { Sidebar } from './ui/sidebar';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
+import { WordsCountStatus } from './ui/words_count';
 
 declare global {
   interface Window {
@@ -31,6 +32,7 @@ function createAppShell() {
   const titleBar = new TitleBar(window.UI.platformName);
   const editor = new MarkdownEditor();
   const statusBar = new StatusBar();
+  const wordsCount = new WordsCountStatus();
   const sidebar = new Sidebar();
   const contentShell = new ContentShell();
   const resizeHandle = new ResizeHandle((width) => {
@@ -51,36 +53,41 @@ function createAppShell() {
 
   sidebar.attachToTitleBar(titleBar.element);
 
-  const statusCenter = document.createElement('span');
-  statusCenter.className = 'text-xs opacity-70';
-  statusCenter.textContent = 'Line 1, Col 1';
-  statusBar.addComponent(statusCenter, 'center');
+  statusBar.addComponent(wordsCount, 'right');
 
   window.UI.titleBar = titleBar;
   window.UI.statusBar = statusBar;
   window.UI.editor = editor;
   window.UI.sidebar = sidebar;
   window.UI.resizeHandle = resizeHandle;
+  window.UI.wordsCount = wordsCount;
   window.UI.appRoot = root;
+
+  void window.UI.eventManager.emit(MARKDOWN_CONTENT_CHANGED, editor.getContent());
 }
 
-function initializeUI() {
+function initialize() {
   window.UI = window.UI || {};
   window.UI.platformName = window.UI.platformName || platform().toLowerCase();
-  createAppShell();
   window.UI.eventManager = window.UI.eventManager || new EventManager();
 }
 
-function initializeEventListeners() {
-  window.UI.eventManager.on('open_folder', (event: any) => {
+async function initializeEventListeners() {
+  await window.UI.eventManager.on('open_folder', (event: any) => {
     const workspacePath = event?.payload ?? event;
     window.UI.sidebar?.setWorkspace?.(workspacePath);
     console.log('Open folder event triggered:', event);
   });
+
+  await window.UI.eventManager.on(MARKDOWN_CONTENT_CHANGED, (event: any) => {
+    const markdown = event?.payload ?? event;
+    void window.UI.wordsCount?.update(markdown);
+  });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  initializeUI();
-  initializeEventListeners();
+window.addEventListener('DOMContentLoaded', async () => {
+  initialize();
+  await initializeEventListeners();
+  createAppShell();
   console.log('DOM fully loaded and parsed');
 });
