@@ -9,6 +9,9 @@ import { WorkspaceTree } from './ui/workspace_tree';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
+import { Toast } from './ui/toast';
+import { WorkspaceManager } from './services/workspace';
+import { loadConfig } from './api/settings';
 
 declare global {
   interface Window {
@@ -40,6 +43,7 @@ function createAppShell() {
   const resizeHandle = new ResizeHandle((width) => {
     sidebar.setWidth(width);
   }, 180, 420, sidebar.getWidth());
+  const toast = new Toast();
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
@@ -48,6 +52,7 @@ function createAppShell() {
   editor.mount(contentShell.element);
   contentShell.mount(root);
   statusBar.mount(root);
+  toast.mount(document.body);
 
   const titleActions = document.createElement('button');
   titleActions.className = 'btn btn-ghost btn-xs';
@@ -65,6 +70,7 @@ function createAppShell() {
   window.UI.workspaceTree = workspaceTree;
   window.UI.resizeHandle = resizeHandle;
   window.UI.wordsCount = wordsCount;
+  window.UI.toast = toast;
   window.UI.appRoot = root;
 
   void window.UI.eventManager.emit(MARKDOWN_CONTENT_CHANGED, editor.getContent());
@@ -79,7 +85,7 @@ function initialize() {
 async function initializeEventListeners() {
   await window.UI.eventManager.on('open_folder', (event: any) => {
     const workspacePath = event?.payload ?? event;
-    window.UI.workspaceTree?.setWorkspace?.(workspacePath);
+    void window.UI.workspaceManager?.openWorkspace(workspacePath);
     console.log('Open folder event triggered:', event);
   });
 
@@ -89,9 +95,23 @@ async function initializeEventListeners() {
   });
 }
 
+async function initializeConfig(): Promise<void> {
+  try {
+    window.UI.config = await loadConfig();
+
+    if (window.UI.config?.workspace) {
+      window.UI.workspaceTree?.setWorkspace(window.UI.config.workspace);
+    }
+  } catch (error) {
+    console.error('Failed to load the app config:', error);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   initialize();
   await initializeEventListeners();
   createAppShell();
+  await initializeConfig();
+  window.UI.workspaceManager = new WorkspaceManager();
   console.log('DOM fully loaded and parsed');
 });
