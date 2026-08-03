@@ -20,10 +20,23 @@ const stringifyProcessor = unified()
     bullet: '-',
     incrementListMarker: false,
     closeAtx: true,
-    listItemIndent: 'one'
+    listItemIndent: 'one',
+    handlers: {
+      descriptionlist(node: any, _parent: any, state: any, info: any): string {
+        return state.containerFlow(node, info);
+      },
+      descriptionterm(node: any, _parent: any, state: any, info: any): string {
+        return state.containerPhrasing(node, info);
+      },
+      descriptiondetails(node: any, _parent: any, state: any, info: any): string {
+        return `: ${state.containerPhrasing(node, info)}`;
+      }
+    }
   })
+  .use(remarkGfm)
   .use(remarkDeflist)
-  .use(remarkMath);
+  .use(remarkMath)
+  .use(remarkFrontmatter, ['yaml', 'toml']);
 
 export function parseMarkdown(markdown: string): Root {
   const tree = parseProcessor.parse(markdown) as Root;

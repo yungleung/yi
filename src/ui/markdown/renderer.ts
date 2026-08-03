@@ -396,4 +396,3 @@ function renderImage(node: any): HTMLElement {
   img.className = 'max-w-full';
   return img;
 }
-
