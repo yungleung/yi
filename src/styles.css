@@ -111,6 +111,13 @@ body {
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
+/* Inline source view shown when a rendered image or link is clicked. */
+.markdown-image-source,
+.markdown-link-source {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
 @keyframes markdown-caret-blink {
   0% {
     opacity: 1;

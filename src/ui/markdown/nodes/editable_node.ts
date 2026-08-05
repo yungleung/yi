@@ -1,5 +1,5 @@
 import type { Root, RootContent } from 'mdast';
-import { caretRangeAtPoint, showCaret, showCaretBeside } from './caret';
+import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
 
 export type {
   Blockquote as MarkdownBlockquote,
@@ -106,7 +106,13 @@ export abstract class EditableNodeComponent implements EditableMarkdownNode {
     element.classList.add('markdown-node');
     element.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
+      // Resolve the root before placing the caret: overrides (e.g. an image
+      // revealing its source) may detach `this.element`.
+      const root = this.element.closest('.prose') as HTMLElement | null;
       this.placeCaretAt(event.clientX, event.clientY);
+      // Move keyboard focus to the rendered document so arrow keys can steer
+      // the caret (the root element is made focusable by the editor).
+      root?.focus({ preventScroll: true });
     });
   }
 

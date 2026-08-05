@@ -1,5 +1,7 @@
 import type { Root } from 'mdast';
 import { BaseComponent } from '../component';
+import { getCaretRange } from './caret/caret';
+import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import { parseMarkdown, serializeMarkdown } from './parser';
 import { renderMarkdownAst } from './renderer';
 
@@ -82,6 +84,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
     this.contentView = document.createElement('div');
     this.contentView.className = 'flex-1 min-h-0 overflow-auto p-4';
+    this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
     this.appendChild(this.contentView);
 
     this.documentRoot = parseMarkdown(DEFAULT_MARKDOWN);
@@ -99,6 +102,25 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   private renderPreview(): void {
     const preview = renderMarkdownAst(this.documentRoot);
+    preview.tabIndex = 0;
+    preview.classList.add('outline-none');
     this.contentView.replaceChildren(preview);
+  }
+
+  private handleKeydown(event: KeyboardEvent): void {
+    const direction = ARROW_KEY_DIRECTIONS[event.key];
+    if (!direction) {
+      return;
+    }
+    // Arrows only steer the caret while one is active in the editor.
+    if (!getCaretRange()) {
+      return;
+    }
+
+    event.preventDefault();
+    const root = this.contentView.querySelector('.prose') as HTMLElement | null;
+    if (root) {
+      moveCaret(root, direction);
+    }
   }
 }
