@@ -1,5 +1,7 @@
 import { getWordsCount } from '../api/stats';
+import { eventManager } from '../services/event_manager';
 import { BaseComponent } from './component';
+import { MARKDOWN_CONTENT_CHANGED } from './markdown_editor';
 
 export class WordsCountStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;
@@ -9,6 +11,13 @@ export class WordsCountStatus extends BaseComponent {
     super('span', ['text-xs', 'opacity-70', 'whitespace-nowrap']);
     this.label = this.element;
     this.label.textContent = 'Words: 0';
+
+    // Keep the word count in sync with the document without being registered
+    // as a global component.
+    void eventManager.on(MARKDOWN_CONTENT_CHANGED, (event: any) => {
+      const markdown = event?.payload ?? event;
+      void this.update(markdown);
+    });
   }
 
   async update(markdown: string): Promise<void> {

@@ -1,5 +1,8 @@
 import type { Root, RootContent } from 'mdast';
 import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
+import type { CitationNode } from '../plugins/remark-citation';
+
+export type { CitationNode };
 
 export type {
   Blockquote as MarkdownBlockquote,
@@ -25,18 +28,6 @@ export type {
   ThematicBreak as MarkdownThematicBreak
 } from 'mdast';
 
-/** remark-math flow node (`$$...$$`), not part of core mdast. */
-export interface MathNode {
-  type: 'math';
-  value: string;
-}
-
-/** remark-math inline node (`$...$`), not part of core mdast. */
-export interface InlineMathNode {
-  type: 'inlineMath';
-  value: string;
-}
-
 /** remark-deflist `<dl>` node, which ships no official types. */
 export interface DescriptionListNode {
   type: 'descriptionlist';
@@ -53,6 +44,17 @@ export interface DescriptionTermNode {
 export interface DescriptionDetailsNode {
   type: 'descriptiondetails';
   children: MarkdownNode[];
+}
+
+// Register the remark-deflist nodes in the mdast type registry so they become
+// part of `RootContent` (mdast-util-math already registers `math`/`inlineMath`
+// itself, so those flow into `RootContent` without any local declaration).
+declare module 'mdast' {
+  interface RootContentMap {
+    descriptionlist: DescriptionListNode;
+    descriptionterm: DescriptionTermNode;
+    descriptiondetails: DescriptionDetailsNode;
+  }
 }
 
 /**
@@ -77,14 +79,7 @@ export interface EditableMarkdownNode {
  * Any node shape the renderer may encounter: core mdast nodes plus the nodes
  * added by the remark plugins in use (math and deflists).
  */
-export type MarkdownNode =
-  | Root
-  | RootContent
-  | MathNode
-  | InlineMathNode
-  | DescriptionListNode
-  | DescriptionTermNode
-  | DescriptionDetailsNode;
+export type MarkdownNode = Root | RootContent | CitationNode;
 
 /**
  * Base class implementing the {@link EditableMarkdownNode} contract: every

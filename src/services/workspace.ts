@@ -1,47 +1,39 @@
 import {
   getCurrentConfigVersion,
-  saveConfig,
-  type AppConfig,
 } from '../api/settings';
+import { configManager } from './config_manager';
+import { eventManager } from './event_manager';
 
 const VERSION_MISMATCH_PATTERN = /config\s+version\s+mismatch/i;
+
+/** Emitted with the workspace path so the UI (workspace tree) can react. */
+export const WORKSPACE_CHANGED = 'workspace_changed';
+
+/** Emitted with a message so the UI (toast) can surface it to the user. */
+export const TOAST_EVENT = 'toast';
 
 /**
  * Keeps the workspace in sync with the persisted app config:
  * - when a different folder is opened, updates the UI and saves the config,
  *   recovering from config version mismatches by refreshing the version.
  *
- * The manager keeps no config state of its own: the global window.UI.config
- * is the single source of truth and is mutated in place so that other/unspecified
- * config fields are preserved instead of being replaced on every save.
+ * The manager keeps no config state of its own: the ConfigService singleton is
+ * the single source of truth and merges updates so other config fields are
+ * preserved instead of being replaced on every save.
  */
 export class WorkspaceManager {
   async openWorkspace(path: string): Promise<void> {
-    if (!path || path === window.UI?.config?.workspace) {
+    if (!path || path === configManager.get()?.workspace) {
       return;
     }
 
-    window.UI?.workspaceTree?.setWorkspace(path);
+    void eventManager.emit(WORKSPACE_CHANGED, path);
     await this.persistWorkspace(path);
   }
 
   private async persistWorkspace(path: string): Promise<void> {
-    let config: AppConfig | null | undefined = window.UI?.config;
-    if (!config) {
-      try {
-        const version = await getCurrentConfigVersion();
-        config = { workspace: path, config_version: version };
-        window.UI.config = config;
-      } catch (error) {
-        this.notifySaveFailure(error);
-        return;
-      }
-    } else {
-      config.workspace = path;
-    }
-
     try {
-      await saveConfig(config);
+      await configManager.update({ workspace: path });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (VERSION_MISMATCH_PATTERN.test(message)) {
@@ -55,12 +47,11 @@ export class WorkspaceManager {
   private async retrySaveWithCurrentVersion(): Promise<void> {
     try {
       const currentVersion = await getCurrentConfigVersion();
-      const config = window.UI?.config;
+      const config = configManager.get();
       if (!config) {
         return;
       }
-      config.config_version = currentVersion;
-      await saveConfig(config);
+      await configManager.save({ ...config, config_version: currentVersion });
       console.log(`Workspace config saved with updated version: ${currentVersion}`);
     } catch (error) {
       this.notifySaveFailure(error);
@@ -70,6 +61,9 @@ export class WorkspaceManager {
   private notifySaveFailure(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Failed to save the workspace config:', error);
-    window.UI?.toast?.info(`Failed to save the workspace: ${message}`);
+    void eventManager.emit(TOAST_EVENT, `Failed to save the workspace: ${message}`);
   }
 }
+
+/** The app-wide workspace manager singleton. */
+export const workspaceManager = new WorkspaceManager();

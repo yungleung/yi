@@ -22,6 +22,7 @@ import { Strong } from './strong';
 import { Delete } from './delete';
 import { Link } from './link';
 import { Image } from './image';
+import { Citation } from './citation';
 import { TextNode } from './text';
 
 /**
@@ -78,6 +79,8 @@ export function createNodeComponent(node: MarkdownNode): EditableMarkdownNode | 
       return new Link(node);
     case 'image':
       return new Image(node);
+    case 'citation':
+      return new Citation(node);
     case 'text':
       return new TextNode(node);
     case 'imageReference':

@@ -3,7 +3,8 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main"
+    "main",
+    "settings"
   ],
   "permissions": [
     "core:default",
@@ -25,8 +26,14 @@
       "identifier": "fs:allow-home-write-recursive",
       "allow": [{ "path": "$HOME/**" }]
     },
+    {
+      "identifier": "fs:allow-watch",
+      "allow": [{ "path": "$HOME/**" }]
+    },
     "os:default",
     "dialog:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-set-focus",
     "core:window:allow-start-dragging",
     "mcp-bridge:default"
   ]

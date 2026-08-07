@@ -1,4 +1,6 @@
 import { BaseComponent } from './component';
+import { eventManager } from '../services/event_manager';
+import { TOAST_EVENT } from '../services/workspace';
 
 /**
  * Displays closable informational notifications stacked at the bottom-right
@@ -7,6 +9,11 @@ import { BaseComponent } from './component';
 export class Toast extends BaseComponent {
   constructor() {
     super('div', ['toast', 'toast-end', 'toast-bottom', 'z-50', 'pointer-events-none']);
+    // Surface messages without being registered globally.
+    void eventManager.on(TOAST_EVENT, (event: any) => {
+      const message = event?.payload ?? event;
+      this.info(String(message));
+    });
   }
 
   info(message: string): void {

@@ -1,5 +1,7 @@
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { listFolderFiles, type FileInfo } from '../api/files';
+import { eventManager } from '../services/event_manager';
+import { WORKSPACE_CHANGED } from '../services/workspace';
 import { SidebarSection } from './sidebar_section';
 
 class TreeNode {
@@ -131,6 +133,11 @@ export class WorkspaceTree extends SidebarSection {
   constructor() {
     super('Workspace');
     this.renderEmptyState();
+    // React to workspace changes without being registered globally.
+    void eventManager.on(WORKSPACE_CHANGED, (event: any) => {
+      const path = event?.payload ?? event;
+      this.setWorkspace(path);
+    });
   }
 
   setWorkspace(path: string | null): void {
@@ -146,7 +153,9 @@ export class WorkspaceTree extends SidebarSection {
       is_file: false
     }, 0);
 
-    this.rootNode.render(this.element);
+    // Render into the cleared content area (not the whole section element),
+    // so switching workspaces replaces the previous tree instead of stacking.
+    this.rootNode.render(this.content);
     void this.rootNode.toggle();
   }
 

@@ -16,7 +16,9 @@ export class SidebarSection extends BaseComponent {
     this.title.textContent = title;
 
     const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'collapse-content min-h-0 py-0';
+    // Keep the section content close to the sidebar edges (daisyUI's
+    // collapse-content default adds a large horizontal padding).
+    contentWrapper.className = 'collapse-content min-h-0 py-0 px-1';
 
     this.content = document.createElement('div');
     this.content.className = 'flex flex-col gap-1';

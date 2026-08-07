@@ -121,7 +121,7 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
 
         match event.id().0.as_str() {
             "settings" => {
-                app_handle.emit("settings", ()).unwrap();
+                app_handle.emit("setting", ()).unwrap();
             }
             "new_markdown" => {
                 app_handle.emit("new_markdown", ()).unwrap();

@@ -1,3 +1,4 @@
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BaseComponent, type Renderable } from './component';
 
 export class TitleBar extends BaseComponent {
@@ -58,7 +59,7 @@ export class TitleBar extends BaseComponent {
   }
 
   private startDragging(): void {
-    window.UI?.window?.startDragging?.();
+    void getCurrentWindow().startDragging();
   }
 
   private toNode(component: Renderable): HTMLElement {

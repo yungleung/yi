@@ -30,7 +30,8 @@ pub fn run() {
             greeting::greet,
             settings::get_config,
             settings::set_config,
-            settings::get_current_config_version,])
+            settings::get_current_config_version,
+            settings::read_bibliography,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

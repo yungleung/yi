@@ -1,5 +1,6 @@
 import katex from 'katex';
-import { EditableNodeComponent, type InlineMathNode, type MathNode } from './editable_node';
+import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
+import { EditableNodeComponent } from './editable_node';
 
 function renderKatex(value: string, displayMode: boolean): string {
   return katex.renderToString(value, {

@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type AppConfig = {
   workspace: string | null;
+  bibliography_file: string;
+  csl_style: string;
   config_version: number;
 };
 

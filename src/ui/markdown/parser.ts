@@ -6,13 +6,15 @@ import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
+import { remarkCitation } from './plugins/remark-citation';
 
 const parseProcessor = unified()
   .use(remarkParse)
   .use(remarkGfm)
   .use(remarkDeflist)
   .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml', 'toml']);
+  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkCitation);
 
 const stringifyProcessor = unified()
   .use(remarkStringify as any, {
@@ -36,7 +38,8 @@ const stringifyProcessor = unified()
   .use(remarkGfm)
   .use(remarkDeflist)
   .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml', 'toml']);
+  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkCitation);
 
 export function parseMarkdown(markdown: string): Root {
   const tree = parseProcessor.parse(markdown) as Root;

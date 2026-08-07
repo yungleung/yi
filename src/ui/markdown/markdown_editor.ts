@@ -2,6 +2,8 @@ import type { Root } from 'mdast';
 import { BaseComponent } from '../component';
 import { getCaretRange } from './caret/caret';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
+import { eventManager } from '../../services/event_manager';
+import { CITATION_UPDATED } from '../../services/bibliography';
 import { parseMarkdown, serializeMarkdown } from './parser';
 import { renderMarkdownAst } from './renderer';
 
@@ -70,6 +72,16 @@ const DEFAULT_MARKDOWN = [
   '',
   '![A sample image](https://placehold.co/200x80/png)',
   '',
+  '## Citations',
+  '',
+  'Pandoc-style citations: [@Abel2024], with locator [@Abel2024, p. 45],',
+  'suppressed author [-@Abel2024], and multiple [see @Abel2024; also @2014, ch. 3].',
+  'Narrative citations: according to @Abel2024, code reviews matter;',
+  'with a locator @Abel2024 [p. 33], suppressed -@Abel2024.',
+  'Keys missing from the bibliography stay raw: [@smith2020] and @jones2019.',
+  'emails like contact@example.com are not citations.',
+  'An escaped one \\@literal stays literal, while [a link](https://example.com) is not a citation.',
+  '',
   '---',
   '',
   'This demo shows GitHub-flavored markdown features such as task lists, autolinks, tables, and fenced code blocks.'
@@ -89,6 +101,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
     this.documentRoot = parseMarkdown(DEFAULT_MARKDOWN);
     this.renderPreview();
+    // The bibliography manager announces when its data is ready or refreshed;
+    // the editor just re-renders the same tree.
+    void eventManager.on(CITATION_UPDATED, () => this.refresh());
   }
 
   setContent(content: string): void {
@@ -98,6 +113,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   getContent(): string {
     return serializeMarkdown(this.documentRoot);
+  }
+
+  /**
+   * Re-renders the current document tree without re-parsing it. Used when the
+   * bibliography arrives after the first render, so citations can switch from
+   * raw source to formatted text without a serialization round-trip (which
+   * would drop escapes such as `\@literal`).
+   */
+  refresh(): void {
+    this.renderPreview();
   }
 
   private renderPreview(): void {

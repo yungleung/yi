@@ -1,6 +1,6 @@
 import { listen, emit } from '@tauri-apps/api/event';
 
-let eventManager: EventManager | null = null;
+let instance: EventManager | null = null;
 /**
  * Event class to handle custom events in the Tauri application.
  * It allows you to register event listeners and emit events with payloads.
@@ -10,10 +10,10 @@ export class EventManager {
   private unlistenByEvent: Record<string, (() => void) | undefined> = {};
 
   constructor() {
-    if(!eventManager){
-        eventManager = this;
+    if (!instance) {
+      instance = this;
     }
-    return eventManager;
+    return instance;
   }
 
   async on(eventName: string, callback: (event: any) => void) {
@@ -48,3 +48,6 @@ export class EventManager {
     }
   }
 }
+
+/** The app-wide event manager singleton. */
+export const eventManager = new EventManager();

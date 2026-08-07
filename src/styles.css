@@ -113,9 +113,18 @@ body {
 
 /* Inline source view shown when a rendered image or link is clicked. */
 .markdown-image-source,
-.markdown-link-source {
+.markdown-link-source,
+.markdown-citation-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
+}
+
+/* Rendered pandoc citation. */
+.markdown-citation {
+  padding: 0 0.2em;
+  border-radius: 0.25rem;
+  background-color: color-mix(in oklab, var(--color-primary, currentColor) 12%, transparent);
+  font-size: 0.9em;
 }
 
 @keyframes markdown-caret-blink {
