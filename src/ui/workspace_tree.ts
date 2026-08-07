@@ -4,6 +4,9 @@ import { eventManager } from '../services/event_manager';
 import { WORKSPACE_CHANGED } from '../services/workspace';
 import { SidebarSection } from './sidebar_section';
 
+/** Emitted with the file content when the user opens a document from the tree. */
+export const DOCUMENT_OPENED = 'document_opened';
+
 class TreeNode {
   private readonly tree: WorkspaceTree;
   private readonly info: FileInfo;
@@ -118,9 +121,7 @@ class TreeNode {
   private async openFile(): Promise<void> {
     try {
       const content = await readTextFile(this.info.path);
-      if (typeof window !== 'undefined' && (window as any).UI?.editor?.setContent) {
-        (window as any).UI.editor.setContent(content);
-      }
+      void eventManager.emit(DOCUMENT_OPENED, content);
     } catch (error) {
       console.error('Failed to read file content:', error);
     }
