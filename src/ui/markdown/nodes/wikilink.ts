@@ -1,0 +1,46 @@
+import { documentManager } from '../../../services/document_manager';
+import type { AstWikilink } from '../ast';
+import { RevealableNodeComponent } from './revealable_node';
+
+/**
+ * Renders a wikilink as its display text: the explicit title for
+ * `[[filename|title]]`, or the target document's title for `[[filename]]`
+ * (the frontmatter `title` key, falling back to its heading 1, and finally to
+ * the target when the document cannot be resolved).
+ * Clicking reveals the raw markdown with the caret at the end.
+ */
+export class Wikilink extends RevealableNodeComponent {
+  private readonly target: string;
+  private readonly explicitTitle: string | null;
+
+  constructor(node: AstWikilink) {
+    super('wikilink', node, document.createElement('span'), 'markdown-wikilink');
+    const parsed = parseWikilinkValue(node.value);
+    this.target = parsed.target;
+    this.explicitTitle = parsed.title;
+    this.element.textContent = this.explicitTitle ?? this.target;
+
+    if (!this.explicitTitle) {
+      void documentManager.getTitle(this.target).then((title) => {
+        if (title && this.element.isConnected) {
+          this.element.textContent = title;
+        }
+      });
+    }
+  }
+
+  override placeCaretAt(): void {
+    this.revealSource('markdown-wikilink-source');
+  }
+}
+
+function parseWikilinkValue(value: string): { target: string; title: string | null } {
+  const inner = value.slice(2, -2);
+  const separator = inner.indexOf('|');
+  if (separator >= 0) {
+    const target = inner.slice(0, separator).trim();
+    const title = inner.slice(separator + 1).trim();
+    return { target, title: title || null };
+  }
+  return { target: inner.trim(), title: null };
+}

@@ -7,6 +7,7 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { remarkCitation } from './plugins/remark-citation';
+import { remarkWikilink } from './plugins/remark-wikilink';
 
 const parseProcessor = unified()
   .use(remarkParse)
@@ -14,7 +15,8 @@ const parseProcessor = unified()
   .use(remarkDeflist)
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml', 'toml'])
-  .use(remarkCitation);
+  .use(remarkCitation)
+  .use(remarkWikilink);
 
 const stringifyProcessor = unified()
   .use(remarkStringify as any, {
@@ -39,7 +41,8 @@ const stringifyProcessor = unified()
   .use(remarkDeflist)
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml', 'toml'])
-  .use(remarkCitation);
+  .use(remarkCitation)
+  .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
   const tree = parseProcessor.parse(markdown) as Root;

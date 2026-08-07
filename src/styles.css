@@ -114,7 +114,8 @@ body {
 /* Inline source view shown when a rendered image or link is clicked. */
 .markdown-image-source,
 .markdown-link-source,
-.markdown-citation-source {
+.markdown-citation-source,
+.markdown-wikilink-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
 }
@@ -125,6 +126,14 @@ body {
   border-radius: 0.25rem;
   background-color: color-mix(in oklab, var(--color-primary, currentColor) 12%, transparent);
   font-size: 0.9em;
+}
+
+/* Rendered wikilink. */
+.markdown-wikilink {
+  padding: 0 0.2em;
+  border-radius: 0.25rem;
+  color: var(--color-primary, currentColor);
+  background-color: color-mix(in oklab, var(--color-primary, currentColor) 8%, transparent);
 }
 
 @keyframes markdown-caret-blink {

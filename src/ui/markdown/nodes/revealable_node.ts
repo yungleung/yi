@@ -1,7 +1,8 @@
 import type { RootContent } from 'mdast';
 import { onCaretRangeChanged, setCaretRange } from '../caret/caret';
 import { serializeMarkdown } from '../parser';
-import { EditableNodeComponent, type MarkdownNode } from './editable_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstNode } from '../ast';
 
 /**
  * Base class for node components that toggle between their rendered view and
@@ -13,7 +14,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   protected sourceView: HTMLSpanElement | null = null;
   private unsubscribeCaret: () => void = () => {};
 
-  constructor(type: string, node: MarkdownNode, element: HTMLElement, className = '') {
+  constructor(type: string, node: AstNode, element: HTMLElement, className = '') {
     super(type, node, element, className);
 
     // The source view stays open only while the caret is inside it; when the

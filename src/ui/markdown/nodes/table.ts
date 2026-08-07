@@ -1,13 +1,10 @@
-import { appendChildren } from './create_node';
-import {
-  EditableNodeComponent,
-  type MarkdownTable,
-  type MarkdownTableCell
-} from './editable_node';
+import { appendChildren } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstTable, AstTableCell } from '../ast';
 
 /** Renders a `table` node: first row becomes `<thead>`, the rest `<tbody>`. */
 export class Table extends EditableNodeComponent {
-  constructor(node: MarkdownTable) {
+  constructor(node: AstTable) {
     super('table', node, document.createElement('table'), 'w-full');
 
     const rows = node.children;
@@ -38,7 +35,7 @@ export class Table extends EditableNodeComponent {
     this.element.appendChild(tbody);
   }
 
-  private renderCell(cell: MarkdownTableCell): HTMLElement {
+  private renderCell(cell: AstTableCell): HTMLElement {
     const content = document.createElement('div');
     appendChildren(content, cell.children);
     return content;

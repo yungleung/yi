@@ -1,8 +1,9 @@
-import { EditableNodeComponent, type MarkdownInlineCode } from './editable_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstInlineCode } from '../ast';
 
 /** Renders an `inlineCode` node. */
 export class InlineCode extends EditableNodeComponent {
-  constructor(node: MarkdownInlineCode) {
+  constructor(node: AstInlineCode) {
     super('inlineCode', node, document.createElement('code'));
     this.element.textContent = String(node.value ?? '');
   }

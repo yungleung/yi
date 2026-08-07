@@ -82,6 +82,13 @@ const DEFAULT_MARKDOWN = [
   'emails like contact@example.com are not citations.',
   'An escaped one \\@literal stays literal, while [a link](https://example.com) is not a citation.',
   '',
+  '## Wikilinks',
+  '',
+  'Wikilinks resolve inside the workspace: [[虚无与生发]] renders the target’s heading 1,',
+  '[[6 Bayesian Game]] resolves by name, [[20221031105857]] resolves by frontmatter id,',
+  '[[Language and Thought]] falls back to the frontmatter title,',
+  '[[虚无与生发|My Custom Title]] uses the explicit title, and [[nonexistent-note]] stays as typed.',
+  '',
   '---',
   '',
   'This demo shows GitHub-flavored markdown features such as task lists, autolinks, tables, and fenced code blocks.'

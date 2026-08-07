@@ -1,9 +1,10 @@
-import { appendChildren, createNodeComponent } from './create_node';
-import { EditableNodeComponent, type MarkdownList, type MarkdownListItem } from './editable_node';
+import { appendChildren, createNodeComponent } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstList, AstListItem } from '../ast';
 
 /** Renders a `list` node as a `<ul>` / `<ol>` element. */
 export class List extends EditableNodeComponent {
-  constructor(node: MarkdownList) {
+  constructor(node: AstList) {
     super('list', node, document.createElement(node.ordered ? 'ol' : 'ul'), 'min-w-0');
     appendChildren(this.element, node.children);
   }
@@ -11,7 +12,7 @@ export class List extends EditableNodeComponent {
 
 /** Renders a `listItem` node, including GFM task-list checkboxes. */
 export class ListItem extends EditableNodeComponent {
-  constructor(node: MarkdownListItem) {
+  constructor(node: AstListItem) {
     super('listItem', node, document.createElement('li'));
 
     if (typeof node.checked !== 'boolean') {

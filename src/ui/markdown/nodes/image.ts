@@ -1,9 +1,9 @@
-import type { MarkdownImage } from './editable_node';
+import type { AstImage } from '../ast';
 import { RevealableNodeComponent } from './revealable_node';
 
 /** Renders an `image` node. */
 export class Image extends RevealableNodeComponent {
-  constructor(node: MarkdownImage) {
+  constructor(node: AstImage) {
     super('image', node, document.createElement('img'), 'max-w-full');
     const img = this.element as HTMLImageElement;
     img.src = node.url || '';

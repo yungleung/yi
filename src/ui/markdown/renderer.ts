@@ -1,5 +1,5 @@
 import type { Root } from 'mdast';
-import { createNodeComponent } from './nodes/create_node';
+import { createNodeComponent } from './create_node';
 
 /**
  * Renders an mdast tree into a DOM element. Every node is built by its own

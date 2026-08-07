@@ -1,9 +1,10 @@
 import hljs from 'highlight.js';
-import { EditableNodeComponent, type MarkdownCode } from './editable_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstCode } from '../ast';
 
 /** Renders a fenced `code` node with highlight.js syntax highlighting. */
 export class CodeBlock extends EditableNodeComponent {
-  constructor(node: MarkdownCode) {
+  constructor(node: AstCode) {
     super('code', node, document.createElement('pre'), 'overflow-x-auto');
 
     const code = document.createElement('code');

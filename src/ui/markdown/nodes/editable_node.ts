@@ -1,61 +1,5 @@
-import type { Root, RootContent } from 'mdast';
+import type { AstNode } from '../ast';
 import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
-import type { CitationNode } from '../plugins/remark-citation';
-
-export type { CitationNode };
-
-export type {
-  Blockquote as MarkdownBlockquote,
-  Break as MarkdownBreak,
-  Code as MarkdownCode,
-  Delete as MarkdownDelete,
-  Emphasis as MarkdownEmphasis,
-  FootnoteDefinition as MarkdownFootnoteDefinition,
-  FootnoteReference as MarkdownFootnoteReference,
-  Heading as MarkdownHeading,
-  Html as MarkdownHtml,
-  Image as MarkdownImage,
-  InlineCode as MarkdownInlineCode,
-  Link as MarkdownLink,
-  List as MarkdownList,
-  ListItem as MarkdownListItem,
-  Paragraph as MarkdownParagraph,
-  Root as MarkdownRoot,
-  Strong as MarkdownStrong,
-  Table as MarkdownTable,
-  TableCell as MarkdownTableCell,
-  Text as MarkdownText,
-  ThematicBreak as MarkdownThematicBreak
-} from 'mdast';
-
-/** remark-deflist `<dl>` node, which ships no official types. */
-export interface DescriptionListNode {
-  type: 'descriptionlist';
-  children: MarkdownNode[];
-}
-
-/** remark-deflist `<dt>` node, which ships no official types. */
-export interface DescriptionTermNode {
-  type: 'descriptionterm';
-  children: MarkdownNode[];
-}
-
-/** remark-deflist `<dd>` node, which ships no official types. */
-export interface DescriptionDetailsNode {
-  type: 'descriptiondetails';
-  children: MarkdownNode[];
-}
-
-// Register the remark-deflist nodes in the mdast type registry so they become
-// part of `RootContent` (mdast-util-math already registers `math`/`inlineMath`
-// itself, so those flow into `RootContent` without any local declaration).
-declare module 'mdast' {
-  interface RootContentMap {
-    descriptionlist: DescriptionListNode;
-    descriptionterm: DescriptionTermNode;
-    descriptiondetails: DescriptionDetailsNode;
-  }
-}
 
 /**
  * A markdown node rendered as an editable component.
@@ -68,18 +12,12 @@ export interface EditableMarkdownNode {
   /** The mdast node type this component renders (also acts as a capability marker). */
   readonly type: string;
   /** The mdast node this component is bound to. */
-  readonly node: MarkdownNode;
+  readonly node: AstNode;
   /** The rendered DOM element of this node. */
   readonly element: HTMLElement;
   /** Places the blinking caret right after the character under the given viewport point. */
   placeCaretAt(clientX: number, clientY: number): void;
 }
-
-/**
- * Any node shape the renderer may encounter: core mdast nodes plus the nodes
- * added by the remark plugins in use (math and deflists).
- */
-export type MarkdownNode = Root | RootContent | CitationNode;
 
 /**
  * Base class implementing the {@link EditableMarkdownNode} contract: every
@@ -88,10 +26,10 @@ export type MarkdownNode = Root | RootContent | CitationNode;
  */
 export abstract class EditableNodeComponent implements EditableMarkdownNode {
   readonly type: string;
-  readonly node: MarkdownNode;
+  readonly node: AstNode;
   readonly element: HTMLElement;
 
-  constructor(type: string, node: MarkdownNode, element: HTMLElement, className = '') {
+  constructor(type: string, node: AstNode, element: HTMLElement, className = '') {
     this.type = type;
     this.node = node;
     this.element = element;

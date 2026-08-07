@@ -1,9 +1,10 @@
-import { appendChildren } from './create_node';
-import { EditableNodeComponent, type MarkdownStrong } from './editable_node';
+import { appendChildren } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstStrong } from '../ast';
 
 /** Renders a `strong` node. */
 export class Strong extends EditableNodeComponent {
-  constructor(node: MarkdownStrong) {
+  constructor(node: AstStrong) {
     super('strong', node, document.createElement('strong'));
     appendChildren(this.element, node.children);
   }

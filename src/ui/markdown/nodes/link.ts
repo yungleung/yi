@@ -1,5 +1,5 @@
-import { appendChildren } from './create_node';
-import type { MarkdownLink } from './editable_node';
+import { appendChildren } from '../create_node';
+import type { AstLink } from '../ast';
 import { RevealableNodeComponent } from './revealable_node';
 
 /**
@@ -7,7 +7,7 @@ import { RevealableNodeComponent } from './revealable_node';
  * autolinks keep normal caret behavior.
  */
 export class Link extends RevealableNodeComponent {
-  constructor(node: MarkdownLink) {
+  constructor(node: AstLink) {
     super('link', node, document.createElement('a'));
     const anchor = this.element as HTMLAnchorElement;
     anchor.href = node.url || '#';
@@ -36,7 +36,7 @@ export class Link extends RevealableNodeComponent {
   }
 
   override placeCaretAt(clientX: number, clientY: number): void {
-    if (isAutolink(this.node as MarkdownLink)) {
+    if (isAutolink(this.node as AstLink)) {
       super.placeCaretAt(clientX, clientY);
       return;
     }
@@ -50,7 +50,7 @@ export class Link extends RevealableNodeComponent {
  * text child equals the URL, allowing for the scheme prefixes the parser
  * normalizes (`www.` → `http://`, `name@host` → `mailto:`).
  */
-function isAutolink(node: MarkdownLink): boolean {
+function isAutolink(node: AstLink): boolean {
   const child = node.children.length === 1 ? node.children[0] : null;
   if (child?.type !== 'text') {
     return false;

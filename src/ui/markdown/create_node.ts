@@ -1,35 +1,36 @@
 import {
   EditableNodeComponent,
-  type EditableMarkdownNode,
-  type MarkdownNode
-} from './editable_node';
-import { RootNode } from './root';
-import { Paragraph } from './paragraph';
-import { Heading } from './heading';
-import { Blockquote } from './blockquote';
-import { List, ListItem } from './list';
-import { DescriptionDetails, DescriptionList, DescriptionTerm } from './description';
-import { FootnoteDefinition, FootnoteReference } from './footnote';
-import { DisplayMath, InlineMath } from './math';
-import { CodeBlock } from './code_block';
-import { ThematicBreak } from './thematic_break';
-import { Table } from './table';
-import { HtmlBlock } from './html';
-import { Break } from './break';
-import { InlineCode } from './inline_code';
-import { Emphasis } from './emphasis';
-import { Strong } from './strong';
-import { Delete } from './delete';
-import { Link } from './link';
-import { Image } from './image';
-import { Citation } from './citation';
-import { TextNode } from './text';
+  type EditableMarkdownNode
+} from './nodes/editable_node';
+import type { AstNode } from './ast';
+import { RootNode } from './nodes/root';
+import { Paragraph } from './nodes/paragraph';
+import { Heading } from './nodes/heading';
+import { Blockquote } from './nodes/blockquote';
+import { List, ListItem } from './nodes/list';
+import { DescriptionDetails, DescriptionList, DescriptionTerm } from './nodes/description';
+import { FootnoteDefinition, FootnoteReference } from './nodes/footnote';
+import { DisplayMath, InlineMath } from './nodes/math';
+import { CodeBlock } from './nodes/code_block';
+import { ThematicBreak } from './nodes/thematic_break';
+import { Table } from './nodes/table';
+import { HtmlBlock } from './nodes/html';
+import { Break } from './nodes/break';
+import { InlineCode } from './nodes/inline_code';
+import { Emphasis } from './nodes/emphasis';
+import { Strong } from './nodes/strong';
+import { Delete } from './nodes/delete';
+import { Link } from './nodes/link';
+import { Image } from './nodes/image';
+import { Citation } from './nodes/citation';
+import { Wikilink } from './nodes/wikilink';
+import { TextNode } from './nodes/text';
 
 /**
  * Builds the editable component for an mdast node, or `null` for nodes that
  * are not rendered (image references and definitions are resolved elsewhere).
  */
-export function createNodeComponent(node: MarkdownNode): EditableMarkdownNode | null {
+export function createNodeComponent(node: AstNode): EditableMarkdownNode | null {
   switch (node.type) {
     case 'root':
       return new RootNode(node);
@@ -81,6 +82,8 @@ export function createNodeComponent(node: MarkdownNode): EditableMarkdownNode | 
       return new Image(node);
     case 'citation':
       return new Citation(node);
+    case 'wikilink':
+      return new Wikilink(node);
     case 'text':
       return new TextNode(node);
     case 'imageReference':
@@ -94,7 +97,7 @@ export function createNodeComponent(node: MarkdownNode): EditableMarkdownNode | 
 /** Renders every child of an mdast node into the given container element. */
 export function appendChildren(
   container: HTMLElement,
-  children: readonly MarkdownNode[] | undefined
+  children: readonly AstNode[] | undefined
 ): void {
   for (const child of children ?? []) {
     const component = createNodeComponent(child);
@@ -106,7 +109,7 @@ export function appendChildren(
 
 /** Fallback for unknown node types: a generic block container. */
 class GenericContainer extends EditableNodeComponent {
-  constructor(node: MarkdownNode) {
+  constructor(node: AstNode) {
     super(String(node.type ?? 'unknown'), node, document.createElement('div'), 'min-w-0');
     appendChildren(this.element, 'children' in node ? node.children : undefined);
   }

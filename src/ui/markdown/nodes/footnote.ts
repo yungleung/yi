@@ -1,13 +1,10 @@
-import { createNodeComponent } from './create_node';
-import {
-  EditableNodeComponent,
-  type MarkdownFootnoteDefinition,
-  type MarkdownFootnoteReference
-} from './editable_node';
+import { createNodeComponent } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
 
 /** Renders a `footnoteDefinition` node with its reference anchor on the same line. */
 export class FootnoteDefinition extends EditableNodeComponent {
-  constructor(node: MarkdownFootnoteDefinition) {
+  constructor(node: AstFootnoteDefinition) {
     super(
       'footnoteDefinition',
       node,
@@ -49,7 +46,7 @@ export class FootnoteDefinition extends EditableNodeComponent {
 
 /** Renders a `footnoteReference` node as a superscript backlink. */
 export class FootnoteReference extends EditableNodeComponent {
-  constructor(node: MarkdownFootnoteReference) {
+  constructor(node: AstFootnoteReference) {
     super('footnoteReference', node, document.createElement('sup'));
 
     const id = String(node.identifier ?? node.label ?? 'note');

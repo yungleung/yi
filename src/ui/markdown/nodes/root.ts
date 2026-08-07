@@ -1,9 +1,10 @@
-import { appendChildren } from './create_node';
-import { EditableNodeComponent, type MarkdownRoot } from './editable_node';
+import { appendChildren } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstRoot } from '../ast';
 
 /** Renders the `root` of an mdast tree (the prose container). */
 export class RootNode extends EditableNodeComponent {
-  constructor(node: MarkdownRoot) {
+  constructor(node: AstRoot) {
     super(
       'root',
       node,

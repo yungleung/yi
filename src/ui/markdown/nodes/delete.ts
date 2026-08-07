@@ -1,9 +1,10 @@
-import { appendChildren } from './create_node';
-import { EditableNodeComponent, type MarkdownDelete } from './editable_node';
+import { appendChildren } from '../create_node';
+import { EditableNodeComponent } from './editable_node';
+import type { AstDelete } from '../ast';
 
 /** Renders a `delete` (strikethrough) node. */
 export class Delete extends EditableNodeComponent {
-  constructor(node: MarkdownDelete) {
+  constructor(node: AstDelete) {
     super('delete', node, document.createElement('del'));
     appendChildren(this.element, node.children);
   }

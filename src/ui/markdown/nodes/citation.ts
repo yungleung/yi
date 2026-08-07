@@ -1,4 +1,4 @@
-import type { CitationNode } from './editable_node';
+import type { AstCitation } from '../ast';
 import { bibliographyManager } from '../../../services/bibliography';
 import { RevealableNodeComponent } from './revealable_node';
 
@@ -8,7 +8,7 @@ import { RevealableNodeComponent } from './revealable_node';
  * source (`[@key, …]` or `@key`) with the caret at the end.
  */
 export class Citation extends RevealableNodeComponent {
-  constructor(node: CitationNode) {
+  constructor(node: AstCitation) {
     super('citation', node, document.createElement('span'), 'markdown-citation');
     this.element.textContent = bibliographyManager.format(node.value);
   }
