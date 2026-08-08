@@ -8,7 +8,7 @@ import { RevealableNodeComponent } from './revealable_node';
  */
 export class Link extends RevealableNodeComponent {
   constructor(node: AstLink) {
-    super('link', node, document.createElement('a'));
+    super('link', node, document.createElement('a'), 'markdown-link');
     const anchor = this.element as HTMLAnchorElement;
     anchor.href = node.url || '#';
     anchor.target = '_blank';

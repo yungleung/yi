@@ -1,6 +1,8 @@
 import katex from 'katex';
 import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
-import { EditableNodeComponent } from './editable_node';
+import type { RootContent } from 'mdast';
+import { serializeMarkdown } from '../parser';
+import { RevealableNodeComponent } from './revealable_node';
 
 function renderKatex(value: string, displayMode: boolean): string {
   return katex.renderToString(value, {
@@ -10,8 +12,12 @@ function renderKatex(value: string, displayMode: boolean): string {
   });
 }
 
-/** Renders an `inlineMath` node with KaTeX. */
-export class InlineMath extends EditableNodeComponent {
+/**
+ * Renders an `inlineMath` node with KaTeX. Clicking reveals the raw `$…$`
+ * source with the caret at the end; the rendered math returns when the caret
+ * moves away.
+ */
+export class InlineMath extends RevealableNodeComponent {
   constructor(node: InlineMathNode) {
     super('inlineMath', node, document.createElement('span'), 'mx-1 align-middle');
     try {
@@ -20,10 +26,18 @@ export class InlineMath extends EditableNodeComponent {
       this.element.textContent = node.value;
     }
   }
+
+  override placeCaretAt(): void {
+    this.revealSource('markdown-math-source');
+  }
 }
 
-/** Renders a display `math` node with KaTeX. */
-export class DisplayMath extends EditableNodeComponent {
+/**
+ * Renders a display `math` node with KaTeX. Clicking reveals the raw `$$…$$`
+ * source (which may span multiple lines); the caret is placed at the end of
+ * the source line nearest the clicked position.
+ */
+export class DisplayMath extends RevealableNodeComponent {
   constructor(node: MathNode) {
     super('math', node, document.createElement('div'), 'my-4 overflow-x-auto');
     try {
@@ -31,5 +45,41 @@ export class DisplayMath extends EditableNodeComponent {
     } catch {
       this.element.textContent = node.value;
     }
+  }
+
+  override placeCaretAt(_clientX: number, clientY: number): void {
+    this.revealSource('markdown-math-source', this.sourceLineOffsetAt(clientY));
+  }
+
+  /**
+   * Maps the click's vertical position to the nearest source line of the
+   * display formula, returning the caret offset at the end of that line.
+   */
+  private sourceLineOffsetAt(clientY: number): number | undefined {
+    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const lines = source.split('\n');
+    if (lines.length <= 1) {
+      return undefined;
+    }
+    const rect = this.element.getBoundingClientRect();
+    if (rect.height <= 0) {
+      return undefined;
+    }
+
+    // The content sits between the `$$` delimiters when present.
+    const contentStart = lines[0].trim() === '$$' ? 1 : 0;
+    const contentEnd =
+      lines.length > 1 && lines[lines.length - 1].trim() === '$$' ? lines.length - 1 : lines.length;
+    const contentLines = lines.slice(contentStart, contentEnd);
+    if (contentLines.length <= 1) {
+      return undefined;
+    }
+
+    const ratio = (clientY - rect.top) / rect.height;
+    const lineIndex = Math.min(
+      contentLines.length - 1,
+      Math.max(0, Math.floor(ratio * contentLines.length))
+    );
+    return lines.slice(0, contentStart + lineIndex + 1).join('\n').length;
   }
 }

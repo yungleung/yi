@@ -115,9 +115,15 @@ body {
 .markdown-image-source,
 .markdown-link-source,
 .markdown-citation-source,
-.markdown-wikilink-source {
+.markdown-wikilink-source,
+.markdown-math-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
+}
+
+/* Math sources can span multiple lines (display mode `$$…$$`). */
+.markdown-math-source {
+  white-space: pre-wrap;
 }
 
 /* Rendered pandoc citation. */
@@ -128,12 +134,24 @@ body {
   font-size: 0.9em;
 }
 
+/* Inline code keeps the typography defaults; only the border goes away. */
+.markdown-inline-code {
+  padding: 0 0.2em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+
 /* Rendered wikilink. */
 .markdown-wikilink {
   padding: 0 0.2em;
   border-radius: 0.25rem;
-  color: var(--color-primary, currentColor);
+  color: color-mix(in oklab, var(--color-primary, currentColor) 50%, var(--color-base-content, currentColor));
   background-color: color-mix(in oklab, var(--color-primary, currentColor) 8%, transparent);
+}
+
+/* Links and autolinks use the theme's primary color. */
+.markdown-link {
+  color: var(--color-primary, currentColor);
 }
 
 @keyframes markdown-caret-blink {

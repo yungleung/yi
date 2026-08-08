@@ -38,7 +38,11 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    * Replaces the rendered element with its markdown source and places the
    * caret after the last character, ready for source editing.
    */
-  protected revealSource(sourceClassName: string): void {
+  /**
+   * Replaces the rendered element with its markdown source and places the
+   * caret after the last character (or at the given source offset).
+   */
+  protected revealSource(sourceClassName: string, caretOffset?: number): void {
     const source = serializeMarkdown([this.node as RootContent]).trimEnd();
 
     const sourceView = document.createElement('span');
@@ -49,8 +53,12 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     this.element.replaceWith(sourceView);
 
     const textNode = sourceView.firstChild as Text;
+    const offset =
+      caretOffset === undefined
+        ? textNode.data.length
+        : Math.min(Math.max(0, caretOffset), textNode.data.length);
     const range = document.createRange();
-    range.setStart(textNode, textNode.data.length);
+    range.setStart(textNode, offset);
     range.collapse(true);
     setCaretRange(range);
   }
