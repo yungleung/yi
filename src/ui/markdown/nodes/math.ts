@@ -3,30 +3,58 @@ import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-
 import type { RootContent } from 'mdast';
 import { serializeMarkdown } from '../parser';
 import { RevealableNodeComponent } from './revealable_node';
+import { onNearViewport } from '../lazy';
+
+/**
+ * KaTeX output is a pure function of the source, so render once per unique
+ * formula and reuse the HTML. Structural re-renders rebuild every math node,
+ * and without this cache each rebuild would re-run KaTeX for the whole
+ * document (the dominant cost in math-heavy notes).
+ */
+const katexCache = new Map<string, string>();
 
 function renderKatex(value: string, displayMode: boolean): string {
-  return katex.renderToString(value, {
+  const key = `${displayMode ? 'd' : 'i'}:${value}`;
+  const cached = katexCache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const html = katex.renderToString(value, {
     displayMode,
     throwOnError: false,
     output: 'html'
   });
+  katexCache.set(key, html);
+  return html;
+}
+
+/** Swaps a math placeholder's raw formula for its KaTeX rendering. */
+function renderMathElement(element: HTMLElement): void {
+  const value = element.dataset.math ?? '';
+  const display = element.dataset.display === 'true';
+  try {
+    element.innerHTML = renderKatex(value, display);
+    element.classList.remove('markdown-math-placeholder');
+  } catch {
+    // Keep the raw formula as the placeholder when KaTeX fails.
+  }
 }
 
 /**
- * Renders an `inlineMath` node with KaTeX. Clicking reveals the raw `$…$`
- * source with the caret at the end; the rendered math returns when the caret
- * moves away.
+ * Renders an `inlineMath` node with KaTeX. The raw formula is shown
+ * immediately as a cheap placeholder; KaTeX runs only when the node
+ * approaches the viewport. Clicking reveals the raw `$…$` source.
  */
 export class InlineMath extends RevealableNodeComponent {
   protected readonly sourceClassName = 'markdown-math-source';
 
   constructor(node: InlineMathNode) {
     super('inlineMath', node, document.createElement('span'), 'mx-1 align-middle');
-    try {
-      this.element.innerHTML = renderKatex(node.value, false);
-    } catch {
-      this.element.textContent = node.value;
-    }
+    this.element.classList.add('markdown-math-placeholder');
+    this.element.dataset.math = node.value;
+    this.element.dataset.display = 'false';
+    this.element.textContent = node.value;
+    onNearViewport(this.element, () => renderMathElement(this.element));
   }
 
   /** The formula between the `$` markers. */
@@ -38,18 +66,19 @@ export class InlineMath extends RevealableNodeComponent {
 /**
  * Renders a display `math` node with KaTeX. Clicking reveals the raw `$$…$$`
  * source (which may span multiple lines); the caret is placed at the end of
- * the source line nearest the clicked position.
+ * the source line nearest the clicked position. The formula renders lazily
+ * near the viewport, like inline math.
  */
 export class DisplayMath extends RevealableNodeComponent {
   protected readonly sourceClassName = 'markdown-math-source';
 
   constructor(node: MathNode) {
     super('math', node, document.createElement('div'), 'my-4 overflow-x-auto');
-    try {
-      this.element.innerHTML = renderKatex(node.value, true);
-    } catch {
-      this.element.textContent = node.value;
-    }
+    this.element.classList.add('markdown-math-placeholder');
+    this.element.dataset.math = node.value;
+    this.element.dataset.display = 'true';
+    this.element.textContent = node.value;
+    onNearViewport(this.element, () => renderMathElement(this.element));
   }
 
   protected override sourceOffsetForClick(_clientX: number, clientY: number): number | undefined {

@@ -1,6 +1,7 @@
 import { documentManager } from '../../../services/document_manager';
 import type { AstWikilink } from '../ast';
 import { RevealableNodeComponent } from './revealable_node';
+import { onNearViewport } from '../lazy';
 
 /**
  * Renders a wikilink as its display text: the explicit title for
@@ -22,10 +23,14 @@ export class Wikilink extends RevealableNodeComponent {
     this.element.textContent = this.explicitTitle ?? this.target;
 
     if (!this.explicitTitle) {
-      void documentManager.getTitle(this.target).then((title) => {
-        if (title && this.element.isConnected) {
-          this.element.textContent = title;
-        }
+      // Resolve the target's title only when the wikilink approaches the
+      // viewport, so off-screen wikilinks don't trigger document lookups.
+      onNearViewport(this.element, () => {
+        void documentManager.getTitle(this.target).then((title) => {
+          if (title && this.element.isConnected) {
+            this.element.textContent = title;
+          }
+        });
       });
     }
   }

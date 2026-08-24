@@ -134,10 +134,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   private renderPreview(): void {
+    const scrollTop = this.contentView.scrollTop;
     const preview = renderMarkdownAst(this.documentRoot);
     preview.tabIndex = 0;
     preview.classList.add('outline-none');
     this.contentView.replaceChildren(preview);
+    // Re-renders (e.g. after the bibliography loads) must not reset the
+    // reader's scroll position; the lazy viewport rendering depends on it.
+    this.contentView.scrollTop = scrollTop;
   }
 
   private handleKeydown(event: KeyboardEvent): void {

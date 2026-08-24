@@ -134,6 +134,12 @@ body {
   font-size: 0.9em;
 }
 
+/* Math placeholders show the raw formula until KaTeX renders near the viewport. */
+.markdown-math-placeholder {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  opacity: 0.75;
+}
+
 /* Inline code keeps the typography defaults; only the border goes away. */
 .markdown-inline-code {
   padding: 0 0.2em;
