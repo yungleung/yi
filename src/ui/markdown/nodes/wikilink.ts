@@ -10,6 +10,7 @@ import { RevealableNodeComponent } from './revealable_node';
  * Clicking reveals the raw markdown with the caret at the end.
  */
 export class Wikilink extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-wikilink-source';
   private readonly target: string;
   private readonly explicitTitle: string | null;
 
@@ -29,8 +30,9 @@ export class Wikilink extends RevealableNodeComponent {
     }
   }
 
-  override placeCaretAt(): void {
-    this.revealSource('markdown-wikilink-source');
+  /** The target/title between the `[[` and `]]` markers. */
+  protected sourceContentRange(source: string): { start: number; end: number } {
+    return { start: 2, end: Math.max(2, source.length - 2) };
   }
 }
 

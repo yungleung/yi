@@ -8,12 +8,17 @@ import { RevealableNodeComponent } from './revealable_node';
  * source (`[@key, …]` or `@key`) with the caret at the end.
  */
 export class Citation extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-citation-source';
+
   constructor(node: AstCitation) {
     super('citation', node, document.createElement('span'), 'markdown-citation');
     this.element.textContent = bibliographyManager.format(node.value);
   }
 
-  override placeCaretAt(): void {
-    this.revealSource('markdown-citation-source');
+  /** The key after the opening marker: `[@key]` → `@key`, `@key` → `key`. */
+  protected sourceContentRange(source: string): { start: number; end: number } {
+    const start = source.startsWith('[') ? 1 : source.startsWith('-@') ? 2 : source.startsWith('@') ? 1 : 0;
+    const end = source.endsWith(']') ? source.length - 1 : source.length;
+    return { start, end };
   }
 }

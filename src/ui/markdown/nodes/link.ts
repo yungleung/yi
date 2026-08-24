@@ -7,6 +7,8 @@ import { RevealableNodeComponent } from './revealable_node';
  * autolinks keep normal caret behavior.
  */
 export class Link extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-link-source';
+
   constructor(node: AstLink) {
     super('link', node, document.createElement('a'), 'markdown-link');
     const anchor = this.element as HTMLAnchorElement;
@@ -27,7 +29,7 @@ export class Link extends RevealableNodeComponent {
           return;
         }
         event.stopPropagation();
-        this.revealSource('markdown-link-source');
+        this.revealSource(this.sourceClassName, this.sourceOffsetForClick(event.clientX, event.clientY));
         const root = this.element.closest('.prose') as HTMLElement | null;
         root?.focus({ preventScroll: true });
       },
@@ -35,12 +37,14 @@ export class Link extends RevealableNodeComponent {
     );
   }
 
-  override placeCaretAt(clientX: number, clientY: number): void {
-    if (isAutolink(this.node as AstLink)) {
-      super.placeCaretAt(clientX, clientY);
-      return;
-    }
-    this.revealSource('markdown-link-source');
+  /** Autolinks render as plain URLs with no source to reveal. */
+  protected override shouldReveal(): boolean {
+    return !isAutolink(this.node as AstLink);
+  }
+
+  /** The title between the `[` and `]` markers. */
+  protected sourceContentRange(source: string): { start: number; end: number } {
+    return { start: 1, end: Math.max(1, source.lastIndexOf(']')) };
   }
 }
 

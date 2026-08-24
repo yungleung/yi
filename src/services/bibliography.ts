@@ -118,6 +118,16 @@ export class BibliographyManager {
     return formatted;
   }
 
+  /**
+   * Returns the already-formatted text for a citation value, or null when it
+   * has not been formatted yet. Renderers can show the raw source immediately
+   * and only pay the (expensive, cold) CSL formatting cost once, in the
+   * background.
+   */
+  formatCached(value: string): string | null {
+    return formatCache.get(value) ?? null;
+  }
+
   private formatUncached(value: string): string {
     if (!bibliography) {
       // Bibliography not loaded (yet): leave the raw source as-is.

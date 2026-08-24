@@ -18,6 +18,8 @@ function renderKatex(value: string, displayMode: boolean): string {
  * moves away.
  */
 export class InlineMath extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-math-source';
+
   constructor(node: InlineMathNode) {
     super('inlineMath', node, document.createElement('span'), 'mx-1 align-middle');
     try {
@@ -27,8 +29,9 @@ export class InlineMath extends RevealableNodeComponent {
     }
   }
 
-  override placeCaretAt(): void {
-    this.revealSource('markdown-math-source');
+  /** The formula between the `$` markers. */
+  protected sourceContentRange(source: string): { start: number; end: number } {
+    return { start: 1, end: Math.max(1, source.length - 1) };
   }
 }
 
@@ -38,6 +41,8 @@ export class InlineMath extends RevealableNodeComponent {
  * the source line nearest the clicked position.
  */
 export class DisplayMath extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-math-source';
+
   constructor(node: MathNode) {
     super('math', node, document.createElement('div'), 'my-4 overflow-x-auto');
     try {
@@ -47,8 +52,16 @@ export class DisplayMath extends RevealableNodeComponent {
     }
   }
 
-  override placeCaretAt(_clientX: number, clientY: number): void {
-    this.revealSource('markdown-math-source', this.sourceLineOffsetAt(clientY));
+  protected override sourceOffsetForClick(_clientX: number, clientY: number): number | undefined {
+    return this.sourceLineOffsetAt(clientY);
+  }
+
+  /** The formula between the `$$` delimiters (or the whole source without them). */
+  protected sourceContentRange(source: string): { start: number; end: number } {
+    return {
+      start: source.trimStart().startsWith('$$') ? source.indexOf('$$') + 2 : 0,
+      end: source.trimEnd().endsWith('$$') ? source.lastIndexOf('$$') : source.length
+    };
   }
 
   /**

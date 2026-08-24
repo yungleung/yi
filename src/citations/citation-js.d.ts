@@ -18,3 +18,9 @@ declare module '@citation-js/core' {
 
   export const Cite: CiteConstructor;
 }
+
+/* Side-effect imports: loading the plugins registers their formats/styles on
+ * @citation-js/core. The packages ship no type declarations, so ambient
+ * declarations satisfy the module resolver for these imports. */
+declare module '@citation-js/plugin-bibtex';
+declare module '@citation-js/plugin-csl';
