@@ -1,11 +1,10 @@
-import type { Root } from 'mdast';
 import { BaseComponent } from '../component';
 import { getCaretRange } from './caret/caret';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { parseMarkdown, serializeMarkdown } from './parser';
-import { renderMarkdownAst } from './renderer';
+import { MarkdownEditorState } from './state';
+import { createDocumentView } from './create_block';
 
 const DEFAULT_MARKDOWN = [
   '# GitHub-flavored markdown demo',
@@ -96,7 +95,8 @@ const DEFAULT_MARKDOWN = [
 ].join('\n');
 
 export class WysiwygMarkdownEditor extends BaseComponent {
-  private documentRoot: Root;
+  /** Owns the raw document and maintains its blocks. */
+  private readonly state = new MarkdownEditorState(DEFAULT_MARKDOWN);
   private contentView: HTMLElement;
 
   constructor() {
@@ -107,7 +107,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
     this.appendChild(this.contentView);
 
-    this.documentRoot = parseMarkdown(DEFAULT_MARKDOWN);
     this.renderPreview();
     // The bibliography manager announces when its data is ready or refreshed;
     // the editor just re-renders the same tree.
@@ -115,19 +114,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   setContent(content: string): void {
-    this.documentRoot = parseMarkdown(content);
+    this.state.setText(content);
     this.renderPreview();
   }
 
   getContent(): string {
-    return serializeMarkdown(this.documentRoot);
+    return this.state.getText();
   }
 
   /**
-   * Re-renders the current document tree without re-parsing it. Used when the
-   * bibliography arrives after the first render, so citations can switch from
-   * raw source to formatted text without a serialization round-trip (which
-   * would drop escapes such as `\@literal`).
+   * Re-renders the blocks. Used when the bibliography arrives after the first
+   * render, so citations can switch from raw source to formatted text.
    */
   refresh(): void {
     this.renderPreview();
@@ -135,10 +132,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   private renderPreview(): void {
     const scrollTop = this.contentView.scrollTop;
-    const preview = renderMarkdownAst(this.documentRoot);
-    preview.tabIndex = 0;
-    preview.classList.add('outline-none');
-    this.contentView.replaceChildren(preview);
+    // Render the document as a block tree inside a single `.prose` element;
+    // the root block is a plain container and the editor assigns the class.
+    const root = createDocumentView(this.state.getBlockTree(), this.state.getParse());
+    root.element.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full';
+    root.element.tabIndex = 0;
+    root.element.classList.add('outline-none');
+    this.contentView.replaceChildren(root.element);
     // Re-renders (e.g. after the bibliography loads) must not reset the
     // reader's scroll position; the lazy viewport rendering depends on it.
     this.contentView.scrollTop = scrollTop;

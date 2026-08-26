@@ -140,6 +140,18 @@ body {
   opacity: 0.75;
 }
 
+/* Blocks stack with a little breathing room between them. */
+.markdown-block + .markdown-block {
+  margin-top: 1rem;
+}
+
+/* Frontmatter blocks render as their raw YAML/TOML source. */
+.markdown-frontmatter {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  opacity: 0.8;
+}
+
 /* Inline code keeps the typography defaults; only the border goes away. */
 .markdown-inline-code {
   padding: 0 0.2em;

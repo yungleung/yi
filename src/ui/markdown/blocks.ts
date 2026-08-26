@@ -1,0 +1,398 @@
+/**
+ * Block-level slicing of the raw markdown document.
+ *
+ * The editor keeps the raw markdown as the source of truth. This module
+ * splits it into blocks — each block is a *view* over a slice of the
+ * original lines, described by a line-number range and the matching
+ * character offsets. A block component renders each block, and the editor
+ * tracks blocks by their line ranges so an edit re-slices and re-renders
+ * only the affected region.
+ *
+ * Block rules:
+ * - `frontmatter`: a `---` (YAML) or `+++` (TOML) fence at the very start
+ *   of the document, through its closing fence;
+ * - `fencedCode`: an opening fence through the closing fence (blank lines
+ *   are allowed inside);
+ * - `displayMath`: `$$` … `$$` (blank lines are allowed inside);
+ * - `descriptionList`: a term run merged with its following `: details`;
+ * - `paragraph`: every other run of consecutive non-blank lines (the
+ *   markdown parser re-splits it into headings, lists, tables, ...).
+ *
+ * Blank lines are separators, not blocks.
+ */
+
+export type BlockKind =
+  | 'frontmatter'
+  | 'fencedCode'
+  | 'indentedCode'
+  | 'displayMath'
+  | 'html'
+  | 'descriptionList'
+  | 'paragraph';
+
+export interface MarkdownBlock {
+  kind: BlockKind;
+  /** `yaml` or `toml` for frontmatter blocks. */
+  format?: 'yaml' | 'toml';
+  /** 1-based number of the block's first line (inclusive). */
+  lineStart: number;
+  /** 1-based number of the block's last line (inclusive). */
+  lineEnd: number;
+  /** Character offset of the block's first character in the document. */
+  charStart: number;
+  /** Character offset just past the block's last character. */
+  charEnd: number;
+  /** The block's raw source: `document.slice(charStart, charEnd)`. */
+  text: string;
+}
+
+/** A block as an mdast-like node (the `type` field makes it a tree node). */
+export interface BlockNode extends MarkdownBlock {
+  type: 'block';
+}
+
+/** The whole document as an mdast-like root of block nodes. */
+export interface BlockRoot {
+  type: 'root';
+  children: BlockNode[];
+}
+
+interface SourceLine {
+  number: number;
+  start: number;
+  end: number;
+  text: string;
+}
+
+/** Splits a raw markdown document into blocks, in document order. */
+export function splitBlocks(text: string): MarkdownBlock[] {
+  const lines = splitLines(text);
+  const blocks: MarkdownBlock[] = [];
+  let i = 0;
+
+  // Frontmatter must start at the very first line of the document.
+  if (i < lines.length) {
+    const delimiter = frontmatterDelimiter(lines[0].text);
+    if (delimiter) {
+      const close = lines.findIndex((line, index) => index > 0 && line.text.trim() === delimiter);
+      if (close >= 0) {
+        const last = lines[close];
+        blocks.push({
+          kind: 'frontmatter',
+          format: delimiter === '+++' ? 'toml' : 'yaml',
+          lineStart: lines[0].number,
+          lineEnd: last.number,
+          charStart: lines[0].start,
+          charEnd: last.end,
+          text: text.slice(lines[0].start, last.end)
+        });
+        i = close + 1;
+      }
+    }
+  }
+
+  while (i < lines.length) {
+    const first = lines[i];
+    if (first.text.trim() === '') {
+      i += 1;
+      continue;
+    }
+
+    const lineStart = first.number;
+    const charStart = first.start;
+    let lineEnd = first.number;
+    let charEnd = first.end;
+    let j = i + 1;
+    let kind: BlockKind = 'paragraph';
+
+    // Fenced code: consume through the closing fence (or to the end).
+    const fence = openingFence(first.text);
+    if (fence) {
+      kind = 'fencedCode';
+      while (j < lines.length && !closingFence(lines[j].text, fence)) {
+        lineEnd = lines[j].number;
+        charEnd = lines[j].end;
+        j += 1;
+      }
+      if (j < lines.length) {
+        lineEnd = lines[j].number;
+        charEnd = lines[j].end;
+        j += 1;
+      }
+      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      i = j;
+      continue;
+    }
+
+    // Display math: `$$` on its own line through the closing `$$`.
+    if (first.text.trimStart().startsWith('$$')) {
+      kind = 'displayMath';
+      const open = first.text.indexOf('$$');
+      const closesOnLine =
+        first.text.indexOf('$$', open + 2) >= 0 && first.text.trimEnd().endsWith('$$');
+      if (!closesOnLine) {
+        while (j < lines.length) {
+          const candidate = lines[j].text;
+          lineEnd = lines[j].number;
+          charEnd = lines[j].end;
+          j += 1;
+          if (candidate.trim().startsWith('$$') || candidate.trim().endsWith('$$')) {
+            break;
+          }
+        }
+      }
+      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      i = j;
+      continue;
+    }
+
+    // Indented code may contain blank lines (when followed by indented
+    // lines), so an indented run continues across them.
+    if (/^(?: {4}|\t)/.test(first.text)) {
+      kind = 'indentedCode';
+      let scan = j;
+      while (scan < lines.length) {
+        while (scan < lines.length && lines[scan].text.trim() === '') {
+          scan += 1;
+        }
+        if (scan >= lines.length) {
+          break;
+        }
+        if (!/^(?: {4}|\t)/.test(lines[scan].text)) {
+          break;
+        }
+        while (scan < lines.length && lines[scan].text.trim() !== '') {
+          lineEnd = lines[scan].number;
+          charEnd = lines[scan].end;
+          scan += 1;
+        }
+      }
+      if (scan > j) {
+        j = scan;
+      }
+      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      i = j;
+      continue;
+    }
+
+    // HTML blocks that continue until a terminator (script/pre/style/
+    // textarea, comments, processing instructions, declarations, CDATA) may
+    // contain blank lines; consume them whole so one block maps to one
+    // `html` node.
+    const htmlTerminator = htmlBlockTerminator(first.text);
+    if (htmlTerminator) {
+      kind = 'html';
+      while (j < lines.length && !htmlTerminator.test(lines[j].text)) {
+        lineEnd = lines[j].number;
+        charEnd = lines[j].end;
+        j += 1;
+      }
+      if (j < lines.length) {
+        lineEnd = lines[j].number;
+        charEnd = lines[j].end;
+        j += 1;
+      }
+      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      i = j;
+      continue;
+    }
+
+    // A run of consecutive non-blank lines.
+    while (j < lines.length && lines[j].text.trim() !== '') {
+      lineEnd = lines[j].number;
+      charEnd = lines[j].end;
+      j += 1;
+    }
+
+    // Loose lists may contain blank lines between items (and indented item
+    // continuations after a blank), so a run that starts with a list marker
+    // continues across blank lines while the next content still belongs to
+    // the list. This keeps one list = one block, matching the mdast tree.
+    const list = listMarker(first.text);
+    let listMerged = false;
+    if (list) {
+      let scan = j;
+      let mergedEnd = j;
+      while (scan < lines.length) {
+        while (scan < lines.length && lines[scan].text.trim() === '') {
+          scan += 1;
+        }
+        if (scan >= lines.length) {
+          break;
+        }
+        const info = listMarker(lines[scan].text);
+        const sameLevel =
+          info !== null && info.indent === list.indent && info.ordered === list.ordered;
+        const indented = /^(?: {2,}|\t)/.test(lines[scan].text);
+        if (!sameLevel && !indented) {
+          break;
+        }
+        listMerged = true;
+        while (scan < lines.length && lines[scan].text.trim() !== '') {
+          lineEnd = lines[scan].number;
+          charEnd = lines[scan].end;
+          scan += 1;
+        }
+        mergedEnd = scan;
+      }
+      if (listMerged) {
+        j = mergedEnd;
+      }
+    }
+
+    // Description lists: remark-deflist merges every consecutive `term` +
+    // `: details` pair (separated by blank lines) into a single description
+    // list, so the block must span them all to slice cleanly from the
+    // whole-document tree.
+    let scan = j;
+    let mergedEnd = j;
+    let sawDetails = false;
+    while (scan < lines.length) {
+      while (scan < lines.length && lines[scan].text.trim() === '') {
+        scan += 1;
+      }
+      if (scan >= lines.length) {
+        break;
+      }
+      if (/^:\s+/.test(lines[scan].text.trimStart())) {
+        sawDetails = true;
+        while (scan < lines.length && lines[scan].text.trim() !== '') {
+          lineEnd = lines[scan].number;
+          charEnd = lines[scan].end;
+          scan += 1;
+        }
+        mergedEnd = scan;
+        continue;
+      }
+      // Before the first `: details` the run is not a description list; a
+      // plain run (e.g. a footnote definition) must stay its own block.
+      if (!sawDetails) {
+        break;
+      }
+      // A non-details line continues the list when it is a term: a run of
+      // non-blank lines followed (after blanks) by `: details`.
+      const termStart = scan;
+      while (scan < lines.length && lines[scan].text.trim() !== '') {
+        scan += 1;
+      }
+      let probe = scan;
+      while (probe < lines.length && lines[probe].text.trim() === '') {
+        probe += 1;
+      }
+      if (probe < lines.length && /^:\s+/.test(lines[probe].text.trimStart())) {
+        for (let k = termStart; k < scan; k += 1) {
+          lineEnd = lines[k].number;
+          charEnd = lines[k].end;
+        }
+        continue;
+      }
+      break; // not a term: the description list ends here
+    }
+    if (sawDetails) {
+      kind = 'descriptionList';
+      i = mergedEnd;
+    } else {
+      i = j;
+    }
+
+    blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+  }
+
+  return blocks;
+}
+
+/**
+ * Builds the mdast-like block tree for a raw document: a root block
+ * representing the whole document, whose children are the document's blocks.
+ */
+export function buildBlockTree(text: string): BlockRoot {
+  return {
+    type: 'root',
+    children: splitBlocks(text).map((block) => ({ type: 'block', ...block }))
+  };
+}
+
+/** The frontmatter fence when the line is a lone `---` or `+++`. */
+function frontmatterDelimiter(line: string): '---' | '+++' | null {
+  if (line.trim() === '---') {
+    return '---';
+  }
+  if (line.trim() === '+++') {
+    return '+++';
+  }
+  return null;
+}
+
+/** The fence marker (``` or ~~~) when the line opens a fenced code block. */
+function openingFence(line: string): string | null {
+  const match = /^(?: {0,3})(`{3,}|~{3,})/.exec(line);
+  return match ? match[1] : null;
+}
+
+/** The list marker info when the line starts a list item, or null. */
+function listMarker(line: string): { indent: number; ordered: boolean } | null {
+  const match = /^( {0,3})([-*+]|\d+[.)])(?:\s+|$)/.exec(line);
+  if (!match) {
+    return null;
+  }
+  return { indent: match[1].length, ordered: /^\d/.test(match[2]) };
+}
+
+/**
+ * The terminator regex of a long HTML block (commonmark types 1-5) when the
+ * line opens one, or null. These blocks may span blank lines.
+ */
+function htmlBlockTerminator(line: string): RegExp | null {
+  const match = /^ {0,3}(<(?:script|pre|style|textarea)\b|<!--|<\?|<!\[CDATA\[|<![A-Z])/.exec(
+    line
+  );
+  if (!match) {
+    return null;
+  }
+  const open = match[1];
+  if (/^<(?:script|pre|style|textarea)\b/.test(open)) {
+    return /<\/(?:script|pre|style|textarea)>/i;
+  }
+  if (open.startsWith('<!--')) {
+    return /-->/;
+  }
+  if (open.startsWith('<?')) {
+    return /\?>/;
+  }
+  if (open.startsWith('<![CDATA[')) {
+    return /\]\]>/;
+  }
+  return />/;
+}
+
+/** Whether a line closes a fence opened with `marker`. */
+function closingFence(line: string, marker: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith(marker[0])) {
+    return false;
+  }
+  return /^(`{3,}|~{3,})$/.test(trimmed);
+}
+
+function makeBlock(
+  kind: BlockKind,
+  text: string,
+  lineStart: number,
+  lineEnd: number,
+  charStart: number,
+  charEnd: number
+): MarkdownBlock {
+  return { kind, lineStart, lineEnd, charStart, charEnd, text: text.slice(charStart, charEnd) };
+}
+
+function splitLines(text: string): SourceLine[] {
+  const out: SourceLine[] = [];
+  let start = 0;
+  let number = 1;
+  for (const line of text.split('\n')) {
+    out.push({ number, start, end: start + line.length, text: line });
+    start += line.length + 1;
+    number += 1;
+  }
+  return out;
+}

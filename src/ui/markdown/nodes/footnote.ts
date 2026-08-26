@@ -1,4 +1,4 @@
-import { createNodeComponent } from '../create_node';
+import { createComponent } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
 
@@ -27,13 +27,13 @@ export class FootnoteDefinition extends EditableNodeComponent {
     for (const child of node.children) {
       if (child.type === 'paragraph') {
         for (const grandChild of child.children) {
-          const component = createNodeComponent(grandChild);
+          const component = createComponent(grandChild);
           if (component) {
             content.appendChild(component.element);
           }
         }
       } else {
-        const component = createNodeComponent(child);
+        const component = createComponent(child);
         if (component) {
           content.appendChild(component.element);
         }

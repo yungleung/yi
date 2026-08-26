@@ -1,4 +1,4 @@
-import { appendChildren, createNodeComponent } from '../create_node';
+import { appendChildren, createComponent } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstList, AstListItem } from '../ast';
 
@@ -33,7 +33,7 @@ export class ListItem extends EditableNodeComponent {
     contentWrapper.appendChild(checkbox);
 
     for (const child of node.children) {
-      const component = createNodeComponent(child);
+      const component = createComponent(child);
       if (!component) {
         continue;
       }

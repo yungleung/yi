@@ -1,8 +1,44 @@
-import {
-  EditableNodeComponent,
-  type EditableMarkdownNode
-} from './nodes/editable_node';
-import type { AstNode } from './ast';
+/**
+ * Node component bootstrap: registers the editable component factory for
+ * every mdast node type with the shared registry (see `registry.ts`).
+ *
+ * The node modules depend only on the registry, so this module — the single
+ * place that imports both the registry and every node class — can register
+ * them without creating the `create_node ↔ nodes/*` import cycle. Importing
+ * this module (directly or via its re-exports) also triggers the
+ * registrations.
+ */
+
+import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
+import type {
+  AstBlockquote,
+  AstBreak,
+  AstCitation,
+  AstCode,
+  AstDelete,
+  AstDescriptionDetails,
+  AstDescriptionList,
+  AstDescriptionTerm,
+  AstEmphasis,
+  AstFootnoteDefinition,
+  AstFootnoteReference,
+  AstHeading,
+  AstHtml,
+  AstImage,
+  AstInlineCode,
+  AstLink,
+  AstList,
+  AstListItem,
+  AstParagraph,
+  AstRoot,
+  AstStrong,
+  AstTable,
+  AstText,
+  AstThematicBreak,
+  AstWikilink,
+  AstNode
+} from './ast';
+import { appendChildren, createComponent, registerComponent } from './registry';
 import { RootNode } from './nodes/root';
 import { Paragraph } from './nodes/paragraph';
 import { Heading } from './nodes/heading';
@@ -26,91 +62,40 @@ import { Citation } from './nodes/citation';
 import { Wikilink } from './nodes/wikilink';
 import { TextNode } from './nodes/text';
 
-/**
- * Builds the editable component for an mdast node, or `null` for nodes that
- * are not rendered (image references and definitions are resolved elsewhere).
- */
-export function createNodeComponent(node: AstNode): EditableMarkdownNode | null {
-  switch (node.type) {
-    case 'root':
-      return new RootNode(node);
-    case 'paragraph':
-      return new Paragraph(node);
-    case 'heading':
-      return new Heading(node);
-    case 'blockquote':
-      return new Blockquote(node);
-    case 'list':
-      return new List(node);
-    case 'listItem':
-      return new ListItem(node);
-    case 'descriptionlist':
-      return new DescriptionList(node);
-    case 'descriptionterm':
-      return new DescriptionTerm(node);
-    case 'descriptiondetails':
-      return new DescriptionDetails(node);
-    case 'footnoteDefinition':
-      return new FootnoteDefinition(node);
-    case 'footnoteReference':
-      return new FootnoteReference(node);
-    case 'inlineMath':
-      return new InlineMath(node);
-    case 'math':
-      return new DisplayMath(node);
-    case 'code':
-      return new CodeBlock(node);
-    case 'thematicBreak':
-      return new ThematicBreak(node);
-    case 'table':
-      return new Table(node);
-    case 'html':
-      return new HtmlBlock(node);
-    case 'break':
-      return new Break(node);
-    case 'inlineCode':
-      return new InlineCode(node);
-    case 'emphasis':
-      return new Emphasis(node);
-    case 'strong':
-      return new Strong(node);
-    case 'delete':
-      return new Delete(node);
-    case 'link':
-      return new Link(node);
-    case 'image':
-      return new Image(node);
-    case 'citation':
-      return new Citation(node);
-    case 'wikilink':
-      return new Wikilink(node);
-    case 'text':
-      return new TextNode(node);
-    case 'imageReference':
-    case 'definition':
-      return null;
-    default:
-      return new GenericContainer(node);
-  }
+export { appendChildren };
+
+/** Creates the editable component for an mdast node (see `registry.ts`). */
+export function createNodeComponent(node: AstNode) {
+  return createComponent(node);
 }
 
-/** Renders every child of an mdast node into the given container element. */
-export function appendChildren(
-  container: HTMLElement,
-  children: readonly AstNode[] | undefined
-): void {
-  for (const child of children ?? []) {
-    const component = createNodeComponent(child);
-    if (component) {
-      container.appendChild(component.element);
-    }
-  }
-}
-
-/** Fallback for unknown node types: a generic block container. */
-class GenericContainer extends EditableNodeComponent {
-  constructor(node: AstNode) {
-    super(String(node.type ?? 'unknown'), node, document.createElement('div'), 'min-w-0');
-    appendChildren(this.element, 'children' in node ? node.children : undefined);
-  }
-}
+registerComponent('root', (node) => new RootNode(node as AstRoot));
+registerComponent('paragraph', (node) => new Paragraph(node as AstParagraph));
+registerComponent('heading', (node) => new Heading(node as AstHeading));
+registerComponent('blockquote', (node) => new Blockquote(node as AstBlockquote));
+registerComponent('list', (node) => new List(node as AstList));
+registerComponent('listItem', (node) => new ListItem(node as AstListItem));
+registerComponent('descriptionlist', (node) => new DescriptionList(node as AstDescriptionList));
+registerComponent('descriptionterm', (node) => new DescriptionTerm(node as AstDescriptionTerm));
+registerComponent(
+  'descriptiondetails',
+  (node) => new DescriptionDetails(node as AstDescriptionDetails)
+);
+registerComponent('footnoteDefinition', (node) => new FootnoteDefinition(node as AstFootnoteDefinition));
+registerComponent('footnoteReference', (node) => new FootnoteReference(node as AstFootnoteReference));
+registerComponent('inlineMath', (node) => new InlineMath(node as InlineMathNode));
+registerComponent('math', (node) => new DisplayMath(node as MathNode));
+registerComponent('code', (node) => new CodeBlock(node as AstCode));
+registerComponent('thematicBreak', (node) => new ThematicBreak(node as AstThematicBreak));
+registerComponent('table', (node) => new Table(node as AstTable));
+registerComponent('html', (node) => new HtmlBlock(node as AstHtml));
+registerComponent('break', (node) => new Break(node as AstBreak));
+registerComponent('inlineCode', (node) => new InlineCode(node as AstInlineCode));
+registerComponent('emphasis', (node) => new Emphasis(node as AstEmphasis));
+registerComponent('strong', (node) => new Strong(node as AstStrong));
+registerComponent('delete', (node) => new Delete(node as AstDelete));
+registerComponent('link', (node) => new Link(node as AstLink));
+registerComponent('image', (node) => new Image(node as AstImage));
+registerComponent('citation', (node) => new Citation(node as AstCitation));
+registerComponent('wikilink', (node) => new Wikilink(node as AstWikilink));
+registerComponent('text', (node) => new TextNode(node as AstText));

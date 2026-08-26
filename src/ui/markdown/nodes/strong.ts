@@ -1,4 +1,4 @@
-import { appendChildren } from '../create_node';
+import { appendChildren } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstStrong } from '../ast';
 

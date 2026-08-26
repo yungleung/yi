@@ -1,4 +1,4 @@
-import { appendChildren } from '../create_node';
+import { appendChildren } from '../registry';
 import type { AstLink } from '../ast';
 import { RevealableNodeComponent } from './revealable_node';
 
