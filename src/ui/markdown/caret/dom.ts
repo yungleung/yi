@@ -1,0 +1,240 @@
+/**
+ * Shared DOM position utilities.
+ *
+ * These are pure document-tree helpers used by arrow navigation (finding the
+ * nearest text/void node around a caret) and by revealable boundary detection
+ * (finding the node adjacent to the caret). They have no editor dependencies.
+ */
+
+/** A collapsed range anchored in a text node. */
+export function collapsed(text: Text, offset: number): Range {
+  const range = document.createRange();
+  range.setStart(text, offset);
+  range.collapse(true);
+  return range;
+}
+
+/** Text nodes inside the given blocks, in document order. */
+export function textNodesIn(blocks: readonly HTMLElement[]): Text[] {
+  const result: Text[] = [];
+  for (const block of blocks) {
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      result.push(node as Text);
+    }
+  }
+  return result;
+}
+
+/** The first text node inside `element`, or null. */
+export function firstTextNodeIn(element: Element): Text | null {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const first = walker.nextNode();
+  return first ? (first as Text) : null;
+}
+
+/** The last text node inside `element`, or null. */
+export function lastTextNodeIn(element: Element): Text | null {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  let last: Text | null = null;
+  let current: Node | null;
+  while ((current = walker.nextNode())) {
+    last = current as Text;
+  }
+  return last;
+}
+
+/** Whether `node` is a void leaf element (image, rule, break, ...). */
+export function isVoidElement(node: Node): boolean {
+  return (
+    node.nodeType === Node.ELEMENT_NODE &&
+    ['IMG', 'HR', 'BR', 'INPUT', 'WBR'].includes((node as Element).tagName)
+  );
+}
+
+export function withinBlocks(node: Node, blocks: readonly HTMLElement[]): boolean {
+  return blocks.some((block) => block.contains(node));
+}
+
+/** The nearest node before `node` (in document order) that can hold a caret. */
+export function previousPositionNode(node: Node, blocks: readonly HTMLElement[]): Node | null {
+  let current: Node | null = node;
+  while (current) {
+    if (current.previousSibling) {
+      const found = lastPositionableIn(current.previousSibling);
+      if (found && withinBlocks(found, blocks)) {
+        return found;
+      }
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+/** The nearest node after `node` (in document order) that can hold a caret. */
+export function nextPositionNode(node: Node, blocks: readonly HTMLElement[]): Node | null {
+  let current: Node | null = node;
+  while (current) {
+    if (current.nextSibling) {
+      const found = firstPositionableIn(current.nextSibling);
+      if (found && withinBlocks(found, blocks)) {
+        return found;
+      }
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+/** The last text/void node inside `node`, or `node` itself when positionable. */
+function lastPositionableIn(node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE || isVoidElement(node)) {
+    return node;
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    for (let index = node.childNodes.length - 1; index >= 0; index -= 1) {
+      const found = lastPositionableIn(node.childNodes[index]);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+/** The first text/void node inside `node`, or `node` itself when positionable. */
+function firstPositionableIn(node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE || isVoidElement(node)) {
+    return node;
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    for (let index = 0; index < node.childNodes.length; index += 1) {
+      const found = firstPositionableIn(node.childNodes[index]);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+/** The top of the line holding a caret position, or null when unresolvable. */
+export function lineTopOf(node: Node, offset: number): number | null {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const rect = collapsed(
+      node as Text,
+      Math.min(Math.max(0, offset), (node as Text).data.length)
+    ).getBoundingClientRect();
+    return rect.height > 0 ? rect.top : null;
+  }
+  const rect = (node as Element).getBoundingClientRect();
+  return rect.height > 0 ? rect.top : null;
+}
+
+/** Whether two line tops are the same visual line. */
+export function sameLineTop(a: number | null, b: number | null): boolean {
+  return a !== null && b !== null && Math.abs(a - b) < 1;
+}
+
+/** A collapsed range anchored before an element. */
+export function rangeBefore(element: Element): Range {
+  const range = document.createRange();
+  range.setStartBefore(element);
+  range.collapse(true);
+  return range;
+}
+
+/** A collapsed range anchored after an element. */
+export function rangeAfter(element: Element): Range {
+  const range = document.createRange();
+  range.setStartAfter(element);
+  range.collapse(true);
+  return range;
+}
+
+/** The node right after a DOM position (skipping the local caret), or null. */
+export function nextNodeAfter(container: Node, offset: number): Node | null {
+  if (container.nodeType === Node.TEXT_NODE) {
+    if (offset < (container as Text).data.length) {
+      return null;
+    }
+    return skipCaretNodes(nextSiblingNode(container), true);
+  }
+  const element = container as Element;
+  if (offset < element.childNodes.length) {
+    return skipCaretNodes(element.childNodes[offset], true);
+  }
+  return skipCaretNodes(nextSiblingNode(element), true);
+}
+
+/** The node right before a DOM position (skipping the local caret), or null. */
+export function nextNodeBefore(container: Node, offset: number): Node | null {
+  if (container.nodeType === Node.TEXT_NODE) {
+    if (offset > 0) {
+      return null;
+    }
+    return skipCaretNodes(previousSiblingNode(container), false);
+  }
+  const element = container as Element;
+  if (offset > 0) {
+    return skipCaretNodes(element.childNodes[offset - 1], false);
+  }
+  return skipCaretNodes(previousSiblingNode(element), false);
+}
+
+/**
+ * The local caret span is a zero-width rendering artifact: boundary detection
+ * must look past it to the real neighbouring node.
+ */
+function skipCaretNodes(node: Node | null, forward: boolean): Node | null {
+  let current = node;
+  while (current && (current as Element).classList?.contains('markdown-caret')) {
+    current = forward ? nextSiblingNode(current) : previousSiblingNode(current);
+  }
+  return current;
+}
+
+export function nextSiblingNode(node: Node): Node | null {
+  let current: Node | null = node;
+  while (current) {
+    if (current.nextSibling) {
+      return current.nextSibling;
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+export function previousSiblingNode(node: Node): Node | null {
+  let current: Node | null = node;
+  while (current) {
+    if (current.previousSibling) {
+      return current.previousSibling;
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+/**
+ * Whether a caret range is anchored on the boundary of `element`, and on
+ * which side.
+ */
+export function elementBoundarySide(
+  range: Range | null,
+  element: Element
+): 'before' | 'after' | null {
+  if (!range) {
+    return null;
+  }
+  const container = range.startContainer;
+  if (container.nodeType !== Node.ELEMENT_NODE || !container.contains(element)) {
+    return null;
+  }
+  const index = Array.from(container.childNodes).indexOf(element);
+  if (index < 0) {
+    return null;
+  }
+  return range.startOffset <= index ? 'before' : 'after';
+}

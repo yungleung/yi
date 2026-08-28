@@ -9,10 +9,12 @@
  * parsed with mdast and rendered with the usual node components.
  */
 
-import type { BlockNode, BlockRoot } from './blocks';
+import { sliceBlockTree, type BlockNode, type BlockRoot } from './blocks';
 import type { Root, RootContent } from 'mdast';
-import { appendChildren } from './create_node';
+import { appendChildren } from './registry';
 import { parseMarkdown } from './parser';
+// Importing the registration bootstrap registers every node component.
+import './create_node';
 
 export interface BlockComponent {
   readonly type: 'root' | 'block';
@@ -27,7 +29,7 @@ export interface BlockComponent {
  * dominant cost when rendering large documents.
  */
 export function createDocumentView(tree: BlockRoot, root: Root): BlockComponent {
-  return new RootBlockView(tree, sliceBlocks(tree, root));
+  return new RootBlockView(tree, sliceBlockTree(tree, root));
 }
 
 /** Creates a standalone block component (parses the block's own slice). */
@@ -81,61 +83,9 @@ class BlockView implements BlockComponent {
     element.className = 'markdown-block';
     element.dataset.lineStart = String(node.lineStart);
     element.dataset.lineEnd = String(node.lineEnd);
+    // The block's character start, refreshed on every render/edit. Revealed
+    // source spans use it to tag block-relative positions.
+    element.dataset.charStart = String(node.charStart);
     return element;
   }
-}
-
-/**
- * Assigns each node of the whole-document tree to the block whose line range
- * contains it. Both lists are in document order, so one pass suffices.
- */
-function sliceBlocks(tree: BlockRoot, root: Root): Map<number, RootContent[]> {
-  const blocks = tree.children;
-  const slices = new Map<number, RootContent[]>();
-  let index = 0;
-  let lastEnd = -1;
-
-  const push = (i: number, child: RootContent): void => {
-    if (i >= blocks.length) {
-      return;
-    }
-    const list = slices.get(i);
-    if (list) {
-      list.push(child);
-    } else {
-      slices.set(i, [child]);
-    }
-  };
-
-  for (const child of root.children) {
-    const position = (
-      child as { position?: { start: { offset?: number }; end: { offset?: number } } }
-    ).position;
-    if (position?.start.offset !== undefined) {
-      const start = position.start.offset;
-      const end = position.end.offset ?? start;
-      while (index < blocks.length && start > blocks[index].charEnd) {
-        index += 1;
-      }
-      if (index >= blocks.length) {
-        break;
-      }
-      if (start >= blocks[index].charStart) {
-        push(index, child);
-        lastEnd = Math.max(lastEnd, end);
-      }
-    } else {
-      // Position-less constructs (description lists) belong to the block
-      // that follows the previously assigned content.
-      while (index < blocks.length && blocks[index].charStart <= lastEnd) {
-        index += 1;
-      }
-      if (index >= blocks.length) {
-        break;
-      }
-      push(index, child);
-      lastEnd = Math.max(lastEnd, blocks[index].charEnd);
-    }
-  }
-  return slices;
 }

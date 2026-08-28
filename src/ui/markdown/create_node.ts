@@ -5,8 +5,7 @@
  * The node modules depend only on the registry, so this module — the single
  * place that imports both the registry and every node class — can register
  * them without creating the `create_node ↔ nodes/*` import cycle. Importing
- * this module (directly or via its re-exports) also triggers the
- * registrations.
+ * this module triggers the registrations.
  */
 
 import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
@@ -35,10 +34,9 @@ import type {
   AstTable,
   AstText,
   AstThematicBreak,
-  AstWikilink,
-  AstNode
+  AstWikilink
 } from './ast';
-import { appendChildren, createComponent, registerComponent } from './registry';
+import { registerComponent } from './registry';
 import { RootNode } from './nodes/root';
 import { Paragraph } from './nodes/paragraph';
 import { Heading } from './nodes/heading';
@@ -61,13 +59,6 @@ import { Image } from './nodes/image';
 import { Citation } from './nodes/citation';
 import { Wikilink } from './nodes/wikilink';
 import { TextNode } from './nodes/text';
-
-export { appendChildren };
-
-/** Creates the editable component for an mdast node (see `registry.ts`). */
-export function createNodeComponent(node: AstNode) {
-  return createComponent(node);
-}
 
 registerComponent('root', (node) => new RootNode(node as AstRoot));
 registerComponent('paragraph', (node) => new Paragraph(node as AstParagraph));

@@ -9,13 +9,21 @@
  */
 
 import type { Root } from 'mdast';
-import { buildBlockTree, splitBlocks, type BlockRoot, type MarkdownBlock } from './blocks';
+import {
+  buildBlockTree,
+  sliceBlockTree,
+  splitBlocks,
+  type BlockRoot,
+  type MarkdownBlock
+} from './blocks';
+import type { RootContent } from 'mdast';
 import { parseMarkdown } from './parser';
 
 export class MarkdownEditorState {
   private text: string;
   private blocks: MarkdownBlock[];
   private parsed: Root;
+  private slices: Map<number, RootContent[]> | null = null;
 
   constructor(text = '') {
     this.text = text;
@@ -47,11 +55,23 @@ export class MarkdownEditorState {
     return this.parsed;
   }
 
+  /** The block's nodes from the whole-document tree (cached per document). */
+  getBlockContent(block: MarkdownBlock): RootContent[] {
+    if (!this.slices) {
+      this.slices = sliceBlockTree(this.getBlockTree(), this.parsed);
+    }
+    const index = this.blocks.findIndex(
+      (b) => b.charStart === block.charStart && b.lineStart === block.lineStart
+    );
+    return this.slices.get(index) ?? [];
+  }
+
   /** Replaces the document and re-splits its blocks. */
   setText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
     this.parsed = parseMarkdown(text);
+    this.slices = null;
   }
 
   /** The block containing a 1-based line number, or null (e.g. a blank line). */

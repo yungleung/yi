@@ -21,6 +21,8 @@
  * Blank lines are separators, not blocks.
  */
 
+import type { Root, RootContent } from 'mdast';
+
 export type BlockKind =
   | 'frontmatter'
   | 'fencedCode'
@@ -55,6 +57,58 @@ export interface BlockNode extends MarkdownBlock {
 export interface BlockRoot {
   type: 'root';
   children: BlockNode[];
+}
+
+/** Assigns each node of the document tree to the block containing it. */
+export function sliceBlockTree(tree: BlockRoot, root: Root): Map<number, RootContent[]> {
+  const blocks = tree.children;
+  const slices = new Map<number, RootContent[]>();
+  let index = 0;
+  let lastEnd = -1;
+
+  const push = (i: number, child: RootContent): void => {
+    if (i >= blocks.length) {
+      return;
+    }
+    const list = slices.get(i);
+    if (list) {
+      list.push(child);
+    } else {
+      slices.set(i, [child]);
+    }
+  };
+
+  for (const child of root.children) {
+    const position = (
+      child as { position?: { start: { offset?: number }; end: { offset?: number } } }
+    ).position;
+    if (position?.start.offset !== undefined) {
+      const start = position.start.offset;
+      const end = position.end.offset ?? start;
+      while (index < blocks.length && start > blocks[index].charEnd) {
+        index += 1;
+      }
+      if (index >= blocks.length) {
+        break;
+      }
+      if (start >= blocks[index].charStart) {
+        push(index, child);
+        lastEnd = Math.max(lastEnd, end);
+      }
+    } else {
+      // Position-less constructs (description lists) belong to the block
+      // that follows the previously assigned content.
+      while (index < blocks.length && blocks[index].charStart <= lastEnd) {
+        index += 1;
+      }
+      if (index >= blocks.length) {
+        break;
+      }
+      push(index, child);
+      lastEnd = Math.max(lastEnd, blocks[index].charEnd);
+    }
+  }
+  return slices;
 }
 
 interface SourceLine {

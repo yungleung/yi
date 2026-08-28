@@ -1,19 +1,27 @@
 /**
- * Shared blinking caret for editable markdown node components.
+ * Local blinking caret for editable markdown node components.
  *
- * A single caret element is reused across the whole document. It is rendered as
- * a fixed-position span with a CSS blink animation, so showing it never mutates
- * the AST-rendered DOM tree.
+ * The caret is a single absolutely-positioned span inside the editor's prose
+ * root, anchored to the logical position (`activeRange`) of the caret. The
+ * text itself is never split, so text shaping (ligatures, kerning pairs such
+ * as "Ta"/"Te") stays identical with or without the caret, and the DOM never
+ * accumulates fragments.
  *
- * The caret has two facets:
- * - a logical position (`activeRange`), which arrow-key navigation reads and
- *   moves, and
- * - a rendered element, whose geometry is derived per placement.
+ * The logical range remains the source of truth for arrow-key navigation and
+ * offset mapping; the rendered span follows it and is re-anchored whenever
+ * the surrounding layout changes (reveal swaps, lazy rendering, ...).
+ *
+ * Geometry lives in `geometry.ts`; the layout-mutation watcher lives in
+ * `observer.ts`; navigation moves the logical range (see `navigation.ts`).
  */
+
+import { caretRect, proseHost } from './geometry';
+import { watchContentMutations } from './observer';
 
 let caretElement: HTMLSpanElement | null = null;
 let listenersAttached = false;
 let activeRange: Range | null = null;
+let stopWatchingLayout: (() => void) | null = null;
 
 type CaretRangeListener = (range: Range | null) => void;
 const caretRangeListeners = new Set<CaretRangeListener>();
@@ -35,54 +43,139 @@ export function onCaretRangeChanged(listener: CaretRangeListener): () => void {
   };
 }
 
-function ensureCaretElement(): HTMLSpanElement {
-  if (!caretElement || !caretElement.isConnected) {
-    caretElement = document.createElement('span');
-    caretElement.className = 'markdown-caret';
-    caretElement.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(caretElement);
-  }
-  return caretElement;
+function createCaretElement(): HTMLSpanElement {
+  const caret = document.createElement('span');
+  caret.className = 'markdown-caret';
+  caret.setAttribute('aria-hidden', 'true');
+  return caret;
 }
 
-function estimateLineHeight(container: Node): number {
-  const host =
-    container.nodeType === Node.TEXT_NODE
-      ? container.parentElement
-      : (container as HTMLElement);
-  const style = getComputedStyle(host ?? document.body);
-  const fontSize = parseFloat(style.fontSize) || 16;
-  const lineHeight = parseFloat(style.lineHeight);
-  return Number.isFinite(lineHeight) && lineHeight > 0 ? lineHeight : fontSize * 1.2;
-}
-
+/** Removes the rendered caret span (and any stale ones from other instances). */
 function removeCaretElement(): void {
+  for (const stray of document.querySelectorAll('.markdown-caret')) {
+    if (stray === caretElement) {
+      continue;
+    }
+    stray.remove();
+  }
   caretElement?.remove();
   caretElement = null;
 }
 
 /**
- * Re-anchors the rendered caret to the active range after layout shifts such
- * as scrolling (a real editor caret follows the text instead of vanishing).
+ * Navigation hook. The positioned caret never interferes with text walking,
+ * so nothing needs cleaning; keeping the element in place lets movement reuse
+ * it (style-only updates) instead of mutating the DOM on every arrow.
  */
-function refreshCaretPosition(): void {
+export function normalizeCaretDom(): void {
+}
+
+/** Positions the (reused) caret span for the active range. */
+function renderCaret(): void {
   if (!activeRange) {
+    removeCaretElement();
     return;
   }
 
-  if (activeRange.startContainer.nodeType === Node.TEXT_NODE) {
-    const rect = activeRange.getBoundingClientRect();
-    showCaretAtRect({
-      left: rect.left,
-      top: rect.top,
-      height: rect.height || estimateLineHeight(activeRange.startContainer)
-    });
+  const container = activeRange.startContainer;
+  if (!container.isConnected) {
+    removeCaretElement();
+    return;
+  }
+  const host = proseHost(container);
+  if (!host) {
+    removeCaretElement();
+    return;
+  }
+  const rect = caretRect(activeRange);
+  if (!rect || rect.height <= 0) {
+    removeCaretElement();
     return;
   }
 
-  // Element-anchored ranges (beside an image / rule) have no reliable rect
-  // after a layout change; hide rather than leave a stale caret behind.
-  hideCaret();
+  let caret = caretElement;
+  if (!caret || !caret.isConnected || caret.parentElement !== host) {
+    caret = createCaretElement();
+    host.appendChild(caret);
+    caretElement = caret;
+  }
+  placeCaret(caret, host, rect);
+  ensureLayoutWatcher(host);
+  scrollCaretIntoView(caret);
+}
+
+/**
+ * Re-anchors the rendered caret to the active range without touching the DOM
+ * tree (style only). Used after layout shifts such as reveal swaps and lazy
+ * rendering, whose mutations would otherwise leave the caret misplaced.
+ */
+function positionCaret(): void {
+  if (!caretElement || !activeRange || !activeRange.startContainer.isConnected) {
+    removeCaretElement();
+    return;
+  }
+  const host = proseHost(activeRange.startContainer);
+  if (!host || caretElement.parentElement !== host) {
+    removeCaretElement();
+    return;
+  }
+  const rect = caretRect(activeRange);
+  if (!rect || rect.height <= 0) {
+    removeCaretElement();
+    return;
+  }
+  placeCaret(caretElement, host, rect);
+}
+
+/**
+ * Positions the caret span inside its host. The transform moves it without
+ * invalidating layout; only the initial creation mutates the DOM.
+ */
+function placeCaret(
+  caret: HTMLElement,
+  host: HTMLElement,
+  rect: { left: number; top: number; height: number }
+): void {
+  const hostRect = host.getBoundingClientRect();
+  caret.style.transform = `translate(${rect.left - hostRect.left}px, ${rect.top - hostRect.top}px)`;
+  caret.style.height = `${rect.height}px`;
+}
+
+/** Repositions the caret to the current logical position. */
+export function refreshCaretPosition(): void {
+  positionCaret();
+}
+
+/** Watches the editor's scroll container so content mutations re-anchor the caret. */
+function ensureLayoutWatcher(host: HTMLElement): void {
+  if (stopWatchingLayout) {
+    return;
+  }
+  const scroller = host.closest('.overflow-auto') as HTMLElement | null;
+  if (!scroller) {
+    return;
+  }
+  stopWatchingLayout = watchContentMutations(scroller, () => positionCaret());
+}
+
+/**
+ * Keeps the caret inside its scroll container: when the caret is rendered
+ * (or moved with arrows) past the visible edge, scroll the editor so the
+ * caret stays in view instead of drifting out to the status bar area.
+ */
+function scrollCaretIntoView(caret: HTMLElement): void {
+  const scroller = caret.closest('.overflow-auto') as HTMLElement | null;
+  if (!scroller) {
+    return;
+  }
+  const caretBox = caret.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const margin = 8;
+  if (caretBox.top < scrollerRect.top + margin) {
+    scroller.scrollTop += caretBox.top - scrollerRect.top - margin;
+  } else if (caretBox.bottom > scrollerRect.bottom - margin) {
+    scroller.scrollTop += caretBox.bottom - scrollerRect.bottom + margin;
+  }
 }
 
 /**
@@ -110,28 +203,22 @@ export function caretRangeAtPoint(clientX: number, clientY: number): Range | nul
   return range;
 }
 
-/** Shows the blinking caret at a viewport rectangle (typically a collapsed range rect). */
-export function showCaretAtRect(rect: { left: number; top: number; height: number }): void {
-  removeCaretElement();
-
-  const height = rect.height || estimateLineHeight(document.body);
-  if (!Number.isFinite(height) || height <= 0) {
-    return;
+/** Shows the caret at a collapsed range, rendered locally in the DOM. */
+export function showCaret(range: Range | null): void {
+  activeRange = range;
+  notifyCaretRangeChanged(range);
+  if (range) {
+    renderCaret();
+  } else {
+    removeCaretElement();
   }
-
-  const caret = ensureCaretElement();
-  caret.style.left = `${rect.left}px`;
-  caret.style.top = `${rect.top}px`;
-  caret.style.height = `${height}px`;
 }
 
 /**
- * Shows the blinking caret beside a character-less element (image, rule, ...),
- * on the side of the pointer. The caret never overlaps the element itself.
+ * Places the caret beside a character-less element (image, rule, ...), on the
+ * side of the pointer. The caret is anchored to the element's boundary.
  */
 export function showCaretBeside(element: HTMLElement, clientX: number): void {
-  removeCaretElement();
-
   const rect = element.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) {
     return;
@@ -145,60 +232,12 @@ export function showCaretBeside(element: HTMLElement, clientX: number): void {
     range.setStartAfter(element);
   }
   range.collapse(true);
-  activeRange = range;
-  notifyCaretRangeChanged(range);
-
-  // `activeRange` is the source of truth for the caret's logical position and
-  // is what arrow navigation moves. Its own rect is degenerate (0x0) for
-  // element-anchored ranges in WebKit, so the rendered geometry is taken from
-  // the element's box, with the side read back from the range itself.
-  const side = sideOfRange(element, range);
-  const caret = ensureCaretElement();
-  const width = caret.getBoundingClientRect().width || 2;
-  // Match the element's own height (e.g. an image) so the caret spans it fully,
-  // but never shrink below a normal text caret so thin elements such as
-  // horizontal rules still show one, centered on their line.
-  const height = Math.max(rect.height, estimateLineHeight(element));
-  const top = rect.top + (rect.height - height) / 2;
-
-  caret.style.left = `${side === 'before' ? rect.left - width : rect.right}px`;
-  caret.style.top = `${top}px`;
-  caret.style.height = `${height}px`;
-}
-
-/** Which side of the element the collapsed range sits on. */
-function sideOfRange(element: HTMLElement, range: Range): 'before' | 'after' {
-  const container = range.startContainer;
-  const index =
-    container instanceof Element ? Array.from(container.childNodes).indexOf(element) : -1;
-  return range.startOffset <= index ? 'before' : 'after';
-}
-
-/** Shows the blinking caret at a collapsed range (a caret position inside text). */
-export function showCaret(range: Range | null): void {
-  // Caret positions only make sense inside a text node. Element-anchored ranges
-  // (e.g. resolving a click in a flex gap) have degenerate rects and must never
-  // render a caret (they would appear at the viewport origin).
-  if (!range || range.startContainer.nodeType !== Node.TEXT_NODE) {
-    hideCaret();
-    return;
-  }
-
-  activeRange = range;
-  notifyCaretRangeChanged(range);
-  const rect = range.getBoundingClientRect();
-  showCaretAtRect({
-    left: rect.left,
-    top: rect.top,
-    height: rect.height || estimateLineHeight(range.startContainer)
-  });
+  showCaret(range);
 }
 
 /** Removes the blinking caret from the document. */
 export function hideCaret(): void {
-  activeRange = null;
-  notifyCaretRangeChanged(null);
-  removeCaretElement();
+  showCaret(null);
 }
 
 /** Returns the current caret position, or null when no caret is shown. */
@@ -216,10 +255,6 @@ function ensureListeners(): void {
     return;
   }
   listenersAttached = true;
-
-  // Keep the caret pinned to its text position as the document scrolls or the
-  // layout shifts (e.g. an image revealing its source shrinks the content).
-  window.addEventListener('scroll', refreshCaretPosition, true);
 
   // Clicking anywhere outside an editable markdown node clears the caret.
   document.addEventListener('click', (event) => {

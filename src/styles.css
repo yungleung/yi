@@ -52,6 +52,8 @@
 
 .prose {
   font-family: 'Crimson', serif;
+  /* Positioning host for the locally-anchored caret. */
+  position: relative;
 }
 
 html,
@@ -101,13 +103,17 @@ body {
   mask-size: 100% 100%;
 }
 
-/* Blinking caret shown when an editable markdown node is clicked. */
+/* Blinking caret shown when an editable markdown node is clicked. It is
+   rendered locally: a single absolutely-positioned span inside the prose
+   root, anchored to the caret's logical position. The text is never split,
+   so ligatures and kerning (e.g. "Ta"/"Te") stay untouched. */
 .markdown-caret {
-  position: fixed;
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 2px;
   background-color: var(--color-base-content, currentColor);
   pointer-events: none;
-  z-index: 50;
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
@@ -116,7 +122,9 @@ body {
 .markdown-link-source,
 .markdown-citation-source,
 .markdown-wikilink-source,
-.markdown-math-source {
+.markdown-math-source,
+.markdown-break-source,
+.markdown-thematic-break-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
 }

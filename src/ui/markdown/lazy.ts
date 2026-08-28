@@ -9,6 +9,8 @@
  * callbacks are throttled or delayed).
  */
 
+import { refreshCaretPosition } from './caret/caret';
+
 const VIEWPORT_MARGIN = 600;
 const FALLBACK_DELAY_MS = 250;
 
@@ -55,6 +57,9 @@ function renderElement(element: HTMLElement): void {
   observer?.unobserve(element);
   element.dataset.lazyRendered = 'true';
   renders.get(element)?.();
+  // Lazy renders (KaTeX, formatted citations, ...) change the surrounding
+  // layout; re-anchor the positioned caret to the active range.
+  refreshCaretPosition();
 }
 
 function scheduleFallback(): void {

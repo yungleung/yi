@@ -80,7 +80,21 @@ export abstract class EditableNodeComponent implements EditableMarkdownNode {
       return;
     }
 
-    showCaretBeside(this.element, clientX);
+    if (this.isVoidElement(this.element)) {
+      showCaretBeside(this.element, clientX);
+      return;
+    }
+    // An empty container (paragraph, list item, table cell, ...): place the
+    // caret inside it so the local caret span gives the line a visible height.
+    const range = document.createRange();
+    range.setStart(this.element, 0);
+    range.collapse(true);
+    showCaret(range);
+  }
+
+  /** Whether the element renders without children (img, hr, br, ...). */
+  private isVoidElement(element: HTMLElement): boolean {
+    return ['IMG', 'HR', 'BR', 'INPUT', 'WBR'].includes(element.tagName);
   }
 
   private collapsedRange(node: Text, offset: number): Range {
