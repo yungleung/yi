@@ -32,9 +32,16 @@ export function createDocumentView(tree: BlockRoot, root: Root): BlockComponent 
   return new RootBlockView(tree, sliceBlockTree(tree, root));
 }
 
-/** Creates a standalone block component (parses the block's own slice). */
-export function createBlockComponent(node: BlockNode): BlockComponent {
-  return new BlockView(node);
+/**
+ * Creates a standalone block component. When `children` are given (sliced
+ * from the whole-document parse) they are used as-is; otherwise the block's
+ * own slice is parsed.
+ */
+export function createBlockComponent(
+  node: BlockNode,
+  children?: RootContent[]
+): BlockComponent {
+  return new BlockView(node, children);
 }
 
 /** The document root block: a plain container for the document's blocks. */

@@ -167,10 +167,13 @@ function moveLeft(range: Range, blocks: readonly HTMLElement[]): Range | null {
   }
   if (before?.nodeType === Node.ELEMENT_NODE) {
     // The neighbour can hold text (e.g. a revealed source span): step into
-    // its last character instead of skipping over the whole element.
+    // its content end instead of skipping over the whole element.
     const lastText = lastTextNodeIn(before as Element);
     if (lastText) {
-      return collapsed(lastText, Math.max(0, lastText.data.length - 1));
+      return collapsed(
+        lastText,
+        sourceRightEntryOffset(revealedSourceRange(lastText), lastText.data.length)
+      );
     }
   }
   return endOfPreviousText(before ?? element, 0, blocks);
@@ -193,9 +196,14 @@ function moveRight(range: Range, blocks: readonly HTMLElement[]): Range | null {
     return collapsed(after as Text, Math.min(1, (after as Text).data.length));
   }
   if (after?.nodeType === Node.ELEMENT_NODE) {
+    // The neighbour can hold text (e.g. a revealed source span): step into
+    // its content start instead of skipping over the whole element.
     const firstText = firstTextNodeIn(after as Element);
     if (firstText) {
-      return collapsed(firstText, Math.min(1, firstText.data.length));
+      return collapsed(
+        firstText,
+        sourceLeftEntryOffset(revealedSourceRange(firstText), firstText.data.length)
+      );
     }
   }
   if (after) {
@@ -204,6 +212,58 @@ function moveRight(range: Range, blocks: readonly HTMLElement[]): Range | null {
   // At the element's end: continue from its last child so sibling text
   // nodes inside the element are not mistaken for following content.
   return startOfNextText(element.lastChild ?? element, 0, blocks);
+}
+
+/**
+ * The identifier content range of a revealed source span (see
+ * `revealable_node.ts`), or null when `text` is not inside one. Boundary
+ * movement uses it to enter the source at the content boundary instead of on
+ * a raw marker (`[[target]]` → `target`, `[title](url)` → `title`, ...).
+ */
+function revealedSourceRange(text: Text): { start: number; end: number } | null {
+  const span = text.parentElement?.closest('[data-content-start]') as HTMLElement | null;
+  if (!span) {
+    return null;
+  }
+  const start = Number(span.dataset.contentStart);
+  const end = Number(span.dataset.contentEnd);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    return null;
+  }
+  return { start, end };
+}
+
+/**
+ * The caret offset when entering a revealed source from its left side: the
+ * content start (skipping the opening markers), or one character in when the
+ * whole source is the content (thematic break, break) so the caret still
+ * makes visible progress.
+ */
+function sourceLeftEntryOffset(
+  range: { start: number; end: number } | null,
+  length: number
+): number {
+  if (range && range.start > 0) {
+    return range.start;
+  }
+  return Math.min(1, length);
+}
+
+/**
+ * The caret offset when entering a revealed source from its right side: the
+ * content end (skipping the closing marker). When only an opening marker
+ * exists (e.g. a narrative `@key` citation) the content runs to the source
+ * end; when the whole source is the content (thematic break, break) step one
+ * character in from the end so the caret still makes visible progress.
+ */
+function sourceRightEntryOffset(
+  range: { start: number; end: number } | null,
+  length: number
+): number {
+  if (range && (range.end < length || range.start > 0)) {
+    return range.end;
+  }
+  return Math.max(0, length - 1);
 }
 
 /**
@@ -230,7 +290,12 @@ function endOfPreviousText(
     // The boundary between two inline runs is zero-width only on the same
     // line; across lines, land at the previous node's real end.
     const sameLine = sameLineTop(currentTop, lineTopOf(text, text.data.length));
-    return collapsed(text, sameLine ? Math.max(0, text.data.length - 1) : text.data.length);
+    return collapsed(
+      text,
+      sameLine
+        ? sourceRightEntryOffset(revealedSourceRange(text), text.data.length)
+        : text.data.length
+    );
   }
   const rect = (previous as Element).getBoundingClientRect();
   const sameLine = sameLineTop(currentTop, rect.height > 0 ? rect.top : null);
@@ -258,7 +323,12 @@ function startOfNextText(
   if (next.nodeType === Node.TEXT_NODE) {
     const text = next as Text;
     const sameLine = sameLineTop(currentTop, lineTopOf(text, 0));
-    return collapsed(text, sameLine ? Math.min(1, text.data.length) : 0);
+    return collapsed(
+      text,
+      sameLine
+        ? sourceLeftEntryOffset(revealedSourceRange(text), text.data.length)
+        : 0
+    );
   }
   const rect = (next as Element).getBoundingClientRect();
   const sameLine = sameLineTop(currentTop, rect.height > 0 ? rect.top : null);

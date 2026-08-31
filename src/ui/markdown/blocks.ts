@@ -70,11 +70,16 @@ export function sliceBlockTree(tree: BlockRoot, root: Root): Map<number, RootCon
     if (i >= blocks.length) {
       return;
     }
+    // The whole-document parse carries absolute positions; the renderer and
+    // offset mapping work with block-relative ones (absolute = block.charStart
+    // + relative). Clone the node with shifted positions so the shared tree
+    // stays pristine and the initial render can be repeated.
+    const shifted = cloneWithShift(child, -blocks[i].charStart);
     const list = slices.get(i);
     if (list) {
-      list.push(child);
+      list.push(shifted);
     } else {
-      slices.set(i, [child]);
+      slices.set(i, [shifted]);
     }
   };
 
@@ -109,6 +114,28 @@ export function sliceBlockTree(tree: BlockRoot, root: Root): Map<number, RootCon
     }
   }
   return slices;
+}
+
+/** A copy of the node with every position offset shifted by `delta`. */
+function cloneWithShift(node: RootContent, delta: number): RootContent {
+  const clone = { ...node } as RootContent & {
+    position?: { start: { offset: number }; end: { offset: number } };
+    children?: RootContent[];
+  };
+  const position = (
+    node as { position?: { start?: { offset?: number }; end?: { offset?: number } } }
+  ).position;
+  if (position?.start?.offset !== undefined && position?.end?.offset !== undefined) {
+    clone.position = {
+      start: { ...position.start, offset: position.start.offset + delta },
+      end: { ...position.end, offset: position.end.offset + delta }
+    };
+  }
+  const children = (node as { children?: unknown[] }).children;
+  if (Array.isArray(children)) {
+    clone.children = children.map((child) => cloneWithShift(child as RootContent, delta));
+  }
+  return clone;
 }
 
 interface SourceLine {

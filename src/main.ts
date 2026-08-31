@@ -8,6 +8,7 @@ import { WorkspaceTree } from './ui/workspace_tree';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
+import { FormattingToolbar } from './ui/formatting_toolbar';
 import { Toast } from './ui/toast';
 import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
@@ -36,6 +37,7 @@ function createAppShell() {
   const resizeHandle = new ResizeHandle((width) => {
     sidebar.setWidth(width);
   }, 180, 420, sidebar.getWidth());
+  const formattingToolbar = new FormattingToolbar();
   const toast = new Toast();
 
   titleBar.mount(root);
@@ -51,6 +53,7 @@ function createAppShell() {
   titleActions.className = 'btn btn-ghost btn-xs';
   titleActions.textContent = '⋯';
   titleBar.addComponent(titleActions, 'right');
+  titleBar.addComponent(formattingToolbar, 'center');
 
   sidebar.attachToTitleBar(titleBar.element);
 

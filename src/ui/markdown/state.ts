@@ -9,21 +9,19 @@
  */
 
 import type { Root } from 'mdast';
-import {
-  buildBlockTree,
-  sliceBlockTree,
-  splitBlocks,
-  type BlockRoot,
-  type MarkdownBlock
-} from './blocks';
+import { buildBlockTree, splitBlocks, type BlockRoot, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import { parseMarkdown } from './parser';
 
 export class MarkdownEditorState {
   private text: string;
   private blocks: MarkdownBlock[];
+  /** The initial whole-document parse, used only for the first render. */
   private parsed: Root;
-  private slices: Map<number, RootContent[]> | null = null;
+  /** Whether the document was edited (making the whole-document parse stale). */
+  private dirty = false;
+  /** Per-block parses (block-relative positions), invalidated on edits. */
+  private blockContent: Map<number, RootContent[]> | null = null;
 
   constructor(text = '') {
     this.text = text;
@@ -47,31 +45,83 @@ export class MarkdownEditorState {
   }
 
   /**
-   * The whole-document mdast tree. Parsed once per document and reused by the
-   * renderer, which slices blocks out of it instead of re-parsing every block
-   * (re-parsing per block makes large documents markedly slower).
+   * The initial whole-document mdast tree. Only the first render slices
+   * blocks out of it; every later render and edit re-parses only the
+   * affected block (see {@link getBlockContent}), so this tree is never
+   * updated and must not be used after an edit.
    */
   getParse(): Root {
     return this.parsed;
   }
 
-  /** The block's nodes from the whole-document tree (cached per document). */
+  /**
+   * The block's mdast nodes, parsed from its own raw slice with
+   * block-relative positions, and cached per block.
+   */
   getBlockContent(block: MarkdownBlock): RootContent[] {
-    if (!this.slices) {
-      this.slices = sliceBlockTree(this.getBlockTree(), this.parsed);
+    if (!this.blockContent) {
+      this.blockContent = new Map();
     }
-    const index = this.blocks.findIndex(
-      (b) => b.charStart === block.charStart && b.lineStart === block.lineStart
-    );
-    return this.slices.get(index) ?? [];
+    const cached = this.blockContent.get(block.lineStart);
+    if (cached) {
+      return cached;
+    }
+    const content = parseMarkdown(block.text).children;
+    this.blockContent.set(block.lineStart, content);
+    return content;
   }
 
-  /** Replaces the document and re-splits its blocks. */
+  /**
+   * Replaces the document: re-splits the blocks (cheap, line-based) and
+   * invalidates the per-block parse cache. The whole-document tree is not
+   * re-parsed — it is only ever used for the initial render.
+   */
   setText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
+    this.blockContent = null;
+    this.dirty = true;
+  }
+
+  /**
+   * Loads a new document: re-splits the blocks and re-parses the whole
+   * document once, so the initial render can slice blocks out of a single
+   * parse instead of parsing every block separately. Edits go through
+   * {@link setText}, which never re-parses the whole document.
+   */
+  loadText(text: string): void {
+    this.text = text;
+    this.blocks = splitBlocks(text);
     this.parsed = parseMarkdown(text);
-    this.slices = null;
+    this.blockContent = null;
+    this.dirty = false;
+  }
+
+  /**
+   * Whether the document changed since the whole-document parse (true after
+   * an edit). The initial parse is only valid for rendering while clean.
+   */
+  isDirty(): boolean {
+    return this.dirty;
+  }
+
+  /**
+   * Whether the current blocks' raw slices re-assemble into the document
+   * text (blocks are separated by blank lines, which belong to no block).
+   * This checks that block offsets stayed in sync with the raw document.
+   */
+  validateBlocks(): boolean {
+    let rebuilt = '';
+    let prevEnd = 0;
+    for (const block of this.blocks) {
+      if (block.charStart > prevEnd) {
+        rebuilt += this.text.slice(prevEnd, block.charStart);
+      }
+      rebuilt += block.text;
+      prevEnd = block.charEnd;
+    }
+    rebuilt += this.text.slice(prevEnd);
+    return rebuilt === this.text;
   }
 
   /** The block containing a 1-based line number, or null (e.g. a blank line). */

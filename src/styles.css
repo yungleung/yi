@@ -148,7 +148,25 @@ body {
   opacity: 0.75;
 }
 
-/* Blocks stack with a little breathing room between them. */
+/* Blocks stack with a little breathing room between them.
+
+   `content-visibility: auto` makes the browser skip layout (and rendering)
+   of blocks outside the viewport. Without it, any structural change inside
+   one block — a formatting edit or a block re-render — forces the browser
+   to relayout the whole document flow from the change onward, which on a
+   math-heavy note takes hundreds of milliseconds. With containment, an edit
+   only relayouts the blocks near the viewport (~1ms), matching the editor's
+   block-based model: the other blocks genuinely stay untouched.
+
+   `contain-intrinsic-size: auto 60px` keeps the scrollbar usable before a
+   block has been rendered (the fallback height, close to the average block
+   height of a typical note), and remembers each block's real height once it
+   has been laid out. */
+.markdown-block {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 60px;
+}
+
 .markdown-block + .markdown-block {
   margin-top: 1rem;
 }

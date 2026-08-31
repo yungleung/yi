@@ -21,7 +21,12 @@ import { watchContentMutations } from './observer';
 let caretElement: HTMLSpanElement | null = null;
 let listenersAttached = false;
 let activeRange: Range | null = null;
+let selectionRange: Range | null = null;
 let stopWatchingLayout: (() => void) | null = null;
+let caretFrame: number | null = null;
+let caretTimeout: number | null = null;
+let pendingNativeSelection: Range | null = null;
+let selectionTimeout: number | null = null;
 
 type CaretRangeListener = (range: Range | null) => void;
 const caretRangeListeners = new Set<CaretRangeListener>();
@@ -72,6 +77,88 @@ export function normalizeCaretDom(): void {
 
 /** Positions the (reused) caret span for the active range. */
 function renderCaret(): void {
+  renderCaretNow();
+}
+
+/**
+ * Positions the caret on the next animation frame, coalescing consecutive
+ * requests. Used right after a DOM mutation (a block re-render) where
+ * measuring immediately would force a full layout; the caller returns before
+ * the expensive geometry is computed. A timer fallback guarantees the caret
+ * still renders when animation frames are throttled (occluded/backgrounded
+ * windows), since a missing caret is worse than a slightly later one.
+ */
+function renderCaretDeferred(): void {
+  if (caretFrame !== null) {
+    return;
+  }
+  caretFrame = requestAnimationFrame(() => {
+    caretFrame = null;
+    if (caretTimeout !== null) {
+      clearTimeout(caretTimeout);
+      caretTimeout = null;
+    }
+    renderCaretNow();
+  });
+  caretTimeout = window.setTimeout(() => {
+    if (caretFrame !== null) {
+      cancelAnimationFrame(caretFrame);
+      caretFrame = null;
+    }
+    caretTimeout = null;
+    renderCaretNow();
+  }, 120);
+}
+
+/** Cancels a pending deferred caret render. */
+function clearPendingCaretRender(): void {
+  if (caretFrame !== null) {
+    cancelAnimationFrame(caretFrame);
+    caretFrame = null;
+  }
+  if (caretTimeout !== null) {
+    clearTimeout(caretTimeout);
+    caretTimeout = null;
+  }
+}
+
+/**
+ * Applies a native (browser) selection after the current frame's paint.
+ *
+ * `removeAllRanges` + `addRange` force synchronous selection painting, which
+ * is the dominant cost of a formatting edit on large documents (measured at
+ * ~140ms on the math-heavy file). The editor's own selection state is
+ * updated synchronously by the caller, so only the visible highlight is
+ * deferred: the formatted text paints at the next frame, and the highlight
+ * lands in the task right after it.
+ */
+export function scheduleNativeSelection(range: Range): void {
+  pendingNativeSelection = range;
+  if (selectionTimeout !== null) {
+    return;
+  }
+  selectionTimeout = window.setTimeout(() => {
+    selectionTimeout = null;
+    const target = pendingNativeSelection;
+    pendingNativeSelection = null;
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    if (target) {
+      selection?.addRange(target);
+    }
+  }, 0);
+}
+
+/** Cancels a deferred native selection (e.g. the caret moved or was hidden). */
+function clearPendingNativeSelection(): void {
+  pendingNativeSelection = null;
+  if (selectionTimeout !== null) {
+    clearTimeout(selectionTimeout);
+    selectionTimeout = null;
+  }
+}
+
+function renderCaretNow(): void {
   if (!activeRange) {
     removeCaretElement();
     return;
@@ -87,17 +174,18 @@ function renderCaret(): void {
     removeCaretElement();
     return;
   }
-  const rect = caretRect(activeRange);
-  if (!rect || rect.height <= 0) {
-    removeCaretElement();
-    return;
-  }
-
   let caret = caretElement;
   if (!caret || !caret.isConnected || caret.parentElement !== host) {
     caret = createCaretElement();
     host.appendChild(caret);
     caretElement = caret;
+  }
+  // Ensure the caret element exists before measuring, so one layout serves
+  // both the range rect and the host rect instead of two.
+  const rect = caretRect(activeRange);
+  if (!rect || rect.height <= 0) {
+    removeCaretElement();
+    return;
   }
   placeCaret(caret, host, rect);
   ensureLayoutWatcher(host);
@@ -205,11 +293,36 @@ export function caretRangeAtPoint(clientX: number, clientY: number): Range | nul
 
 /** Shows the caret at a collapsed range, rendered locally in the DOM. */
 export function showCaret(range: Range | null): void {
+  if (!range) {
+    clearPendingNativeSelection();
+  }
   activeRange = range;
   notifyCaretRangeChanged(range);
   if (range) {
     renderCaret();
   } else {
+    clearPendingCaretRender();
+    removeCaretElement();
+  }
+}
+
+/**
+ * Moves the caret to a collapsed range but defers its rendered geometry to
+ * the next animation frame. The logical position updates synchronously (so
+ * navigation and reveal logic stay consistent); only the measuring is
+ * postponed. Used after a block re-render, where the caret's container was
+ * just replaced and reading its rect forces a layout.
+ */
+export function scheduleCaret(range: Range | null): void {
+  if (!range) {
+    clearPendingNativeSelection();
+  }
+  activeRange = range;
+  notifyCaretRangeChanged(range);
+  if (range) {
+    renderCaretDeferred();
+  } else {
+    clearPendingCaretRender();
     removeCaretElement();
   }
 }
@@ -245,8 +358,30 @@ export function getCaretRange(): Range | null {
   return activeRange;
 }
 
+/**
+ * Records the current non-collapsed selection as a DOM range within the
+ * editor. The formatting step reads it to map the selection to raw offsets.
+ */
+export function setSelectionRange(range: Range | null): void {
+  selectionRange = range;
+}
+
+/** The current non-collapsed selection range, or null when none is active. */
+export function getSelectionRange(): Range | null {
+  return selectionRange;
+}
+
 /** Moves the caret to a new collapsed position and re-renders it. */
 export function setCaretRange(range: Range | null): void {
+  // Moving the caret collapses any pending selection highlight.
+  clearPendingNativeSelection();
+  // Moving the caret collapses an active selection, unless a native
+  // selection is still live (e.g. a drag across a revealable that just
+  // revealed its source) — the formatting step keeps that in sync.
+  const nativeSelection = window.getSelection();
+  if (!nativeSelection || nativeSelection.rangeCount === 0 || nativeSelection.getRangeAt(0).collapsed) {
+    selectionRange = null;
+  }
   showCaret(range);
 }
 

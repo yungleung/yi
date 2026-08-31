@@ -20,6 +20,24 @@ export interface EditableMarkdownNode {
 }
 
 /**
+ * Tags an element with its node's raw range, so the formatting step can
+ * detect the whole formatted unit a selection covers (see
+ * `markdown_editor.ts`). Positions come from the whole-document parse today,
+ * so they are absolute; once blocks are parsed independently this becomes
+ * block-relative and the mapping must add the block's `charStart`.
+ */
+export function tagRawRange(
+  element: HTMLElement,
+  node: { position?: { start: { offset?: number }; end: { offset?: number } } }
+): void {
+  const position = node.position;
+  if (position?.start.offset !== undefined && position.end.offset !== undefined) {
+    element.dataset.formatFrom = String(position.start.offset);
+    element.dataset.formatTo = String(position.end.offset);
+  }
+}
+
+/**
  * Base class implementing the {@link EditableMarkdownNode} contract: every
  * node component listens for clicks and places the shared blinking caret right
  * after the clicked character.

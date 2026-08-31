@@ -6,7 +6,13 @@ import {
   refreshCaretPosition,
   setCaretRange
 } from '../caret/caret';
-import { elementBoundarySide, nextNodeAfter, nextNodeBefore } from '../caret/dom';
+import {
+  elementBoundarySide,
+  firstPositionableIn,
+  lastPositionableIn,
+  nextNodeAfter,
+  nextNodeBefore
+} from '../caret/dom';
 import { serializeMarkdown } from '../parser';
 import { EditableNodeComponent } from './editable_node';
 import type { AstNode } from '../ast';
@@ -118,13 +124,23 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     return this.contentOffset(clicked, source);
   }
 
-  /** Maps a content-relative offset into the absolute source range. */
+  /**
+   * Maps an offset in the rendered text into the absolute source range. The
+   * rendered text can differ in length from the source (e.g. a formatted
+   * citation), so the offset is normalized proportionally over the content.
+   */
   protected contentOffset(clicked: number | undefined, source: string): number | undefined {
     if (clicked === undefined) {
       return undefined;
     }
     const { start, end } = this.sourceContentRange(source);
-    return start + Math.min(Math.max(0, clicked), Math.max(0, end - start));
+    const contentLength = Math.max(0, end - start);
+    const renderedLength = this.element.textContent?.length ?? 0;
+    if (renderedLength > 0 && contentLength > 0) {
+      const ratio = Math.min(1, Math.max(0, clicked / renderedLength));
+      return start + Math.round(ratio * contentLength);
+    }
+    return start + Math.min(Math.max(0, clicked), contentLength);
   }
 
   /**
@@ -198,23 +214,25 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   /** Replaces the rendered element with the tagged source span. */
   private swapToSource(sourceClassName: string): HTMLSpanElement {
     const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const restoreSelection = this.captureSelectionForSwap(source);
+    const { start, end } = this.sourceContentRange(source);
     const sourceView = document.createElement('span');
     sourceView.className = sourceClassName;
     sourceView.textContent = source;
+    // The identifier content range (without the raw markers), stored on the
+    // span so caret navigation can enter the source at the content boundary
+    // instead of on a marker (see `caret/navigation.ts`).
+    sourceView.dataset.contentStart = String(start);
+    sourceView.dataset.contentEnd = String(end);
     // Tag the source's block-relative raw start so the caret inside the
     // revealed source can be mapped back to the document: the global offset
     // is the block's `charStart` plus this value (see `position.ts`).
-    // Positions come from the whole-document parse today, so subtract the
-    // block's char start; once blocks are parsed independently the node
-    // position is already block-relative and this becomes the raw value.
+    // Node positions are block-relative (each block parses its own slice).
     const position = (
       this.node as { position?: { start: { offset?: number } } }
     ).position;
-    const blockCharStart = Number(
-      (this.element.closest('.markdown-block') as HTMLElement | null)?.dataset.charStart
-    );
-    if (position?.start.offset !== undefined && Number.isFinite(blockCharStart)) {
-      sourceView.dataset.sourceFrom = String(position.start.offset - blockCharStart);
+    if (position?.start.offset !== undefined) {
+      sourceView.dataset.sourceFrom = String(position.start.offset);
     }
     this.sourceView = sourceView;
 
@@ -223,6 +241,9 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // source span so the caret stays where it was.
     const side = elementBoundarySide(getCaretRange(), this.element);
     this.element.replaceWith(sourceView);
+    // The browser would otherwise re-anchor a live drag selection onto the
+    // replacement unpredictably (empty, or the whole source span).
+    restoreSelection();
     if (side) {
       const range = document.createRange();
       if (side === 'before') {
@@ -237,6 +258,84 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // active range so it does not drift.
     refreshCaretPosition();
     return sourceView;
+  }
+
+  /**
+   * Captures a live (non-collapsed) native selection that touches this
+   * element before the source swap, and returns a restore function that
+   * rebuilds the selection on the revealed source. Boundaries inside the
+   * rendered element are mapped proportionally onto the source content (the
+   * same mapping as clicks), so dragging across a revealable keeps a correct
+   * selection instead of dropping it or selecting the whole source.
+   */
+  private captureSelectionForSwap(source: string): () => void {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return () => {};
+    }
+    const range = selection.getRangeAt(0);
+    if (range.collapsed) {
+      return () => {};
+    }
+    const startInside = this.touchesElementNode(range.startContainer);
+    const endInside = this.touchesElementNode(range.endContainer);
+    // A drag can also run fully across the element (boundaries on both
+    // sides). Those boundaries survive the swap, but the browser's highlight
+    // must be refreshed afterwards or it renders empty.
+    const spansElement =
+      range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE &&
+      (range.commonAncestorContainer as Element).contains(this.element);
+    if (!startInside && !endInside && !spansElement) {
+      return () => {};
+    }
+    const anchor = this.selectionBoundary(range, true, source);
+    const focus = this.selectionBoundary(range, false, source);
+    return () => {
+      const textNode = this.sourceView?.firstChild;
+      const anchorNode = anchor.kind === 'inside' ? textNode : anchor.node;
+      const focusNode = focus.kind === 'inside' ? textNode : focus.node;
+      if (!anchorNode || !focusNode) {
+        return;
+      }
+      const restored = document.createRange();
+      restored.setStart(anchorNode, anchor.offset);
+      restored.setEnd(focusNode, focus.offset);
+      selection.removeAllRanges();
+      selection.addRange(restored);
+    };
+  }
+
+  /**
+   * A selection boundary re-anchored onto the revealed source: either a
+   * mapped offset inside the source text, or the original node/offset when
+   * the boundary lies outside this element.
+   */
+  private selectionBoundary(
+    range: Range,
+    isAnchor: boolean,
+    source: string
+  ): { kind: 'inside'; offset: number } | { kind: 'outside'; node: Node; offset: number } {
+    const node = isAnchor ? range.startContainer : range.endContainer;
+    const offset = isAnchor ? range.startOffset : range.endOffset;
+    if (node.nodeType === Node.TEXT_NODE && this.element.contains(node)) {
+      const probe = document.createRange();
+      probe.setStart(node, offset);
+      probe.collapse(true);
+      const clicked = this.offsetFromRange(probe);
+      const mapped =
+        clicked === undefined ? undefined : this.contentOffset(clicked, source);
+      if (mapped !== undefined) {
+        // The source span is a single text node; the mapped offset is
+        // relative to the same source string.
+        return { kind: 'inside', offset: mapped };
+      }
+    }
+    return { kind: 'outside', node, offset };
+  }
+
+  /** Whether a node is this element or lives inside it. */
+  private touchesElementNode(node: Node): boolean {
+    return node === this.element || this.element.contains(node);
   }
 
   /** Swaps the revealed source back to the rendered element. */
@@ -306,9 +405,7 @@ function nearestTouchedRevealable(range: Range | null): RevealableNodeComponent 
     }
     const candidate =
       fromContainer(adjacent) ??
-      // The neighbouring node can be a container (e.g. a block holding an
-      // image): look inside it for the revealable nearest to the caret.
-      revealableInside(adjacent, forward);
+      revealableAtEdge(adjacent, forward);
     if (candidate && block?.contains(candidate.element)) {
       return candidate;
     }
@@ -317,27 +414,18 @@ function nearestTouchedRevealable(range: Range | null): RevealableNodeComponent 
 }
 
 /**
- * The revealable component inside an element, nearest to the caret side:
- * the first in document order when the caret is before it, the last when the
- * caret is after it.
+ * The revealable component at the edge of a container node, nearest to the
+ * caret side: the first positionable node when the caret is before it, the
+ * last when the caret is after it. A revealable further inside the container
+ * is not adjacent to the caret and must not reveal (e.g. a link at the end
+ * of the next list item).
  */
-function revealableInside(node: Node, forward: boolean): RevealableNodeComponent | null {
+function revealableAtEdge(node: Node, forward: boolean): RevealableNodeComponent | null {
   if (node.nodeType !== Node.ELEMENT_NODE) {
     return null;
   }
-  const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
-  let found: HTMLElement | null = null;
-  let current: Node | null;
-  while ((current = walker.nextNode())) {
-    const component = revealableByElement.get(current as HTMLElement);
-    if (component) {
-      found = current as HTMLElement;
-      if (forward) {
-        break;
-      }
-    }
-  }
-  return found ? (revealableByElement.get(found) ?? null) : null;
+  const edge = forward ? firstPositionableIn(node) : lastPositionableIn(node);
+  return edge ? fromContainer(edge) : null;
 }
 
 function fromContainer(node: Node): RevealableNodeComponent | null {

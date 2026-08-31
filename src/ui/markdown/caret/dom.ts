@@ -88,7 +88,7 @@ export function nextPositionNode(node: Node, blocks: readonly HTMLElement[]): No
 }
 
 /** The last text/void node inside `node`, or `node` itself when positionable. */
-function lastPositionableIn(node: Node): Node | null {
+export function lastPositionableIn(node: Node): Node | null {
   if (node.nodeType === Node.TEXT_NODE || isVoidElement(node)) {
     return node;
   }
@@ -104,7 +104,7 @@ function lastPositionableIn(node: Node): Node | null {
 }
 
 /** The first text/void node inside `node`, or `node` itself when positionable. */
-function firstPositionableIn(node: Node): Node | null {
+export function firstPositionableIn(node: Node): Node | null {
   if (node.nodeType === Node.TEXT_NODE || isVoidElement(node)) {
     return node;
   }
