@@ -260,7 +260,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         this.renderBlock(start.block.lineStart);
       }
     } else {
-      this.renderPreview();
+      // Formatting only changes the two endpoint blocks. The raw markers can
+      // span blank lines, but blocks in between retain both their source and
+      // their block-relative AST positions, so rebuilding the entire document
+      // would needlessly re-render every math widget.
+      this.renderFormattingBlocks(start.block.lineStart, end.block.lineStart);
+    }
+    if (start.block.lineStart === end.block.lineStart) {
+      this.refreshBlockOffsets();
     }
     this.restoreSelection(edit.from, edit.to);
   }
@@ -392,6 +399,43 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       old.replaceWith(component.element);
     } else {
       this.contentView.querySelector('.prose')?.appendChild(component.element);
+    }
+  }
+
+  /**
+   * Re-renders only the blocks whose source changed during a formatting edit.
+   * Inline formatting never adds/removes lines, so line numbers remain stable;
+   * only character starts after the edit need to be refreshed.
+   */
+  private renderFormattingBlocks(startLine: number, endLine: number): void {
+    const firstLine = Math.min(startLine, endLine);
+    const lastLine = Math.max(startLine, endLine);
+    for (const block of this.state.getBlocks()) {
+      if (block.lineStart === firstLine || block.lineStart === lastLine) {
+        this.renderBlock(block.lineStart);
+      }
+    }
+    this.refreshBlockOffsets();
+  }
+
+  /** Keeps DOM block metadata aligned after an edit shifts later offsets. */
+  private refreshBlockOffsets(): void {
+    const root = this.contentView.querySelector('.prose');
+    if (!root) {
+      return;
+    }
+    const elements = new Map<number, HTMLElement>();
+    for (const element of root.querySelectorAll<HTMLElement>('.markdown-block')) {
+      const lineStart = Number(element.dataset.lineStart);
+      if (Number.isFinite(lineStart)) {
+        elements.set(lineStart, element);
+      }
+    }
+    for (const block of this.state.getBlocks()) {
+      const element = elements.get(block.lineStart);
+      if (element) {
+        element.dataset.charStart = String(block.charStart);
+      }
     }
   }
 

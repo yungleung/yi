@@ -20,7 +20,7 @@ export class MarkdownEditorState {
   private parsed: Root;
   /** Whether the document was edited (making the whole-document parse stale). */
   private dirty = false;
-  /** Per-block parses (block-relative positions), invalidated on edits. */
+  /** Per-block parses (block-relative positions), retained for unchanged blocks. */
   private blockContent: Map<number, RootContent[]> | null = null;
 
   constructor(text = '') {
@@ -73,13 +73,31 @@ export class MarkdownEditorState {
 
   /**
    * Replaces the document: re-splits the blocks (cheap, line-based) and
-   * invalidates the per-block parse cache. The whole-document tree is not
+   * retains cached parses for unchanged blocks. The whole-document tree is not
    * re-parsed — it is only ever used for the initial render.
    */
   setText(text: string): void {
+    const previousBlocks = this.blocks;
+    const previousContent = this.blockContent;
     this.text = text;
     this.blocks = splitBlocks(text);
-    this.blockContent = null;
+    if (previousContent) {
+      const unchanged = new Map<number, RootContent[]>();
+      const previousByKey = new Map<string, number>();
+      for (const block of previousBlocks) {
+        previousByKey.set(`${block.lineStart}:${block.lineEnd}:${block.text}`, block.lineStart);
+      }
+      for (const block of this.blocks) {
+        const previousLine = previousByKey.get(`${block.lineStart}:${block.lineEnd}:${block.text}`);
+        const content = previousLine === undefined ? undefined : previousContent.get(previousLine);
+        if (content) {
+          unchanged.set(block.lineStart, content);
+        }
+      }
+      this.blockContent = unchanged;
+    } else {
+      this.blockContent = null;
+    }
     this.dirty = true;
   }
 
@@ -126,8 +144,16 @@ export class MarkdownEditorState {
 
   /** The block containing a 1-based line number, or null (e.g. a blank line). */
   getBlockAtLine(line: number): MarkdownBlock | null {
-    for (const block of this.blocks) {
-      if (line >= block.lineStart && line <= block.lineEnd) {
+    let low = 0;
+    let high = this.blocks.length - 1;
+    while (low <= high) {
+      const middle = (low + high) >> 1;
+      const block = this.blocks[middle];
+      if (line < block.lineStart) {
+        high = middle - 1;
+      } else if (line > block.lineEnd) {
+        low = middle + 1;
+      } else {
         return block;
       }
     }
@@ -136,8 +162,16 @@ export class MarkdownEditorState {
 
   /** The block containing a character offset, or null (e.g. a separator gap). */
   getBlockAtOffset(offset: number): MarkdownBlock | null {
-    for (const block of this.blocks) {
-      if (offset >= block.charStart && offset <= block.charEnd) {
+    let low = 0;
+    let high = this.blocks.length - 1;
+    while (low <= high) {
+      const middle = (low + high) >> 1;
+      const block = this.blocks[middle];
+      if (offset < block.charStart) {
+        high = middle - 1;
+      } else if (offset > block.charEnd) {
+        low = middle + 1;
+      } else {
         return block;
       }
     }
