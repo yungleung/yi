@@ -148,6 +148,14 @@ body {
   opacity: 0.75;
 }
 
+/* KaTeX formulas are internally complex (deeply nested spans). Containing
+   their layout keeps an edit in a neighbouring block from re-laying-out the
+   formula internals — the visible formulas are the dominant layout cost on
+   math-heavy notes, even though the surrounding text is cheap to lay out. */
+.katex {
+  contain: layout style;
+}
+
 /* Blocks stack with a little breathing room between them.
 
    `content-visibility: auto` makes the browser skip layout (and rendering)
