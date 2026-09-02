@@ -14,8 +14,7 @@ import { documentOffsetAt, domPositionAtOffset } from './position';
 import { formatRange, type FormatUnit } from './format';
 import { patchFormatDom } from './format_dom';
 import { MarkdownEditorState } from './state';
-import { createBlockComponent, createDocumentView } from './create_block';
-import type { BlockNode } from './blocks';
+import { VirtualBlockRenderer } from './virtual_block_renderer';
 
 const DEFAULT_MARKDOWN = [
   '# GitHub-flavored markdown demo',
@@ -109,12 +108,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** Owns the raw document and maintains its blocks. */
   private readonly state = new MarkdownEditorState(DEFAULT_MARKDOWN);
   private contentView: HTMLElement;
+  private readonly renderer: VirtualBlockRenderer;
 
   constructor() {
     super('div', ['flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
 
     this.contentView = document.createElement('div');
     this.contentView.className = 'flex-1 min-h-0 overflow-auto p-4';
+    this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
     this.appendChild(this.contentView);
     // Keep the editor's selection state in sync with the native DOM
@@ -128,8 +129,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       }
     });
 
-    // The initial render uses the whole-document parse; every later render
-    // parses each block independently (see `renderPreview`).
+    // Blocks are parsed lazily as they enter the viewport.
     this.renderInitial();
     // The bibliography manager announces when its data is ready or refreshed;
     // the editor just re-renders the same tree.
@@ -137,8 +137,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   setContent(content: string): void {
-    // Loading a new document parses it once as a whole; edits later go
-    // through the per-block path (`setText` + `renderBlock`).
     this.state.loadText(content);
     this.renderInitial();
   }
@@ -152,43 +150,21 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * render, so citations can switch from raw source to formatted text.
    */
   refresh(): void {
-    // While the document is untouched, re-render from the whole-document
-    // parse (fast); after edits only the per-block path is valid.
-    if (this.state.isDirty()) {
-      this.renderPreview();
-    } else {
-      this.renderInitial();
-    }
+    this.renderPreview();
   }
 
-  /** The first render, slicing blocks out of the whole-document parse. */
+  /** The first render, mounting only blocks near the viewport. */
   private renderInitial(): void {
-    const scrollTop = this.contentView.scrollTop;
-    const root = createDocumentView(this.state.getBlockTree(), this.state.getParse());
-    root.element.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full';
-    root.element.tabIndex = 0;
-    root.element.classList.add('outline-none');
-    this.contentView.replaceChildren(root.element);
-    this.contentView.scrollTop = scrollTop;
+    // Mount only blocks near the viewport. This prevents a math-heavy document
+    // from creating thousands of persistent KaTeX nodes and listeners.
+    this.renderer.render();
   }
 
   /**
-   * Re-renders every block from its own parsed slice (block-relative
-   * positions). Used after edits, bibliography updates, and any full re-render
-   * — the whole-document parse is never maintained across edits.
+   * Rebuilds the virtual viewport from per-block parsed slices.
    */
   private renderPreview(): void {
-    const scrollTop = this.contentView.scrollTop;
-    const root = document.createElement('div');
-    root.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full';
-    root.tabIndex = 0;
-    root.classList.add('outline-none');
-    for (const block of this.state.getBlocks()) {
-      const node: BlockNode = { ...block, type: 'block' };
-      root.appendChild(createBlockComponent(node, this.state.getBlockContent(block)).element);
-    }
-    this.contentView.replaceChildren(root);
-    this.contentView.scrollTop = scrollTop;
+    this.renderer.render();
   }
 
   private handleKeydown(event: KeyboardEvent): void {
@@ -257,7 +233,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       const root = this.contentView.querySelector('.prose') as HTMLElement | null;
       const patched = root !== null && patchFormatDom(this.state, root, style, edit);
       if (!patched) {
-        this.renderBlock(start.block.lineStart);
+        this.renderer.renderBlock(start.block.lineStart);
       }
     } else {
       // Formatting only changes the two endpoint blocks. The raw markers can
@@ -267,7 +243,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       this.renderFormattingBlocks(start.block.lineStart, end.block.lineStart);
     }
     if (start.block.lineStart === end.block.lineStart) {
-      this.refreshBlockOffsets();
+      this.renderer.refreshBlockOffsets();
     }
     this.restoreSelection(edit.from, edit.to);
   }
@@ -384,24 +360,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     };
   }
 
-  /** Re-renders only the block starting at `lineStart`. */
-  private renderBlock(lineStart: number): void {
-    const block = this.state.getBlockAtLine(lineStart);
-    if (!block) {
-      return;
-    }
-    const node: BlockNode = { ...block, type: 'block' };
-    const component = createBlockComponent(node, this.state.getBlockContent(block));
-    const old = this.contentView.querySelector<HTMLElement>(
-      `.markdown-block[data-line-start="${lineStart}"]`
-    );
-    if (old) {
-      old.replaceWith(component.element);
-    } else {
-      this.contentView.querySelector('.prose')?.appendChild(component.element);
-    }
-  }
-
   /**
    * Re-renders only the blocks whose source changed during a formatting edit.
    * Inline formatting never adds/removes lines, so line numbers remain stable;
@@ -412,31 +370,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     const lastLine = Math.max(startLine, endLine);
     for (const block of this.state.getBlocks()) {
       if (block.lineStart === firstLine || block.lineStart === lastLine) {
-        this.renderBlock(block.lineStart);
+        this.renderer.renderBlock(block.lineStart);
       }
     }
-    this.refreshBlockOffsets();
-  }
-
-  /** Keeps DOM block metadata aligned after an edit shifts later offsets. */
-  private refreshBlockOffsets(): void {
-    const root = this.contentView.querySelector('.prose');
-    if (!root) {
-      return;
-    }
-    const elements = new Map<number, HTMLElement>();
-    for (const element of root.querySelectorAll<HTMLElement>('.markdown-block')) {
-      const lineStart = Number(element.dataset.lineStart);
-      if (Number.isFinite(lineStart)) {
-        elements.set(lineStart, element);
-      }
-    }
-    for (const block of this.state.getBlocks()) {
-      const element = elements.get(block.lineStart);
-      if (element) {
-        element.dataset.charStart = String(block.charStart);
-      }
-    }
+    this.renderer.refreshBlockOffsets();
   }
 
   /**

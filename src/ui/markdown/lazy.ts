@@ -3,13 +3,9 @@
  *
  * Math (KaTeX), citations (CSL) and wikilink titles are cheap to show as raw
  * placeholders but expensive to render. This module defers the real render
- * until the element approaches the viewport: an IntersectionObserver renders
- * it when scrolled near, and a fallback pass renders whatever is already near
- * the viewport shortly after registration (for environments where observer
- * callbacks are throttled or delayed).
+ * until the element approaches the viewport. A timer fallback supports
+ * environments without IntersectionObserver.
  */
-
-import { refreshCaretPosition } from './caret/caret';
 
 const VIEWPORT_MARGIN = 600;
 const FALLBACK_DELAY_MS = 250;
@@ -18,11 +14,12 @@ const pending = new Set<HTMLElement>();
 const renders = new WeakMap<HTMLElement, () => void>();
 let observer: IntersectionObserver | null = null;
 let fallbackTimer: number | null = null;
+let observeQueued = false;
 
 /**
  * Calls `render()` once, the first time `element` approaches the viewport.
- * Elements already near the viewport are rendered by the fallback pass;
- * scrolled-into-view elements are rendered by the observer.
+ * Elements are rendered by the observer, or by the fallback timer when the
+ * browser does not provide IntersectionObserver.
  */
 export function onNearViewport(element: HTMLElement, render: () => void): void {
   if (element.dataset.lazyRendered === 'true') {
@@ -32,21 +29,39 @@ export function onNearViewport(element: HTMLElement, render: () => void): void {
   pending.add(element);
 
   if (typeof IntersectionObserver !== 'undefined') {
-    if (!observer) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              renderElement(entry.target as HTMLElement);
-            }
-          }
-        },
-        { rootMargin: `${VIEWPORT_MARGIN}px 0px` }
-      );
-    }
-    observer.observe(element);
+    queueObservation(element);
+    return;
   }
   scheduleFallback();
+}
+
+function queueObservation(element: HTMLElement): void {
+  if (observer) {
+    observer.observe(element);
+    return;
+  }
+  if (!observeQueued) {
+    observeQueued = true;
+    queueMicrotask(() => {
+      observeQueued = false;
+      if (!observer) {
+        const scrollRoot = element.closest('.overflow-auto');
+        observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                renderElement(entry.target as HTMLElement);
+              }
+            }
+          },
+          { root: scrollRoot, rootMargin: `${VIEWPORT_MARGIN}px 0px` }
+        );
+      }
+      for (const pendingElement of pending) {
+        observer.observe(pendingElement);
+      }
+    });
+  }
 }
 
 function renderElement(element: HTMLElement): void {
@@ -57,9 +72,6 @@ function renderElement(element: HTMLElement): void {
   observer?.unobserve(element);
   element.dataset.lazyRendered = 'true';
   renders.get(element)?.();
-  // Lazy renders (KaTeX, formatted citations, ...) change the surrounding
-  // layout; re-anchor the positioned caret to the active range.
-  refreshCaretPosition();
 }
 
 function scheduleFallback(): void {

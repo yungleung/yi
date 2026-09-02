@@ -8,25 +8,19 @@
  * text through this state, re-splitting only the affected region.
  */
 
-import type { Root } from 'mdast';
-import { buildBlockTree, splitBlocks, type BlockRoot, type MarkdownBlock } from './blocks';
+import { splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import { parseMarkdown } from './parser';
 
 export class MarkdownEditorState {
   private text: string;
   private blocks: MarkdownBlock[];
-  /** The initial whole-document parse, used only for the first render. */
-  private parsed: Root;
-  /** Whether the document was edited (making the whole-document parse stale). */
-  private dirty = false;
   /** Per-block parses (block-relative positions), retained for unchanged blocks. */
   private blockContent: Map<number, RootContent[]> | null = null;
 
   constructor(text = '') {
     this.text = text;
     this.blocks = splitBlocks(text);
-    this.parsed = parseMarkdown(text);
   }
 
   /** The raw markdown document. */
@@ -37,21 +31,6 @@ export class MarkdownEditorState {
   /** The document's blocks, in document order. */
   getBlocks(): readonly MarkdownBlock[] {
     return this.blocks;
-  }
-
-  /** The mdast-like block tree of the current document. */
-  getBlockTree(): BlockRoot {
-    return buildBlockTree(this.text);
-  }
-
-  /**
-   * The initial whole-document mdast tree. Only the first render slices
-   * blocks out of it; every later render and edit re-parses only the
-   * affected block (see {@link getBlockContent}), so this tree is never
-   * updated and must not be used after an edit.
-   */
-  getParse(): Root {
-    return this.parsed;
   }
 
   /**
@@ -73,8 +52,7 @@ export class MarkdownEditorState {
 
   /**
    * Replaces the document: re-splits the blocks (cheap, line-based) and
-   * retains cached parses for unchanged blocks. The whole-document tree is not
-   * re-parsed — it is only ever used for the initial render.
+   * retains cached parses for unchanged blocks.
    */
   setText(text: string): void {
     const previousBlocks = this.blocks;
@@ -98,29 +76,16 @@ export class MarkdownEditorState {
     } else {
       this.blockContent = null;
     }
-    this.dirty = true;
   }
 
   /**
-   * Loads a new document: re-splits the blocks and re-parses the whole
-   * document once, so the initial render can slice blocks out of a single
-   * parse instead of parsing every block separately. Edits go through
-   * {@link setText}, which never re-parses the whole document.
+   * Loads a new document without parsing it eagerly. Blocks are parsed as they
+   * enter the virtualized viewport.
    */
   loadText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
-    this.parsed = parseMarkdown(text);
     this.blockContent = null;
-    this.dirty = false;
-  }
-
-  /**
-   * Whether the document changed since the whole-document parse (true after
-   * an edit). The initial parse is only valid for rendering while clean.
-   */
-  isDirty(): boolean {
-    return this.dirty;
   }
 
   /**

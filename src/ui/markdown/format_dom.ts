@@ -263,9 +263,13 @@ function wrapRange(
     t.element.remove();
   }
 
-  // Move the isolated text pieces into the wrapper (concatenated for code).
+  // Move the isolated text pieces into the wrapper. Whole leaves and nested
+  // formatted units were already moved above; assigning `textContent` here
+  // would clear them, which made a whole inline-code selection disappear.
   if (style === 'inlineCode') {
-    wrapper.textContent = textPieces.map((p) => p.text.data).join('');
+    for (const piece of textPieces) {
+      wrapper.appendChild(piece.text);
+    }
   } else {
     for (const piece of textPieces) {
       const span = document.createElement('span');
