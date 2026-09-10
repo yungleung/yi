@@ -18,6 +18,7 @@
 import type { FormattingStyle } from '../formatting_toolbar';
 import type { FormattingEdit } from './format';
 import type { MarkdownEditorState } from './state';
+import { preserveSpaces } from './nodes/text';
 
 const FORMAT_TAGS: Record<FormattingStyle, string> = {
   bold: 'strong',
@@ -118,7 +119,7 @@ function makeTaggedSpan(oldStart: number, text: Text): HTMLElement {
   const span = document.createElement('span');
   span.classList.add('markdown-node');
   span.dataset.textFrom = String(oldStart);
-  span.appendChild(text);
+  span.appendChild(document.createTextNode(preserveSpaces(text.data)));
   return span;
 }
 

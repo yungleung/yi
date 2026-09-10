@@ -16,6 +16,7 @@ import {
 import { serializeMarkdown } from '../parser';
 import { EditableNodeComponent } from './editable_node';
 import type { AstNode } from '../ast';
+import { preserveSpaces } from './text';
 
 /** Revealable components by their rendered element (for the caret watcher). */
 const revealableByElement = new WeakMap<HTMLElement, RevealableNodeComponent>();
@@ -218,7 +219,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     const { start, end } = this.sourceContentRange(source);
     const sourceView = document.createElement('span');
     sourceView.className = sourceClassName;
-    sourceView.textContent = source;
+    sourceView.textContent = preserveSpaces(source);
     // The identifier content range (without the raw markers), stored on the
     // span so caret navigation can enter the source at the content boundary
     // instead of on a marker (see `caret/navigation.ts`).

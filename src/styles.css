@@ -134,6 +134,11 @@ body {
   white-space: pre-wrap;
 }
 
+.markdown-list-placeholder {
+  display: inline-block;
+  min-width: 0.5em;
+}
+
 /* Rendered pandoc citation. */
 .markdown-citation {
   padding: 0 0.2em;

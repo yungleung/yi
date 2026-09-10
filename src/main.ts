@@ -10,10 +10,12 @@ import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/formatting_toolbar';
 import { Toast } from './ui/toast';
-import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
+import { workspaceManager, TOAST_EVENT, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
 import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
 
 function createAppShell() {
   const existingRoot = document.getElementById('app');
@@ -63,6 +65,22 @@ function createAppShell() {
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).
   void wordsCount.update(editor.getContent());
   void eventManager.emit(MARKDOWN_CONTENT_CHANGED, editor.getContent());
+  void eventManager.on('save_as', async () => {
+    try {
+      const path = await save({
+        defaultPath: 'untitled.md',
+        filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
+      });
+      if (!path) {
+        return;
+      }
+      await writeTextFile(path, editor.getContent());
+    } catch (error) {
+      console.error('Failed to save the document:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      void eventManager.emit(TOAST_EVENT, `Failed to save the document: ${message}`);
+    }
+  });
 }
 
 async function initializeEventListeners() {

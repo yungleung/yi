@@ -1,6 +1,6 @@
 import { createBlockComponent } from './create_block';
-import type { BlockNode } from './blocks';
-import type { MarkdownEditorState } from './state';
+import type { BlockNode, MarkdownBlock } from './blocks';
+import type { MarkdownEditorState, TextChange } from './state';
 
 const ESTIMATED_BLOCK_HEIGHT = 60;
 const BLOCK_GAP = 16;
@@ -26,10 +26,8 @@ export class VirtualBlockRenderer {
   }
 
   render(): void {
-    const scrollTop = this.scroller.scrollTop;
     const root = this.createRoot();
     this.scroller.replaceChildren(root);
-    this.scroller.scrollTop = scrollTop;
     this.mountVisible();
   }
 
@@ -38,13 +36,77 @@ export class VirtualBlockRenderer {
     if (!block || !this.root) {
       return;
     }
-    const node: BlockNode = { ...block, type: 'block' };
-    const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
+    const element = this.createBlockElement(block);
     const current = this.root.querySelector<HTMLElement>(
       `.markdown-block[data-line-start="${lineStart}"]`
     );
     if (current) {
       current.replaceWith(element);
+    }
+  }
+
+  renderChanged(change: TextChange): void {
+    if (!this.root || !this.mountedRange) {
+      this.render();
+      return;
+    }
+    const oldElements = [...this.root.querySelectorAll<HTMLElement>('.markdown-block')];
+    const oldElementByIndex = new Map<number, HTMLElement>();
+    oldElements.forEach((element, index) => {
+      oldElementByIndex.set(this.mountedRange!.first + index, element);
+    });
+
+    const itemSize = ESTIMATED_BLOCK_HEIGHT + BLOCK_GAP;
+    const first = Math.min(
+      change.newBlocks.length - 1,
+      Math.floor(Math.max(0, this.scroller.scrollTop - VIEWPORT_MARGIN) / itemSize)
+    );
+    const last = Math.min(
+      change.newBlocks.length - 1,
+      Math.ceil(
+        (this.scroller.scrollTop + this.scroller.clientHeight + VIEWPORT_MARGIN) / itemSize
+      )
+    );
+    this.mountedRange = change.newBlocks.length === 0 ? null : { first, last };
+
+    const topSpacer = this.root.querySelector<HTMLElement>('[data-virtual-spacer="top"]');
+    const bottomSpacer = this.root.querySelector<HTMLElement>('[data-virtual-spacer="bottom"]');
+    if (!topSpacer || !bottomSpacer || !this.mountedRange) {
+      this.render();
+      return;
+    }
+    topSpacer.style.height = `${first * itemSize}px`;
+    bottomSpacer.style.height = `${Math.max(0, change.newBlocks.length - last - 1) * itemSize}px`;
+
+    const nextElements: HTMLElement[] = [];
+    for (let index = first; index <= last; index += 1) {
+      const block = change.newBlocks[index];
+      const oldIndex =
+        index < change.newFrom
+          ? index
+          : index >= change.newTo
+            ? index - (change.newTo - change.newFrom) + (change.oldTo - change.oldFrom)
+            : -1;
+      const existing = oldElementByIndex.get(oldIndex);
+      if (existing && (index < change.newFrom || index >= change.newTo)) {
+        this.updateBlockElement(existing, block);
+        nextElements.push(existing);
+      } else {
+        nextElements.push(this.createBlockElement(block));
+      }
+    }
+
+    const nextSet = new Set(nextElements);
+    for (const element of oldElements) {
+      if (!nextSet.has(element)) {
+        element.remove();
+      }
+    }
+    let cursor: ChildNode = bottomSpacer;
+    for (let index = nextElements.length - 1; index >= 0; index -= 1) {
+      const element = nextElements[index];
+      cursor.before(element);
+      cursor = element;
     }
   }
 
@@ -64,6 +126,19 @@ export class VirtualBlockRenderer {
     }
   }
 
+  revealOffset(offset: number): void {
+    const blocks = this.state.getBlocks();
+    const blockIndex = blocks.findIndex(
+      (block) => offset >= block.charStart && offset <= block.charEnd
+    );
+    if (blockIndex < 0) {
+      return;
+    }
+    const itemSize = ESTIMATED_BLOCK_HEIGHT + BLOCK_GAP;
+    this.scroller.scrollTop = Math.max(0, blockIndex * itemSize - VIEWPORT_MARGIN / 2);
+    this.mountVisible();
+  }
+
   private createRoot(): HTMLElement {
     const root = document.createElement('div');
     root.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full outline-none';
@@ -71,6 +146,17 @@ export class VirtualBlockRenderer {
     this.root = root;
     this.mountedRange = null;
     return root;
+  }
+
+  private createBlockElement(block: MarkdownBlock): HTMLElement {
+    const node: BlockNode = { ...block, type: 'block' };
+    return createBlockComponent(node, this.state.getBlockContent(block)).element;
+  }
+
+  private updateBlockElement(element: HTMLElement, block: MarkdownBlock): void {
+    element.dataset.lineStart = String(block.lineStart);
+    element.dataset.lineEnd = String(block.lineEnd);
+    element.dataset.charStart = String(block.charStart);
   }
 
   private schedule(): void {

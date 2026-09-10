@@ -5,7 +5,7 @@ import type { AstText } from '../ast';
 export class TextNode extends EditableNodeComponent {
   constructor(node: AstText) {
     super('text', node, document.createElement('span'));
-    this.element.textContent = String(node.value ?? '');
+    this.element.textContent = preserveSpaces(String(node.value ?? ''));
     // Tag the leaf's raw start so DOM positions can be mapped back to the
     // document exactly (see `position.ts`). Positions come from the
     // whole-document parse today, so they are absolute; once blocks are
@@ -18,4 +18,9 @@ export class TextNode extends EditableNodeComponent {
       this.element.dataset.textFrom = String(start);
     }
   }
+}
+
+/** Keeps consecutive source spaces visible without changing their length. */
+export function preserveSpaces(value: string): string {
+  return value.replace(/ {2,}/g, (run) => ` ${'\u00a0'.repeat(run.length - 1)}`);
 }

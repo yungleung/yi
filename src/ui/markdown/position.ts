@@ -102,9 +102,7 @@ export function documentOffsetAt(
     }
   }
 
-  const blockElement = (containerNode as Node).parentElement?.closest('.markdown-block') as
-    | HTMLElement
-    | null;
+  const blockElement = closestBlockElement(containerNode);
   if (!blockElement) {
     return null;
   }
@@ -126,12 +124,25 @@ export function documentOffsetAt(
   return { block, offset, blockOffset: offset - block.charStart };
 }
 
+function closestBlockElement(node: Node): HTMLElement | null {
+  if (node.nodeType === Node.ELEMENT_NODE && (node as Element).matches('.markdown-block')) {
+    return node as HTMLElement;
+  }
+  return (node.parentElement?.closest('.markdown-block') as HTMLElement | null) ?? null;
+}
+
 /** The caret's offset within an element's rendered text content, or null. */
 function textOffsetInElement(
   element: HTMLElement,
   container: Node,
   offset: number
 ): number | null {
+  if (container.nodeType === Node.ELEMENT_NODE) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.setEnd(container, Math.min(offset, container.childNodes.length));
+    return range.toString().length;
+  }
   let acc = 0;
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
   let node: Node | null;
@@ -310,6 +321,9 @@ export function domPositionAtOffset(
         return { node: lastNode, offset: lastNode.data.length };
       }
     }
+  }
+  if (blockElement.textContent?.length === 0) {
+    return { node: blockElement, offset: 0 };
   }
   // Widgets and other untagged positions fall back to the rendered-offset
   // model, which approximates the widget lengths.

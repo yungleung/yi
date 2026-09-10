@@ -66,13 +66,33 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
         .build()?;
 
     let edit_submenu = SubmenuBuilder::new(app, "Edit")
-        .undo()
-        .redo()
+        .item(
+            &MenuItemBuilder::new("Undo")
+                .accelerator("CmdOrCtrl+Z")
+                .id("undo")
+                .build(app)?,
+        )
+        .item(
+            &MenuItemBuilder::new("Redo")
+                .accelerator("CmdOrCtrl+Shift+Z")
+                .id("redo")
+                .build(app)?,
+        )
         .separator()
-        .cut()
+        .item(
+            &MenuItemBuilder::new("Cut")
+                .accelerator("CmdOrCtrl+X")
+                .id("cut")
+                .build(app)?,
+        )
         .copy()
         .paste()
-        .select_all()
+        .item(
+            &MenuItemBuilder::new("Select All")
+                .accelerator("CmdOrCtrl+A")
+                .id("select_all")
+                .build(app)?,
+        )
         .separator()
         .item(
             &MenuItemBuilder::new("Find")
@@ -147,6 +167,18 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
             }
             "save_as" => {
                 app_handle.emit("save_as", ()).unwrap();
+            }
+            "undo" => {
+                app_handle.emit("undo", ()).unwrap();
+            }
+            "redo" => {
+                app_handle.emit("redo", ()).unwrap();
+            }
+            "cut" => {
+                app_handle.emit("cut", ()).unwrap();
+            }
+            "select_all" => {
+                app_handle.emit("select_all", ()).unwrap();
             }
             "export" => {
                 app_handle.emit("export", ()).unwrap();
