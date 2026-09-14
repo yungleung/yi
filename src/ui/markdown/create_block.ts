@@ -6,6 +6,7 @@
 import type { BlockNode } from './blocks';
 import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
+import { showCaret } from './caret/caret';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -53,6 +54,20 @@ class BlockView implements BlockComponent {
     placeholder.textContent = '\u00a0';
     paragraph.appendChild(placeholder);
     element.appendChild(paragraph);
+    // An empty paragraph holds no characters to aim at, so every click on it
+    // puts the caret at the start of the line it stands for.
+    paragraph.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const text = placeholder.firstChild;
+      if (!text) {
+        return;
+      }
+      const caret = document.createRange();
+      caret.setStart(text, 0);
+      caret.collapse(true);
+      showCaret(caret);
+      (element.closest('.prose') as HTMLElement | null)?.focus({ preventScroll: true });
+    });
     return element;
   }
 

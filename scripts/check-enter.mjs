@@ -38,7 +38,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
 const file = join(directory, 'blank_lines.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { paragraphBreak, emptyLineInsertion } = await import(file);
+const { paragraphBreak, emptyLineInsertion, characterRemoval } = await import(file);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
@@ -86,6 +86,21 @@ check(
   'clearing a blank item leaves an empty line between the two blocks',
   insert(cleared, 2, '\n'),
   'a\n\n\nb'
+);
+
+// Deleting the character typed on an empty line takes the materialised
+// newline back with it.
+const typed = 'a\n\nx\n\nb\n';
+const removal = characterRemoval(typed, 3, 4);
+check(
+  'deleting the last character of a materialised paragraph also drops its line',
+  `${typed.slice(0, removal.from)}${typed.slice(removal.to)}`,
+  'a\n\n\nb\n'
+);
+check(
+  'a plain character delete is left alone',
+  JSON.stringify(characterRemoval('hello', 2, 3)),
+  JSON.stringify({ from: 2, to: 3 })
 );
 
 console.log(failures === 0 ? 'all line rules hold' : `${failures} rule(s) failed`);

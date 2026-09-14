@@ -9,7 +9,10 @@
  */
 
 import type { MarkdownBlock } from '../blocks';
+import { isEmptyParagraphLine } from '../blank_lines';
+import { lineSpanAt } from '../list_lines';
 import { applyEdit, type EditorContext } from './context';
+import { lineRemoval } from './line_removal';
 
 /** The newlines `Enter` inserts to make a paragraph break at `offset`. */
 export function paragraphBreak(text: string, offset: number): string {
@@ -97,4 +100,54 @@ function blankRunEnd(text: string, offset: number): number {
     end = nextBreak + 1;
   }
   return end;
+}
+
+/** Typing (or pasting) on an empty paragraph: the text needs its own line. */
+export function materializeInsertion(
+  context: EditorContext,
+  offsets: { from: number; to: number },
+  inserted: string
+): boolean {
+  const replacement = emptyLineInsertion(context.state.getText(), offsets.from, inserted);
+  applyEdit(context, offsets.from, offsets.to, replacement, offsets.from + inserted.length);
+  return true;
+}
+
+/** Backspace/Delete on an empty paragraph: the line goes, like a blank item. */
+export function deleteEmptyParagraph(context: EditorContext, offset: number): boolean {
+  const text = context.state.getText();
+  const line = lineSpanAt(text, offset);
+  if (!isEmptyParagraphLine(text.slice(line.start, line.end))) {
+    return false;
+  }
+  const removal = lineRemoval(text, line);
+  applyEdit(context, removal.from, removal.to, '', removal.caret);
+  return true;
+}
+
+/**
+ * The range a character delete removes. When the deletion empties a line whose
+ * blank run is longer than a separator (three newlines), the line takes the
+ * newline materialisation added back with it, so typing a character on an
+ * empty line and deleting it again leaves the document as it was.
+ */
+export function characterRemoval(
+  text: string,
+  from: number,
+  to: number
+): { from: number; to: number } {
+  const after = `${text.slice(0, from)}${text.slice(to)}`;
+  const line = lineSpanAt(after, from);
+  if (after.slice(line.start, line.end).trim() !== '') {
+    return { from, to };
+  }
+  let before = 0;
+  while (line.start - before - 1 >= 0 && after[line.start - before - 1] === '\n') {
+    before += 1;
+  }
+  const following = /^\n+/.exec(after.slice(line.start))?.[0].length ?? 0;
+  if (before + following <= 3) {
+    return { from, to };
+  }
+  return { from, to: Math.min(to + 1, text.length) };
 }

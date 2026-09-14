@@ -7,7 +7,10 @@
 
 import { deleteBlankItem } from './blank_item';
 import {
+  characterRemoval,
+  deleteEmptyParagraph,
   exitBlankItem,
+  materializeInsertion,
   splitParagraph,
   startEmptyParagraph
 } from './blank_lines';
@@ -32,6 +35,10 @@ export function insertText(context: EditorContext, text: string): boolean {
   if (!offsets) {
     return false;
   }
+  const block = context.state.getBlockAtOffset(offsets.from);
+  if (block?.kind === 'blank' && offsets.from === offsets.to) {
+    return materializeInsertion(context, offsets, text);
+  }
   applyEdit(context, offsets.from, offsets.to, text);
   return true;
 }
@@ -52,6 +59,9 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
     if (deleteBlankItem(context, from)) {
       return true;
     }
+    if (deleteEmptyParagraph(context, from)) {
+      return true;
+    }
     if (forward) {
       to = Math.min(context.state.getText().length, to + 1);
     } else {
@@ -61,7 +71,8 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   if (from === to) {
     return false;
   }
-  applyEdit(context, from, to, '', from);
+  const removal = characterRemoval(context.state.getText(), from, to);
+  applyEdit(context, removal.from, removal.to, '', from);
   return true;
 }
 
