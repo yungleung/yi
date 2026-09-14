@@ -11,17 +11,13 @@
 import { splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import { parseMarkdown } from './parser';
+import { blockParseInput } from './trailing_spaces';
 
-export interface TextChange {
-  text: string;
-  oldBlocks: readonly MarkdownBlock[];
-  newBlocks: readonly MarkdownBlock[];
-  oldFrom: number;
-  oldTo: number;
-  newFrom: number;
-  newTo: number;
-}
-
+/**
+ * One undo step: the document text before the edit and after it. Whole-text
+ * snapshots keep undo trivial and exact for a block-based document, and the
+ * renderer only rebuilds the blocks whose source actually changed.
+ */
 interface HistoryEntry {
   before: string;
   after: string;
@@ -55,6 +51,9 @@ export class MarkdownEditorState {
    * block-relative positions, and cached per block.
    */
   getBlockContent(block: MarkdownBlock): RootContent[] {
+    if (block.kind === 'blank') {
+      return [];
+    }
     if (!this.blockContent) {
       this.blockContent = new Map();
     }
@@ -62,7 +61,7 @@ export class MarkdownEditorState {
     if (cached) {
       return cached;
     }
-    const content = parseMarkdown(block.text).children;
+    const content = parseMarkdown(blockParseInput(block)).children;
     this.blockContent.set(block.lineStart, content);
     return content;
   }
@@ -104,43 +103,13 @@ export class MarkdownEditorState {
     }
   }
 
-  /** Replaces a raw document range and describes the blocks changed by it. */
-  replaceRange(from: number, to: number, replacement: string): TextChange {
+  /** Replaces a raw document range with `replacement`. */
+  replaceRange(from: number, to: number, replacement: string): void {
     const start = Math.max(0, Math.min(from, this.text.length));
     const end = Math.max(start, Math.min(to, this.text.length));
-    const oldText = this.text;
-    const oldBlocks = this.blocks;
-    const text = `${oldText.slice(0, start)}${replacement}${oldText.slice(end)}`;
-    this.updateText(text);
-    this.recordHistory({ before: oldText, after: text });
-    const newBlocks = this.blocks;
-    let prefix = 0;
-    while (
-      prefix < oldBlocks.length &&
-      prefix < newBlocks.length &&
-      blockSignature(oldBlocks[prefix]) === blockSignature(newBlocks[prefix])
-    ) {
-      prefix += 1;
-    }
-    let oldSuffix = oldBlocks.length;
-    let newSuffix = newBlocks.length;
-    while (
-      oldSuffix > prefix &&
-      newSuffix > prefix &&
-      blockSignature(oldBlocks[oldSuffix - 1]) === blockSignature(newBlocks[newSuffix - 1])
-    ) {
-      oldSuffix -= 1;
-      newSuffix -= 1;
-    }
-    return {
-      text,
-      oldBlocks,
-      newBlocks,
-      oldFrom: prefix,
-      oldTo: oldSuffix,
-      newFrom: prefix,
-      newTo: newSuffix
-    };
+    const before = this.text;
+    this.updateText(`${before.slice(0, start)}${replacement}${before.slice(end)}`);
+    this.recordHistory({ before, after: this.text });
   }
 
   /**
@@ -155,26 +124,24 @@ export class MarkdownEditorState {
     this.historyIndex = 0;
   }
 
-  undo(): TextChange | null {
+  /** Steps back one edit. Returns false when there is nothing to undo. */
+  undo(): boolean {
     if (this.historyIndex === 0) {
-      return null;
+      return false;
     }
-    const entry = this.history[this.historyIndex - 1];
-    const oldBlocks = this.blocks;
-    this.updateText(entry.before);
+    this.updateText(this.history[this.historyIndex - 1].before);
     this.historyIndex -= 1;
-    return describeChange(entry.before, oldBlocks, this.blocks);
+    return true;
   }
 
-  redo(): TextChange | null {
+  /** Re-applies the last undone edit. Returns false when there is none. */
+  redo(): boolean {
     if (this.historyIndex >= this.history.length) {
-      return null;
+      return false;
     }
-    const entry = this.history[this.historyIndex];
-    const oldBlocks = this.blocks;
-    this.updateText(entry.after);
+    this.updateText(this.history[this.historyIndex].after);
     this.historyIndex += 1;
-    return describeChange(entry.after, oldBlocks, this.blocks);
+    return true;
   }
 
   private recordHistory(entry: HistoryEntry): void {
@@ -238,42 +205,42 @@ export class MarkdownEditorState {
     }
     return null;
   }
-}
 
-function blockSignature(block: MarkdownBlock): string {
-  return `${block.kind}:${block.format ?? ''}:${block.text}`;
-}
+  /**
+   * The closest offset to `offset` that lies inside a block. An edit can end
+   * the caret on the blank line that separates two blocks, where there is no
+   * rendered text to hold it: such a position belongs to the end of the block
+   * before it, or to the start of the one after at the very top of the file.
+   */
+  nearestTextOffset(offset: number): number {
+    const clamped = Math.max(0, Math.min(offset, this.text.length));
+    if (this.getBlockAtOffset(clamped)) {
+      return clamped;
+    }
+    let before: MarkdownBlock | null = null;
+    for (const block of this.blocks) {
+      if (block.charStart > clamped) {
+        break;
+      }
+      before = block;
+    }
+    if (before) {
+      return before.charEnd;
+    }
+    return this.blocks.length > 0 ? this.blocks[0].charStart : clamped;
+  }
 
-function describeChange(
-  text: string,
-  oldBlocks: readonly MarkdownBlock[],
-  newBlocks: readonly MarkdownBlock[]
-): TextChange {
-  let prefix = 0;
-  while (
-    prefix < oldBlocks.length &&
-    prefix < newBlocks.length &&
-    blockSignature(oldBlocks[prefix]) === blockSignature(newBlocks[prefix])
-  ) {
-    prefix += 1;
+  /**
+   * The start offset of the first empty paragraph at or after `offset`, or
+   * null when the text has none. Commands use it to move the caret onto the
+   * line an edit has just created.
+   */
+  firstEmptyParagraphAfter(offset: number): number | null {
+    for (const block of this.blocks) {
+      if (block.kind === 'blank' && block.charStart >= offset) {
+        return block.charStart;
+      }
+    }
+    return null;
   }
-  let oldTo = oldBlocks.length;
-  let newTo = newBlocks.length;
-  while (
-    oldTo > prefix &&
-    newTo > prefix &&
-    blockSignature(oldBlocks[oldTo - 1]) === blockSignature(newBlocks[newTo - 1])
-  ) {
-    oldTo -= 1;
-    newTo -= 1;
-  }
-  return {
-    text,
-    oldBlocks,
-    newBlocks,
-    oldFrom: prefix,
-    oldTo,
-    newFrom: prefix,
-    newTo
-  };
 }

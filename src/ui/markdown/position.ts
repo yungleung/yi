@@ -96,7 +96,14 @@ export function documentOffsetAt(
             .find((b) => String(b.lineStart) === blockElement.dataset.lineStart)
         : null;
       if (Number.isFinite(from) && block) {
-        const offset = block.charStart + from + positionOffset;
+        // A placeholder stands for a line with no characters of its own: the
+        // caret can sit anywhere inside it, but every position maps to the
+        // same raw offset (where its content would start), so typing stays on
+        // that line instead of spilling into the next one.
+        const placeholder =
+          textSpan.classList.contains('markdown-list-placeholder') ||
+          textSpan.classList.contains('markdown-empty-line-placeholder');
+        const offset = block.charStart + from + (placeholder ? 0 : positionOffset);
         return { block, offset, blockOffset: offset - block.charStart };
       }
     }

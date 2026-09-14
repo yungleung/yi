@@ -22,6 +22,7 @@
  */
 
 import type { Root, RootContent } from 'mdast';
+import { emptyParagraphIndexes, isEmptyParagraphLine } from './blank_lines';
 
 export type BlockKind =
   | 'frontmatter'
@@ -30,7 +31,8 @@ export type BlockKind =
   | 'displayMath'
   | 'html'
   | 'descriptionList'
-  | 'paragraph';
+  | 'paragraph'
+  | 'blank';
 
 export interface MarkdownBlock {
   kind: BlockKind;
@@ -46,6 +48,22 @@ export interface MarkdownBlock {
   charEnd: number;
   /** The block's raw source: `document.slice(charStart, charEnd)`. */
   text: string;
+}
+
+/**
+ * Whether a block renders its raw source as it stands, without the markdown
+ * it contains being parsed into nodes. Such a block's lines mean nothing to
+ * the renderer beyond being text: a `- ` inside a code block is code, not an
+ * empty list item.
+ */
+export function isRawRendered(kind: BlockKind): boolean {
+  return (
+    kind === 'frontmatter' ||
+    kind === 'fencedCode' ||
+    kind === 'indentedCode' ||
+    kind === 'displayMath' ||
+    kind === 'html'
+  );
 }
 
 /** A block as an mdast-like node (the `type` field makes it a tree node). */
@@ -174,8 +192,27 @@ export function splitBlocks(text: string): MarkdownBlock[] {
 
   while (i < lines.length) {
     const first = lines[i];
-    if (first.text.trim() === '') {
-      i += 1;
+    if (isEmptyParagraphLine(first.text)) {
+      const runStart = i;
+      while (i < lines.length && isEmptyParagraphLine(lines[i].text)) {
+        i += 1;
+      }
+      // The final line of a file that ends with a newline is that newline's
+      // doing, not a blank line the author wrote.
+      const phantom = i === lines.length && text.endsWith('\n') ? 1 : 0;
+      const run = lines.slice(runStart, i - phantom);
+      const separator = blocks.length > 0 && i < lines.length;
+      for (const index of emptyParagraphIndexes(run.length, separator)) {
+        const line = run[index];
+        blocks.push({
+          kind: 'blank',
+          lineStart: line.number,
+          lineEnd: line.number,
+          charStart: line.start,
+          charEnd: line.start,
+          text: ''
+        });
+      }
       continue;
     }
 
@@ -295,8 +332,15 @@ export function splitBlocks(text: string): MarkdownBlock[] {
       let scan = j;
       let mergedEnd = j;
       while (scan < lines.length) {
-        while (scan < lines.length && lines[scan].text.trim() === '') {
+        const blankStart = scan;
+        while (scan < lines.length && isEmptyParagraphLine(lines[scan].text)) {
           scan += 1;
+        }
+        const phantom = scan === lines.length && text.endsWith('\n') ? 1 : 0;
+        // A run that renders an empty paragraph is a block boundary: the list
+        // ends there and the empty paragraph becomes a block of its own.
+        if (scan - blankStart - phantom > 1) {
+          break;
         }
         if (scan >= lines.length) {
           break;
@@ -309,7 +353,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
           break;
         }
         listMerged = true;
-        while (scan < lines.length && lines[scan].text.trim() !== '') {
+        while (scan < lines.length && !isEmptyParagraphLine(lines[scan].text)) {
           lineEnd = lines[scan].number;
           charEnd = lines[scan].end;
           scan += 1;

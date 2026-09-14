@@ -6,7 +6,6 @@
 import type { BlockNode } from './blocks';
 import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
-import { parseMarkdown } from './parser';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -17,13 +16,11 @@ export interface BlockComponent {
 }
 
 /**
- * Creates a block component from cached AST children or, when absent, the
- * block's own raw slice.
+ * Creates a block component from the block's parsed children. Parsing happens
+ * in the editor state, which is the single place that knows how a block's
+ * source is prepared for the renderer.
  */
-export function createBlockComponent(
-  node: BlockNode,
-  children?: RootContent[]
-): BlockComponent {
+export function createBlockComponent(node: BlockNode, children: RootContent[]): BlockComponent {
   return new BlockView(node, children);
 }
 
@@ -33,16 +30,35 @@ class BlockView implements BlockComponent {
   readonly node: BlockNode;
   readonly element: HTMLElement;
 
-  constructor(node: BlockNode, children?: RootContent[]) {
+  constructor(node: BlockNode, children: RootContent[]) {
     this.node = node;
     this.element =
-      node.kind === 'frontmatter' ? this.renderFrontmatter(node) : this.renderParsed(node, children);
+      node.kind === 'frontmatter'
+        ? this.renderFrontmatter(node)
+        : node.kind === 'blank'
+          ? this.renderBlank(node)
+          : this.renderParsed(node, children);
   }
 
-  private renderParsed(node: BlockNode, children?: RootContent[]): HTMLElement {
-    const content = children ?? parseMarkdown(node.text).children;
+  /** A blank line the author added: an empty paragraph holding the caret. */
+  private renderBlank(node: BlockNode): HTMLElement {
     const element = this.container(node);
-    appendChildren(element, content);
+    element.classList.add('markdown-blank');
+    const paragraph = document.createElement('p');
+    paragraph.className = 'markdown-node markdown-empty-line';
+    const placeholder = document.createElement('span');
+    placeholder.className = 'markdown-empty-line-placeholder markdown-node';
+    // Block-relative: an empty paragraph starts at its own line start.
+    placeholder.dataset.textFrom = '0';
+    placeholder.textContent = '\u00a0';
+    paragraph.appendChild(placeholder);
+    element.appendChild(paragraph);
+    return element;
+  }
+
+  private renderParsed(node: BlockNode, children: RootContent[]): HTMLElement {
+    const element = this.container(node);
+    appendChildren(element, children);
     return element;
   }
 
