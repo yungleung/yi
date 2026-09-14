@@ -27,10 +27,43 @@
   overflow: hidden;
 }
 
-/* Reduced vertical spacing for prose content (paragraphs and list items) */
+/* Vertical rhythm. Spacing belongs to the content, not to the block wrappers:
+   a block's measured height already contains its children's margins, so the
+   renderer adds nothing between blocks. The values are print-like: a tight
+   paragraph skip and one step more before a heading. */
 .prose-tight p {
   margin-top: 0;
-  margin-bottom: 0.5rem; /* ~8px */
+  margin-bottom: var(--md-space-paragraph);
+}
+
+.prose-tight h1 {
+  margin-bottom: 0.75rem;
+}
+
+.prose-tight h2 {
+  margin-top: var(--md-space-heading-before);
+  margin-bottom: var(--md-space-heading-after);
+}
+
+.prose-tight h3,
+.prose-tight h4,
+.prose-tight h5,
+.prose-tight h6 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.375rem;
+}
+
+.prose-tight ul,
+.prose-tight ol {
+  margin-top: var(--md-space-paragraph);
+  margin-bottom: var(--md-space-paragraph);
+}
+
+.prose-tight blockquote,
+.prose-tight table,
+.prose-tight pre {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 /* Remove paragraph margins inside list items to avoid double spacing */
@@ -54,6 +87,11 @@
   font-family: 'Crimson', serif;
   /* Positioning host for the locally-anchored caret. */
   position: relative;
+  /* Print-like vertical rhythm: spacing comes from the content's own margins,
+     which are already part of each block's measured height. */
+  --md-space-paragraph: 0.5rem; /* 8px */
+  --md-space-heading-before: 1.5rem; /* 24px */
+  --md-space-heading-after: 0.5rem; /* 8px */
 }
 
 html,
@@ -180,8 +218,10 @@ body {
   contain-intrinsic-size: auto 60px;
 }
 
+/* Blocks carry no margin of their own: the spacing belongs to the content and
+   is measured as part of each block's height. */
 .markdown-block + .markdown-block {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 /* Frontmatter blocks render as their raw YAML/TOML source. */

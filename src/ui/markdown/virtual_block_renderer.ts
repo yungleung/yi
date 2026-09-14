@@ -1,162 +1,149 @@
 import { createBlockComponent } from './create_block';
 import type { BlockNode, MarkdownBlock } from './blocks';
-import type { MarkdownEditorState, TextChange } from './state';
+import type { MarkdownEditorState } from './state';
 
+/** Fallback height for a block that has never been measured. */
 const ESTIMATED_BLOCK_HEIGHT = 60;
-const BLOCK_GAP = 16;
+/**
+ * Gap between block wrappers. Blocks have no margin of their own (styles.css
+ * keeps the spacing inside the content, where each block height measures it),
+ * so the renderer adds nothing; the arithmetic below stays as the single place
+ * to change if spacing ever moves back to the wrappers.
+ */
+const BLOCK_GAP = 0;
+/** Extra content kept mounted above and below the viewport. */
 const VIEWPORT_MARGIN = 1200;
 
 /**
- * Owns the DOM window for a block-based markdown document.
+ * Editor-facing hooks that keep the caret anchored while the window changes:
+ * the renderer captures an opaque snapshot before it touches the DOM and
+ * hands it back once the new window is in place.
+ */
+export interface RendererSyncHooks {
+  capture(): unknown;
+  restore(snapshot: unknown): void;
+}
+
+/**
+ * Owns the block DOM for a document: only the blocks around the viewport are
+ * mounted, the rest are represented by two spacers sized from remembered
+ * heights.
  *
- * The editor state remains the source of truth. This renderer only decides
- * which blocks need DOM nodes and maintains spacers for the unmounted ranges.
+ * Unchanged blocks keep their DOM nodes (they are reused, never re-created),
+ * so the caret, the selection and any open revealable survive scrolling and
+ * edits. Heights are measured once a block has been laid out and reused
+ * afterwards, which keeps the spacers — and therefore the scrollbar and
+ * `revealOffset` — accurate on documents whose blocks differ wildly in size
+ * (display math, code fences, ...).
  */
 export class VirtualBlockRenderer {
-  private readonly scroller: HTMLElement;
-  private readonly state: MarkdownEditorState;
   private root: HTMLElement | null = null;
   private frame: number | null = null;
-  private mountedRange: { first: number; last: number } | null = null;
+  private hooks: RendererSyncHooks | null = null;
+  /** Measured height per block signature (`lineStart:text`). */
+  private readonly heights = new Map<string, number>();
+  /** The raw text an element was built from, so unchanged blocks are reused. */
+  private readonly builtFrom = new WeakMap<HTMLElement, string>();
+  /** Mounted block elements, keyed by line start. */
+  private readonly mounted = new Map<number, HTMLElement>();
+  private range: { first: number; last: number } | null = null;
+  private syncing = false;
 
-  constructor(scroller: HTMLElement, state: MarkdownEditorState) {
-    this.scroller = scroller;
-    this.state = state;
-    scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
+  constructor(
+    private readonly scroller: HTMLElement,
+    private readonly state: MarkdownEditorState
+  ) {
+    this.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
   }
 
+  /** Registers the caret-preservation hooks used around DOM swaps. */
+  setSyncHooks(hooks: RendererSyncHooks | null): void {
+    this.hooks = hooks;
+  }
+
+  /** Builds the prose root and mounts the window around the current scroll. */
   render(): void {
+    this.heights.clear();
+    this.mounted.clear();
+    this.range = null;
     const root = this.createRoot();
+    this.root = root;
     this.scroller.replaceChildren(root);
-    this.mountVisible();
+    this.syncWindow(true);
   }
 
+  /** Rebuilds a single block in place (used when an edit re-renders a block). */
   renderBlock(lineStart: number): void {
     const block = this.state.getBlockAtLine(lineStart);
-    if (!block || !this.root) {
+    const current = this.mounted.get(lineStart);
+    if (!block || !current || !this.root) {
       return;
     }
+    const snapshot = this.hooks?.capture();
     const element = this.createBlockElement(block);
-    const current = this.root.querySelector<HTMLElement>(
-      `.markdown-block[data-line-start="${lineStart}"]`
-    );
-    if (current) {
-      current.replaceWith(element);
-    }
+    current.replaceWith(element);
+    this.mounted.set(lineStart, element);
+    this.rememberHeight(block, element);
+    this.updateSpacers();
+    this.refreshBlockOffsets();
+    this.hooks?.restore(snapshot);
   }
 
-  renderChanged(change: TextChange): void {
-    if (!this.root || !this.mountedRange) {
-      this.render();
-      return;
-    }
-    const oldElements = [...this.root.querySelectorAll<HTMLElement>('.markdown-block')];
-    const oldElementByIndex = new Map<number, HTMLElement>();
-    oldElements.forEach((element, index) => {
-      oldElementByIndex.set(this.mountedRange!.first + index, element);
-    });
-
-    const itemSize = ESTIMATED_BLOCK_HEIGHT + BLOCK_GAP;
-    const first = Math.min(
-      change.newBlocks.length - 1,
-      Math.floor(Math.max(0, this.scroller.scrollTop - VIEWPORT_MARGIN) / itemSize)
-    );
-    const last = Math.min(
-      change.newBlocks.length - 1,
-      Math.ceil(
-        (this.scroller.scrollTop + this.scroller.clientHeight + VIEWPORT_MARGIN) / itemSize
-      )
-    );
-    this.mountedRange = change.newBlocks.length === 0 ? null : { first, last };
-
-    const topSpacer = this.root.querySelector<HTMLElement>('[data-virtual-spacer="top"]');
-    const bottomSpacer = this.root.querySelector<HTMLElement>('[data-virtual-spacer="bottom"]');
-    if (!topSpacer || !bottomSpacer || !this.mountedRange) {
-      this.render();
-      return;
-    }
-    topSpacer.style.height = `${first * itemSize}px`;
-    bottomSpacer.style.height = `${Math.max(0, change.newBlocks.length - last - 1) * itemSize}px`;
-
-    const nextElements: HTMLElement[] = [];
-    for (let index = first; index <= last; index += 1) {
-      const block = change.newBlocks[index];
-      const oldIndex =
-        index < change.newFrom
-          ? index
-          : index >= change.newTo
-            ? index - (change.newTo - change.newFrom) + (change.oldTo - change.oldFrom)
-            : -1;
-      const existing = oldElementByIndex.get(oldIndex);
-      if (existing && (index < change.newFrom || index >= change.newTo)) {
-        this.updateBlockElement(existing, block);
-        nextElements.push(existing);
-      } else {
-        nextElements.push(this.createBlockElement(block));
-      }
-    }
-
-    const nextSet = new Set(nextElements);
-    for (const element of oldElements) {
-      if (!nextSet.has(element)) {
-        element.remove();
-      }
-    }
-    let cursor: ChildNode = bottomSpacer;
-    for (let index = nextElements.length - 1; index >= 0; index -= 1) {
-      const element = nextElements[index];
-      cursor.before(element);
-      cursor = element;
-    }
-  }
-
-  refreshBlockOffsets(): void {
+  /**
+   * Re-syncs the window after a document edit. Blocks whose source is
+   * unchanged keep their DOM; the rest are rebuilt.
+   */
+  renderChanged(): void {
     if (!this.root) {
+      this.render();
       return;
     }
-    const elements = new Map<number, HTMLElement>();
-    for (const element of this.root.querySelectorAll<HTMLElement>('.markdown-block')) {
-      const lineStart = Number(element.dataset.lineStart);
-      if (Number.isFinite(lineStart)) {
-        elements.set(lineStart, element);
+    const byLine = new Map<number, MarkdownBlock>();
+    for (const block of this.state.getBlocks()) {
+      byLine.set(block.lineStart, block);
+    }
+    for (const [lineStart, element] of [...this.mounted]) {
+      const block = byLine.get(lineStart);
+      if (!block || this.builtFrom.get(element) !== block.text) {
+        element.remove();
+        this.mounted.delete(lineStart);
       }
     }
-    for (const block of this.state.getBlocks()) {
-      elements.get(block.lineStart)?.setAttribute('data-char-start', String(block.charStart));
-    }
+    this.syncWindow(true);
   }
 
+  /**
+   * Rebuilds every mounted block. Used when the renderers' inputs changed
+   * (for example the bibliography arrived), so widgets re-read their data.
+   */
+  refresh(): void {
+    for (const [lineStart, element] of [...this.mounted]) {
+      element.remove();
+      this.mounted.delete(lineStart);
+    }
+    this.syncWindow(true);
+  }
+
+  /** Scrolls so the block containing `offset` is visible, then mounts it. */
   revealOffset(offset: number): void {
     const blocks = this.state.getBlocks();
-    const blockIndex = blocks.findIndex(
+    const index = blocks.findIndex(
       (block) => offset >= block.charStart && offset <= block.charEnd
     );
-    if (blockIndex < 0) {
+    if (index < 0) {
       return;
     }
-    const itemSize = ESTIMATED_BLOCK_HEIGHT + BLOCK_GAP;
-    this.scroller.scrollTop = Math.max(0, blockIndex * itemSize - VIEWPORT_MARGIN / 2);
-    this.mountVisible();
+    this.scroller.scrollTop = Math.max(0, this.offsetOf(index) - this.scroller.clientHeight / 3);
+    this.syncWindow(true);
   }
 
-  private createRoot(): HTMLElement {
-    const root = document.createElement('div');
-    root.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full outline-none';
-    root.tabIndex = 0;
-    this.root = root;
-    this.mountedRange = null;
-    return root;
-  }
-
-  private createBlockElement(block: MarkdownBlock): HTMLElement {
-    const node: BlockNode = { ...block, type: 'block' };
-    return createBlockComponent(node, this.state.getBlockContent(block)).element;
-  }
-
-  private updateBlockElement(element: HTMLElement, block: MarkdownBlock): void {
-    element.dataset.lineStart = String(block.lineStart);
-    element.dataset.lineEnd = String(block.lineEnd);
-    element.dataset.charStart = String(block.charStart);
+  /** Refreshes the raw character-start tag of every mounted block. */
+  refreshBlockOffsets(): void {
+    for (const block of this.state.getBlocks()) {
+      this.mounted
+        .get(block.lineStart)
+        ?.setAttribute('data-char-start', String(block.charStart));
+    }
   }
 
   private schedule(): void {
@@ -165,47 +152,220 @@ export class VirtualBlockRenderer {
     }
     this.frame = requestAnimationFrame(() => {
       this.frame = null;
-      this.mountVisible();
+      this.syncWindow(false);
     });
   }
 
-  private mountVisible(): void {
-    if (!this.root) {
+  /**
+   * Brings the mounted blocks in line with the viewport: unchanged blocks
+   * stay in place, new ones are created, far ones are dropped.
+   */
+  private syncWindow(force: boolean): void {
+    const root = this.root;
+    if (!root || this.syncing) {
       return;
     }
-    const blocks = this.state.getBlocks();
-    if (blocks.length === 0) {
-      this.root.replaceChildren();
-      return;
-    }
+    this.syncing = true;
+    try {
+      const blocks = this.state.getBlocks();
+      if (blocks.length === 0) {
+        for (const element of this.mounted.values()) {
+          element.remove();
+        }
+        this.mounted.clear();
+        this.range = { first: 0, last: -1 };
+        this.updateSpacers();
+        return;
+      }
 
-    const itemSize = ESTIMATED_BLOCK_HEIGHT + BLOCK_GAP;
-    const top = Math.max(0, this.scroller.scrollTop - VIEWPORT_MARGIN);
-    const bottom = this.scroller.scrollTop + this.scroller.clientHeight + VIEWPORT_MARGIN;
-    const first = Math.min(blocks.length - 1, Math.floor(top / itemSize));
-    const last = Math.min(blocks.length - 1, Math.ceil(bottom / itemSize));
-    if (this.mountedRange?.first === first && this.mountedRange.last === last) {
-      return;
-    }
-    this.mountedRange = { first, last };
+      const [first, last] = this.windowRange();
+      if (!force && this.range?.first === first && this.range.last === last) {
+        this.measureMounted(blocks, first, last);
+        this.updateSpacers();
+        return;
+      }
+      const snapshot = this.hooks?.capture();
+      const desired: Node[] = [this.spacer('top')];
+      const keep = new Set<number>();
+      for (let index = first; index <= last; index += 1) {
+        const block = blocks[index];
+        keep.add(block.lineStart);
+        let element = this.mounted.get(block.lineStart);
+        if (!element || this.builtFrom.get(element) !== block.text) {
+          element = this.createBlockElement(block);
+          this.mounted.set(block.lineStart, element);
+        }
+        desired.push(element);
+      }
+      desired.push(this.spacer('bottom'));
 
-    const fragment = document.createDocumentFragment();
-    fragment.appendChild(this.createSpacer(first * itemSize, 'top'));
+      for (const [lineStart, element] of [...this.mounted]) {
+        if (!keep.has(lineStart)) {
+          element.remove();
+          this.mounted.delete(lineStart);
+        }
+      }
+
+      this.reconcile(root, desired);
+      this.range = { first, last };
+      this.measureMounted(blocks, first, last);
+      this.updateSpacers();
+      this.refreshBlockOffsets();
+      this.hooks?.restore(snapshot);
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  /**
+   * Reorders/inserts only what changed: nodes already in the right position
+   * are left untouched, which keeps the caret's DOM anchors valid.
+   */
+  private reconcile(root: HTMLElement, desired: Node[]): void {
+    let cursor = root.firstChild;
+    for (const node of desired) {
+      if (node === cursor) {
+        cursor = cursor.nextSibling;
+        continue;
+      }
+      root.insertBefore(node, cursor);
+    }
+    const keep = new Set(desired);
+    while (cursor) {
+      const next = cursor.nextSibling;
+      // Only nodes this renderer created are removed: anything else living
+      // inside the prose root (the caret span, for instance) is left alone.
+      if (!keep.has(cursor) && isRendererOwned(cursor)) {
+        cursor.remove();
+      }
+      cursor = next;
+    }
+  }
+
+  private createRoot(): HTMLElement {
+    const root = document.createElement('div');
+    root.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full outline-none';
+    root.tabIndex = 0;
+    return root;
+  }
+
+  private createBlockElement(block: MarkdownBlock): HTMLElement {
+    const node: BlockNode = { ...block, type: 'block' };
+    const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
+    this.builtFrom.set(element, block.text);
+    return element;
+  }
+
+  /** Measures mounted blocks once, so the spacers use real heights. */
+  private measureMounted(blocks: readonly MarkdownBlock[], first: number, last: number): void {
     for (let index = first; index <= last; index += 1) {
       const block = blocks[index];
-      const node: BlockNode = { ...block, type: 'block' };
-      fragment.appendChild(createBlockComponent(node, this.state.getBlockContent(block)).element);
+      const element = this.mounted.get(block.lineStart);
+      if (element) {
+        this.rememberHeight(block, element);
+      }
     }
-    fragment.appendChild(
-      this.createSpacer(Math.max(0, blocks.length - last - 1) * itemSize, 'bottom')
-    );
-    this.root.replaceChildren(fragment);
   }
 
-  private createSpacer(height: number, position: 'top' | 'bottom'): HTMLElement {
+  private rememberHeight(block: MarkdownBlock, element: HTMLElement): void {
+    const height = element.offsetHeight;
+    if (height > 0) {
+      this.heights.set(blockKey(block), height);
+    }
+  }
+
+  private heightOf(block: MarkdownBlock): number {
+    return this.heights.get(blockKey(block)) ?? ESTIMATED_BLOCK_HEIGHT;
+  }
+
+  /** The document height according to the remembered/estimated block sizes. */
+  private totalHeight(): number {
+    const blocks = this.state.getBlocks();
+    if (blocks.length === 0) {
+      return 0;
+    }
+    let total = 0;
+    for (const block of blocks) {
+      total += this.heightOf(block) + BLOCK_GAP;
+    }
+    return total - BLOCK_GAP;
+  }
+
+  /** The top offset of the block at `index` in the document. */
+  private offsetOf(index: number): number {
+    const blocks = this.state.getBlocks();
+    let top = 0;
+    for (let i = 0; i < index && i < blocks.length; i += 1) {
+      top += this.heightOf(blocks[i]) + BLOCK_GAP;
+    }
+    return top;
+  }
+
+  /** The block index range that should be mounted for the current scroll. */
+  private windowRange(): [number, number] {
+    const blocks = this.state.getBlocks();
+    const top = this.scroller.scrollTop - VIEWPORT_MARGIN;
+    const bottom = this.scroller.scrollTop + this.scroller.clientHeight + VIEWPORT_MARGIN;
+    let first = -1;
+    let last = -1;
+    let cursor = 0;
+    for (let index = 0; index < blocks.length; index += 1) {
+      const height = this.heightOf(blocks[index]);
+      if (first < 0 && cursor + height >= top) {
+        first = index;
+      }
+      if (cursor <= bottom) {
+        last = index;
+      }
+      cursor += height + BLOCK_GAP;
+    }
+    return [first < 0 ? 0 : first, last < 0 ? blocks.length - 1 : last];
+  }
+
+  /** The spacer element for a position, created on first use. */
+  private spacer(position: 'top' | 'bottom'): HTMLElement {
+    const existing = this.root?.querySelector<HTMLElement>(
+      `[data-virtual-spacer="${position}"]`
+    );
+    if (existing) {
+      return existing;
+    }
     const spacer = document.createElement('div');
     spacer.dataset.virtualSpacer = position;
-    spacer.style.height = `${height}px`;
+    spacer.style.pointerEvents = 'none';
     return spacer;
   }
+
+  /** Sizes the spacers from the remembered block heights. */
+  private updateSpacers(): void {
+    const root = this.root;
+    if (!root) {
+      return;
+    }
+    const topSpacer = this.spacer('top');
+    const bottomSpacer = this.spacer('bottom');
+    if (!this.range || this.range.last < this.range.first) {
+      topSpacer.style.height = '0px';
+      bottomSpacer.style.height = '0px';
+      return;
+    }
+    const top = this.offsetOf(this.range.first);
+    const mountedHeight = this.offsetOf(this.range.last + 1) - top;
+    const bottom = Math.max(0, this.totalHeight() - top - mountedHeight);
+    topSpacer.style.height = `${Math.round(top)}px`;
+    bottomSpacer.style.height = `${Math.round(bottom)}px`;
+  }
+}
+
+/** Whether a node inside the prose root belongs to the renderer. */
+function isRendererOwned(node: Node): boolean {
+  if (!(node instanceof HTMLElement)) {
+    return false;
+  }
+  return node.classList.contains('markdown-block') || node.hasAttribute('data-virtual-spacer');
+}
+
+/** Identity of a block's rendered source (its height cache key). */
+function blockKey(block: MarkdownBlock): string {
+  return `${block.lineStart}:${block.text}`;
 }
