@@ -91,6 +91,11 @@ the same edit also inserts the `\n` that keeps the next block separate
 line on both sides of a paragraph. One keystroke stays one undo step, and the
 layout does not shift: the line already occupied a line's height.
 
+The inverse holds too: deleting the last character of a line that
+materialisation created also removes the newline it added, so typing on an
+empty line and deleting again leaves the document exactly as it was, instead
+of leaving an extra blank line behind.
+
 ### 2.3 Block boundaries
 
 A blank-line run that yields at least one empty paragraph is a block boundary,
@@ -113,7 +118,9 @@ implemented for blank list items.
 - Clicking an empty paragraph places the caret on it.
 - Clicking a separator margin places the caret at the nearest line edge (the top
   half of the margin → end of the previous block, the bottom half → start of the
-  next) instead of clearing the caret.
+  next) instead of clearing the caret. The distance is measured to the
+  neighbouring *lines*, not to the block boxes: a block box contains its own
+  margins, so adjacent boxes touch and their edges cannot be told apart.
 - Clicking below the last line places the caret at the end of the document.
 
 ### 2.6 Mapping

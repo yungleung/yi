@@ -30,7 +30,7 @@ const probe = installing || reloading ? null : readFileSync(argument, 'utf8');
 // bridge's budget while the page is still settling. The wrapper stashes the
 // result, so a timed-out probe is still readable a moment later.
 const wrappedProbe = probe
-  ? `(async () => { window.__probeResult = undefined; window.__probeResult = await (\n${probe}\n); return window.__probeResult; })()`
+  ? `(async () => { window.__probeResult = undefined; window.__probeSteps = undefined; window.__probeResult = await (\n${probe}\n); return window.__probeResult; })()`
   : null;
 
 async function connect() {
@@ -94,6 +94,9 @@ if (reloading) {
   process.exit(0);
 }
 
+// Clear any earlier probe's stash first, so a timed-out run can never be
+// mistaken for the previous one's result.
+await call('window.__probeResult = undefined; window.__probeSteps = undefined; null');
 const reply = await call(wrappedProbe);
 if (reply.success) {
   console.log(JSON.stringify(reply.data, null, 2));
@@ -102,9 +105,9 @@ if (reply.success) {
 
 // The page keeps working after the bridge gives up; poll for the stashed
 // result while it settles.
-for (let attempt = 0; attempt < 3; attempt += 1) {
-  await sleep(3000);
-  const recovered = await call('window.__probeResult ?? null', 8000);
+for (let attempt = 0; attempt < 6; attempt += 1) {
+  await sleep(4000);
+  const recovered = await call('window.__probeResult ?? window.__probeSteps ?? null', 8000);
   if (recovered.success && recovered.data !== null && recovered.data !== undefined) {
     console.log(JSON.stringify(recovered.data, null, 2));
     console.log('(recovered after the bridge timed out; the probe had already run)');
