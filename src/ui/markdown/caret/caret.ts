@@ -229,6 +229,16 @@ function placeCaret(
   caret.style.height = `${rect.height}px`;
 }
 
+/**
+ * Re-creates the caret element when a DOM swap (a virtualized window change)
+ * dropped it, leaving the logical range untouched.
+ */
+export function ensureCaretRendered(): void {
+  if (activeRange && (!caretElement || !caretElement.isConnected)) {
+    renderCaretNow();
+  }
+}
+
 /** Repositions the caret to the current logical position. */
 export function refreshCaretPosition(): void {
   positionCaret();
@@ -391,10 +401,11 @@ function ensureListeners(): void {
   }
   listenersAttached = true;
 
-  // Clicking anywhere outside an editable markdown node clears the caret.
+  // Clicking outside the editable document clears the caret; clicks inside it
+  // are resolved to a line edge by the editor.
   document.addEventListener('click', (event) => {
     const target = event.target;
-    if (target instanceof Element && target.closest('.markdown-node')) {
+    if (target instanceof Element && target.closest('.markdown-scroller')) {
       return;
     }
     hideCaret();
