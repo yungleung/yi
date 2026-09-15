@@ -108,12 +108,59 @@ export function continueListItem(
   line: { start: number; end: number },
   offsets: { from: number; to: number }
 ): boolean {
-  const insertion = itemContinuation(context.state.getText().slice(line.start, line.end));
+  const text = context.state.getText();
+  const insertion = itemContinuation(text.slice(line.start, line.end));
   if (insertion === null) {
     return false;
   }
-  applyEdit(context, offsets.from, offsets.to, insertion);
+  // The new item is a sibling of this one, so it belongs after the item's own
+  // subtree: markdown gives indented lines to the item directly above them, so
+  // inserting before a nested list would move it under the new item.
+  const afterSubtree = offsets.from === line.end && hasChildBlock(text, line);
+  const from = afterSubtree ? itemSubtreeEnd(text, line) : offsets.from;
+  applyEdit(context, from, offsets.to, insertion);
   return true;
+}
+
+/** A block start that is indented deeper than the item: one of its children. */
+const CHILD_BLOCK = /^[ \t]+(?:[-+*]|\d+[.)])\s|^[ \t]+(?:>|```|~~~|\$\$)/;
+
+/**
+ * Whether a child block follows the item's line. An indented line of plain
+ * text is the item's own continuation, not a child, so Enter at the end of a
+ * soft-broken line still splits the item's text where the caret is.
+ */
+export function hasChildBlock(text: string, line: { start: number; end: number }): boolean {
+  const next = text.slice(line.end + 1).split('\n')[0] ?? '';
+  return CHILD_BLOCK.test(next);
+}
+
+/**
+ * The offset just past the last line of the item that starts at `line`,
+ * including its own indented children (and blank lines inside them). A line at
+ * the same or a shallower indentation ends the item.
+ */
+export function itemSubtreeEnd(text: string, line: { start: number; end: number }): number {
+  const indent = /^[ \t]*/.exec(text.slice(line.start, line.end))![0].length;
+  const deeper = (candidate: string): boolean =>
+    candidate.trim() !== '' && /^[ \t]*/.exec(candidate)![0].length > indent;
+  let end = line.end;
+  while (end < text.length) {
+    const breakAt = text.indexOf('\n', end + 1);
+    const lineEnd = breakAt < 0 ? text.length : breakAt;
+    const next = text.slice(end + 1, lineEnd);
+    if (deeper(next)) {
+      end = lineEnd;
+      continue;
+    }
+    // A blank line belongs to the item only when a deeper line follows it.
+    if (next.trim() === '' && deeper(text.slice(lineEnd + 1).split('\n')[0] ?? '')) {
+      end = lineEnd;
+      continue;
+    }
+    break;
+  }
+  return end;
 }
 
 /** The insert that turns the empty line at `offset` into a paragraph. */

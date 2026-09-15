@@ -38,8 +38,15 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
 const file = join(directory, 'blank_lines.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { paragraphSplit, paragraphStart, emptyLineInsertion, characterRemoval, itemContinuation } =
-  await import(file);
+const {
+  paragraphSplit,
+  paragraphStart,
+  emptyLineInsertion,
+  characterRemoval,
+  itemContinuation,
+  itemSubtreeEnd,
+  hasChildBlock
+} = await import(file);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
@@ -150,6 +157,40 @@ check(
   'a paragraph that already has an empty line above gains nothing',
   JSON.stringify(paragraphStart('alpha\n\n\nbeta\n', 8, true)),
   JSON.stringify({ insert: '', caret: 7 })
+);
+
+// A new sibling item goes after the item's own subtree, so a nested list stays
+// with the item it belongs to.
+const nested = '- first\n- second\n  - child\n  - \n- third\n';
+check(
+  'the item subtree ends after its nested lines',
+  itemSubtreeEnd(nested, { start: 8, end: 16 }),
+  '- first\n- second\n  - child\n  - '.length
+);
+check(
+  'a sibling on the same level ends the item',
+  itemSubtreeEnd('- first\n- second\n', { start: 0, end: 7 }),
+  7
+);
+check(
+  'a blank line inside a nested list stays in the subtree',
+  itemSubtreeEnd('- first\n\n  - child\n- third\n', { start: 0, end: 7 }),
+  '- first\n\n  - child'.length
+);
+check(
+  'a nested list counts as a child block',
+  hasChildBlock('- second\n  - child\n', { start: 0, end: 8 }),
+  true
+);
+check(
+  'an indented continuation line is not a child block',
+  hasChildBlock('- second\n  continuation\n', { start: 0, end: 8 }),
+  false
+);
+check(
+  'a sibling item is not a child block',
+  hasChildBlock('- second\n- third\n', { start: 0, end: 8 }),
+  false
 );
 
 console.log(failures === 0 ? 'all line rules hold' : `${failures} rule(s) failed`);
