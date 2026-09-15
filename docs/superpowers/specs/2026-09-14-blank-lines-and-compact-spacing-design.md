@@ -76,9 +76,9 @@ paragraph, and carries a placeholder element so the caret can be placed on it
 | caret | effect |
 | --- | --- |
 | caret at the block's end (`offset === block.charEnd`), nothing but separators after it | insert one `\n`; the run after the block grows by one, so a new empty paragraph appears; caret moves onto the first empty paragraph after the block |
-| inside a block (mid-line, or at a line end that is not the block's end) | insert the newlines needed for a paragraph break (`2` when the next character is not a newline, `1` when it is); caret stays before the text that follows |
+| inside a block (mid-line, or at a line end that is not the block's end) | insert the newlines still missing from a paragraph break, counting the newlines on **both** sides of the caret: `2` in the middle of a line, `1` when a newline already sits before or after the caret, `0` when a whole break is already there; the caret lands after the break, before the text that follows |
 | on an empty paragraph line | insert one `\n` at the caret: the line splits in two, caret stays on the first |
-| on a blank list item's line | clear the item's marker (the line becomes blank), then insert a newline if the run that results still has no empty paragraph; the list ends there (§2.3) and the caret lands on the empty paragraph that appears in the item's place |
+| on a blank list item's line | clear the item's marker (the line becomes blank) and add the second newline **only when a line of content follows**: a blank line already below the item is reused rather than added to, so the file gains nothing, and the item's own line becomes the empty paragraph. The list ends there (§2.3) and the caret lands on the empty paragraph that appears in the item's place |
 
 `Enter` inside fenced code, display math or indented code still inserts a single
 newline inside the block.

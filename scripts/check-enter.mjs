@@ -38,14 +38,24 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
 const file = join(directory, 'blank_lines.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { paragraphBreak, emptyLineInsertion, characterRemoval, itemContinuation } = await import(file);
+const { paragraphSplit, emptyLineInsertion, characterRemoval, itemContinuation } = await import(file);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
 
 const cases = [
-  ['a paragraph break needs two newlines', paragraphBreak('alpha beta\n', 5), '\n\n'],
-  ['a break reuses a newline that is already there', paragraphBreak('a\nb', 1), '\n'],
+  ['a paragraph break needs two newlines', paragraphSplit('alpha beta\n', 5).insert, '\n\n'],
+  ['a break reuses a newline that is already there', paragraphSplit('a\nb', 1).insert, '\n'],
+  [
+    'a break before a line counts the newline in front of it',
+    paragraphSplit('a\nb', 2).insert,
+    '\n'
+  ],
+  [
+    'a break that is already there inserts nothing',
+    paragraphSplit('a\n\nb', 3).insert,
+    ''
+  ],
   ['typing between blocks takes a newline with it', emptyLineInsertion('a\n\n\nb', 3, 'x'), 'x\n'],
   ['typing at the end of the file does not', emptyLineInsertion('a\n\n', 2, 'x'), 'x'],
   ['typing on a leading empty line takes a newline', emptyLineInsertion('\na', 0, 'x'), 'x\n']

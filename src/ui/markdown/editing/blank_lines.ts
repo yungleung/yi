@@ -14,10 +14,33 @@ import { lineSpanAt } from '../list_lines';
 import { applyEdit, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';
 
-/** The newlines `Enter` inserts to make a paragraph break at `offset`. */
-export function paragraphBreak(text: string, offset: number): string {
-  const following = /^\n+/.exec(text.slice(offset))?.[0].length ?? 0;
-  return '\n'.repeat(Math.max(0, 2 - following));
+/** The newlines immediately before an offset. */
+function newlinesBefore(text: string, offset: number): number {
+  return /(\n+)$/.exec(text.slice(0, offset))?.[1].length ?? 0;
+}
+
+/** The newlines immediately after an offset. */
+function newlinesAfter(text: string, offset: number): number {
+  return /^\n+/.exec(text.slice(offset))?.[0].length ?? 0;
+}
+
+/**
+ * The edit `Enter` makes inside a block: the newlines to insert, and where the
+ * caret lands (after the whole break, at the text that follows it).
+ *
+ * A paragraph break is two newlines between the two halves. Both sides count:
+ * a newline already sitting before the caret — the caret at the start of a
+ * line — is half the break already, so only one is inserted, and a break that
+ * is already there inserts nothing.
+ */
+export function paragraphSplit(
+  text: string,
+  offset: number
+): { insert: string; caret: number } {
+  const before = newlinesBefore(text, offset);
+  const after = newlinesAfter(text, offset);
+  const insert = '\n'.repeat(Math.max(0, 2 - before - after));
+  return { insert, caret: offset + insert.length + after };
 }
 
 /** A list marker, its indentation, and an optional task marker. */
@@ -75,8 +98,8 @@ export function splitParagraph(
   context: EditorContext,
   offsets: { from: number; to: number }
 ): boolean {
-  const breakText = paragraphBreak(context.state.getText(), offsets.from);
-  applyEdit(context, offsets.from, offsets.to, breakText, offsets.from + 2);
+  const split = paragraphSplit(context.state.getText(), offsets.from);
+  applyEdit(context, offsets.from, offsets.to, split.insert, split.caret);
   return true;
 }
 
@@ -91,46 +114,31 @@ export function exitBlankItem(
 ): boolean {
   const text = context.state.getText();
   const cleared = `${text.slice(0, line.start)}${text.slice(line.end)}`;
-  const runFrom = blankRunStart(cleared, line.start);
-  const runTo = blankRunEnd(cleared, line.start);
-  const betweenBlocks =
-    cleared.slice(0, runFrom).trim() !== '' && cleared.slice(runTo).trim() !== '';
-  // One blank line is a separator; a second one is the paragraph the author
-  // asked for.
-  const replacement = betweenBlocks ? '\n' : '';
+  // The emptied line's own newline is the first blank line; a second one is
+  // the empty paragraph the author asked for, and one only has to be added
+  // when a line of content follows. When a blank line is already there — the
+  // usual case of a blank item above a heading — it is reused instead of
+  // adding another.
+  const replacement = contentFollowsTheLine(cleared, line.start) ? '\n' : '';
   applyEdit(context, line.start, line.end, replacement, (state) => {
     return state.firstEmptyParagraphAfter(line.start) ?? line.start;
   });
   return true;
 }
 
-/** The start of the blank run the line at `offset` belongs to. */
-function blankRunStart(text: string, offset: number): number {
-  let start = offset;
-  while (start > 0) {
-    const previousBreak = text.lastIndexOf('\n', start - 2);
-    if (previousBreak < 0 || text.slice(previousBreak + 1, start - 1).trim() !== '') {
-      break;
-    }
-    start = previousBreak + 1;
+/**
+ * Whether a line of content follows the emptied line at `offset`. The emptied
+ * line needs an extra newline only then; a blank line (or the end of the file)
+ * already provides the paragraph.
+ */
+function contentFollowsTheLine(text: string, offset: number): boolean {
+  const lineBreak = text.indexOf('\n', offset);
+  if (lineBreak < 0) {
+    return false;
   }
-  return start;
-}
-
-/** The end of the blank run the line at `offset` belongs to. */
-function blankRunEnd(text: string, offset: number): number {
-  let end = offset;
-  while (end < text.length) {
-    const nextBreak = text.indexOf('\n', end);
-    if (nextBreak < 0) {
-      break;
-    }
-    if (text.slice(end, nextBreak).trim() !== '') {
-      break;
-    }
-    end = nextBreak + 1;
-  }
-  return end;
+  const nextStart = lineBreak + 1;
+  const nextBreak = text.indexOf('\n', nextStart);
+  return text.slice(nextStart, nextBreak < 0 ? text.length : nextBreak).trim() !== '';
 }
 
 /** Typing (or pasting) on an empty paragraph: the text needs its own line. */
