@@ -99,6 +99,11 @@ function renderCaretDeferred(): void {
       caretTimeout = null;
     }
     renderCaretNow();
+    // An edit can insert a block that this frame's layout has not placed yet
+    // (a `content-visibility: auto` block can still be skipped), which left
+    // the caret a line off until some later measurement. One more frame
+    // re-anchors it to the settled layout.
+    requestAnimationFrame(() => positionCaret());
   });
   caretTimeout = window.setTimeout(() => {
     if (caretFrame !== null) {
