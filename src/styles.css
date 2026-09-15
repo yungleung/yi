@@ -236,6 +236,13 @@ body {
   margin-bottom: var(--md-space-paragraph);
 }
 
+/* A footnote definition is a block like any other, so it ends with the same
+   skip a paragraph does: the spacing now comes from the content, and without
+   this the line after a footnote sat right against it. */
+.prose-tight .markdown-footnote {
+  margin-bottom: var(--md-space-paragraph);
+}
+
 /* Frontmatter blocks render as their raw YAML/TOML source. */
 .markdown-frontmatter {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

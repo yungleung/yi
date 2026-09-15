@@ -9,7 +9,7 @@ export class FootnoteDefinition extends EditableNodeComponent {
       'footnoteDefinition',
       node,
       document.createElement('div'),
-      'mt-3 text-sm flex items-start gap-2'
+      'markdown-footnote mt-3 text-sm flex items-start gap-2'
     );
 
     const id = String(node.identifier ?? node.label ?? 'note');

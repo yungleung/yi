@@ -99,11 +99,19 @@ function renderCaretDeferred(): void {
       caretTimeout = null;
     }
     renderCaretNow();
-    // An edit can insert a block that this frame's layout has not placed yet
-    // (a `content-visibility: auto` block can still be skipped), which left
-    // the caret a line off until some later measurement. One more frame
-    // re-anchors it to the settled layout.
-    requestAnimationFrame(() => positionCaret());
+    // This frame's measurement can be stale — an edit can insert a block that
+    // layout has not placed yet, a `content-visibility: auto` block can still
+    // be skipped — so the caret is neither trusted nor scrolled from it. One
+    // more frame re-anchors it, and scrolls, against the settled layout;
+    // scrolling from the stale measurement moved the page when the caret had
+    // not moved at all.
+    renderCaretNow(false);
+    requestAnimationFrame(() => {
+      positionCaret();
+      if (caretElement) {
+        scrollCaretIntoView(caretElement);
+      }
+    });
   });
   caretTimeout = window.setTimeout(() => {
     if (caretFrame !== null) {
@@ -163,7 +171,7 @@ function clearPendingNativeSelection(): void {
   }
 }
 
-function renderCaretNow(): void {
+function renderCaretNow(scroll = true): void {
   if (!activeRange) {
     removeCaretElement();
     return;
@@ -194,7 +202,9 @@ function renderCaretNow(): void {
   }
   placeCaret(caret, host, rect);
   ensureLayoutWatcher(host);
-  scrollCaretIntoView(caret);
+  if (scroll) {
+    scrollCaretIntoView(caret);
+  }
 }
 
 /**
@@ -240,7 +250,11 @@ function placeCaret(
  */
 export function ensureCaretRendered(): void {
   if (activeRange && (!caretElement || !caretElement.isConnected)) {
-    renderCaretNow();
+    // Called from the renderer's swap hook, where the DOM is mid-reconcile:
+    // the caret span has to come back, but scrolling from a measurement taken
+    // here moved the page to a position the caret never occupied. The deferred
+    // pass scrolls once the layout has settled.
+    renderCaretNow(false);
   }
 }
 
