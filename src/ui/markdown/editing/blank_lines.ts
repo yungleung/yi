@@ -11,7 +11,7 @@
 import type { MarkdownBlock } from '../blocks';
 import { isEmptyParagraphLine } from '../blank_lines';
 import { lineSpanAt } from '../list_lines';
-import { applyEdit, type EditorContext } from './context';
+import { applyEdit, restoreCaret, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';
 
 /** The newlines immediately before an offset. */
@@ -41,6 +41,48 @@ export function paragraphSplit(
   const after = newlinesAfter(text, offset);
   const insert = '\n'.repeat(Math.max(0, 2 - before - after));
   return { insert, caret: offset + insert.length + after };
+}
+
+/**
+ * The edit `Enter` makes at the start of a block: give it one empty paragraph
+ * above, by growing the run in front of it just enough.
+ *
+ * A run between two blocks costs three newlines — the separator plus the
+ * paragraph — so one newline is added when the separator is already there, two
+ * when the block follows another block with no blank line between them (right
+ * after a code fence, say), and none when the paragraph is already there. At
+ * the top of a file no separator is needed, so a single newline is the
+ * paragraph.
+ *
+ * The caret lands on the empty line adjacent to the paragraph — the line the
+ * author is about to fill in.
+ */
+export function paragraphStart(
+  text: string,
+  offset: number,
+  hasBlockBefore: boolean
+): { insert: string; caret: number } {
+  const before = newlinesBefore(text, offset);
+  const needed = hasBlockBefore ? 3 : 1;
+  const insert = '\n'.repeat(Math.max(0, needed - before));
+  return { insert, caret: Math.max(0, offset + insert.length - 1) };
+}
+
+/** `Enter` at the start of a block: add an empty paragraph above it. */
+export function startEmptyParagraphAbove(
+  context: EditorContext,
+  block: MarkdownBlock,
+  offsets: { from: number; to: number }
+): boolean {
+  const hasBlockBefore = context.state.getBlocks().indexOf(block) > 0;
+  const start = paragraphStart(context.state.getText(), offsets.from, hasBlockBefore);
+  if (start.insert.length === 0) {
+    // The paragraph above is already there: just move onto it.
+    restoreCaret(context, start.caret);
+    return true;
+  }
+  applyEdit(context, offsets.from, offsets.to, start.insert, start.caret);
+  return true;
 }
 
 /** A list marker, its indentation, and an optional task marker. */

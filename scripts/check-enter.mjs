@@ -38,7 +38,8 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
 const file = join(directory, 'blank_lines.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { paragraphSplit, emptyLineInsertion, characterRemoval, itemContinuation } = await import(file);
+const { paragraphSplit, paragraphStart, emptyLineInsertion, characterRemoval, itemContinuation } =
+  await import(file);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
@@ -127,6 +128,29 @@ check(
 );
 check('a blank item does not continue the list', JSON.stringify(itemContinuation('- ')), 'null');
 check('plain text does not continue a list', JSON.stringify(itemContinuation('text')), 'null');
+
+// Enter at the start of a paragraph gives it one empty line above.
+const startMidDocument = paragraphStart('alpha\n\nbeta\n', 7, true);
+check(
+  'a paragraph after its separator gains one newline',
+  JSON.stringify(startMidDocument),
+  JSON.stringify({ insert: '\n', caret: 7 })
+);
+check(
+  'a block right after another block gains two',
+  JSON.stringify(paragraphStart('```\ncode\n```\npara\n', 13, true)),
+  JSON.stringify({ insert: '\n\n', caret: 14 })
+);
+check(
+  'the first paragraph of a file gains one',
+  JSON.stringify(paragraphStart('beta\n', 0, false)),
+  JSON.stringify({ insert: '\n', caret: 0 })
+);
+check(
+  'a paragraph that already has an empty line above gains nothing',
+  JSON.stringify(paragraphStart('alpha\n\n\nbeta\n', 8, true)),
+  JSON.stringify({ insert: '', caret: 7 })
+);
 
 console.log(failures === 0 ? 'all line rules hold' : `${failures} rule(s) failed`);
 process.exitCode = failures === 0 ? 0 : 1;

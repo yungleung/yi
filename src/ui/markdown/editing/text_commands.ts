@@ -13,6 +13,7 @@ import {
   exitBlankItem,
   materializeInsertion,
   splitParagraph,
+  startEmptyParagraphAbove,
   startEmptyParagraph
 } from './blank_lines';
 import {
@@ -108,6 +109,11 @@ export function insertNewline(context: EditorContext): boolean {
   }
   if (continueListItem(context, lineSpanAt(source, offsets.from), offsets)) {
     return true;
+  }
+  // The start of a block gets an empty paragraph above it, the mirror of the
+  // end of a block getting one below.
+  if (offsets.from === block.charStart) {
+    return startEmptyParagraphAbove(context, block, offsets);
   }
   if (offsets.from >= block.charEnd) {
     return startEmptyParagraph(context, block, offsets);
