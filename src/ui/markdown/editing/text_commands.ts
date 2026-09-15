@@ -8,6 +8,7 @@
 import { deleteBlankItem } from './blank_item';
 import {
   characterRemoval,
+  continueListItem,
   deleteEmptyParagraph,
   exitBlankItem,
   materializeInsertion,
@@ -23,7 +24,7 @@ import {
   type EditorContext
 } from './context';
 import { isRawRendered } from '../blocks';
-import { blankItemLineAt } from '../list_lines';
+import { blankItemLineAt, lineSpanAt } from '../list_lines';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -100,9 +101,13 @@ export function insertNewline(context: EditorContext): boolean {
     applyEdit(context, offsets.from, offsets.to, '\n');
     return true;
   }
-  const item = blankItemLineAt(context.state.getText(), offsets.from);
+  const source = context.state.getText();
+  const item = blankItemLineAt(source, offsets.from);
   if (item) {
     return exitBlankItem(context, item);
+  }
+  if (continueListItem(context, lineSpanAt(source, offsets.from), offsets)) {
+    return true;
   }
   if (offsets.from >= block.charEnd) {
     return startEmptyParagraph(context, block, offsets);

@@ -20,6 +20,37 @@ export function paragraphBreak(text: string, offset: number): string {
   return '\n'.repeat(Math.max(0, 2 - following));
 }
 
+/** A list marker, its indentation, and an optional task marker. */
+const ITEM_LINE = /^(\s*(?:[-+*]|\d+[.)])\s+)(?:(\[[ xX]\])\s+)?/;
+
+/**
+ * What `Enter` inserts to continue a list item, or null when the line is not
+ * one. The new item keeps the marker and indentation of the item above it; a
+ * task item continues unchecked, as every editor's list does.
+ */
+export function itemContinuation(lineText: string): string | null {
+  const match = ITEM_LINE.exec(lineText);
+  if (!match || lineText.slice(match[0].length).trim() === '') {
+    // A blank item is handled by `exitBlankItem`: Enter there ends the list.
+    return null;
+  }
+  return `\n${match[1]}${match[2] ? '[ ] ' : ''}`;
+}
+
+/** `Enter` inside a list item: start a new item of the same kind below. */
+export function continueListItem(
+  context: EditorContext,
+  line: { start: number; end: number },
+  offsets: { from: number; to: number }
+): boolean {
+  const insertion = itemContinuation(context.state.getText().slice(line.start, line.end));
+  if (insertion === null) {
+    return false;
+  }
+  applyEdit(context, offsets.from, offsets.to, insertion);
+  return true;
+}
+
 /** The insert that turns the empty line at `offset` into a paragraph. */
 export function emptyLineInsertion(text: string, offset: number, inserted: string): string {
   const lineEnd = text.indexOf('\n', offset);

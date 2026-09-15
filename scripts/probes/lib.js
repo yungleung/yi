@@ -27,11 +27,19 @@ window.__t = (() => {
 
   /** Loads a document into the editor. */
   const load = async (markdown) => {
-    await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+    // The emit's promise can hang when the app falls back to its slower IPC
+    // path, so wait for it with a bound instead of awaiting it forever.
+    const before = window.__opened ?? 0;
+    void window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
       event: 'document_opened',
       payload: markdown
+    }).then(() => {
+      window.__opened = (window.__opened ?? 0) + 1;
     });
-    await sleep(400);
+    for (let attempt = 0; attempt < 60 && (window.__opened ?? 0) === before; attempt += 1) {
+      await sleep(50);
+    }
+    await sleep(250);
   };
 
   const key = (name) =>
@@ -91,6 +99,15 @@ window.__t = (() => {
       .filter((block) => block.querySelector('.markdown-empty-line-placeholder'))
       .map((block) => ({ lineStart: Number(block.dataset.lineStart), ...rectOf(block) }));
 
+  /**
+   * Publishes a probe's partial results, so a probe that outlives the bridge's
+   * budget still reports everything it managed to measure.
+   */
+  const report = (value) => {
+    window.__probeSteps = value;
+    return value;
+  };
+
   return {
     prose,
     scroller,
@@ -105,6 +122,7 @@ window.__t = (() => {
     styles,
     gaps,
     emptyLines,
+    report,
     sleep
   };
 })();

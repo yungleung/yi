@@ -38,7 +38,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
 const file = join(directory, 'blank_lines.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { paragraphBreak, emptyLineInsertion, characterRemoval } = await import(file);
+const { paragraphBreak, emptyLineInsertion, characterRemoval, itemContinuation } = await import(file);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
@@ -102,6 +102,21 @@ check(
   JSON.stringify(characterRemoval('hello', 2, 3)),
   JSON.stringify({ from: 2, to: 3 })
 );
+
+// Enter inside a list item starts a sibling item of the same kind.
+check('a bullet item continues with a bullet', JSON.stringify(itemContinuation('- item')), JSON.stringify('\n- '));
+check(
+  'an indented ordered item keeps its marker and indentation',
+  JSON.stringify(itemContinuation('  2. two')),
+  JSON.stringify('\n  2. ')
+);
+check(
+  'a task item continues unchecked',
+  JSON.stringify(itemContinuation('- [x] done')),
+  JSON.stringify('\n- [ ] ')
+);
+check('a blank item does not continue the list', JSON.stringify(itemContinuation('- ')), 'null');
+check('plain text does not continue a list', JSON.stringify(itemContinuation('text')), 'null');
 
 console.log(failures === 0 ? 'all line rules hold' : `${failures} rule(s) failed`);
 process.exitCode = failures === 0 ? 0 : 1;
