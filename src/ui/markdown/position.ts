@@ -162,19 +162,56 @@ function textOffsetInElement(
   return null;
 }
 
-/** Maps a rendered-text offset inside a block back to a document offset. */
+/**
+ * Whether a node's raw source is wider than what it renders to: a link, a
+ * citation, a wikilink, math, an image, a break or a formatting span all hide
+ * their markers. Containers are excluded — a list item's raw range starts at
+ * its marker, which is not where a caret at the item's start belongs.
+ */
+function hasHiddenMarkers(node: RootContent, block: MarkdownBlock): boolean {
+  if (node.type === 'list' || node.type === 'listItem' || node.type === 'blockquote') {
+    return false;
+  }
+  const range = nodeRawRange(node, block);
+  return range !== null && range.end - range.start > renderedLength(node);
+}
+
+/**
+ * Maps a rendered-text offset inside a block back to a document offset.
+ *
+ * A rendered offset that sits exactly on the edge of a node with hidden
+ * markers is that node's raw edge: the caret beside a citation, a wikilink,
+ * math or a link belongs at the start or the end of its source rather than at
+ * an offset guessed from the rendered length, which is what lets a selection
+ * grown from such a boundary cover the whole source. Offsets strictly inside a
+ * node keep the approximation.
+ */
 function mapRenderedOffset(
   children: RootContent[],
   block: MarkdownBlock,
   renderedOffset: number
 ): number | null {
   let acc = 0;
+  let last: RootContent | null = null;
   for (const child of children) {
+    if (renderedOffset <= acc && hasHiddenMarkers(child, block)) {
+      const start = rawStartOf(child, block);
+      if (start !== null) {
+        return start;
+      }
+    }
     const mapped = mapNode(child, block, renderedOffset, acc);
     if (mapped !== null) {
       return mapped;
     }
     acc += renderedLength(child);
+    last = child;
+  }
+  if (last && renderedOffset === acc && hasHiddenMarkers(last, block)) {
+    const range = nodeRawRange(last, block);
+    if (range) {
+      return range.end;
+    }
   }
   return null;
 }

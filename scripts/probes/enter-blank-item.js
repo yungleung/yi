@@ -10,6 +10,7 @@
     caretBeforeEnter: caret,
     after: await t.raw(),
     emptyLines: t.emptyLines(),
+    caretAfterEnter: t.caretRect(),
     lists: t.prose().querySelectorAll('ul').length
   };
 })()
