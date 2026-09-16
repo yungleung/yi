@@ -10,6 +10,9 @@
  *   node scripts/tauri-probe.mjs --install
  *   node scripts/tauri-probe.mjs scripts/probes/jump-report.js
  *
+ * The flow it follows is the reported one: scroll to the end of the document
+ * first, come back to the footnote, then press Enter.
+ *
  * How to read it:
  * - `topSpacer` changing across the edit → the spacer heights moved the
  *   content (a placeholder height replaced by a measured one);
@@ -45,22 +48,18 @@
   }
   out.target = target.textContent.slice(0, 40);
 
-  // Scroll down to it the way a reader would: in steps, so the blocks on the
-  // way are mounted and measured.
-  let steps = 0;
-  while (steps < 40) {
-    const view = scroller.getBoundingClientRect();
-    const rect = target.getBoundingClientRect();
-    if (rect.top > view.top + 40 && rect.bottom < view.bottom - 40) {
-      break;
-    }
-    const step = Math.max(80, Math.round(scroller.clientHeight / 2));
-    scroller.scrollTop = rect.bottom < view.bottom ? scroller.scrollTop - step : scroller.scrollTop + step;
-    await t.sleep(50);
-    steps += 1;
-  }
-  await t.sleep(250);
-  out.scrolled = { steps, ...geometry() };
+  const targetY = () =>
+    Math.round(target.getBoundingClientRect().top - scroller.getBoundingClientRect().top);
+
+  // 1. The end of the document first, as the reader did.
+  scroller.scrollTop = scroller.scrollHeight;
+  await t.sleep(500);
+  out.atEnd = { ...geometry(), targetY: targetY() };
+
+  // 2. Then back to the footnote.
+  scroller.scrollTop = Math.round(scroller.scrollTop + targetY() - 200);
+  await t.sleep(500);
+  out.backAtTarget = { ...geometry(), targetY: targetY() };
 
   const node = t.textNodesIn(target).find((n) => n.data.length > 4);
   if (!node) {
@@ -80,8 +79,6 @@
   );
   await t.sleep(250);
 
-  const targetY = () =>
-    Math.round(target.getBoundingClientRect().top - scroller.getBoundingClientRect().top);
   out.before = { ...geometry(), targetY: targetY() };
   t.key('Enter');
   await t.sleep(500);
