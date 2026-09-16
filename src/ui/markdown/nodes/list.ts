@@ -10,62 +10,129 @@ export class List extends EditableNodeComponent {
   }
 }
 
+/** The marker-only content of a task item with nothing after it (`[ ]`). */
+const MARKER_ONLY = /^\[([ xX])\]$/;
+
 /** Renders a `listItem` node, including GFM task-list checkboxes. */
 export class ListItem extends EditableNodeComponent {
   constructor(node: AstListItem) {
     super('listItem', node, document.createElement('li'));
 
-    if (typeof node.checked !== 'boolean') {
-      appendChildren(this.element, node.children);
-      const paragraph = node.children.find((child) => child.type === 'paragraph');
-      if (paragraph?.type === 'paragraph' && paragraph.children.length === 0) {
-        const placeholder = document.createElement('span');
-        placeholder.textContent = '\u00a0';
-        placeholder.dataset.textFrom = String(
-          ((node as { position?: { start: { offset?: number } } }).position?.start.offset ?? 0) + 2
-        );
-        placeholder.className = 'markdown-list-placeholder';
-        this.element.querySelector('p')?.appendChild(placeholder);
-      }
+    const markerOnly = markerOnlyChecked(node);
+    const checked = typeof node.checked === 'boolean' ? node.checked : markerOnly;
+    if (checked === null) {
+      this.renderPlainItem(node);
+    } else {
+      this.renderTaskItem(node, checked, markerOnly !== null);
+    }
+  }
+
+  /** A regular item: its children, plus a placeholder when it has no content. */
+  private renderPlainItem(node: AstListItem): void {
+    appendChildren(this.element, node.children);
+    const paragraph = node.children.find((child) => child.type === 'paragraph');
+    const emptyParagraph = paragraph?.type === 'paragraph' && paragraph.children.length === 0;
+    if (paragraph && !emptyParagraph) {
       return;
     }
+    const placeholder = this.placeholder(node, false);
+    if (emptyParagraph) {
+      this.element.querySelector('p')?.appendChild(placeholder);
+    } else {
+      // `- ` with nothing after the marker: the item is a bare line, which
+      // still needs somewhere for the caret to sit and text to be typed.
+      this.element.appendChild(placeholder);
+    }
+  }
 
+  /** A task item: a checkbox followed by the item's content. */
+  private renderTaskItem(node: AstListItem, checked: boolean, markerOnly: boolean): void {
     this.element.classList.add('list-none');
-    const position = (
-      node as { position?: { start: { offset?: number } } }
-    ).position?.start.offset;
+    const position = node.position?.start.offset;
     if (position !== undefined) {
       this.element.dataset.taskSourceFrom = String(position);
     }
 
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'flex items-start gap-2';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex items-start gap-2';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.checked = node.checked;
+    checkbox.checked = checked;
     checkbox.dataset.taskCheckbox = 'true';
     checkbox.className = 'mt-1 shrink-0';
-    contentWrapper.appendChild(checkbox);
+    wrapper.appendChild(checkbox);
 
-    for (const child of node.children) {
-      const component = createComponent(child);
-      if (!component) {
-        continue;
-      }
-      if (child.type === 'paragraph') {
-        component.element.classList.add('my-0');
-        if (child.children.length === 0) {
-          const placeholder = document.createElement('span');
-          placeholder.textContent = '\u00a0';
-          placeholder.dataset.textFrom = String((position ?? 0) + (node.checked ? 6 : 2));
-          placeholder.className = 'markdown-list-placeholder';
-          component.element.appendChild(placeholder);
+    if (markerOnly) {
+      // `- [ ] ` with nothing after the marker parses as a plain item whose
+      // text is the marker itself; render it as an empty task item instead.
+      const paragraph = document.createElement('p');
+      paragraph.className = 'min-w-0 markdown-node my-0';
+      paragraph.appendChild(this.placeholder(node, true));
+      wrapper.appendChild(paragraph);
+    } else {
+      for (const child of node.children) {
+        const component = createComponent(child);
+        if (!component) {
+          continue;
         }
+        if (child.type === 'paragraph') {
+          component.element.classList.add('my-0');
+          if (child.children.length === 0) {
+            component.element.appendChild(this.placeholder(node, false));
+          }
+        }
+        wrapper.appendChild(component.element);
       }
-      contentWrapper.appendChild(component.element);
     }
-
-    this.element.appendChild(contentWrapper);
+    this.element.appendChild(wrapper);
   }
+
+  /**
+   * The caret/typing placeholder for an item without content. Its raw offset
+   * is where the item's content would start: the paragraph's own start when
+   * there is one, otherwise the end of the item's marker line.
+   */
+  private placeholder(node: AstListItem, markerOnly: boolean): HTMLElement {
+    const span = document.createElement('span');
+    span.className = 'markdown-list-placeholder markdown-node';
+    span.textContent = '\u00a0';
+    const offset = contentOffset(node, markerOnly);
+    if (offset !== null) {
+      span.dataset.textFrom = String(offset);
+    }
+    return span;
+  }
+}
+
+/** The checked state of an item whose only content is a bare task marker. */
+function markerOnlyChecked(node: AstListItem): boolean | null {
+  const paragraph = node.children.find((child) => child.type === 'paragraph');
+  if (paragraph?.type !== 'paragraph' || paragraph.children.length !== 1) {
+    return null;
+  }
+  const child = paragraph.children[0];
+  if (child.type !== 'text') {
+    return null;
+  }
+  const match = MARKER_ONLY.exec(String(child.value ?? ''));
+  return match ? match[1].toLowerCase() === 'x' : null;
+}
+
+/**
+ * Where the item's content starts in the block's raw slice. A task marker the
+ * parser turned into plain text (`- [ ] `) is not content, so those items put
+ * the caret at the end of their marker line instead.
+ */
+function contentOffset(node: AstListItem, markerOnly: boolean): number | null {
+  if (!markerOnly) {
+    const paragraph = node.children.find((child) => child.type === 'paragraph');
+    const start = (
+      paragraph as { position?: { start: { offset?: number } } } | undefined
+    )?.position?.start.offset;
+    if (start !== undefined) {
+      return start;
+    }
+  }
+  return node.position?.end.offset ?? null;
 }

@@ -68,6 +68,7 @@ Create `scripts/tauri-probe.mjs`:
  * Runs a probe script inside the running editor through the Tauri MCP bridge.
  *
  * Usage: node scripts/tauri-probe.mjs scripts/probes/<name>.js
+ *        node scripts/tauri-probe.mjs --reload      (reload the editor page)
  *
  * The probe is a plain script evaluated in the webview; it may return a value
  * (or a promise) which is printed as JSON. `scripts/probes/lib.js` is
@@ -81,9 +82,15 @@ if (!file) {
   process.exit(2);
 }
 
-const lib = readFileSync(new URL('./probes/lib.js', import.meta.url), 'utf8');
-const probe = readFileSync(file, 'utf8');
-const script = `${lib}\n${probe}`;
+// The bridge only reports a value for a script that is a single expression,
+// and it awaits a promise: one async IIFE wrapping helper install + probe, so
+// probes are written as one expression, e.g. `(async () => ({...}))()`.
+// The editor's event handlers also go stale after many document swaps, so
+// `--reload` exists to refresh the page before a probe run.
+const reloading = file === '--reload';
+const script = reloading
+  ? "(async () => { location.reload(); return 'reloading'; })()"
+  : `(async () => {\n${readFileSync(new URL('./probes/lib.js', import.meta.url), 'utf8')}\nreturn await (\n${readFileSync(file, 'utf8')}\n);\n})()`;
 
 async function connect() {
   for (let port = 9223; port < 9233; port += 1) {
@@ -241,10 +248,16 @@ Create `scripts/probes/spacing.js`:
 (async () => {
   const t = window.__t;
   await t.load('# Title\n\nfirst paragraph\n\nsecond paragraph\n\n## Section\n\nafter the heading\n');
+  // Blocks include their children's margins, so the paragraph-to-paragraph
+  // distance has to be measured between the inner paragraphs, not the blocks.
+  const paragraphs = [...t.prose().querySelectorAll('p')].map((p) => p.getBoundingClientRect());
+  const heading = t.prose().querySelector('h2').getBoundingClientRect();
   return {
-    paragraphGap: t.gaps()[0],
+    paragraphGap: Math.round(paragraphs[1].top - paragraphs[0].bottom),
+    blockGaps: t.gaps(),
     paragraph: t.styles('p'),
-    h2: t.styles('h2')
+    h2: t.styles('h2'),
+    headingGap: Math.round(heading.top - paragraphs[1].bottom)
   };
 })()
 ```
@@ -253,7 +266,7 @@ Create `scripts/probes/spacing.js`:
 
 Run: `npm run tauri dev` (leave it running)
 Run: `node scripts/tauri-probe.mjs scripts/probes/spacing.js`
-Expected today: `paragraphGap: 16`, `paragraph.marginBottom: "8px"`, `h2.marginTop: "48px"` — the 64px of air the spec complains about (16 + 48).
+Expected today: `paragraphGap: 16`, `blockGaps: [16, 16, 16, 16]`, `paragraph.marginBottom: "8px"`, `h2.marginTop: "48px"` — the 64px of air the spec complains about (16 + 48).
 
 - [ ] **Step 5: Move spacing from the block wrapper to the content**
 
@@ -339,7 +352,7 @@ const BLOCK_GAP = 0;
 - [ ] **Step 7: Run the probe and the type check**
 
 Run: `node scripts/tauri-probe.mjs scripts/probes/spacing.js`
-Expected: `paragraphGap: 8`, `h2.marginTop: "24px"`, `h2.marginBottom: "8px"`, `h1.marginBottom: "12px"`; paragraph to heading is 32px (8 + 24).
+Expected: `paragraphGap: 8`, `blockGaps` all `0` (the wrapper no longer adds anything), `h2.marginTop: "24px"`, `h2.marginBottom: "8px"`, `h1.marginBottom: "12px"`; paragraph to heading is 32px (8 + 24).
 
 Run: `npx tsc --noEmit`
 Expected: no output.
@@ -781,11 +794,25 @@ Create `scripts/probes/enter.js`:
     };
   };
 
+  // A blank list item has no text node to aim at: click its placeholder.
+  const blankItem = async () => {
+    await t.load('- a\n- \n- b\n');
+    const item = t.blocks().find((b) => b.textContent.includes('a'));
+    await t.click(item.querySelector('.markdown-list-placeholder').closest('li'));
+    t.key('Enter');
+    await t.sleep(200);
+    return {
+      after: await t.raw(),
+      caret: t.caretRect(),
+      emptyLines: t.emptyLines().map((line) => line.top)
+    };
+  };
+
   return {
     endOfMiddleParagraph: await run('first line\n\nsecond line\n', 'first line'),
     endOfLastParagraph: await run('only line\n', 'only line'),
     midParagraph: await run('alpha beta\n', 'alpha ', 5),
-    blankItem: await run('- a\n- \n- b\n', '- a')
+    blankItem: await blankItem()
   };
 })()
 ```
@@ -957,7 +984,7 @@ Expected:
 - `endOfMiddleParagraph`: one newline added, `after === 'first line\n\n\nsecond line\n'`, one empty line whose top is about 24px below `targetY`, caret on it;
 - `endOfLastParagraph`: `after === 'only line\n\n'`, caret on the new line;
 - `midParagraph`: `after === 'alpha\n\n beta\n'`, caret at the start of the text after the break;
-- `blankItem`: marker gone, one empty line where the item was, caret on it, and the raw between the two lists holds two newlines.
+- `blankItem`: `after === '- a\n\n\n- b\n'` (the item's line became a blank line, plus the newline an empty paragraph needs), one empty line where the item was, caret on it.
 
 Run: `npx tsc --noEmit`
 Expected: no output.
@@ -1358,8 +1385,10 @@ Create `scripts/probes/regression.js`:
   results.redone = await t.raw();
 
   // Select All still round-trips the raw source.
-  await t.load('# H\n\ntext\n');
-  results.copyRoundTrip = await t.raw();
+  const document = '# H\n\ntext\n';
+  await t.load(document);
+  const copied = await t.raw();
+  results.copyRoundTrip = { same: copied === document, copied };
 
   // Arrows stop on the empty paragraph between two paragraphs.
   await t.load('a\n\n\nb\n');
@@ -1384,10 +1413,10 @@ Create `scripts/probes/regression.js`:
 Run: `node scripts/tauri-probe.mjs scripts/probes/regression.js`
 Expected:
 
-- `blankItemDeleteAndType === '- a\nx\n- b'` (the item's line was replaced, the caret took the place it had);
-- `taskToggle === '- [x] task one\n- [ ] task two'`;
+- `blankItemDeleteAndType === '- ax\n- b\n'` (the item's line was removed and the caret took the place it had, at the end of the item above);
+- `taskToggle === '- [x] task one\n- [ ] task two\n'`;
 - `typed === 'a\n\nx\n\nb\n'`, `undone === 'a\n\n\nb\n'`, `redone === 'a\n\nx\n\nb\n'`;
-- `copyRoundTrip === '# H\n\ntext'`;
+- `copyRoundTrip.same === true` (Select All + copy yields the whole source, trailing newline included);
 - `arrows.onEmptyLine.y` equals `arrows.emptyLineTop` (within a pixel or two) and `arrows.afterSecondDown.y` is one line below it — arrows visit empty paragraphs but not separators.
 
 - [ ] **Step 3: Ask the human to exercise it**

@@ -6,6 +6,7 @@ import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
+import { restoreEmptyItems } from './empty_items';
 import { remarkCitation } from './plugins/remark-citation';
 import { remarkWikilink } from './plugins/remark-wikilink';
 
@@ -62,6 +63,7 @@ export function parseMarkdown(markdown: string): Root {
   const tree = parseProcessor.parse(markdown) as Root;
   const root = parseProcessor.runSync(tree) as Root;
   fixDescriptionPositions(root, markdown);
+  restoreEmptyItems(root, markdown);
   return root;
 }
 
@@ -167,7 +169,11 @@ function fixDescriptionPositions(tree: Root, markdown: string): void {
             start: { offset: lineStart },
             end: { offset: lineEnd }
           };
-          reparseDescriptionContent(term, sourceLine.trim(), lineStart);
+          // Only the indentation is dropped: the term's trailing spaces are
+          // kept (as the non-breaking spaces `trailing_spaces.ts` writes) so a
+          // space typed at the end of a term stays visible and editable.
+          const content = sourceLine.trimStart();
+          reparseDescriptionContent(term, content, lineStart + sourceLine.length - content.length);
         }
       }
       lastEnd = lineEnd;
