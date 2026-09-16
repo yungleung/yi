@@ -90,6 +90,14 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
   re-rendering while scrolling is much lower than before the content-keyed
   caches — the case the probes could not reach, because this window's editor is
   tall enough that the default document never virtualizes.
+- Maintainer-verified in the production build: scrolling is "a little slower
+  than before, almost invisible". That is the caches' price — retaining
+  rendered elements and a couple of map lookups per block that leaves the
+  window — against their benefit, that a line-shifting edit or a scroll round
+  trip rebuilds almost nothing (27 of 28 elements kept, and 0 rebuilt when
+  scrolling back). The spare cap is twice the mounted window; halving it to
+  once would still cover the blocks that just left, at half the retained DOM,
+  if that price ever needs paying down.
 - `scripts/probes/jump-report.js`: the reported flow (end of the document,
   back to the footnote, Enter) moves the footnote **2px** after §2 (485px
   before it).
