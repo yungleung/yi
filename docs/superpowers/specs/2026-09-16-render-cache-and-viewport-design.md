@@ -103,6 +103,25 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
 
 ## Fixes found while measuring
 
+Measured on the math document, loading it directly into the editor (a probe
+with the document embedded avoids the file-tree navigation, which is what
+wedges the dev page), 400px steps, `ms` to settle and blocks rebuilt:
+
+| variant | down | back |
+| --- | --- | --- |
+| as landed | 110 / 195 (7 / 9 rebuilt) | 523 / 255 / 410 (0 rebuilt) |
+| spare element cache disabled | 100 / 230 | 750 / 253 / 405 |
+| heights measured once per width | 110 / 215 | 759 / 255 / 343 |
+| window margin 1200 → 400 (≈45% fewer blocks mounted) | 96 / 281 | 436 / 235 / 211 |
+
+None of the three levers moves the numbers beyond the run-to-run spread, so the
+per-step cost is not the caches and not the measurement pass: it is the browser
+laying out the window as it moves, in a document where every other block is
+display math. The spare cache, the once-per-width measurement and the smaller
+margin were all reverted — the first two because they changed nothing, the
+third because a 400px margin risks visible blank space when a fast scroll
+outruns it.
+
 - `blockContentKey` caches the `kind:text` key per block object. Building that
   string copies the block's whole text, and the spacer arithmetic asks for a
   block's height several times per sync, so the first version of the
