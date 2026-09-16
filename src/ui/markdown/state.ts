@@ -23,11 +23,23 @@ interface HistoryEntry {
   after: string;
 }
 
+/** Parsed blocks kept before the oldest is dropped. */
+const PARSED_BLOCK_LIMIT = 400;
+
+/** A block's parse identity: its source, not its place in the document. */
+function blockContentKey(block: MarkdownBlock): string {
+  return `${block.kind}:${block.text}`;
+}
+
 export class MarkdownEditorState {
   private text: string;
   private blocks: MarkdownBlock[];
-  /** Per-block parses (block-relative positions), retained for unchanged blocks. */
-  private blockContent: Map<number, RootContent[]> | null = null;
+  /**
+   * Parses per block content (`kind:text`), with block-relative positions.
+   * Keyed by content, not by line number: an edit shifts every line below it,
+   * and a shifted block's parse is still valid.
+   */
+  private readonly blockContent = new Map<string, RootContent[]>();
   private readonly history: HistoryEntry[] = [];
   private historyIndex = 0;
 
@@ -54,15 +66,20 @@ export class MarkdownEditorState {
     if (block.kind === 'blank') {
       return [];
     }
-    if (!this.blockContent) {
-      this.blockContent = new Map();
-    }
-    const cached = this.blockContent.get(block.lineStart);
+    const key = blockContentKey(block);
+    const cached = this.blockContent.get(key);
     if (cached) {
       return cached;
     }
     const content = parseMarkdown(blockParseInput(block)).children;
-    this.blockContent.set(block.lineStart, content);
+    this.blockContent.set(key, content);
+    // Every edit mints one new key, so the cache needs a bound of its own.
+    if (this.blockContent.size > PARSED_BLOCK_LIMIT) {
+      const oldest = this.blockContent.keys().next().value as string | undefined;
+      if (oldest !== undefined && oldest !== key) {
+        this.blockContent.delete(oldest);
+      }
+    }
     return content;
   }
 
@@ -80,27 +97,8 @@ export class MarkdownEditorState {
   }
 
   private updateText(text: string): void {
-    const previousBlocks = this.blocks;
-    const previousContent = this.blockContent;
     this.text = text;
     this.blocks = splitBlocks(text);
-    if (previousContent) {
-      const unchanged = new Map<number, RootContent[]>();
-      const previousByKey = new Map<string, number>();
-      for (const block of previousBlocks) {
-        previousByKey.set(`${block.lineStart}:${block.lineEnd}:${block.text}`, block.lineStart);
-      }
-      for (const block of this.blocks) {
-        const previousLine = previousByKey.get(`${block.lineStart}:${block.lineEnd}:${block.text}`);
-        const content = previousLine === undefined ? undefined : previousContent.get(previousLine);
-        if (content) {
-          unchanged.set(block.lineStart, content);
-        }
-      }
-      this.blockContent = unchanged;
-    } else {
-      this.blockContent = null;
-    }
   }
 
   /** Replaces a raw document range with `replacement`. */
@@ -119,7 +117,7 @@ export class MarkdownEditorState {
   loadText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
-    this.blockContent = null;
+    this.blockContent.clear();
     this.history.length = 0;
     this.historyIndex = 0;
   }

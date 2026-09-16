@@ -13,6 +13,8 @@ const ESTIMATED_BLOCK_HEIGHT = 60;
 const BLOCK_GAP = 0;
 /** Extra content kept mounted above and below the viewport. */
 const VIEWPORT_MARGIN = 1200;
+/** Rendered elements kept for blocks that left the window, at the least. */
+const MIN_SPARE_ELEMENTS = 20;
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -29,21 +31,30 @@ export interface RendererSyncHooks {
  * mounted, the rest are represented by two spacers sized from remembered
  * heights.
  *
- * Unchanged blocks keep their DOM nodes (they are reused, never re-created),
- * so the caret, the selection and any open revealable survive scrolling and
- * edits. Heights are measured once a block has been laid out and reused
- * afterwards, which keeps the spacers — and therefore the scrollbar and
- * `revealOffset` — accurate on documents whose blocks differ wildly in size
- * (display math, code fences, ...).
+ * Rendering is a function of a block's own source, never of where it sits, so
+ * everything remembered is keyed by that source rather than by a line number:
+ * a block that keeps its text keeps its parse, its measured height and its
+ * rendered element through edits above it, through undo, and through leaving
+ * the window and coming back. Elements of blocks that left the window are kept
+ * in a bounded spare cache instead of being thrown away.
+ *
+ * Heights are measured once a block has been laid out and reused afterwards,
+ * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
+ * accurate on documents whose blocks differ wildly in size (display math,
+ * code fences, ...). Because those heights can still change when a placeholder
+ * is replaced by a measurement, the renderer also anchors the scroll position
+ * to the block at the top of the viewport and restores it after every re-sync.
  */
 export class VirtualBlockRenderer {
   private root: HTMLElement | null = null;
   private frame: number | null = null;
   private hooks: RendererSyncHooks | null = null;
-  /** Measured height per block signature (`lineStart:text`). */
+  /** Measured height per block content. */
   private readonly heights = new Map<string, number>();
-  /** The raw text an element was built from, so unchanged blocks are reused. */
+  /** The content key an element was built from, so unchanged blocks are reused. */
   private readonly builtFrom = new WeakMap<HTMLElement, string>();
+  /** Elements of blocks that are not mounted, keyed by content (LRU order). */
+  private readonly spare = new Map<string, HTMLElement>();
   /** Mounted block elements, keyed by line start. */
   private readonly mounted = new Map<number, HTMLElement>();
   private range: { first: number; last: number } | null = null;
@@ -64,6 +75,7 @@ export class VirtualBlockRenderer {
   /** Builds the prose root and mounts the window around the current scroll. */
   render(): void {
     this.heights.clear();
+    this.dropSpare();
     this.mounted.clear();
     this.range = null;
     const root = this.createRoot();
@@ -81,6 +93,7 @@ export class VirtualBlockRenderer {
     }
     const snapshot = this.hooks?.capture();
     const element = this.createBlockElement(block);
+    this.releaseElement(current, this.builtFrom.get(current));
     current.replaceWith(element);
     this.mounted.set(lineStart, element);
     this.rememberHeight(block, element);
@@ -104,8 +117,8 @@ export class VirtualBlockRenderer {
     }
     for (const [lineStart, element] of [...this.mounted]) {
       const block = byLine.get(lineStart);
-      if (!block || this.builtFrom.get(element) !== block.text) {
-        element.remove();
+      if (!block || this.builtFrom.get(element) !== blockKey(block)) {
+        this.releaseElement(element, this.builtFrom.get(element));
         this.mounted.delete(lineStart);
       }
     }
@@ -121,6 +134,10 @@ export class VirtualBlockRenderer {
       element.remove();
       this.mounted.delete(lineStart);
     }
+    // The bibliography or the settings changed: nothing rendered before is
+    // known to still be valid.
+    this.dropSpare();
+    this.heights.clear();
     this.syncWindow(true);
   }
 
@@ -191,7 +208,7 @@ export class VirtualBlockRenderer {
         const block = blocks[index];
         keep.add(block.lineStart);
         let element = this.mounted.get(block.lineStart);
-        if (!element || this.builtFrom.get(element) !== block.text) {
+        if (!element || this.builtFrom.get(element) !== blockKey(block)) {
           element = this.createBlockElement(block);
           this.mounted.set(block.lineStart, element);
         }
@@ -201,7 +218,7 @@ export class VirtualBlockRenderer {
 
       for (const [lineStart, element] of [...this.mounted]) {
         if (!keep.has(lineStart)) {
-          element.remove();
+          this.releaseElement(element, this.builtFrom.get(element));
           this.mounted.delete(lineStart);
         }
       }
@@ -250,10 +267,44 @@ export class VirtualBlockRenderer {
   }
 
   private createBlockElement(block: MarkdownBlock): HTMLElement {
+    const key = blockKey(block);
+    const spare = this.spare.get(key);
+    if (spare) {
+      // The same content, rendered before: reuse it instead of rebuilding.
+      this.spare.delete(key);
+      return spare;
+    }
     const node: BlockNode = { ...block, type: 'block' };
     const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
-    this.builtFrom.set(element, block.text);
+    this.builtFrom.set(element, key);
     return element;
+  }
+
+  /** Keeps a block's element for later instead of throwing its rendering away. */
+  private releaseElement(element: HTMLElement, key: string | undefined): void {
+    element.remove();
+    if (!key) {
+      return;
+    }
+    this.spare.get(key)?.remove();
+    this.spare.set(key, element);
+    const windowSize = this.range ? this.range.last - this.range.first + 1 : MIN_SPARE_ELEMENTS;
+    const limit = Math.max(MIN_SPARE_ELEMENTS, windowSize * 2);
+    while (this.spare.size > limit) {
+      const oldest = this.spare.keys().next().value as string | undefined;
+      if (oldest === undefined) {
+        break;
+      }
+      this.spare.delete(oldest);
+    }
+  }
+
+  /** Forgets every spare element (a new document, or changed global inputs). */
+  private dropSpare(): void {
+    for (const element of this.spare.values()) {
+      element.remove();
+    }
+    this.spare.clear();
   }
 
   /** Measures mounted blocks once, so the spacers use real heights. */
@@ -365,7 +416,11 @@ function isRendererOwned(node: Node): boolean {
   return node.classList.contains('markdown-block') || node.hasAttribute('data-virtual-spacer');
 }
 
-/** Identity of a block's rendered source (its height cache key). */
+/**
+ * A block's rendering identity: its own source, not where it sits. Line
+ * numbers change whenever anything above changes, so keying caches by them
+ * threw away work that was still valid.
+ */
 function blockKey(block: MarkdownBlock): string {
-  return `${block.lineStart}:${block.text}`;
+  return `${block.kind}:${block.text}`;
 }

@@ -45,18 +45,21 @@ Nothing becomes eager: only blocks the reader has actually seen are retained,
 and the cap makes the memory predictable. The parse cache gets a cap too, since
 each edit mints one new entry.
 
-### 2. Viewport compensation
+### 2. Viewport compensation — implemented, measured, **not landed**
 
-Before a re-sync touches the DOM, the renderer records the block at the top of
-the viewport and its offset from the scroller's top. After the re-sync (and
-after the spacers are resized), it finds that block again — the same node when
-it survived, otherwise the nearest mounted block — and adjusts `scrollTop` by
-the change in its offset. The reader keeps the line they were looking at.
+The first implementation recorded the block at the top of the viewport and its
+offset before a re-sync, then adjusted `scrollTop` by the change in that offset
+afterwards. Measurement says it cannot work as written. The mounted window
+moves with the caret, and the heights of the blocks above it are a mix of
+measured values and 60px placeholders, so the top spacer's height changes with
+the window: the content moves under a fixed `scrollTop`, and compensating
+against a DOM anchor then moves the *view* instead. Measured on the footnote
+case: the top visible block went from `Math expressions` at −39px to
+`function greet…` at −52px with `scrollTop` 909 → 600.
 
-This is what makes any height change invisible: a placeholder height replaced
-by a measurement, an edit that splits a block, undo and redo of either. It never
-scrolls the caret into view (that stays in the caret layer) and it does nothing
-when the offset did not change.
+It was reverted. The root of the jump is the estimate error feeding the spacer
+heights — option 1 of the three, better heights — not a scroll adjustment, and
+that needs its own design.
 
 ## Non-goals
 
@@ -70,12 +73,8 @@ when the offset did not change.
 ## Verification
 
 - `scripts/probes/edit-stability.js` (new): after a line-shifting edit, report
-  how many rendered elements survive and how far the viewport anchor moved.
-  Expected: most elements survive (was 1 of 28) and the anchor moves ≈ 0px.
-- `scripts/probes/block-gaps.js`, `scripts/probes/footnote-enter.js` (existing):
-  still no tight gaps, and the footnote line no longer moves when Enter is
-  pressed.
-- The large-document round trip (open the math document, scroll far away and
-  back): the block that left the window comes back as the **same** element
-  (measured `sameNode: false` before this change).
+  how many rendered elements survive. Measured **27 of 28** after the change
+  (1 of 28 before it).
+- `scripts/probes/block-gaps.js`: still `tight: []`.
+- The footnote jump is *not* fixed — see §2 above.
 - `npx tsc --noEmit`, `scripts/check-blocks.mjs`, `scripts/check-enter.mjs`.
