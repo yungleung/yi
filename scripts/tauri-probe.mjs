@@ -104,12 +104,18 @@ if (reply.success) {
 }
 
 // The page keeps working after the bridge gives up; poll for the stashed
-// result while it settles.
-for (let attempt = 0; attempt < 6; attempt += 1) {
+// result while it settles. An empty object means the probe has not reported
+// anything yet — a document being opened, say — so keep waiting.
+for (let attempt = 0; attempt < 8; attempt += 1) {
   await sleep(4000);
   const recovered = await call('window.__probeResult ?? window.__probeSteps ?? null', 8000);
-  if (recovered.success && recovered.data !== null && recovered.data !== undefined) {
-    console.log(JSON.stringify(recovered.data, null, 2));
+  const reported = recovered.success ? recovered.data : null;
+  const empty =
+    reported === null ||
+    reported === undefined ||
+    (typeof reported === 'object' && Object.keys(reported).length === 0);
+  if (!empty) {
+    console.log(JSON.stringify(reported, null, 2));
     console.log('(recovered after the bridge timed out; the probe had already run)');
     process.exit(0);
   }

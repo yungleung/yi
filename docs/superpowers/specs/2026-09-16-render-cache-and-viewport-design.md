@@ -93,4 +93,18 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
 - `scripts/probes/jump-report.js`: the reported flow (end of the document,
   back to the footnote, Enter) moves the footnote **2px** after §2 (485px
   before it).
+- `scripts/probes/scroll-cost.js`: per-step settle time and rebuild count on a
+  document that virtualizes, measured on the math document with a freshly
+  started app: **86 / 138 / 262 ms** per 400px step, rebuilding 5–8 blocks per
+  step. The same probe against a page that had been through many hot reloads
+  and document loads reported steps that never settled — a dev-server artifact,
+  not the code.
+
+## Fixes found while measuring
+
+- `blockContentKey` caches the `kind:text` key per block object. Building that
+  string copies the block's whole text, and the spacer arithmetic asks for a
+  block's height several times per sync, so the first version of the
+  content-keyed caches rebuilt and re-hashed the text of every block on every
+  scroll step — the old key (`block.text`) was a string V8 had already hashed.
 - `npx tsc --noEmit`, `scripts/check-blocks.mjs`, `scripts/check-enter.mjs`.

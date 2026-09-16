@@ -50,6 +50,30 @@ export interface MarkdownBlock {
   text: string;
 }
 
+/** Content keys, one per block object (see `blockContentKey`). */
+const contentKeys = new WeakMap<MarkdownBlock, string>();
+
+/**
+ * A block's rendering identity: its own source, never where it sits. Line
+ * numbers change whenever anything above changes, so every cache keyed by them
+ * threw away work that was still valid.
+ *
+ * The key is cached per block object on purpose. Building `kind:text` copies
+ * the block's whole text, and a math-heavy document has blocks large enough
+ * that doing it on every lookup — the spacer arithmetic walks the block list
+ * several times per sync — shows up as slower scrolling; caching it also gives
+ * the maps a stable string, whose hash V8 remembers.
+ */
+export function blockContentKey(block: MarkdownBlock): string {
+  const cached = contentKeys.get(block);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const key = `${block.kind}:${block.text}`;
+  contentKeys.set(block, key);
+  return key;
+}
+
 /**
  * Whether a block renders its raw source as it stands, without the markdown
  * it contains being parsed into nodes. Such a block's lines mean nothing to

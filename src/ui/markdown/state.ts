@@ -8,7 +8,7 @@
  * text through this state, re-splitting only the affected region.
  */
 
-import { splitBlocks, type MarkdownBlock } from './blocks';
+import { blockContentKey, splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import { parseMarkdown } from './parser';
 import { blockParseInput } from './trailing_spaces';
@@ -25,11 +25,6 @@ interface HistoryEntry {
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
-
-/** A block's parse identity: its source, not its place in the document. */
-function blockContentKey(block: MarkdownBlock): string {
-  return `${block.kind}:${block.text}`;
-}
 
 export class MarkdownEditorState {
   private text: string;

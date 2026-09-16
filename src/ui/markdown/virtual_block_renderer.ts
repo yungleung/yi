@@ -1,5 +1,5 @@
 import { createBlockComponent } from './create_block';
-import type { BlockNode, MarkdownBlock } from './blocks';
+import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
 import type { MarkdownEditorState } from './state';
 
 /** Fallback height for a block that has never been measured. */
@@ -117,7 +117,7 @@ export class VirtualBlockRenderer {
     }
     for (const [lineStart, element] of [...this.mounted]) {
       const block = byLine.get(lineStart);
-      if (!block || this.builtFrom.get(element) !== blockKey(block)) {
+      if (!block || this.builtFrom.get(element) !== blockContentKey(block)) {
         this.releaseElement(element, this.builtFrom.get(element));
         this.mounted.delete(lineStart);
       }
@@ -208,7 +208,7 @@ export class VirtualBlockRenderer {
         const block = blocks[index];
         keep.add(block.lineStart);
         let element = this.mounted.get(block.lineStart);
-        if (!element || this.builtFrom.get(element) !== blockKey(block)) {
+        if (!element || this.builtFrom.get(element) !== blockContentKey(block)) {
           element = this.createBlockElement(block);
           this.mounted.set(block.lineStart, element);
         }
@@ -267,7 +267,7 @@ export class VirtualBlockRenderer {
   }
 
   private createBlockElement(block: MarkdownBlock): HTMLElement {
-    const key = blockKey(block);
+    const key = blockContentKey(block);
     const spare = this.spare.get(key);
     if (spare) {
       // The same content, rendered before: reuse it instead of rebuilding.
@@ -321,12 +321,12 @@ export class VirtualBlockRenderer {
   private rememberHeight(block: MarkdownBlock, element: HTMLElement): void {
     const height = element.offsetHeight;
     if (height > 0) {
-      this.heights.set(blockKey(block), height);
+      this.heights.set(blockContentKey(block), height);
     }
   }
 
   private heightOf(block: MarkdownBlock): number {
-    return this.heights.get(blockKey(block)) ?? ESTIMATED_BLOCK_HEIGHT;
+    return this.heights.get(blockContentKey(block)) ?? ESTIMATED_BLOCK_HEIGHT;
   }
 
   /** The document height according to the remembered/estimated block sizes. */
@@ -414,13 +414,4 @@ function isRendererOwned(node: Node): boolean {
     return false;
   }
   return node.classList.contains('markdown-block') || node.hasAttribute('data-virtual-spacer');
-}
-
-/**
- * A block's rendering identity: its own source, not where it sits. Line
- * numbers change whenever anything above changes, so keying caches by them
- * threw away work that was still valid.
- */
-function blockKey(block: MarkdownBlock): string {
-  return `${block.kind}:${block.text}`;
 }
