@@ -13,6 +13,17 @@ import { onNearViewport } from '../lazy';
  */
 const katexCache = new Map<string, string>();
 
+/**
+ * A formula's markup if it has been rendered before, or undefined. Nodes apply
+ * this immediately: starting a re-mounted block on the raw formula and
+ * swapping in the rendering a moment later changes the block's height after
+ * the renderer has already measured it, which moves the document's total height
+ * and makes the scrollbar re-scale mid-scroll.
+ */
+export function cachedMath(value: string, displayMode: boolean): string | undefined {
+  return katexCache.get(`${displayMode ? 'd' : 'i'}:${value}`);
+}
+
 function renderKatex(value: string, displayMode: boolean): string {
   const key = `${displayMode ? 'd' : 'i'}:${value}`;
   const cached = katexCache.get(key);
@@ -41,6 +52,22 @@ function renderMathElement(element: HTMLElement): void {
 }
 
 /**
+ * Renders the formula straight away when it is already cached, and otherwise
+ * leaves the raw source as a placeholder until the node approaches the
+ * viewport. Skipping the placeholder avoids a height change after measuring.
+ */
+function renderOrDefer(element: HTMLElement, value: string, display: boolean): void {
+  const cached = cachedMath(value, display);
+  if (cached !== undefined) {
+    element.innerHTML = cached;
+    element.classList.remove('markdown-math-placeholder');
+    return;
+  }
+  element.textContent = value;
+  onNearViewport(element, () => renderMathElement(element));
+}
+
+/**
  * Renders an `inlineMath` node with KaTeX. The raw formula is shown
  * immediately as a cheap placeholder; KaTeX runs only when the node
  * approaches the viewport. Clicking reveals the raw `$…$` source.
@@ -53,8 +80,7 @@ export class InlineMath extends RevealableNodeComponent {
     this.element.classList.add('markdown-math-placeholder');
     this.element.dataset.math = node.value;
     this.element.dataset.display = 'false';
-    this.element.textContent = node.value;
-    onNearViewport(this.element, () => renderMathElement(this.element));
+    renderOrDefer(this.element, node.value, false);
   }
 
   /** The formula between the `$` markers. */
@@ -77,8 +103,7 @@ export class DisplayMath extends RevealableNodeComponent {
     this.element.classList.add('markdown-math-placeholder');
     this.element.dataset.math = node.value;
     this.element.dataset.display = 'true';
-    this.element.textContent = node.value;
-    onNearViewport(this.element, () => renderMathElement(this.element));
+    renderOrDefer(this.element, node.value, true);
   }
 
   protected override sourceOffsetForClick(_clientX: number, clientY: number): number | undefined {

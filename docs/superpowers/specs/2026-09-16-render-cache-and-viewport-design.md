@@ -109,6 +109,33 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
   `settled: false` instead of a time; and a page that has been through many hot
   reloads and document loads reports steps that never settle at all.
 
+### The shivering scrollbar (build)
+
+Reported: in the production build, scrolling a math-heavy document shivers the
+scrollbar and the content, most visibly backwards. Measured, scrolling six
+400px steps with the document loaded directly:
+
+| step | document height | mounted blocks |
+| --- | --- | --- |
+| down 1 | 8532 | 41 |
+| down 2 | 8677 (+145) | 51 |
+| down 3 | 8403 (−274) | 57 |
+| back 1–3 | 8403 (stable) | 54 / 47 / 41 |
+
+17 block heights changed across those steps, including `60 → 32` transitions —
+the raw formula placeholder being replaced by the KaTeX rendering after the
+block had already been measured. Two things follow, both fixed:
+
+- a block's placeholder height was a flat 60px, nearly twice a typical block,
+  so every block entering the window corrected the document's total by 20–30px
+  and the scrollbar thumb re-scaled on each step. The estimate now comes from
+  the block's line count (`lines × 24 + 8`), which is within a few pixels of the
+  real height for text blocks;
+- a re-mounted math node started on its raw source and swapped in the rendering
+  a moment later, changing its height *after* the renderer had measured it.
+  `cachedMath` now lets a node apply markup it has rendered before straight
+  away, so only the first render of a formula goes through the placeholder.
+
 ## Fixes found while measuring
 
 Measured on the math document, loading it directly into the editor (a probe

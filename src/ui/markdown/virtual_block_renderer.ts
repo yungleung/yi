@@ -2,8 +2,25 @@ import { createBlockComponent } from './create_block';
 import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
 import type { MarkdownEditorState } from './state';
 
-/** Fallback height for a block that has never been measured. */
-const ESTIMATED_BLOCK_HEIGHT = 60;
+/**
+ * Height of one line of body text, and the skip a paragraph leaves after it
+ * (see `styles.css`). A block that has never been measured is estimated from
+ * the number of lines its source has, which lands within a few pixels of the
+ * real height for text blocks.
+ *
+ * The flat 60px estimate this replaces was nearly twice a typical block, so
+ * every block entering the window corrected the document's total height by
+ * 20–30px: the scrollbar thumb re-scaled on every step of a scroll, which
+ * reads as the whole scrollbar and the content shivering.
+ */
+const LINE_HEIGHT = 24;
+const PARAGRAPH_SKIP = 8;
+
+/** The height a block would have if it rendered as plain text. */
+function estimateHeight(block: MarkdownBlock): number {
+  const lines = Math.max(1, block.text.split('\n').length);
+  return lines * LINE_HEIGHT + PARAGRAPH_SKIP;
+}
 /**
  * Gap between block wrappers. Blocks have no margin of their own (styles.css
  * keeps the spacing inside the content, where each block height measures it),
@@ -326,7 +343,7 @@ export class VirtualBlockRenderer {
   }
 
   private heightOf(block: MarkdownBlock): number {
-    return this.heights.get(blockContentKey(block)) ?? ESTIMATED_BLOCK_HEIGHT;
+    return this.heights.get(blockContentKey(block)) ?? estimateHeight(block);
   }
 
   /** The document height according to the remembered/estimated block sizes. */
