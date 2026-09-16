@@ -2,9 +2,10 @@
  * The cost of scrolling through a document that really virtualizes: how long
  * each scroll step takes to settle, and how many blocks it rebuilt.
  *
- * Run it after the app has been started fresh — a page that has been through
- * many hot reloads and document loads reports step times orders of magnitude
- * larger than the same code does on a fresh one.
+ * Run it with the editor window in the foreground: a webview whose window is
+ * occluded throttles animation frames almost to zero, and every step then
+ * reports `settled: false` instead of a time. A page that has been through many
+ * hot reloads and document loads also reports larger times than a fresh one.
  *
  *   node scripts/tauri-probe.mjs --install
  *   node scripts/tauri-probe.mjs scripts/probes/scroll-cost.js
@@ -27,10 +28,11 @@
     const before = new Set(t.blocks());
     const started = performance.now();
     scroller.scrollTop = scroller.scrollTop + delta;
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const settled = await nextFrames(2);
     const after = t.blocks();
     return {
       ms: Math.round(performance.now() - started),
+      settled,
       mounted: after.length,
       rebuilt: after.filter((element) => !before.has(element)).length
     };
@@ -46,3 +48,20 @@
   }
   return out;
 })()
+
+/** Waits for a couple of animation frames, or gives up if they are throttled. */
+function nextFrames(count) {
+  return new Promise((resolve) => {
+    let seen = 0;
+    const tick = () => {
+      seen += 1;
+      if (seen >= count) {
+        resolve(true);
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    setTimeout(() => resolve(false), 500);
+  });
+}

@@ -41,6 +41,15 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
+    // The editor renders KaTeX per block, and KaTeX warns about
+    // LaTeX-incompatible input on every render of such a formula. Forwarding
+    // every client console call to the dev terminal (Vite's default) turns a
+    // math-heavy document's scrolling into a stream of websocket messages and
+    // terminal writes — a dev-only cost that made the build feel much faster.
+    // Real errors still come through.
+    forwardConsole: {
+      logLevel: 'error',
+    },
     host: host || false,
     hmr: host
       ? {

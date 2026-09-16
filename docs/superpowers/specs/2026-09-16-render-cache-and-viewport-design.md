@@ -96,9 +96,10 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
 - `scripts/probes/scroll-cost.js`: per-step settle time and rebuild count on a
   document that virtualizes, measured on the math document with a freshly
   started app: **86 / 138 / 262 ms** per 400px step, rebuilding 5–8 blocks per
-  step. The same probe against a page that had been through many hot reloads
-  and document loads reported steps that never settled — a dev-server artifact,
-  not the code.
+  step. Two traps to be aware of when reading it: a webview whose window is not
+  in the foreground throttles animation frames, so the probe now reports
+  `settled: false` instead of a time; and a page that has been through many hot
+  reloads and document loads reports steps that never settle at all.
 
 ## Fixes found while measuring
 
@@ -107,4 +108,9 @@ instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
   block's height several times per sync, so the first version of the
   content-keyed caches rebuilt and re-hashed the text of every block on every
   scroll step — the old key (`block.text`) was a string V8 had already hashed.
+- `vite.config.ts` sets `server.forwardConsole` to errors only. KaTeX warns
+  about LaTeX-incompatible input on every render of such a formula, and Vite's
+  dev client forwards every client console call to the dev terminal, so a
+  math-heavy document's scrolling produced a stream of websocket messages and
+  terminal writes that the production build does not have.
 - `npx tsc --noEmit`, `scripts/check-blocks.mjs`, `scripts/check-enter.mjs`.
