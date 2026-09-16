@@ -94,10 +94,52 @@ if (reloading) {
   process.exit(0);
 }
 
-// Clear any earlier probe's stash first, so a timed-out run can never be
-// mistaken for the previous one's result.
-await call('window.__probeResult = undefined; window.__probeSteps = undefined; null');
-const reply = await call(wrappedProbe);
+/** Installs the helpers, waiting out the slow path the bridge uses for them. */
+async function installHelpers() {
+  await call(readFileSync(new URL('./probes/lib.js', import.meta.url), 'utf8'), 15000);
+  await sleep(1000);
+}
+
+/** Whether the page still has the helpers installed. */
+async function helpersReady() {
+  const reply = await call('typeof window.__t === "object" && typeof window.__t.blocks === "function"', 8000);
+  return reply.success && reply.data === true;
+}
+
+/** Waits until the editor has rendered, which a reload interrupts. */
+async function waitForEditor(attempts = 30) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const reply = await call('Boolean(document.querySelector(".prose"))', 8000);
+    if (reply.success && reply.data === true) {
+      return true;
+    }
+    await sleep(500);
+  }
+  return false;
+}
+
+// A probe that throws because the helpers are missing would report nothing at
+// all, which is what a page reload between installing and probing looks like —
+// an editor change or a dev-server restart does exactly that. Install (or
+// reinstall) first, and retry once if the page reloaded underneath the probe.
+if (!(await helpersReady())) {
+  await installHelpers();
+}
+await waitForEditor();
+
+/** Runs the probe, installing the helpers again if the page lost them. */
+async function runProbe() {
+  // Clear any earlier probe's stash first, so a timed-out run can never be
+  // mistaken for the previous one's result.
+  await call('window.__probeResult = undefined; window.__probeSteps = undefined; null');
+  return await call(wrappedProbe);
+}
+
+let reply = await runProbe();
+if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.error))) {
+  await installHelpers();
+  reply = await runProbe();
+}
 if (reply.success) {
   console.log(JSON.stringify(reply.data, null, 2));
   process.exit(0);
