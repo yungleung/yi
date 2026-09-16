@@ -158,6 +158,9 @@ Verified in the dev window that the seeded sizes are the measured heights
 (72 / 64 / 80 / 33px rather than 60), which is as far as a measurement can go
 here.
 
+**Maintainer-verified in the build: "much better now"** — the content shiver
+while scrolling backwards is gone.
+
 ## Fixes found while measuring
 
 Measured on the math document, loading it directly into the editor (a probe
