@@ -4,6 +4,12 @@
  * Usage: node scripts/tauri-probe.mjs --install     (once per page load)
  *        node scripts/tauri-probe.mjs scripts/probes/<name>.js
  *        node scripts/tauri-probe.mjs --reload      (reload the editor page)
+ *        node scripts/tauri-probe.mjs --with-doc FILE scripts/probes/<name>.js
+ *
+ * `--with-doc` loads a markdown file into the editor before the probe runs.
+ * Use it instead of the workspace tree for measurements: the tree's file
+ * navigation reloads and scans enough of the app that the page stalls, and a
+ * probe then measures nothing.
  *
  * The probe is a plain script evaluated in the webview; it may return a value
  * (or a promise) which is printed as JSON. Helpers are installed separately
@@ -25,12 +31,24 @@ if (!argument) {
 // after many document swaps, which is what `--reload` is for.
 const installing = argument === '--install';
 const reloading = argument === '--reload';
-const probe = installing || reloading ? null : readFileSync(argument, 'utf8');
+const withDoc = argument === '--with-doc';
+const probeFile = withDoc ? process.argv[4] : argument;
+const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
+const documentText = withDoc ? readFileSync(process.argv[3], 'utf8') : null;
 // A probe that loads a document and then reads layout can outlive the
 // bridge's budget while the page is still settling. The wrapper stashes the
 // result, so a timed-out probe is still readable a moment later.
 const wrappedProbe = probe
-  ? `(async () => { window.__probeResult = undefined; window.__probeSteps = undefined; window.__probeResult = await (\n${probe}\n); return window.__probeResult; })()`
+  ? `(async () => {
+  window.__probeResult = undefined;
+  window.__probeSteps = undefined;
+  window.__probeDoc = ${JSON.stringify(documentText)};
+  ${documentText === null ? '' : 'await window.__t.load(window.__probeDoc);'}
+  window.__probeResult = await (
+${probe}
+  );
+  return window.__probeResult;
+})()`
   : null;
 
 async function connect() {

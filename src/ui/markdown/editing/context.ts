@@ -203,7 +203,7 @@ export function applyEdit(
  * gained a line. The position is restored only when the caret is visible
  * there, so an edit that moves the caret out of the view still scrolls it in.
  */
-function keepScroll(context: EditorContext, anchor: number): void {
+export function keepScroll(context: EditorContext, anchor: number): void {
   const scroller = context.contentView;
   // Two frames: the caret is placed on the first, and the second is where the
   // browser has finished scrolling whatever it decided to scroll.

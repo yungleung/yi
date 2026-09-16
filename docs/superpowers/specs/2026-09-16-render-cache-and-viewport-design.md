@@ -161,6 +161,21 @@ here.
 **Maintainer-verified in the build: "much better now"** — the content shiver
 while scrolling backwards is gone.
 
+## Follow-ups landed after the shiver fix
+
+- `markdown_editor.applyHistory` now keeps the scroll position around undo and
+  redo, the same way `applyEdit` does. Measured on the demo document, scrolled
+  to the bottom: 1366 → 1366 → 1366 across typing, undo and redo.
+- The spare element cache keeps one window's worth of blocks instead of two.
+  The blocks that come back are the ones that just left, so the extra window
+  was only holding more heavy DOM alive; the saving is by construction, not
+  measured, because the step timings did not move when the cache was disabled
+  altogether.
+- `scripts/tauri-probe.mjs --with-doc FILE <probe>` loads a document before the
+  probe runs. Verified against `untitled.md`: the editor reports its 28 blocks.
+  Measuring with it (rather than through the workspace tree) is what made the
+  scroll measurements possible at all.
+
 ## Fixes found while measuring
 
 Measured on the math document, loading it directly into the editor (a probe

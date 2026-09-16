@@ -322,8 +322,11 @@ export class VirtualBlockRenderer {
     }
     this.spare.get(key)?.remove();
     this.spare.set(key, element);
+    // One window's worth of spares is enough: the blocks that come back are
+    // the ones that just left, and a larger cap only keeps more heavy DOM
+    // (KaTeX, highlight.js) alive.
     const windowSize = this.range ? this.range.last - this.range.first + 1 : MIN_SPARE_ELEMENTS;
-    const limit = Math.max(MIN_SPARE_ELEMENTS, windowSize * 2);
+    const limit = Math.max(MIN_SPARE_ELEMENTS, windowSize);
     while (this.spare.size > limit) {
       const oldest = this.spare.keys().next().value as string | undefined;
       if (oldest === undefined) {

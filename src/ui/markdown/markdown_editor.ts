@@ -6,6 +6,7 @@ import { ensureCaretRendered, getCaretRange, setSelectionRange } from './caret/c
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
+  keepScroll,
   proseRoot,
   restoreCaret,
   type EditorContext
@@ -106,7 +107,8 @@ const DEFAULT_MARKDOWN = [
   '',
   '---',
   '',
-  'This demo shows GitHub-flavored markdown features such as task lists, autolinks, tables, and fenced code blocks.'
+  'This demo shows GitHub-flavored markdown features such as task lists, autolinks, tables, and fenced code blocks.',
+  ''
 ].join('\n');
 
 /**
@@ -324,12 +326,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** Undo/redo keeps the caret at the same document offset when it can. */
   private applyHistory(direction: 'undo' | 'redo'): void {
     const offset = caretOffset(this.context) ?? this.state.getText().length;
+    const anchor = this.contentView.scrollTop;
     const applied = direction === 'undo' ? this.state.undo() : this.state.redo();
     if (!applied) {
       return;
     }
     this.renderer.renderChanged();
     restoreCaret(this.context, Math.min(offset, this.state.getText().length));
+    // Undo and redo restore a caret the same way an edit does, and the browser
+    // scrolls a focused element or a synchronised selection into view just the
+    // same: keep the reader where they were.
+    keepScroll(this.context, anchor);
   }
 
   /** Toggles a task-list checkbox without moving the caret. */
