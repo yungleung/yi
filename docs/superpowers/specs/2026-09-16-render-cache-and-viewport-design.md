@@ -136,6 +136,28 @@ block had already been measured. Two things follow, both fixed:
   `cachedMath` now lets a node apply markup it has rendered before straight
   away, so only the first render of a formula goes through the placeholder.
 
+### The content shivering while scrolling back (build)
+
+Reported: in the build, scrolling a math-heavy document backwards shivers the
+*content*. A per-frame sample of the topmost visible line during a backward
+scroll shows no jitter in the dev window (one position for sixteen frames), so
+this is timing-sensitive and only the maintainer can see it.
+
+The mechanism it fits: blocks are `content-visibility: auto`, so a block that is
+off-screen is laid out from its *intrinsic* size, and the stylesheet's fallback
+is `auto 60px`. A heavy block therefore entered the window at 60px and took its
+real height a frame later. That is a content shiver rather than a scrollbar one
+— and it is biased towards scrolling *backwards*, because the blocks being
+mounted then are *above* the viewport, so their expansion pushes the visible
+content down, while blocks mounted below it expand harmlessly.
+
+Each block's element is now seeded with `contain-intrinsic-size: auto <its
+remembered height>` (the line-count estimate before it has ever been measured),
+so it occupies its real height from the first frame it is in the document.
+Verified in the dev window that the seeded sizes are the measured heights
+(72 / 64 / 80 / 33px rather than 60), which is as far as a measurement can go
+here.
+
 ## Fixes found while measuring
 
 Measured on the math document, loading it directly into the editor (a probe

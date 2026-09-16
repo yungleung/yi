@@ -289,12 +289,29 @@ export class VirtualBlockRenderer {
     if (spare) {
       // The same content, rendered before: reuse it instead of rebuilding.
       this.spare.delete(key);
+      this.setIntrinsicSize(spare, this.heightOf(block));
       return spare;
     }
     const node: BlockNode = { ...block, type: 'block' };
     const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
+    this.setIntrinsicSize(element, this.heightOf(block));
     this.builtFrom.set(element, key);
     return element;
+  }
+
+  /**
+   * Tells the browser how tall this block is before it lays it out.
+   *
+   * Blocks are `content-visibility: auto`, so one that is off-screen — a block
+   * that has just been re-inserted, say — is laid out from its intrinsic size,
+   * and the stylesheet's fallback is 60px. A heavy block therefore entered the
+   * window at 60px and took its real height a frame later, which moves
+   * everything below it: the content shivers while scrolling. Seeding the size
+   * with the block's remembered height (or its line-count estimate) removes
+   * that jump.
+   */
+  private setIntrinsicSize(element: HTMLElement, height: number): void {
+    element.style.containIntrinsicSize = `auto ${Math.round(height)}px`;
   }
 
   /** Keeps a block's element for later instead of throwing its rendering away. */
@@ -339,6 +356,7 @@ export class VirtualBlockRenderer {
     const height = element.offsetHeight;
     if (height > 0) {
       this.heights.set(blockContentKey(block), height);
+      this.setIntrinsicSize(element, height);
     }
   }
 
