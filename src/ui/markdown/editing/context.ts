@@ -187,9 +187,45 @@ export function applyEdit(
   replacement: string,
   caret: CaretTarget = from + replacement.length
 ): void {
+  const anchor = context.contentView.scrollTop;
   context.state.replaceRange(from, to, replacement);
   context.renderer.renderChanged();
   restoreCaret(context, typeof caret === 'function' ? caret(context.state) : caret);
+  keepScroll(context, anchor);
+}
+
+/**
+ * Puts the scroll position back after an edit.
+ *
+ * Restoring the caret can make the browser scroll the focused element or the
+ * synchronised selection into view — a scroll no seam in our code performs or
+ * sees — and the reader ends up half a page away even though the document only
+ * gained a line. The position is restored only when the caret is visible
+ * there, so an edit that moves the caret out of the view still scrolls it in.
+ */
+function keepScroll(context: EditorContext, anchor: number): void {
+  const scroller = context.contentView;
+  // Two frames: the caret is placed on the first, and the second is where the
+  // browser has finished scrolling whatever it decided to scroll.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (Math.abs(scroller.scrollTop - anchor) < 1) {
+        return;
+      }
+      const caret = getCaretRange();
+      const box = scroller.getBoundingClientRect();
+      if (!caret || !caret.startContainer.isConnected) {
+        scroller.scrollTop = anchor;
+        return;
+      }
+      // Where the caret would sit if the scroll went back to the anchor.
+      const caretInContent = caret.getBoundingClientRect().top - box.top + scroller.scrollTop;
+      const viewportY = caretInContent - anchor + box.top;
+      if (viewportY >= box.top + 8 && viewportY <= box.bottom - 24) {
+        scroller.scrollTop = anchor;
+      }
+    });
+  });
 }
 
 /**

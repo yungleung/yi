@@ -45,21 +45,30 @@ Nothing becomes eager: only blocks the reader has actually seen are retained,
 and the cap makes the memory predictable. The parse cache gets a cap too, since
 each edit mints one new entry.
 
-### 2. Viewport compensation — implemented, measured, **not landed**
+### 2. The scroll position is put back after an edit
 
-The first implementation recorded the block at the top of the viewport and its
-offset before a re-sync, then adjusted `scrollTop` by the change in that offset
-afterwards. Measurement says it cannot work as written. The mounted window
-moves with the caret, and the heights of the blocks above it are a mix of
-measured values and 60px placeholders, so the top spacer's height changes with
-the window: the content moves under a fixed `scrollTop`, and compensating
-against a DOM anchor then moves the *view* instead. Measured on the footnote
-case: the top visible block went from `Math expressions` at −39px to
-`function greet…` at −52px with `scrollTop` 909 → 600.
+The jump was not the spacers at all. A probe of the reported flow (jump to the
+end of the document, back to the footnote, press Enter) reported `topSpacer: 0`,
+`bottomSpacer: 0` and every block mounted — this document never virtualizes in
+that window — while `scrollTop` moved 1176 → 691 and `targetY` 200 → 685: the
+two cancel, so the content did not move in the document and *only the scroll
+did*, well inside the maximum.
 
-It was reverted. The root of the jump is the estimate error feeding the spacer
-heights — option 1 of the three, better heights — not a scroll adjustment, and
-that needs its own design.
+Trapping `scrollTop`'s setter plus `scrollTo`/`scrollBy`/`scrollIntoView` named
+two movers: a scroll with **no JavaScript write at all** (the browser scrolling
+the focused element or the synchronised native selection into view — nothing in
+our code performs it or can see it), and then our caret layer following it with
+its own scroll-into-view.
+
+`applyEdit` therefore records the scroller's position before the edit and puts
+it back two frames later, once the caret is placed and the browser has finished
+scrolling whatever it decided to scroll — but only when the caret is visible at
+that position, so an edit that moves the caret out of view still scrolls it in.
+Measured with the probe above: the footnote moved **2px** (was 485px), with
+`scrollTop` restored exactly to its previous value.
+
+An earlier DOM-anchor compensation was implemented, measured (it moved the view
+instead: `scrollTop` 909 → 600) and reverted; it is not part of this change.
 
 ## Non-goals
 
@@ -81,5 +90,7 @@ that needs its own design.
   re-rendering while scrolling is much lower than before the content-keyed
   caches — the case the probes could not reach, because this window's editor is
   tall enough that the default document never virtualizes.
-- The footnote jump is *not* fixed — see §2 above.
+- `scripts/probes/jump-report.js`: the reported flow (end of the document,
+  back to the footnote, Enter) moves the footnote **2px** after §2 (485px
+  before it).
 - `npx tsc --noEmit`, `scripts/check-blocks.mjs`, `scripts/check-enter.mjs`.
