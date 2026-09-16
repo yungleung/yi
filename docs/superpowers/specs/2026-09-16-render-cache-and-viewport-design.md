@@ -76,5 +76,10 @@ that needs its own design.
   how many rendered elements survive. Measured **27 of 28** after the change
   (1 of 28 before it).
 - `scripts/probes/block-gaps.js`: still `tight: []`.
+- Maintainer-verified in their own window on
+  `Geometric and Kinematic Foundations of Lagrangian Mechanics.md`: the
+  re-rendering while scrolling is much lower than before the content-keyed
+  caches — the case the probes could not reach, because this window's editor is
+  tall enough that the default document never virtualizes.
 - The footnote jump is *not* fixed — see §2 above.
 - `npx tsc --noEmit`, `scripts/check-blocks.mjs`, `scripts/check-enter.mjs`.
