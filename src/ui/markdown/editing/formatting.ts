@@ -56,7 +56,7 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
       context.renderer.renderBlock(end.block.lineStart);
     }
   }
-  context.renderer.refreshBlockOffsets();
+  context.renderer.refreshBlockTags();
   restoreSelection(context, edit.from, edit.to);
 }
 

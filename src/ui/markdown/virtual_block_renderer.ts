@@ -115,7 +115,7 @@ export class VirtualBlockRenderer {
     this.mounted.set(lineStart, element);
     this.rememberHeight(block, element);
     this.updateSpacers();
-    this.refreshBlockOffsets();
+    this.refreshBlockTags();
     this.hooks?.restore(snapshot);
   }
 
@@ -171,12 +171,24 @@ export class VirtualBlockRenderer {
     this.syncWindow(true);
   }
 
-  /** Refreshes the raw character-start tag of every mounted block. */
-  refreshBlockOffsets(): void {
-    for (const block of this.state.getBlocks()) {
-      this.mounted
-        .get(block.lineStart)
-        ?.setAttribute('data-char-start', String(block.charStart));
+  /**
+   * Re-tags every mounted block with its own line and character range.
+   *
+   * An element is remembered by its content, so an edit above it — or a
+   * window that brings it back — can hand back an element built when the block
+   * sat somewhere else. Everything that maps a caret or a pointer back to the
+   * document reads these tags, so they have to describe the block as it is now,
+   * not as it was when the element was built.
+   */
+  refreshBlockTags(): void {
+    for (const [lineStart, element] of this.mounted) {
+      const block = this.state.getBlockAtLine(lineStart);
+      if (!block) {
+        continue;
+      }
+      element.dataset.lineStart = String(block.lineStart);
+      element.dataset.lineEnd = String(block.lineEnd);
+      element.dataset.charStart = String(block.charStart);
     }
   }
 
@@ -244,7 +256,7 @@ export class VirtualBlockRenderer {
       this.range = { first, last };
       this.measureMounted(blocks, first, last);
       this.updateSpacers();
-      this.refreshBlockOffsets();
+      this.refreshBlockTags();
       this.hooks?.restore(snapshot);
     } finally {
       this.syncing = false;
