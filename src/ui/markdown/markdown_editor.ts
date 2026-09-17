@@ -18,14 +18,16 @@ import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
 import {
-  TABLE_COMMAND,
-  TABLE_INSERT,
   insertTable,
+  tableSnapshot,
   moveTableCell,
   runTableCommand,
   type TableCommand,
   type TableTarget
 } from './editing/table';
+import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
+import { tableMenuModel } from '../table/table_menu_model';
+import { TABLE_INSERT } from '../table/table_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -184,6 +186,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Clicks that miss every markdown node still place the caret: the margin
     // between blocks and the space below the text are lines, not dead zones.
     this.contentView.addEventListener('click', (event) => this.handlePointerClick(event));
+    this.contentView.addEventListener('contextmenu', (event) => this.handleContextMenu(event));
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
     this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
 
@@ -385,5 +388,35 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     placeCaretFromPointer(this.context, event.clientY);
+  }
+
+  /**
+   * A right-click inside a table cell opens the table's menu on that cell.
+   *
+   * The cell is captured *before* the menu opens: the native menu takes focus,
+   * so the command that follows has to be told what it acts on.
+   */
+  private handleContextMenu(event: MouseEvent): void {
+    const cell = (event.target as Element | null)?.closest<HTMLElement>('[data-table-cell]');
+    if (!cell) {
+      return;
+    }
+    // The webview has its own context menu; ours replaces it.
+    event.preventDefault();
+    const blockElement = cell.closest('.markdown-block') as HTMLElement | null;
+    const lineStart = Number(blockElement?.dataset.lineStart);
+    const [row, column] = (cell.dataset.tableCell ?? '').split(':').map(Number);
+    if (!Number.isFinite(lineStart) || !Number.isFinite(row) || !Number.isFinite(column)) {
+      return;
+    }
+    const target: TableTarget = { lineStart, row, column };
+    const snapshot = tableSnapshot(this.context, target);
+    if (!snapshot) {
+      return;
+    }
+    void showTableMenu(tableMenuModel(snapshot.source, row, column), target, {
+      x: event.clientX,
+      y: event.clientY
+    });
   }
 }

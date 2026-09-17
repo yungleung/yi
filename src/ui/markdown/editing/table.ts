@@ -29,11 +29,6 @@ import {
 } from '../table_edits';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
-/** The picker announces a chosen size; the editor creates the table. */
-export const TABLE_INSERT = 'table_insert';
-/** The context menu announces a chosen operation on a captured cell. */
-export const TABLE_COMMAND = 'table_command';
-
 export interface TableTarget {
   /** The 1-based first line of the table's block. */
   lineStart: number;
