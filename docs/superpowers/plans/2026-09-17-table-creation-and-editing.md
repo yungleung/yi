@@ -423,19 +423,21 @@ git commit -m "feat(editor): add the table source model"
   ```ts
   interface TableEdit { from: number; to: number; replacement: string; }
   function shiftOffset(offset: number, edit: TableEdit): number;
-  function insertRow(source, text, row: number, where: 'above' | 'below'): TableEdit;
+  function insertRow(source, row: number, where: 'above' | 'below'): TableEdit;
   function deleteRow(source, text, row: number): TableEdit | null;
-  function clearRow(source, text, row: number): TableEdit | null;
+  function clearRow(source, row: number): TableEdit | null;
   function moveRow(source, text, row: number, delta: -1 | 1): TableEdit | null;
   function insertColumn(source, text, column: number, where: 'left' | 'right'): TableEdit;
   function deleteColumn(source, text, column: number): TableEdit | null;
   function clearColumn(source, text, column: number): TableEdit | null;
   function moveColumn(source, text, column: number, delta: -1 | 1): TableEdit | null;
-  function alignColumn(source, text, column: number, align: ColumnAlign): TableEdit | null;
-  function clearCell(source, text, row: number, column: number): TableEdit | null;
+  function alignColumn(source, column: number, align: ColumnAlign): TableEdit | null;
+  function clearCell(source, row: number, column: number): TableEdit | null;
   function clearTable(source, text): TableEdit | null;
   function deleteTable(source, text): TableEdit;
   ```
+  An operation takes the table's text only when it needs it: the ones that rewrite
+  individual lines work from the spans the model already carries.
   A `null` return means "this operation does not apply here" — exactly the state the menu shows as a disabled item.
 
 - [ ] **Step 1: Write the failing check**
@@ -986,10 +988,10 @@ function editFor(
 ): TableEdit | null {
   const { row, column } = target;
   switch (command) {
-    case 'insertRowAbove': return insertRow(source, text, row, 'above');
-    case 'insertRowBelow': return insertRow(source, text, row, 'below');
+    case 'insertRowAbove': return insertRow(source, row, 'above');
+    case 'insertRowBelow': return insertRow(source, row, 'below');
     case 'deleteRow': return deleteRow(source, text, row);
-    case 'clearRow': return clearRow(source, text, row);
+    case 'clearRow': return clearRow(source, row);
     case 'moveRowUp': return moveRow(source, text, row, -1);
     case 'moveRowDown': return moveRow(source, text, row, 1);
     case 'insertColumnLeft': return insertColumn(source, text, column, 'left');
@@ -998,10 +1000,10 @@ function editFor(
     case 'clearColumn': return clearColumn(source, text, column);
     case 'moveColumnLeft': return moveColumn(source, text, column, -1);
     case 'moveColumnRight': return moveColumn(source, text, column, 1);
-    case 'alignLeft': return alignColumn(source, text, column, 'left');
-    case 'alignCenter': return alignColumn(source, text, column, 'center');
-    case 'alignRight': return alignColumn(source, text, column, 'right');
-    case 'clearCell': return clearCell(source, text, row, column);
+    case 'alignLeft': return alignColumn(source, column, 'left');
+    case 'alignCenter': return alignColumn(source, column, 'center');
+    case 'alignRight': return alignColumn(source, column, 'right');
+    case 'clearCell': return clearCell(source, row, column);
     case 'clearTable': return clearTable(source, text);
     case 'deleteTable': return deleteTable(source, text);
     default: return null;
@@ -1110,7 +1112,7 @@ export function moveTableCell(context: EditorContext, direction: -1 | 1): boolea
     return false;
   }
   const lastRow = source.rows[source.rows.length - 1];
-  const edit = insertRow(source, block.text, lastRow.row, 'below');
+  const edit = insertRow(source, lastRow.row, 'below');
   const nextText = `${block.text.slice(0, edit.from)}${edit.replacement}${block.text.slice(edit.to)}`;
   const appended = readTableSource(nextText)?.rows[source.rows.length];
   const caret = appended?.cells[0]?.contentStart;
