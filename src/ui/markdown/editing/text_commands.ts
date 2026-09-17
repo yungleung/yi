@@ -26,6 +26,7 @@ import {
 } from './context';
 import { isRawRendered } from '../blocks';
 import { blankItemLineAt, lineSpanAt } from '../list_lines';
+import { caretInTableCell, tableDeleteIsNoop } from './table';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -57,6 +58,12 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   }
   let { from, to } = offsets;
   if (from === to) {
+    // A caret in a table cell deletes inside its own cell only: at the cell's
+    // edges there is nothing left to delete that belongs to the cell, and
+    // eating a pipe or the neighbouring cell is never what the author meant.
+    if (tableDeleteIsNoop(context, forward)) {
+      return true;
+    }
     // An empty list item is a whole line, not a character to nibble at.
     if (deleteBlankItem(context, from)) {
       return true;
@@ -87,6 +94,11 @@ export function insertNewline(context: EditorContext): boolean {
   const offsets = rangeOffsets(context, range);
   if (!offsets) {
     return false;
+  }
+  // Enter in a table cell would split the row and shred the table: a cell holds
+  // text, not lines.
+  if (caretInTableCell(context)) {
+    return true;
   }
   const block = context.state.getBlockAtOffset(offsets.from);
   if (!block) {

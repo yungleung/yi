@@ -21,6 +21,7 @@ import {
   TABLE_COMMAND,
   TABLE_INSERT,
   insertTable,
+  moveTableCell,
   runTableCommand,
   type TableCommand,
   type TableTarget
@@ -257,6 +258,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     if (this.handleShortcut(event)) {
+      return;
+    }
+    if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (moveTableCell(this.context, event.shiftKey ? -1 : 1)) {
+        event.preventDefault();
+      }
       return;
     }
     if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey) {
