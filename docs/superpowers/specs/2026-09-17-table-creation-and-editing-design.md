@@ -159,14 +159,15 @@ Menu shape, grouped by what it manipulates:
 - **Column** ▸ insert column left · insert column right · delete column ·
   clear column · move column left · move column right · align column ▸ left ·
   center · right
+- clear cell
 - delete table · clear table
 
 Items that cannot apply are created disabled (`enabled: false`) rather than
 hidden: deleting or moving the **header** row (GFM needs a header and a
 delimiter to be a table at all), deleting the last remaining column, moving a
-row/column at the edge, and clearing a table that has no content. A disabled
-item keeps the menu's shape stable, so the row/column groups are always in the
-same place.
+row/column at the edge, clearing a cell that is already empty, and clearing a
+table that has no content. A disabled item keeps the menu's shape stable, so
+the row/column groups are always in the same place.
 
 ### 5. The commands
 
@@ -184,6 +185,7 @@ existing machinery:
 | insert column left / right | insert an empty cell into **every** line (delimiter included) at that index; short rows are padded by the canonical rewrite |
 | delete column | remove the cell at that index from every line; refuse the last column |
 | clear column | blank the cell at that index on every line |
+| clear cell | blank the cell that was right-clicked, keeping the line |
 | move column left / right | swap the cell at that index with its neighbour on every line, so the column's alignment moves with it |
 | align column | rewrite that column's delimiter cell as `:---`, `:---:` or `---:` |
 | clear table | blank every cell, keeping the frame and the alignment |
