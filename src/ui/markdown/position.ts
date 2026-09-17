@@ -20,6 +20,7 @@ import { bibliographyManager } from '../../services/bibliography';
 import { getCaretRange } from './caret/caret';
 import type { MarkdownBlock } from './blocks';
 import type { MarkdownEditorState } from './state';
+import { locateCell, readTableSource } from './table_source';
 
 export interface CaretLocation {
   /** The block containing the caret. */
@@ -84,6 +85,31 @@ export function documentOffsetAt(
     // is the block's charStart (refreshed on every edit) plus the tag plus
     // the position inside the leaf. Exact at leaf boundaries too, where a
     // flat rendered offset would be ambiguous (e.g. between list items).
+    // A caret inside an empty table cell has no tag of its own: the cell's
+    // name (row:column) and the block's text say where its content starts.
+    const tablePlaceholder = (containerNode.parentElement as HTMLElement | null)?.closest<HTMLElement>(
+      '.markdown-table-placeholder'
+    );
+    const tableCell = tablePlaceholder?.closest<HTMLElement>('[data-table-cell]') ?? null;
+    if (tablePlaceholder && tableCell) {
+      const blockElement = tableCell.closest('.markdown-block') as HTMLElement | null;
+      const block = blockElement
+        ? state.getBlockAtLine(Number(blockElement.dataset.lineStart))
+        : null;
+      const hint = Number(tableCell.dataset.tableRowStart);
+      const [row, column] = (tableCell.dataset.tableCell ?? '').split(':').map(Number);
+      const source = block
+        ? readTableSource(block.text, Number.isFinite(hint) ? hint : undefined)
+        : null;
+      const span = source?.rows[row]?.cells[column];
+      if (block && span) {
+        return {
+          block,
+          offset: block.charStart + span.contentStart,
+          blockOffset: span.contentStart
+        };
+      }
+    }
     const textSpan = (containerNode.parentElement as HTMLElement | null)?.closest<HTMLElement>(
       '[data-text-from]'
     );
@@ -324,6 +350,27 @@ export function domPositionAtOffset(
     return null;
   }
   const clamped = Math.min(Math.max(offset, block.charStart), block.charEnd);
+  // A table cell is addressed by its name, not by a tag: the model says which
+  // cell holds the offset, and the element with that name is its DOM. This is
+  // also the only way into an empty cell, which has no text to walk to.
+  const table = readTableSource(block.text, clamped - block.charStart);
+  if (table) {
+    const cell = locateCell(table, clamped - block.charStart);
+    const element = cell
+      ? blockElement.querySelector<HTMLElement>(`[data-table-cell="${cell.row}:${cell.column}"]`)
+      : null;
+    if (cell && element) {
+      const textSpan = element.querySelector<HTMLElement>('[data-text-from]');
+      const node = textSpan?.firstChild ?? element.querySelector('.markdown-table-placeholder')?.firstChild;
+      if (node && node.nodeType === Node.TEXT_NODE) {
+        const from = textSpan
+          ? block.charStart + Number(textSpan.dataset.textFrom)
+          : block.charStart + cell.contentStart;
+        return { node, offset: Math.max(0, Math.min(clamped - from, (node as Text).data.length)) };
+      }
+      return { node: element, offset: 0 };
+    }
+  }
   // Plain text leaves tag their block-relative raw start: the global offset
   // is block.charStart + the tag. Exact at leaf boundaries too, where a flat
   // rendered offset would be ambiguous (e.g. between list items).

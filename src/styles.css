@@ -177,6 +177,13 @@ body {
   min-width: 0.5em;
 }
 
+/* An empty table cell has no text of its own: this span gives the cell a line
+   box, so a click can land a caret in it and the row keeps its height. */
+.markdown-table-placeholder {
+  display: inline-block;
+  min-width: 0.5em;
+}
+
 /* Rendered pandoc citation. */
 .markdown-citation {
   padding: 0 0.2em;
