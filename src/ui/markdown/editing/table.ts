@@ -10,7 +10,7 @@
 import type { MarkdownBlock } from '../blocks';
 import { lineSpanAt } from '../list_lines';
 import { caretLocation } from '../position';
-import { readTableSource, rowAt, type TableSource } from '../table_source';
+import { isLastCell, readTableSource, rowAt, type TableSource } from '../table_source';
 import {
   alignColumn,
   clearCell,
@@ -228,6 +228,31 @@ function caretTable(
 /** Whether the caret sits inside a table cell. */
 export function caretInTableCell(context: EditorContext): boolean {
   return caretTable(context) !== null;
+}
+
+/**
+ * `Shift+Enter` in the table's last cell: leave the table and start an empty
+ * paragraph below it, the way `Enter` at the end of a block does everywhere
+ * else.
+ *
+ * The paragraph is one blank line after the table's own line terminator, so it
+ * is a block of its own rather than a separator; the newline that is already
+ * there is reused when the table is not at the end of the document.
+ */
+export function exitTableBelow(context: EditorContext): boolean {
+  const found = caretTable(context);
+  if (!found) {
+    return false;
+  }
+  const lastRow = found.source.rows[found.source.rows.length - 1];
+  if (!isLastCell(found.source, found.row, found.column)) {
+    return false;
+  }
+  const after = found.block.charStart + lastRow.end;
+  const text = context.state.getText();
+  const insertion = text[after] === '\n' ? '\n' : '\n\n';
+  applyEdit(context, after, after, insertion, after + 1);
+  return true;
 }
 
 /**

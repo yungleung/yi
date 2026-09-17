@@ -202,6 +202,31 @@ existing machinery:
   (row-major); `Tab` in the last cell appends a body row and moves into its
   first cell. The caret is placed at the cell's content start.
 
+### 7. How a table is presented
+
+The typography defaults a table to the full column width and draws one border
+under each row, which reads as a list rather than a table. A table is typeset
+like a figure instead:
+
+- `width: auto` with centred margins, so the table takes the width its content
+  needs and sits in the middle of the column;
+- a visible border on every side of every header and body cell;
+- a minimum width per cell (`3.5rem`), so an empty cell still has room for a
+  caret and a few characters while a column with content grows past it.
+
+Alignment stays per column (`text-align` from the delimiter row); the frame
+around it is presentation, not content.
+
+### 8. Leaving the table
+
+`Enter` inside a cell does nothing, but there has to be a way out of a table
+that sits at the end of a document. `Shift+Enter` in the table's **last cell**
+does what `Enter` does at the end of any other block: it starts an empty
+paragraph below the table. Anywhere else in the table it does nothing, so the
+key never restructures a table by accident. The blank line reuses the newline
+that is already after the table when the document continues below it, and adds
+both newlines when the table ends the document.
+
 ## Testing
 
 Driven through the Tauri MCP bridge, both in the default document's `## Tables`

@@ -18,6 +18,7 @@ import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
 import {
+  exitTableBelow,
   insertTable,
   tableSnapshot,
   moveTableCell,
@@ -270,6 +271,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      // Shift+Enter in the table's last cell leaves the table: an empty
+      // paragraph below it, like Enter at the end of any other block.
+      if (event.shiftKey) {
+        if (exitTableBelow(this.context)) {
+          event.preventDefault();
+        }
+        return;
+      }
       if (insertNewline(this.context)) {
         event.preventDefault();
       }

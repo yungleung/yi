@@ -16,7 +16,7 @@ export class Table extends EditableNodeComponent {
   private readonly tableNode: AstTable;
 
   constructor(node: AstTable) {
-    super('table', node, document.createElement('table'), 'w-full');
+    super('table', node, document.createElement('table'), 'markdown-table');
     this.tableNode = node;
 
     const rows = node.children;

@@ -13,7 +13,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-table-'));
 const file = join(directory, 'table_source.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { readTableSource, rowAt, locateCell, cellValue, canonicalLine, alignmentMarker } =
+const { readTableSource, rowAt, locateCell, isLastCell, cellValue, canonicalLine, alignmentMarker } =
   await import(file);
 
 const failures = [];
@@ -72,6 +72,14 @@ check(
   'an offset in the first table keeps the first table',
   readTableSource(twoTables, 2)?.rows[0].values,
   ['a']
+);
+check('isLastCell names the last body cell', isLastCell(source, 2, 1), true);
+check('a header cell is not the last cell', isLastCell(source, 0, 1), false);
+check('an earlier body cell is not the last cell', isLastCell(source, 1, 1), false);
+check(
+  'a short last row ends at the cell it actually has',
+  isLastCell(readTableSource('| A | B |\n| --- | --- |\n| 1 |'), 1, 0),
+  true
 );
 
 if (failures.length > 0) {

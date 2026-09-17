@@ -257,6 +257,13 @@ export function locateCell(source: TableSource, offset: number): TableCellSpan |
   return nearest;
 }
 
+/** Whether this cell is the table's last one — its last row's last cell. */
+export function isLastCell(source: TableSource, row: number, column: number): boolean {
+  const lastRow = source.rows[source.rows.length - 1];
+  const lastCell = lastRow?.cells[lastRow.cells.length - 1];
+  return lastCell !== undefined && lastRow.row === row && lastCell.column === column;
+}
+
 /** The cell's text, as the author wrote it (padding trimmed). */
 export function cellValue(source: TableSource, text: string, row: number, column: number): string {
   const cell = rowAt(source, row)?.cells.find((candidate) => candidate.column === column);

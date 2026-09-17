@@ -184,6 +184,32 @@ body {
   min-width: 0.5em;
 }
 
+/* A table is typeset like a figure: it takes the width its content needs, it
+   is centred in the column, and every cell keeps a visible border — a row of
+   pipes the author cannot see is a row the author cannot trust. */
+.prose table.markdown-table {
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
+}
+
+/* `table th`/`table td` out-specify the typography plugin's own `thead th`
+   rules, which only draw a border under each row. */
+.prose table.markdown-table th,
+.prose table.markdown-table td {
+  border: 1px solid var(--color-base-300, color-mix(in oklab, currentColor 22%, transparent));
+  padding: 0.25rem 0.6rem;
+  vertical-align: top;
+}
+
+/* The default minimum width of a cell: enough to hold a caret and a few
+   characters, while the column still grows with whatever the author writes. */
+.prose table.markdown-table .markdown-table-cell {
+  min-width: 3.5rem;
+}
+
 /* Rendered pandoc citation. */
 .markdown-citation {
   padding: 0 0.2em;
