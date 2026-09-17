@@ -17,6 +17,14 @@ import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
+import {
+  TABLE_COMMAND,
+  TABLE_INSERT,
+  insertTable,
+  runTableCommand,
+  type TableCommand,
+  type TableTarget
+} from './editing/table';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -229,6 +237,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     void eventManager.on('select_all', () => selectAll(this.context));
     void eventManager.on('find', () => this.find.open(false));
     void eventManager.on('replace', () => this.find.open(true));
+    void eventManager.on(TABLE_INSERT, (event) => {
+      const payload = (event.payload ?? event) as { rows?: number; columns?: number };
+      if (payload.rows && payload.columns) {
+        insertTable(this.context, { rows: payload.rows, columns: payload.columns });
+      }
+    });
+    void eventManager.on(TABLE_COMMAND, (event) => {
+      const payload = (event.payload ?? event) as { target?: TableTarget; command?: TableCommand };
+      if (payload.target && payload.command) {
+        runTableCommand(this.context, payload.target, payload.command);
+      }
+    });
   }
 
   /** Keyboard shortcuts and plain text input. */
