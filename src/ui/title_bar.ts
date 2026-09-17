@@ -8,6 +8,7 @@ export class TitleBar extends BaseComponent {
 
   constructor(platformName: string) {
     super('div', [
+      'titlebar',
       'flex',
       'items-center',
       'justify-between',

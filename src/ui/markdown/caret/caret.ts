@@ -427,6 +427,12 @@ function ensureListeners(): void {
     if (target instanceof Element && target.closest('.markdown-scroller')) {
       return;
     }
+    // The titlebar holds the editor's own controls (formatting, table, the
+    // window menu): reaching for them is not leaving the document, so the
+    // caret stays where the author left it.
+    if (target instanceof Element && target.closest('.titlebar')) {
+      return;
+    }
     hideCaret();
   });
 }
