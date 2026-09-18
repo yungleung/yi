@@ -13,7 +13,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-table-'));
 const file = join(directory, 'table_source.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { readTableSource, rowAt, locateCell, isLastCell, cellValue, canonicalLine, alignmentMarker } =
+const { readTableSource, rowAt, locateCell, cellBelow, cellValue, canonicalLine, alignmentMarker } =
   await import(file);
 
 const failures = [];
@@ -73,13 +73,13 @@ check(
   readTableSource(twoTables, 2)?.rows[0].values,
   ['a']
 );
-check('isLastCell names the last body cell', isLastCell(source, 2, 1), true);
-check('a header cell is not the last cell', isLastCell(source, 0, 1), false);
-check('an earlier body cell is not the last cell', isLastCell(source, 1, 1), false);
+check('cellBelow finds the cell under the header', cellBelow(source, 0, 1)?.row, 1);
+check('cellBelow finds the cell under a body cell', cellBelow(source, 1, 0)?.column, 0);
+check('the last row has nothing below it', cellBelow(source, 2, 0), null);
 check(
-  'a short last row ends at the cell it actually has',
-  isLastCell(readTableSource('| A | B |\n| --- | --- |\n| 1 |'), 1, 0),
-  true
+  'a short row has nothing below its missing column',
+  cellBelow(readTableSource('| A | B |\n| --- | --- |\n| 1 |'), 0, 1),
+  null
 );
 
 if (failures.length > 0) {

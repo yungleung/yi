@@ -217,15 +217,19 @@ like a figure instead:
 Alignment stays per column (`text-align` from the delimiter row); the frame
 around it is presentation, not content.
 
-### 8. Leaving the table
+### 8. Moving through a table with Enter
 
-`Enter` inside a cell does nothing, but there has to be a way out of a table
-that sits at the end of a document. `Shift+Enter` in the table's **last cell**
-does what `Enter` does at the end of any other block: it starts an empty
-paragraph below the table. Anywhere else in the table it does nothing, so the
-key never restructures a table by accident. The blank line reuses the newline
+`Enter` inside a cell goes **down the column**: the caret moves to the cell
+under it, which is how a table is filled in. A cell with nothing under it — the
+last row, or a short row that does not reach that column — ends the column
+there, and the key does what `Enter` does at the end of any other block: it
+starts an empty paragraph below the table. The blank line reuses the newline
 that is already after the table when the document continues below it, and adds
 both newlines when the table ends the document.
+
+`Shift+Enter` is the same key inside a table, because a cell holds text rather
+than lines and a soft break has nothing to mean there; outside a table it keeps
+its usual meaning.
 
 ## Testing
 

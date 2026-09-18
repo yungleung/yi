@@ -257,11 +257,13 @@ export function locateCell(source: TableSource, offset: number): TableCellSpan |
   return nearest;
 }
 
-/** Whether this cell is the table's last one — its last row's last cell. */
-export function isLastCell(source: TableSource, row: number, column: number): boolean {
-  const lastRow = source.rows[source.rows.length - 1];
-  const lastCell = lastRow?.cells[lastRow.cells.length - 1];
-  return lastCell !== undefined && lastRow.row === row && lastCell.column === column;
+/**
+ * The cell directly below this one, or null when there is nothing below it —
+ * the last row, or a short row that does not reach this column.
+ */
+export function cellBelow(source: TableSource, row: number, column: number): TableCellSpan | null {
+  const next = source.rows.find((candidate) => candidate.row === row + 1);
+  return next?.cells.find((cell) => cell.column === column) ?? null;
 }
 
 /** The cell's text, as the author wrote it (padding trimmed). */
