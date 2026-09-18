@@ -20,7 +20,8 @@ export class FootnoteToolbar extends BaseComponent {
     super('div', ['flex', 'items-center', 'gap-1']);
 
     const button = document.createElement('button');
-    button.className = 'btn btn-ghost btn-xs';
+    // The icon is sized in `em`, so the font size is the icon size.
+    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
     button.title = 'Footnote';
     button.setAttribute('aria-label', 'Footnote');
     button.innerHTML = FOOTNOTE_ICON;
