@@ -63,13 +63,22 @@ export class ListItem extends EditableNodeComponent {
     checkbox.className = 'mt-1 shrink-0';
     wrapper.appendChild(checkbox);
 
+    // The checkbox and the item's text sit in a row; the item's *other* block
+    // children — a nested list above all — belong to the item itself, below
+    // that row and at the item's content column. Markdown indents a nested
+    // list to that column, so leaving the list inside the row would indent it
+    // by a whole checkbox more than the source says.
+    const content = document.createElement('div');
+    content.className = 'min-w-0 flex-1';
+    const blocks: HTMLElement[] = [];
+
     if (markerOnly) {
       // `- [ ] ` with nothing after the marker parses as a plain item whose
       // text is the marker itself; render it as an empty task item instead.
       const paragraph = document.createElement('p');
       paragraph.className = 'min-w-0 markdown-node my-0';
       paragraph.appendChild(this.placeholder(node, true));
-      wrapper.appendChild(paragraph);
+      content.appendChild(paragraph);
     } else {
       for (const child of node.children) {
         const component = createComponent(child);
@@ -82,10 +91,15 @@ export class ListItem extends EditableNodeComponent {
             component.element.appendChild(this.placeholder(node, false));
           }
         }
-        wrapper.appendChild(component.element);
+        if (child.type === 'paragraph') {
+          content.appendChild(component.element);
+        } else {
+          blocks.push(component.element);
+        }
       }
     }
-    this.element.appendChild(wrapper);
+    wrapper.appendChild(content);
+    this.element.append(wrapper, ...blocks);
   }
 
   /**
