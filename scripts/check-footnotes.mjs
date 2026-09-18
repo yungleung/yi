@@ -60,18 +60,18 @@ check('an empty definition is found too',
 
 // The insertion: marker at the caret, definition at the end.
 const inserted = footnoteInsertEdit(doc, 4, '2');
-check('the marker goes at the caret and the definition at the end',
+check('the marker goes at the caret and the definition on the next line at the end',
   applied(doc, inserted),
-  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n\n[^2]: ');
-check('a document with no trailing newline gains a blank line first',
+  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n[^2]: ');
+check('a document with no trailing newline gets one newline',
   applied('text', footnoteInsertEdit('text', 4, '1')),
-  'text[^1]\n\n[^1]: ');
-check('a document that already ends in a blank line does not gain another',
+  'text[^1]\n[^1]: ');
+check('a document that already ends in a blank line keeps it',
   applied('text\n\n', footnoteInsertEdit('text\n\n', 4, '1')),
   'text[^1]\n\n[^1]: ');
 check('an empty document gets a marker and a definition',
   applied('', footnoteInsertEdit('', 0, '1')),
-  '[^1]\n\n[^1]: ');
+  '[^1]\n[^1]: ');
 
 // The borrowed definitions are what make the reference parse.
 check('without its definition the reference is plain text',

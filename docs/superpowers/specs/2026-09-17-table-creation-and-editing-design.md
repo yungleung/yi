@@ -342,11 +342,24 @@ lines parse into (`isOwnContent`). A raw block — code, math, html — is left
 alone: its brackets are text.
 
 **The button writes both halves in one edit**: `[^N]` where the caret is, and
-an empty `[^N]: ` line at the end of the document, separated by the blank line
-markdown needs. `N` is one past the highest numbered label in the document, so
-labelled footnotes (`[^note]`) never collide with it. One edit means one undo
-takes the whole footnote away. The caret stays just after the new marker, where
-the author was writing.
+an empty `[^N]: ` line on the very next line at the end of the document. `N` is
+one past the highest numbered label in the document, so labelled footnotes
+(`[^note]`) never collide with it. One edit means one undo takes the whole
+footnote away, and the caret stays just after the new marker, where the author
+was writing.
+
+The definition is **not** separated by a blank line. Footnotes are not in the
+GFM specification at all — GitHub announced them in 2021 without specifying
+them, and `micromark-extension-gfm-footnote` (what `remark-gfm` parses with)
+says so in as many words — so there is no rule to follow here, and the
+implementation's own grammar only notes that a blank line is *allowed* inside a
+definition. Checked against the parser: a definition directly under a paragraph
+parses exactly like one after a blank line, and the tight pair renders as one
+block with the definition inside it. Newlines the document already ends with
+are left alone, because an empty paragraph is a block here rather than mere
+separation. The cost of the tight form, worth knowing: an unindented line
+written directly under a definition is swallowed into it as a lazy
+continuation, so a blank line has to be typed above anything added below.
 
 **A marker and its definition jump to each other.** The marker renders as a
 superscript link carrying `data-footnote-ref`; the definition's label carries
