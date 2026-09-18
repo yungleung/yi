@@ -62,30 +62,34 @@ check('an empty definition is found too',
 const inserted = footnoteInsertEdit(doc, 4, '2');
 check('the marker goes at the caret and the definition joins the notes at the end',
   applied(doc, inserted),
-  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n[^2]: ');
+  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n[^2]: \n');
 check('a document with no trailing newline gains the blank line',
   applied('text', footnoteInsertEdit('text', 4, '1')),
-  'text[^1]\n\n[^1]: ');
+  'text[^1]\n\n[^1]: \n');
 check('a document that already ends in a blank line keeps it',
   applied('text\n\n', footnoteInsertEdit('text\n\n', 4, '1')),
-  'text[^1]\n\n[^1]: ');
+  'text[^1]\n\n[^1]: \n');
 check('an empty document gets a marker and a definition',
   applied('', footnoteInsertEdit('', 0, '1')),
-  '[^1]\n\n[^1]: ');
+  '[^1]\n\n[^1]: \n');
 check('a second footnote joins the notes without a blank line',
   applied('Body[^1].\n\n[^1]: First.\n', footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n', 4, '2')),
-  'Body[^2][^1].\n\n[^1]: First.\n[^2]: ');
+  'Body[^2][^1].\n\n[^1]: First.\n[^2]: \n');
 check('a second footnote joins a note written without a trailing newline',
   applied('Body[^1].\n\n[^1]: First.', footnoteInsertEdit('Body[^1].\n\n[^1]: First.', 4, '2')),
-  'Body[^2][^1].\n\n[^1]: First.\n[^2]: ');
+  'Body[^2][^1].\n\n[^1]: First.\n[^2]: \n');
 check('a note with an indented continuation still counts as the notes',
   applied('Body[^1].\n\n[^1]: First.\n    continued\n',
     footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n    continued\n', 4, '2')),
-  'Body[^2][^1].\n\n[^1]: First.\n    continued\n[^2]: ');
+  'Body[^2][^1].\n\n[^1]: First.\n    continued\n[^2]: \n');
 check('text below the notes starts them again with a blank line',
   applied('Body[^1].\n\n[^1]: First.\n\nA closing paragraph.\n',
     footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n\nA closing paragraph.\n', 4, '2')),
-  'Body[^2][^1].\n\n[^1]: First.\n\nA closing paragraph.\n\n[^2]: ');
+  'Body[^2][^1].\n\n[^1]: First.\n\nA closing paragraph.\n\n[^2]: \n');
+check('the document still ends with a line ending',
+  applied(doc, inserted).endsWith('\n'), true);
+check('and so does one written into a document with no trailing newline',
+  applied('text', footnoteInsertEdit('text', 4, '1')).endsWith('\n'), true);
 
 // The borrowed definitions are what make the reference parse.
 check('without its definition the reference is plain text',

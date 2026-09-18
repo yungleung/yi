@@ -363,6 +363,11 @@ The button decides between the two by looking at the document's last run of
 non-blank lines: if a definition starts one of them, the notes are already open
 and the new one joins them.
 
+The definition line is written **terminated**. A text file's last line is meant
+to end with a line ending, and this edit is the only one that could take it
+away: appending an unterminated line at the end would leave a document that no
+longer ends in a newline, so the marker line it writes always ends with one.
+
 Markdown does not require that blank line — footnotes are not in the GFM
 specification at all. GitHub announced them in 2021 without specifying them, as
 `micromark-extension-gfm-footnote` (what `remark-gfm` parses with) says in as

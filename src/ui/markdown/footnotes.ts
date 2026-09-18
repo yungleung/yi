@@ -108,7 +108,9 @@ export function withFootnoteDefinitions(blockText: string, defined: ReadonlySet<
  * set off by a blank line, and every definition after it follows the one above
  * directly, so the notes read as one list. Newlines the document already ends
  * with are left as they are — an empty paragraph is a block here, not
- * separation this edit owns.
+ * separation this edit owns — and the definition line is terminated, so a
+ * document that ended with a newline still ends with one: a text file's last
+ * line is meant to end with a line ending.
  */
 export function footnoteInsertEdit(text: string, caret: number, label: string): TextEdit {
   const tail = text.slice(caret);
@@ -121,7 +123,7 @@ export function footnoteInsertEdit(text: string, caret: number, label: string): 
   return {
     from: caret,
     to: text.length,
-    replacement: `[^${label}]${tail}${separator}[^${label}]: `
+    replacement: `[^${label}]${tail}${separator}[^${label}]: \n`
   };
 }
 
