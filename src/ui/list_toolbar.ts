@@ -64,7 +64,8 @@ export class ListToolbar extends BaseComponent {
 
   private createButton(spec: ListButtonSpec): HTMLButtonElement {
     const button = document.createElement('button');
-    button.className = 'btn btn-ghost btn-xs';
+    // The icons are sized in `em`, so the font size is the icon size.
+    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
     button.title = spec.label;
     button.setAttribute('aria-label', spec.label);
     button.innerHTML = spec.icon;
