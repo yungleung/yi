@@ -326,3 +326,37 @@ it and only ever fires when the caret is inside a `fencedCode` block.
   line edit;
 - a blank line inside a selected range stays empty rather than collecting
   trailing spaces.
+
+## Appendix: footnotes
+
+**A reference is only a reference when its definition is in the same parse.**
+Markdown reads `[^1]` as a footnote reference only if the document defines
+`[^1]: …`, and this editor parses one block at a time — so a marker in a
+paragraph and its definition further down used to leave the marker as plain
+text, which is why it never rendered as a superscript.
+
+The state now hands each non-raw block the definitions its references need
+(`withFootnoteDefinitions`), appended as plain text *after* the block's own
+text so every real position is unchanged, and drops the nodes those borrowed
+lines parse into (`isOwnContent`). A raw block — code, math, html — is left
+alone: its brackets are text.
+
+**The button writes both halves in one edit**: `[^N]` where the caret is, and
+an empty `[^N]: ` line at the end of the document, separated by the blank line
+markdown needs. `N` is one past the highest numbered label in the document, so
+labelled footnotes (`[^note]`) never collide with it. One edit means one undo
+takes the whole footnote away. The caret stays just after the new marker, where
+the author was writing.
+
+**A marker and its definition jump to each other.** The marker renders as a
+superscript link carrying `data-footnote-ref`; the definition's label carries
+`data-footnote-def`. The editor catches the click before a node can place a
+caret where the pointer happened to land: the marker sends the caret to the
+start of the definition's text, ready to be written, and the definition's label
+sends it just past the marker it belongs to. The target's block is revealed
+first, because the definition is usually below the viewport.
+
+Known limit: a block's cached parse is keyed by its own text, but whether a
+reference parses depends on the document's definitions. Removing a definition
+therefore leaves a dangling marker looking like a footnote until its own block
+re-renders; clicking it then does nothing.

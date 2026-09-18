@@ -19,6 +19,7 @@ import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
 import { applyListCommand, type ListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
+import { insertFootnote, jumpToFootnote } from './editing/footnotes';
 import {
   continueTableDown,
   insertTable,
@@ -32,6 +33,7 @@ import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
 import { tableMenuModel } from '../table/table_menu_model';
 import { TABLE_INSERT } from '../table/table_toolbar';
 import { LIST_COMMAND } from '../list_toolbar';
+import { FOOTNOTE_COMMAND } from '../footnote_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -187,6 +189,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Checkbox clicks must be handled before the node components stop the
     // event from bubbling to the editor.
     this.contentView.addEventListener('click', (event) => this.handleTaskClick(event), true);
+    // A click on a footnote marker or on a definition's label jumps between the
+    // two, so it is caught before a node places a caret where it was hit.
+    this.contentView.addEventListener('click', (event) => this.handleFootnoteClick(event), true);
     // Clicks that miss every markdown node still place the caret: the margin
     // between blocks and the space below the text are lines, not dead zones.
     this.contentView.addEventListener('click', (event) => this.handlePointerClick(event));
@@ -263,6 +268,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         applyListCommand(this.context, payload.command);
       }
     });
+    void eventManager.on(FOOTNOTE_COMMAND, () => insertFootnote(this.context));
   }
 
   /** Keyboard shortcuts and plain text input. */
@@ -417,6 +423,21 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     placeCaretFromPointer(this.context, event.clientY);
+  }
+
+  /** Jumps between a footnote's marker and its definition. */
+  private handleFootnoteClick(event: MouseEvent): void {
+    const target = event.target as Element | null;
+    const reference = target?.closest<HTMLElement>('[data-footnote-ref]');
+    const definition = target?.closest<HTMLElement>('[data-footnote-def]');
+    const element = reference ?? definition;
+    const label = reference?.dataset.footnoteRef ?? definition?.dataset.footnoteDef;
+    if (!element || !label) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    jumpToFootnote(this.context, label, reference ? 'reference' : 'definition');
   }
 
   /**

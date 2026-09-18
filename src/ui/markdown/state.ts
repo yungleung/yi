@@ -8,8 +8,9 @@
  * text through this state, re-splitting only the affected region.
  */
 
-import { blockContentKey, splitBlocks, type MarkdownBlock } from './blocks';
+import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
+import { footnoteLabels, withFootnoteDefinitions } from './footnotes';
 import { parseMarkdown } from './parser';
 import { blockParseInput } from './trailing_spaces';
 
@@ -35,6 +36,8 @@ export class MarkdownEditorState {
    * and a shifted block's parse is still valid.
    */
   private readonly blockContent = new Map<string, RootContent[]>();
+  /** The labels the document defines, recomputed after every edit. */
+  private labels: Set<string> | null = null;
   private readonly history: HistoryEntry[] = [];
   private historyIndex = 0;
 
@@ -66,7 +69,18 @@ export class MarkdownEditorState {
     if (cached) {
       return cached;
     }
-    const content = parseMarkdown(blockParseInput(block)).children;
+    // Markdown reads `[^1]` as a footnote reference only when its definition is
+    // in the same parse, and this parses one block at a time: the definitions
+    // the block's references need are borrowed from the rest of the document
+    // (see `footnotes.ts`), and the nodes they parse into are dropped again.
+    const prepared = blockParseInput(block);
+    // A raw block (code, math, html) has no footnote references: its brackets
+    // are text, so its parse input is left exactly as it stands.
+    const withContext = isRawRendered(block.kind)
+      ? prepared
+      : withFootnoteDefinitions(prepared, this.footnoteLabels());
+    const content = parseMarkdown(withContext)
+      .children.filter((child) => isOwnContent(child, prepared.length));
     this.blockContent.set(key, content);
     // Every edit mints one new key, so the cache needs a bound of its own.
     if (this.blockContent.size > PARSED_BLOCK_LIMIT) {
@@ -94,6 +108,13 @@ export class MarkdownEditorState {
   private updateText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
+    this.labels = null;
+  }
+
+  /** The labels the document defines, read once per text. */
+  private footnoteLabels(): ReadonlySet<string> {
+    this.labels ??= footnoteLabels(this.text);
+    return this.labels;
   }
 
   /** Replaces a raw document range with `replacement`. */
@@ -112,6 +133,7 @@ export class MarkdownEditorState {
   loadText(text: string): void {
     this.text = text;
     this.blocks = splitBlocks(text);
+    this.labels = null;
     this.blockContent.clear();
     this.history.length = 0;
     this.historyIndex = 0;
@@ -236,4 +258,14 @@ export class MarkdownEditorState {
     }
     return null;
   }
+}
+
+/**
+ * Whether a parsed node comes from the block's own text rather than from the
+ * footnote definitions borrowed for the parse: the borrowed lines sit after it,
+ * so anything starting past its end is not content.
+ */
+function isOwnContent(node: RootContent, length: number): boolean {
+  const start = (node as { position?: { start: { offset?: number } } }).position?.start.offset;
+  return start === undefined || start < length;
 }

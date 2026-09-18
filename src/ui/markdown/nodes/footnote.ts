@@ -18,6 +18,9 @@ export class FootnoteDefinition extends EditableNodeComponent {
     anchor.id = `fn-${id}`;
     anchor.className = 'mr-2 font-semibold inline-block align-top';
     anchor.textContent = `[${id}]`;
+    // Clicking the label of a definition jumps back to its reference; the
+    // editor owns that jump, so the label only has to name itself.
+    anchor.dataset.footnoteDef = id;
     this.element.appendChild(anchor);
 
     const content = document.createElement('span');
@@ -55,6 +58,8 @@ export class FootnoteReference extends EditableNodeComponent {
     link.className = 'text-primary font-medium';
     link.textContent = `[${id}]`;
     link.id = `fnref-${id}`;
+    // The marker is a superscript link: clicking it jumps to the definition.
+    this.element.dataset.footnoteRef = id;
     this.element.appendChild(link);
   }
 }

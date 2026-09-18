@@ -10,6 +10,7 @@ import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/formatting_toolbar';
 import { ListToolbar } from './ui/list_toolbar';
+import { FootnoteToolbar } from './ui/footnote_toolbar';
 import { TableToolbar } from './ui/table/table_toolbar';
 import { Toast } from './ui/toast';
 import { workspaceManager, TOAST_EVENT, WORKSPACE_CHANGED } from './services/workspace';
@@ -43,6 +44,7 @@ function createAppShell() {
   }, 180, 420, sidebar.getWidth());
   const formattingToolbar = new FormattingToolbar();
   const listToolbar = new ListToolbar();
+  const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
   const toast = new Toast();
 
@@ -61,6 +63,7 @@ function createAppShell() {
   titleBar.addComponent(titleActions, 'right');
   titleBar.addComponent(formattingToolbar, 'center');
   titleBar.addComponent(listToolbar, 'center');
+  titleBar.addComponent(footnoteToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');
 
   sidebar.attachToTitleBar(titleBar.element);
