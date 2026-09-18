@@ -16,6 +16,12 @@ import type { TextEdit } from './edit_range';
 
 /** The label a definition line defines, or null. */
 const DEFINITION = /^ {0,3}\[\^([^\]\n]+)\]:/gm;
+/**
+ * A line that starts a definition. Kept separate from `DEFINITION` on purpose:
+ * that one is global, so it carries a last-index between calls, which a plain
+ * `test` would inherit.
+ */
+const DEFINITION_START = /^ {0,3}\[\^[^\]\n]+\]:/;
 /** A reference: a labelled bracket that is not a definition. */
 const REFERENCE = /\[\^([^\]\n]+)\](?!:)/g;
 
@@ -96,21 +102,47 @@ export function withFootnoteDefinitions(blockText: string, defined: ReadonlySet<
 
 /**
  * The one edit the footnote button makes: the marker at the caret, and the
- * definition line at the end of the document, with a blank line in front of
- * it: the notes are a part of the document of their own, and without that
- * blank line the definition would sit inside the paragraph above — where an
- * unindented line typed below it is swallowed into the note.
+ * definition line at the end of the document.
  *
- * Newlines the document already ends with are left as they are: they are
- * content (an empty paragraph is a block here), not separation this edit owns.
+ * The notes are a part of the document of their own: the *first* definition is
+ * set off by a blank line, and every definition after it follows the one above
+ * directly, so the notes read as one list. Newlines the document already ends
+ * with are left as they are — an empty paragraph is a block here, not
+ * separation this edit owns.
  */
 export function footnoteInsertEdit(text: string, caret: number, label: string): TextEdit {
   const tail = text.slice(caret);
   const trailingNewlines = /(\n*)$/.exec(tail)?.[1].length ?? 0;
-  const separator = '\n'.repeat(Math.max(0, 2 - trailingNewlines));
+  const separator = notesAreOpen(text, trailingNewlines)
+    ? trailingNewlines >= 1
+      ? ''
+      : '\n'
+    : '\n'.repeat(Math.max(0, 2 - trailingNewlines));
   return {
     from: caret,
     to: text.length,
     replacement: `[^${label}]${tail}${separator}[^${label}]: `
   };
+}
+
+/**
+ * Whether the document already ends inside the notes, in which case the new
+ * definition joins them instead of starting them.
+ *
+ * The document's last run of non-blank lines is what decides: if one of those
+ * lines starts a definition, the run is the notes.
+ */
+function notesAreOpen(text: string, trailingNewlines: number): boolean {
+  const before = text.slice(0, text.length - trailingNewlines);
+  const lines = before.split('\n');
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (line.trim() === '') {
+      return false;
+    }
+    if (DEFINITION_START.test(line)) {
+      return true;
+    }
+  }
+  return false;
 }

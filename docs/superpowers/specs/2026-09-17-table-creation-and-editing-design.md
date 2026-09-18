@@ -342,11 +342,26 @@ lines parse into (`isOwnContent`). A raw block — code, math, html — is left
 alone: its brackets are text.
 
 **The button writes both halves in one edit**: `[^N]` where the caret is, and
-an empty `[^N]: ` line **after a blank line** at the end of the document. `N` is
-one past the highest numbered label in the document, so labelled footnotes
-(`[^note]`) never collide with it. One edit means one undo takes the whole
-footnote away, and the caret stays just after the new marker, where the author
-was writing.
+an empty `[^N]: ` line at the end of the document. `N` is one past the highest
+numbered label in the document, so labelled footnotes (`[^note]`) never collide
+with it. One edit means one undo takes the whole footnote away, and the caret
+stays just after the new marker, where the author was writing.
+
+**The notes are one part of the document, not a set of blocks.** The *first*
+definition is set off from what precedes it by a blank line; every definition
+after it follows the note above it directly, on the next line. So a document
+grows like this:
+
+```markdown
+Body text.[^1][^2]
+
+[^1]: First note.
+[^2]: Second note.
+```
+
+The button decides between the two by looking at the document's last run of
+non-blank lines: if a definition starts one of them, the notes are already open
+and the new one joins them.
 
 Markdown does not require that blank line — footnotes are not in the GFM
 specification at all. GitHub announced them in 2021 without specifying them, as
@@ -359,6 +374,11 @@ it is swallowed into the note as a lazy continuation. Separated, the notes are
 a part of the document of their own, and nothing typed below them can join one.
 Newlines the document already ends with are left alone, because an empty
 paragraph is a block here rather than mere separation.
+
+A footnote marker also counts as its rendered width (`[label]`) in the offset
+model. Counted as nothing, the caret placed just after a marker mapped back in
+front of it, and the next marker typed landed on the wrong side of the one
+before.
 
 **Notes are set tight, the way they are set in print**: one paragraph skip
 between definitions rather than a block's own leading. A definition carries no

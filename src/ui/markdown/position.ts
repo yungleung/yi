@@ -289,6 +289,13 @@ function renderedLength(node: RootContent): number {
     const value = (node as { value: string }).value;
     return bibliographyManager.formatCached(value)?.length ?? value.length;
   }
+  if (node.type === 'footnoteReference') {
+    // The marker renders as `[label]`, and the caret has to be able to sit
+    // after it: a marker counted as no width would pull the caret back in
+    // front of itself, and the next marker typed would land on the wrong side.
+    const label = node as { label?: string; identifier?: string };
+    return 2 + String(label.label ?? label.identifier ?? '').length;
+  }
   return (node as { value?: string }).value?.length ?? 0;
 }
 

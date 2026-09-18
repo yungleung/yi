@@ -60,9 +60,9 @@ check('an empty definition is found too',
 
 // The insertion: marker at the caret, definition at the end.
 const inserted = footnoteInsertEdit(doc, 4, '2');
-check('the marker goes at the caret and the definition after a blank line at the end',
+check('the marker goes at the caret and the definition joins the notes at the end',
   applied(doc, inserted),
-  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n\n[^2]: ');
+  'Body[^2] text[^1] more.\n\n[^1]: The definition.\n[^2]: ');
 check('a document with no trailing newline gains the blank line',
   applied('text', footnoteInsertEdit('text', 4, '1')),
   'text[^1]\n\n[^1]: ');
@@ -72,6 +72,20 @@ check('a document that already ends in a blank line keeps it',
 check('an empty document gets a marker and a definition',
   applied('', footnoteInsertEdit('', 0, '1')),
   '[^1]\n\n[^1]: ');
+check('a second footnote joins the notes without a blank line',
+  applied('Body[^1].\n\n[^1]: First.\n', footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n', 4, '2')),
+  'Body[^2][^1].\n\n[^1]: First.\n[^2]: ');
+check('a second footnote joins a note written without a trailing newline',
+  applied('Body[^1].\n\n[^1]: First.', footnoteInsertEdit('Body[^1].\n\n[^1]: First.', 4, '2')),
+  'Body[^2][^1].\n\n[^1]: First.\n[^2]: ');
+check('a note with an indented continuation still counts as the notes',
+  applied('Body[^1].\n\n[^1]: First.\n    continued\n',
+    footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n    continued\n', 4, '2')),
+  'Body[^2][^1].\n\n[^1]: First.\n    continued\n[^2]: ');
+check('text below the notes starts them again with a blank line',
+  applied('Body[^1].\n\n[^1]: First.\n\nA closing paragraph.\n',
+    footnoteInsertEdit('Body[^1].\n\n[^1]: First.\n\nA closing paragraph.\n', 4, '2')),
+  'Body[^2][^1].\n\n[^1]: First.\n\nA closing paragraph.\n\n[^2]: ');
 
 // The borrowed definitions are what make the reference parse.
 check('without its definition the reference is plain text',
