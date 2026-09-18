@@ -18,9 +18,6 @@ import type { TextEdit } from './edit_range';
 
 export type ListKind = 'ordered' | 'bullet' | 'task';
 
-/** The characters an indent step adds or takes away. */
-const INDENT = '  ';
-
 /** A line's list marker, read apart. */
 interface Marker {
   /** The leading whitespace before the marker. */
@@ -32,6 +29,14 @@ interface Marker {
   number: number | null;
   /** How many characters the marker occupies, content excluded. */
   length: number;
+  /**
+   * The column the item's content starts in, inside its own line: the
+   * indentation plus the bullet and the space after it. A child list has to
+   * reach this column to nest, so this — not a fixed step — is how far an
+   * indent has to move an item. The task checkbox is *content* to markdown,
+   * so it is not counted here.
+   */
+  column: number;
 }
 
 /** `- item`, `  * item`, `1) item`, `- [x] item` … */
@@ -43,14 +48,15 @@ export function readMarker(line: string): Marker | null {
   if (!match) {
     return null;
   }
-  const [, indent, bullet, , checkbox] = match;
+  const [, indent, bullet, spaces, checkbox] = match;
   const ordered = /\d/.test(bullet);
   return {
     indent,
     bullet,
     kind: ordered ? 'ordered' : checkbox ? 'task' : 'bullet',
     number: ordered ? Number.parseInt(bullet, 10) : null,
-    length: match[0].length
+    length: match[0].length,
+    column: indent.length + bullet.length + spaces.length
   };
 }
 
@@ -82,16 +88,21 @@ function touchedLines(text: string, from: number, to: number): Array<{ start: nu
 
 /**
  * The number an ordered item written on this line should carry: it continues
- * the ordered item directly above when there is one at the same indentation,
- * and starts at 1 otherwise.
+ * the nearest ordered item above it at the same indentation, and starts at 1
+ * when there is none. Anything else would either restart a nested list in the
+ * middle of itself or, worse, write a nested list that markdown does not read
+ * as a list at all — a nested ordered list has to begin at 1.
  */
 function orderedStart(text: string, lineStart: number, indent: string): number {
   if (lineStart === 0) {
     return 1;
   }
-  const above = lineSpanAt(text, lineStart - 1);
-  const marker = readMarker(text.slice(above.start, above.end));
-  return marker?.kind === 'ordered' && marker.indent === indent ? (marker.number ?? 0) + 1 : 1;
+  const above = itemAbove(
+    text,
+    lineStart,
+    (marker) => marker.kind === 'ordered' && marker.indent === indent
+  );
+  return above ? (above.marker.number ?? 0) + 1 : 1;
 }
 
 /**
@@ -133,18 +144,41 @@ export function listEdit(text: string, from: number, to: number, kind: ListKind)
   return { from: lines[0].start, to: lines[lines.length - 1].end, replacement };
 }
 
-/** One indent step over a block of lines: whole lines, blank ones untouched. */
-function shiftIndent(block: string, outdent: boolean): string {
+/** The item nearest above `offset` whose marker satisfies `accept`. */
+function itemAbove(
+  text: string,
+  offset: number,
+  accept: (marker: Marker) => boolean
+): { marker: Marker; start: number } | null {
+  let line = lineSpanAt(text, Math.max(0, offset - 1));
+  for (;;) {
+    const marker = readMarker(text.slice(line.start, line.end));
+    if (marker && accept(marker)) {
+      return { marker, start: line.start };
+    }
+    if (line.start === 0) {
+      return null;
+    }
+    line = lineSpanAt(text, line.start - 1);
+  }
+}
+
+/** Moves every line of a subtree `delta` columns sideways. */
+function shiftBlock(block: string, delta: number): string {
   return block
     .split('\n')
     .map((line) => {
       if (line.trim() === '') {
         return line;
       }
-      if (outdent) {
-        return line.replace(/^ {1,2}/, '');
+      if (delta > 0) {
+        return `${' '.repeat(delta)}${line}`;
       }
-      return `${INDENT}${line}`;
+      let removed = 0;
+      while (removed < -delta && line[removed] === ' ') {
+        removed += 1;
+      }
+      return line.slice(removed);
     })
     .join('\n');
 }
@@ -153,10 +187,18 @@ function shiftIndent(block: string, outdent: boolean): string {
  * The indent button's edit: move every item the range touches one level in or
  * out, children included. Returns null when nothing would move — there is no
  * item in the range, or outdenting items that are not indented.
+ *
+ * A level is not a fixed number of spaces. Markdown nests a child list only
+ * when it reaches the column the parent's *content* starts in — two columns
+ * under `- `, three under `1. `, four under `10. ` — so the step is measured
+ * from the item above, and each subtree moves by its own amount. An ordered
+ * item that moves is renumbered for the level it lands on: a nested ordered
+ * list that does not start at 1 does not nest at all, it is read as the text
+ * of the item above.
  */
 export function indentEdit(text: string, from: number, to: number, outdent: boolean): TextEdit | null {
   const lines = touchedLines(text, from, to);
-  const items: Array<{ start: number; end: number }> = [];
+  const plans: Array<{ start: number; end: number; delta: number }> = [];
   let covered = -1;
   for (const line of lines) {
     if (line.start < covered) {
@@ -165,29 +207,77 @@ export function indentEdit(text: string, from: number, to: number, outdent: bool
       continue;
     }
     const raw = text.slice(line.start, line.end);
-    if (!readMarker(raw)) {
+    const marker = readMarker(raw);
+    if (!marker) {
       continue;
     }
     const end = itemSubtreeEnd(text, line);
-    items.push({ start: line.start, end });
+    const own = marker.indent.length;
+    let target: number;
+    if (outdent) {
+      const parent = itemAbove(text, line.start, (candidate) => candidate.indent.length < own);
+      target = parent ? parent.marker.indent.length : 0;
+    } else {
+      const above = itemAbove(text, line.start, (candidate) => candidate.indent.length <= own);
+      // A sibling above becomes the parent: reach into its content. With no
+      // sibling, the item steps in by its own marker's width.
+      target =
+        above && above.marker.indent.length === own
+          ? above.marker.column
+          : own + (marker.column - own);
+    }
+    if (target !== own) {
+      plans.push({ start: line.start, end, delta: target - own });
+    }
     covered = end;
   }
-  if (items.length === 0) {
+  if (plans.length === 0) {
     return null;
   }
 
-  const first = items[0].start;
-  const close = items[items.length - 1].end;
+  const first = plans[0].start;
+  const close = plans[plans.length - 1].end;
   let replacement = '';
   let cursor = first;
-  for (const item of items) {
-    replacement += text.slice(cursor, item.start);
-    replacement += shiftIndent(text.slice(item.start, item.end), outdent);
-    cursor = item.end;
+  let running: { indent: string; number: number } | null = null;
+  for (const plan of plans) {
+    replacement += text.slice(cursor, plan.start);
+    replacement += shiftItem(text, plan, running);
+    const moved = readMarker(replacement.slice(replacement.lastIndexOf('\n') + 1));
+    running =
+      moved?.kind === 'ordered'
+        ? { indent: moved.indent, number: moved.number ?? 1 }
+        : null;
+    cursor = plan.end;
   }
   replacement += text.slice(cursor, close);
   if (replacement === text.slice(first, close)) {
     return null;
   }
   return { from: first, to: close, replacement };
+}
+
+/**
+ * One item's subtree, moved sideways, with its marker renumbered when it is an
+ * ordered item. `running` is the ordered run the item joins — the item above
+ * it at its new level, if that item is part of this same edit.
+ */
+function shiftItem(
+  text: string,
+  plan: { start: number; end: number; delta: number },
+  running: { indent: string; number: number } | null
+): string {
+  const shifted = shiftBlock(text.slice(plan.start, plan.end), plan.delta);
+  const firstBreak = shifted.indexOf('\n');
+  const head = firstBreak < 0 ? shifted : shifted.slice(0, firstBreak);
+  const marker = readMarker(head);
+  if (marker?.kind !== 'ordered') {
+    return shifted;
+  }
+  const number =
+    running && running.indent === marker.indent
+      ? running.number + 1
+      : orderedStart(text, plan.start, marker.indent);
+  const rewritten = `${marker.indent}${number}. ${head.slice(marker.length)}`;
+  return firstBreak < 0 ? rewritten : `${rewritten}${shifted.slice(firstBreak)}`;
 }

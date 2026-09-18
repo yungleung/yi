@@ -7,7 +7,7 @@ export const TABLE_INSERT = 'table_insert';
 
 /** The grid icon, sized like the formatting icons it sits beside. */
 const TABLE_ICON =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1.25em" height="1.25em" viewBox="0 0 36 36">' +
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 36 36">' +
   '<path d="M0 0h36v36H0z" fill="none" />' +
   '<path fill="currentColor" d="M8 34a1 1 0 0 1-1-1V2.92a1 1 0 0 1 2 0V33a1 1 0 0 1-1 1" />' +
   '<path fill="currentColor" d="M17 33.92a1 1 0 0 1-1-1V9.1a1 1 0 1 1 2 0v23.82a1 1 0 0 1-1 1" />' +
@@ -29,7 +29,7 @@ export class TableToolbar extends BaseComponent {
     super('div', ['relative', 'flex', 'items-center']);
 
     const button = document.createElement('button');
-    button.className = 'btn btn-ghost btn-xs';
+    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
     button.title = 'Insert table';
     button.setAttribute('aria-label', 'Insert table');
     button.innerHTML = TABLE_ICON;

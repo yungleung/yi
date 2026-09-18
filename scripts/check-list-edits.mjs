@@ -6,6 +6,9 @@ import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 
 const bundle = await rolldown({ input: 'src/ui/markdown/list_edits.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
@@ -14,6 +17,20 @@ const directory = mkdtempSync(join(tmpdir(), 'yi-list-'));
 const file = join(directory, 'list_edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { listEdit, indentEdit, readMarker } = await import(file);
+
+/** How deep the lists of a document nest, per the markdown parser itself. */
+const nestingDepth = (markdown) => {
+  const tree = unified().use(remarkParse).use(remarkGfm).runSync(
+    unified().use(remarkParse).use(remarkGfm).parse(markdown)
+  );
+  const walk = (node, depth) =>
+    (node.children ?? []).reduce(
+      (best, child) =>
+        child.type === 'list' ? Math.max(best, walk(child, depth + 1)) : Math.max(best, walk(child, depth)),
+      depth
+    );
+  return walk(tree, 0);
+};
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -91,7 +108,7 @@ check(
 );
 check(
   'outdent moves the children too',
-  applied('- a\n  - b', indentEdit('- a\n  - b', 2, 3, true)),
+  applied('- a\n  - b', indentEdit('- a\n  - b', 8, 9, true)),
   '- a\n- b'
 );
 check(
@@ -100,13 +117,62 @@ check(
   '  - a\n  - b'
 );
 
+// Nesting is decided by the markdown parser, so these ask it directly: an
+// indented item has to be a *child* item of the one above, not text under it.
+check(
+  'indenting an ordered item nests it, and numbers it as a nested list starts',
+  applied('1. one\n2. two', indentEdit('1. one\n2. two', 10, 11, false)),
+  '1. one\n   1. two'
+);
+check(
+  'the indented ordered item is really nested',
+  nestingDepth(applied('1. one\n2. two', indentEdit('1. one\n2. two', 10, 11, false))) > 1,
+  true
+);
+check(
+  'the old flat step would not have nested',
+  nestingDepth('1. one\n  2. two') > 1,
+  false
+);
+check(
+  'a two-digit marker nests its child at its own column',
+  applied('10. one\n11. two', indentEdit('10. one\n11. two', 11, 12, false)),
+  '10. one\n    1. two'
+);
+check(
+  'indenting a task item nests it',
+  applied('- [ ] a\n- [ ] b', indentEdit('- [ ] a\n- [ ] b', 11, 12, false)),
+  '- [ ] a\n  - [ ] b'
+);
+check(
+  'the nested task item is a child item',
+  nestingDepth(applied('- [ ] a\n- [ ] b', indentEdit('- [ ] a\n- [ ] b', 11, 12, false))) > 1,
+  true
+);
+check(
+  'indenting into an existing nested list continues its numbering',
+  applied('1. a\n   1. b\n2. c', indentEdit('1. a\n   1. b\n2. c', 18, 19, false)),
+  '1. a\n   1. b\n   2. c'
+);
+check(
+  'outdenting an ordered item renumbers it at its parent level',
+  applied('1. a\n   1. b\n   2. c', indentEdit('1. a\n   1. b\n   2. c', 17, 18, true)),
+  '1. a\n   1. b\n2. c'
+);
+check(
+  'outdenting keeps the nesting that remains',
+  nestingDepth(applied('1. a\n   1. b\n   2. c', indentEdit('1. a\n   1. b\n   2. c', 17, 18, true))),
+  2
+);
+
 // Reading a marker.
 check('a marker is read apart', readMarker('  - [x] item'), {
   indent: '  ',
   bullet: '-',
   kind: 'task',
   number: null,
-  length: 8
+  length: 8,
+  column: 4
 });
 check('an ordered marker keeps its number', readMarker('12) item')?.number, 12);
 check('plain text has no marker', readMarker('text'), null);

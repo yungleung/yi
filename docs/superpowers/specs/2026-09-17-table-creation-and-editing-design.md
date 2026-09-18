@@ -289,10 +289,19 @@ same rule applies to every line it touches, in one edit, so a mixed selection
 becomes one list of the named kind; a selection that stops where a line starts
 does not touch that line, and a blank line is never given a marker.
 
-**One indent step is two spaces**, applied to the item *and its subtree*, so a
-nested list stays nested in the item it belongs to; un-indenting takes the two
-spaces back from the same span. Only list items move: a plain paragraph is left
+**One indent step is the parent's content column**, not a fixed number of
+spaces: markdown nests a child list only when it reaches the column the item
+above starts its content in — two spaces under `- `, three under `1. `, four
+under `10. ` — so the step is measured from that item and each subtree moves by
+its own amount. The step applies to the item *and its subtree*, so a nested
+list stays nested in the item it belongs to, and un-indenting moves the subtree
+back to the parent's column. Only list items move: a plain paragraph is left
 alone, because spaces at the start of a line mean an indented code block.
+
+An ordered item that moves is **renumbered for the level it lands on**, because
+a nested ordered list that does not begin at 1 is not read as a list at all —
+markdown sees the text of the item above it. An item joining an existing nested
+run takes the next number; an item opening one starts at 1.
 
 **`Tab` and `Shift+Tab` are the same commands** as the indent button, so a list
 can be shaped without leaving the keyboard. Inside a table cell the table's own
