@@ -9,6 +9,7 @@ import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/formatting_toolbar';
+import { ListToolbar } from './ui/list_toolbar';
 import { TableToolbar } from './ui/table/table_toolbar';
 import { Toast } from './ui/toast';
 import { workspaceManager, TOAST_EVENT, WORKSPACE_CHANGED } from './services/workspace';
@@ -41,6 +42,7 @@ function createAppShell() {
     sidebar.setWidth(width);
   }, 180, 420, sidebar.getWidth());
   const formattingToolbar = new FormattingToolbar();
+  const listToolbar = new ListToolbar();
   const tableToolbar = new TableToolbar();
   const toast = new Toast();
 
@@ -58,6 +60,7 @@ function createAppShell() {
   titleActions.textContent = '⋯';
   titleBar.addComponent(titleActions, 'right');
   titleBar.addComponent(formattingToolbar, 'center');
+  titleBar.addComponent(listToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');
 
   sidebar.attachToTitleBar(titleBar.element);

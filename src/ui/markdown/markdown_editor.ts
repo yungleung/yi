@@ -17,6 +17,7 @@ import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
+import { applyListCommand, type ListCommand } from './editing/lists';
 import {
   continueTableDown,
   insertTable,
@@ -29,6 +30,7 @@ import {
 import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
 import { tableMenuModel } from '../table/table_menu_model';
 import { TABLE_INSERT } from '../table/table_toolbar';
+import { LIST_COMMAND } from '../list_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -254,6 +256,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         runTableCommand(this.context, payload.target, payload.command);
       }
     });
+    void eventManager.on(LIST_COMMAND, (event) => {
+      const payload = (event.payload ?? event) as { command?: ListCommand };
+      if (payload.command) {
+        applyListCommand(this.context, payload.command);
+      }
+    });
   }
 
   /** Keyboard shortcuts and plain text input. */
@@ -265,7 +273,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      // Tab walks a table's cells and moves a list item a level in or out;
+      // elsewhere the browser keeps its own Tab, as it did before.
       if (moveTableCell(this.context, event.shiftKey ? -1 : 1)) {
+        event.preventDefault();
+        return;
+      }
+      if (applyListCommand(this.context, event.shiftKey ? 'outdent' : 'indent')) {
         event.preventDefault();
       }
       return;

@@ -19,19 +19,12 @@ import {
   type ColumnAlign,
   type TableSource
 } from './table_source';
+import { shiftOffset, type TextEdit } from './edit_range';
 
-export interface TableEdit {
-  from: number;
-  to: number;
-  replacement: string;
-}
+/** A table operation is a raw-text edit like any other. */
+export type TableEdit = TextEdit;
 
-/** Where an offset ends up once `edit` is applied. */
-export function shiftOffset(offset: number, edit: TableEdit): number {
-  if (offset <= edit.from) return offset;
-  if (offset >= edit.to) return offset + (edit.replacement.length - (edit.to - edit.from));
-  return edit.from;
-}
+export { shiftOffset };
 
 /** One of the table's source lines: the delimiter line has no row index. */
 interface TableLine {

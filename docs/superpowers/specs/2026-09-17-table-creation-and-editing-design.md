@@ -270,3 +270,32 @@ webview's own context menu does not appear alongside the Tauri one, and that
 Cell-level alignment (markdown has no syntax for it), multi-line cells, column
 widths and author padding preservation in touched lines, drag handles for
 resizing or reordering, and converting an existing block into a table.
+
+## Appendix: the list tools
+
+The titlebar carries a second group of buttons beside the table one — ordered,
+bullet and task lists, and one indent step — because a table is a structure the
+author inserts and edits, and so is a list. The rules live in
+`list_edits.ts` (pure) and `editing/lists.ts` (the editor-facing commands), the
+buttons in `ui/list_toolbar.ts`.
+
+**The three list buttons toggle.** A line that is not a list item gets the
+marker the button names; a line that is already that kind loses its marker and
+becomes an ordinary line again; a line that is another kind is rewritten in
+place. Content never moves, and an item's indentation is kept through a
+rewrite. An ordered item continues the numbering of the ordered item directly
+above it at the same indentation, and starts at 1 otherwise. On a selection the
+same rule applies to every line it touches, in one edit, so a mixed selection
+becomes one list of the named kind; a selection that stops where a line starts
+does not touch that line, and a blank line is never given a marker.
+
+**One indent step is two spaces**, applied to the item *and its subtree*, so a
+nested list stays nested in the item it belongs to; un-indenting takes the two
+spaces back from the same span. Only list items move: a plain paragraph is left
+alone, because spaces at the start of a line mean an indented code block.
+
+**`Tab` and `Shift+Tab` are the same commands** as the indent button, so a list
+can be shaped without leaving the keyboard. Inside a table cell the table's own
+rule comes first — Tab walks the cells — and elsewhere Tab keeps whatever the
+browser did with it before. Each command is one `applyEdit`, so a list change
+is one undo step, and the caret travels with the text it sat in.
