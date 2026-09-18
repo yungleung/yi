@@ -254,20 +254,36 @@ export function continueTableDown(context: EditorContext): boolean {
 /**
  * Starts an empty paragraph after the table.
  *
- * The paragraph is one blank line after the table's own line terminator, so it
- * is a block of its own rather than a separator; the newline that is already
- * there is reused when the table is not at the end of the document.
+ * The newlines already sitting after the table are counted and only the
+ * missing ones are added. Between the table and a following block one blank
+ * line is the separator and the next one is the empty paragraph, so three
+ * newlines are needed there; at the end of the document no separator is due
+ * and the paragraph is the second newline.
+ *
+ * The caret is put on the paragraph by asking the state where the first empty
+ * paragraph after the table is, rather than by counting characters: the line
+ * the author sees is the one the caret has to land on.
  */
 function leaveTableBelow(context: EditorContext, block: MarkdownBlock): boolean {
-  const lines = readTableSource(block.text)?.rows;
-  const lastRow = lines?.[lines.length - 1];
+  const rows = readTableSource(block.text)?.rows;
+  const lastRow = rows?.[rows.length - 1];
   if (!lastRow) {
     return false;
   }
   const after = block.charStart + lastRow.end;
   const text = context.state.getText();
-  const insertion = text[after] === '\n' ? '\n' : '\n\n';
-  applyEdit(context, after, after, insertion, after + 1);
+  const run = /^\n+/.exec(text.slice(after))?.[0].length ?? 0;
+  const endsTheDocument = text.slice(after + run) === '';
+  const neededRun = endsTheDocument ? 2 : 3;
+  const insertion = '\n'.repeat(Math.max(0, neededRun - run));
+  const caret = (state: { firstEmptyParagraphAfter(offset: number): number | null }): number =>
+    state.firstEmptyParagraphAfter(after) ?? after;
+  if (insertion.length === 0) {
+    // The empty paragraph is already there: Enter moves onto it.
+    const offset = context.state.firstEmptyParagraphAfter(after);
+    return offset === null ? false : restoreCaret(context, offset);
+  }
+  applyEdit(context, after + run, after + run, insertion, caret);
   return true;
 }
 

@@ -81,6 +81,11 @@ check(
   cellBelow(readTableSource('| A | B |\n| --- | --- |\n| 1 |'), 0, 1),
   null
 );
+check(
+  'an offset past the last cell belongs to that cell, not the first',
+  locateCell(readTableSource('| a | b |\n| --- | --- |\n| 1 | 2 |'), 33)?.column,
+  1
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

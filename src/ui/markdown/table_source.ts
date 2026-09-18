@@ -243,14 +243,25 @@ export function rowAt(source: TableSource, row: number): TableRow | null {
   return source.rows.find((candidate) => candidate.row === row) ?? null;
 }
 
-/** The cell whose inner range holds `offset`, or the first cell otherwise. */
+/**
+ * The cell whose inner range holds `offset`, or — when the offset falls
+ * between cells, on a pipe or past the table's end — the cell nearest to it.
+ * "Nearest" rather than "first": an offset just past the last cell belongs to
+ * that cell, not to the one at the other end of the table.
+ */
 export function locateCell(source: TableSource, offset: number): TableCellSpan | null {
   let nearest: TableCellSpan | null = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
   for (const row of source.rows) {
     for (const cell of row.cells) {
-      nearest = nearest ?? cell;
       if (offset >= cell.innerStart && offset <= cell.innerEnd) {
         return cell;
+      }
+      const distance =
+        offset < cell.innerStart ? cell.innerStart - offset : offset - cell.innerEnd;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = cell;
       }
     }
   }

@@ -102,7 +102,9 @@ Each cell therefore renders:
   that contains it: the caret goes into that cell's text at the matching
   position, or into its placeholder when the cell is empty. This is what puts
   the caret in the first header cell after creation and what moves it across
-  cells for `Tab`.
+  cells for `Tab`. An offset that falls between cells resolves to the *nearest*
+  one, so an offset just past the table's last cell belongs to that cell rather
+  than to the cell at the other end of the table.
 
 Alignment is finally rendered: `table.align[column]` sets `text-align` on the
 header and body cells of that column.
@@ -223,9 +225,14 @@ around it is presentation, not content.
 under it, which is how a table is filled in. A cell with nothing under it — the
 last row, or a short row that does not reach that column — ends the column
 there, and the key does what `Enter` does at the end of any other block: it
-starts an empty paragraph below the table. The blank line reuses the newline
-that is already after the table when the document continues below it, and adds
-both newlines when the table ends the document.
+starts an empty paragraph below the table and **puts the caret on it**, not
+back inside the table.
+
+That paragraph is placed by counting the newlines the table already has after
+it and adding only the missing ones: between the table and a following block
+one blank line is the separator and the next one is the paragraph, while at the
+end of the document no separator is due. When an empty paragraph is already
+there, `Enter` simply moves onto it rather than stacking another blank line.
 
 `Shift+Enter` is the same key inside a table, because a cell holds text rather
 than lines and a soft break has nothing to mean there; outside a table it keeps
