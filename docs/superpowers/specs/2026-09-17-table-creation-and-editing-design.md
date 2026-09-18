@@ -342,24 +342,28 @@ lines parse into (`isOwnContent`). A raw block — code, math, html — is left
 alone: its brackets are text.
 
 **The button writes both halves in one edit**: `[^N]` where the caret is, and
-an empty `[^N]: ` line on the very next line at the end of the document. `N` is
+an empty `[^N]: ` line **after a blank line** at the end of the document. `N` is
 one past the highest numbered label in the document, so labelled footnotes
 (`[^note]`) never collide with it. One edit means one undo takes the whole
 footnote away, and the caret stays just after the new marker, where the author
 was writing.
 
-The definition is **not** separated by a blank line. Footnotes are not in the
-GFM specification at all — GitHub announced them in 2021 without specifying
-them, and `micromark-extension-gfm-footnote` (what `remark-gfm` parses with)
-says so in as many words — so there is no rule to follow here, and the
-implementation's own grammar only notes that a blank line is *allowed* inside a
-definition. Checked against the parser: a definition directly under a paragraph
-parses exactly like one after a blank line, and the tight pair renders as one
-block with the definition inside it. Newlines the document already ends with
-are left alone, because an empty paragraph is a block here rather than mere
-separation. The cost of the tight form, worth knowing: an unindented line
-written directly under a definition is swallowed into it as a lazy
-continuation, so a blank line has to be typed above anything added below.
+Markdown does not require that blank line — footnotes are not in the GFM
+specification at all. GitHub announced them in 2021 without specifying them, as
+`micromark-extension-gfm-footnote` (what `remark-gfm` parses with) says in as
+many words, and its grammar only notes that a blank line is *allowed* inside a
+definition. Checked against the parser, a definition directly under a paragraph
+parses exactly like one after a blank line. The blank line is there for the
+document's sake: a definition is a container, so an unindented line typed under
+it is swallowed into the note as a lazy continuation. Separated, the notes are
+a part of the document of their own, and nothing typed below them can join one.
+Newlines the document already ends with are left alone, because an empty
+paragraph is a block here rather than mere separation.
+
+**Notes are set tight, the way they are set in print**: one paragraph skip
+between definitions rather than a block's own leading. A definition carries no
+top margin of its own, and its bottom margin is the paragraph skip, so a note
+follows the note above it by the same 8px a paragraph follows a paragraph by.
 
 **A marker and its definition jump to each other.** The marker renders as a
 superscript link carrying `data-footnote-ref`; the definition's label carries

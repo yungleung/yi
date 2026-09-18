@@ -96,17 +96,18 @@ export function withFootnoteDefinitions(blockText: string, defined: ReadonlySet<
 
 /**
  * The one edit the footnote button makes: the marker at the caret, and the
- * definition line at the end of the document.
+ * definition line at the end of the document, with a blank line in front of
+ * it: the notes are a part of the document of their own, and without that
+ * blank line the definition would sit inside the paragraph above — where an
+ * unindented line typed below it is swallowed into the note.
  *
- * The definition goes on the very next line — markdown does not require a
- * blank line in front of a definition, and a tight document is easier to read.
  * Newlines the document already ends with are left as they are: they are
  * content (an empty paragraph is a block here), not separation this edit owns.
  */
 export function footnoteInsertEdit(text: string, caret: number, label: string): TextEdit {
   const tail = text.slice(caret);
   const trailingNewlines = /(\n*)$/.exec(tail)?.[1].length ?? 0;
-  const separator = trailingNewlines === 0 ? '\n' : '';
+  const separator = '\n'.repeat(Math.max(0, 2 - trailingNewlines));
   return {
     from: caret,
     to: text.length,

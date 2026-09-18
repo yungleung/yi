@@ -1,6 +1,6 @@
 /**
- * A footnote written at the end of a paragraph stays tight: the definition
- * goes on the next line, inside the same block as the paragraph it annotates.
+ * A footnote written at the end of a paragraph keeps its definition as a block
+ * of its own, one blank line below — so a line typed under it stays a line.
  */
 (async () => {
   const t = window.__t;
@@ -16,12 +16,17 @@
   await t.sleep(350);
   const blocks = [...t.prose().querySelectorAll('.markdown-block')];
   const last = blocks[blocks.length - 1];
+  const previous = blocks[blocks.length - 2];
   return {
     blocks: blocks.length,
     blockTexts: blocks.map((block) => block.textContent),
-    lastBlockHasDefinition: last.querySelector('.markdown-footnote') !== null,
+    definitionIsItsOwnBlock: last.querySelector('.markdown-footnote') !== null,
+    paragraphIsSeparate: previous.querySelector('.markdown-footnote') === null,
     definitionLabel: last.querySelector('[data-footnote-def]')?.textContent ?? null,
     sups: t.prose().querySelectorAll('sup').length,
-    caret: t.caretRect()
+    gap:
+      last && previous
+        ? Math.round(last.getBoundingClientRect().top - previous.getBoundingClientRect().bottom)
+        : null
   };
 })()

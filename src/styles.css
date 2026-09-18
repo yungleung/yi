@@ -271,8 +271,13 @@ body {
 
 /* A footnote definition is a block like any other, so it ends with the same
    skip a paragraph does: the spacing now comes from the content, and without
-   this the line after a footnote sat right against it. */
+   this the line after a footnote sat right against it.
+
+   Notes are set as one tight block, the way they are set in print: the next
+   note follows at that same paragraph skip, so a definition carries no top
+   margin of its own. */
 .prose-tight .markdown-footnote {
+  margin-top: 0;
   margin-bottom: var(--md-space-paragraph);
 }
 
