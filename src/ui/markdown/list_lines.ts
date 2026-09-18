@@ -39,6 +39,33 @@ export function blankItemLineAt(
   return isBlankItemLine(text.slice(line.start, line.end)) ? line : null;
 }
 
+/**
+ * The lines a document range touches, in order.
+ *
+ * A selection that stops where a line starts does not touch that line: the
+ * newline it ends on belongs to the line above. Both the list commands and the
+ * code-block indent read a selection the same way.
+ */
+export function touchedLines(
+  text: string,
+  from: number,
+  to: number
+): Array<{ start: number; end: number }> {
+  const lines: Array<{ start: number; end: number }> = [];
+  const start = Math.max(0, Math.min(from, text.length));
+  const end = Math.max(0, Math.min(to, text.length));
+  const last = Math.max(start, end > start && text[end - 1] === '\n' ? end - 1 : end);
+  let offset = start;
+  for (;;) {
+    const line = lineSpanAt(text, offset);
+    lines.push(line);
+    if (line.end >= last || line.end >= text.length) {
+      return lines;
+    }
+    offset = line.end + 1;
+  }
+}
+
 /** A block start that is indented deeper than the item: one of its children. */
 const CHILD_BLOCK = /^[ \t]+(?:[-+*]|\d+[.)])\s|^[ \t]+(?:>|```|~~~|\$\$)/;
 

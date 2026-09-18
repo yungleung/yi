@@ -308,3 +308,21 @@ can be shaped without leaving the keyboard. Inside a table cell the table's own
 rule comes first — Tab walks the cells — and elsewhere Tab keeps whatever the
 browser did with it before. Each command is one `applyEdit`, so a list change
 is one undo step, and the caret travels with the text it sat in.
+
+## Appendix: Tab inside a fenced code block
+
+**One Tab is two spaces**, because a code block cannot hold a literal tab that
+the author can see or line up, and two spaces is what markdown code in this
+project already uses. `code_edits.ts` holds the rule; `editing/code.ts` applies
+it and only ever fires when the caret is inside a `fencedCode` block.
+
+- a caret gets two spaces at its position, and is left after them;
+- a selection indents **every line it touches** and never eats the selected
+  text — Tab over a block of code is an indent, not a replacement;
+- `Shift+Tab` takes one step back off each line it touches, and does nothing
+  when there is nothing to take (but still keeps the key inside the editor);
+- the **fence lines are never touched**. Two spaces in front of a closing fence
+  is a fence that no longer closes, so ``` and ~~~ lines are left out of every
+  line edit;
+- a blank line inside a selected range stays empty rather than collecting
+  trailing spaces.

@@ -18,6 +18,7 @@ import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
 import { applyListCommand, type ListCommand } from './editing/lists';
+import { applyCodeIndent } from './editing/code';
 import {
   continueTableDown,
   insertTable,
@@ -280,6 +281,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         return;
       }
       if (applyListCommand(this.context, event.shiftKey ? 'outdent' : 'indent')) {
+        event.preventDefault();
+        return;
+      }
+      // Inside a fenced code block a Tab is two spaces, and Shift+Tab takes
+      // them back.
+      if (applyCodeIndent(this.context, event.shiftKey)) {
         event.preventDefault();
       }
       return;

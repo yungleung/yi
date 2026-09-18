@@ -13,7 +13,7 @@
  *   stays nested in the item it belongs to.
  */
 
-import { lineSpanAt, itemSubtreeEnd } from './list_lines';
+import { lineSpanAt, itemSubtreeEnd, touchedLines } from './list_lines';
 import type { TextEdit } from './edit_range';
 
 export type ListKind = 'ordered' | 'bullet' | 'task';
@@ -65,25 +65,6 @@ function markerText(kind: ListKind, number: number): string {
   if (kind === 'ordered') return `${number}. `;
   if (kind === 'task') return '- [ ] ';
   return '- ';
-}
-
-/** The lines a document range touches, in order. */
-function touchedLines(text: string, from: number, to: number): Array<{ start: number; end: number }> {
-  const lines: Array<{ start: number; end: number }> = [];
-  const start = Math.max(0, Math.min(from, text.length));
-  const end = Math.max(0, Math.min(to, text.length));
-  // A selection that stops where a line starts does not touch that line: the
-  // newline it ends on belongs to the line above.
-  const last = Math.max(start, end > start && text[end - 1] === '\n' ? end - 1 : end);
-  let offset = start;
-  for (;;) {
-    const line = lineSpanAt(text, offset);
-    lines.push(line);
-    if (line.end >= last || line.end >= text.length) {
-      return lines;
-    }
-    offset = line.end + 1;
-  }
 }
 
 /**

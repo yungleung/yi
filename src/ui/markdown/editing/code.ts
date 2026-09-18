@@ -1,0 +1,45 @@
+/**
+ * Tab inside a fenced code block: one `Tab` is two spaces.
+ *
+ * The rule itself is pure (`code_edits.ts`); this module is the part that
+ * knows where the caret is and applies the edit. Anywhere else in the document
+ * this command declines, so the browser keeps its own Tab.
+ */
+
+import { isRawRendered } from '../blocks';
+import { codeIndentEdit } from '../code_edits';
+import { shiftOffset } from '../edit_range';
+import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
+
+/**
+ * Whether the Tab key was handled. True whenever the caret is inside a fenced
+ * code block — even when the edit itself is a no-op, like Shift+Tab at the
+ * start of a line — so the key never moves focus out of the code being typed.
+ */
+export function applyCodeIndent(context: EditorContext, outdent: boolean): boolean {
+  const range = editorSelection(context, true);
+  if (!range) {
+    return false;
+  }
+  const offsets = rangeOffsets(context, range);
+  if (!offsets) {
+    return false;
+  }
+  const block = context.state.getBlockAtOffset(offsets.from);
+  if (!block || block.kind !== 'fencedCode' || !isRawRendered(block.kind)) {
+    return false;
+  }
+  const edit = codeIndentEdit(context.state.getText(), offsets.from, offsets.to, outdent);
+  if (!edit) {
+    return true;
+  }
+  const caret = caretOffset(context) ?? edit.from;
+  // Two spaces typed at the caret leave it after them; a line that moves takes
+  // the caret with it.
+  const next =
+    edit.from === edit.to && caret <= edit.from
+      ? edit.from + edit.replacement.length
+      : shiftOffset(caret, edit);
+  applyEdit(context, edit.from, edit.to, edit.replacement, next);
+  return true;
+}
