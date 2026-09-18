@@ -113,11 +113,11 @@ header and body cells of that column.
 
 Two new UI modules plus one command:
 
-- `src/ui/table/table_toolbar.ts` — the titlebar-centre button (same
-  `BaseComponent` + inline-SVG pattern as `formatting_toolbar.ts`); it opens and
+- `src/ui/toolbar/table_toolbar.ts` — the titlebar-centre button (same
+  `BaseComponent` + inline-SVG pattern as the other toolbars); it opens and
   closes the picker and emits a `TABLE_INSERT` event with `{rows, columns}`,
   mirroring how `FORMATTING_COMMAND` reaches the editor.
-- `src/ui/table/table_picker.ts` — the 10 × 10 grid. Hovering cell *(r, c)*
+- `src/ui/toolbar/table_picker.ts` — the 10 × 10 grid. Hovering cell *(r, c)*
   highlights the whole `r × c` region and labels it; clicking picks it; Esc, a
   click outside or a second click on the button closes the panel without
   inserting. The panel is positioned under the button and must not start a
@@ -277,7 +277,7 @@ The titlebar carries a second group of buttons beside the table one — ordered,
 bullet and task lists, and one indent step — because a table is a structure the
 author inserts and edits, and so is a list. The rules live in
 `list_edits.ts` (pure) and `editing/lists.ts` (the editor-facing commands), the
-buttons in `ui/list_toolbar.ts`.
+buttons in `ui/toolbar/list_toolbar.ts`.
 
 **The three list buttons toggle.** A line that is not a list item gets the
 marker the button names; a line that is already that kind loses its marker and
@@ -402,3 +402,18 @@ Known limit: a block's cached parse is keyed by its own text, but whether a
 reference parses depends on the document's definitions. Removing a definition
 therefore leaves a dangling marker looking like a footnote until its own block
 re-renders; clicking it then does nothing.
+
+## Appendix: where the toolbar lives
+
+Everything that sits in the titlebar's centre is a component under
+`src/ui/toolbar/`: the inline formatting buttons, the list tools, the footnote
+button, and the table button together with the picker it opens. Each group is
+one file and owns the event name it emits — `FORMATTING_COMMAND`,
+`LIST_COMMAND`, `FOOTNOTE_COMMAND`, `TABLE_INSERT` — which is what lets the
+markdown editor subscribe to a toolbar without the toolbar knowing anything
+about the document. A button never reaches into the editor; it announces what
+was pressed and the editor decides what that means.
+
+The table's *context menu* is not a toolbar component: it belongs to the cell
+that was right-clicked, so it stays in `src/ui/table/`, next to the model that
+decides which of its items are enabled.

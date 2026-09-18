@@ -11,7 +11,7 @@ import { getSelectionRange, scheduleCaret, scheduleNativeSelection, setSelection
 import { documentOffsetAt, domPositionAtOffset } from '../position';
 import { formatRange, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
-import type { FormattingStyle } from '../../formatting_toolbar';
+import type { FormattingStyle } from '../../toolbar/formatting_toolbar';
 import { proseRoot, type EditorContext } from './context';
 
 /** Applies a formatting style to the current selection. */

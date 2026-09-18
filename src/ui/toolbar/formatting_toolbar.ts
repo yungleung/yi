@@ -1,5 +1,5 @@
-import { BaseComponent } from './component';
-import { eventManager } from '../services/event_manager';
+import { BaseComponent } from '../component';
+import { eventManager } from '../../services/event_manager';
 
 /** Formatting commands emitted by the toolbar (the editor subscribes later). */
 export const FORMATTING_COMMAND = 'formatting_command';

@@ -1,4 +1,4 @@
-import type { FormattingStyle } from '../formatting_toolbar';
+import type { FormattingStyle } from '../toolbar/formatting_toolbar';
 
 /** The raw markdown markers each formatting style wraps a range with. */
 const MARKERS: Record<FormattingStyle, string> = {

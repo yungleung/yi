@@ -1,7 +1,7 @@
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { FORMATTING_COMMAND, type FormattingStyle } from '../formatting_toolbar';
+import { FORMATTING_COMMAND, type FormattingStyle } from '../toolbar/formatting_toolbar';
 import { ensureCaretRendered, getCaretRange, setSelectionRange } from './caret/caret';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
@@ -31,9 +31,9 @@ import {
 } from './editing/table';
 import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
 import { tableMenuModel } from '../table/table_menu_model';
-import { TABLE_INSERT } from '../table/table_toolbar';
-import { LIST_COMMAND } from '../list_toolbar';
-import { FOOTNOTE_COMMAND } from '../footnote_toolbar';
+import { TABLE_INSERT } from '../toolbar/table_toolbar';
+import { LIST_COMMAND } from '../toolbar/list_toolbar';
+import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 

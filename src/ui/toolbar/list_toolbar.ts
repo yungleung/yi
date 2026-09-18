@@ -1,6 +1,6 @@
-import { eventManager } from '../services/event_manager';
-import { BaseComponent } from './component';
-import type { ListCommand } from './markdown/editing/lists';
+import { eventManager } from '../../services/event_manager';
+import { BaseComponent } from '../component';
+import type { ListCommand } from '../markdown/editing/lists';
 
 /** A list command chosen from the toolbar; the editor applies it. */
 export const LIST_COMMAND = 'list_command';

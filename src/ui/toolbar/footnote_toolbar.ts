@@ -1,5 +1,5 @@
-import { eventManager } from '../services/event_manager';
-import { BaseComponent } from './component';
+import { eventManager } from '../../services/event_manager';
+import { BaseComponent } from '../component';
 
 /** The footnote button asks the editor for a new footnote at the caret. */
 export const FOOTNOTE_COMMAND = 'footnote_command';
