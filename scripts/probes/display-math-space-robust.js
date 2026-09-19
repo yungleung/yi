@@ -7,29 +7,26 @@
   formula.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: Math.round(box.left + 4), clientY: Math.round(box.top + 4) }));
   await t.sleep(350);
   const span = () => t.prose().querySelector('.markdown-math-source');
-  // Find the last content line and put the caret at its end.
+  // Click the last character of the last content line: the caret lands after it.
   const walker = document.createTreeWalker(span(), NodeFilter.SHOW_TEXT);
   let text = null, at = -1, node;
   while ((node = walker.nextNode())) {
     const found = node.data.indexOf('= 1');
-    if (found >= 0) { text = node; at = found + '= 1'.length; break; }
+    if (found >= 0) { text = node; at = found + '= 1'.length - 1; break; }
   }
   const target = document.createRange();
   target.setStart(text, at);
-  target.collapse(true);
+  target.setEnd(text, at + 1);
   const rect = target.getBoundingClientRect();
-  span().dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: Math.round(rect.left), clientY: Math.round(rect.top + rect.height / 2) }));
+  span().dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: Math.round(rect.left + rect.width * 0.9), clientY: Math.round(rect.top + rect.height / 2) }));
   await t.sleep(200);
-  t.report({ before: { source: span() ? span().textContent : null, caret: t.caretRect(), blocks: t.prose().querySelectorAll('.markdown-block').length } });
+  t.report({ clicked: text.data.slice(at, at + 1), caret: t.caretRect() });
   t.key(' ');
-  await t.sleep(400);
-  const after = span();
+  await t.sleep(350);
   const result = {
-    sourceAfter: after ? after.textContent : null,
-    caretAfter: t.caretRect(),
-    blocksAfter: t.prose().querySelectorAll('.markdown-block').length,
-    katexAfter: t.prose().querySelectorAll('.katex').length,
-    textAfter: [...t.prose().querySelectorAll('.markdown-block')].map((b) => b.textContent.slice(0, 18))
+    source: span() ? span().textContent : null,
+    caret: t.caretRect(),
+    blocks: t.prose().querySelectorAll('.markdown-block').length
   };
   t.report(result);
   return result;

@@ -13,6 +13,7 @@
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
 import { documentOffsetAt, domPositionAtOffset } from '../position';
 import {
+  editSourceInPlace,
   resumeEditingSource,
   setEditingSourceCaret,
   shiftEditingSource
@@ -193,6 +194,23 @@ export function applyEdit(
   caret: CaretTarget = from + replacement.length
 ): void {
   const anchor = context.contentView.scrollTop;
+  // An edit inside a source the author is editing is patched into that source:
+  // the block keeps its DOM, so the caret it places is the caret, and nothing
+  // has to be restored into a rendering that only approximates the source.
+  if (typeof caret === 'number' && editSourceInPlace(from, to, replacement, caret)) {
+    context.state.replaceRange(from, to, replacement);
+    shiftEditingSource(from, to, replacement);
+    setEditingSourceCaret(caret);
+    // The block's height changed without it being rebuilt, and the heights are
+    // what the mounted window is computed from: keep the renderer's own idea of
+    // this block current, or the block can fall out of the window for good.
+    const block = context.state.getBlockAtOffset(from);
+    if (block) {
+      context.renderer.syncBlockHeight(block.lineStart);
+    }
+    keepScroll(context, anchor);
+    return;
+  }
   context.state.replaceRange(from, to, replacement);
   // A source being edited keeps its range across the edit, and opens again
   // when the block is rebuilt — before the caret is restored, so the caret is

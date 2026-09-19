@@ -127,6 +127,44 @@ export function setCaretRawOffsetResolver(resolver: (() => number | null) | null
 }
 
 /**
+ * How to rebuild the block an element belongs to, or null when no editor is
+ * running. The editor registers it.
+ *
+ * A source edited in place is patched without its block being rebuilt — that
+ * is the point, since the rebuild is what moves the caret. When the author
+ * leaves it, the node would render from the parse it was built with, which is
+ * now out of date, so the block has to be rebuilt from the document instead.
+ */
+let rebuildBlock: ((element: HTMLElement) => void) | null = null;
+
+export function setBlockRebuilder(rebuilder: ((element: HTMLElement) => void) | null): void {
+  rebuildBlock = rebuilder;
+}
+
+/**
+ * Applies an edit to the source being edited *in place*: the span's text is
+ * patched and the caret is put at the exact offset the edit produced.
+ *
+ * The alternative — rebuilding the block — throws away the DOM the caret lives
+ * in, so the caret has to be restored into a fresh rendering, where its
+ * position is only a guess (a formula is KaTeX). Nothing here is a guess: the
+ * source is text, and the caret is a character offset in it.
+ */
+export function editSourceInPlace(
+  from: number,
+  to: number,
+  replacement: string,
+  caret: number
+): boolean {
+  for (const revealable of [...liveRevealables]) {
+    if (revealable.editSourceInPlace(from, to, replacement, caret)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Base class for node components that toggle between their rendered view and
  * their markdown source (image, link, citation, wikilink, math, ...).
  * Clicking reveals the source with the caret at the offset given by
@@ -136,6 +174,8 @@ export function setCaretRawOffsetResolver(resolver: (() => number | null) | null
 export abstract class RevealableNodeComponent extends EditableNodeComponent {
   /** The CSS class of the revealed source span. */
   protected sourceView: HTMLSpanElement | null = null;
+  /** Whether the source has been edited since it was shown. */
+  private editedInPlace = false;
   protected abstract readonly sourceClassName: string;
   /**
    * The absolute `[start, end)` range of the identifier content within the
@@ -272,6 +312,46 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       return;
     }
     this.revealSource(this.sourceClassName, offset - range.start);
+  }
+
+  /**
+   * Patches this node's revealed source for an edit that falls inside it, and
+   * puts the caret at the offset the edit produced — exactly, marker or not,
+   * because the editor computed that offset rather than mapping a click. False
+   * when the range is not this node's.
+   */
+  editSourceInPlace(from: number, to: number, replacement: string, caret: number): boolean {
+    const span = this.sourceView;
+    const range = this.sourceRangeInDocument();
+    if (!span || !range || from < range.start || to > range.end) {
+      return false;
+    }
+    const text = span.textContent ?? '';
+    const start = from - range.start;
+    const end = to - range.start;
+    this.fillSourceView(span, `${text.slice(0, start)}${replacement}${text.slice(end)}`);
+    this.editedInPlace = true;
+    this.placeCaretAtSourceOffset(caret - range.start);
+    return true;
+  }
+
+  /** The caret's place inside the source, by character, without clamping it. */
+  private placeCaretAtSourceOffset(offset: number): void {
+    const span = this.sourceView;
+    if (!span) {
+      return;
+    }
+    const position = sourceTextPosition(
+      span,
+      Math.max(0, Math.min(offset, span.textContent?.length ?? 0))
+    );
+    if (!position) {
+      return;
+    }
+    const range = document.createRange();
+    range.setStart(position.node, position.offset);
+    range.collapse(true);
+    setCaretRange(range);
   }
 
   /** This node's own raw range in the document, or null when it has none. */
@@ -592,8 +672,18 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       return;
     }
     this.sourceView = null;
+    const editedInPlace = this.editedInPlace;
+    this.editedInPlace = false;
+    // Put the rendered element back first, so the block is never missing, then
+    // rebuild it: a source edited in place no longer matches the parse this
+    // component was built from, so its own element is out of date.
     showing.replaceWith(this.element);
     refreshCaretPosition();
+    if (editedInPlace && rebuildBlock) {
+      const rebuilder = rebuildBlock;
+      const host = this.element;
+      requestAnimationFrame(() => rebuilder(host));
+    }
   }
 }
 
