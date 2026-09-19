@@ -130,18 +130,11 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    */
   private caretOffsetInSource(): number | null {
     const offset = caretRawOffset?.();
-    const blockElement = this.element.closest('.markdown-block') as HTMLElement | null;
-    const charStart = Number(blockElement?.dataset.charStart ?? NaN);
-    const relative = (
-      this.node as { position?: { start: { offset?: number } } }
-    ).position?.start.offset;
-    if (offset === null || offset === undefined || !Number.isFinite(charStart) || relative === undefined) {
+    const range = this.sourceRangeInDocument();
+    if (offset === null || offset === undefined || !range) {
       return null;
     }
-    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
-    const start = charStart + relative;
-    const end = start + source.length;
-    return offset >= start && offset <= end ? offset - start : null;
+    return offset >= range.start && offset <= range.end ? offset - range.start : null;
   }
 
   /** Whether clicking reveals the source (links with no source to reveal return false). */
@@ -152,6 +145,19 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   /** Whether the source is currently revealed. */
   isSourceVisible(): boolean {
     return this.sourceView !== null;
+  }
+
+  /** This node's own raw range in the document, or null when it has none. */
+  sourceRangeInDocument(): { start: number; end: number } | null {
+    const blockElement = (this.sourceView ?? this.element).closest('.markdown-block');
+    const charStart = Number((blockElement as HTMLElement | null)?.dataset.charStart ?? NaN);
+    const relative = (this.node as { position?: { start: { offset?: number } } }).position?.start
+      .offset;
+    if (!Number.isFinite(charStart) || relative === undefined) {
+      return null;
+    }
+    const length = serializeMarkdown([this.node as RootContent]).trimEnd().length;
+    return { start: charStart + relative, end: charStart + relative + length };
   }
 
   /**
@@ -234,6 +240,14 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
 
   /** Replaces the rendered element with its markdown source. */
   protected revealSource(sourceClassName: string, caretOffset?: number): void {
+    // Already open: put the caret in the source rather than swapping again.
+    // The swap replaces the element this component listens on, and that
+    // element is gone once the source is showing — a second swap would leave
+    // the new span detached, with the caret inside it.
+    if (this.sourceView?.isConnected) {
+      this.placeCaretInSourceView(caretOffset);
+      return;
+    }
     this.swapToSource(sourceClassName);
     this.placeCaretInSourceView(caretOffset);
   }
@@ -268,6 +282,9 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    * the element's boundary, in the surrounding text).
    */
   protected revealSourceAtBoundary(sourceClassName: string): void {
+    if (this.sourceView?.isConnected) {
+      return;
+    }
     this.swapToSource(sourceClassName);
   }
 
@@ -301,7 +318,10 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // wrong side of the swap; re-anchor it to the same boundary of the new
     // source span so the caret stays where it was.
     const side = elementBoundarySide(getCaretRange(), this.element);
-    this.element.replaceWith(sourceView);
+    // Whichever of the two is in the document is the one to replace: after an
+    // earlier swap the element is detached and the previous span is not.
+    const showing = this.sourceView?.isConnected ? this.sourceView : this.element;
+    showing.replaceWith(sourceView);
     // The browser would otherwise re-anchor a live drag selection onto the
     // replacement unpredictably (empty, or the whole source span).
     restoreSelection();

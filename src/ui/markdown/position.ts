@@ -61,31 +61,34 @@ export function documentOffsetAt(
 ): CaretLocation | null {
   const containerNode = container;
 
-  // Caret inside a revealed source: the span holds the raw-ish source and
-  // its block-relative raw start was tagged when it was revealed.
-  if (containerNode.nodeType === Node.TEXT_NODE) {
-    const sourceSpan = (containerNode.parentElement as HTMLElement | null)?.closest<HTMLElement>(
-      SOURCE_SELECTOR
-    );
-    if (sourceSpan) {
-      const from = Number(sourceSpan.dataset.sourceFrom ?? NaN);
-      const blockElement = sourceSpan.closest('.markdown-block') as HTMLElement | null;
-      const block = blockElement
-        ? state.getBlockAtLine(Number(blockElement.dataset.lineStart))
-        : null;
-      if (Number.isFinite(from) && block) {
-        // `from` is block-relative; the global offset is the block's char
-        // start plus the block-relative position.
-        // The offset is read over the span's whole text, not over the text
-        // node the caret happens to be in: a highlighted source is many nodes.
-        const within = sourceTextOffset(sourceSpan, containerNode, positionOffset);
-        if (within === null) {
-          return null;
-        }
-        const blockOffset = from + Math.min(within, sourceSpan.textContent?.length ?? 0);
-        return { block, offset: block.charStart + blockOffset, blockOffset };
-      }
+  // Caret inside a revealed source: the span holds the raw-ish source and its
+  // block-relative raw start was tagged when it was revealed.
+  //
+  // This comes before the text-node checks below because the caret need not be
+  // in a text node at all: at the end of a line, or between the nodes a
+  // highlighter produced, it sits on an element. Read over the span's own text
+  // either way, so a highlighted source maps exactly as a plain one does.
+  const sourceSpan = (
+    containerNode.nodeType === Node.TEXT_NODE
+      ? containerNode.parentElement
+      : (containerNode as Element)
+  )?.closest<HTMLElement>(SOURCE_SELECTOR);
+  if (sourceSpan) {
+    const from = Number(sourceSpan.dataset.sourceFrom ?? NaN);
+    const blockElement = sourceSpan.closest('.markdown-block') as HTMLElement | null;
+    const block = blockElement
+      ? state.getBlockAtLine(Number(blockElement.dataset.lineStart))
+      : null;
+    const within = sourceTextOffset(sourceSpan, containerNode, positionOffset);
+    if (Number.isFinite(from) && block && within !== null) {
+      // `from` is block-relative; the global offset is the block's char
+      // start plus the block-relative position.
+      const blockOffset = from + Math.min(within, sourceSpan.textContent?.length ?? 0);
+      return { block, offset: block.charStart + blockOffset, blockOffset };
     }
+  }
+
+  if (containerNode.nodeType === Node.TEXT_NODE) {
     // A plain text leaf tags its block-relative raw start; the global offset
     // is the block's charStart (refreshed on every edit) plus the tag plus
     // the position inside the leaf. Exact at leaf boundaries too, where a
