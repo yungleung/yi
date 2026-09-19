@@ -309,23 +309,48 @@ rule comes first — Tab walks the cells — and elsewhere Tab keeps whatever th
 browser did with it before. Each command is one `applyEdit`, so a list change
 is one undo step, and the caret travels with the text it sat in.
 
-## Appendix: Tab inside a fenced code block
+## Appendix: Tab inside code and formulas
 
 **One Tab is two spaces**, because a code block cannot hold a literal tab that
 the author can see or line up, and two spaces is what markdown code in this
 project already uses. `code_edits.ts` holds the rule; `editing/code.ts` applies
-it and only ever fires when the caret is inside a `fencedCode` block.
+it and only ever fires when the caret is inside a `fencedCode` block or a
+`displayMath` block — both are literal text, so indenting a line in them can
+only mean "move this line".
 
 - a caret gets two spaces at its position, and is left after them;
 - a selection indents **every line it touches** and never eats the selected
   text — Tab over a block of code is an indent, not a replacement;
 - `Shift+Tab` takes one step back off each line it touches, and does nothing
   when there is nothing to take (but still keeps the key inside the editor);
-- the **fence lines are never touched**. Two spaces in front of a closing fence
-  is a fence that no longer closes, so ``` and ~~~ lines are left out of every
-  line edit;
+- the **delimiter lines are never touched**. Two spaces in front of a closing
+  fence is a fence that no longer closes, and the same goes for the `$$` around
+  a display formula, so those lines are left out of every line edit;
 - a blank line inside a selected range stays empty rather than collecting
   trailing spaces.
+
+## Appendix: editing inside a revealed source
+
+A revealable node replaces its own element with a span holding the markdown
+source, and that span *is* the text being edited until the caret leaves. Two
+things follow from that, both of which had to be fixed before a display formula
+could be edited the way a code block is:
+
+- **The source handles its own clicks.** The element the component listens on
+  is gone once the source is open, so a click on the source reached the editor
+  as a click *beside* a block, which snaps the caret to the block's edge — past
+  the closing `$$` of a formula, however far inside it the pointer was. The
+  span now puts the caret where the pointer is, and falls back to the node's
+  own mapping (the end of the nearest line) only when the pointer is in the
+  span's padding rather than on its text.
+- **The caret's offset comes from the document, not from the rendering.** After
+  an edit the block is re-rendered and the source re-opened, and the caret
+  coming back has to land where the edit left it. Mapping its position in the
+  *rendering* is a guess — a formula renders as KaTeX, whose text has nothing
+  to do with the source's length — so the editor registers a resolver
+  (`setCaretRawOffsetResolver`) that tells a node the caret's offset in the raw
+  document. When that offset falls inside the node, it is used exactly, and the
+  caret keeps the character it was next to.
 
 ## Appendix: footnotes
 

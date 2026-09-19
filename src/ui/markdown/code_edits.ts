@@ -4,8 +4,9 @@
  * A caret gets two spaces at its position, the way a code editor tab does. A
  * selection indents or out-indents the lines it touches without ever eating
  * the selected text, which is what makes Tab safe to press over a block of
- * code. The fence lines themselves (` ``` `, `~~~`) are never touched: two
- * spaces in front of a closing fence is a code block that no longer closes.
+ * code. The lines that *delimit* the block are never touched: two spaces in
+ * front of a closing fence is a code block that no longer closes, and the same
+ * goes for the `$$` around a display formula.
  */
 
 import type { TextEdit } from './edit_range';
@@ -14,9 +15,9 @@ import { lineSpanAt, touchedLines } from './list_lines';
 /** The two spaces one Tab stands for. */
 const STEP = '  ';
 
-/** A fence line: ``` or ~~~ with an optional info string. */
-function isFence(line: string): boolean {
-  return /^ {0,3}(?:`{3,}|~{3,})/.test(line);
+/** A line that delimits a fenced code block or a display formula. */
+function isDelimiter(line: string): boolean {
+  return /^ {0,3}(?:`{3,}|~{3,})/.test(line) || /^ {0,3}\$\$\s*$/.test(line);
 }
 
 /** One edit covering the given line rewrites, with everything between them kept. */
@@ -38,12 +39,12 @@ function joinLineEdits(
   };
 }
 
-/** The lines that may be indented: the fences around the code are not. */
+/** The lines that may be indented: the delimiters around the block are not. */
 function usableLines(
   text: string,
   lines: Array<{ start: number; end: number }>
 ): Array<{ start: number; end: number }> {
-  return lines.filter((line) => !isFence(text.slice(line.start, line.end)));
+  return lines.filter((line) => !isDelimiter(text.slice(line.start, line.end)));
 }
 
 /** Adds one step to each line that may take it. */
@@ -84,7 +85,7 @@ export function codeIndentEdit(
 ): TextEdit | null {
   if (from === to) {
     const line = lineSpanAt(text, from);
-    if (isFence(text.slice(line.start, line.end))) {
+    if (isDelimiter(text.slice(line.start, line.end))) {
       return null;
     }
     return outdent ? outdentLines(text, [line]) : { from, to, replacement: STEP };

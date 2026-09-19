@@ -22,6 +22,23 @@ import { preserveSpaces } from './text';
 const revealableByElement = new WeakMap<HTMLElement, RevealableNodeComponent>();
 
 /**
+ * How to read the caret's offset in the raw document, or null when no editor
+ * is running. The editor registers it: a node component cannot work this out
+ * for itself, because the offset depends on the whole document's parsing.
+ *
+ * It matters when the caret comes back into a node it was already in — after
+ * an edit inside a revealed source, say. Mapping the caret's position in the
+ * *rendering* instead would be a guess: a display formula renders as KaTeX,
+ * whose text has nothing to do with the source's length, so the caret lands
+ * somewhere proportional rather than where the author left it.
+ */
+let caretRawOffset: (() => number | null) | null = null;
+
+export function setCaretRawOffsetResolver(resolver: (() => number | null) | null): void {
+  caretRawOffset = resolver;
+}
+
+/**
  * Base class for node components that toggle between their rendered view and
  * their markdown source (image, link, citation, wikilink, math, ...).
  * Clicking reveals the source with the caret at the offset given by
@@ -84,6 +101,13 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     if (!this.shouldReveal()) {
       return;
     }
+    // The caret's own offset in the document is exact; take it when it falls
+    // inside this node, rather than mapping a position in the rendering.
+    const exact = this.caretOffsetInSource();
+    if (exact !== null) {
+      this.revealSource(this.sourceClassName, exact);
+      return;
+    }
     const container = range.startContainer;
     const source = serializeMarkdown([this.node as RootContent]).trimEnd();
     if (this.element.contains(container)) {
@@ -97,6 +121,26 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // The caret sits on the element's boundary: reveal the source in place
     // without moving the caret out of the surrounding text.
     this.revealSourceAtBoundary(this.sourceClassName);
+  }
+
+  /**
+   * Where the caret sits inside this node's source, when the editor can say
+   * and the caret is in fact inside it.
+   */
+  private caretOffsetInSource(): number | null {
+    const offset = caretRawOffset?.();
+    const blockElement = this.element.closest('.markdown-block') as HTMLElement | null;
+    const charStart = Number(blockElement?.dataset.charStart ?? NaN);
+    const relative = (
+      this.node as { position?: { start: { offset?: number } } }
+    ).position?.start.offset;
+    if (offset === null || offset === undefined || !Number.isFinite(charStart) || relative === undefined) {
+      return null;
+    }
+    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const start = charStart + relative;
+    const end = start + source.length;
+    return offset >= start && offset <= end ? offset - start : null;
   }
 
   /** Whether clicking reveals the source (links with no source to reveal return false). */
@@ -189,15 +233,24 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
 
   /** Replaces the rendered element with its markdown source. */
   protected revealSource(sourceClassName: string, caretOffset?: number): void {
+    this.swapToSource(sourceClassName);
+    this.placeCaretInSourceView(caretOffset);
+  }
+
+  /**
+   * Puts the caret inside the revealed source, clamped to the node's content
+   * (the range without its markers). Without an offset it lands at the end,
+   * which is where a reveal that was not aimed at a character belongs.
+   */
+  protected placeCaretInSourceView(caretOffset?: number): void {
+    const sourceView = this.sourceView;
+    const textNode = sourceView?.firstChild as Text | undefined;
+    if (!textNode) {
+      return;
+    }
     const source = serializeMarkdown([this.node as RootContent]).trimEnd();
     const { start, end } = this.sourceContentRange(source);
-    const sourceView = this.swapToSource(sourceClassName);
-
-    const textNode = sourceView.firstChild as Text;
-    const offset =
-      caretOffset === undefined
-        ? end
-        : Math.min(Math.max(start, caretOffset), end);
+    const offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
     const range = document.createRange();
     range.setStart(textNode, offset);
     range.collapse(true);
@@ -236,6 +289,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       sourceView.dataset.sourceFrom = String(position.start.offset);
     }
     this.sourceView = sourceView;
+    this.attachSourceClick(sourceView);
 
     // Replacing the element moves an element-anchored caret range to the
     // wrong side of the swap; re-anchor it to the same boundary of the new
@@ -259,6 +313,29 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // active range so it does not drift.
     refreshCaretPosition();
     return sourceView;
+  }
+
+  /**
+   * A click into the revealed source is a click into the text being edited.
+   *
+   * The span replaced the element this component listens on, so it has to
+   * handle its own clicks: without that the click reaches the editor as a
+   * click on empty space beside a block, which snaps the caret to the block's
+   * edge — the far end of a display formula, say, however far into it the
+   * pointer was.
+   */
+  private attachSourceClick(sourceView: HTMLSpanElement): void {
+    sourceView.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const range = caretRangeAtPoint(event.clientX, event.clientY);
+      if (range && sourceView.contains(range.startContainer)) {
+        setCaretRange(range);
+        return;
+      }
+      // The pointer is in the source's padding rather than on its text: take
+      // the offset this node's own click mapping gives.
+      this.placeCaretInSourceView(this.sourceOffsetForClick(event.clientX, event.clientY));
+    });
   }
 
   /**

@@ -357,6 +357,22 @@ export function domPositionAtOffset(
     return null;
   }
   const clamped = Math.min(Math.max(offset, block.charStart), block.charEnd);
+  // An offset inside a revealed source belongs to that source: it is the text
+  // being edited, and its span carries the block-relative start of exactly that
+  // text. Mapping through the rendered node instead would approximate the
+  // position (a formula renders as KaTeX, not as its source) and the caret
+  // would drift away from where the edit left it.
+  for (const source of blockElement.querySelectorAll<HTMLElement>(SOURCE_SELECTOR)) {
+    const from = block.charStart + Number(source.dataset.sourceFrom ?? NaN);
+    const text = source.firstChild;
+    if (!Number.isFinite(from) || !text || text.nodeType !== Node.TEXT_NODE) {
+      continue;
+    }
+    const length = (text as Text).data.length;
+    if (clamped >= from && clamped <= from + length) {
+      return { node: text, offset: clamped - from };
+    }
+  }
   // A table cell is addressed by its name, not by a tag: the model says which
   // cell holds the offset, and the element with that name is its DOM. This is
   // also the only way into an empty cell, which has no text to walk to.

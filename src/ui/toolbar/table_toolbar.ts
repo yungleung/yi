@@ -1,5 +1,5 @@
 import { TablePicker, type TableSize } from './table_picker';
-import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
+import { Toolbar } from './toolbar';
 
 /** The table picker announces a chosen size; the editor creates the table. */
 export const TABLE_INSERT = 'table_insert';
@@ -30,7 +30,7 @@ export class TableToolbar extends Toolbar {
     super(['relative', 'flex', 'items-center']);
     this.picker = new TablePicker((size: TableSize) => this.announce(TABLE_INSERT, size));
     this.addButton(
-      { label: 'Insert table', icon: TABLE_ICON, className: TOOL_ICON_SIZE },
+      { label: 'Insert table', icon: TABLE_ICON, className: 'text-[1.1em]' },
       () => this.togglePicker()
     );
     this.appendChild(this.picker.element);

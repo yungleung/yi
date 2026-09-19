@@ -1,5 +1,6 @@
 /**
- * Tab inside a fenced code block: one `Tab` is two spaces.
+ * Tab inside a fenced code block or a display formula: one `Tab` is two
+ * spaces, so a multi-line formula lines up the way the code around it does.
  *
  * The rule itself is pure (`code_edits.ts`); this module is the part that
  * knows where the caret is and applies the edit. Anywhere else in the document
@@ -26,7 +27,9 @@ export function applyCodeIndent(context: EditorContext, outdent: boolean): boole
     return false;
   }
   const block = context.state.getBlockAtOffset(offsets.from);
-  if (!block || block.kind !== 'fencedCode' || !isRawRendered(block.kind)) {
+  // Both blocks are literal text: nothing in them is parsed, so indenting a
+  // line can only mean "move this line".
+  if (!block || (block.kind !== 'fencedCode' && block.kind !== 'displayMath') || !isRawRendered(block.kind)) {
     return false;
   }
   const edit = codeIndentEdit(context.state.getText(), offsets.from, offsets.to, outdent);

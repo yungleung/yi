@@ -65,6 +65,23 @@ check('a blank line inside the selection stays empty',
   applied('```ts\n\nconst a = 1;\n```', codeIndentEdit('```ts\n\nconst a = 1;\n```', 6, 20, false)),
   '```ts\n\n  const a = 1;\n```');
 
+// A display formula is indented the same way, between its own delimiters.
+const math = ['$$', '\\frac{a}{b}', '+ c', '$$'].join('\n');
+const mathCaret = math.indexOf('+ c') + 1;
+check('Tab types two spaces inside a display formula',
+  applied(math, codeIndentEdit(math, mathCaret, mathCaret, false)),
+  math.slice(0, mathCaret) + '  ' + math.slice(mathCaret));
+check('a caret on a `$$` line is left alone', codeIndentEdit(math, 1, 1, false), null);
+check('a selection inside a formula indents its lines but not the `$$` lines',
+  applied(math, codeIndentEdit(math, 3, math.length - 3, false)),
+  ['$$', '  \\frac{a}{b}', '  + c', '$$'].join('\n'));
+const indentedMath = ['$$', '  \\frac{a}{b}', '$$'].join('\n');
+check('Shift+Tab takes the indentation back off a formula line',
+  applied(indentedMath, codeIndentEdit(indentedMath, 4, 4, true)),
+  ['$$', '\\frac{a}{b}', '$$'].join('\n'));
+check('an indented `$$` line is not outdented either',
+  codeIndentEdit(['  $$', 'x', '  $$'].join('\n'), 3, 3, true), null);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
