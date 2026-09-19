@@ -76,8 +76,13 @@ export function documentOffsetAt(
       if (Number.isFinite(from) && block) {
         // `from` is block-relative; the global offset is the block's char
         // start plus the block-relative position.
-        const blockOffset =
-          from + Math.min(positionOffset, sourceSpan.textContent?.length ?? 0);
+        // The offset is read over the span's whole text, not over the text
+        // node the caret happens to be in: a highlighted source is many nodes.
+        const within = sourceTextOffset(sourceSpan, containerNode, positionOffset);
+        if (within === null) {
+          return null;
+        }
+        const blockOffset = from + Math.min(within, sourceSpan.textContent?.length ?? 0);
         return { block, offset: block.charStart + blockOffset, blockOffset };
       }
     }
@@ -186,6 +191,27 @@ function textOffsetInElement(
     acc += (node as Text).data.length;
   }
   return null;
+}
+
+/**
+ * A DOM boundary's character offset within a revealed source span.
+ *
+ * The source is one span, but not necessarily one text node: a formula's
+ * source is highlighted into many. Everything that maps a caret inside a
+ * revealed source goes through the span's own text, so the markup a highlight
+ * adds is invisible to the mapping.
+ */
+export function sourceTextOffset(
+  source: HTMLElement,
+  container: Node,
+  offset: number
+): number | null {
+  return textOffsetInElement(source, container, offset);
+}
+
+/** The text position a character offset inside a revealed source lands on. */
+export function sourceTextPosition(source: HTMLElement, offset: number): DomPosition | null {
+  return textNodeAtRenderedOffset(source, offset);
 }
 
 /**
@@ -364,13 +390,17 @@ export function domPositionAtOffset(
   // would drift away from where the edit left it.
   for (const source of blockElement.querySelectorAll<HTMLElement>(SOURCE_SELECTOR)) {
     const from = block.charStart + Number(source.dataset.sourceFrom ?? NaN);
-    const text = source.firstChild;
-    if (!Number.isFinite(from) || !text || text.nodeType !== Node.TEXT_NODE) {
+    if (!Number.isFinite(from)) {
       continue;
     }
-    const length = (text as Text).data.length;
+    const length = source.textContent?.length ?? 0;
     if (clamped >= from && clamped <= from + length) {
-      return { node: text, offset: clamped - from };
+      // The span's text, not its first child: a highlighted source is split
+      // into as many text nodes as the highlighter needed.
+      const position = sourceTextPosition(source, clamped - from);
+      if (position) {
+        return position;
+      }
     }
   }
   // A table cell is addressed by its name, not by a tag: the model says which

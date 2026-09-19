@@ -21,15 +21,30 @@
   if (!span) {
     return { error: 'the source did not reveal' };
   }
-  const text = span.firstChild;
-  const at = text.data.indexOf('+ c');
+  // The source is highlighted, so the character lives in one of many text
+  // nodes: find the node that holds it.
+  const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+  let text = null;
+  let at = -1;
+  let node;
+  while ((node = walker.nextNode())) {
+    const found = node.data.indexOf('+ c');
+    if (found >= 0) {
+      text = node;
+      at = found;
+      break;
+    }
+  }
+  if (!text) {
+    return { error: 'the clicked text is not in the source' };
+  }
   const target = document.createRange();
   target.setStart(text, at);
   target.setEnd(text, at + 1);
   const targetRect = target.getBoundingClientRect();
   const clickX = Math.round(targetRect.left + targetRect.width / 2);
   const clickY = Math.round(targetRect.top + targetRect.height / 2);
-  t.report({ sourceText: text.data, targetChar: text.data.slice(at, at + 1), clickX, clickY });
+  t.report({ sourceText: span.textContent, targetChar: text.data.slice(at, at + 1), clickX, clickY });
   span.dispatchEvent(
     new MouseEvent('click', {
       bubbles: true,
@@ -41,7 +56,7 @@
   await t.sleep(250);
   const caret = t.caretRect();
   return {
-    sourceText: text.data,
+    sourceText: span.textContent,
     targetChar: text.data.slice(at, at + 1),
     targetX: Math.round(targetRect.left),
     clickX,

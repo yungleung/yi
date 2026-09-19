@@ -4,6 +4,21 @@ import type { RootContent } from 'mdast';
 import { serializeMarkdown } from '../parser';
 import { RevealableNodeComponent } from './revealable_node';
 import { onNearViewport } from '../lazy';
+import { highlightLatex } from './latex_highlight';
+
+/**
+ * Math source is LaTeX, so it is shown highlighted while it is being edited —
+ * the display delimiters, the commands and the comments read apart. The markup
+ * never changes the text: the caret inside the source is placed by character
+ * offset over it.
+ */
+abstract class MathSource extends RevealableNodeComponent {
+  protected readonly sourceClassName = 'markdown-math-source';
+
+  protected override fillSourceView(sourceView: HTMLSpanElement, source: string): void {
+    sourceView.innerHTML = highlightLatex(source);
+  }
+}
 
 /**
  * KaTeX output is a pure function of the source, so render once per unique
@@ -72,9 +87,7 @@ function renderOrDefer(element: HTMLElement, value: string, display: boolean): v
  * immediately as a cheap placeholder; KaTeX runs only when the node
  * approaches the viewport. Clicking reveals the raw `$…$` source.
  */
-export class InlineMath extends RevealableNodeComponent {
-  protected readonly sourceClassName = 'markdown-math-source';
-
+export class InlineMath extends MathSource {
   constructor(node: InlineMathNode) {
     super('inlineMath', node, document.createElement('span'), 'mx-1 align-middle');
     this.element.classList.add('markdown-math-placeholder');
@@ -95,9 +108,7 @@ export class InlineMath extends RevealableNodeComponent {
  * the source line nearest the clicked position. The formula renders lazily
  * near the viewport, like inline math.
  */
-export class DisplayMath extends RevealableNodeComponent {
-  protected readonly sourceClassName = 'markdown-math-source';
-
+export class DisplayMath extends MathSource {
   constructor(node: MathNode) {
     super('math', node, document.createElement('div'), 'my-4 overflow-x-auto');
     this.element.classList.add('markdown-math-placeholder');

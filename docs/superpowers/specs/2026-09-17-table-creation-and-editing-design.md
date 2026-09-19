@@ -351,6 +351,17 @@ could be edited the way a code block is:
   (`setCaretRawOffsetResolver`) that tells a node the caret's offset in the raw
   document. When that offset falls inside the node, it is used exactly, and the
   caret keeps the character it was next to.
+- **The source may be highlighted, as long as its text survives.** A formula's
+  source is LaTeX, so it is run through highlight.js's LaTeX grammar
+  (`latex_highlight.ts`) while it is open: commands, comments and built-ins read
+  apart, in the same theme the code blocks use. The rule is that the markup must
+  not change the text — every character and every space is a caret position.
+  What follows is that the caret code reads the *span's* text rather than a text
+  node in it: a highlighted source is split into as many nodes as the
+  highlighter needed, which is what `sourceTextOffset` and `sourceTextPosition`
+  in `position.ts` exist for. A subclass says how to fill the span
+  (`fillSourceView`); the reveal machinery, the click mapping and the caret do
+  not know what is in it.
 
 ## Appendix: footnotes
 

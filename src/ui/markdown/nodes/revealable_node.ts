@@ -14,6 +14,7 @@ import {
   nextNodeBefore
 } from '../caret/dom';
 import { serializeMarkdown } from '../parser';
+import { sourceTextPosition } from '../position';
 import { EditableNodeComponent } from './editable_node';
 import type { AstNode } from '../ast';
 import { preserveSpaces } from './text';
@@ -244,15 +245,20 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    */
   protected placeCaretInSourceView(caretOffset?: number): void {
     const sourceView = this.sourceView;
-    const textNode = sourceView?.firstChild as Text | undefined;
-    if (!textNode) {
+    if (!sourceView) {
       return;
     }
     const source = serializeMarkdown([this.node as RootContent]).trimEnd();
     const { start, end } = this.sourceContentRange(source);
     const offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
+    // Over the span's whole text: the source may be highlighted into many
+    // nodes, and the caret is placed by character.
+    const position = sourceTextPosition(sourceView, offset);
+    if (!position) {
+      return;
+    }
     const range = document.createRange();
-    range.setStart(textNode, offset);
+    range.setStart(position.node, position.offset);
     range.collapse(true);
     setCaretRange(range);
   }
@@ -272,7 +278,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     const { start, end } = this.sourceContentRange(source);
     const sourceView = document.createElement('span');
     sourceView.className = sourceClassName;
-    sourceView.textContent = preserveSpaces(source);
+    this.fillSourceView(sourceView, source);
     // The identifier content range (without the raw markers), stored on the
     // span so caret navigation can enter the source at the content boundary
     // instead of on a marker (see `caret/navigation.ts`).
@@ -313,6 +319,17 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // active range so it does not drift.
     refreshCaretPosition();
     return sourceView;
+  }
+
+  /**
+   * Fills the revealed span with the source. The default keeps visible the
+   * spaces markdown would drop; a subclass with a language of its own — LaTeX,
+   * for one — may highlight it instead, as long as the *text* comes out
+   * unchanged: the caret inside the source is placed by character offset over
+   * that text.
+   */
+  protected fillSourceView(sourceView: HTMLSpanElement, source: string): void {
+    sourceView.textContent = preserveSpaces(source);
   }
 
   /**
@@ -369,15 +386,20 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     const anchor = this.selectionBoundary(range, true, source);
     const focus = this.selectionBoundary(range, false, source);
     return () => {
-      const textNode = this.sourceView?.firstChild;
-      const anchorNode = anchor.kind === 'inside' ? textNode : anchor.node;
-      const focusNode = focus.kind === 'inside' ? textNode : focus.node;
-      if (!anchorNode || !focusNode) {
+      const sourceView = this.sourceView;
+      if (!sourceView) {
+        return;
+      }
+      const anchorPoint =
+        anchor.kind === 'inside' ? sourceTextPosition(sourceView, anchor.offset) : anchor;
+      const focusPoint =
+        focus.kind === 'inside' ? sourceTextPosition(sourceView, focus.offset) : focus;
+      if (!anchorPoint || !focusPoint) {
         return;
       }
       const restored = document.createRange();
-      restored.setStart(anchorNode, anchor.offset);
-      restored.setEnd(focusNode, focus.offset);
+      restored.setStart(anchorPoint.node, anchorPoint.offset);
+      restored.setEnd(focusPoint.node, focusPoint.offset);
       selection.removeAllRanges();
       selection.addRange(restored);
     };

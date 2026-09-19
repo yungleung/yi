@@ -7,8 +7,22 @@
   const t = window.__t;
   const clickCharacter = (char) => {
     const span = t.prose().querySelector('.markdown-math-source');
-    const text = span.firstChild;
-    const at = text.data.indexOf(char);
+    // The source is highlighted: the character is in one of many text nodes.
+    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+    let text = null;
+    let at = -1;
+    let node;
+    while ((node = walker.nextNode())) {
+      const found = node.data.indexOf(char);
+      if (found >= 0) {
+        text = node;
+        at = found;
+        break;
+      }
+    }
+    if (!text) {
+      return false;
+    }
     const target = document.createRange();
     target.setStart(text, at);
     target.setEnd(text, at + 1);
@@ -21,6 +35,7 @@
         clientY: Math.round(rect.top + rect.height / 2)
       })
     );
+    return true;
   };
   await t.load('text\n\n$$\n\\frac{a}{b}\n$$\n');
   const formula = t.prose().querySelector('[data-display="true"]');
@@ -38,10 +53,10 @@
   if (!span) {
     return { error: 'the source did not reveal' };
   }
-  const sourceBefore = span.firstChild.data;
-  clickCharacter('{b}');
+  const sourceBefore = span.textContent;
+  const clicked = clickCharacter('{b}');
   await t.sleep(200);
-  t.report({ sourceBefore, caretBefore: t.caretRect() });
+  t.report({ sourceBefore, clicked, caretBefore: t.caretRect() });
   t.scroller().dispatchEvent(
     new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
   );
