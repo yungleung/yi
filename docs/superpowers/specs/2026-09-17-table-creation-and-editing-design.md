@@ -414,6 +414,14 @@ markdown editor subscribe to a toolbar without the toolbar knowing anything
 about the document. A button never reaches into the editor; it announces what
 was pressed and the editor decides what that means.
 
+The wiring every group needs is in `toolbar.ts` (`Toolbar`): a button is
+ghost-styled, it must not start a window drag, and it must not take focus — the
+caret and the selection live in the document, and a focused button takes them
+away. A group therefore only says what its buttons are (a spec carries the
+label, the inline SVG and any classes, `TOOL_ICON_SIZE` among them) and what a
+press *means*, which is the one line that differs between the groups: emit this
+event, or open the picker. Adding a group means writing specs, not mechanics.
+
 The table's *context menu* is not a toolbar component: it belongs to the cell
 that was right-clicked, so it stays in `src/ui/table/`, next to the model that
 decides which of its items are enabled.

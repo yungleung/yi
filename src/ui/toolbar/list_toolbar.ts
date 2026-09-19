@@ -1,14 +1,11 @@
-import { eventManager } from '../../services/event_manager';
-import { BaseComponent } from '../component';
 import type { ListCommand } from '../markdown/editing/lists';
+import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './toolbar';
 
 /** A list command chosen from the toolbar; the editor applies it. */
 export const LIST_COMMAND = 'list_command';
 
-interface ListButtonSpec {
+interface ListButtonSpec extends ToolbarButtonSpec {
   command: ListCommand;
-  label: string;
-  icon: string;
 }
 
 const ICON_PREFIX = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">';
@@ -17,6 +14,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   {
     command: 'ordered',
     label: 'Ordered list',
+    className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" /><g fill="currentColor">` +
       '<path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5" />' +
@@ -26,6 +24,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   {
     command: 'bullet',
     label: 'Bullet list',
+    className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" />` +
       '<path fill="currentColor" fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2" /></svg>'
@@ -33,6 +32,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   {
     command: 'task',
     label: 'Task list',
+    className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" /><g fill="currentColor">` +
       '<path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1z" />' +
@@ -43,6 +43,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   {
     command: 'indent',
     label: 'Indent list item',
+    className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" />` +
       '<path fill="currentColor" fill-rule="evenodd" d="M4.5 11.5A.5.5 0 0 1 5 11h10a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5m-2-4A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m-2-4A.5.5 0 0 1 1 3h10a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5" /></svg>'
@@ -54,28 +55,11 @@ const LIST_BUTTONS: ListButtonSpec[] = [
  * one indent step. Like the formatting buttons, they must not start a window
  * drag and must not take focus from the editor's selection.
  */
-export class ListToolbar extends BaseComponent {
+export class ListToolbar extends Toolbar {
   constructor() {
-    super('div', ['flex', 'items-center', 'gap-1']);
-    for (const spec of LIST_BUTTONS) {
-      this.element.appendChild(this.createButton(spec));
-    }
-  }
-
-  private createButton(spec: ListButtonSpec): HTMLButtonElement {
-    const button = document.createElement('button');
-    // The icons are sized in `em`, so the font size is the icon size.
-    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
-    button.title = spec.label;
-    button.setAttribute('aria-label', spec.label);
-    button.innerHTML = spec.icon;
-    button.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    button.addEventListener('click', () => {
-      void eventManager.emit(LIST_COMMAND, { command: spec.command });
-    });
-    return button;
+    super();
+    this.addButtons(LIST_BUTTONS, (spec) =>
+      this.announce(LIST_COMMAND, { command: spec.command })
+    );
   }
 }

@@ -1,5 +1,4 @@
-import { eventManager } from '../../services/event_manager';
-import { BaseComponent } from '../component';
+import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 /** The footnote button asks the editor for a new footnote at the caret. */
 export const FOOTNOTE_COMMAND = 'footnote_command';
@@ -15,23 +14,11 @@ const FOOTNOTE_ICON =
  * must not start a window drag and must not take focus from the editor, which
  * is where the caret it works from lives.
  */
-export class FootnoteToolbar extends BaseComponent {
+export class FootnoteToolbar extends Toolbar {
   constructor() {
-    super('div', ['flex', 'items-center', 'gap-1']);
-
-    const button = document.createElement('button');
-    // The icon is sized in `em`, so the font size is the icon size.
-    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
-    button.title = 'Footnote';
-    button.setAttribute('aria-label', 'Footnote');
-    button.innerHTML = FOOTNOTE_ICON;
-    button.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    button.addEventListener('click', () => {
-      void eventManager.emit(FOOTNOTE_COMMAND);
-    });
-    this.element.appendChild(button);
+    super();
+    this.addButton({ label: 'Footnote', icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () =>
+      this.announce(FOOTNOTE_COMMAND)
+    );
   }
 }

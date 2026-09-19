@@ -1,5 +1,4 @@
-import { BaseComponent } from '../component';
-import { eventManager } from '../../services/event_manager';
+import { Toolbar, type ToolbarButtonSpec } from './toolbar';
 
 /** Formatting commands emitted by the toolbar (the editor subscribes later). */
 export const FORMATTING_COMMAND = 'formatting_command';
@@ -7,11 +6,8 @@ export const FORMATTING_COMMAND = 'formatting_command';
 /** The inline styles the toolbar can apply to a selection. */
 export type FormattingStyle = 'bold' | 'italic' | 'strikethrough' | 'inlineCode';
 
-interface FormattingButtonSpec {
+interface FormattingButtonSpec extends ToolbarButtonSpec {
   style: FormattingStyle;
-  label: string;
-  /** The inline SVG icon (fills with the button's text color). */
-  icon: string;
 }
 
 const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
@@ -55,30 +51,11 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
  * a {@link FORMATTING_COMMAND} event that the markdown editor will apply to
  * the current selection.
  */
-export class FormattingToolbar extends BaseComponent {
+export class FormattingToolbar extends Toolbar {
   constructor() {
-    super('div', ['flex', 'items-center', 'gap-1']);
-    for (const spec of FORMATTING_BUTTONS) {
-      this.element.appendChild(this.createButton(spec));
-    }
-  }
-
-  private createButton(spec: FormattingButtonSpec): HTMLButtonElement {
-    const button = document.createElement('button');
-    button.className = 'btn btn-ghost btn-xs';
-    button.title = spec.label;
-    button.setAttribute('aria-label', spec.label);
-    button.innerHTML = spec.icon;
-
-    // Interactive controls must not start a titlebar window drag, and must
-    // not take focus (which would clear the editor's selection).
-    button.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    button.addEventListener('click', () => {
-      void eventManager.emit(FORMATTING_COMMAND, { style: spec.style });
-    });
-    return button;
+    super();
+    this.addButtons(FORMATTING_BUTTONS, (spec) =>
+      this.announce(FORMATTING_COMMAND, { style: spec.style })
+    );
   }
 }

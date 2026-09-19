@@ -1,6 +1,5 @@
-import { eventManager } from '../../services/event_manager';
-import { BaseComponent } from '../component';
 import { TablePicker, type TableSize } from './table_picker';
+import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 /** The table picker announces a chosen size; the editor creates the table. */
 export const TABLE_INSERT = 'table_insert';
@@ -22,32 +21,27 @@ const TABLE_ICON =
  * Like the formatting buttons, it must not start a window drag and must not
  * take focus away from the editor's selection.
  */
-export class TableToolbar extends BaseComponent {
+export class TableToolbar extends Toolbar {
   private readonly picker: TablePicker;
 
   constructor() {
-    super('div', ['relative', 'flex', 'items-center']);
+    // `relative`, so the picker hangs under the button rather than somewhere
+    // in the page.
+    super(['relative', 'flex', 'items-center']);
+    this.picker = new TablePicker((size: TableSize) => this.announce(TABLE_INSERT, size));
+    this.addButton(
+      { label: 'Insert table', icon: TABLE_ICON, className: TOOL_ICON_SIZE },
+      () => this.togglePicker()
+    );
+    this.appendChild(this.picker.element);
+  }
 
-    const button = document.createElement('button');
-    button.className = 'btn btn-ghost btn-xs text-[1.25em]';
-    button.title = 'Insert table';
-    button.setAttribute('aria-label', 'Insert table');
-    button.innerHTML = TABLE_ICON;
-    button.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    button.addEventListener('click', () => {
-      if (this.picker.isOpen()) {
-        this.picker.close();
-      } else {
-        this.picker.open();
-      }
-    });
-
-    this.picker = new TablePicker((size: TableSize) => {
-      void eventManager.emit(TABLE_INSERT, size);
-    });
-    this.element.append(button, this.picker.element);
+  /** The button opens the picker, and closes it again. */
+  private togglePicker(): void {
+    if (this.picker.isOpen()) {
+      this.picker.close();
+    } else {
+      this.picker.open();
+    }
   }
 }
