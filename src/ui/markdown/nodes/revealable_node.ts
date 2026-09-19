@@ -587,11 +587,12 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
 
   /** Swaps the revealed source back to the rendered element. */
   protected restoreSource(): void {
-    if (!this.sourceView) {
+    const showing = this.sourceView;
+    if (!showing) {
       return;
     }
-    this.sourceView.replaceWith(this.element);
     this.sourceView = null;
+    showing.replaceWith(this.element);
     refreshCaretPosition();
   }
 }
