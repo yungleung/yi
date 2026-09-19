@@ -422,6 +422,16 @@ label, the inline SVG and any classes, `TOOL_ICON_SIZE` among them) and what a
 press *means*, which is the one line that differs between the groups: emit this
 event, or open the picker. Adding a group means writing specs, not mechanics.
 
+What a button *asks for* is one property on that spec, `command` — optional,
+because not every button asks for something. A formatting button's command is
+the style it applies and a list button's is the kind of list it makes; they were
+two differently-named properties meaning the same thing until it was clear they
+are the same property. A group's specs narrow the type (`command:
+FormattingStyle`, `command: ListCommand`) and the group announces it with the
+event it owns, so the event carries `{ command }` whichever group sent it. The
+table button has no command: pressing it opens the picker, and the picker is
+what asks.
+
 The table's *context menu* is not a toolbar component: it belongs to the cell
 that was right-clicked, so it stays in `src/ui/table/`, next to the model that
 decides which of its items are enabled.

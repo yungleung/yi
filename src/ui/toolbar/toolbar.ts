@@ -9,6 +9,14 @@ export interface ToolbarButtonSpec {
   icon: string;
   /** Extra classes for the button — the icon size, mostly. */
   className?: string;
+  /**
+   * What pressing the button asks the editor for. Groups that have one
+   * announce it with the event they own — a formatting button asks for a style
+   * and a list button asks for a list kind, and both are the same thing here:
+   * the command the button stands for. A button that does something else
+   * (opening the table picker) leaves it out.
+   */
+  command?: string;
 }
 
 /** The size the tool icons share: one and a quarter the text around them. */

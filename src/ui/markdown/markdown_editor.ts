@@ -239,9 +239,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** Wires the application-level commands (menu, toolbar, keyboard). */
   private registerCommandEvents(): void {
     void eventManager.on(FORMATTING_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { style?: FormattingStyle };
-      if (payload.style) {
-        applyFormatting(this.context, payload.style);
+      const payload = (event.payload ?? event) as { command?: FormattingStyle };
+      if (payload.command) {
+        applyFormatting(this.context, payload.command);
       }
     });
     void eventManager.on('undo', () => this.applyHistory('undo'));

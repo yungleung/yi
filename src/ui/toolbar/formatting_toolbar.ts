@@ -7,12 +7,12 @@ export const FORMATTING_COMMAND = 'formatting_command';
 export type FormattingStyle = 'bold' | 'italic' | 'strikethrough' | 'inlineCode';
 
 interface FormattingButtonSpec extends ToolbarButtonSpec {
-  style: FormattingStyle;
+  command: FormattingStyle;
 }
 
 const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
   {
-    style: 'bold',
+    command: 'bold',
     label: 'Bold',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="0.92em" height="1em" viewBox="0 0 1408 1536">' +
       '<path d="M0 0h1408v1536H0z" fill="none" />' +
@@ -20,7 +20,7 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
       '</svg>'
   },
   {
-    style: 'italic',
+    command: 'italic',
     label: 'Italic',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 1024 1536">' +
       '<path d="M0 0h1024v1536H0z" fill="none" />' +
@@ -28,7 +28,7 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
       '</svg>'
   },
   {
-    style: 'strikethrough',
+    command: 'strikethrough',
     label: 'Strikethrough',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1.17em" height="1em" viewBox="0 0 1792 1536">' +
       '<path d="M0 0h1792v1536H0z" fill="none" />' +
@@ -36,7 +36,7 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
       '</svg>'
   },
   {
-    style: 'inlineCode',
+    command: 'inlineCode',
     label: 'Inline code',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">' +
       '<path d="M0 0h24v24H0z" fill="none" />' +
@@ -55,7 +55,7 @@ export class FormattingToolbar extends Toolbar {
   constructor() {
     super();
     this.addButtons(FORMATTING_BUTTONS, (spec) =>
-      this.announce(FORMATTING_COMMAND, { style: spec.style })
+      this.announce(FORMATTING_COMMAND, { command: spec.command })
     );
   }
 }
