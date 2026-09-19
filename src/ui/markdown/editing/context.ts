@@ -12,6 +12,11 @@
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
 import { documentOffsetAt, domPositionAtOffset } from '../position';
+import {
+  resumeEditingSource,
+  setEditingSourceCaret,
+  shiftEditingSource
+} from '../nodes/revealable_node';
 import type { MarkdownEditorState } from '../state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
@@ -189,8 +194,15 @@ export function applyEdit(
 ): void {
   const anchor = context.contentView.scrollTop;
   context.state.replaceRange(from, to, replacement);
+  // A source being edited keeps its range across the edit, and opens again
+  // when the block is rebuilt — before the caret is restored, so the caret is
+  // placed inside the source text rather than into a fresh rendering.
+  shiftEditingSource(from, to, replacement);
   context.renderer.renderChanged();
-  restoreCaret(context, typeof caret === 'function' ? caret(context.state) : caret);
+  resumeEditingSource();
+  const target = typeof caret === 'function' ? caret(context.state) : caret;
+  setEditingSourceCaret(target);
+  restoreCaret(context, target);
   keepScroll(context, anchor);
 }
 

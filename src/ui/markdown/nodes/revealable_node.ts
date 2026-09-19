@@ -22,6 +22,93 @@ import { preserveSpaces } from './text';
 /** Revealable components by their rendered element (for the caret watcher). */
 const revealableByElement = new WeakMap<HTMLElement, RevealableNodeComponent>();
 
+/** The revealables alive in the document, so one can be found after a rebuild. */
+const liveRevealables = new Set<RevealableNodeComponent>();
+
+/**
+ * The source the author is *editing*, as a range of the raw document.
+ *
+ * Source mode is editing state, not a side effect of where the caret happens
+ * to be: it has to outlive the block being re-rendered, which rebuilds every
+ * node in it. While this is set, the node keeps showing its source across the
+ * rebuild — so the caret, which the editor restores by offset a moment later,
+ * is placed inside the source text, where its position is exact. Without it the
+ * rebuilt node shows its rendering again, and the caret is restored into
+ * something whose text has nothing to do with the source (a formula is KaTeX).
+ *
+ * It is kept in document offsets, so it names the same node after a re-parse,
+ * and the editor shifts it through each edit.
+ */
+let editingSource: { from: number; to: number; caret: number } | null = null;
+
+/** Notes that a source is being edited, and where the caret sits in it. */
+export function setEditingSource(from: number, to: number, caret: number): void {
+  editingSource = { from, to, caret };
+}
+
+/** Stops editing: the next time the node is rebuilt it renders again. */
+export function clearEditingSource(): void {
+  editingSource = null;
+}
+
+/** Whether a document offset is inside the source being edited. */
+export function insideEditingSource(offset: number): boolean {
+  return (
+    editingSource !== null && offset >= editingSource.from && offset <= editingSource.to
+  );
+}
+
+/** Where the caret goes inside the source being edited. */
+export function editingSourceCaret(): number | null {
+  return editingSource ? editingSource.caret : null;
+}
+
+/** Moves the editing range through an edit, so it keeps naming the same node. */
+export function shiftEditingSource(from: number, to: number, replacement: string): void {
+  if (!editingSource) {
+    return;
+  }
+  const delta = replacement.length - (to - from);
+  const shift = (offset: number): number => (offset >= to ? offset + delta : offset);
+  editingSource = {
+    from: shift(editingSource.from),
+    to: shift(editingSource.to),
+    caret: shift(editingSource.caret)
+  };
+}
+
+/** Puts the caret's place in the editing source where the editor is putting it. */
+export function setEditingSourceCaret(offset: number): void {
+  if (editingSource && insideEditingSource(offset)) {
+    editingSource = { ...editingSource, caret: offset };
+  }
+}
+
+/**
+ * Re-opens the source being edited after its block was rebuilt. Returns
+ * whether one was found and opened.
+ */
+export function resumeEditingSource(): boolean {
+  const editing = editingSource;
+  if (!editing) {
+    return false;
+  }
+  for (const revealable of [...liveRevealables]) {
+    const range = revealable.sourceRangeInDocument();
+    if (!range) {
+      if (!revealable.isAttached()) {
+        liveRevealables.delete(revealable);
+      }
+      continue;
+    }
+    if (range.start === editing.from && range.end === editing.to) {
+      revealable.revealSourceAt(editing.caret);
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * How to read the caret's offset in the raw document, or null when no editor
  * is running. The editor registers it: a node component cannot work this out
@@ -62,6 +149,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   constructor(type: string, node: AstNode, element: HTMLElement, className = '') {
     super(type, node, element, className);
     revealableByElement.set(element, this);
+    liveRevealables.add(this);
     ensureRevealWatcher();
 
     // The source view stays open only while the caret is inside it; when the
@@ -75,9 +163,22 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
         return;
       }
       const touched = range !== null && touchesElement(range, this.sourceView);
-      if (!touched) {
-        this.restoreSource();
+      if (touched) {
+        return;
       }
+      // A source being edited stays open while the caret is between
+      // placements — that is exactly what an edit does to it. It closes when
+      // the caret comes to rest outside the source, or when the editor stops
+      // editing it.
+      const caret = caretRawOffset?.();
+      if (
+        this.isBeingEdited() &&
+        (caret === null || caret === undefined || insideEditingSource(caret))
+      ) {
+        return;
+      }
+      clearEditingSource();
+      this.restoreSource();
     });
   }
 
@@ -106,6 +207,12 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // inside this node, rather than mapping a position in the rendering.
     const exact = this.caretOffsetInSource();
     if (exact !== null) {
+      const range = this.sourceRangeInDocument();
+      if (range) {
+        // The author's caret is in this source: it is being edited, and stays
+        // in source mode until the caret comes to rest somewhere else.
+        setEditingSource(range.start, range.end, range.start + exact);
+      }
       this.revealSource(this.sourceClassName, exact);
       return;
     }
@@ -145,6 +252,26 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   /** Whether the source is currently revealed. */
   isSourceVisible(): boolean {
     return this.sourceView !== null;
+  }
+
+  /** Whether this node's source is the one the author is editing. */
+  isBeingEdited(): boolean {
+    const range = this.sourceRangeInDocument();
+    return range !== null && editingSource !== null && range.start === editingSource.from;
+  }
+
+  /** Whether this node is still part of the rendered document. */
+  isAttached(): boolean {
+    return this.element.isConnected || (this.sourceView?.isConnected ?? false);
+  }
+
+  /** Reveals this node's source with the caret at a document offset inside it. */
+  revealSourceAt(offset: number): void {
+    const range = this.sourceRangeInDocument();
+    if (!range) {
+      return;
+    }
+    this.revealSource(this.sourceClassName, offset - range.start);
   }
 
   /** This node's own raw range in the document, or null when it has none. */
