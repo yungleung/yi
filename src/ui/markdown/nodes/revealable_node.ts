@@ -110,6 +110,34 @@ export function resumeEditingSource(): boolean {
 }
 
 /**
+ * Re-opens the source being edited inside one block that has just been
+ * rebuilt.
+ *
+ * The editor knows which block it edited and where that block starts, so this
+ * needs nothing from the DOM: the component's own element may not be in the
+ * document yet when the rebuild hands it back, and a lookup through
+ * `closest('.markdown-block')` would then find nothing and quietly leave the
+ * node showing its rendering again.
+ */
+export function resumeEditingSourceIn(blockElement: HTMLElement, charStart: number): boolean {
+  const editing = editingSource;
+  if (!editing) {
+    return false;
+  }
+  for (const revealable of [...liveRevealables]) {
+    if (!blockElement.contains(revealable.element)) {
+      continue;
+    }
+    const relative = revealable.relativeSourceRange();
+    if (relative && charStart + relative.start === editing.from) {
+      revealable.revealSourceAt(editing.caret);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * How to read the caret's offset in the raw document, or null when no editor
  * is running. The editor registers it: a node component cannot work this out
  * for itself, because the offset depends on the whole document's parsing.
@@ -140,6 +168,11 @@ let restoringCaretOffset: number | null = null;
 
 export function setRestoringCaretOffset(offset: number | null): void {
   restoringCaretOffset = offset;
+}
+
+/** Whether the editor is in the middle of placing the caret. */
+function isRestoringCaret(): boolean {
+  return restoringCaretOffset !== null;
 }
 
 /**
@@ -190,6 +223,15 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       // placements — that is exactly what an edit does to it. It closes when
       // the caret comes to rest outside the source, or when the editor stops
       // editing it.
+      //
+      // While the editor is placing the caret itself the caret has no
+      // trustworthy position to judge: the block was just rebuilt and the
+      // offset is only being written now. Closing on that would end source
+      // mode after every edit — the source would flash back to its rendering,
+      // and the caret would be left wherever that rendering put it.
+      if (isRestoringCaret()) {
+        return;
+      }
       const caret = caretRawOffset?.();
       if (
         this.isBeingEdited() &&
@@ -307,13 +349,21 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   sourceRangeInDocument(): { start: number; end: number } | null {
     const blockElement = (this.sourceView ?? this.element).closest('.markdown-block');
     const charStart = Number((blockElement as HTMLElement | null)?.dataset.charStart ?? NaN);
-    const relative = (this.node as { position?: { start: { offset?: number } } }).position?.start
-      .offset;
-    if (!Number.isFinite(charStart) || relative === undefined) {
+    const relative = this.relativeSourceRange();
+    if (!Number.isFinite(charStart) || !relative) {
       return null;
     }
-    const length = this.source().length;
-    return { start: charStart + relative, end: charStart + relative + length };
+    return { start: charStart + relative.start, end: charStart + relative.end };
+  }
+
+  /** The same range without the block's start, which is all the block knows. */
+  relativeSourceRange(): { start: number; end: number } | null {
+    const start = (this.node as { position?: { start: { offset?: number } } }).position?.start
+      .offset;
+    if (start === undefined) {
+      return null;
+    }
+    return { start, end: start + this.source().length };
   }
 
   /**

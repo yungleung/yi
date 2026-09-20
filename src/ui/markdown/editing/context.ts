@@ -13,7 +13,7 @@
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
 import { documentOffsetAt, domPositionAtOffset } from '../position';
 import {
-  resumeEditingSource,
+  resumeEditingSourceIn,
   setEditingSourceCaret,
   setRestoringCaretOffset,
   shiftEditingSource
@@ -200,7 +200,17 @@ export function applyEdit(
   // placed inside the source text rather than into a fresh rendering.
   shiftEditingSource(from, to, replacement);
   context.renderer.renderChanged();
-  resumeEditingSource();
+  // Re-open the source in the block that was rebuilt, found through the block
+  // itself: the component's element is not necessarily in the document yet.
+  const editedBlock = context.state.getBlockAtOffset(from);
+  const root = proseRoot(context);
+  const blockElement =
+    editedBlock && root
+      ? root.querySelector<HTMLElement>(`.markdown-block[data-line-start="${editedBlock.lineStart}"]`)
+      : null;
+  if (editedBlock && blockElement) {
+    resumeEditingSourceIn(blockElement, editedBlock.charStart);
+  }
   const target = typeof caret === 'function' ? caret(context.state) : caret;
   setEditingSourceCaret(target);
   restoreCaret(context, target);
