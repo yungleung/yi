@@ -472,6 +472,16 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // The browser would otherwise re-anchor a live drag selection onto the
     // replacement unpredictably (empty, or the whole source span).
     restoreSelection();
+    // A collapsed native selection — the browser's own caret from the click
+    // that revealed this — is left pointing at the element that was just
+    // swapped away, or collapsed onto the replacement's first position. The
+    // editor reads the native selection before its own caret, so it would take
+    // that position as the caret and edit there. The caret placed below, inside
+    // the source, is the one that counts.
+    const native = window.getSelection();
+    if (native && native.rangeCount > 0 && native.getRangeAt(0).collapsed) {
+      native.removeAllRanges();
+    }
     if (side) {
       const range = document.createRange();
       if (side === 'before') {
