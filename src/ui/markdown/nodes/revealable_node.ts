@@ -470,7 +470,15 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     }
     const source = this.source();
     const { start, end } = this.sourceContentRange(source);
-    const offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
+    let offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
+    // The end of the content belongs on the content's last line, not after it:
+    // a display formula's content ends with a newline and then its closing
+    // `$$`, and a character typed between the two would glue itself to the
+    // fence — which is no longer a fence, and the formula reads as something
+    // else on the next parse.
+    while (offset > start && source[offset - 1] === '\n') {
+      offset -= 1;
+    }
     // Over the span's whole text: the source may be highlighted into many
     // nodes, and the caret is placed by character.
     const position = sourceTextPosition(sourceView, offset);
