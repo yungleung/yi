@@ -229,16 +229,22 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       // offset is only being written now. Closing on that would end source
       // mode after every edit — the source would flash back to its rendering,
       // and the caret would be left wherever that rendering put it.
+      //
+      // The guard is spent here, on the first caret notification after the
+      // editor's placement: that notification *is* the placement. Clearing it
+      // on a timer or an animation frame cannot be relied on — those do not run
+      // while the window is in the background — and a guard that outlives its
+      // placement blocks every later close, leaving a source open for good.
       if (isRestoringCaret()) {
+        setRestoringCaretOffset(null);
         return;
       }
-      const caret = caretRawOffset?.();
-      if (
-        this.isBeingEdited() &&
-        (caret === null || caret === undefined || insideEditingSource(caret))
-      ) {
-        return;
-      }
+      // The caret has come to rest somewhere that is not this source, so the
+      // source closes. Nothing else needs to be consulted: what kept a source
+      // open through a rebuild was the editor placing the caret, and that is
+      // the guard above. Judging by the recorded editing range instead made
+      // the decision depend on arithmetic that undo and redo do not perform,
+      // so a source could stay open after its range went stale.
       clearEditingSource();
       this.restoreSource();
     });

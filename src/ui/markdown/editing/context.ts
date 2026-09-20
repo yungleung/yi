@@ -270,9 +270,6 @@ export function restoreCaret(context: EditorContext, offset: number): boolean {
   // to hold the caret places it there exactly instead of reading the caret back
   // out of a rendering that has only just been rebuilt.
   setRestoringCaretOffset(clamped);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => setRestoringCaretOffset(null));
-  });
   const position = domPositionAtOffset(context.state, root, clamped);
   if (!position) {
     setSelectionRange(null);

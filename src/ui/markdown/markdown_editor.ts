@@ -36,7 +36,7 @@ import { LIST_COMMAND } from '../toolbar/list_toolbar';
 import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import { setCaretRawOffsetResolver } from './nodes/revealable_node';
+import { resumeEditingSourceIn, setCaretRawOffsetResolver } from './nodes/revealable_node';
 
 const DEFAULT_MARKDOWN = [
   '# GitHub-flavored markdown demo',
@@ -401,6 +401,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     this.renderer.renderChanged();
+    // Undo and redo rebuild the block just like an edit does, so a source being
+    // edited has to be re-opened the same way — and its recorded range, which
+    // the edit path shifts, is recomputed here rather than left stale.
+    const block = this.state.getBlockAtOffset(offset) ?? this.state.getBlockAtOffset(this.state.nearestTextOffset(offset));
+    const root = proseRoot(this.context);
+    const blockElement =
+      block && root
+        ? root.querySelector<HTMLElement>(`.markdown-block[data-line-start="${block.lineStart}"]`)
+        : null;
+    if (block && blockElement) {
+      resumeEditingSourceIn(blockElement, block.charStart);
+    }
     restoreCaret(this.context, Math.min(offset, this.state.getText().length));
     // Undo and redo restore a caret the same way an edit does, and the browser
     // scrolls a focused element or a synchronised selection into view just the
