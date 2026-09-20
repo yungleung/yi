@@ -172,25 +172,6 @@ export class VirtualBlockRenderer {
   }
 
   /**
-   * Re-measures one mounted block whose content changed without being rebuilt.
-   *
-   * A source edited in place changes a block's height under the renderer's
-   * feet. The heights are what the spacers — and therefore the mounted window —
-   * are computed from, so a stale one can put the block outside the window and
-   * have it released: the block would vanish and, because a block that is not
-   * mounted is never re-measured, never come back.
-   */
-  syncBlockHeight(lineStart: number): void {
-    const element = this.mounted.get(lineStart);
-    const block = this.state.getBlockAtLine(lineStart);
-    if (!element || !block) {
-      return;
-    }
-    this.rememberHeight(block, element);
-    this.updateSpacers();
-  }
-
-  /**
    * Re-tags every mounted block with its own line and character range.
    *
    * An element is remembered by its content, so an edit above it — or a

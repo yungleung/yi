@@ -36,7 +36,7 @@ import { LIST_COMMAND } from '../toolbar/list_toolbar';
 import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import { setBlockRebuilder, setCaretRawOffsetResolver } from './nodes/revealable_node';
+import { setCaretRawOffsetResolver } from './nodes/revealable_node';
 
 const DEFAULT_MARKDOWN = [
   '# GitHub-flavored markdown demo',
@@ -171,14 +171,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
     setCaretRawOffsetResolver(() => caretOffset(this.context));
-    // A source edited in place asks for its block to be rebuilt when it closes.
-    setBlockRebuilder((element) => {
-      const blockElement = element.closest('.markdown-block') as HTMLElement | null;
-      const lineStart = Number(blockElement?.dataset.lineStart);
-      if (Number.isFinite(lineStart)) {
-        this.renderer.renderBlock(lineStart);
-      }
-    });
 
     // The window is rebuilt as the user scrolls; re-anchor the caret only
     // when the block it lived in was dropped, so scrolling never moves it.
