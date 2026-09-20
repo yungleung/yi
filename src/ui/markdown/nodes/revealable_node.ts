@@ -455,7 +455,17 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       return;
     }
     this.swapToSource(sourceClassName);
-    this.placeCaretInSourceView(caretOffset);
+    const placed = this.placeCaretInSourceView(caretOffset);
+    // Showing a source with the caret in it *is* editing it, so say so here
+    // rather than waiting for the caret watcher to notice. The watcher only
+    // runs on a caret change, and a reveal driven by a click places the caret
+    // itself — the block is then rebuilt by the first edit with no editing
+    // range recorded, so the rebuild brings the rendering back and the caret
+    // is restored into it.
+    const range = this.sourceRangeInDocument();
+    if (range && placed !== null) {
+      setEditingSource(range.start, range.end, range.start + placed);
+    }
   }
 
   /**
@@ -463,10 +473,10 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    * (the range without its markers). Without an offset it lands at the end,
    * which is where a reveal that was not aimed at a character belongs.
    */
-  protected placeCaretInSourceView(caretOffset?: number): void {
+  protected placeCaretInSourceView(caretOffset?: number): number | null {
     const sourceView = this.sourceView;
     if (!sourceView) {
-      return;
+      return null;
     }
     const source = this.source();
     const { start, end } = this.sourceContentRange(source);
@@ -483,12 +493,13 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // nodes, and the caret is placed by character.
     const position = sourceTextPosition(sourceView, offset);
     if (!position) {
-      return;
+      return null;
     }
     const range = document.createRange();
     range.setStart(position.node, position.offset);
     range.collapse(true);
     setCaretRange(range);
+    return offset;
   }
 
   /**
