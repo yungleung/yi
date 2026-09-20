@@ -203,15 +203,24 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   }
 
   /**
-   * Reveals the source when clicked, placing the caret at the offset mapped
-   * from the click position (see {@link sourceOffsetForClick}).
+   * Reveals the source when clicked, with the caret at the end of its content.
+   *
+   * The click position cannot be turned into a character here: this element is
+   * the *rendering*, and for the nodes that matter most it does not resemble
+   * the source at all — a wikilink renders as the note's resolved title, and a
+   * formula renders as KaTeX, whose width says nothing about where a character
+   * is. Scaling the click into the source was a guess, and a guess is what put
+   * the caret a few characters off and made the following edit land wrong.
+   *
+   * The content end is a position that is always true, and the author's next
+   * click lands on the source itself, where the mapping is exact.
    */
   override placeCaretAt(clientX: number, clientY: number): void {
     if (!this.shouldReveal()) {
       super.placeCaretAt(clientX, clientY);
       return;
     }
-    this.revealSource(this.sourceClassName, this.sourceOffsetForClick(clientX, clientY));
+    this.revealSource(this.sourceClassName);
   }
 
   /**
