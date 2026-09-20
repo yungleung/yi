@@ -176,6 +176,19 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   protected sourceView: HTMLSpanElement | null = null;
   /** Whether the source has been edited since it was shown. */
   private editedInPlace = false;
+  /**
+   * The source as edited here, once it has been. The node this component was
+   * built from is a parse of the document as it was *before* that edit, so
+   * serializing it again would hand back the old source — the wrong text for
+   * the caret to be placed in, for the next edit's range, and for the rebuild
+   * that happens when the source closes.
+   */
+  private editedSource: string | null = null;
+
+  /** The markdown this node shows and edits: the edited text, or its own. */
+  protected source(): string {
+    return this.editedSource ?? serializeMarkdown([this.node as RootContent]).trimEnd();
+  }
   protected abstract readonly sourceClassName: string;
   /**
    * The absolute `[start, end)` range of the identifier content within the
@@ -257,7 +270,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
       return;
     }
     const container = range.startContainer;
-    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const source = this.source();
     if (this.element.contains(container)) {
       const clicked = this.offsetFromRange(range);
       this.revealSource(
@@ -329,7 +342,9 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     const text = span.textContent ?? '';
     const start = from - range.start;
     const end = to - range.start;
-    this.fillSourceView(span, `${text.slice(0, start)}${replacement}${text.slice(end)}`);
+    const edited = `${text.slice(0, start)}${replacement}${text.slice(end)}`;
+    this.fillSourceView(span, edited);
+    this.editedSource = edited;
     this.editedInPlace = true;
     this.placeCaretAtSourceOffset(caret - range.start);
     return true;
@@ -363,7 +378,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     if (!Number.isFinite(charStart) || relative === undefined) {
       return null;
     }
-    const length = serializeMarkdown([this.node as RootContent]).trimEnd().length;
+    const length = this.source().length;
     return { start: charStart + relative, end: charStart + relative + length };
   }
 
@@ -379,7 +394,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     if (clicked === undefined) {
       return undefined;
     }
-    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const source = this.source();
     return this.contentOffset(clicked, source);
   }
 
@@ -469,7 +484,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     if (!sourceView) {
       return;
     }
-    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const source = this.source();
     const { start, end } = this.sourceContentRange(source);
     const offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
     // Over the span's whole text: the source may be highlighted into many
@@ -497,7 +512,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
 
   /** Replaces the rendered element with the tagged source span. */
   private swapToSource(sourceClassName: string): HTMLSpanElement {
-    const source = serializeMarkdown([this.node as RootContent]).trimEnd();
+    const source = this.source();
     const restoreSelection = this.captureSelectionForSwap(source);
     const { start, end } = this.sourceContentRange(source);
     const sourceView = document.createElement('span');
