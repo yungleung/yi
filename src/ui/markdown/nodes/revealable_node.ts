@@ -127,6 +127,22 @@ export function setCaretRawOffsetResolver(resolver: (() => number | null) | null
 }
 
 /**
+ * The offset the editor is restoring the caret to, while it is restoring it.
+ *
+ * An edit re-renders the block, and the caret is then put back by *offset* —
+ * that offset is the truth, because the editor computed it. Reading the caret
+ * back out of the DOM a frame later is not: the node has been rebuilt and the
+ * caret was first placed somewhere in its rendering, which for a formula says
+ * nothing about where that is in the source. A node that reveals its source to
+ * hold the caret uses this while it is set.
+ */
+let restoringCaretOffset: number | null = null;
+
+export function setRestoringCaretOffset(offset: number | null): void {
+  restoringCaretOffset = offset;
+}
+
+/**
  * Base class for node components that toggle between their rendered view and
  * their markdown source (image, link, citation, wikilink, math, ...).
  * Clicking reveals the source with the caret at the offset given by
@@ -240,7 +256,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    * and the caret is in fact inside it.
    */
   private caretOffsetInSource(): number | null {
-    const offset = caretRawOffset?.();
+    const offset = restoringCaretOffset ?? caretRawOffset?.();
     const range = this.sourceRangeInDocument();
     if (offset === null || offset === undefined || !range) {
       return null;

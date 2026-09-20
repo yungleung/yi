@@ -15,6 +15,7 @@ import { documentOffsetAt, domPositionAtOffset } from '../position';
 import {
   resumeEditingSource,
   setEditingSourceCaret,
+  setRestoringCaretOffset,
   shiftEditingSource
 } from '../nodes/revealable_node';
 import type { MarkdownEditorState } from '../state';
@@ -255,6 +256,13 @@ export function restoreCaret(context: EditorContext, offset: number): boolean {
     return false;
   }
   const clamped = context.state.nearestTextOffset(offset);
+  // Tell the nodes what offset is being restored, so one that opens its source
+  // to hold the caret places it there exactly instead of reading the caret back
+  // out of a rendering that has only just been rebuilt.
+  setRestoringCaretOffset(clamped);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => setRestoringCaretOffset(null));
+  });
   const position = domPositionAtOffset(context.state, root, clamped);
   if (!position) {
     setSelectionRange(null);
