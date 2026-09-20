@@ -397,10 +397,21 @@ export function domPositionAtOffset(
       continue;
     }
     const length = source.textContent?.length ?? 0;
-    if (clamped >= from && clamped <= from + length) {
+    // The caret belongs to this source when it is inside it — and, at its
+    // edges, when it is a character or two outside: the raw text and the drawn
+    // source can disagree by a marker, and at the end of an edit the caret sits
+    // exactly there. Falling through to the block model instead would place the
+    // caret by a rendering that is not the source at all, which puts it at the
+    // start of the line.
+    const atSource = clamped >= from && clamped <= from + length;
+    const atSourceEdge = clamped >= from - 2 && clamped <= from + length + 2;
+    if (atSource || atSourceEdge) {
       // The span's text, not its first child: a highlighted source is split
       // into as many text nodes as the highlighter needed.
-      const position = sourceTextPosition(source, clamped - from);
+      const position = sourceTextPosition(
+        source,
+        Math.max(0, Math.min(clamped - from, length))
+      );
       if (position) {
         return position;
       }
