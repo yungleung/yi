@@ -208,11 +208,15 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     // The source view stays open only while the caret is inside it; when the
     // caret moves elsewhere (or disappears), re-render the original element.
     this.unsubscribeCaret = onCaretRangeChanged((range) => {
+      // A component whose block was rebuilt is out of the document, but its
+      // subscription is not: it would go on reacting to every caret move,
+      // spending the caret-restore guard and clearing the shared editing range
+      // that the node now in the document depends on. Stand down instead.
+      if (!this.isAttached()) {
+        this.unsubscribeCaret();
+        return;
+      }
       if (!this.sourceView) {
-        // Self-clean when this component is re-rendered out of the document.
-        if (!this.element.isConnected) {
-          this.unsubscribeCaret();
-        }
         return;
       }
       const touched = range !== null && touchesElement(range, this.sourceView);
