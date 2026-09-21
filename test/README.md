@@ -23,16 +23,17 @@ methodology; this file is the index and the conventions.
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
-| `check-layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
-| `check-syntax-home.mjs` | That each markdown-syntax fact is defined in exactly one module |
+| `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
+| `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
+| `syntax-home.mjs` | That each markdown-syntax fact is defined in exactly one module |
 
 ## The probes
 
-Sixty of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Sixty-four of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`), source mode

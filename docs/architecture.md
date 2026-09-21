@@ -30,7 +30,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | Document | `state.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*`, `position.ts` | render, document |
-| Commands | `editing/*`, `markdown_editor.ts` | everything above |
+| Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
 keeps the rules testable in Node, and it is the boundary most likely to be broken by
@@ -97,7 +97,7 @@ Almost every bug in this editor has been a confusion between these:
 | How the document is split into blocks | `blocks.ts` |
 | How one markdown construct looks | `nodes/<type>.ts` |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
-| A new keystroke or command | `markdown_editor.ts` (`handleKeydown`, `registerCommandEvents`) |
+| A new keystroke or command | the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger — a chord in `commands/keymap.ts`, a button, a menu item |
 | Where the caret goes, or how it maps | `caret/*`, `position.ts` |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `styles.css` |
