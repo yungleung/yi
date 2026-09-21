@@ -38,7 +38,6 @@ import { copySelection, pasteText } from './editing/clipboard';
 import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
-import { applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
 import { continueTableDown, moveTableCell } from './editing/table';
 import {
@@ -212,7 +211,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         event.preventDefault();
         return;
       }
-      if (applyListCommand(this.context, event.shiftKey ? 'outdent' : 'indent')) {
+      // The list step goes through the registry like any other trigger: the
+      // command is available where there is a list line to move, so a Tab that
+      // cannot indent here falls through to the code block below.
+      if (runCommand(event.shiftKey ? 'list:outdent' : 'list:indent')) {
         event.preventDefault();
         return;
       }

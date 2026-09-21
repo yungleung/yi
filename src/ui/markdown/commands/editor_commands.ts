@@ -14,7 +14,7 @@
  */
 
 import { FORMATTING_STYLES } from '../format';
-import { LIST_COMMANDS, applyListCommand } from '../editing/lists';
+import { LIST_COMMANDS, applyListCommand, listCommandEdit } from '../editing/lists';
 import {
   TABLE_COMMANDS,
   insertTable,
@@ -59,7 +59,14 @@ export function registerEditorCommands(host: CommandHost): void {
     registerCommand({ id: `format:${style}`, run: () => applyFormatting(context, style) });
   }
   for (const command of LIST_COMMANDS) {
-    registerCommand({ id: `list:${command}`, run: () => applyListCommand(context, command) });
+    // A list command applies where there is a list line to move, and Tab has to
+    // know that *before* it runs: a Tab that cannot indent here is the code
+    // block's Tab, two spaces of text (`markdown_editor.ts`).
+    registerCommand({
+      id: `list:${command}`,
+      available: () => listCommandEdit(context, command) !== null,
+      run: () => applyListCommand(context, command)
+    });
   }
   for (const command of TABLE_COMMANDS) {
     registerCommand({ id: `table:${command}`, run: (target) => runTableOperation(context, command, target) });
