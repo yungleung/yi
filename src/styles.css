@@ -168,7 +168,16 @@ body {
 }
 
 /* Math sources can span multiple lines (display mode `$$…$$`). */
-.markdown-math-source {
+/* Revealed sources are the document's own text: the runs of spaces in them are
+   the author's characters, so they are laid out as written rather than
+   rewritten into non-breaking spaces to survive HTML's collapsing. */
+.markdown-link-source,
+.markdown-image-source,
+.markdown-citation-source,
+.markdown-wikilink-source,
+.markdown-math-source,
+.markdown-break-source,
+.markdown-thematic-break-source {
   white-space: pre-wrap;
 }
 

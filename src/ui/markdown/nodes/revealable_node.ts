@@ -17,7 +17,6 @@ import { serializeMarkdown } from '../parser';
 import { sourceTextPosition } from '../position';
 import { EditableNodeComponent } from './editable_node';
 import type { AstNode } from '../ast';
-import { preserveSpaces } from './text';
 
 /** Revealable components by their rendered element (for the caret watcher). */
 const revealableByElement = new WeakMap<HTMLElement, RevealableNodeComponent>();
@@ -587,14 +586,18 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   }
 
   /**
-   * Fills the revealed span with the source. The default keeps visible the
-   * spaces markdown would drop; a subclass with a language of its own — LaTeX,
-   * for one — may highlight it instead, as long as the *text* comes out
-   * unchanged: the caret inside the source is placed by character offset over
-   * that text.
+   * Fills the revealed span with the source, exactly as the document has it.
+   *
+   * This is text the author edits, so it must not be re-written on the way in:
+   * a space turned into a non-breaking space to keep it visible would be a
+   * character the document does not have, and editing around it writes that
+   * character into the document instead of the space. Runs of spaces stay
+   * visible through the span's `white-space: pre-wrap` instead (see
+   * `styles.css`). A subclass with a language of its own — LaTeX, for one — may
+   * highlight it, as long as the text comes out unchanged.
    */
   protected fillSourceView(sourceView: HTMLSpanElement, source: string): void {
-    sourceView.textContent = preserveSpaces(source);
+    sourceView.textContent = source;
   }
 
   /**
