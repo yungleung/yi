@@ -12,7 +12,7 @@ import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from 
 import type { RootContent } from 'mdast';
 import { footnoteLabels, withFootnoteDefinitions } from './syntax/footnotes';
 import { parseMarkdown } from './syntax/parser';
-import { blockParseInput } from './syntax/trailing_spaces';
+import { blockParseInput } from './blocks';
 
 /**
  * One undo step: the document text before the edit and after it. Whole-text

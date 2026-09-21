@@ -1,3 +1,4 @@
+import { listItemMarker } from './markers';
 /**
  * Reading a raw line as a list item marker.
  *
@@ -9,12 +10,9 @@
  * recognise the shape, so they read it here.
  */
 
-/** A bare bullet, ordered or task marker — `[ ]`/`[x]` is part of it. */
-const LIST_ITEM_MARKER = /^\s*(?:[-+*]|\d+[.)])(?:\s+\[[ xX]\])?$/;
-
 /** Whether a raw line is an empty list item, trailing spaces included. */
 export function isBlankItemLine(line: string): boolean {
-  return LIST_ITEM_MARKER.test(line.trimEnd());
+  return listItemMarker.test(line.trimEnd());
 }
 
 /** The bounds of the line an offset sits on. */

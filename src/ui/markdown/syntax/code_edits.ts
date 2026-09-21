@@ -1,3 +1,4 @@
+import { isDelimiterLine } from './markers';
 /**
  * Indenting inside a fenced code block: one `Tab` is two spaces.
  *
@@ -14,11 +15,6 @@ import { lineSpanAt, touchedLines } from './lines';
 
 /** The two spaces one Tab stands for. */
 const STEP = '  ';
-
-/** A line that delimits a fenced code block or a display formula. */
-function isDelimiter(line: string): boolean {
-  return /^ {0,3}(?:`{3,}|~{3,})/.test(line) || /^ {0,3}\$\$\s*$/.test(line);
-}
 
 /** One edit covering the given line rewrites, with everything between them kept. */
 function joinLineEdits(
@@ -44,7 +40,7 @@ function usableLines(
   text: string,
   lines: Array<{ start: number; end: number }>
 ): Array<{ start: number; end: number }> {
-  return lines.filter((line) => !isDelimiter(text.slice(line.start, line.end)));
+  return lines.filter((line) => !isDelimiterLine(text.slice(line.start, line.end)));
 }
 
 /** Adds one step to each line that may take it. */
@@ -85,7 +81,7 @@ export function codeIndentEdit(
 ): TextEdit | null {
   if (from === to) {
     const line = lineSpanAt(text, from);
-    if (isDelimiter(text.slice(line.start, line.end))) {
+    if (isDelimiterLine(text.slice(line.start, line.end))) {
       return null;
     }
     return outdent ? outdentLines(text, [line]) : { from, to, replacement: STEP };
