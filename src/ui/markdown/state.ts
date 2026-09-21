@@ -6,6 +6,11 @@
  * slices of its lines. The editor reads the blocks to render them (one
  * {@link MarkdownBlockView} per block) and will apply edits against the raw
  * text through this state, re-splitting only the affected region.
+ *
+ * May import: the block model (`blocks.ts`) and the parser (`syntax/parser.ts`
+ * with its repairs). Upholds: the raw document is the only source of truth —
+ * blocks, parses and the undo history are all derived from it, and an edit
+ * re-splits only what it touched.
  */
 
 import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';

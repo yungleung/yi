@@ -1,3 +1,18 @@
+/**
+ * The editor: the document, the rendered window, and the wiring between them.
+ *
+ * This is the module the shell mounts. It owns the state, the virtual block
+ * renderer and the DOM events, and it registers the commands it owns under the
+ * registry's names; every editing feature itself lives in its own module under
+ * `editing/` (see the class comment below), and the clicks that are not plain
+ * caret placement live in `click_routing.ts`.
+ *
+ * May import: everything above it — the render layer, the caret, the commands'
+ * registry and the editing rules it registers. Upholds: a keystroke reaches
+ * behaviour by name (`runCommand`) or by the text path (`editing/text_commands`),
+ * never by a second copy of the rule.
+ */
+
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';

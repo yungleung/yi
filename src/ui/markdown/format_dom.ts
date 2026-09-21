@@ -13,6 +13,12 @@
  * Selections that cannot be patched safely (partially covering a formatted
  * unit, covering an unrevealed widget, spanning blocks, ...) return false so
  * the caller falls back to re-rendering the block.
+ *
+ * May import: the pure formatting rules and the state's parse
+ * (`format.ts`, `state.ts`) and the text nodes it patches. Upholds: the DOM it
+ * writes mirrors the edit that was made to the text — the raw offsets it
+ * re-tags come from the same edit, so the rendering can never claim a range the
+ * document does not have.
  */
 
 import type { FormattingEdit, FormattingStyle } from './format';

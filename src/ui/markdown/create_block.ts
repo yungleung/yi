@@ -1,6 +1,11 @@
 /**
  * Block component factory — the block-level counterpart of `create_node.ts`.
  * The virtual renderer composes these individual block elements.
+ *
+ * May import: the document's blocks, the node registry, the caret and
+ * `source_mode.ts`. Upholds: a block's rendering is a pure function of its own
+ * source — the component is built from the block's slice, and the block's line
+ * range is tagged on it for everything that maps back.
  */
 
 import type { BlockNode } from './blocks';

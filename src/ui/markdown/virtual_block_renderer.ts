@@ -1,3 +1,28 @@
+/**
+ * Owns the block DOM for a document: only the blocks around the viewport are
+ * mounted, the rest are represented by two spacers sized from remembered
+ * heights.
+ *
+ * Rendering is a function of a block's own source, never of where it sits, so
+ * everything remembered is keyed by that source rather than by a line number: a
+ * block that keeps its text keeps its parse, its measured height and its rendered
+ * element through edits above it, through undo, and through leaving the window
+ * and coming back. Elements of blocks that left the window are kept in a bounded
+ * spare cache instead of being thrown away.
+ *
+ * Heights are measured once a block has been laid out and reused afterwards,
+ * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
+ * accurate on documents whose blocks differ wildly in size (display math, code
+ * fences, ...). Because those heights can still change when a placeholder is
+ * replaced by a measurement, the renderer also anchors the scroll position to the
+ * block at the top of the viewport and restores it after every re-sync.
+ *
+ * May import: the document's blocks and state, the block factory, the size
+ * arithmetic (`block_sizes.ts`) and the window (`viewport_window.ts`). Upholds:
+ * the mounted window and its spacers are derived from the block sizes on every
+ * sync — the DOM is a view of that arithmetic, never a second record of it.
+ */
+
 import { BlockSizes } from './block_sizes';
 import { createBlockComponent } from './create_block';
 import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
@@ -15,25 +40,6 @@ export interface RendererSyncHooks {
   restore(snapshot: unknown): void;
 }
 
-/**
- * Owns the block DOM for a document: only the blocks around the viewport are
- * mounted, the rest are represented by two spacers sized from remembered
- * heights.
- *
- * Rendering is a function of a block's own source, never of where it sits, so
- * everything remembered is keyed by that source rather than by a line number:
- * a block that keeps its text keeps its parse, its measured height and its
- * rendered element through edits above it, through undo, and through leaving
- * the window and coming back. Elements of blocks that left the window are kept
- * in a bounded spare cache instead of being thrown away.
- *
- * Heights are measured once a block has been laid out and reused afterwards,
- * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
- * accurate on documents whose blocks differ wildly in size (display math,
- * code fences, ...). Because those heights can still change when a placeholder
- * is replaced by a measurement, the renderer also anchors the scroll position
- * to the block at the top of the viewport and restores it after every re-sync.
- */
 export class VirtualBlockRenderer {
   private root: HTMLElement | null = null;
   private frame: number | null = null;
