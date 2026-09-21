@@ -489,14 +489,25 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
     }
     const source = this.source();
     const { start, end } = this.sourceContentRange(source);
-    let offset = caretOffset === undefined ? end : Math.min(Math.max(start, caretOffset), end);
-    // The end of the content belongs on the content's last line, not after it:
-    // a display formula's content ends with a newline and then its closing
-    // `$$`, and a character typed between the two would glue itself to the
-    // fence — which is no longer a fence, and the formula reads as something
-    // else on the next parse.
-    while (offset > start && source[offset - 1] === '\n') {
-      offset -= 1;
+    let offset: number;
+    if (caretOffset === undefined) {
+      // Placing the caret without being told where: at the end of the content,
+      // which belongs on the content's last line rather than after it. A
+      // display formula's content ends with a newline and then its closing
+      // `$$`, and a character typed between the two would glue itself to the
+      // fence — which is no longer a fence, and the formula then reads as
+      // something else.
+      offset = end;
+      while (offset > start && source[offset - 1] === '\n') {
+        offset -= 1;
+      }
+    } else {
+      // An offset the editor computed is exact, and it may sit anywhere in the
+      // source — on a blank line, on a fence line — exactly as it may anywhere
+      // in a code block. Clamping it to the *content* range was what moved the
+      // caret off the end of a line, and what a click on a blank line could
+      // not reach.
+      offset = Math.min(Math.max(0, caretOffset), source.length);
     }
     // Over the span's whole text: the source may be highlighted into many
     // nodes, and the caret is placed by character.
