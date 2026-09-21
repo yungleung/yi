@@ -15,7 +15,7 @@
  */
 
 import type { Root } from 'mdast';
-import { isBlankItemLine } from './list_lines';
+import { isBlankItemLine } from './lines';
 
 /** A node that may hold block children, with the position the repair needs. */
 interface Container {

@@ -1,4 +1,4 @@
-import { rowAt, type TableSource } from '../markdown/table_source';
+import { rowAt, type TableSource } from '../markdown/syntax/table_source';
 import type { TableCommand } from '../markdown/editing/table';
 
 /** One node of the table context menu. */

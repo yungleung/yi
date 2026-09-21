@@ -10,7 +10,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/list_edits.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/markdown/syntax/list_edits.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-list-'));

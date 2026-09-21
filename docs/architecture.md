@@ -26,7 +26,7 @@ layers, the invariants that hold them together, and where a change belongs.
 
 | Layer | Files | May import |
 | --- | --- | --- |
-| Syntax (pure) | `blocks.ts`, `list_lines.ts`, `blank_lines.ts`, `trailing_spaces.ts`, `table_source.ts`, `code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `parser.ts` | other syntax modules, mdast types |
+| Syntax (pure) | `blocks.ts`, `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `state.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*`, `position.ts` | render, document |
@@ -34,7 +34,20 @@ layers, the invariants that hold them together, and where a change belongs.
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
 keeps the rules testable in Node, and it is the boundary most likely to be broken by
-an innocent import.
+an innocent import. `test/checks/layering.mjs` enforces it.
+
+### One fact, one home
+
+| Fact | Home |
+| --- | --- |
+| Fences, frontmatter delimiters, html terminators, list markers, delimiter lines, block starts | `syntax/markers.ts` |
+| Line spans, touched lines, item subtrees | `syntax/lines.ts` |
+| Empty-paragraph lines | `syntax/blank_lines.ts` |
+| Trailing-space rewriting | `syntax/trailing_spaces.ts` |
+| Table source, table/list/code edits, `TextEdit` | `syntax/table_source.ts`, `syntax/table_edits.ts`, `syntax/list_edits.ts`, `syntax/code_edits.ts`, `syntax/edit_range.ts` |
+| Parser repairs (empty items, footnote labels) and the remark pipeline | `syntax/empty_items.ts`, `syntax/footnotes.ts`, `syntax/parser.ts` |
+
+`test/checks/syntax-home.mjs` fails if any of those facts is defined anywhere else.
 
 ## Invariants
 

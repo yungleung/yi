@@ -1,3 +1,5 @@
+import { withVisibleTrailingSpaces } from './syntax/trailing_spaces';
+import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from './syntax/markers';
 /**
  * Block-level slicing of the raw markdown document.
  *
@@ -21,7 +23,7 @@
  * Blank lines are separators, not blocks.
  */
 
-import { emptyParagraphIndexes, isEmptyParagraphLine } from './blank_lines';
+import { emptyParagraphIndexes, isEmptyParagraphLine } from './syntax/blank_lines';
 
 export type BlockKind =
   | 'frontmatter'
@@ -376,68 +378,6 @@ export function splitBlocks(text: string): MarkdownBlock[] {
   return blocks;
 }
 
-/** The frontmatter fence when the line is a lone `---` or `+++`. */
-function frontmatterDelimiter(line: string): '---' | '+++' | null {
-  if (line.trim() === '---') {
-    return '---';
-  }
-  if (line.trim() === '+++') {
-    return '+++';
-  }
-  return null;
-}
-
-/** The fence marker (``` or ~~~) when the line opens a fenced code block. */
-function openingFence(line: string): string | null {
-  const match = /^(?: {0,3})(`{3,}|~{3,})/.exec(line);
-  return match ? match[1] : null;
-}
-
-/** The list marker info when the line starts a list item, or null. */
-function listMarker(line: string): { indent: number; ordered: boolean } | null {
-  const match = /^( {0,3})([-*+]|\d+[.)])(?:\s+|$)/.exec(line);
-  if (!match) {
-    return null;
-  }
-  return { indent: match[1].length, ordered: /^\d/.test(match[2]) };
-}
-
-/**
- * The terminator regex of a long HTML block (commonmark types 1-5) when the
- * line opens one, or null. These blocks may span blank lines.
- */
-function htmlBlockTerminator(line: string): RegExp | null {
-  const match = /^ {0,3}(<(?:script|pre|style|textarea)\b|<!--|<\?|<!\[CDATA\[|<![A-Z])/.exec(
-    line
-  );
-  if (!match) {
-    return null;
-  }
-  const open = match[1];
-  if (/^<(?:script|pre|style|textarea)\b/.test(open)) {
-    return /<\/(?:script|pre|style|textarea)>/i;
-  }
-  if (open.startsWith('<!--')) {
-    return /-->/;
-  }
-  if (open.startsWith('<?')) {
-    return /\?>/;
-  }
-  if (open.startsWith('<![CDATA[')) {
-    return /\]\]>/;
-  }
-  return />/;
-}
-
-/** Whether a line closes a fence opened with `marker`. */
-function closingFence(line: string, marker: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed.startsWith(marker[0])) {
-    return false;
-  }
-  return /^(`{3,}|~{3,})$/.test(trimmed);
-}
-
 function makeBlock(
   kind: BlockKind,
   text: string,
@@ -459,4 +399,9 @@ function splitLines(text: string): SourceLine[] {
     number += 1;
   }
   return out;
+}
+
+/** The text to parse for a block, with dropped trailing spaces made visible. */
+export function blockParseInput(block: MarkdownBlock): string {
+  return isRawRendered(block.kind) ? block.text : withVisibleTrailingSpaces(block.text);
 }

@@ -17,7 +17,7 @@ mounted.
 
 | Layer | Files | Job |
 | --- | --- | --- |
-| Syntax (pure, no DOM) | `src/ui/markdown/{blocks,list_lines,blank_lines,trailing_spaces,table_source,code_edits,list_edits,table_edits,parser}.ts` | split text, and the pure rules of editing |
+| Syntax (pure, no DOM) | `src/ui/markdown/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing |
 | Document | `state.ts` | the text, its blocks, parse cache, undo history |
 | Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks |
 | Caret and offsets | `caret/*`, `position.ts` | the logical caret, and mapping offsets |

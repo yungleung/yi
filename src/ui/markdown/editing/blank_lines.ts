@@ -9,8 +9,8 @@
  */
 
 import type { MarkdownBlock } from '../blocks';
-import { isEmptyParagraphLine } from '../blank_lines';
-import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../list_lines';
+import { isEmptyParagraphLine } from '../syntax/blank_lines';
+import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
 import { applyEdit, restoreCaret, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';
 

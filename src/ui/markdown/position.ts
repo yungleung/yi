@@ -20,7 +20,7 @@ import { bibliographyManager } from '../../services/bibliography';
 import { getCaretRange } from './caret/caret';
 import type { MarkdownBlock } from './blocks';
 import type { MarkdownEditorState } from './state';
-import { locateCell, readTableSource } from './table_source';
+import { locateCell, readTableSource } from './syntax/table_source';
 
 export interface CaretLocation {
   /** The block containing the caret. */

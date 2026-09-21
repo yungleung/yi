@@ -10,7 +10,7 @@
  */
 
 import { isRawRendered } from '../blocks';
-import { blankItemLineAt } from '../list_lines';
+import { blankItemLineAt } from '../syntax/lines';
 import { applyEdit, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';
 

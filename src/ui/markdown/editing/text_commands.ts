@@ -25,7 +25,7 @@ import {
   type EditorContext
 } from './context';
 import { isRawRendered } from '../blocks';
-import { blankItemLineAt, lineSpanAt } from '../list_lines';
+import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 
 /** Inserts typed text at the caret, replacing any selection. */

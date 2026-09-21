@@ -8,8 +8,8 @@
  */
 
 import { isRawRendered } from '../blocks';
-import { codeIndentEdit } from '../code_edits';
-import { shiftOffset } from '../edit_range';
+import { codeIndentEdit } from '../syntax/code_edits';
+import { shiftOffset } from '../syntax/edit_range';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
 
 /**

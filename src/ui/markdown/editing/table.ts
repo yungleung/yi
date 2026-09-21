@@ -8,9 +8,9 @@
  */
 
 import type { MarkdownBlock } from '../blocks';
-import { lineSpanAt } from '../list_lines';
+import { lineSpanAt } from '../syntax/lines';
 import { caretLocation } from '../position';
-import { cellBelow, readTableSource, rowAt, type TableSource } from '../table_source';
+import { cellBelow, readTableSource, rowAt, type TableSource } from '../syntax/table_source';
 import {
   alignColumn,
   clearCell,
@@ -26,7 +26,7 @@ import {
   moveRow,
   shiftOffset,
   type TableEdit
-} from '../table_edits';
+} from '../syntax/table_edits';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 export interface TableTarget {

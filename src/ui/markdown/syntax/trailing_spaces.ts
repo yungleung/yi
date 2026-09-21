@@ -1,3 +1,4 @@
+import { startsBlock } from './markers';
 /**
  * Keeps the spaces markdown drops at the end of a line visible.
  *
@@ -20,17 +21,7 @@
  * rendered DOM.
  */
 
-import { isRawRendered, type MarkdownBlock } from './blocks';
-import { isBlankItemLine } from './list_lines';
-
-/** Line starts that cannot continue the paragraph above them. */
-const BLOCK_START =
-  /^\s*(?:[-+*]|\d+[.)])\s|^\s*:\s|^\s*#{1,6}\s|^\s*(?:```|~~~|\$\$)/;
-
-/** The text to parse for a block, with dropped trailing spaces made visible. */
-export function blockParseInput(block: MarkdownBlock): string {
-  return isRawRendered(block.kind) ? block.text : withVisibleTrailingSpaces(block.text);
-}
+import { isBlankItemLine } from './lines';
 
 /** Rewrites the trailing spaces markdown would drop with non-breaking ones. */
 export function withVisibleTrailingSpaces(text: string): string {
@@ -59,5 +50,5 @@ export function withVisibleTrailingSpaces(text: string): string {
 
 /** Whether a line continues the paragraph above it. */
 function continuesParagraph(next: string | undefined): boolean {
-  return next !== undefined && next.trim() !== '' && !BLOCK_START.test(next);
+  return next !== undefined && next.trim() !== '' && !startsBlock(next);
 }

@@ -245,21 +245,31 @@ if (reply.success) {
   process.exit(0);
 }
 
-// The page keeps working after the bridge gives up; poll for the stashed
-// result while it settles. An empty object means the probe has not reported
-// anything yet — a document being opened, say — so keep waiting.
+// The page keeps working after the bridge gives up; poll for the stashed result
+// while it settles. Only a probe that *finished* — one whose wrapper returned —
+// counts as recovered: `__probeSteps` holds whatever the probe reported on the
+// way, so treating that as success once hid a probe that threw half-way through.
 for (let attempt = 0; attempt < 8; attempt += 1) {
   await sleep(4000);
-  const recovered = await call('window.__probeResult ?? window.__probeSteps ?? null', 8000);
-  const reported = recovered.success ? recovered.data : null;
-  const empty =
-    reported === null ||
-    reported === undefined ||
-    (typeof reported === 'object' && Object.keys(reported).length === 0);
-  if (!empty) {
-    console.log(JSON.stringify(reported, null, 2));
+  const recovered = await call(
+    'JSON.stringify({ result: window.__probeResult ?? null, steps: window.__probeSteps ?? null })',
+    8000
+  );
+  let state = null;
+  try {
+    state = recovered.success ? JSON.parse(recovered.data) : null;
+  } catch {
+    state = null;
+  }
+  if (state && state.result !== null) {
+    console.log(JSON.stringify(state.result, null, 2));
     console.log('(recovered after the bridge timed out; the probe had already run)');
     process.exit(0);
+  }
+  if (state && state.steps !== null) {
+    console.error(JSON.stringify(state.steps, null, 2));
+    console.error('(the probe did not finish; the steps above are what it reported)');
+    process.exit(1);
   }
 }
 
