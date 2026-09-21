@@ -2,19 +2,19 @@
  * The document offset as a position in the rendered tree: where the caret goes
  * after an edit or a rebuild.
  *
- * May import: the offset model (`caret/offsets.ts`), the state and its blocks,
- * the table's raw source. Upholds: the mapping is re-derived from the offset
+ * May import: the offset model (`./offsets`), the state and its blocks, the
+ * table's raw source. Upholds: the mapping is re-derived from the offset
  * every time — never cached, never the other way round.
  *
- * The way *in* (a rendered position read back into a document offset) lives in
- * `caret/offsets.ts`; what is left here moves to `caret/dom_position.ts`.
+ * The way *in* — a rendered position read back into a document offset — is
+ * `offsets.ts`, beside this file.
  */
 
 import type { RootContent } from 'mdast';
-import { SOURCE_SELECTOR, nodeRawRange, renderedLength } from './caret/offsets';
-import type { MarkdownBlock } from './blocks';
-import type { MarkdownEditorState } from './state';
-import { locateCell, readTableSource } from './syntax/table_source';
+import { SOURCE_SELECTOR, nodeRawRange, renderedLength } from './offsets';
+import type { MarkdownBlock } from '../blocks';
+import type { MarkdownEditorState } from '../state';
+import { locateCell, readTableSource } from '../syntax/table_source';
 
 /** The text position a character offset inside a revealed source lands on. */
 export function sourceTextPosition(source: HTMLElement, offset: number): DomPosition | null {

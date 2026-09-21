@@ -9,7 +9,7 @@
 
 import { getSelectionRange, scheduleCaret, scheduleNativeSelection, setSelectionRange } from '../caret/caret';
 import { documentOffsetAt } from '../caret/offsets';
-import { domPositionAtOffset } from '../position';
+import { domPositionAtOffset } from '../caret/dom_position';
 import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
 import { proseRoot, type EditorContext } from './context';
