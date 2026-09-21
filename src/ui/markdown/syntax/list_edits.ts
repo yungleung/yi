@@ -11,6 +11,10 @@
  *   two paragraphs cannot turn the blank line between them into an item;
  * - indentation moves a whole item, its children included, so a nested list
  *   stays nested in the item it belongs to.
+ *
+ * May import: the line helpers and the edit shape beside it (`./lines`,
+ * `./edit_range`). Upholds: one fact about markdown syntax has one home, and this
+ * is the home of the list markers a line is written with.
  */
 
 import { lineSpanAt, itemSubtreeEnd, touchedLines } from './lines';

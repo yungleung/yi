@@ -6,6 +6,10 @@
  * added on purpose, so it renders as a real empty paragraph the caret can sit
  * on. At the top and the bottom of a file no separator is needed, so every
  * blank line there becomes an empty paragraph.
+ *
+ * May import: nothing — the text is passed in. Upholds: one fact about markdown
+ * syntax has one home, and this is the home of the blank-line runs that are empty
+ * paragraphs.
  */
 
 /** Whether a raw line holds no content at all. */

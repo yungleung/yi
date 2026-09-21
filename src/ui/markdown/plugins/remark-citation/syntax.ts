@@ -18,6 +18,10 @@
  * alphanumeric (emails like `contact@example.com`) or a backslash (escaped
  * `\@key`); pandoc allows every other previous character, including `/` in a
  * URL path. A bracketed locator (`@key [p. 33]`) is part of the citation.
+ *
+ * May import: the micromark extension APIs. Upholds: the construct is recognised
+ * from the token stream alone — the bracket content stays literal, so the raw
+ * source of a citation is what the reader typed.
  */
 import { asciiAlphanumeric } from 'micromark-util-character';
 import { markdownLineEnding } from 'micromark-util-character';

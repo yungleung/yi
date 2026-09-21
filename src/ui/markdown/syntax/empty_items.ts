@@ -12,6 +12,10 @@
  * the list that follows it or wrapped in a list of its own. It only touches
  * headings whose last line is a bare marker, so real setext headings (`===`,
  * `---`, `Title\n- `) are left alone unless they are exactly that shape.
+ *
+ * May import: the line helpers beside it (`./lines`). Upholds: one fact about
+ * markdown syntax has one home — that a bare marker under a paragraph is a setext
+ * heading, and how to write it so markdown reads the item instead.
  */
 
 import type { Root } from 'mdast';

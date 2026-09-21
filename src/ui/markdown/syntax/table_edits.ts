@@ -10,6 +10,10 @@
  * Lines an operation changes are rewritten canonically; lines it does not
  * change are spliced through untouched, so hand-made padding survives
  * everywhere the edit did not have to touch.
+ *
+ * May import: the table's source model (`./table_source`) and the edit shape
+ * (`./edit_range`). Upholds: one fact about markdown syntax has one home, and this
+ * is the home of every table operation, each expressed as one range replacement.
  */
 
 import {

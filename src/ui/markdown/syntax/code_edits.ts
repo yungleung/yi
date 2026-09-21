@@ -1,4 +1,3 @@
-import { isDelimiterLine } from './markers';
 /**
  * Indenting inside a fenced code block: one `Tab` is two spaces.
  *
@@ -8,7 +7,13 @@ import { isDelimiterLine } from './markers';
  * code. The lines that *delimit* the block are never touched: two spaces in
  * front of a closing fence is a code block that no longer closes, and the same
  * goes for the `$$` around a display formula.
+ *
+ * May import: the marker rules (`./markers`). Upholds: one fact about markdown
+ * syntax has one home — what a fence's delimiter line is lives in `markers.ts`,
+ * and what Tab does to the lines between two of them lives here.
  */
+
+import { isDelimiterLine } from './markers';
 
 import type { TextEdit } from './edit_range';
 import { lineSpanAt, touchedLines } from './lines';

@@ -1,3 +1,18 @@
+/**
+ * The markdown pipeline: parse one slice of raw text into an mdast tree, and
+ * serialize a node back to markdown.
+ *
+ * Every block is parsed from its own slice, with the repairs markdown needs to
+ * survive block-by-block parsing applied around the parse (see
+ * `empty_items.ts`, `footnotes.ts`), and the plugins the editor added
+ * (citations, wikilinks, description lists) mounted here once.
+ *
+ * May import: the parser libraries, the remark plugins that extend them, and the
+ * syntax modules that repair their output. Upholds: one fact about markdown
+ * syntax has one home — this module says which pipeline turns text into nodes,
+ * and nothing else in the editor parses markdown.
+ */
+
 import { unified } from 'unified';
 import remarkDeflist from 'remark-deflist';
 import remarkFrontmatter from 'remark-frontmatter';

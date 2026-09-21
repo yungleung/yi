@@ -9,6 +9,10 @@
  * The syntax is implemented as a micromark text construct, which keeps the
  * bracket content literal (no emphasis/links inside) and correctly skips
  * escaped brackets (`\[@x\]`) and image/link syntax.
+ *
+ * May import: the plugin API and its own three pieces (`./syntax`,
+ * `./from-markdown`, `./to-markdown`). Upholds: the construct is added to the
+ * parser in one place, so parsing and serializing cite the same rule.
  */
 import type { Processor } from 'unified';
 import { citationFromMarkdown } from './from-markdown';

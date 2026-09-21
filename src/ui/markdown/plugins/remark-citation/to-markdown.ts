@@ -1,6 +1,10 @@
 /**
  * mdast-util-to-markdown extension serializing `citation` nodes back to their
  * exact source (`@key` or `[@key]`).
+ *
+ * May import: the mdast-util extension API. Upholds: a node serializes back to
+ * exactly the source it was parsed from — through a hand edit of the raw text,
+ * the citation a reader sees and the text on disk cannot drift apart.
  */
 import type { Options } from 'mdast-util-to-markdown';
 

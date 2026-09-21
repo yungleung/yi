@@ -7,6 +7,10 @@
  *
  * The syntax is a micromark text construct, which keeps the bracket content
  * literal and correctly skips escaped brackets, images, and link labels.
+ *
+ * May import: the plugin API and its own three pieces (`./syntax`,
+ * `./from-markdown`, `./to-markdown`). Upholds: the construct is added to the
+ * parser in one place, so parsing and serializing cite the same rule.
  */
 import type { Processor } from 'unified';
 import { wikilinkFromMarkdown } from './from-markdown';
