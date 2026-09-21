@@ -58,10 +58,17 @@ export function paragraphSplit(
  * blank line on *each* side of it, where `paragraphSplit` counts the one break
  * a caret sits in. A side that already has its blank line keeps it: what is
  * there is kept, and only what is missing is added.
+ *
+ * The one side that can need nothing is the top of the document: there is no
+ * paragraph above the first line to be separated from, so nothing is added
+ * there — the same rule `paragraphStart` follows for a file's first line.
  */
 export function blockPadding(text: string, offset: number): { leading: string; trailing: string } {
   return {
-    leading: '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - newlinesBefore(text, offset))),
+    leading:
+      offset === 0
+        ? ''
+        : '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - newlinesBefore(text, offset))),
     trailing: '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - newlinesAfter(text, offset)))
   };
 }

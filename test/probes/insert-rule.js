@@ -56,12 +56,12 @@
 
   const checks = {};
   const failed = [];
-  const expect = (name, after, raw) => {
+  const expect = (name, after, raw, ruleLine = 3) => {
     checks[name] = after;
     if (
       after.raw !== raw ||
       after.rules !== 1 ||
-      after.ruleLine !== 3 ||
+      after.ruleLine !== ruleLine ||
       after.ruleText !== '' ||
       !after.caretUnderRule
     ) {
@@ -76,6 +76,12 @@
   await t.load('only line\n');
   await caretAt('only line', 'only line'.length);
   expect('atTheEnd', await rule(), 'only line\n\n---\n\n');
+
+  // Nothing above the first line needs separating from, so no blank lines are
+  // pushed into the document.
+  await t.load('only line\n');
+  await caretAt('only line', 0);
+  expect('atTheTop', await rule(), '---\n\nonly line\n', 1);
 
   return { checks, failed };
 })()
