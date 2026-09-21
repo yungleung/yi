@@ -4,6 +4,10 @@
  * These are pure document-tree helpers used by arrow navigation (finding the
  * nearest text/void node around a caret) and by revealable boundary detection
  * (finding the node adjacent to the caret). They have no editor dependencies.
+ *
+ * May import: nothing — these are document-tree helpers. Upholds: a caret's
+ * document offset is the truth, so the helpers here answer only "which node is
+ * next to this range", never "what offset is this".
  */
 
 /**
@@ -182,4 +186,3 @@ export function previousSiblingNode(node: Node): Node | null {
   }
   return null;
 }
-

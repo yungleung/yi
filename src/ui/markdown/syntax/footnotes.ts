@@ -10,6 +10,10 @@
  *
  * Everything here is pure text: labels, offsets, numbering, and the single
  * edit that writes a new marker and its definition line.
+ *
+ * May import: nothing — the raw document text is passed in. Upholds: one fact
+ * about markdown syntax has one home, and this is the home of footnote labels,
+ * their offsets and their numbering.
  */
 
 import type { TextEdit } from './edit_range';

@@ -12,6 +12,10 @@
  *
  * The raw source is kept on the token so the serializer round-trips it
  * exactly and the editor can reveal it on click.
+ *
+ * May import: the micromark extension APIs. Upholds: the construct is recognised
+ * from the token stream alone — the bracket content stays literal, so the raw
+ * source of a wikilink is what the reader typed.
  */
 import { markdownLineEnding } from 'micromark-util-character';
 import type {

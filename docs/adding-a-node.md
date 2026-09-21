@@ -34,7 +34,7 @@ export class YourNode extends EditableNodeComponent {
 
 `EditableNodeComponent` gives you the marker contract: the element is rendered and a
 click places the caret. The header comment matters — say what the file is for, what
-it may import, and the invariant it upholds.
+it may import, and the invariant it upholds (`docs/writing-comments.md`).
 
 If your node has text leaves, tag them with the block-relative raw offset they start
 at (`element.dataset.textFrom = String(offset)`), which is what lets the caret map

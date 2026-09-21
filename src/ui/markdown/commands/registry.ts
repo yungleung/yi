@@ -11,6 +11,11 @@
  * The registry holds no editor state of its own. A command closes over whatever
  * it needs when it is registered, so running one is a plain call, and the ids are
  * a union type, so a typo is a compile error rather than a silent no-op.
+ *
+ * May import: the types that name a command's vocabulary (`../format.ts`,
+ * `../editing/lists.ts`, `../editing/table.ts`) and nothing else. Upholds: one
+ * command has one name, one home and one way in — a build with two registrations
+ * for one id throws rather than picking a winner.
  */
 
 import type { FormattingStyle } from '../format';

@@ -3,6 +3,11 @@
  *
  * All of them are expressed as raw-document edits so they behave the same
  * wherever the caret sits, including in blocks that had to be re-rendered.
+ *
+ * May import: the editing context, the pure line and list rules beside it
+ * (`./blank_lines`, `./blank_item`), the table's cell rules and the block model.
+ * Upholds: the document text is the only source of truth — typing, deleting and
+ * splitting are all one range replacement.
  */
 
 import { deleteBlankItem } from './blank_item';

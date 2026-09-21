@@ -1,3 +1,13 @@
+/**
+ * Renders a `link` node. Clicking a regular link enters its markdown source;
+ * autolinks keep normal caret behavior.
+ *
+ * May import: the revealable contract (`revealable_node.ts`), the registry's
+ * child helper, `source_mode.ts` for entering the source, and the AST types.
+ * Upholds: the source view is built from the node's own markdown, so the link
+ * shows its source while the caret is inside it and renders itself otherwise.
+ */
+
 import { appendChildren } from '../registry';
 import type { AstLink } from '../ast';
 import { enterSourceOf } from '../source_mode';
@@ -5,10 +15,6 @@ import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-link-source';
 
-/**
- * Renders a `link` node. Clicking a regular link enters its markdown source;
- * autolinks keep normal caret behavior.
- */
 export class Link extends RevealableNodeComponent {
   constructor(node: AstLink) {
     const sourceView = sourceViewFor(node, SOURCE_CLASS, titleRange);

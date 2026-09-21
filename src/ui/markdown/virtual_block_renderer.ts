@@ -1,38 +1,34 @@
+/**
+ * Owns the block DOM for a document: only the blocks around the viewport are
+ * mounted, the rest are represented by two spacers sized from remembered
+ * heights.
+ *
+ * Rendering is a function of a block's own source, never of where it sits, so
+ * everything remembered is keyed by that source rather than by a line number: a
+ * block that keeps its text keeps its parse, its measured height and its rendered
+ * element through edits above it, through undo, and through leaving the window
+ * and coming back. Elements of blocks that left the window are kept in a bounded
+ * spare cache instead of being thrown away.
+ *
+ * Heights are measured once a block has been laid out and reused afterwards,
+ * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
+ * accurate on documents whose blocks differ wildly in size (display math, code
+ * fences, ...). Because those heights can still change when a placeholder is
+ * replaced by a measurement, the renderer also anchors the scroll position to the
+ * block at the top of the viewport and restores it after every re-sync.
+ *
+ * May import: the document's blocks and state, the block factory, the size
+ * arithmetic (`block_sizes.ts`) and the window (`viewport_window.ts`). Upholds:
+ * the mounted window and its spacers are derived from the block sizes on every
+ * sync — the DOM is a view of that arithmetic, never a second record of it.
+ */
+
+import { BlockSizes } from './block_sizes';
 import { createBlockComponent } from './create_block';
 import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './state';
-
-/**
- * Height of one line of body text, and the skip a paragraph leaves after it
- * (see `styles.css`). A block that has never been measured is estimated from
- * the number of lines its source has, which lands within a few pixels of the
- * real height for text blocks.
- *
- * The flat 60px estimate this replaces was nearly twice a typical block, so
- * every block entering the window corrected the document's total height by
- * 20–30px: the scrollbar thumb re-scaled on every step of a scroll, which
- * reads as the whole scrollbar and the content shivering.
- */
-const LINE_HEIGHT = 24;
-const PARAGRAPH_SKIP = 8;
-
-/** The height a block would have if it rendered as plain text. */
-function estimateHeight(block: MarkdownBlock): number {
-  const lines = Math.max(1, block.text.split('\n').length);
-  return lines * LINE_HEIGHT + PARAGRAPH_SKIP;
-}
-/**
- * Gap between block wrappers. Blocks have no margin of their own (styles.css
- * keeps the spacing inside the content, where each block height measures it),
- * so the renderer adds nothing; the arithmetic below stays as the single place
- * to change if spacing ever moves back to the wrappers.
- */
-const BLOCK_GAP = 0;
-/** Extra content kept mounted above and below the viewport. */
-const VIEWPORT_MARGIN = 1200;
-/** Rendered elements kept for blocks that left the window, at the least. */
-const MIN_SPARE_ELEMENTS = 20;
+import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -44,31 +40,12 @@ export interface RendererSyncHooks {
   restore(snapshot: unknown): void;
 }
 
-/**
- * Owns the block DOM for a document: only the blocks around the viewport are
- * mounted, the rest are represented by two spacers sized from remembered
- * heights.
- *
- * Rendering is a function of a block's own source, never of where it sits, so
- * everything remembered is keyed by that source rather than by a line number:
- * a block that keeps its text keeps its parse, its measured height and its
- * rendered element through edits above it, through undo, and through leaving
- * the window and coming back. Elements of blocks that left the window are kept
- * in a bounded spare cache instead of being thrown away.
- *
- * Heights are measured once a block has been laid out and reused afterwards,
- * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
- * accurate on documents whose blocks differ wildly in size (display math,
- * code fences, ...). Because those heights can still change when a placeholder
- * is replaced by a measurement, the renderer also anchors the scroll position
- * to the block at the top of the viewport and restores it after every re-sync.
- */
 export class VirtualBlockRenderer {
   private root: HTMLElement | null = null;
   private frame: number | null = null;
   private hooks: RendererSyncHooks | null = null;
-  /** Measured height per block content. */
-  private readonly heights = new Map<string, number>();
+  /** What each block is worth in pixels, keyed by the block's rendering identity. */
+  private readonly sizes = new BlockSizes((block) => this.renderKey(block));
   /** The content key an element was built from, so unchanged blocks are reused. */
   private readonly builtFrom = new WeakMap<HTMLElement, string>();
   /** Elements of blocks that are not mounted, keyed by content (LRU order). */
@@ -105,7 +82,7 @@ export class VirtualBlockRenderer {
 
   /** Builds the prose root and mounts the window around the current scroll. */
   render(): void {
-    this.heights.clear();
+    this.sizes.clear();
     this.dropSpare();
     this.mounted.clear();
     this.range = null;
@@ -168,7 +145,7 @@ export class VirtualBlockRenderer {
     // The bibliography or the settings changed: nothing rendered before is
     // known to still be valid.
     this.dropSpare();
-    this.heights.clear();
+    this.sizes.clear();
     this.syncWindow(true);
   }
 
@@ -181,7 +158,10 @@ export class VirtualBlockRenderer {
     if (index < 0) {
       return;
     }
-    this.scroller.scrollTop = Math.max(0, this.offsetOf(index) - this.scroller.clientHeight / 3);
+    this.scroller.scrollTop = Math.max(
+      0,
+      this.sizes.offsetOf(this.state.getBlocks(), index) - this.scroller.clientHeight / 3
+    );
     this.syncWindow(true);
   }
 
@@ -238,7 +218,12 @@ export class VirtualBlockRenderer {
         return;
       }
 
-      const [first, last] = this.windowRange();
+      const [first, last] = windowRange(
+        this.sizes,
+        this.state.getBlocks(),
+        this.scroller.scrollTop,
+        this.scroller.clientHeight
+      );
       if (!force && this.range?.first === first && this.range.last === last) {
         this.measureMounted(blocks, first, last);
         this.updateSpacers();
@@ -315,12 +300,12 @@ export class VirtualBlockRenderer {
     if (spare) {
       // The same content, rendered before: reuse it instead of rebuilding.
       this.spare.delete(key);
-      this.setIntrinsicSize(spare, this.heightOf(block));
+      this.setIntrinsicSize(spare, this.sizes.heightOf(block));
       return spare;
     }
     const node: BlockNode = { ...block, type: 'block' };
     const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
-    this.setIntrinsicSize(element, this.heightOf(block));
+    this.setIntrinsicSize(element, this.sizes.heightOf(block));
     this.builtFrom.set(element, key);
     return element;
   }
@@ -384,57 +369,9 @@ export class VirtualBlockRenderer {
   private rememberHeight(block: MarkdownBlock, element: HTMLElement): void {
     const height = element.offsetHeight;
     if (height > 0) {
-      this.heights.set(this.renderKey(block), height);
+      this.sizes.remember(block, height);
       this.setIntrinsicSize(element, height);
     }
-  }
-
-  private heightOf(block: MarkdownBlock): number {
-    return this.heights.get(this.renderKey(block)) ?? estimateHeight(block);
-  }
-
-  /** The document height according to the remembered/estimated block sizes. */
-  private totalHeight(): number {
-    const blocks = this.state.getBlocks();
-    if (blocks.length === 0) {
-      return 0;
-    }
-    let total = 0;
-    for (const block of blocks) {
-      total += this.heightOf(block) + BLOCK_GAP;
-    }
-    return total - BLOCK_GAP;
-  }
-
-  /** The top offset of the block at `index` in the document. */
-  private offsetOf(index: number): number {
-    const blocks = this.state.getBlocks();
-    let top = 0;
-    for (let i = 0; i < index && i < blocks.length; i += 1) {
-      top += this.heightOf(blocks[i]) + BLOCK_GAP;
-    }
-    return top;
-  }
-
-  /** The block index range that should be mounted for the current scroll. */
-  private windowRange(): [number, number] {
-    const blocks = this.state.getBlocks();
-    const top = this.scroller.scrollTop - VIEWPORT_MARGIN;
-    const bottom = this.scroller.scrollTop + this.scroller.clientHeight + VIEWPORT_MARGIN;
-    let first = -1;
-    let last = -1;
-    let cursor = 0;
-    for (let index = 0; index < blocks.length; index += 1) {
-      const height = this.heightOf(blocks[index]);
-      if (first < 0 && cursor + height >= top) {
-        first = index;
-      }
-      if (cursor <= bottom) {
-        last = index;
-      }
-      cursor += height + BLOCK_GAP;
-    }
-    return [first < 0 ? 0 : first, last < 0 ? blocks.length - 1 : last];
   }
 
   /** The spacer element for a position, created on first use. */
@@ -464,9 +401,7 @@ export class VirtualBlockRenderer {
       bottomSpacer.style.height = '0px';
       return;
     }
-    const top = this.offsetOf(this.range.first);
-    const mountedHeight = this.offsetOf(this.range.last + 1) - top;
-    const bottom = Math.max(0, this.totalHeight() - top - mountedHeight);
+    const { top, bottom } = spacerHeights(this.sizes, this.state.getBlocks(), this.range);
     topSpacer.style.height = `${Math.round(top)}px`;
     bottomSpacer.style.height = `${Math.round(bottom)}px`;
   }

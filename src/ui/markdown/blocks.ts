@@ -1,5 +1,3 @@
-import { withVisibleTrailingSpaces } from './syntax/trailing_spaces';
-import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from './syntax/markers';
 /**
  * Block-level slicing of the raw markdown document.
  *
@@ -21,8 +19,15 @@ import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, op
  *   markdown parser re-splits it into headings, lists, tables, ...).
  *
  * Blank lines are separators, not blocks.
+ *
+ * May import: the pure syntax rules (`syntax/markers.ts`,
+ * `syntax/trailing_spaces.ts`, `syntax/blank_lines.ts`). Upholds: a block is a
+ * slice of the raw text — the split is computed from the text alone, never from
+ * what is rendered or where the caret is.
  */
 
+import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from './syntax/markers';
+import { withVisibleTrailingSpaces } from './syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from './syntax/blank_lines';
 
 export type BlockKind =

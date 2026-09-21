@@ -19,7 +19,7 @@ mounted.
 | --- | --- | --- |
 | Syntax (pure, no DOM) | `src/ui/markdown/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing |
 | Document | `state.ts` | the text, its blocks, parse cache, undo history |
-| Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks |
+| Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
 | Commands | `editing/*`, `commands/*` (the registry, the native-menu bridge, the keymap), `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one command, one name, one way in |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`), `src/services/*` | the window, workspace, settings, bibliography |
@@ -29,7 +29,8 @@ change go?" table.
 
 Two recipes cover the changes an editor like this gets most: `docs/adding-a-node.md`
 for a markdown construct, and `docs/adding-a-command.md` for a name the author can
-ask for.
+ask for. `docs/writing-comments.md` is the third page a contributor needs — the
+module header every file opens with, and the voice the rest of the comments use.
 
 ## The rules
 
@@ -65,12 +66,16 @@ npm run probe:all                       # probes that need no fixture workspace
 npm run fixtures                        # refresh the fixture workspace
 ```
 
+Setting those up — the MCP server and CLI that drive the app, and the skills this
+project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
+under *AI agents*.
+
 ## If you are an AI agent
 
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
-2. `npm run check` → `13/13 checks passed` (or more, if you added one).
+2. `npm run check` → `15/15 checks passed` (or more, if you added one).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report, and check the app is freshly started —
    a dev app left running for hours gets slow and probes will time out.

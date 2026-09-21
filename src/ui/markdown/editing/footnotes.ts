@@ -5,6 +5,10 @@
  *
  * The text rules live in `footnotes.ts`; this module knows the caret, the
  * renderer and the scroll position.
+ *
+ * May import: the pure footnote rules (`syntax/footnotes.ts`) and the editing
+ * context. Upholds: the document text is the only source of truth — the marker
+ * and its definition are one edit, so one undo takes the whole footnote away.
  */
 
 import { footnoteInsertEdit, footnoteOffsets, nextFootnoteNumber } from '../syntax/footnotes';

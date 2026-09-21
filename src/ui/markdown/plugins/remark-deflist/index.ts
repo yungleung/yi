@@ -3,6 +3,10 @@
  * official type declarations. They are declared here so the editor's other
  * modules (and mdast's type registry) can reference them like the node types
  * of the plugins we maintain ourselves.
+ *
+ * May import: the mdast types. Upholds: the shapes another module compiled here
+ * are declared here rather than repeated, so every reader of a description list
+ * sees the same node type.
  */
 import type { RootContent } from 'mdast';
 

@@ -1,3 +1,13 @@
+/**
+ * Renders description-list nodes: a `descriptionlist` as a `<dl>`, and the terms
+ * and details inside it.
+ *
+ * May import: the node contract (`editable_node.ts`), the registry's child helper
+ * and the AST types. Upholds: a block's rendering is a pure function of its own
+ * source — the element is built from the node it was given and knows nothing
+ * about where the block sits.
+ */
+
 import { appendChildren } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstDescriptionDetails, AstDescriptionList, AstDescriptionTerm } from '../ast';

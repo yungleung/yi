@@ -28,8 +28,9 @@ npm run check          # pure Node checks (fast, no browser)
 `docs/architecture.md` has the layer table and the invariants. The short version: a
 block is rendered from its own source, the document text is the only source of
 truth, and a caret's document offset is the truth about where the caret is. The
-house rules are that one fact has one home, and every module header says what it is
-for and what it may import.
+house rules are that one fact has one home, and that every module header says what
+it is for, what it may import and what it upholds — `docs/writing-comments.md` has
+the shape and the voice, and a check fails without it.
 
 ## Adding things
 

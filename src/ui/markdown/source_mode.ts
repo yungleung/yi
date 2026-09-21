@@ -26,6 +26,12 @@
  * What is held here is the range of the raw source being shown, in document
  * offsets. It follows the caret: the source the caret is inside is the one
  * being shown (see `editing/context.ts`).
+ *
+ * May import: the registry (which node types show a source), the renderer's
+ * rebuild and the editing context's offsets. Upholds: source mode is decided
+ * from the document — the range shown is computed from the caret's offset, and
+ * the blocks that change shape are rebuilt, so nothing ever swaps an element
+ * behind the caret.
  */
 
 import type { AstNode } from './ast';

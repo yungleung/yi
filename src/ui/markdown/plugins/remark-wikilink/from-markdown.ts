@@ -2,6 +2,9 @@
  * mdast-util-from-markdown extension turning `wikilink` tokens into mdast
  * `wikilink` nodes whose `value` is the raw markdown source (`[[filename]]` or
  * `[[filename|title]]`), preserving round-trips.
+ *
+ * May import: the mdast-util extension API. Upholds: the construct's raw text is
+ * what the node carries, so the serializer can write back exactly what was read.
  */
 import type { CompileContext, Extension as FromMarkdownExtension } from 'mdast-util-from-markdown';
 import type { Token } from 'micromark-util-types';

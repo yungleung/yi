@@ -2,6 +2,9 @@
  * mdast-util-from-markdown extension turning `citation` tokens into mdast
  * `citation` nodes whose `value` is the raw markdown source of the citation
  * (`@key` for narrative, `[@key]` for parenthetical), preserving round-trips.
+ *
+ * May import: the mdast-util extension API. Upholds: the construct's raw text is
+ * what the node carries, so the serializer can write back exactly what was read.
  */
 import type { CompileContext, Extension as FromMarkdownExtension } from 'mdast-util-from-markdown';
 import type { Token } from 'micromark-util-types';

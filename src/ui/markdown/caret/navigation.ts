@@ -5,6 +5,11 @@
  * only scans the caret's neighbouring blocks (a small window) so large
  * documents stay fast, and it reuses the caret's own geometry (`geometry.ts`)
  * and the document-position helpers in `dom.ts`.
+ *
+ * May import: the caret itself (`caret.ts`), its geometry (`geometry.ts`), the
+ * document-tree helpers (`dom.ts`) and the offsets model (`offsets.ts`). Upholds:
+ * arrow keys move the logical range, and every position they land on is a real
+ * document offset — never a rendered pixel that happens to be next door.
  */
 
 import {

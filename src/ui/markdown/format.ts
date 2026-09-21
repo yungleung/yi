@@ -5,6 +5,10 @@
  * that draws a button for each of them or the registry that names their
  * commands, so the list lives here and the type is read off it. The module is
  * pure — no DOM, no state — so a Node check can bundle it.
+ *
+ * May import: nothing. Upholds: one fact about markdown syntax has one home —
+ * which inline styles exist, and the marker characters each one wraps a range
+ * with.
  */
 
 /** The inline styles a formatting command can apply, in the order they are offered. */

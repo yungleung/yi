@@ -5,6 +5,10 @@
  * placeholders but expensive to render. This module defers the real render
  * until the element approaches the viewport. A timer fallback supports
  * environments without IntersectionObserver.
+ *
+ * May import: the DOM and nothing of the editor. Upholds: rendering is deferred
+ * but never decided here — the callback a widget registers is its own, so this
+ * module can decide *when* a widget renders and never *what* it renders.
  */
 
 const VIEWPORT_MARGIN = 600;

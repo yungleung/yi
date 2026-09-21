@@ -1,3 +1,14 @@
+/**
+ * The contract for a node whose markdown can stand in for its rendering: the
+ * source view that is built instead, and the click that enters it.
+ *
+ * May import: the node contract (`editable_node.ts`), `source_mode.ts` and the
+ * parser's serializer (for the node's own markdown). Upholds: source mode is
+ * decided from the document — the shape is settled before `super()`, so a node
+ * never swaps its element behind the caret, and the block is rendered again when
+ * the source has to appear or go.
+ */
+
 import type { RootContent } from 'mdast';
 import { serializeMarkdown } from '../syntax/parser';
 import { EditableNodeComponent } from './editable_node';

@@ -19,6 +19,7 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `check-blocks.mjs` | How the raw document splits into blocks, and empty-paragraph runs |
+| `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
@@ -29,6 +30,7 @@ methodology; this file is the index and the conventions.
 | `check-table-source.mjs` | Reading and writing a table's raw source |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
+| `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `syntax-home.mjs` | That each markdown-syntax fact is defined in exactly one module |
 

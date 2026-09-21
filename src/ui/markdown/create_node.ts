@@ -6,6 +6,11 @@
  * place that imports both the registry and every node class — can register
  * them without creating the `create_node ↔ nodes/*` import cycle. Importing
  * this module triggers the registrations.
+ *
+ * May import: the registry and every node component — it is the one module that
+ * may see both, which is what keeps the `create_node ↔ nodes/*` cycle from
+ * existing. Upholds: which node types exist is one list, registered here and
+ * read through the registry by the renderer and by source mode.
  */
 
 import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';

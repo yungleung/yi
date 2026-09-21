@@ -14,6 +14,10 @@
  * a marker (`> `, `- `) that would have to be stripped from every line first.
  * `readTableSource` returns null for them, so table edits simply do not apply
  * where the model cannot be trusted.
+ *
+ * May import: nothing — the table's slice of raw text is passed in. Upholds: one
+ * fact about markdown syntax has one home, and this is the home of the table's
+ * source model: cell spans, alignment, and which cell holds a given offset.
  */
 
 export type ColumnAlign = 'left' | 'center' | 'right' | null;

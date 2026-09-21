@@ -6,6 +6,10 @@
  * paragraph. Typing on an empty line needs one newline on the side where the
  * next block begins, because markdown keeps two paragraphs apart only when a
  * blank line sits on both sides.
+ *
+ * May import: the block model, the pure line rules (`syntax/`) and the editing
+ * context. Upholds: the document text is the only source of truth — every rule
+ * here is a pure function of the text and an offset, applied as one replacement.
  */
 
 import type { MarkdownBlock } from '../blocks';

@@ -1,17 +1,17 @@
+/**
+ * Renders a `table` node: the first row becomes `<thead>`, the rest `<tbody>`,
+ * and every cell is named by its index (`data-table-cell="row:column"`).
+ *
+ * May import: the node contract (`editable_node.ts`), the registry's child helper
+ * and the AST types. Upholds: the offsets a cell carries are block-relative
+ * positions in its own block's text — computed nowhere here, because
+ * `caret/offsets.ts` turns the cell's name into one when the caret needs it.
+ */
+
 import { appendChildren } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstTable, AstTableCell } from '../ast';
 
-/**
- * Renders a `table` node: the first row becomes `<thead>`, the rest `<tbody>`.
- *
- * Each cell is named by its index (`data-table-cell="row:column"`) and carries
- * the block-relative offset its row starts at. The offsets themselves are not
- * computed here: `caret/offsets.ts` turns a cell name into an offset from the
- * block's own text, which is where a caret in a cell has to land. The header
- * is row 0 and the body rows follow, exactly the numbering the delimiter
- * line's absence leaves mdast with.
- */
 export class Table extends EditableNodeComponent {
   private readonly tableNode: AstTable;
 

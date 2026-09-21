@@ -6,6 +6,11 @@
  * between two blocks, or on the space below the last line, have no node to map
  * through: they go to the nearest line edge, which is the line the reader is
  * pointing at.
+ *
+ * May import: the editing context and the caret's DOM helpers (`caret/dom.ts`).
+ * Upholds: the caret is a document offset — this resolves a pointer to the
+ * nearest line edge and hands that to `restoreCaret`, which maps it through the
+ * offsets model.
  */
 
 import { proseRoot, restoreCaret, type EditorContext } from './context';

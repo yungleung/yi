@@ -5,6 +5,10 @@
  * than doing the work itself. Text entry is deliberately not here — typing,
  * `Enter`, `Backspace`, `Tab` and the arrows are the text path, and they stay in
  * the editor's keydown handler.
+ *
+ * May import: the command ids (`./registry`) and nothing else — a chord is a
+ * name, not an action. Upholds: a key that names a command is looked up here and
+ * run by the editor; a key that does not is left to the browser.
  */
 import type { CommandId } from './registry';
 

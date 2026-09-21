@@ -1,4 +1,3 @@
-import { startsBlock } from './markers';
 /**
  * Keeps the spaces markdown drops at the end of a line visible.
  *
@@ -19,7 +18,13 @@ import { startsBlock } from './markers';
  * space it replaces — so node positions, offset mapping, formatting and the
  * raw document are all unaffected; the substitution only shows up in the
  * rendered DOM.
+ *
+ * May import: the marker rules (`./markers`). Upholds: one fact about markdown
+ * syntax has one home, and this is the home of what markdown drops at the end of
+ * a line — the substitution keeps the text and the parse in step.
  */
+
+import { startsBlock } from './markers';
 
 import { isBlankItemLine } from './lines';
 

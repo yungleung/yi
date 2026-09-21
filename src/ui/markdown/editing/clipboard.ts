@@ -4,6 +4,11 @@
  * Everything works on raw document offsets rather than the rendered DOM, so
  * the clipboard still round-trips correctly when most of the document is
  * virtualized away.
+ *
+ * May import: the editing context and the pure rules it needs (`./context`,
+ * `./blank_lines`). Upholds: the document text is the only source of truth —
+ * copy and cut read raw offsets and paste is one range replacement, so what the
+ * clipboard carries never depends on which blocks happen to be mounted.
  */
 
 import { editorSelection, rangeOffsets, applyEdit, proseRoot, type EditorContext } from './context';

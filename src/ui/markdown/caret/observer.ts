@@ -2,6 +2,10 @@
  * Watches an editor container for content mutations (reveal swaps, lazy
  * rendering, ...) so callers can re-anchor layout-dependent state on the next
  * frame, coalescing bursts of mutations into a single callback.
+ *
+ * May import: nothing but the DOM. Upholds: a rendered position is re-derived
+ * after a rebuild — this is what tells the caret that the layout around it
+ * changed, once per burst rather than once per mutation.
  */
 
 /**

@@ -10,6 +10,11 @@
  * The module reads the editor context and calls the editing commands and the
  * table menu; it keeps no state of its own, so a click routes the same way
  * wherever the editor happens to be.
+ *
+ * May import: the editing commands it routes to (`editing/*`), the table menu
+ * and the editor context. Upholds: a click is routed by what is under it —
+ * the handlers read the document and the rendered tree, and hold no state that
+ * could disagree with them.
  */
 
 import { showTableMenu } from '../table/table_menu';

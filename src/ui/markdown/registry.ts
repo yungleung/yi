@@ -6,6 +6,11 @@
  * the factory module. This breaks the `create_node ↔ nodes/*` import cycle:
  * node modules depend only on this registry, and this registry depends only
  * on the shared base classes.
+ *
+ * May import: the AST types and the node base classes. Upholds: the registry is
+ * the one place that says which node types exist and which of them show their
+ * source, so every consumer of that fact — `create_node.ts`, `source_mode.ts` —
+ * reads it here.
  */
 
 import type { AstNode } from './ast';

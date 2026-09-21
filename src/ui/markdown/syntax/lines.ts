@@ -1,4 +1,3 @@
-import { listItemMarker } from './markers';
 /**
  * Reading a raw line as a list item marker.
  *
@@ -8,7 +7,13 @@ import { listItemMarker } from './markers';
  * line as a setext heading underline when a paragraph precedes it. Both the
  * parse-input rewrite (`trailing_spaces.ts`) and the editing commands need to
  * recognise the shape, so they read it here.
+ *
+ * May import: the marker rules (`./markers`). Upholds: one fact about markdown
+ * syntax has one home, and this is the home of line spans, item subtrees and the
+ * blank-item shape.
  */
+
+import { listItemMarker } from './markers';
 
 /** Whether a raw line is an empty list item, trailing spaces included. */
 export function isBlankItemLine(line: string): boolean {

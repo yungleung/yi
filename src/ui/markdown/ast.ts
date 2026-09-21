@@ -1,6 +1,11 @@
 /**
  * The markdown AST node types used by the editor: the core mdast nodes plus
  * the custom nodes registered by the remark plugins (see `mdast.d.ts`).
+ *
+ * May import: the mdast types. Upholds: the editor names every markdown
+ * construct in one vocabulary — a node type is asked for by its alias here, so
+ * a plugin's node and the component that renders it cannot disagree about the
+ * type they mean.
  */
 import type { Root, RootContent, RootContentMap } from 'mdast';
 

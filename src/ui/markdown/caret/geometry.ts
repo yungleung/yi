@@ -2,6 +2,10 @@
  * Pure geometry helpers for the caret: where a caret position sits on screen
  * and how to estimate a line's height. These have no dependencies on the
  * editor, so both the caret renderer and arrow navigation share them.
+ *
+ * May import: nothing but the DOM. Upholds: a caret's rendered position is
+ * derived from its range — this module measures that range and holds no state,
+ * so the same range always measures the same way.
  */
 
 /**

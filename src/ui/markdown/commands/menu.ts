@@ -5,6 +5,10 @@
  * events named by strings. Rather than each of those names appearing as a
  * literal somewhere in the editor, they are mapped here, once, to command ids —
  * and this is the only module that may name them.
+ *
+ * May import: the command ids (`./registry`). Upholds: an event name reaches the
+ * editor as a command id in one place, so no other module has to know what the
+ * native menu calls things.
  */
 import type { CommandId } from './registry';
 
