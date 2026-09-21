@@ -16,7 +16,11 @@
 import { lineSpanAt, itemSubtreeEnd, touchedLines } from './lines';
 import type { TextEdit } from './edit_range';
 
-export type ListKind = 'ordered' | 'bullet' | 'task';
+/** The kinds of list a command can make a line into. */
+export const LIST_KINDS = ['ordered', 'bullet', 'task'] as const;
+
+/** One of the list kinds above. */
+export type ListKind = (typeof LIST_KINDS)[number];
 
 /** A line's list marker, read apart. */
 interface Marker {

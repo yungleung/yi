@@ -9,9 +9,8 @@
 
 import { getSelectionRange, scheduleCaret, scheduleNativeSelection, setSelectionRange } from '../caret/caret';
 import { documentOffsetAt, domPositionAtOffset } from '../position';
-import { formatRange, type FormatUnit } from '../format';
+import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
-import type { FormattingStyle } from '../../toolbar/formatting_toolbar';
 import { proseRoot, type EditorContext } from './context';
 
 /** Applies a formatting style to the current selection. */

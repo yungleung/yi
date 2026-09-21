@@ -1,4 +1,17 @@
-import type { FormattingStyle } from '../toolbar/formatting_toolbar';
+/**
+ * The inline styles, and the raw markdown each one wraps a range with.
+ *
+ * Which inline styles exist is a fact about markdown, not about the toolbar
+ * that draws a button for each of them or the registry that names their
+ * commands, so the list lives here and the type is read off it. The module is
+ * pure — no DOM, no state — so a Node check can bundle it.
+ */
+
+/** The inline styles a formatting command can apply, in the order they are offered. */
+export const FORMATTING_STYLES = ['bold', 'italic', 'strikethrough', 'inlineCode'] as const;
+
+/** One of the inline styles above. */
+export type FormattingStyle = (typeof FORMATTING_STYLES)[number];
 
 /** The raw markdown markers each formatting style wraps a range with. */
 const MARKERS: Record<FormattingStyle, string> = {

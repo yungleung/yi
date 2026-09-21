@@ -13,7 +13,7 @@
  * a union type, so a typo is a compile error rather than a silent no-op.
  */
 
-import type { FormattingStyle } from '../../toolbar/formatting_toolbar';
+import type { FormattingStyle } from '../format';
 import type { ListCommand } from '../editing/lists';
 import type { TableCommand } from '../editing/table';
 

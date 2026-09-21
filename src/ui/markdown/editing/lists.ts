@@ -9,11 +9,18 @@
 
 import { isRawRendered } from '../blocks';
 import { shiftOffset } from '../syntax/edit_range';
-import { indentEdit, listEdit, type ListKind } from '../syntax/list_edits';
+import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list_edits';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
 
-/** What a list button, or Tab, asks for. */
-export type ListCommand = ListKind | 'indent' | 'outdent';
+/**
+ * What a list trigger asks for: make the line a list of a kind, or move the
+ * item in or out one level. Tab and Shift+Tab ask for the last two directly,
+ * as the text path; the buttons ask for theirs by command id.
+ */
+export const LIST_COMMANDS = [...LIST_KINDS, 'indent', 'outdent'] as const;
+
+/** One of the list commands above. */
+export type ListCommand = (typeof LIST_COMMANDS)[number];
 
 /**
  * Applies a list command to the caret's line or to every line the selection
