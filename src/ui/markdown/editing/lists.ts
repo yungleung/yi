@@ -8,8 +8,8 @@
  */
 
 import { isRawRendered } from '../blocks';
-import { shiftOffset } from '../edit_range';
-import { indentEdit, listEdit, type ListKind } from '../list_edits';
+import { shiftOffset } from '../syntax/edit_range';
+import { indentEdit, listEdit, type ListKind } from '../syntax/list_edits';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
 
 /** What a list button, or Tab, asks for. */

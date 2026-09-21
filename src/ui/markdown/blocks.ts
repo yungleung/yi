@@ -21,7 +21,7 @@
  * Blank lines are separators, not blocks.
  */
 
-import { emptyParagraphIndexes, isEmptyParagraphLine } from './blank_lines';
+import { emptyParagraphIndexes, isEmptyParagraphLine } from './syntax/blank_lines';
 
 export type BlockKind =
   | 'frontmatter'

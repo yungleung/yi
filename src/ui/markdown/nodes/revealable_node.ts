@@ -1,5 +1,5 @@
 import type { RootContent } from 'mdast';
-import { serializeMarkdown } from '../parser';
+import { serializeMarkdown } from '../syntax/parser';
 import { EditableNodeComponent } from './editable_node';
 import { enterSourceOf, isShownSource } from '../source_mode';
 import type { AstNode } from '../ast';

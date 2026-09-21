@@ -20,8 +20,8 @@
  * rendered DOM.
  */
 
-import { isRawRendered, type MarkdownBlock } from './blocks';
-import { isBlankItemLine } from './list_lines';
+import { isRawRendered, type MarkdownBlock } from '../blocks';
+import { isBlankItemLine } from './lines';
 
 /** Line starts that cannot continue the paragraph above them. */
 const BLOCK_START =

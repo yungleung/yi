@@ -12,7 +12,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/footnotes.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/markdown/syntax/footnotes.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-footnotes-'));

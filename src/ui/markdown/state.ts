@@ -10,9 +10,9 @@
 
 import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
-import { footnoteLabels, withFootnoteDefinitions } from './footnotes';
-import { parseMarkdown } from './parser';
-import { blockParseInput } from './trailing_spaces';
+import { footnoteLabels, withFootnoteDefinitions } from './syntax/footnotes';
+import { parseMarkdown } from './syntax/parser';
+import { blockParseInput } from './syntax/trailing_spaces';
 
 /**
  * One undo step: the document text before the edit and after it. Whole-text

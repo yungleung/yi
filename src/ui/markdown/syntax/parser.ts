@@ -7,8 +7,8 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
-import { remarkCitation } from './plugins/remark-citation';
-import { remarkWikilink } from './plugins/remark-wikilink';
+import { remarkCitation } from '../plugins/remark-citation/index';
+import { remarkWikilink } from '../plugins/remark-wikilink/index';
 
 const parseProcessor = unified()
   .use(remarkParse)

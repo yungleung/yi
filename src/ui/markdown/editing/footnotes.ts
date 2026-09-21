@@ -7,7 +7,7 @@
  * renderer and the scroll position.
  */
 
-import { footnoteInsertEdit, footnoteOffsets, nextFootnoteNumber } from '../footnotes';
+import { footnoteInsertEdit, footnoteOffsets, nextFootnoteNumber } from '../syntax/footnotes';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 /** Which end of a footnote pair a click came from. */

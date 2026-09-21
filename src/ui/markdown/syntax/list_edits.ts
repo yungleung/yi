@@ -13,7 +13,7 @@
  *   stays nested in the item it belongs to.
  */
 
-import { lineSpanAt, itemSubtreeEnd, touchedLines } from './list_lines';
+import { lineSpanAt, itemSubtreeEnd, touchedLines } from './lines';
 import type { TextEdit } from './edit_range';
 
 export type ListKind = 'ordered' | 'bullet' | 'task';

@@ -10,7 +10,7 @@
  */
 
 import type { TextEdit } from './edit_range';
-import { lineSpanAt, touchedLines } from './list_lines';
+import { lineSpanAt, touchedLines } from './lines';
 
 /** The two spaces one Tab stands for. */
 const STEP = '  ';
