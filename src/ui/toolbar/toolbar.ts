@@ -1,4 +1,3 @@
-import { eventManager } from '../../services/event_manager';
 import { BaseComponent } from '../component';
 
 /** One button of a toolbar: its name, its icon, and any classes it needs. */
@@ -10,10 +9,10 @@ export interface ToolbarButtonSpec {
   /** Extra classes for the button — the icon size, mostly. */
   className?: string;
   /**
-   * What pressing the button asks the editor for. Groups that have one
-   * announce it with the event they own — a formatting button asks for a style
-   * and a list button asks for a list kind, and both are the same thing here:
-   * the command the button stands for. A button that does something else
+   * What pressing the button asks the editor for. A group whose buttons map
+   * one-to-one onto commands narrows this — a formatting button is the style
+   * it applies, a list button the list command it runs — and the group turns
+   * that into the command id it runs. A button that does something else
    * (opening the table picker) leaves it out.
    */
   command?: string;
@@ -29,9 +28,9 @@ export const TOOL_ICON_SIZE = 'text-[1.25em]';
  * a button is ghost-styled, it must not start a window drag, and it must not
  * take focus — the caret and the selection live in the document, and a focused
  * button would take them away. What is left for a group to say is *what* its
- * buttons are and *what pressing one means*: it announces a command, and the
- * editor decides what that command does. A button never reaches into the
- * editor itself, which is why every group can own its own event name.
+ * buttons are and *what pressing one means*: a press runs a command by id, and
+ * the editor decides what that command does. A button never reaches into the
+ * editor itself.
  */
 export abstract class Toolbar extends BaseComponent {
   protected constructor(classNames: string[] = ['flex', 'items-center', 'gap-1']) {
@@ -67,10 +66,5 @@ export abstract class Toolbar extends BaseComponent {
     for (const spec of specs) {
       this.addButton(spec, () => onPress(spec));
     }
-  }
-
-  /** Announces a command to the editor, and forgets about it. */
-  protected announce(event: string, payload?: unknown): void {
-    void eventManager.emit(event, payload);
   }
 }

@@ -1,8 +1,6 @@
+import { runCommand } from '../markdown/commands/registry';
 import { TablePicker, type TableSize } from './table_picker';
 import { Toolbar } from './toolbar';
-
-/** The table picker announces a chosen size; the editor creates the table. */
-export const TABLE_INSERT = 'table_insert';
 
 /** The grid icon, sized like the formatting icons it sits beside. */
 const TABLE_ICON =
@@ -19,7 +17,8 @@ const TABLE_ICON =
 /**
  * The create-table button at the titlebar's centre, and the picker it opens.
  * Like the formatting buttons, it must not start a window drag and must not
- * take focus away from the editor's selection.
+ * take focus away from the editor's selection. The picker hands the size it
+ * chose to the editor's `table:insert` command.
  */
 export class TableToolbar extends Toolbar {
   private readonly picker: TablePicker;
@@ -28,7 +27,9 @@ export class TableToolbar extends Toolbar {
     // `relative`, so the picker hangs under the button rather than somewhere
     // in the page.
     super(['relative', 'flex', 'items-center']);
-    this.picker = new TablePicker((size: TableSize) => this.announce(TABLE_INSERT, size));
+    this.picker = new TablePicker((size: TableSize) => {
+      runCommand('table:insert', size);
+    });
     this.addButton(
       { label: 'Insert table', icon: TABLE_ICON, className: 'text-[1.1em]' },
       () => this.togglePicker()

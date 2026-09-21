@@ -1,10 +1,6 @@
+import type { FormattingStyle } from '../markdown/format';
+import { runCommand } from '../markdown/commands/registry';
 import { Toolbar, type ToolbarButtonSpec } from './toolbar';
-
-/** Formatting commands emitted by the toolbar (the editor subscribes later). */
-export const FORMATTING_COMMAND = 'formatting_command';
-
-/** The inline styles the toolbar can apply to a selection. */
-export type FormattingStyle = 'bold' | 'italic' | 'strikethrough' | 'inlineCode';
 
 interface FormattingButtonSpec extends ToolbarButtonSpec {
   command: FormattingStyle;
@@ -47,15 +43,15 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
 
 /**
  * The formatting toolbar shown at the center of the titlebar: Bold, Italic
- * and Strikethrough. This is the entry point for editing — each button emits
- * a {@link FORMATTING_COMMAND} event that the markdown editor will apply to
- * the current selection.
+ * and Strikethrough. This is the entry point for editing — each button runs
+ * the command named after the style it stands for, and the editor applies it
+ * to the current selection.
  */
 export class FormattingToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButtons(FORMATTING_BUTTONS, (spec) =>
-      this.announce(FORMATTING_COMMAND, { command: spec.command })
-    );
+    this.addButtons(FORMATTING_BUTTONS, (spec) => {
+      runCommand(`format:${spec.command}`);
+    });
   }
 }

@@ -1,18 +1,16 @@
-import { eventManager } from '../../services/event_manager';
+import { runCommand } from '../markdown/commands/registry';
 import type { TableCommand, TableTarget } from '../markdown/editing/table';
 import type { TableMenuNode } from './table_menu_model';
 import type { MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
-
-/** The context menu announces a chosen operation on a captured cell. */
-export const TABLE_COMMAND = 'table_command';
 
 /**
  * Shows the native context menu for a table cell.
  *
  * The menu is rebuilt for every right-click, so its items are enabled exactly
- * as the table is at that moment. Choosing an item emits `TABLE_COMMAND` with
- * the *captured* target: a native menu takes focus while it is open, so the
- * command must not read the live caret to find out what it acts on.
+ * as the table is at that moment. Choosing an item runs the command the item
+ * names, passing the *captured* target: a native menu takes focus while it is
+ * open, so the command must not read the live caret to find out what it acts
+ * on.
  *
  * This is the only module that touches Tauri's menu API, and it does so inside
  * the function, so nothing else in the editor depends on it.
@@ -51,7 +49,7 @@ async function toNode(
     text: node.label,
     enabled: node.enabled,
     action: () => {
-      void eventManager.emit(TABLE_COMMAND, { target, command });
+      runCommand(`table:${command}`, target);
     }
   });
 }

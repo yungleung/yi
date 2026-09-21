@@ -1,7 +1,7 @@
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { FORMATTING_COMMAND, type FormattingStyle } from '../toolbar/formatting_toolbar';
+import { FORMATTING_STYLES } from './format';
 import {
   ensureCaretRendered,
   getCaretRange,
@@ -25,10 +25,11 @@ import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { placeCaretFromPointer } from './editing/pointer';
-import { applyListCommand, type ListCommand } from './editing/lists';
+import { LIST_COMMANDS, applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
 import { insertFootnote, jumpToFootnote } from './editing/footnotes';
 import {
+  TABLE_COMMANDS,
   continueTableDown,
   insertTable,
   tableSnapshot,
@@ -37,11 +38,8 @@ import {
   type TableCommand,
   type TableTarget
 } from './editing/table';
-import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
+import { showTableMenu } from '../table/table_menu';
 import { tableMenuModel } from '../table/table_menu_model';
-import { TABLE_INSERT } from '../toolbar/table_toolbar';
-import { LIST_COMMAND } from '../toolbar/list_toolbar';
-import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 // The document the editor starts on. It lives in the fixture workspace so the
 // demo can be edited as markdown rather than as a string array in code.
 import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
@@ -174,46 +172,65 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Wires the application-level commands (menu, toolbar, keyboard). */
   private registerCommandEvents(): void {
-    void eventManager.on(FORMATTING_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { command?: FormattingStyle };
-      if (payload.command) {
-        applyFormatting(this.context, payload.command);
-      }
-    });
     // The commands this editor owns, registered by name so every trigger — a
     // chord, the native menu, a toolbar button — reaches the same behaviour.
     registerCommand({ id: 'history:undo', run: () => this.applyHistory('undo') });
     registerCommand({ id: 'history:redo', run: () => this.applyHistory('redo') });
     registerCommand({ id: 'edit:cut', run: () => void cutSelection(this.context) });
     registerCommand({ id: 'edit:selectAll', run: () => selectAll(this.context) });
+    registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
     registerCommand({ id: 'find:open', run: () => this.find.open(false) });
     registerCommand({ id: 'find:replace', run: () => this.find.open(true) });
     registerCommand({ id: 'find:close', run: () => this.find.close() });
-    registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
+    // One command per inline style, per list command and per table operation,
+    // enumerated from the modules that own those lists: a button or a menu item
+    // can only name a command that is registered here.
+    for (const style of FORMATTING_STYLES) {
+      registerCommand({ id: `format:${style}`, run: () => applyFormatting(this.context, style) });
+    }
+    for (const command of LIST_COMMANDS) {
+      registerCommand({
+        id: `list:${command}`,
+        run: () => applyListCommand(this.context, command)
+      });
+    }
+    for (const command of TABLE_COMMANDS) {
+      registerCommand({
+        id: `table:${command}`,
+        run: (target) => this.runTableOperation(command, target)
+      });
+    }
+    registerCommand({ id: 'table:insert', run: (size) => this.insertPickedTable(size) });
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.
     for (const event of Object.keys(MENU_COMMANDS)) {
       void eventManager.on(event, () => runCommand(MENU_COMMANDS[event]));
     }
-    void eventManager.on(TABLE_INSERT, (event) => {
-      const payload = (event.payload ?? event) as { rows?: number; columns?: number };
-      if (payload.rows && payload.columns) {
-        insertTable(this.context, { rows: payload.rows, columns: payload.columns });
-      }
-    });
-    void eventManager.on(TABLE_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { target?: TableTarget; command?: TableCommand };
-      if (payload.target && payload.command) {
-        runTableCommand(this.context, payload.target, payload.command);
-      }
-    });
-    void eventManager.on(LIST_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { command?: ListCommand };
-      if (payload.command) {
-        applyListCommand(this.context, payload.command);
-      }
-    });
-    void eventManager.on(FOOTNOTE_COMMAND, () => insertFootnote(this.context));
+  }
+
+  /**
+   * Runs one table-menu operation on the cell the menu captured before it took
+   * focus. The payload comes from a native menu, so it is checked, not trusted.
+   */
+  private runTableOperation(command: TableCommand, payload: unknown): void {
+    const target = payload as TableTarget | null;
+    if (
+      !target ||
+      !Number.isFinite(target.lineStart) ||
+      !Number.isFinite(target.row) ||
+      !Number.isFinite(target.column)
+    ) {
+      return;
+    }
+    runTableCommand(this.context, target, command);
+  }
+
+  /** Creates the table of the size the picker handed over. */
+  private insertPickedTable(payload: unknown): void {
+    const size = payload as { rows?: number; columns?: number } | null;
+    if (size?.rows && size.columns) {
+      insertTable(this.context, { rows: size.rows, columns: size.columns });
+    }
   }
 
   /** Keyboard shortcuts and plain text input. */
