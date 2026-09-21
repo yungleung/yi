@@ -20,26 +20,28 @@ import {
 } from './editing/context';
 import { documentOffsetAt } from './position';
 import { copySelection, cutSelection, pasteText, selectAll } from './editing/clipboard';
-import { deleteText, insertNewline, insertText, toggleTask } from './editing/text_commands';
+import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
-import { placeCaretFromPointer } from './editing/pointer';
 import { LIST_COMMANDS, applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
-import { insertFootnote, jumpToFootnote } from './editing/footnotes';
+import { insertFootnote } from './editing/footnotes';
 import {
   TABLE_COMMANDS,
   continueTableDown,
   insertTable,
-  tableSnapshot,
   moveTableCell,
   runTableCommand,
   type TableCommand,
   type TableTarget
 } from './editing/table';
-import { showTableMenu } from '../table/table_menu';
-import { tableMenuModel } from '../table/table_menu_model';
+import {
+  routeContextMenu,
+  routeFootnoteClick,
+  routePointerClick,
+  routeTaskClick
+} from './click_routing';
 // The document the editor starts on. It lives in the fixture workspace so the
 // demo can be edited as markdown rather than as a string array in code.
 import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
@@ -115,16 +117,19 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.element.appendChild(this.findBar.element);
 
     this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
-    // Checkbox clicks must be handled before the node components stop the
-    // event from bubbling to the editor.
-    this.contentView.addEventListener('click', (event) => this.handleTaskClick(event), true);
-    // A click on a footnote marker or on a definition's label jumps between the
-    // two, so it is caught before a node places a caret where it was hit.
-    this.contentView.addEventListener('click', (event) => this.handleFootnoteClick(event), true);
-    // Clicks that miss every markdown node still place the caret: the margin
-    // between blocks and the space below the text are lines, not dead zones.
-    this.contentView.addEventListener('click', (event) => this.handlePointerClick(event));
-    this.contentView.addEventListener('contextmenu', (event) => this.handleContextMenu(event));
+    // The four routed clicks, in the order they have to run: a checkbox and a
+    // footnote marker are handled before a node can place a caret where the
+    // click landed, and a click that missed every node still places one.
+    this.contentView.addEventListener('click', (event) => routeTaskClick(this.context, event), true);
+    this.contentView.addEventListener(
+      'click',
+      (event) => routeFootnoteClick(this.context, event),
+      true
+    );
+    this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
+    this.contentView.addEventListener('contextmenu', (event) =>
+      routeContextMenu(this.context, event)
+    );
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
     this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
 
@@ -392,69 +397,4 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     keepScroll(this.context, anchor);
   }
 
-  /** Toggles a task-list checkbox without moving the caret. */
-  private handleTaskClick(event: MouseEvent): void {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
-      return;
-    }
-    if (toggleTask(this.context, target)) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  /** Places the caret for a click that no markdown node handled. */
-  private handlePointerClick(event: MouseEvent): void {
-    const target = event.target;
-    if (target instanceof Element && target.closest('.markdown-node')) {
-      return;
-    }
-    placeCaretFromPointer(this.context, event.clientY);
-  }
-
-  /** Jumps between a footnote's marker and its definition. */
-  private handleFootnoteClick(event: MouseEvent): void {
-    const target = event.target as Element | null;
-    const reference = target?.closest<HTMLElement>('[data-footnote-ref]');
-    const definition = target?.closest<HTMLElement>('[data-footnote-def]');
-    const element = reference ?? definition;
-    const label = reference?.dataset.footnoteRef ?? definition?.dataset.footnoteDef;
-    if (!element || !label) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    jumpToFootnote(this.context, label, reference ? 'reference' : 'definition');
-  }
-
-  /**
-   * A right-click inside a table cell opens the table's menu on that cell.
-   *
-   * The cell is captured *before* the menu opens: the native menu takes focus,
-   * so the command that follows has to be told what it acts on.
-   */
-  private handleContextMenu(event: MouseEvent): void {
-    const cell = (event.target as Element | null)?.closest<HTMLElement>('[data-table-cell]');
-    if (!cell) {
-      return;
-    }
-    // The webview has its own context menu; ours replaces it.
-    event.preventDefault();
-    const blockElement = cell.closest('.markdown-block') as HTMLElement | null;
-    const lineStart = Number(blockElement?.dataset.lineStart);
-    const [row, column] = (cell.dataset.tableCell ?? '').split(':').map(Number);
-    if (!Number.isFinite(lineStart) || !Number.isFinite(row) || !Number.isFinite(column)) {
-      return;
-    }
-    const target: TableTarget = { lineStart, row, column };
-    const snapshot = tableSnapshot(this.context, target);
-    if (!snapshot) {
-      return;
-    }
-    void showTableMenu(tableMenuModel(snapshot.source, row, column), target, {
-      x: event.clientX,
-      y: event.clientY
-    });
-  }
 }
