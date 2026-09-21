@@ -257,11 +257,6 @@ export function ensureCaretRendered(): void {
   }
 }
 
-/** Repositions the caret to the current logical position. */
-export function refreshCaretPosition(): void {
-  positionCaret();
-}
-
 /** Watches the editor's scroll container so content mutations re-anchor the caret. */
 function ensureLayoutWatcher(host: HTMLElement): void {
   if (stopWatchingLayout) {

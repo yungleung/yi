@@ -161,48 +161,6 @@ export function rangeAfter(element: Element): Range {
   return range;
 }
 
-/** The node right after a DOM position (skipping the local caret), or null. */
-export function nextNodeAfter(container: Node, offset: number): Node | null {
-  if (container.nodeType === Node.TEXT_NODE) {
-    if (offset < (container as Text).data.length) {
-      return null;
-    }
-    return skipCaretNodes(nextSiblingNode(container), true);
-  }
-  const element = container as Element;
-  if (offset < element.childNodes.length) {
-    return skipCaretNodes(element.childNodes[offset], true);
-  }
-  return skipCaretNodes(nextSiblingNode(element), true);
-}
-
-/** The node right before a DOM position (skipping the local caret), or null. */
-export function nextNodeBefore(container: Node, offset: number): Node | null {
-  if (container.nodeType === Node.TEXT_NODE) {
-    if (offset > 0) {
-      return null;
-    }
-    return skipCaretNodes(previousSiblingNode(container), false);
-  }
-  const element = container as Element;
-  if (offset > 0) {
-    return skipCaretNodes(element.childNodes[offset - 1], false);
-  }
-  return skipCaretNodes(previousSiblingNode(element), false);
-}
-
-/**
- * The local caret span is a zero-width rendering artifact: boundary detection
- * must look past it to the real neighbouring node.
- */
-function skipCaretNodes(node: Node | null, forward: boolean): Node | null {
-  let current = node;
-  while (current && (current as Element).classList?.contains('markdown-caret')) {
-    current = forward ? nextSiblingNode(current) : previousSiblingNode(current);
-  }
-  return current;
-}
-
 export function nextSiblingNode(node: Node): Node | null {
   let current: Node | null = node;
   while (current) {
@@ -225,24 +183,3 @@ export function previousSiblingNode(node: Node): Node | null {
   return null;
 }
 
-/**
- * Whether a caret range is anchored on the boundary of `element`, and on
- * which side.
- */
-export function elementBoundarySide(
-  range: Range | null,
-  element: Element
-): 'before' | 'after' | null {
-  if (!range) {
-    return null;
-  }
-  const container = range.startContainer;
-  if (container.nodeType !== Node.ELEMENT_NODE || !container.contains(element)) {
-    return null;
-  }
-  const index = Array.from(container.childNodes).indexOf(element);
-  if (index < 0) {
-    return null;
-  }
-  return range.startOffset <= index ? 'before' : 'after';
-}

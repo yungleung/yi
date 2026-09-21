@@ -21,7 +21,6 @@
  * Blank lines are separators, not blocks.
  */
 
-import type { Root, RootContent } from 'mdast';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from './blank_lines';
 
 export type BlockKind =
@@ -105,91 +104,6 @@ export function hasSourceMode(kind: BlockKind): boolean {
 /** A block as an mdast-like node (the `type` field makes it a tree node). */
 export interface BlockNode extends MarkdownBlock {
   type: 'block';
-}
-
-/** The whole document as an mdast-like root of block nodes. */
-export interface BlockRoot {
-  type: 'root';
-  children: BlockNode[];
-}
-
-/** Assigns each node of the document tree to the block containing it. */
-export function sliceBlockTree(tree: BlockRoot, root: Root): Map<number, RootContent[]> {
-  const blocks = tree.children;
-  const slices = new Map<number, RootContent[]>();
-  let index = 0;
-  let lastEnd = -1;
-
-  const push = (i: number, child: RootContent): void => {
-    if (i >= blocks.length) {
-      return;
-    }
-    // The whole-document parse carries absolute positions; the renderer and
-    // offset mapping work with block-relative ones (absolute = block.charStart
-    // + relative). Clone the node with shifted positions so the shared tree
-    // stays pristine and the initial render can be repeated.
-    const shifted = cloneWithShift(child, -blocks[i].charStart);
-    const list = slices.get(i);
-    if (list) {
-      list.push(shifted);
-    } else {
-      slices.set(i, [shifted]);
-    }
-  };
-
-  for (const child of root.children) {
-    const position = (
-      child as { position?: { start: { offset?: number }; end: { offset?: number } } }
-    ).position;
-    if (position?.start.offset !== undefined) {
-      const start = position.start.offset;
-      const end = position.end.offset ?? start;
-      while (index < blocks.length && start > blocks[index].charEnd) {
-        index += 1;
-      }
-      if (index >= blocks.length) {
-        break;
-      }
-      if (start >= blocks[index].charStart) {
-        push(index, child);
-        lastEnd = Math.max(lastEnd, end);
-      }
-    } else {
-      // Position-less constructs (description lists) belong to the block
-      // that follows the previously assigned content.
-      while (index < blocks.length && blocks[index].charStart <= lastEnd) {
-        index += 1;
-      }
-      if (index >= blocks.length) {
-        break;
-      }
-      push(index, child);
-      lastEnd = Math.max(lastEnd, blocks[index].charEnd);
-    }
-  }
-  return slices;
-}
-
-/** A copy of the node with every position offset shifted by `delta`. */
-function cloneWithShift(node: RootContent, delta: number): RootContent {
-  const clone = { ...node } as RootContent & {
-    position?: { start: { offset: number }; end: { offset: number } };
-    children?: RootContent[];
-  };
-  const position = (
-    node as { position?: { start?: { offset?: number }; end?: { offset?: number } } }
-  ).position;
-  if (position?.start?.offset !== undefined && position?.end?.offset !== undefined) {
-    clone.position = {
-      start: { ...position.start, offset: position.start.offset + delta },
-      end: { ...position.end, offset: position.end.offset + delta }
-    };
-  }
-  const children = (node as { children?: unknown[] }).children;
-  if (Array.isArray(children)) {
-    clone.children = children.map((child) => cloneWithShift(child as RootContent, delta));
-  }
-  return clone;
 }
 
 interface SourceLine {
@@ -460,17 +374,6 @@ export function splitBlocks(text: string): MarkdownBlock[] {
   }
 
   return blocks;
-}
-
-/**
- * Builds the mdast-like block tree for a raw document: a root block
- * representing the whole document, whose children are the document's blocks.
- */
-export function buildBlockTree(text: string): BlockRoot {
-  return {
-    type: 'root',
-    children: splitBlocks(text).map((block) => ({ type: 'block', ...block }))
-  };
 }
 
 /** The frontmatter fence when the line is a lone `---` or `+++`. */
