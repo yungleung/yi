@@ -31,7 +31,7 @@
     definitions: t.prose().querySelectorAll('.markdown-footnote').length,
     definitionText: definition ? definition.textContent : null,
     definitionIsLast: definition
-      ? definition === t.prose().querySelectorAll('.markdown-block').pop()?.lastElementChild
+      ? definition === t.blocks().pop()?.lastElementChild
       : null,
     caret: t.caretRect(),
     supRect: sup ? t.rectOf(sup) : null
