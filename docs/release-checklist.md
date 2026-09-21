@@ -15,10 +15,14 @@ npm run tauri dev        # the app starts, the demo document loads
 ## Nothing private is in the tree
 
 ```bash
-git grep -n "/Users/urshanabi"                     # only the fixtures' provenance note
+git grep -n "/Users/urshanabi" -- . ':!docs/release-checklist.md' ':!docs/superpowers'
 git grep -nE "api[_-]?key|token|secret|password" src src-tauri | grep -v node_modules
 git status --short                                 # clean
 ```
+
+The first grep must print nothing: the only places this repository names a home
+directory are the two documents that talk about doing so — this checklist and the
+P0 plan that wrote it — and both are excluded above.
 
 The notes under `test/fixtures/workspace/` are deliberate: they are the maintainer's
 own writing, published under CC BY 4.0, and their README says so.
@@ -39,5 +43,6 @@ run them yourself before a release, against a freshly started app.
 
 ## Then
 
-Tag the release, and update the thread in `docs/superpowers/plans/` that this
-checklist belongs to.
+Tag the release. If a phase changed the commands above — or the counts — update
+this file, `docs/ai-context.md` and `test/README.md` in the same commit: they are
+the three places that state what the suite is.

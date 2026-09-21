@@ -1,6 +1,8 @@
 # Markdown editor architecture: clean-up, test workspace, and an AI-ready contributor guide
 
-**Status:** design, awaiting review
+**Status:** implemented — P0–P4 are merged into `main` (one plan per phase under
+`docs/superpowers/plans/`). Section 5 below is the design's sketch of the layout;
+the subsection after it records where the tree that was built differs.
 **Date:** 2026-09-21
 **Audience:** the maintainer, future open-source contributors, and the AI agents either of them works with.
 
@@ -173,6 +175,22 @@ Rules, and how each is enforced:
 | One fact about markdown syntax has one home | review, plus the same-rule list in `docs/architecture.md` |
 | Every module header states responsibility, allowed imports, and the invariant it upholds | review, plus `test/checks/headers.mjs` |
 | A command is registered in exactly one place | `test/checks/commands.mjs`, ids unique and reachable |
+
+### 5.1 As built (2026-09-22)
+
+What the phases landed, where it differs from the sketch above — every difference
+is a name or a folder, not a boundary:
+
+| Sketch | As built |
+| --- | --- |
+| `editor_shell.ts` | `src/ui/editor_panel.ts` (the wrapper the shell mounts) and `markdown/markdown_editor.ts` (the editor). The shell split moved the editor's listeners and focus handling to `markdown_editor.ts` and the clicks to `click_routing.ts`, so a third name for the same file was not needed. |
+| `keymap.ts` at the top | `commands/keymap.ts`, beside the registry it names ids from |
+| `document/state.ts history.ts blocks.ts` | Flat: `state.ts` (which owns the undo history today), `blocks.ts`. No phase's acceptance asked for the folder, so the files were not moved for the sake of the drawing. |
+| `syntax/lines.ts blank_lines.ts list_markers.ts fences.ts trailing_spaces.ts table_syntax.ts code_indent.ts` | `syntax/lines.ts`, `blank_lines.ts`, `markers.ts` (fences, frontmatter delimiters, list markers and delimiter lines in one home, rather than three files that each held part of a rule), `trailing_spaces.ts`, `table_source.ts`, `table_edits.ts`, `list_edits.ts`, `code_edits.ts`, `edit_range.ts`, `empty_items.ts`, `footnotes.ts`, `parser.ts` |
+| `render/*` as a folder | Flat: `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts`, `nodes/` |
+| `commands/clipboard.ts text.ts formatting.ts …` | The rules stayed in `editing/` (where the editing context lives); `commands/` holds the registry, the keymap, the native-menu bridge and the editor's own command table (`editor_commands.ts`) |
+| — | `commands/editor_commands.ts`: the command ids this editor registers, one per command (P4's follow-up) |
+| — | Checks the phases added beyond this sketch: `commands.mjs`, `headers.mjs`, `check-block-sizes.mjs`, `check-thematic-break.mjs` |
 
 ## 6. The test workspace and the testing methodology
 
