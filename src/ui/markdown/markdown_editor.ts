@@ -16,7 +16,7 @@
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { FORMATTING_STYLES } from './format';
+import { registerEditorCommands } from './commands/editor_commands';
 import {
   ensureCaretRendered,
   getCaretRange,
@@ -34,24 +34,13 @@ import {
   type EditorContext
 } from './editing/context';
 import { documentOffsetAt } from './caret/offsets';
-import { copySelection, cutSelection, pasteText, selectAll } from './editing/clipboard';
+import { copySelection, pasteText } from './editing/clipboard';
 import { deleteText, insertNewline, insertText } from './editing/text_commands';
-import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
-import { LIST_COMMANDS, applyListCommand } from './editing/lists';
+import { applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
-import { insertFootnote } from './editing/footnotes';
-import { insertThematicBreak } from './editing/thematic_break';
-import {
-  TABLE_COMMANDS,
-  continueTableDown,
-  insertTable,
-  moveTableCell,
-  runTableCommand,
-  type TableCommand,
-  type TableTarget
-} from './editing/table';
+import { continueTableDown, moveTableCell } from './editing/table';
 import {
   routeContextMenu,
   routeFootnoteClick,
@@ -63,7 +52,7 @@ import {
 import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
-import { registerCommand, runCommand } from './commands/registry';
+import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -193,65 +182,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Wires the application-level commands (menu, toolbar, keyboard). */
   private registerCommandEvents(): void {
-    // The commands this editor owns, registered by name so every trigger — a
-    // chord, the native menu, a toolbar button — reaches the same behaviour.
-    registerCommand({ id: 'history:undo', run: () => this.applyHistory('undo') });
-    registerCommand({ id: 'history:redo', run: () => this.applyHistory('redo') });
-    registerCommand({ id: 'edit:cut', run: () => void cutSelection(this.context) });
-    registerCommand({ id: 'edit:selectAll', run: () => selectAll(this.context) });
-    registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
-    registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(this.context) });
-    registerCommand({ id: 'find:open', run: () => this.find.open(false) });
-    registerCommand({ id: 'find:replace', run: () => this.find.open(true) });
-    registerCommand({ id: 'find:close', run: () => this.find.close() });
-    // One command per inline style, per list command and per table operation,
-    // enumerated from the modules that own those lists: a button or a menu item
-    // can only name a command that is registered here.
-    for (const style of FORMATTING_STYLES) {
-      registerCommand({ id: `format:${style}`, run: () => applyFormatting(this.context, style) });
-    }
-    for (const command of LIST_COMMANDS) {
-      registerCommand({
-        id: `list:${command}`,
-        run: () => applyListCommand(this.context, command)
-      });
-    }
-    for (const command of TABLE_COMMANDS) {
-      registerCommand({
-        id: `table:${command}`,
-        run: (target) => this.runTableOperation(command, target)
-      });
-    }
-    registerCommand({ id: 'table:insert', run: (size) => this.insertPickedTable(size) });
+    // The commands this editor owns are registered in one place, and it is not
+    // here: what is left is the wiring they need back from the editor.
+    registerEditorCommands({
+      context: this.context,
+      openFind: (replace) => this.find.open(replace),
+      closeFind: () => this.find.close(),
+      applyHistory: (direction) => this.applyHistory(direction)
+    });
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.
     for (const event of Object.keys(MENU_COMMANDS)) {
       void eventManager.on(event, () => runCommand(MENU_COMMANDS[event]));
-    }
-  }
-
-  /**
-   * Runs one table-menu operation on the cell the menu captured before it took
-   * focus. The payload comes from a native menu, so it is checked, not trusted.
-   */
-  private runTableOperation(command: TableCommand, payload: unknown): void {
-    const target = payload as TableTarget | null;
-    if (
-      !target ||
-      !Number.isFinite(target.lineStart) ||
-      !Number.isFinite(target.row) ||
-      !Number.isFinite(target.column)
-    ) {
-      return;
-    }
-    runTableCommand(this.context, target, command);
-  }
-
-  /** Creates the table of the size the picker handed over. */
-  private insertPickedTable(payload: unknown): void {
-    const size = payload as { rows?: number; columns?: number } | null;
-    if (size?.rows && size.columns) {
-      insertTable(this.context, { rows: size.rows, columns: size.columns });
     }
   }
 
