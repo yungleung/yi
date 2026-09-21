@@ -31,6 +31,25 @@ const probes = readdirSync(directory)
 
 const failed = [];
 let skipped = 0;
+
+// Every probe has to parse, whether or not this run starts it: a marker that
+// lands outside the header comment leaves the file a syntax error,
+// `probe:all` skips it on that very string, and by the time anyone runs it by
+// name the bridge answers with a timeout instead of the typo. It has happened
+// twice (`table-menu.js`, `scroll-cost.js`), so it is checked here.
+const broken = [];
+for (const name of probes) {
+  try {
+    new Function(`return (${readFileSync(join(directory, name), 'utf8')})`);
+  } catch (error) {
+    broken.push(`${name}: ${error.message}`);
+  }
+}
+if (broken.length > 0) {
+  console.error(`probes that do not parse:\n${broken.join('\n')}`);
+  process.exit(1);
+}
+
 for (const name of probes) {
   const header = readFileSync(join(directory, name), 'utf8');
   if (

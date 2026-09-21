@@ -12,8 +12,8 @@
  *
  * Open the document you want to measure first (the probe uses whatever is in
  * the editor), or pass one of the helper flows in `test/probes/real-docs.js`.
- */
-* @needs-large-document — run against the 323 KB fixture note.
+ *
+ * @needs-large-document — run against the 323 KB fixture note.
  * @needs-foreground-window — the editor window must be visible: an occluded webview throttles
  * animation frames, and every step then reports `settled: false` instead of a time.
  */
@@ -51,21 +51,21 @@
     out.back.push(await step(-400));
   }
   return out;
-})()
 
-/** Waits for a couple of animation frames, or gives up if they are throttled. */
-function nextFrames(count) {
-  return new Promise((resolve) => {
-    let seen = 0;
-    const tick = () => {
-      seen += 1;
-      if (seen >= count) {
-        resolve(true);
-        return;
-      }
+  /** Waits for a couple of animation frames, or gives up if they are throttled. */
+  function nextFrames(count) {
+    return new Promise((resolve) => {
+      let seen = 0;
+      const tick = () => {
+        seen += 1;
+        if (seen >= count) {
+          resolve(true);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
       requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    setTimeout(() => resolve(false), 500);
-  });
-}
+      setTimeout(() => resolve(false), 500);
+    });
+  }
+})()
