@@ -1,5 +1,5 @@
 /**
- * Local blinking caret for editable markdown node components.
+ * The caret: the logical range, and the span that renders it.
  *
  * The caret is a single absolutely-positioned span inside the editor's prose
  * root, anchored to the logical position (`activeRange`) of the caret. The
@@ -7,12 +7,34 @@
  * as "Ta"/"Te") stays identical with or without the caret, and the DOM never
  * accumulates fragments.
  *
- * The logical range remains the source of truth for arrow-key navigation and
- * offset mapping; the rendered span follows it and is re-anchored whenever
- * the surrounding layout changes (reveal swaps, lazy rendering, ...).
+ * May import: the rendered geometry (`geometry.ts`), the layout-mutation
+ * watcher (`observer.ts`). Upholds: the logical range is the source of truth
+ * for arrow-key navigation and offset mapping, the rendered span is derived
+ * from it, and the span is re-anchored whenever the layout around it changes —
+ * a reveal swap, a lazy block, a virtualised window swap.
  *
- * Geometry lives in `geometry.ts`; the layout-mutation watcher lives in
- * `observer.ts`; navigation moves the logical range (see `navigation.ts`).
+ * **The state is module-wide, and this module is its only owner.** Every `let`
+ * below lives for the life of the window, because a window holds one editor,
+ * and every caller — `navigation.ts`, `geometry.ts`, `offsets.ts`, the editing
+ * commands — reaches the caret through the functions here rather than holding
+ * it. What each one is:
+ *
+ * - `activeRange` — where the caret is. The truth; everything else follows it.
+ * - `selectionRange` — the non-collapsed selection the browser is showing, kept
+ *   in step by `selectionchange`; null when there is only a caret.
+ * - `caretElement` — the span that draws `activeRange`, re-created on demand.
+ * - `caretFrame`, `caretTimeout` — the pending deferred render (a frame, with a
+ *   timer as the fallback for a window that is not painting).
+ * - `pendingNativeSelection`, `selectionTimeout` — a native selection paint
+ *   deferred the same way, because forcing it synchronously costs a frame on a
+ *   large document.
+ * - `caretRangeListeners`, `listenersAttached` — who is told when the range
+ *   moves, and the one-time wiring of the click handler that hides the caret
+ *   when the author reaches outside the editor.
+ *
+ * Navigation moves the logical range (`navigation.ts`); the geometry is read in
+ * `geometry.ts`; the watcher that re-anchors the span after a layout change is
+ * `observer.ts`.
  */
 
 import { caretRect, proseHost } from './geometry';
