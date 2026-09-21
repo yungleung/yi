@@ -27,14 +27,15 @@ methodology; this file is the index and the conventions.
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
+| `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `syntax-home.mjs` | That each markdown-syntax fact is defined in exactly one module |
 
 ## The probes
 
-Sixty-four of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
-`empty-*`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
+Sixty-five of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+`empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,

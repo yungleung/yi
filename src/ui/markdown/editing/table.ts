@@ -27,6 +27,7 @@ import {
   shiftOffset,
   type TableEdit
 } from '../syntax/table_edits';
+import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 export interface TableTarget {
@@ -120,10 +121,7 @@ export function insertTable(
 
   // A block boundary needs a blank line on each side: keep the newlines that
   // are already there and add only the ones a paragraph break still misses.
-  const before = /(\n+)$/.exec(text.slice(0, caret))?.[1].length ?? 0;
-  const after = /^\n+/.exec(text.slice(caret))?.[0].length ?? 0;
-  const leading = '\n'.repeat(Math.max(0, 2 - before));
-  const trailing = '\n'.repeat(Math.max(0, 2 - after));
+  const { leading, trailing } = blockPadding(text, caret);
   applyEdit(
     context,
     caret,

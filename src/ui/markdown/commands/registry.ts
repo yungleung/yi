@@ -25,6 +25,7 @@ export type CommandId =
   | 'edit:cut'
   | 'edit:selectAll'
   | 'edit:insertFootnote'
+  | 'edit:insertRule'
   | 'find:open'
   | 'find:replace'
   | 'find:close'

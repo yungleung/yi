@@ -24,6 +24,9 @@ function newlinesAfter(text: string, offset: number): number {
   return /^\n+/.exec(text.slice(offset))?.[0].length ?? 0;
 }
 
+/** How many newlines stand between two blocks: one blank line. */
+const PARAGRAPH_BREAK = 2;
+
 /**
  * The edit `Enter` makes inside a block: the newlines to insert, and where the
  * caret lands (after the whole break, at the text that follows it).
@@ -39,8 +42,24 @@ export function paragraphSplit(
 ): { insert: string; caret: number } {
   const before = newlinesBefore(text, offset);
   const after = newlinesAfter(text, offset);
-  const insert = '\n'.repeat(Math.max(0, 2 - before - after));
+  const insert = '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - before - after));
   return { insert, caret: offset + insert.length + after };
+}
+
+/**
+ * The blank lines a whole block needs to stand on its own at `offset`.
+ *
+ * A block that cannot share a line with a paragraph — a table, a `---` line,
+ * which markdown reads as a setext heading when it is glued under one — needs a
+ * blank line on *each* side of it, where `paragraphSplit` counts the one break
+ * a caret sits in. A side that already has its blank line keeps it: what is
+ * there is kept, and only what is missing is added.
+ */
+export function blockPadding(text: string, offset: number): { leading: string; trailing: string } {
+  return {
+    leading: '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - newlinesBefore(text, offset))),
+    trailing: '\n'.repeat(Math.max(0, PARAGRAPH_BREAK - newlinesAfter(text, offset)))
+  };
 }
 
 /**
@@ -63,7 +82,7 @@ export function paragraphStart(
   hasBlockBefore: boolean
 ): { insert: string; caret: number } {
   const before = newlinesBefore(text, offset);
-  const needed = hasBlockBefore ? 3 : 1;
+  const needed = hasBlockBefore ? PARAGRAPH_BREAK + 1 : 1;
   const insert = '\n'.repeat(Math.max(0, needed - before));
   return { insert, caret: Math.max(0, offset + insert.length - 1) };
 }

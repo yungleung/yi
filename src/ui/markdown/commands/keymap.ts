@@ -20,7 +20,8 @@ const CHORDS: Readonly<Record<string, CommandId>> = {
   'x': 'edit:cut',
   'a': 'edit:selectAll',
   'f': 'find:open',
-  'h': 'find:replace'
+  'h': 'find:replace',
+  'shift+r': 'edit:insertRule'
 };
 
 /** The command a keyboard event asks for, or null when it is not a chord. */

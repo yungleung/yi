@@ -27,6 +27,7 @@ import { FindController } from './editing/find_controller';
 import { LIST_COMMANDS, applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
 import { insertFootnote } from './editing/footnotes';
+import { insertThematicBreak } from './editing/thematic_break';
 import {
   TABLE_COMMANDS,
   continueTableDown,
@@ -184,6 +185,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     registerCommand({ id: 'edit:cut', run: () => void cutSelection(this.context) });
     registerCommand({ id: 'edit:selectAll', run: () => selectAll(this.context) });
     registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
+    registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(this.context) });
     registerCommand({ id: 'find:open', run: () => this.find.open(false) });
     registerCommand({ id: 'find:replace', run: () => this.find.open(true) });
     registerCommand({ id: 'find:close', run: () => this.find.close() });

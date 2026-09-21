@@ -27,6 +27,10 @@ mounted.
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 
+Two recipes cover the changes an editor like this gets most: `docs/adding-a-node.md`
+for a markdown construct, and `docs/adding-a-command.md` for a name the author can
+ask for.
+
 ## The rules
 
 1. The document text is the only source of truth; edits are raw-text range
@@ -64,7 +68,7 @@ npm run fixtures                        # refresh the fixture workspace
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
-2. `npm run check` → `12/12 checks passed` (or more, if you added one).
+2. `npm run check` → `13/13 checks passed` (or more, if you added one).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report, and check the app is freshly started —
    a dev app left running for hours gets slow and probes will time out.

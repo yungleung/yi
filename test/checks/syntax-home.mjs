@@ -22,6 +22,7 @@ const facts = [
   'htmlBlockTerminator',
   'listMarker',
   'listItemMarker',
+  'thematicBreakMarker',
   'isDelimiterLine',
   'startsBlock'
 ];
