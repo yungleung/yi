@@ -1,7 +1,16 @@
+/**
+ * Renders a plain text leaf: its characters, with the raw offset they start at
+ * tagged on the element.
+ *
+ * May import: the node contract (`editable_node.ts`) and the AST types. Upholds:
+ * a caret anywhere inside the leaf maps back to the document exactly, because the
+ * tag names the offset the text starts at and the value is the source, character
+ * for character.
+ */
+
 import { EditableNodeComponent } from './editable_node';
 import type { AstText } from '../ast';
 
-/** Renders a plain text leaf as an editable component. */
 export class TextNode extends EditableNodeComponent {
   constructor(node: AstText) {
     super('text', node, document.createElement('span'));

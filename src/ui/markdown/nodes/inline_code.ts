@@ -1,3 +1,12 @@
+/**
+ * Renders an `inlineCode` node, and tags the content's raw start so a caret
+ * inside it maps back to the document exactly.
+ *
+ * May import: the node contract (`editable_node.ts`) and the AST types. Upholds:
+ * a block's rendering is a pure function of its own source — the tag names the
+ * offset the node's own text starts at.
+ */
+
 import { EditableNodeComponent, tagRawRange } from './editable_node';
 import type { AstInlineCode } from '../ast';
 import { preserveSpaces } from './text';

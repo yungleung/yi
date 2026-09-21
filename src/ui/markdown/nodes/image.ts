@@ -1,9 +1,16 @@
+/**
+ * Renders an `image` node; clicking it enters the markdown that made it.
+ *
+ * May import: the revealable contract (`revealable_node.ts`) and the AST types.
+ * Upholds: the source view is built from the node's own markdown, so the image
+ * shows its source while the caret is inside it and renders itself otherwise.
+ */
+
 import type { AstImage } from '../ast';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-image-source';
 
-/** Renders an `image` node; clicking it enters the markdown that made it. */
 export class Image extends RevealableNodeComponent {
   constructor(node: AstImage) {
     const sourceView = sourceViewFor(node, SOURCE_CLASS, altRange);

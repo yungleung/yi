@@ -1,8 +1,16 @@
+/**
+ * Renders a `footnoteDefinition` with its reference anchor on the same line, and
+ * a `footnoteReference` as the superscript link that jumps to it.
+ *
+ * May import: the node contract (`editable_node.ts`), the registry (`createComponent`)
+ * and the AST types. Upholds: a block's rendering is a pure function of its own
+ * source — the anchor is named from the node's own label.
+ */
+
 import { createComponent } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
 
-/** Renders a `footnoteDefinition` node with its reference anchor on the same line. */
 export class FootnoteDefinition extends EditableNodeComponent {
   constructor(node: AstFootnoteDefinition) {
     super(

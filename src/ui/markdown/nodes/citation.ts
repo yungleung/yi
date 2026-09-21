@@ -1,3 +1,15 @@
+/**
+ * Renders a pandoc `citation` node as a highlighted, APA-formatted span (e.g.
+ * "(Smith, 2020)" or "Smith (2020)"). The raw source is shown immediately; the
+ * CSL formatting (expensive on first use) runs only when the citation approaches
+ * the viewport. Clicking enters the markdown source.
+ *
+ * May import: the revealable contract (`revealable_node.ts`), the bibliography's
+ * formatted entries, the viewport observer (`lazy.ts`) and the AST types.
+ * Upholds: the source view is built from the node's own markdown, so the node
+ * shows its source while the caret is inside it and renders itself otherwise.
+ */
+
 import type { AstCitation } from '../ast';
 import { bibliographyManager } from '../../../services/bibliography';
 import { onNearViewport } from '../lazy';
@@ -5,12 +17,6 @@ import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-citation-source';
 
-/**
- * Renders a pandoc `citation` node as a highlighted, APA-formatted span
- * (e.g. "(Smith, 2020)" or "Smith (2020)"). The raw source is shown
- * immediately; the CSL formatting (expensive on first use) runs only when the
- * citation approaches the viewport. Clicking enters the markdown source.
- */
 export class Citation extends RevealableNodeComponent {
   constructor(node: AstCitation) {
     const sourceView = sourceViewFor(node, SOURCE_CLASS, citationRange);

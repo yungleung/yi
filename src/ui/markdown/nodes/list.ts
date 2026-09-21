@@ -1,8 +1,16 @@
+/**
+ * Renders `list` nodes as `<ul>`/`<ol>` and their items as `<li>`, including GFM
+ * task-list checkboxes.
+ *
+ * May import: the node contract (`editable_node.ts`), the registry's helpers and
+ * the AST types. Upholds: a block's rendering is a pure function of its own
+ * source — a task item's checkbox is read from its own marker.
+ */
+
 import { appendChildren, createComponent } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstList, AstListItem } from '../ast';
 
-/** Renders a `list` node as a `<ul>` / `<ol>` element. */
 export class List extends EditableNodeComponent {
   constructor(node: AstList) {
     super('list', node, document.createElement(node.ordered ? 'ol' : 'ul'), 'min-w-0');

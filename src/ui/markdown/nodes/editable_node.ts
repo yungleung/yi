@@ -1,13 +1,16 @@
+/**
+ * The marker contract every rendered node component implements: it is bound to
+ * an mdast node, exposes its element, and places the caret where it was clicked.
+ *
+ * May import: the AST types and the caret's own placement (`caret/caret.ts`).
+ * Upholds: the caret is a document offset — a click inside a node resolves to a
+ * rendered position here, and `caret/offsets.ts` reads that back into the
+ * document.
+ */
+
 import type { AstNode } from '../ast';
 import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
 
-/**
- * A markdown node rendered as an editable component.
- *
- * This is the marker contract every rendered node component implements:
- * - it is bound to an mdast node and exposes its rendered DOM element, and
- * - clicking inside it places a blinking caret right after the clicked character.
- */
 export interface EditableMarkdownNode {
   /** The mdast node type this component renders (also acts as a capability marker). */
   readonly type: string;

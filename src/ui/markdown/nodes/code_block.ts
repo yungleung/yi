@@ -1,8 +1,16 @@
+/**
+ * Renders a fenced `code` node with highlight.js syntax highlighting.
+ *
+ * May import: the node contract (`editable_node.ts`), the highlighter and the
+ * AST types. Upholds: a block's rendering is a pure function of its own source —
+ * the element is built from the node it was given and knows nothing about where
+ * the block sits.
+ */
+
 import hljs from 'highlight.js';
 import { EditableNodeComponent } from './editable_node';
 import type { AstCode } from '../ast';
 
-/** Renders a fenced `code` node with highlight.js syntax highlighting. */
 export class CodeBlock extends EditableNodeComponent {
   constructor(node: AstCode) {
     super('code', node, document.createElement('pre'), 'overflow-x-auto');

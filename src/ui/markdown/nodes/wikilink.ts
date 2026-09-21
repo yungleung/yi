@@ -1,3 +1,15 @@
+/**
+ * Renders a wikilink as its display text: the explicit title for
+ * `[[filename|title]]`, or the target document's title for `[[filename]]` (the
+ * frontmatter `title` key, falling back to its heading 1, and finally to the
+ * target when the document cannot be resolved). Clicking enters the raw markdown.
+ *
+ * May import: the revealable contract (`revealable_node.ts`), the document index
+ * (`services/document_manager`), the viewport observer (`lazy.ts`) and the AST
+ * types. Upholds: the source view is built from the node's own markdown, so the
+ * link shows its source while the caret is inside it and renders itself otherwise.
+ */
+
 import { documentManager } from '../../../services/document_manager';
 import type { AstWikilink } from '../ast';
 import { onNearViewport } from '../lazy';
@@ -5,13 +17,6 @@ import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-wikilink-source';
 
-/**
- * Renders a wikilink as its display text: the explicit title for
- * `[[filename|title]]`, or the target document's title for `[[filename]]`
- * (the frontmatter `title` key, falling back to its heading 1, and finally to
- * the target when the document cannot be resolved). Clicking enters the raw
- * markdown with the caret at the end of its content.
- */
 export class Wikilink extends RevealableNodeComponent {
   constructor(node: AstWikilink) {
     const sourceView = sourceViewFor(node, SOURCE_CLASS, wikilinkRange);

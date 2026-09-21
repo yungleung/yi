@@ -1,3 +1,14 @@
+/**
+ * Renders inline and display math: KaTeX output for the view, and the formula's
+ * own source while the caret is inside it.
+ *
+ * May import: the node contracts (`editable_node.ts`, `revealable_node.ts`),
+ * KaTeX, the LaTeX highlighter (`latex_highlight.ts`), `source_mode.ts`, the
+ * viewport observer (`lazy.ts`) and the AST types. Upholds: a rendering is a pure
+ * function of its own source — the KaTeX cache is keyed by that source, so a
+ * rebuild cannot change what a formula looks like.
+ */
+
 import katex from 'katex';
 import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
 import { EditableNodeComponent } from './editable_node';
