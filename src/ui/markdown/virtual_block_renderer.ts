@@ -1,5 +1,6 @@
 import { createBlockComponent } from './create_block';
 import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
+import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './state';
 
 /**
@@ -89,6 +90,19 @@ export class VirtualBlockRenderer {
     this.hooks = hooks;
   }
 
+  /**
+   * A block's rendering identity: its own source plus the shape it is being
+   * built in. A block that shows a source while the caret is inside it — its
+   * own text, or a node inside it built as its source (see `source_mode.ts`) —
+   * is a different element from its view, with its own height, so the two
+   * never share a remembered element or size.
+   */
+  private renderKey(block: MarkdownBlock): string {
+    const key = blockContentKey(block);
+    const source = shownSourceWithinBlock(block);
+    return source === null ? key : `${key}:source@${source}`;
+  }
+
   /** Builds the prose root and mounts the window around the current scroll. */
   render(): void {
     this.heights.clear();
@@ -134,7 +148,7 @@ export class VirtualBlockRenderer {
     }
     for (const [lineStart, element] of [...this.mounted]) {
       const block = byLine.get(lineStart);
-      if (!block || this.builtFrom.get(element) !== blockContentKey(block)) {
+      if (!block || this.builtFrom.get(element) !== this.renderKey(block)) {
         this.releaseElement(element, this.builtFrom.get(element));
         this.mounted.delete(lineStart);
       }
@@ -237,7 +251,7 @@ export class VirtualBlockRenderer {
         const block = blocks[index];
         keep.add(block.lineStart);
         let element = this.mounted.get(block.lineStart);
-        if (!element || this.builtFrom.get(element) !== blockContentKey(block)) {
+        if (!element || this.builtFrom.get(element) !== this.renderKey(block)) {
           element = this.createBlockElement(block);
           this.mounted.set(block.lineStart, element);
         }
@@ -296,7 +310,7 @@ export class VirtualBlockRenderer {
   }
 
   private createBlockElement(block: MarkdownBlock): HTMLElement {
-    const key = blockContentKey(block);
+    const key = this.renderKey(block);
     const spare = this.spare.get(key);
     if (spare) {
       // The same content, rendered before: reuse it instead of rebuilding.
@@ -370,13 +384,13 @@ export class VirtualBlockRenderer {
   private rememberHeight(block: MarkdownBlock, element: HTMLElement): void {
     const height = element.offsetHeight;
     if (height > 0) {
-      this.heights.set(blockContentKey(block), height);
+      this.heights.set(this.renderKey(block), height);
       this.setIntrinsicSize(element, height);
     }
   }
 
   private heightOf(block: MarkdownBlock): number {
-    return this.heights.get(blockContentKey(block)) ?? estimateHeight(block);
+    return this.heights.get(this.renderKey(block)) ?? estimateHeight(block);
   }
 
   /** The document height according to the remembered/estimated block sizes. */

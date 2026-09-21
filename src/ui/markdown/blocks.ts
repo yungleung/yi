@@ -90,6 +90,18 @@ export function isRawRendered(kind: BlockKind): boolean {
   );
 }
 
+/**
+ * Whether a block of this kind shows its own markdown text while the caret is
+ * inside it, instead of its view.
+ *
+ * A display formula renders KaTeX, which has no characters to aim a caret at,
+ * so the block falls back to being its own text — the shape a fenced code
+ * block has at all times (see `source_mode.ts`).
+ */
+export function hasSourceMode(kind: BlockKind): boolean {
+  return kind === 'displayMath';
+}
+
 /** A block as an mdast-like node (the `type` field makes it a tree node). */
 export interface BlockNode extends MarkdownBlock {
   type: 'block';

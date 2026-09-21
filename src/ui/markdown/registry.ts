@@ -13,11 +13,34 @@ import { EditableNodeComponent, type EditableMarkdownNode } from './nodes/editab
 
 type ComponentFactory = (node: AstNode) => EditableMarkdownNode | null;
 
-const factories = new Map<string, ComponentFactory>();
+/** A node type's component factory, and whether its source can stand in for its rendering. */
+interface Registration {
+  factory: ComponentFactory;
+  showsSource: boolean;
+}
 
-/** Registers the component factory for an mdast node type. */
-export function registerComponent(type: string, factory: ComponentFactory): void {
-  factories.set(type, factory);
+const factories = new Map<string, Registration>();
+
+/**
+ * Registers the component factory for an mdast node type.
+ *
+ * `showsSource` marks the types whose markdown source can be shown in place of
+ * their rendering while the caret is inside them — a link, a citation, a
+ * formula, an image (see `source_mode.ts`). Everything that finds "the source
+ * the caret is in" goes through this flag, so the registration is the single
+ * place that says which nodes have a source to show.
+ */
+export function registerComponent(
+  type: string,
+  factory: ComponentFactory,
+  showsSource = false
+): void {
+  factories.set(type, { factory, showsSource });
+}
+
+/** Whether this node type has a source that can stand in for its rendering. */
+export function showsSource(type: string): boolean {
+  return factories.get(type)?.showsSource ?? false;
 }
 
 /**
@@ -26,9 +49,9 @@ export function registerComponent(type: string, factory: ComponentFactory): void
  * fall back to a generic container.
  */
 export function createComponent(node: AstNode): EditableMarkdownNode | null {
-  const factory = factories.get(node.type);
-  if (factory) {
-    return factory(node);
+  const registration = factories.get(node.type);
+  if (registration) {
+    return registration.factory(node);
   }
   if (node.type === 'imageReference' || node.type === 'definition') {
     return null;

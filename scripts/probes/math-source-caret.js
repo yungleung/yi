@@ -1,29 +1,20 @@
-/**
- * Clicking inside a revealed display formula puts the caret where the pointer
- * is — not at the end of the nearest source line.
- */
+/** Clicking a character in a display formula's source puts the caret on it. */
 (async () => {
   const t = window.__t;
+  const checks = [];
+  const check = (name, actual, expected) =>
+    checks.push({ name, actual, expected, pass: JSON.stringify(actual) === JSON.stringify(expected) });
   const doc = 'text\n\n$$\n\\frac{a}{b} + c\n$$\n\ntail\n';
   await t.load(doc);
-  const formula = t.prose().querySelector('[data-display="true"]');
-  const box = formula.getBoundingClientRect();
-  formula.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: Math.round(box.left + 4),
-      clientY: Math.round(box.top + 4)
-    })
-  );
-  await t.sleep(250);
-  const span = t.prose().querySelector('.markdown-math-source');
-  if (!span) {
-    return { error: 'the source did not reveal' };
+  await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
+  const source = t.prose().querySelector('.markdown-source-text');
+  check('the block shows its own text', source?.textContent ?? null, '$$\n\\frac{a}{b} + c\n$$');
+  if (!source) {
+    return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
   }
-  // The source is highlighted, so the character lives in one of many text
-  // nodes: find the node that holds it.
-  const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+
+  // Click the near edge of the `c`: the caret belongs between `+ ` and `c`.
+  const walker = document.createTreeWalker(source, NodeFilter.SHOW_TEXT);
   let text = null;
   let at = -1;
   let node;
@@ -31,36 +22,31 @@
     const found = node.data.indexOf('+ c');
     if (found >= 0) {
       text = node;
-      at = found;
+      at = found + 2;
       break;
     }
-  }
-  if (!text) {
-    return { error: 'the clicked text is not in the source' };
   }
   const target = document.createRange();
   target.setStart(text, at);
   target.setEnd(text, at + 1);
-  const targetRect = target.getBoundingClientRect();
-  const clickX = Math.round(targetRect.left + targetRect.width / 2);
-  const clickY = Math.round(targetRect.top + targetRect.height / 2);
-  t.report({ sourceText: span.textContent, targetChar: text.data.slice(at, at + 1), clickX, clickY });
-  span.dispatchEvent(
+  const rect = target.getBoundingClientRect();
+  source.dispatchEvent(
     new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
-      clientX: clickX,
-      clientY: clickY
+      clientX: Math.round(rect.left + rect.width * 0.25),
+      clientY: Math.round(rect.top + rect.height / 2)
     })
   );
   await t.sleep(250);
   const caret = t.caretRect();
-  return {
-    sourceText: span.textContent,
-    targetChar: text.data.slice(at, at + 1),
-    targetX: Math.round(targetRect.left),
-    clickX,
-    caret,
-    caretAtTheClickedCharacter: caret ? Math.abs(caret.x - clickX) <= 6 : null
-  };
+  check(
+    'the caret lands on the character clicked',
+    caret ? Math.abs(caret.x - rect.left) <= 6 : null,
+    true
+  );
+  t.key('Z');
+  await t.sleep(300);
+  check('and typing goes there', await t.raw(), 'text\n\n$$\n\\frac{a}{b} + Zc\n$$\n\ntail\n');
+  return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

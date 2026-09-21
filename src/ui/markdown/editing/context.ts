@@ -11,13 +11,10 @@
  */
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
+import { setShownRange } from '../source_mode';
 import { documentOffsetAt, domPositionAtOffset } from '../position';
-import {
-  resumeEditingSourceIn,
-  setEditingSourceCaret,
-  setRestoringCaretOffset,
-  shiftEditingSource
-} from '../nodes/revealable_node';
+import { showsSource } from '../registry';
+import type { RootContent } from 'mdast';
 import type { MarkdownEditorState } from '../state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
@@ -94,6 +91,17 @@ function boundaryOffset(
   const element = container as Element;
   if (!root || element === root || !root.contains(element)) {
     return rootBoundaryOffset(context, root, offset, side);
+  }
+  // A boundary anchored to an element *inside* a block is a text position like
+  // any other: the caret beside a widget (a link, an image, a formula) is
+  // anchored to the paragraph that holds it, and maps through the block's own
+  // model like a caret in its text. Only a boundary on the block element
+  // itself — a drag that anchored to it, Select All — means the block's edge.
+  if (!element.matches('.markdown-block')) {
+    const location = documentOffsetAt(context.state, container, offset);
+    if (location) {
+      return location.offset;
+    }
   }
   return blockEdgeOffset(context, element, side);
 }
@@ -178,6 +186,78 @@ export function caretOffset(context: EditorContext): number | null {
   return start ? start.offset : null;
 }
 
+/**
+ * The block holding `offset` shows its own text, if it is a block whose
+ * rendering cannot hold a caret; `null` shows no block's source at all (see
+ * `source_mode.ts`). The blocks whose shape changed are re-rendered, which is
+ * what puts the text — or the view — in the document.
+ */
+export function showSourceAt(context: EditorContext, offset: number | null): void {
+  const range = offset === null ? null : sourceRangeAt(context.state, offset);
+  if (!setShownRange(range)) {
+    return;
+  }
+  // The blocks that change shape are rebuilt, and a caret's DOM range is not
+  // dropped by that: the browser relocates it to the element that replaced its
+  // text, where it looks connected while sitting somewhere the author never
+  // put it. So the caret is placed again by offset — the truth, because the
+  // editor computed it — whenever the shape changed under it.
+  context.renderer.renderChanged();
+  if (offset !== null) {
+    placeCaret(context, offset);
+  }
+}
+
+/**
+ * The source a caret at this document offset is inside, as its own range: the
+ * node the caret is in, when that node has a source to show. A caret in plain
+ * text is inside no such node.
+ */
+function sourceRangeAt(
+  state: MarkdownEditorState,
+  offset: number
+): { from: number; to: number } | null {
+  const block = state.getBlockAtOffset(offset);
+  if (!block) {
+    return null;
+  }
+  const node = sourceNodeAt(state.getBlockContent(block), offset - block.charStart);
+  const position = (
+    node as { position?: { start?: { offset?: number }; end?: { offset?: number } } } | null
+  )?.position;
+  if (position?.start?.offset === undefined || position.end?.offset === undefined) {
+    return null;
+  }
+  return {
+    from: block.charStart + position.start.offset,
+    to: block.charStart + position.end.offset
+  };
+}
+
+/**
+ * The node at this block-relative offset whose source can stand in for its
+ * rendering, or null. The tree is walked in document order, so the outermost
+ * such node wins: a caret inside a link inside a paragraph belongs to the link.
+ */
+function sourceNodeAt(nodes: RootContent[], offset: number): RootContent | null {
+  for (const node of nodes) {
+    const position = (node as { position?: { start?: { offset?: number } } }).position;
+    if (position?.start?.offset === undefined || offset < position.start.offset) {
+      continue;
+    }
+    const end = (node as { position?: { end?: { offset?: number } } }).position?.end?.offset;
+    if (end !== undefined && offset > end) {
+      continue;
+    }
+    if (showsSource(node.type)) {
+      return node;
+    }
+    const children = (node as { children?: RootContent[] }).children;
+    return Array.isArray(children) ? sourceNodeAt(children, offset) : null;
+  }
+  return null;
+}
+
 /** Where the caret goes after an edit: an offset, or one the new text decides. */
 export type CaretTarget = number | ((state: MarkdownEditorState) => number);
 
@@ -195,24 +275,14 @@ export function applyEdit(
 ): void {
   const anchor = context.contentView.scrollTop;
   context.state.replaceRange(from, to, replacement);
-  // A source being edited keeps its range across the edit, and opens again
-  // when the block is rebuilt — before the caret is restored, so the caret is
-  // placed inside the source text rather than into a fresh rendering.
-  shiftEditingSource(from, to, replacement);
-  context.renderer.renderChanged();
-  // Re-open the source in the block that was rebuilt, found through the block
-  // itself: the component's element is not necessarily in the document yet.
-  const editedBlock = context.state.getBlockAtOffset(from);
-  const root = proseRoot(context);
-  const blockElement =
-    editedBlock && root
-      ? root.querySelector<HTMLElement>(`.markdown-block[data-line-start="${editedBlock.lineStart}"]`)
-      : null;
-  if (editedBlock && blockElement) {
-    resumeEditingSourceIn(blockElement, editedBlock.charStart);
-  }
   const target = typeof caret === 'function' ? caret(context.state) : caret;
-  setEditingSourceCaret(target);
+  // The source the caret lands in is the source that is shown (see
+  // `source_mode.ts`). Deciding that before the rebuild is what has the blocks
+  // built in the shape the caret is about to need — and it is decided from the
+  // document, so an edit inside a link or a formula keeps that source open
+  // without an editing range to shift.
+  showSourceAt(context, target);
+  context.renderer.renderChanged();
   restoreCaret(context, target);
   keepScroll(context, anchor);
 }
@@ -259,6 +329,20 @@ export function keepScroll(context: EditorContext, anchor: number): void {
  * a separator has nothing to draw a caret on.
  */
 export function restoreCaret(context: EditorContext, offset: number): boolean {
+  const clamped = context.state.nearestTextOffset(offset);
+  // The caret is going here, so the source it lands in is the one that is
+  // shown — decided before the placement, so the caret lands on that text
+  // exactly instead of being mapped into a rendering that cannot hold it.
+  showSourceAt(context, clamped);
+  return placeCaret(context, clamped);
+}
+
+/**
+ * Places the caret at a document offset inside the rendered window, without
+ * deciding what source that offset belongs to. Returns false when the offset
+ * lives in a block that is not mounted.
+ */
+export function placeCaret(context: EditorContext, offset: number): boolean {
   const root = proseRoot(context);
   if (!root) {
     setSelectionRange(null);
@@ -266,10 +350,6 @@ export function restoreCaret(context: EditorContext, offset: number): boolean {
     return false;
   }
   const clamped = context.state.nearestTextOffset(offset);
-  // Tell the nodes what offset is being restored, so one that opens its source
-  // to hold the caret places it there exactly instead of reading the caret back
-  // out of a rendering that has only just been rebuilt.
-  setRestoringCaretOffset(clamped);
   const position = domPositionAtOffset(context.state, root, clamped);
   if (!position) {
     setSelectionRange(null);

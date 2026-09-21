@@ -1,16 +1,21 @@
 import { appendChildren } from '../registry';
 import type { AstLink } from '../ast';
-import { RevealableNodeComponent } from './revealable_node';
+import { enterSourceOf } from '../source_mode';
+import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
+
+const SOURCE_CLASS = 'markdown-link-source';
 
 /**
- * Renders a `link` node. Clicking a regular link reveals its markdown source;
+ * Renders a `link` node. Clicking a regular link enters its markdown source;
  * autolinks keep normal caret behavior.
  */
 export class Link extends RevealableNodeComponent {
-  protected readonly sourceClassName = 'markdown-link-source';
-
   constructor(node: AstLink) {
-    super('link', node, document.createElement('a'), 'markdown-link');
+    const sourceView = sourceViewFor(node, SOURCE_CLASS, titleRange);
+    super('link', node, sourceView ?? document.createElement('a'), sourceView ? '' : 'markdown-link');
+    if (sourceView) {
+      return;
+    }
     const anchor = this.element as HTMLAnchorElement;
     anchor.href = node.url || '#';
     anchor.target = '_blank';
@@ -19,17 +24,17 @@ export class Link extends RevealableNodeComponent {
     appendChildren(this.element, node.children);
 
     // Intercept clicks in the capture phase, before child text components
-    // (which stop propagation), so the whole link reveals its source.
+    // (which stop propagation), so the whole link enters its source.
     // Autolinks fall through to the normal caret behavior.
     this.element.addEventListener(
       'click',
       (event) => {
         event.preventDefault();
-        if (isAutolink(node) || this.sourceView) {
+        if (!this.shouldReveal()) {
           return;
         }
         event.stopPropagation();
-        this.revealSource(this.sourceClassName, this.sourceOffsetForClick(event.clientX, event.clientY));
+        enterSourceOf(this.element, this.entryOffset());
         const root = this.element.closest('.prose') as HTMLElement | null;
         root?.focus({ preventScroll: true });
       },
@@ -44,8 +49,13 @@ export class Link extends RevealableNodeComponent {
 
   /** The title between the `[` and `]` markers. */
   protected sourceContentRange(source: string): { start: number; end: number } {
-    return { start: 1, end: Math.max(1, source.lastIndexOf(']')) };
+    return titleRange(source);
   }
+}
+
+/** The title between the `[` and `]` markers. */
+function titleRange(source: string): { start: number; end: number } {
+  return { start: 1, end: Math.max(1, source.lastIndexOf(']')) };
 }
 
 /**

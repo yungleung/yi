@@ -2,15 +2,23 @@ import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
 import { FORMATTING_COMMAND, type FormattingStyle } from '../toolbar/formatting_toolbar';
-import { ensureCaretRendered, getCaretRange, setSelectionRange } from './caret/caret';
+import {
+  ensureCaretRendered,
+  getCaretRange,
+  onCaretRangeChanged,
+  setSelectionRange
+} from './caret/caret';
+import { setSourceEntryHandler, sourceEntryOffset } from './source_mode';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
   keepScroll,
   proseRoot,
   restoreCaret,
+  showSourceAt,
   type EditorContext
 } from './editing/context';
+import { documentOffsetAt } from './position';
 import { copySelection, cutSelection, pasteText, selectAll } from './editing/clipboard';
 import { deleteText, insertNewline, insertText, toggleTask } from './editing/text_commands';
 import { applyFormatting } from './editing/formatting';
@@ -36,7 +44,6 @@ import { LIST_COMMAND } from '../toolbar/list_toolbar';
 import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import { resumeEditingSourceIn, setCaretRawOffsetResolver } from './nodes/revealable_node';
 
 const DEFAULT_MARKDOWN = [
   '# GitHub-flavored markdown demo',
@@ -170,7 +177,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     };
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
-    setCaretRawOffsetResolver(() => caretOffset(this.context));
+    // Source mode follows the caret: the block the caret is in shows its own
+    // text (see `source_mode.ts`). A click on a block's rendering asks the
+    // editor to enter it, because only the editor knows the block's text.
+    onCaretRangeChanged(() => this.followCaret());
+    setSourceEntryHandler((blockElement, offset) => this.enterSource(blockElement, offset));
 
     // The window is rebuilt as the user scrolls; re-anchor the caret only
     // when the block it lived in was dropped, so scrolling never moves it.
@@ -226,6 +237,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Loads a document and renders its first window. */
   setContent(content: string): void {
+    // A new document is a new set of blocks and nodes: whatever was showing
+    // its own source is gone, and a range that named it must not fall on
+    // whatever of the new document happens to start and end at the same
+    // offsets.
+    showSourceAt(this.context, null);
     this.state.loadText(content);
     this.renderer.render();
   }
@@ -374,6 +390,40 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   /**
+   * Keeps the block that shows its own text in step with the caret: the block
+   * holding the caret shows it, and none does when the caret is gone (see
+   * `source_mode.ts`). A caret the editor cannot map yet — the block holding
+   * it is being rebuilt — says nothing about where the author is, so it leaves
+   * the mode as it stands; the next caret position decides.
+   */
+  private followCaret(): void {
+    const range = getCaretRange();
+    if (!range) {
+      showSourceAt(this.context, null);
+      return;
+    }
+    const location = documentOffsetAt(this.state, range.startContainer, range.startOffset);
+    if (location) {
+      showSourceAt(this.context, location.offset);
+    }
+  }
+
+  /**
+   * A click on a block's rendering enters the block's own text, with the caret
+   * at the end of its last content line. The rendering cannot name the
+   * character that was clicked, so this is the entry point that is always
+   * true; the next click lands on the text, where the mapping is exact.
+   */
+  private enterSource(blockElement: HTMLElement, offset: number | null): void {
+    const block = this.state.getBlockAtLine(Number(blockElement.dataset.lineStart));
+    if (!block) {
+      return;
+    }
+    const within = offset ?? sourceEntryOffset(block.text);
+    restoreCaret(this.context, block.charStart + within);
+  }
+
+  /**
    * Keeps the caret alive across virtualized window changes: if its block
    * survived the swap only the caret span has to be re-created, and if the
    * block was dropped the offset is restored once it is mounted again.
@@ -400,19 +450,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (!applied) {
       return;
     }
+    // Undo and redo move the caret to a document offset like an edit does, so
+    // the block that shows its own text is the block that offset lands in —
+    // decided before the rebuild, so the block is built in the right shape.
+    showSourceAt(this.context, Math.min(offset, this.state.getText().length));
     this.renderer.renderChanged();
-    // Undo and redo rebuild the block just like an edit does, so a source being
-    // edited has to be re-opened the same way — and its recorded range, which
-    // the edit path shifts, is recomputed here rather than left stale.
-    const block = this.state.getBlockAtOffset(offset) ?? this.state.getBlockAtOffset(this.state.nearestTextOffset(offset));
-    const root = proseRoot(this.context);
-    const blockElement =
-      block && root
-        ? root.querySelector<HTMLElement>(`.markdown-block[data-line-start="${block.lineStart}"]`)
-        : null;
-    if (block && blockElement) {
-      resumeEditingSourceIn(blockElement, block.charStart);
-    }
     restoreCaret(this.context, Math.min(offset, this.state.getText().length));
     // Undo and redo restore a caret the same way an edit does, and the browser
     // scrolls a focused element or a synchronised selection into view just the

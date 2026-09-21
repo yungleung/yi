@@ -7,69 +7,43 @@
  */
 (async () => {
   const t = window.__t;
-  const out = {};
-  await t.load('text\n\n```ts\nlet a = 1;\n```\n\n$$\n\\frac{a}{b}\n$$\n');
+  const checks = [];
+  const check = (name, actual, expected) =>
+    checks.push({ name, actual, expected, pass: JSON.stringify(actual) === JSON.stringify(expected) });
+  await t.load('text\n\n```ts\nlet a = 1;\nlet b = 2;\n```\n\n$$\n\\frac{a}{b}\n$$\n');
 
-  // A fenced code block is always shown as its source.
-  const pre = t.prose().querySelector('pre');
-  await t.click(pre, 0.99);
-  out.codeCaretBefore = t.caretRect();
+  // A fenced code block is always shown as its source: click its last line and
+  // type a space.
+  const code = t.prose().querySelector('pre');
+  await t.click(code, 0.99, 0.9);
   t.key(' ');
   await t.sleep(300);
-  out.codeText = t.prose().querySelector('pre code')?.textContent ?? null;
-  out.codeCaretAfter = t.caretRect();
-  t.report({ ...out });
-
-  // A display formula shows its source once it is clicked.
-  const formula = t.prose().querySelector('[data-display="true"]');
-  const formulaBox = formula.getBoundingClientRect();
-  formula.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: Math.round(formulaBox.left + 4),
-      clientY: Math.round(formulaBox.top + 4)
-    })
+  check(
+    'the space lands at the end of the code line',
+    await t.raw(),
+    'text\n\n```ts\nlet a = 1;\nlet b = 2; \n```\n\n$$\n\\frac{a}{b}\n$$\n'
   );
+
+  // The formula shows its own text once it is clicked, with the caret at the
+  // end of its last content line.
+  await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
+  check(
+    'the formula shows its own text',
+    t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
+    '$$\n\\frac{a}{b}\n$$'
+  );
+  t.key(' ');
   await t.sleep(300);
-  const span = t.prose().querySelector('.markdown-math-source');
-  out.revealed = span !== null;
-  if (span) {
-    // Click at the end of the formula's own line.
-    const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
-    let text = null;
-    let at = -1;
-    let node;
-    while ((node = walker.nextNode())) {
-      const found = node.data.indexOf('\\frac{a}{b}');
-      if (found >= 0) {
-        text = node;
-        at = found + '\\frac{a}{b}'.length;
-        break;
-      }
-    }
-    if (text) {
-      const target = document.createRange();
-      target.setStart(text, at);
-      target.collapse(true);
-      const rect = target.getBoundingClientRect();
-      span.dispatchEvent(
-        new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          clientX: Math.round(rect.left),
-          clientY: Math.round(rect.top + rect.height / 2)
-        })
-      );
-      await t.sleep(200);
-      out.mathCaretBefore = t.caretRect();
-      t.key(' ');
-      await t.sleep(300);
-      out.mathSource = t.prose().querySelector('.markdown-math-source')?.textContent ?? null;
-      out.mathCaretAfter = t.caretRect();
-    }
-  }
-  t.report({ ...out });
-  out.raw = await t.raw();
-  return out;
+  check(
+    'the space lands at the end of the formula line',
+    await t.raw(),
+    'text\n\n```ts\nlet a = 1;\nlet b = 2; \n```\n\n$$\n\\frac{a}{b} \n$$\n'
+  );
+  checks.push({
+    name: 'and the space shows in the source',
+    actual: t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
+    expected: '$$\n\\frac{a}{b} \n$$',
+    pass: (t.prose().querySelector('.markdown-source-text')?.textContent ?? null) === '$$\n\\frac{a}{b} \n$$'
+  });
+  return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

@@ -137,7 +137,13 @@ export function documentOffsetAt(
         const placeholder =
           textSpan.classList.contains('markdown-list-placeholder') ||
           textSpan.classList.contains('markdown-empty-line-placeholder');
-        const offset = block.charStart + from + (placeholder ? 0 : positionOffset);
+        // The tag names where the span's *text* starts, which need not be the
+        // caret's own parent: a source shown highlighted is many nodes, and
+        // every one of them counts from the span's beginning.
+        const within = placeholder
+          ? 0
+          : textOffsetInElement(textSpan, containerNode, positionOffset) ?? positionOffset;
+        const offset = block.charStart + from + within;
         return { block, offset, blockOffset: offset - block.charStart };
       }
     }
@@ -443,15 +449,15 @@ export function domPositionAtOffset(
   // rendered offset would be ambiguous (e.g. between list items).
   for (const span of blockElement.querySelectorAll<HTMLElement>('[data-text-from]')) {
     const from = block.charStart + Number(span.dataset.textFrom);
-    const text = span.firstChild;
-    if (
-      Number.isFinite(from) &&
-      text !== null &&
-      text.nodeType === Node.TEXT_NODE &&
-      clamped >= from &&
-      clamped <= from + (text as Text).data.length
-    ) {
-      return { node: text, offset: clamped - from };
+    if (!Number.isFinite(from) || clamped < from) {
+      continue;
+    }
+    // Over the span's whole text: a tagged leaf holds one text node, but a
+    // block's source shown highlighted is spread over as many as the
+    // highlighter needed.
+    const position = textNodeAtRenderedOffset(span, clamped - from);
+    if (position) {
+      return position;
     }
   }
   // Raw offsets that fall on a formatted unit's markers (outside its text

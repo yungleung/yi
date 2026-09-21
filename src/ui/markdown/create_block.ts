@@ -6,7 +6,9 @@
 import type { BlockNode } from './blocks';
 import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
+import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
+import { SourceText } from './nodes/source_text';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -33,12 +35,29 @@ class BlockView implements BlockComponent {
 
   constructor(node: BlockNode, children: RootContent[]) {
     this.node = node;
-    this.element =
+    // The block is built with itself named as the one being built, so a node
+    // inside it can tell whether its own source is the one being shown (see
+    // `source_mode.ts`).
+    this.element = withRenderFrame(node, () =>
       node.kind === 'frontmatter'
         ? this.renderFrontmatter(node)
         : node.kind === 'blank'
           ? this.renderBlank(node)
-          : this.renderParsed(node, children);
+          : isSourceBlock(node)
+            ? this.renderSourceText(node)
+            : this.renderParsed(node, children)
+    );
+  }
+
+  /**
+   * The block's own text, shown while the caret is inside it: the block is
+   * built in whichever shape `source_mode.ts` names, and this is the one a
+   * rendered view cannot hold a caret in.
+   */
+  private renderSourceText(node: BlockNode): HTMLElement {
+    const element = this.container(node);
+    element.appendChild(new SourceText(node).element);
+    return element;
   }
 
   /** A blank line the author added: an empty paragraph holding the caret. */

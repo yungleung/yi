@@ -1,28 +1,26 @@
-import { RevealableNodeComponent } from './revealable_node';
 import type { AstBreak } from '../ast';
+import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
+
+const SOURCE_CLASS = 'markdown-break-source';
 
 /**
- * Renders a hard `break` node as a `<br>`. It is revealable like the other
- * inline nodes: the raw source (`\`) shows when the caret sits at its
- * boundary or inside it.
+ * Renders a hard `break` node as a `<br>`, which holds no text at all: while
+ * the caret is at it, the node is built as its raw source (`\` or the line's
+ * trailing spaces) so the caret has somewhere to be.
  */
 export class Break extends RevealableNodeComponent {
-  protected readonly sourceClassName = 'markdown-break-source';
-
   constructor(node: AstBreak) {
-    super('break', node, document.createElement('br'));
+    const sourceView = sourceViewFor(node, SOURCE_CLASS, wholeSource);
+    super('break', node, sourceView ?? document.createElement('br'), sourceView ? '' : '');
   }
 
   /** The whole marker is the content; there are no delimiters to skip. */
   protected sourceContentRange(source: string): { start: number; end: number } {
-    return { start: 0, end: source.length };
+    return wholeSource(source);
   }
+}
 
-  /** A `<br>` has no text and a degenerate rect; place the caret at the source start. */
-  protected override sourceOffsetForClick(
-    _clientX: number,
-    _clientY: number
-  ): number | undefined {
-    return 0;
-  }
+/** A node whose whole source is its content. */
+function wholeSource(source: string): { start: number; end: number } {
+  return { start: 0, end: source.length };
 }

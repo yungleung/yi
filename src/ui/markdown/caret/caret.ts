@@ -98,7 +98,6 @@ function renderCaretDeferred(): void {
       clearTimeout(caretTimeout);
       caretTimeout = null;
     }
-    renderCaretNow();
     // This frame's measurement can be stale — an edit can insert a block that
     // layout has not placed yet, a `content-visibility: auto` block can still
     // be skipped — so the caret is neither trusted nor scrolled from it. One
