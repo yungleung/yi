@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Every shell command starts with `cd /Users/urshanabi/Workspace/Yi`** — this session's working directory is a placeholder for the project.
+- **Every shell command starts with `cd .`** — this session's working directory is a placeholder for the project.
 - **Testing goes through the Tauri MCP bridge** (AGENTS.md). Start the app with `npm run tauri dev` (bridge on `127.0.0.1:9223`, window `main`); if the page stops answering, `node scripts/tauri-probe.mjs --reload`.
 - A probe is **one expression**; keep partial results with `window.__t.report({...})` and read `window.__probeResult` / `window.__probeSteps` after a timeout.
 - `npx tsc --noEmit` must pass before every commit.
@@ -138,7 +138,7 @@ console.log('table source: all checks passed');
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-source.mjs`
+Run: `cd . && node scripts/check-table-source.mjs`
 Expected: FAIL — the bundle of `src/ui/markdown/table_source.ts` cannot be resolved (the module does not exist yet).
 
 - [ ] **Step 3: Write the module**
@@ -395,7 +395,7 @@ export function alignmentMarker(align: ColumnAlign): string {
 
 - [ ] **Step 4: Run the check again**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-source.mjs`
+Run: `cd . && node scripts/check-table-source.mjs`
 Expected: `table source: all checks passed`
 
 Iterate on the module until every assertion passes. If a rule turns out wrong (for instance the
@@ -405,7 +405,7 @@ in the commit message.
 - [ ] **Step 5: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/markdown/table_source.ts scripts/check-table-source.mjs
 git commit -m "feat(editor): add the table source model"
@@ -546,7 +546,7 @@ console.log('table edits: all checks passed');
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-edits.mjs`
+Run: `cd . && node scripts/check-table-edits.mjs`
 Expected: FAIL — `src/ui/markdown/table_edits.ts` cannot be bundled.
 
 - [ ] **Step 3: Write the module**
@@ -832,13 +832,13 @@ export function deleteTable(source: TableSource, text: string): TableEdit {
 
 - [ ] **Step 4: Run the check again**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-edits.mjs`
+Run: `cd . && node scripts/check-table-edits.mjs`
 Expected: `table edits: all checks passed`
 
 - [ ] **Step 5: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/markdown/table_edits.ts scripts/check-table-edits.mjs
 git commit -m "feat(editor): add the pure table operations"
@@ -1194,7 +1194,7 @@ Create `scripts/probes/table-insert.js` (one expression):
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-insert.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-insert.js`
 Expected: `emptyLine` replaces the empty line with
 `|  |  |\n| --- | --- |\n|  |  |\n|  |  |`; `midParagraph` splits the first paragraph with a
 blank line on both sides of the table; the caret rect sits inside the table's first cell (not at
@@ -1224,7 +1224,7 @@ Create `scripts/probes/table-command.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-command.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-command.js`
 Expected: `insertedRow` gains `|  |  |` after `| 1 | 2 |`; `aligned` writes `---:` into the
 delimiter row's first column. (Task 4 adds the cell tags, so until then the click may miss the
 cell — the command still runs, because its target is explicit.)
@@ -1232,7 +1232,7 @@ cell — the command still runs, because its target is explicit.)
 - [ ] **Step 5: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/markdown/editing/table.ts src/ui/markdown/markdown_editor.ts scripts/probes/table-insert.js scripts/probes/table-command.js
 git commit -m "feat(editor): add table creation and table commands"
@@ -1348,7 +1348,7 @@ Create `scripts/probes/table-cells.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-cells.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-cells.js`
 Expected: the caret rect sits inside the empty cell's rect (not at the viewport's top-left), and
 the raw text becomes `| 1 | x |` — the typed character lands in the clicked cell.
 
@@ -1369,14 +1369,14 @@ Create `scripts/probes/table-align.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-align.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-align.js`
 Expected: `headerLeft: "left"`, `headerRight: "right"`, `bodyRight: "right"` (today all three are
 `"start"` or `"left"`, which is the bug this step fixes).
 
 - [ ] **Step 5: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/markdown/nodes/table.ts src/ui/markdown/position.ts src/styles.css scripts/probes/table-cells.js scripts/probes/table-align.js
 git commit -m "feat(editor): render table cells as editable lines"
@@ -1479,7 +1479,7 @@ Create `scripts/probes/table-keys.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-keys.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-keys.js`
 Expected:
 - `emptyCellDelete.raw` is unchanged and the caret rect equals `caretBefore` (the reported bug);
 - `deletingInsideACell` shows `|  | B |` (one character gone);
@@ -1491,7 +1491,7 @@ Expected:
 - [ ] **Step 4: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/markdown/editing/text_commands.ts src/ui/markdown/markdown_editor.ts scripts/probes/table-keys.js
 git commit -m "feat(editor): keep table cells intact while typing and deleting"
@@ -1680,14 +1680,14 @@ Create `scripts/probes/table-picker.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-picker.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-picker.js`
 Expected: `label` is `"4 × 3"`, `highlighted` is `12`, `raw` contains four table lines (a header, a
 delimiter and two body rows of four cells), and `panelOpen` is false.
 
 - [ ] **Step 4: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/table/table_picker.ts src/ui/table/table_toolbar.ts src/main.ts scripts/probes/table-picker.js
 git commit -m "feat(ui): add the create-table picker to the titlebar"
@@ -1745,7 +1745,7 @@ check('every item has a label', flat(headerCell).every((node) => node.label.leng
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-menu.mjs`
+Run: `cd . && node scripts/check-table-menu.mjs`
 Expected: FAIL — `src/ui/table/table_menu_model.ts` cannot be bundled.
 
 - [ ] **Step 3: Write the model**
@@ -1828,7 +1828,7 @@ export function tableMenuModel(source: TableSource, row: number, column: number)
 
 - [ ] **Step 4: Run the check again**
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/check-table-menu.mjs`
+Run: `cd . && node scripts/check-table-menu.mjs`
 Expected: `table menu: all checks passed`
 
 - [ ] **Step 5: Pop the menu up**
@@ -1958,7 +1958,7 @@ Create `scripts/probes/table-menu.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-menu.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-menu.js`
 Expected: `prevented: true`, `outsidePrevented: false`.
 
 Then take a screenshot with the MCP bridge's screenshot tool while the menu is open, and check
@@ -1968,7 +1968,7 @@ right-clicked. This is the one part of the feature a probe cannot assert.
 - [ ] **Step 8: Type-check and commit**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 git add src/ui/table/table_menu_model.ts src/ui/table/table_menu.ts src/ui/markdown/markdown_editor.ts scripts/check-table-menu.mjs scripts/probes/table-menu.js
 git commit -m "feat(ui): add the native table context menu"
@@ -2029,7 +2029,7 @@ Create `scripts/probes/table-e2e.js`:
 })()
 ```
 
-Run: `cd /Users/urshanabi/Workspace/Yi && node scripts/tauri-probe.mjs scripts/probes/table-e2e.js`
+Run: `cd . && node scripts/tauri-probe.mjs scripts/probes/table-e2e.js`
 Expected: `created` is the 3 × 2 table split into its own block; each command changes exactly the
 rows/columns it names; `afterUndo` equals the document before the commands and `afterRedo` equals
 the document after them.
@@ -2037,7 +2037,7 @@ the document after them.
 - [ ] **Step 2: Run every check and the regression probes**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 npx tsc --noEmit
 node scripts/check-table-source.mjs
 node scripts/check-table-edits.mjs
@@ -2057,7 +2057,7 @@ reported before this feature (compare with `git stash` output if a value looks d
 - [ ] **Step 3: Confirm the boundaries held**
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 rg -n "@tauri-apps/api/menu" src/
 rg -n "data-table-cell|markdown-table-placeholder" src/ | wc -l
 ```
@@ -2073,7 +2073,7 @@ need), keep the module comments accurate, and if any behaviour ended up differen
 update the spec first and commit it separately:
 
 ```bash
-cd /Users/urshanabi/Workspace/Yi
+cd .
 git add -A
 git commit -m "test(editor): verify table creation and editing end to end"
 ```
