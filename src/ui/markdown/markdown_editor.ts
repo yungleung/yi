@@ -18,7 +18,7 @@ import {
   showSourceAt,
   type EditorContext
 } from './editing/context';
-import { documentOffsetAt } from './position';
+import { documentOffsetAt } from './caret/offsets';
 import { copySelection, cutSelection, pasteText, selectAll } from './editing/clipboard';
 import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { applyFormatting } from './editing/formatting';

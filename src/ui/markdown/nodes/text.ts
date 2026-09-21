@@ -7,7 +7,7 @@ export class TextNode extends EditableNodeComponent {
     super('text', node, document.createElement('span'));
     this.element.textContent = preserveSpaces(String(node.value ?? ''));
     // Tag the leaf's raw start so DOM positions can be mapped back to the
-    // document exactly (see `position.ts`). Positions come from the
+    // document exactly (see `caret/offsets.ts`). Positions come from the
     // whole-document parse today, so they are absolute; once blocks are
     // parsed independently this becomes block-relative and the mapping must
     // add the block's `charStart` instead.

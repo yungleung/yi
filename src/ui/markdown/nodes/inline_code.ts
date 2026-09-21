@@ -10,7 +10,7 @@ export class InlineCode extends EditableNodeComponent {
     tagRawRange(this.element, node);
     // Tag the content's raw start (after the opening backtick) so DOM
     // positions inside the code map back to the document exactly (see
-    // `position.ts`). Positions are absolute in the current whole-document
+    // `caret/offsets.ts`). Positions are absolute in the current whole-document
     // parse; single-backtick code is the common case.
     const start = (
       node as { position?: { start: { offset?: number } } }

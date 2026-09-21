@@ -6,7 +6,7 @@
  * virtual window to it and selects the text.
  */
 
-import { domPositionAtOffset } from '../position';
+import { domPositionAtOffset } from '../caret/dom_position';
 import { proseRoot, restoreCaret, type EditorContext } from './context';
 import type { FindBar } from './find_bar';
 

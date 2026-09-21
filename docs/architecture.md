@@ -29,7 +29,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | Syntax (pure) | `blocks.ts`, `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `state.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
-| Caret and offsets | `caret/*`, `position.ts` | render, document |
+| Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
@@ -57,7 +57,8 @@ an innocent import. `test/checks/layering.mjs` enforces it.
    sits, so caches key on content rather than line numbers (`blocks.ts:
    blockContentKey`, `virtual_block_renderer.ts`).
 3. **A caret's document offset is the truth.** A rendered position is derived from
-   it and re-derived after any DOM rebuild (`caret/caret.ts`, `position.ts`).
+   it and re-derived after any DOM rebuild (`caret/caret.ts`, `caret/offsets.ts`,
+   `caret/dom_position.ts`).
 4. **Source mode is decided from the document**, from the caret's offset, never by
    swapping an element behind the caret (`source_mode.ts`).
 5. **One fact about markdown syntax has one home.**
@@ -76,7 +77,19 @@ Almost every bug in this editor has been a confusion between these:
    when the node it points into is replaced. That is why a rebuild re-places the
    caret by offset (`editing/context.ts: showSourceAt`, `placeCaret`).
 
-`position.ts: documentOffsetAt` maps 1–4 to 1; `domPositionAtOffset` maps 1 to 4.
+**What maps to what, and when.** Each flavour has one direction in and one out,
+and none of them is stored: every mapping is re-derived from the one above it.
+
+| Flavour | → document offset | document offset → | Re-derived when |
+| --- | --- | --- | --- |
+| document | it *is* the truth | — | never: the offset is recomputed from the caret on the next keystroke, and nothing holds one across a rebuild |
+| block-relative | `caret/offsets.ts`: the block's `charStart` plus the node positions and `data-*-from` tags | `caret/offsets.ts: renderedOffsetAtRaw` (the block's `charStart` comes off) | on every edit: `charStart` moves, and so do the tags it is added to |
+| rendered | `caret/offsets.ts: mapRenderedOffset` (through `textOffsetInElement`) | `caret/dom_position.ts: textNodeAtRenderedOffset` | after any DOM rebuild, because a block is rendered from its source again |
+| DOM range | `caret/offsets.ts: documentOffsetAt` | `caret/caret.ts`: a fresh collapsed range, by `editing/context.ts: placeCaret` | after a rebuild, always: the browser *relocates* a range into the node that replaced its text, so a range that looks connected may sit where the author never put it |
+
+`offsets.ts` is the way in (a rendered position read back into the document,
+plus the rendered-length model both directions share); `dom_position.ts` is the
+way out (a document offset turned into the text node and offset that hold it).
 
 ## One keystroke
 
@@ -98,7 +111,7 @@ Almost every bug in this editor has been a confusion between these:
 | How one markdown construct looks | `nodes/<type>.ts` |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
 | A new keystroke or command | `docs/adding-a-command.md` — the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger |
-| Where the caret goes, or how it maps | `caret/*`, `position.ts` |
+| Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`) |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `styles.css` |
 
