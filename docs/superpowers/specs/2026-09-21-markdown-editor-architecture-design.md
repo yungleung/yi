@@ -276,7 +276,7 @@ Each phase preserves behaviour, lands as its own PR, and ends green.
   `test/` with `run-checks.mjs`, `run-probes.mjs` and the `test/README.md` index; add
   `npm run check`; add CI running `tsc --noEmit` and `npm run check`; write `README.md`,
   `LICENSE` (MIT), `CONTRIBUTING.md`, `docs/architecture.md`, `docs/ai-context.md`,
-  `docs/testing.md`; delete the six proven-dead exports; repair `check-enter.mjs`.
+  `docs/testing.md`, `docs/adding-a-node.md`; delete the six proven-dead exports; repair `check-enter.mjs`.
   Acceptance: `npm run check` green; the app starts on the fixture demo document; a
   probe loads the math-heavy and large fixtures and reports sane block counts; every
   command in the docs runs as written.
@@ -300,12 +300,14 @@ Each phase preserves behaviour, lands as its own PR, and ends green.
   `inline-math-source` and `revealable-flows` probes green; the invariant section states
   what maps to what, and when each mapping is re-derived.
 - **P4 — render polish and extension contract.** Split the renderer's height and window
-  arithmetic (`block_sizes.ts`, `viewport_window.ts`); write the node recipe; make the
-  `registry.ts` + `source_mode.ts` extension contract explicit in
-  `docs/architecture.md`; land `test/checks/headers.mjs` now that the module moves have
-  settled, so the three-line header convention from section 7 is enforced. Acceptance:
-  `docs/adding-a-node.md` followed verbatim yields a working node type; the header check
-  passes on the whole `src/ui/markdown` tree; probes green.
+  arithmetic (`block_sizes.ts`, `viewport_window.ts`); make the `registry.ts` +
+  `source_mode.ts` extension contract explicit in `docs/architecture.md`; land
+  `test/checks/headers.mjs` now that the module moves have settled, so the three-line
+  header convention from section 7 is enforced. Acceptance: the header check passes on
+  the whole `src/ui/markdown` tree; the extension contract names, for each extension
+  point, the file that owns it; probes green. (`docs/adding-a-node.md` is written in P0,
+  where the node contract is already stable; P2 writes `docs/adding-a-command.md` once
+  the command registry exists.)
 
 ## 9. Non-goals
 
