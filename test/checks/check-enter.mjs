@@ -29,24 +29,28 @@ globalThis.window = {
   }
 };
 
-const bundle = await rolldown({
-  input: 'src/ui/markdown/editing/blank_lines.ts',
-  logLevel: 'silent'
-});
-const { output } = await bundle.generate({ format: 'esm' });
-await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-enter-'));
-const file = join(directory, 'blank_lines.mjs');
-writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
+
+/** Bundles one module and imports it, the way every check loads its subject. */
+async function bundleModule(input, name) {
+  const bundle = await rolldown({ input, logLevel: 'silent' });
+  const { output } = await bundle.generate({ format: 'esm' });
+  await bundle.close();
+  const file = join(directory, `${name}.mjs`);
+  writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
+  return await import(file);
+}
+
 const {
   paragraphSplit,
   paragraphStart,
   emptyLineInsertion,
   characterRemoval,
-  itemContinuation,
-  itemSubtreeEnd,
-  hasChildBlock
-} = await import(file);
+  itemContinuation
+} = await bundleModule('src/ui/markdown/editing/blank_lines.ts', 'blank_lines');
+// The list rules moved to list_lines.ts in commit 473ecf2 and this check was
+// never told: it asked the blank-lines bundle for them and got undefined.
+const { itemSubtreeEnd, hasChildBlock } = await bundleModule('src/ui/markdown/list_lines.ts', 'list_lines');
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;
