@@ -300,3 +300,42 @@ npm run probe:all                      # 59/59 (6 skipped)
 - Probes are the safety net here, not the compiler: a wrong offset still compiles.
   Restart `npm run tauri dev` before the acceptance run — a long-running dev app
   makes every probe time out.
+
+---
+
+## Handoff (2026-09-22, P3 complete)
+
+**Where the branch is.** `codex/editor-caret-offsets`, five commits: the plan, the
+way in, the way out, the caret's state written down, and the maps. `npx tsc --noEmit`
+is clean, `npm run check` is 13/13, and `npm run probe:all` is 59/59 (6 skipped) from
+a freshly started app, with the six probes the spec names for P3 run by name as well.
+
+**What P3 changed.** `position.ts` is gone: `caret/offsets.ts` reads a rendered
+position back into the document and owns the rendered-length model both directions
+share (`SOURCE_SELECTOR`, `renderedLength`, `nodeRawRange`), and
+`caret/dom_position.ts` answers the other direction from that model. The caret's nine
+module-wide `let`s are documented rather than converted to an instance (one editor per
+window, every caller already reaches them through the module, and P3 is not allowed a
+behaviour change). `docs/architecture.md`'s "The four offsets" is now a table saying
+what each mapping is built from and what invalidates it.
+
+**What P4 will need, and one measurement that changes its size.** The phase is
+`block_sizes.ts` + `viewport_window.ts` out of the renderer, the extension contract
+(`registry.ts` + `source_mode.ts`) written into `docs/architecture.md`, and
+`test/checks/headers.mjs` enforcing the three-line header convention. That last one is
+not a small commit: **four of the 86 modules under `src/ui/markdown` carry the
+`May import:` / `Upholds:` line today** (`syntax/markers.ts`, `caret/caret.ts`,
+`caret/offsets.ts`, `caret/dom_position.ts`). A check that passes on the whole tree
+means writing the headers for the other 82 — mechanical, but it is the bulk of P4, and
+it should be written into that phase's plan as several tasks rather than one.
+
+**Findings worth carrying forward.** Three things P3 noticed and did not act on,
+because each is a behaviour change: the two directions still share a private helper
+for walking a block's rendered text (`textOffsetInElement` in, `textNodeAtRenderedOffset`
+out) and they could be one walker if a later phase wants it; `domPositionAtOffset`
+falls back to a rendered-offset approximation for widgets, whose length model
+`renderedLength` guesses for citations from the bibliography cache — the one place in
+the mapping where an offset can be wrong without being unmappable; and the caret's
+`selectionRange` is kept in step by a `selectionchange` listener registered at module
+load, so a second editor instance in one window would fight it (which is the argument
+for the instance the spec allowed, when someone needs it).
