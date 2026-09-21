@@ -66,6 +66,10 @@ npm run probe:all                       # probes that need no fixture workspace
 npm run fixtures                        # refresh the fixture workspace
 ```
 
+Setting those up — the MCP server and CLI that drive the app, and the skills this
+project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
+under *AI agents*.
+
 ## If you are an AI agent
 
 Before claiming a change works:

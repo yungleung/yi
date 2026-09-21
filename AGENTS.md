@@ -13,6 +13,8 @@ brief — read it first; this file is the short version and the non-negotiables.
   what a compiler cannot see (caret placement, typing, scrolling, rendering).
 - A dev app left running for hours degrades (document loads go from ~0.3 s to
   ~10 s and probes time out). Restart it before blaming a probe.
+- Setting the bridge up from scratch — the MCP server and CLI that drive the app,
+  and the skills this project uses — is `README.md` → *AI agents*.
 
 ## Design rules
 
