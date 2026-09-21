@@ -76,3 +76,45 @@
 - Do not move `editing/*` files in this phase. They are where behaviour lives; P2 is about how it is *reached*.
 - When a probe opens a native menu it needs the window in front (`@needs-foreground-window`); `probe:all` skips those, so run them by name.
 - A dev app left running for hours degrades and makes probes time out: restart `npm run tauri dev` before the acceptance run.
+
+---
+
+## Handoff (2026-09-22, after the first half of Task 2)
+
+**Where the branch is.** `codex/editor-commands`, four commits ahead of `main`: the
+plan, the registry and its check (`5fe1072`), and the menu bridge, the keymap and the
+editor's registrations (`5e61114`). `npx tsc --noEmit` is clean and `npm run check`
+is 11/12 — the one failure is `test/checks/commands.mjs`, whose output *is* the
+to-do list: five producer modules still own a `*_COMMAND` constant.
+
+**Done.** `commands/registry.ts` (ids as a union type, duplicate registration
+refused, `runCommand` the only way in); `commands/menu.ts` (the one module that
+names the native menu's event strings); `commands/keymap.ts` (chords → ids);
+`markdown_editor.ts` registers the nine commands it owns, subscribes through the
+menu table, and `handleShortcut` asks the keymap. `regression-undo` passes, so the
+native-menu path is proven end to end.
+
+**Next, in order.**
+
+1. **Diagnose the footnote button before rewiring anything else.** `Toolbar.announce`
+   emitted a Tauri event — an asynchronous round trip — while `runCommand` is a
+   synchronous call inside the click handler. Rewiring `footnote_toolbar.ts` to
+   `runCommand('edit:insertFootnote')` made `test/probes/footnote-button.js` report
+   `definitions: 0`: the button stopped working, so that change was reverted and the
+   tree is green. Cheap test of the hypothesis: run that probe on the current tree
+   (it should pass), change *only* the footnote button, watch it fail, then try
+   deferring the call (`queueMicrotask`) or re-focusing the editor before running it.
+2. Rewire the remaining producers — `formatting_toolbar`, `list_toolbar`,
+   `table_menu` — to `runCommand(...)`, delete their constants with their
+   subscriptions, and register the ids they need (`format:<style>`, `list:<command>`,
+   `table:<entry>`, `table:insert`). The check going green is the proof; the
+   toolbar and table probes by name are the behaviour proof.
+3. Task 3 (split the shell: `click_routing.ts`, the `editor_panel.ts` rename) and
+   Task 4 (`docs/adding-a-command.md`, proven by adding `edit:insert-rule`).
+
+**Rules that matter here.** Text entry is not a command: typing, `Enter`,
+`Backspace`, `Tab` and the arrows stay in the editor's keydown handler. Triggering
+code calls a command id; nothing outside `commands/registry.ts` names a command
+event. Verify with `npm run check`, then the probes by name against a **freshly
+started** app (`npm run tauri dev` — a long-running dev app degrades and makes every
+probe time out), then `npm run probe:all`.
