@@ -7,11 +7,11 @@
  * reports `settled: false` instead of a time. A page that has been through many
  * hot reloads and document loads also reports larger times than a fresh one.
  *
- *   node scripts/tauri-probe.mjs --install
- *   node scripts/tauri-probe.mjs scripts/probes/scroll-cost.js
+ *   node test/tauri-probe.mjs --install
+ *   node test/tauri-probe.mjs test/probes/scroll-cost.js
  *
  * Open the document you want to measure first (the probe uses whatever is in
- * the editor), or pass one of the helper flows in `scripts/probes/real-docs.js`.
+ * the editor), or pass one of the helper flows in `test/probes/real-docs.js`.
  */
 (async () => {
   const t = window.__t;

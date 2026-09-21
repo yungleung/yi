@@ -7,8 +7,8 @@
  * estimated. Run this with the window at the size where you see the jump, then
  * paste the output:
  *
- *   node scripts/tauri-probe.mjs --install
- *   node scripts/tauri-probe.mjs scripts/probes/jump-report.js
+ *   node test/tauri-probe.mjs --install
+ *   node test/tauri-probe.mjs test/probes/jump-report.js
  *
  * The flow it follows is the reported one: scroll to the end of the document
  * first, come back to the footnote, then press Enter.

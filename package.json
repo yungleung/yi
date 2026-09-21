@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "check": "node test/run-checks.mjs",
+    "probe": "node test/tauri-probe.mjs",
+    "probe:all": "node test/run-probes.mjs"
   },
   "dependencies": {
     "@citation-js/core": "^0.8.2",

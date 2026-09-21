@@ -1,10 +1,10 @@
 /**
  * Runs a probe script inside the running editor through the Tauri MCP bridge.
  *
- * Usage: node scripts/tauri-probe.mjs --install     (once per page load)
- *        node scripts/tauri-probe.mjs scripts/probes/<name>.js
- *        node scripts/tauri-probe.mjs --reload      (reload the editor page)
- *        node scripts/tauri-probe.mjs --with-doc FILE scripts/probes/<name>.js
+ * Usage: node test/tauri-probe.mjs --install     (once per page load)
+ *        node test/tauri-probe.mjs test/probes/<name>.js   (or: npm run probe -- test/probes/<name>.js)
+ *        node test/tauri-probe.mjs --reload      (reload the editor page)
+ *        node test/tauri-probe.mjs --with-doc FILE test/probes/<name>.js
  *
  * `--with-doc` loads a markdown file into the editor before the probe runs.
  * Use it instead of the workspace tree for measurements: the tree's file
@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 
 const argument = process.argv[2];
 if (!argument) {
-  console.error('usage: node scripts/tauri-probe.mjs <probe.js> | --install | --reload');
+  console.error('usage: node test/tauri-probe.mjs <probe.js> | --install | --reload');
   process.exit(2);
 }
 
