@@ -1,3 +1,15 @@
+/**
+ * The editor panel: the shell around the markdown editor.
+ *
+ * This file was called `markdown_editor.ts`, one directory above
+ * `markdown/markdown_editor.ts` and its `WysiwygMarkdownEditor`: two names for
+ * one editor, and every import of either had to be read twice to know which
+ * one it reached. The class is the panel the shell mounts — it opens the
+ * documents the workspace tree asks for, and announces the content so the
+ * status bar can count its words — so the file is named for that. The editor
+ * itself keeps its name.
+ */
+
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';

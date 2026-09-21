@@ -72,6 +72,9 @@ export function closingFence(line: string, marker: string): boolean {
 /** A bare bullet, ordered or task marker — `[ ]`/`[x]` is part of it. */
 export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])(?:\s+\[[ xX]\])?$/;
 
+/** The marker a thematic break is written with, on a line of its own. */
+export const thematicBreakMarker = '---';
+
 /** A line that delimits a fenced code block or a display formula. */
 export function isDelimiterLine(line: string): boolean {
   return /^ {0,3}(?:`{3,}|~{3,})/.test(line) || /^ {0,3}\$\$\s*$/.test(line);

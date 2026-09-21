@@ -2,7 +2,7 @@ import { platform } from '@tauri-apps/plugin-os';
 import { eventManager } from './services/event_manager';
 import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
-import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/markdown_editor';
+import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
 import { WorkspaceTree } from './ui/workspace_tree';
 import { ContentShell } from './ui/content_shell';

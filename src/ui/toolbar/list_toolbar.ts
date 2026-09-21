@@ -1,8 +1,6 @@
 import type { ListCommand } from '../markdown/editing/lists';
+import { runCommand } from '../markdown/commands/registry';
 import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './toolbar';
-
-/** A list command chosen from the toolbar; the editor applies it. */
-export const LIST_COMMAND = 'list_command';
 
 interface ListButtonSpec extends ToolbarButtonSpec {
   command: ListCommand;
@@ -53,13 +51,14 @@ const LIST_BUTTONS: ListButtonSpec[] = [
 /**
  * The list tools at the titlebar's centre: ordered, bullet and task lists, and
  * one indent step. Like the formatting buttons, they must not start a window
- * drag and must not take focus from the editor's selection.
+ * drag and must not take focus from the editor's selection, and each one runs
+ * the command named after what it does.
  */
 export class ListToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButtons(LIST_BUTTONS, (spec) =>
-      this.announce(LIST_COMMAND, { command: spec.command })
-    );
+    this.addButtons(LIST_BUTTONS, (spec) => {
+      runCommand(`list:${spec.command}`);
+    });
   }
 }

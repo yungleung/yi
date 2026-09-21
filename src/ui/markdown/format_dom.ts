@@ -15,8 +15,7 @@
  * the caller falls back to re-rendering the block.
  */
 
-import type { FormattingStyle } from '../toolbar/formatting_toolbar';
-import type { FormattingEdit } from './format';
+import type { FormattingEdit, FormattingStyle } from './format';
 import type { MarkdownEditorState } from './state';
 import { preserveSpaces } from './nodes/text';
 

@@ -59,6 +59,19 @@ const fixturesRoot = fileURLToPath(new URL('./fixtures/workspace', import.meta.u
 const documentArgument = withDoc || withFixture ? positional[0] : null;
 const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
+// A probe that does not parse is still sent, and comes back as a bridge
+// timeout — which reads like a slow app, or like a native window holding the
+// page. Fail here instead, naming the file: `table-menu.js` carried a stray
+// `* @needs-foreground-window` line outside its comment block for a while, and
+// probe:all skipped it by that very string without ever parsing the file.
+if (probe !== null) {
+  try {
+    new Function(`return (${probe})`);
+  } catch (error) {
+    console.error(`${probeFile} does not parse: ${error.message}`);
+    process.exit(2);
+  }
+}
 const documentText = documentArgument
   ? readFileSync(withFixture ? join(fixturesRoot, documentArgument) : documentArgument, 'utf8')
   : null;
@@ -147,7 +160,13 @@ async function installHelpers() {
 
 /** Whether the page still has the helpers installed. */
 async function helpersReady() {
-  const reply = await call('typeof window.__t === "object" && typeof window.__t.blocks === "function"', 8000);
+  // The helper surface is checked, not just its presence: a page that still has
+  // an older lib.js would fail a probe on a helper that is not there yet.
+  const reply = await call(
+    'typeof window.__t === "object" && typeof window.__t.blocks === "function"' +
+      ' && typeof window.__t.app === "function"',
+    8000
+  );
   return reply.success && reply.data === true;
 }
 

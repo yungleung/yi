@@ -1,7 +1,5 @@
+import { runCommand } from '../markdown/commands/registry';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
-
-/** The footnote button asks the editor for a new footnote at the caret. */
-export const FOOTNOTE_COMMAND = 'footnote_command';
 
 const FOOTNOTE_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">' +
@@ -12,13 +10,14 @@ const FOOTNOTE_ICON =
 /**
  * The footnote button at the titlebar's centre. Like the other tool buttons it
  * must not start a window drag and must not take focus from the editor, which
- * is where the caret it works from lives.
+ * is where the caret it works from lives. Pressing it runs the editor's
+ * `edit:insertFootnote` command by name.
  */
 export class FootnoteToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButton({ label: 'Footnote', icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () =>
-      this.announce(FOOTNOTE_COMMAND)
-    );
+    this.addButton({ label: 'Footnote', icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () => {
+      runCommand('edit:insertFootnote');
+    });
   }
 }

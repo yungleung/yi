@@ -27,6 +27,7 @@ import {
   shiftOffset,
   type TableEdit
 } from '../syntax/table_edits';
+import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 export interface TableTarget {
@@ -37,25 +38,36 @@ export interface TableTarget {
   column: number;
 }
 
-export type TableCommand =
-  | 'insertRowAbove'
-  | 'insertRowBelow'
-  | 'deleteRow'
-  | 'clearRow'
-  | 'moveRowUp'
-  | 'moveRowDown'
-  | 'insertColumnLeft'
-  | 'insertColumnRight'
-  | 'deleteColumn'
-  | 'clearColumn'
-  | 'moveColumnLeft'
-  | 'moveColumnRight'
-  | 'alignLeft'
-  | 'alignCenter'
-  | 'alignRight'
-  | 'clearCell'
-  | 'clearTable'
-  | 'deleteTable';
+/**
+ * Every operation the table menu offers, in the order the menu lists them.
+ *
+ * The registry registers one command per entry, so this list — not the menu's
+ * markup — is what decides which table commands exist, and the item a menu
+ * carries names one of them by type.
+ */
+export const TABLE_COMMANDS = [
+  'insertRowAbove',
+  'insertRowBelow',
+  'deleteRow',
+  'clearRow',
+  'moveRowUp',
+  'moveRowDown',
+  'insertColumnLeft',
+  'insertColumnRight',
+  'deleteColumn',
+  'clearColumn',
+  'moveColumnLeft',
+  'moveColumnRight',
+  'alignLeft',
+  'alignCenter',
+  'alignRight',
+  'clearCell',
+  'clearTable',
+  'deleteTable'
+] as const;
+
+/** One of the table commands above. */
+export type TableCommand = (typeof TABLE_COMMANDS)[number];
 
 /** The table a target points at: its block, its raw text and its model. */
 export function tableSnapshot(
@@ -109,10 +121,7 @@ export function insertTable(
 
   // A block boundary needs a blank line on each side: keep the newlines that
   // are already there and add only the ones a paragraph break still misses.
-  const before = /(\n+)$/.exec(text.slice(0, caret))?.[1].length ?? 0;
-  const after = /^\n+/.exec(text.slice(caret))?.[0].length ?? 0;
-  const leading = '\n'.repeat(Math.max(0, 2 - before));
-  const trailing = '\n'.repeat(Math.max(0, 2 - after));
+  const { leading, trailing } = blockPadding(text, caret);
   applyEdit(
     context,
     caret,

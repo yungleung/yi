@@ -1,7 +1,7 @@
 import { getWordsCount } from '../api/stats';
 import { eventManager } from '../services/event_manager';
 import { BaseComponent } from './component';
-import { MARKDOWN_CONTENT_CHANGED } from './markdown_editor';
+import { MARKDOWN_CONTENT_CHANGED } from './editor_panel';
 
 export class WordsCountStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;

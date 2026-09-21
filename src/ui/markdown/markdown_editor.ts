@@ -1,7 +1,7 @@
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { FORMATTING_COMMAND, type FormattingStyle } from '../toolbar/formatting_toolbar';
+import { FORMATTING_STYLES } from './format';
 import {
   ensureCaretRendered,
   getCaretRange,
@@ -20,31 +20,35 @@ import {
 } from './editing/context';
 import { documentOffsetAt } from './position';
 import { copySelection, cutSelection, pasteText, selectAll } from './editing/clipboard';
-import { deleteText, insertNewline, insertText, toggleTask } from './editing/text_commands';
+import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { applyFormatting } from './editing/formatting';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
-import { placeCaretFromPointer } from './editing/pointer';
-import { applyListCommand, type ListCommand } from './editing/lists';
+import { LIST_COMMANDS, applyListCommand } from './editing/lists';
 import { applyCodeIndent } from './editing/code';
-import { insertFootnote, jumpToFootnote } from './editing/footnotes';
+import { insertFootnote } from './editing/footnotes';
+import { insertThematicBreak } from './editing/thematic_break';
 import {
+  TABLE_COMMANDS,
   continueTableDown,
   insertTable,
-  tableSnapshot,
   moveTableCell,
   runTableCommand,
   type TableCommand,
   type TableTarget
 } from './editing/table';
-import { TABLE_COMMAND, showTableMenu } from '../table/table_menu';
-import { tableMenuModel } from '../table/table_menu_model';
-import { TABLE_INSERT } from '../toolbar/table_toolbar';
-import { LIST_COMMAND } from '../toolbar/list_toolbar';
-import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
+import {
+  routeContextMenu,
+  routeFootnoteClick,
+  routePointerClick,
+  routeTaskClick
+} from './click_routing';
 // The document the editor starts on. It lives in the fixture workspace so the
 // demo can be edited as markdown rather than as a string array in code.
 import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
+import { commandForKey } from './commands/keymap';
+import { MENU_COMMANDS } from './commands/menu';
+import { registerCommand, runCommand } from './commands/registry';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -114,16 +118,19 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.element.appendChild(this.findBar.element);
 
     this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
-    // Checkbox clicks must be handled before the node components stop the
-    // event from bubbling to the editor.
-    this.contentView.addEventListener('click', (event) => this.handleTaskClick(event), true);
-    // A click on a footnote marker or on a definition's label jumps between the
-    // two, so it is caught before a node places a caret where it was hit.
-    this.contentView.addEventListener('click', (event) => this.handleFootnoteClick(event), true);
-    // Clicks that miss every markdown node still place the caret: the margin
-    // between blocks and the space below the text are lines, not dead zones.
-    this.contentView.addEventListener('click', (event) => this.handlePointerClick(event));
-    this.contentView.addEventListener('contextmenu', (event) => this.handleContextMenu(event));
+    // The four routed clicks, in the order they have to run: a checkbox and a
+    // footnote marker are handled before a node can place a caret where the
+    // click landed, and a click that missed every node still places one.
+    this.contentView.addEventListener('click', (event) => routeTaskClick(this.context, event), true);
+    this.contentView.addEventListener(
+      'click',
+      (event) => routeFootnoteClick(this.context, event),
+      true
+    );
+    this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
+    this.contentView.addEventListener('contextmenu', (event) =>
+      routeContextMenu(this.context, event)
+    );
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
     this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
 
@@ -171,37 +178,66 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Wires the application-level commands (menu, toolbar, keyboard). */
   private registerCommandEvents(): void {
-    void eventManager.on(FORMATTING_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { command?: FormattingStyle };
-      if (payload.command) {
-        applyFormatting(this.context, payload.command);
-      }
-    });
-    void eventManager.on('undo', () => this.applyHistory('undo'));
-    void eventManager.on('redo', () => this.applyHistory('redo'));
-    void eventManager.on('cut', () => void cutSelection(this.context));
-    void eventManager.on('select_all', () => selectAll(this.context));
-    void eventManager.on('find', () => this.find.open(false));
-    void eventManager.on('replace', () => this.find.open(true));
-    void eventManager.on(TABLE_INSERT, (event) => {
-      const payload = (event.payload ?? event) as { rows?: number; columns?: number };
-      if (payload.rows && payload.columns) {
-        insertTable(this.context, { rows: payload.rows, columns: payload.columns });
-      }
-    });
-    void eventManager.on(TABLE_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { target?: TableTarget; command?: TableCommand };
-      if (payload.target && payload.command) {
-        runTableCommand(this.context, payload.target, payload.command);
-      }
-    });
-    void eventManager.on(LIST_COMMAND, (event) => {
-      const payload = (event.payload ?? event) as { command?: ListCommand };
-      if (payload.command) {
-        applyListCommand(this.context, payload.command);
-      }
-    });
-    void eventManager.on(FOOTNOTE_COMMAND, () => insertFootnote(this.context));
+    // The commands this editor owns, registered by name so every trigger — a
+    // chord, the native menu, a toolbar button — reaches the same behaviour.
+    registerCommand({ id: 'history:undo', run: () => this.applyHistory('undo') });
+    registerCommand({ id: 'history:redo', run: () => this.applyHistory('redo') });
+    registerCommand({ id: 'edit:cut', run: () => void cutSelection(this.context) });
+    registerCommand({ id: 'edit:selectAll', run: () => selectAll(this.context) });
+    registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
+    registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(this.context) });
+    registerCommand({ id: 'find:open', run: () => this.find.open(false) });
+    registerCommand({ id: 'find:replace', run: () => this.find.open(true) });
+    registerCommand({ id: 'find:close', run: () => this.find.close() });
+    // One command per inline style, per list command and per table operation,
+    // enumerated from the modules that own those lists: a button or a menu item
+    // can only name a command that is registered here.
+    for (const style of FORMATTING_STYLES) {
+      registerCommand({ id: `format:${style}`, run: () => applyFormatting(this.context, style) });
+    }
+    for (const command of LIST_COMMANDS) {
+      registerCommand({
+        id: `list:${command}`,
+        run: () => applyListCommand(this.context, command)
+      });
+    }
+    for (const command of TABLE_COMMANDS) {
+      registerCommand({
+        id: `table:${command}`,
+        run: (target) => this.runTableOperation(command, target)
+      });
+    }
+    registerCommand({ id: 'table:insert', run: (size) => this.insertPickedTable(size) });
+    // The native menu names these commands by string; the bridge is the one place
+    // that knows which string means which command.
+    for (const event of Object.keys(MENU_COMMANDS)) {
+      void eventManager.on(event, () => runCommand(MENU_COMMANDS[event]));
+    }
+  }
+
+  /**
+   * Runs one table-menu operation on the cell the menu captured before it took
+   * focus. The payload comes from a native menu, so it is checked, not trusted.
+   */
+  private runTableOperation(command: TableCommand, payload: unknown): void {
+    const target = payload as TableTarget | null;
+    if (
+      !target ||
+      !Number.isFinite(target.lineStart) ||
+      !Number.isFinite(target.row) ||
+      !Number.isFinite(target.column)
+    ) {
+      return;
+    }
+    runTableCommand(this.context, target, command);
+  }
+
+  /** Creates the table of the size the picker handed over. */
+  private insertPickedTable(payload: unknown): void {
+    const size = payload as { rows?: number; columns?: number } | null;
+    if (size?.rows && size.columns) {
+      insertTable(this.context, { rows: size.rows, columns: size.columns });
+    }
   }
 
   /** Keyboard shortcuts and plain text input. */
@@ -265,25 +301,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Command/control shortcuts, returning true when one was handled. */
   private handleShortcut(event: KeyboardEvent): boolean {
-    if (!(event.metaKey || event.ctrlKey) || event.altKey) {
+    const command = commandForKey(event);
+    if (!command) {
       return false;
     }
-    switch (event.key.toLowerCase()) {
-      case 'z':
-        event.preventDefault();
-        this.applyHistory(event.shiftKey ? 'redo' : 'undo');
-        return true;
-      case 'x':
-        event.preventDefault();
-        void cutSelection(this.context);
-        return true;
-      case 'a':
-        event.preventDefault();
-        selectAll(this.context);
-        return true;
-      default:
-        return false;
-    }
+    event.preventDefault();
+    runCommand(command);
+    return true;
   }
 
   /** Arrow keys steer the caret (the renderer's own caret, not a native one). */
@@ -375,69 +399,4 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     keepScroll(this.context, anchor);
   }
 
-  /** Toggles a task-list checkbox without moving the caret. */
-  private handleTaskClick(event: MouseEvent): void {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
-      return;
-    }
-    if (toggleTask(this.context, target)) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-
-  /** Places the caret for a click that no markdown node handled. */
-  private handlePointerClick(event: MouseEvent): void {
-    const target = event.target;
-    if (target instanceof Element && target.closest('.markdown-node')) {
-      return;
-    }
-    placeCaretFromPointer(this.context, event.clientY);
-  }
-
-  /** Jumps between a footnote's marker and its definition. */
-  private handleFootnoteClick(event: MouseEvent): void {
-    const target = event.target as Element | null;
-    const reference = target?.closest<HTMLElement>('[data-footnote-ref]');
-    const definition = target?.closest<HTMLElement>('[data-footnote-def]');
-    const element = reference ?? definition;
-    const label = reference?.dataset.footnoteRef ?? definition?.dataset.footnoteDef;
-    if (!element || !label) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    jumpToFootnote(this.context, label, reference ? 'reference' : 'definition');
-  }
-
-  /**
-   * A right-click inside a table cell opens the table's menu on that cell.
-   *
-   * The cell is captured *before* the menu opens: the native menu takes focus,
-   * so the command that follows has to be told what it acts on.
-   */
-  private handleContextMenu(event: MouseEvent): void {
-    const cell = (event.target as Element | null)?.closest<HTMLElement>('[data-table-cell]');
-    if (!cell) {
-      return;
-    }
-    // The webview has its own context menu; ours replaces it.
-    event.preventDefault();
-    const blockElement = cell.closest('.markdown-block') as HTMLElement | null;
-    const lineStart = Number(blockElement?.dataset.lineStart);
-    const [row, column] = (cell.dataset.tableCell ?? '').split(':').map(Number);
-    if (!Number.isFinite(lineStart) || !Number.isFinite(row) || !Number.isFinite(column)) {
-      return;
-    }
-    const target: TableTarget = { lineStart, row, column };
-    const snapshot = tableSnapshot(this.context, target);
-    if (!snapshot) {
-      return;
-    }
-    void showTableMenu(tableMenuModel(snapshot.source, row, column), target, {
-      x: event.clientX,
-      y: event.clientY
-    });
-  }
 }
