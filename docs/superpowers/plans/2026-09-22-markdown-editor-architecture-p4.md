@@ -333,3 +333,59 @@ finding about the module, not about the header.
   each commit's list shorter than the last.
 - Probes are the safety net for the renderer: a wrong window size still compiles.
   Restart `npm run tauri dev` before the acceptance run.
+
+---
+
+## Handoff (2026-09-22, P4 complete — the spec's phases are done)
+
+**Where the branch is.** `codex/editor-render-contract`. P4's three deliverables
+landed: the renderer's arithmetic is `block_sizes.ts` and `viewport_window.ts` with
+`test/checks/check-block-sizes.mjs` asserting it in Node; `docs/architecture.md`'s
+extension points are a table naming the file that owns each one; and
+`test/checks/headers.mjs` is green on all 88 modules under `src/ui/markdown`.
+
+`npx tsc --noEmit` is clean, `npm run check` is 15/15, and `npm run probe:all` is
+59/59 (6 skipped) from a freshly started app. Run by name as well: `scroll-cost.js`
+and `fixture-large-document.js` (each with the 323 KB note), `code-tab.js`,
+`inline-math-source.js`, `math-source-caret.js`, `block-gaps.js`,
+`empty-paragraphs.js`, `revealable-flows.js`, `table-style.js`, `enter.js`,
+`list-buttons.js`, `insert-rule.js`.
+
+**What the tree now enforces.** A new module under `src/ui/markdown` must open with
+the three-line header or `npm run check` fails: that is the one rule a contributor
+cannot forget, because the first thing they do — create a file — is checked. The
+one-fact-one-home rule, the layering rule and the command rule were already
+checked; the header rule was the last one living only in prose.
+
+**What the sweep found.**
+
+- **Three probes had never run**, all for the same class of reason: `footnote-button.js`
+  crashed on `querySelectorAll(...).pop()` (fixed in P2), and `table-menu.js` and
+  `scroll-cost.js` had `@needs-*` markers *outside* their header comments, so both
+  files were syntax errors — invisible because `probe:all` skips a probe on that
+  very string. `scroll-cost.js` also declared its `nextFrames` helper after the
+  probe's expression, which the bridge can never see. The runner now parses every
+  probe before running any, skipped or not.
+- **Seven modules kept their prose below their imports** (`code_edits.ts`,
+  `lines.ts`, `parser.ts`, `trailing_spaces.ts`, `blocks.ts`, `virtual_block_renderer.ts`,
+  plus `ast.ts`'s missing paragraph) and one had no header at all
+  (`syntax/trailing_spaces.ts`). The prose was there; the shape was not, which is
+  exactly what a reader skimming headers was missing.
+- **Two headers say something narrower on purpose**, and the sweep kept them
+  honest rather than smoothing them over: `editing/line_removal.ts` imports nothing
+  at all, and `editing/find_bar.ts` knows nothing about the document — that is what
+  keeps the search testable without a window.
+
+**Left for a later phase, none of it in P0–P4.**
+
+- Section 5's directory layout (`document/`, `render/`, `commands/` as
+  subdirectories) was never named in any phase's acceptance, so the files still sit
+  flat in `src/ui/markdown/`. Moving them is mechanical now that the headers and the
+  checks agree, and it would touch every import in the tree — worth its own phase.
+- P3's handoff list stands: a thematic break shows remark's canonical `***` as its
+  source view rather than the `---` written; `blockPadding` adds two blank lines at
+  offset 0 where `paragraphStart` already knows nothing above needs no separator;
+  `list:outdent` is registered with no trigger naming it.
+- The command registrations still live in `markdown_editor.ts: registerCommandEvents`.
+  They could follow `click_routing.ts` into their own module when that file earns
+  one; P2 chose the wiring, P3 and P4 left it.
