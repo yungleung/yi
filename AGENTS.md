@@ -19,7 +19,8 @@ brief — read it first; this file is the short version and the non-negotiables.
 - Keep the layers honest: no DOM in the syntax modules, no reaching upwards.
 - One fact has one home; if you find the same rule twice, merge it and say so.
 - Every module header says what the file is for, what it may import, and the
-  invariant it upholds.
+  invariant it upholds — `docs/writing-comments.md` has the shape, and
+  `test/checks/headers.mjs` fails without it.
 - Read `docs/architecture.md` before touching the caret, offsets or source mode —
   those four offset flavours are where the bugs live.
 - Prefer a small, well-named module over a large one; if a unit needs a paragraph to

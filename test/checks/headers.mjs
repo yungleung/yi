@@ -10,6 +10,8 @@
  * say, and a declaration file (`mdast.d.ts`) is a module with a contract too. It
  * looks only at the first header block, so a module may keep its long prose below
  * the three lines.
+ *
+ * The shape, and what each line is for, is `docs/writing-comments.md`.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,7 +61,8 @@ for (const file of files) {
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   console.error(
-    `\nheaders: ${failures.length} of ${files.length} modules — the layers are in docs/architecture.md`
+    `\nheaders: ${failures.length} of ${files.length} modules — how to write one is ` +
+      'docs/writing-comments.md, and the layers are in docs/architecture.md'
   );
   process.exit(1);
 }

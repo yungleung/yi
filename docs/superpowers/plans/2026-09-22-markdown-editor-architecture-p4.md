@@ -367,10 +367,11 @@ checked; the header rule was the last one living only in prose.
   probe's expression, which the bridge can never see. The runner now parses every
   probe before running any, skipped or not.
 - **Seven modules kept their prose below their imports** (`code_edits.ts`,
-  `lines.ts`, `parser.ts`, `trailing_spaces.ts`, `blocks.ts`, `virtual_block_renderer.ts`,
-  plus `ast.ts`'s missing paragraph) and one had no header at all
-  (`syntax/trailing_spaces.ts`). The prose was there; the shape was not, which is
-  exactly what a reader skimming headers was missing.
+  `lines.ts`, `parser.ts`, `trailing_spaces.ts`, `blocks.ts`,
+  `virtual_block_renderer.ts`, `markdown_editor.ts`), and `syntax/trailing_spaces.ts`
+  had no header at all before the sweep — it is one of the seven. The prose was
+  there; the shape was not, which is exactly what a reader skimming headers was
+  missing.
 - **Two headers say something narrower on purpose**, and the sweep kept them
   honest rather than smoothing them over: `editing/line_removal.ts` imports nothing
   at all, and `editing/find_bar.ts` knows nothing about the document — that is what

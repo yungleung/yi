@@ -29,7 +29,8 @@ change go?" table.
 
 Two recipes cover the changes an editor like this gets most: `docs/adding-a-node.md`
 for a markdown construct, and `docs/adding-a-command.md` for a name the author can
-ask for.
+ask for. `docs/writing-comments.md` is the third page a contributor needs — the
+module header every file opens with, and the voice the rest of the comments use.
 
 ## The rules
 
