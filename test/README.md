@@ -53,6 +53,11 @@ live index; the newest probes carry a header naming what they cover:
 
 ## Conventions
 
+- A probe header may declare what it needs: `@needs-workspace` (the app pointed at the
+  fixtures: run with `--with-workspace`), `@needs-source-workspace` (the maintainer's own
+  notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it
+  the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
+  (the editor window must be visible, so `probe:all` skips it).
 - A probe is one expression returning `{ checks, failed }`; a probe that only
   measures returns its numbers. Use `t.report(...)` for progress, so a bridge
   timeout still yields evidence.

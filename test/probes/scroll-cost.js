@@ -13,6 +13,10 @@
  * Open the document you want to measure first (the probe uses whatever is in
  * the editor), or pass one of the helper flows in `test/probes/real-docs.js`.
  */
+* @needs-large-document — run against the 323 KB fixture note.
+ * @needs-foreground-window — the editor window must be visible: an occluded webview throttles
+ * animation frames, and every step then reports `settled: false` instead of a time.
+ */
 (async () => {
   const t = window.__t;
   const out = t.report({});

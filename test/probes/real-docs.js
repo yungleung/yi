@@ -1,3 +1,6 @@
+/**
+ * @needs-source-workspace — drives the workspace tree, so it needs the maintainer's own notes folder open.
+ */
 (async () => {
   const t = window.__t;
   const row = (label) =>
