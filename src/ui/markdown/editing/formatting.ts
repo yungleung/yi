@@ -5,6 +5,13 @@
  * block is patched in place when possible — re-rendering a block costs far
  * more because it rebuilds every widget inside it. Selections the patch
  * cannot represent fall back to re-rendering the affected block(s).
+ *
+ * May import: the caret's selection and offsets (`caret/caret.ts`,
+ * `caret/offsets.ts`, `caret/dom_position.ts`), the pure formatting rules
+ * (`format.ts`), the DOM patch (`format_dom.ts`) and the editing context.
+ * Upholds: the document text is the only source of truth — the patch mirrors the
+ * edit that was made to the text, and a selection it cannot mirror is rendered
+ * again instead.
  */
 
 import { getSelectionRange, scheduleCaret, scheduleNativeSelection, setSelectionRange } from '../caret/caret';

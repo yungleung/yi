@@ -6,6 +6,11 @@
  * it. That is a rule about markdown, so the padding comes from
  * `blank_lines.ts` and the marker from `syntax/markers.ts` — this module only
  * decides where they go and applies the one edit.
+ *
+ * May import: the marker's home (`syntax/markers.ts`), the blank-line rule
+ * beside it (`./blank_lines`) and the editing context. Upholds: the document
+ * text is the only source of truth — one `applyEdit` writes the rule, and the
+ * caret is placed by offset from the blocks the edit leaves behind.
  */
 
 import { thematicBreakMarker } from '../syntax/markers';

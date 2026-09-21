@@ -4,6 +4,10 @@
  * Matches are computed from the source text, so they cover the whole file
  * even though only part of it is mounted; revealing a match scrolls the
  * virtual window to it and selects the text.
+ *
+ * May import: the editing context, the caret's DOM mapping
+ * (`caret/dom_position.ts`) and the bar it drives. Upholds: matches are computed
+ * from the raw text, so what is found never depends on what is mounted.
  */
 
 import { domPositionAtOffset } from '../caret/dom_position';

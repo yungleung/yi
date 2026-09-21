@@ -5,6 +5,12 @@
  * Every command is one `applyEdit`, so a table operation undoes as one step and
  * re-renders only the block it changed. The geometry lives in `table_source.ts`
  * and `table_edits.ts`; this module is the only part that touches the editor.
+ *
+ * May import: the table's raw source and pure edits (`syntax/table_source.ts`,
+ * `syntax/table_edits.ts`), the caret's location (`caret/offsets.ts`) and the
+ * editing context. Upholds: the document text is the only source of truth — a
+ * cell is addressed by its name in the table's own text, never by the caret's
+ * position in the rendered DOM.
  */
 
 import type { MarkdownBlock } from '../blocks';

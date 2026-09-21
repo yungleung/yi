@@ -3,6 +3,10 @@
  *
  * State changes (query, replacement, navigation) are reported through the
  * handlers so the search logic stays in `find_controller.ts`.
+ *
+ * May import: the DOM and `BaseComponent`. Upholds: the bar knows nothing about
+ * the document — it reports what the author asked for and the controller does
+ * the searching, which is what keeps the search testable without a window.
  */
 
 export interface FindBarHandlers {

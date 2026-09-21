@@ -7,6 +7,9 @@
  * delete eats the newline that separates the item from the next line. Either
  * key, pressed with the caret inside such an item, therefore removes the whole
  * line and puts the caret at the end of the item above it.
+ *
+ * May import: the block model and the editing context. Upholds: the document
+ * text is the only source of truth — the whole line leaves in one edit.
  */
 
 import { isRawRendered } from '../blocks';

@@ -5,6 +5,11 @@
  * The rule itself is pure (`code_edits.ts`); this module is the part that
  * knows where the caret is and applies the edit. Anywhere else in the document
  * this command declines, so the browser keeps its own Tab.
+ *
+ * May import: the block model, the pure code rules (`syntax/code_edits.ts`) and
+ * the editing context. Upholds: the document text is the only source of truth —
+ * the rule is a pure function of the text, and this module only decides whether
+ * the caret is somewhere it applies.
  */
 
 import { isRawRendered } from '../blocks';

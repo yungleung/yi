@@ -8,6 +8,11 @@
  * modules. The helpers here also centralise range→offset mapping, so any
  * command works the same whether its range is a text selection, a boundary
  * inside a block, or a Select-All range anchored to the prose root.
+ *
+ * May import: the caret, the offsets mapping (`caret/offsets.ts`,
+ * `caret/dom_position.ts`), the renderer, the state and `source_mode.ts`.
+ * Upholds: every command funnels its change through `applyEdit`, so the
+ * change → re-render → place-the-caret sequence is identical everywhere.
  */
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
