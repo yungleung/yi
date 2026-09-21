@@ -12,7 +12,8 @@
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
 import { setShownRange } from '../source_mode';
-import { documentOffsetAt, domPositionAtOffset } from '../position';
+import { documentOffsetAt } from '../caret/offsets';
+import { domPositionAtOffset } from '../position';
 import { showsSource } from '../registry';
 import type { RootContent } from 'mdast';
 import type { MarkdownEditorState } from '../state';
