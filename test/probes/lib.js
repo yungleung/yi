@@ -108,6 +108,34 @@ window.__t = (() => {
     return value;
   };
 
+  /**
+   * The running app's own instance of one of its modules, by source path.
+   *
+   * A probe drives the app the way a reader does, but one command has no
+   * scriptable trigger: the table context menu is a native menu, and nothing
+   * can select an item of it but a person. So those probes ask the registry
+   * for the command the menu item names and run it, which is what the menu
+   * does.
+   *
+   * Vite serves a module it has rebuilt under a `?t=` URL, and the app runs
+   * *that* instance — importing the bare path would get a second, empty copy
+   * of the registry — so the newest URL this page fetched for the path wins,
+   * and the bare path is the fallback for a freshly started dev server.
+   */
+  const app = async (path) => {
+    const fetched = performance
+      .getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .filter((name) => {
+        try {
+          return new URL(name).pathname === path;
+        } catch {
+          return false;
+        }
+      });
+    return await import(fetched.length > 0 ? fetched[fetched.length - 1] : path);
+  };
+
   return {
     prose,
     scroller,
@@ -123,6 +151,7 @@ window.__t = (() => {
     gaps,
     emptyLines,
     report,
+    app,
     sleep
   };
 })();

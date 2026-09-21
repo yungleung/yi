@@ -147,7 +147,13 @@ async function installHelpers() {
 
 /** Whether the page still has the helpers installed. */
 async function helpersReady() {
-  const reply = await call('typeof window.__t === "object" && typeof window.__t.blocks === "function"', 8000);
+  // The helper surface is checked, not just its presence: a page that still has
+  // an older lib.js would fail a probe on a helper that is not there yet.
+  const reply = await call(
+    'typeof window.__t === "object" && typeof window.__t.blocks === "function"' +
+      ' && typeof window.__t.app === "function"',
+    8000
+  );
   return reply.success && reply.data === true;
 }
 
