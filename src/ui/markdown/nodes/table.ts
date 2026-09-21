@@ -7,7 +7,7 @@ import type { AstTable, AstTableCell } from '../ast';
  *
  * Each cell is named by its index (`data-table-cell="row:column"`) and carries
  * the block-relative offset its row starts at. The offsets themselves are not
- * computed here: `position.ts` turns a cell name into an offset from the
+ * computed here: `caret/offsets.ts` turns a cell name into an offset from the
  * block's own text, which is where a caret in a cell has to land. The header
  * is row 0 and the body rows follow, exactly the numbering the delimiter
  * line's absence leaves mdast with.

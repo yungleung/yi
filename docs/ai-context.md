@@ -20,7 +20,7 @@ mounted.
 | Syntax (pure, no DOM) | `src/ui/markdown/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing |
 | Document | `state.ts` | the text, its blocks, parse cache, undo history |
 | Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks |
-| Caret and offsets | `caret/*`, `position.ts` | the logical caret, and mapping offsets |
+| Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
 | Commands | `editing/*`, `commands/*` (the registry, the native-menu bridge, the keymap), `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one command, one name, one way in |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`), `src/services/*` | the window, workspace, settings, bibliography |
 
@@ -48,8 +48,10 @@ ask for.
 `document` (index into the raw markdown) → `block-relative` (minus
 `block.charStart`) → `rendered` (index into an element's text) → `DOM range` (a live
 `Range`, which the browser *relocates* rather than drops when its node is replaced).
-`position.ts: documentOffsetAt` and `domPositionAtOffset` are the two directions;
-`editing/context.ts: applyEdit` and `placeCaret` are where they are used.
+`caret/offsets.ts: documentOffsetAt` and `caret/dom_position.ts: domPositionAtOffset`
+are the two directions; `editing/context.ts: applyEdit` and `placeCaret` are where
+they are used. The table in `docs/architecture.md` says what each mapping is
+re-derived from, and when.
 
 ## Commands you will need
 

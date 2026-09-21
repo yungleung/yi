@@ -13,7 +13,7 @@ import type { BlockNode } from '../blocks';
  *
  * The text is tagged with the block-relative offset it starts at, which is
  * zero because it *is* the block's text: a caret inside it maps back to the
- * document exactly (see `position.ts`). LaTeX is highlighted the way a code
+ * document exactly (see `caret/offsets.ts`). LaTeX is highlighted the way a code
  * block's code is, and the markup never changes the text.
  */
 export class SourceText extends EditableNodeComponent {
