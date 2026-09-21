@@ -7,7 +7,7 @@ test asks for it.
 | Path | What it is for |
 | --- | --- |
 | `default-document.md` | The document the editor starts on, and the one probes mean by "the default document". Edit this file to change the demo; no code needs to know. |
-| `zotero.bib` | The bibliography the app loads. Two entries, enough for `[@Abel2024]` in the demo document to resolve. |
+| `zotero.bib` | The bibliography the app loads: two entries (`smith2020`, `jones2019`), the ones the demo document names as keys the bibliography has. The other keys in the demo stay raw, which is what it demonstrates. |
 | `notes/Unfiled/虚无与生发.md` | A wikilink target resolved by its heading 1 (`[[虚无与生发]]`). |
 | `notes/Unfiled/20221031105857.md` | A wikilink target resolved by frontmatter id (`[[20221031105857]]`). |
 | `notes/Game Theory/6 Bayesian Game.md` | A wikilink target resolved by file name (`[[6 Bayesian Game]]`). |

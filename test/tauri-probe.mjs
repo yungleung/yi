@@ -5,20 +5,41 @@
  *        node test/tauri-probe.mjs test/probes/<name>.js   (or: npm run probe -- test/probes/<name>.js)
  *        node test/tauri-probe.mjs --reload      (reload the editor page)
  *        node test/tauri-probe.mjs --with-doc FILE test/probes/<name>.js
+ *        node test/tauri-probe.mjs --fixture REL  test/probes/<name>.js
+ *        node test/tauri-probe.mjs --with-workspace test/probes/<name>.js
  *
  * `--with-doc` loads a markdown file into the editor before the probe runs.
  * Use it instead of the workspace tree for measurements: the tree's file
  * navigation reloads and scans enough of the app that the page stalls, and a
  * probe then measures nothing.
  *
+ * `--fixture` is `--with-doc` resolved inside `test/fixtures/workspace/`, so a
+ * probe can name a real note without depending on where this checkout lives.
+ *
+ * `--with-workspace` points the app's config at the fixture workspace for the
+ * run (wikilinks and citations then resolve) and puts the previous config back
+ * afterwards, so running a probe never changes the maintainer's own workspace.
+ *
  * The probe is a plain script evaluated in the webview; it may return a value
  * (or a promise) which is printed as JSON. Helpers are installed separately
  * (`--install`), so every probe is sent verbatim.
  */
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const argument = process.argv[2];
-if (!argument) {
+const usage =
+  'usage: node test/tauri-probe.mjs <probe.js> | --install | --reload\n' +
+  '       [--with-doc FILE | --fixture REL] [--with-workspace]';
+const args = process.argv.slice(2);
+if (args.length === 0) {
+  console.error(usage);
+  process.exit(2);
+}
+const flags = new Set(args.filter((argument) => argument.startsWith('--')));
+const positional = args.filter((argument) => !argument.startsWith('--'));
+if (!['--install', '--reload'].some((flag) => flags.has(flag)) && positional.length === 0) {
+  console.error(usage);
   console.error('usage: node test/tauri-probe.mjs <probe.js> | --install | --reload');
   process.exit(2);
 }
@@ -29,12 +50,18 @@ if (!argument) {
 // own, and every probe is sent verbatim and written as a single expression,
 // e.g. `(async () => ({ ... }))()`. The editor's event handlers also go stale
 // after many document swaps, which is what `--reload` is for.
-const installing = argument === '--install';
-const reloading = argument === '--reload';
-const withDoc = argument === '--with-doc';
-const probeFile = withDoc ? process.argv[4] : argument;
+const installing = flags.has('--install');
+const reloading = flags.has('--reload');
+const withDoc = flags.has('--with-doc');
+const withFixture = flags.has('--fixture');
+const withWorkspace = flags.has('--with-workspace');
+const fixturesRoot = fileURLToPath(new URL('./fixtures/workspace', import.meta.url));
+const documentArgument = withDoc || withFixture ? positional[0] : null;
+const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
-const documentText = withDoc ? readFileSync(process.argv[3], 'utf8') : null;
+const documentText = documentArgument
+  ? readFileSync(withFixture ? join(fixturesRoot, documentArgument) : documentArgument, 'utf8')
+  : null;
 // A probe that loads a document and then reads layout can outlive the
 // bridge's budget while the page is still settling. The wrapper stashes the
 // result, so a timed-out probe is still readable a moment later.
@@ -153,11 +180,66 @@ async function runProbe() {
   return await call(wrappedProbe);
 }
 
+/**
+ * Points the app's config at the fixture workspace, so wikilinks and citations
+ * in a probe resolve against the committed notes. Returns the previous config
+ * as JSON text, for {@link restoreConfig}.
+ */
+async function useFixtureWorkspace() {
+  const previous = await call(
+    "(async () => JSON.stringify(await window.__TAURI_INTERNALS__.invoke('get_config')))()",
+    15000
+  );
+  await call(
+    `(async () => {
+       const cfg = {
+         workspace: ${JSON.stringify(fixturesRoot)},
+         bibliography_file: ${JSON.stringify(join(fixturesRoot, 'zotero.bib'))},
+         csl_style: '',
+         config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
+       };
+       await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+       await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+         event: 'workspace_changed',
+         payload: cfg.workspace
+       });
+       return 'workspace set';
+     })()`,
+    15000
+  );
+  await sleep(1500);
+  return previous.success ? String(previous.data) : null;
+}
+
+/** Puts the app's config back the way it was before the probe ran. */
+async function restoreConfig(previous) {
+  if (!previous) {
+    return;
+  }
+  await call(
+    `(async () => {
+       const cfg = ${previous};
+       await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+       await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+         event: 'workspace_changed',
+         payload: cfg.workspace
+       });
+       return 'workspace restored';
+     })()`,
+    15000
+  );
+}
+
+// A probe that needs the workspace open gets it, and the maintainer's own
+// workspace is put back once the probe has reported.
+const previousConfig = withWorkspace ? await useFixtureWorkspace() : null;
+
 let reply = await runProbe();
 if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.error))) {
   await installHelpers();
   reply = await runProbe();
 }
+await restoreConfig(previousConfig);
 if (reply.success) {
   console.log(JSON.stringify(reply.data, null, 2));
   process.exit(0);
