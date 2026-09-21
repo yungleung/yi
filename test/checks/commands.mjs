@@ -54,7 +54,22 @@ for (const symbol of ['registerCommand', 'runCommand', 'registeredCommands']) {
 }
 
 // One command, one name: no other module may declare a command of its own.
-for (const file of files) {
+// The scan covers the whole UI, not just the editor: the producers that used to
+// own these names live in src/ui/toolbar and src/ui/table, which is exactly where
+// the first version of this check failed to look.
+const uiFiles = [];
+(function walkUi(directory) {
+  for (const entry of readdirSync(directory)) {
+    const path = join(directory, entry);
+    if (statSync(path).isDirectory()) {
+      walkUi(path);
+    } else if (path.endsWith('.ts')) {
+      uiFiles.push(path);
+    }
+  }
+})('src/ui');
+
+for (const file of uiFiles) {
   if (file === registry) {
     continue;
   }

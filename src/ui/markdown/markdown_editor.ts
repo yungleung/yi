@@ -45,6 +45,9 @@ import { FOOTNOTE_COMMAND } from '../toolbar/footnote_toolbar';
 // The document the editor starts on. It lives in the fixture workspace so the
 // demo can be edited as markdown rather than as a string array in code.
 import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
+import { commandForKey } from './commands/keymap';
+import { MENU_COMMANDS } from './commands/menu';
+import { registerCommand, runCommand } from './commands/registry';
 import { MarkdownEditorState } from './state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
@@ -177,12 +180,21 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         applyFormatting(this.context, payload.command);
       }
     });
-    void eventManager.on('undo', () => this.applyHistory('undo'));
-    void eventManager.on('redo', () => this.applyHistory('redo'));
-    void eventManager.on('cut', () => void cutSelection(this.context));
-    void eventManager.on('select_all', () => selectAll(this.context));
-    void eventManager.on('find', () => this.find.open(false));
-    void eventManager.on('replace', () => this.find.open(true));
+    // The commands this editor owns, registered by name so every trigger — a
+    // chord, the native menu, a toolbar button — reaches the same behaviour.
+    registerCommand({ id: 'history:undo', run: () => this.applyHistory('undo') });
+    registerCommand({ id: 'history:redo', run: () => this.applyHistory('redo') });
+    registerCommand({ id: 'edit:cut', run: () => void cutSelection(this.context) });
+    registerCommand({ id: 'edit:selectAll', run: () => selectAll(this.context) });
+    registerCommand({ id: 'find:open', run: () => this.find.open(false) });
+    registerCommand({ id: 'find:replace', run: () => this.find.open(true) });
+    registerCommand({ id: 'find:close', run: () => this.find.close() });
+    registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(this.context) });
+    // The native menu names these commands by string; the bridge is the one place
+    // that knows which string means which command.
+    for (const event of Object.keys(MENU_COMMANDS)) {
+      void eventManager.on(event, () => runCommand(MENU_COMMANDS[event]));
+    }
     void eventManager.on(TABLE_INSERT, (event) => {
       const payload = (event.payload ?? event) as { rows?: number; columns?: number };
       if (payload.rows && payload.columns) {
@@ -265,25 +277,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Command/control shortcuts, returning true when one was handled. */
   private handleShortcut(event: KeyboardEvent): boolean {
-    if (!(event.metaKey || event.ctrlKey) || event.altKey) {
+    const command = commandForKey(event);
+    if (!command) {
       return false;
     }
-    switch (event.key.toLowerCase()) {
-      case 'z':
-        event.preventDefault();
-        this.applyHistory(event.shiftKey ? 'redo' : 'undo');
-        return true;
-      case 'x':
-        event.preventDefault();
-        void cutSelection(this.context);
-        return true;
-      case 'a':
-        event.preventDefault();
-        selectAll(this.context);
-        return true;
-      default:
-        return false;
-    }
+    event.preventDefault();
+    runCommand(command);
+    return true;
   }
 
   /** Arrow keys steer the caret (the renderer's own caret, not a native one). */
