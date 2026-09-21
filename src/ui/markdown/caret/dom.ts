@@ -6,10 +6,18 @@
  * (finding the node adjacent to the caret). They have no editor dependencies.
  */
 
-/** A collapsed range anchored in a text node. */
+/**
+ * A collapsed range anchored in a text node.
+ *
+ * The offset is clamped to the text: a caller that works in character offsets
+ * over a *whole element* — a revealed source, whose highlighting splits it into
+ * many text nodes — can hand a position past the end of the node it names, and
+ * `setStart` throws for that rather than rounding. Clamping keeps the caret at
+ * the nearest real position, which is what such a caller means anyway.
+ */
 export function collapsed(text: Text, offset: number): Range {
   const range = document.createRange();
-  range.setStart(text, offset);
+  range.setStart(text, Math.max(0, Math.min(offset, text.data.length)));
   range.collapse(true);
   return range;
 }
