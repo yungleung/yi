@@ -104,6 +104,33 @@ export function isShownSource(node: AstNode): boolean {
 }
 
 /**
+ * The text of the source being shown, exactly as the block has it — the
+ * author's own characters, not a re-serialization of the node.
+ *
+ * A source view *is* the text being edited, so it has to be the text in the
+ * document. Markdown spells the same node more than one way (`* * *` and `***`
+ * are both a rule, `[a](b 't')` and `[a](b "t")` are both a link with a title),
+ * and the parser's canonical form can be a different length from what was
+ * written — which puts the caret inside the marker rather than at its end, and
+ * makes an edit land somewhere the author never pointed at.
+ *
+ * Null when no block is being built, in which case a caller has only the node
+ * itself to read (see `revealable_node.ts`).
+ */
+export function shownSourceText(): string | null {
+  const frame = renderFrame;
+  if (!frame || !shownRange) {
+    return null;
+  }
+  const from = shownRange.from - frame.charStart;
+  const to = shownRange.to - frame.charStart;
+  if (from < 0 || to < from || to > frame.text.length) {
+    return null;
+  }
+  return frame.text.slice(from, to);
+}
+
+/**
  * Where a click on a block's rendering enters its text: the end of the last
  * line that has content.
  *
