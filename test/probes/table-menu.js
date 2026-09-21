@@ -2,6 +2,8 @@
  * A right-click inside a cell is handled by the editor (and opens the native
  * menu); a right-click outside a cell is left to the webview.
  */
+* @needs-foreground-window — it opens the table menu, which a scripted run cannot close.
+ */
 (async () => {
   const t = window.__t;
   await t.load('| A | B |\n| --- | --- |\n| 1 | 2 |\n');
@@ -17,6 +19,10 @@
   t.report({ prevented: inside.defaultPrevented });
   await t.sleep(400);
   const outside = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
-  t.prose().querySelector('p').dispatchEvent(outside);
+  // Outside a cell: the block around the table, which exists whatever the
+  // document is (this probe used to reach for a <p>, which a table-only
+  // document does not have — it threw, and the harness's timeout recovery read
+  // the partial stash as a pass).
+  t.prose().querySelector('.markdown-block').dispatchEvent(outside);
   return { prevented: inside.defaultPrevented, outsidePrevented: outside.defaultPrevented };
 })()
