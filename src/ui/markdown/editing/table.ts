@@ -121,7 +121,18 @@ export function insertTable(
 
   if (block?.kind === 'blank') {
     const line = lineSpanAt(text, caret);
-    applyEdit(context, line.start, line.end, table, line.start + firstCell);
+    // The line becomes the table, and the blank lines the table needs come from
+    // the same rule the mid-paragraph insert uses: without the one below it, a
+    // paragraph on the next line is read as a ragged table row and disappears
+    // into the table.
+    const { leading, trailing } = blockPadding(text, line.start);
+    applyEdit(
+      context,
+      line.start,
+      line.end,
+      `${leading}${table}${trailing}`,
+      line.start + leading.length + firstCell
+    );
     return true;
   }
 

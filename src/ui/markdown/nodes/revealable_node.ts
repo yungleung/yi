@@ -12,12 +12,24 @@
 import type { RootContent } from 'mdast';
 import { serializeMarkdown } from '../syntax/parser';
 import { EditableNodeComponent } from './editable_node';
-import { enterSourceOf, isShownSource } from '../source_mode';
+import { enterSourceOf, isShownSource, shownSourceText } from '../source_mode';
 import type { AstNode } from '../ast';
 
-/** The markdown a node was made from. */
+/**
+ * The parser's canonical markdown for a node — `***` for a rule written
+ * `* * *`, `"title"` for one written `(title)`.
+ *
+ * It is what a source view falls back to when the block's own text is not at
+ * hand, which is only when the source is not being shown: while it is, the view
+ * shows the author's characters (`shownSourceText`).
+ */
 export function nodeSource(node: AstNode): string {
   return serializeMarkdown([node as RootContent]).trimEnd();
+}
+
+/** The text a source view shows, and the text a caret inside it maps through. */
+function sourceTextFor(node: AstNode): string {
+  return shownSourceText() ?? nodeSource(node);
 }
 
 /** The class every source view carries, so a node can tell what it was built as. */
@@ -47,7 +59,7 @@ export function sourceViewFor(
   if (!isShownSource(node)) {
     return null;
   }
-  const source = nodeSource(node);
+  const source = sourceTextFor(node);
   const span = document.createElement('span');
   span.className = `${SOURCE_VIEW_CLASS} ${className}`;
   const { start, end } = contentRange(source);
@@ -85,7 +97,7 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
   protected readonly sourceShown: boolean = this.element.classList.contains(SOURCE_VIEW_CLASS);
   /** The markdown this node shows and edits. */
   protected source(): string {
-    return nodeSource(this.node);
+    return sourceTextFor(this.node);
   }
   /**
    * The absolute `[start, end)` range of the identifier content within the
@@ -125,8 +137,19 @@ export abstract class RevealableNodeComponent extends EditableNodeComponent {
    * the end of the node's content, which is a position the source always has.
    */
   protected entryOffset(): number {
-    const position = (this.node as { position?: { start?: { offset?: number } } }).position;
+    const position = (
+      this.node as { position?: { start?: { offset?: number }; end?: { offset?: number } } }
+    ).position;
     const start = position?.start?.offset ?? 0;
-    return start + this.sourceContentRange(this.source()).end;
+    const source = this.source();
+    const content = this.sourceContentRange(source);
+    // A node whose whole source is its content ends where the *node* ends: the
+    // canonical spelling above can be a different length (`* * *` is three
+    // characters as `***`), and the entry point has to be the end of the text
+    // in the document, not of the text the parser would have written.
+    if (content.start === 0 && content.end === source.length && position?.end?.offset !== undefined) {
+      return position.end.offset;
+    }
+    return start + content.end;
   }
 }

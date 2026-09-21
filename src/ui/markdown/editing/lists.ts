@@ -13,7 +13,7 @@
  */
 
 import { isRawRendered } from '../blocks';
-import { shiftOffset } from '../syntax/edit_range';
+import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list_edits';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
 
@@ -28,30 +28,39 @@ export const LIST_COMMANDS = [...LIST_KINDS, 'indent', 'outdent'] as const;
 export type ListCommand = (typeof LIST_COMMANDS)[number];
 
 /**
- * Applies a list command to the caret's line or to every line the selection
- * touches. Returns false when there is nothing to do — inside code, math or
- * another raw block, where a line is literal text and not a list.
+ * The edit a list command would make here, or null when there is nothing to do
+ * — inside code, math or another raw block, where a line is literal text and not
+ * a list. Split from applying it so a trigger can ask whether the command
+ * applies without running it (see `commands/editor_commands.ts`), which is what
+ * lets Tab fall through to the code block's own Tab.
  */
-export function applyListCommand(context: EditorContext, command: ListCommand): boolean {
+export function listCommandEdit(context: EditorContext, command: ListCommand): TextEdit | null {
   const range = editorSelection(context, true);
   if (!range) {
-    return false;
+    return null;
   }
   const offsets = rangeOffsets(context, range);
   if (!offsets) {
-    return false;
+    return null;
   }
   const block = context.state.getBlockAtOffset(offsets.from);
   if (!block || isRawRendered(block.kind)) {
-    return false;
+    return null;
   }
   const text = context.state.getText();
-  const edit =
-    command === 'indent'
-      ? indentEdit(text, offsets.from, offsets.to, false)
-      : command === 'outdent'
-        ? indentEdit(text, offsets.from, offsets.to, true)
-        : listEdit(text, offsets.from, offsets.to, command);
+  return command === 'indent'
+    ? indentEdit(text, offsets.from, offsets.to, false)
+    : command === 'outdent'
+      ? indentEdit(text, offsets.from, offsets.to, true)
+      : listEdit(text, offsets.from, offsets.to, command);
+}
+
+/**
+ * Applies a list command to the caret's line or to every line the selection
+ * touches. Returns false when there is nothing to do.
+ */
+export function applyListCommand(context: EditorContext, command: ListCommand): boolean {
+  const edit = listCommandEdit(context, command);
   if (!edit) {
     return false;
   }

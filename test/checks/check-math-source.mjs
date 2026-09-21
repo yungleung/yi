@@ -13,7 +13,8 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-math-'));
 const file = join(directory, 'source_mode.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { isSourceBlock, setShownRange, sourceEntryOffset } = await import(file);
+const { isSourceBlock, setShownRange, shownSourceText, sourceEntryOffset, withRenderFrame } =
+  await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -73,6 +74,29 @@ check('an empty formula enters at the end of its opening line',
   sourceEntryOffset('$$\n$$'), 2);
 check('a formula that never closes enters at its end',
   sourceEntryOffset('$$\n\\frac{a}{b}\n'), '$$\n\\frac{a}{b}\n'.length - 1);
+
+// What a source view shows: the block's own text over the shown range, not a
+// re-serialization of the node. Markdown spells the same thing more than one
+// way — `* * *` is a rule, `***` is the same rule — and a view built from the
+// canonical spelling is a different length, which is what would put a caret
+// inside the marker instead of at its end.
+const rule = block('above\n\n* * *\n\nbelow', 0, 'paragraph');
+setShownRange({ from: 7, to: 12 });
+check(
+  'the source text is the characters in the document',
+  withRenderFrame(rule, () => shownSourceText()),
+  '* * *'
+);
+check('outside a render frame there is no text to take', shownSourceText(), null);
+check(
+  'a range that names a longer text than the block has is not sliced',
+  withRenderFrame(rule, () => {
+    setShownRange({ from: 0, to: 400 });
+    return shownSourceText();
+  }),
+  null
+);
+setShownRange(null);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

@@ -1,33 +1,78 @@
+/**
+ * Where `table:insert` puts the table: on an empty paragraph, which becomes it;
+ * inside a paragraph, which is split around it with the blank lines markdown
+ * needs; and at the top of the document, which needs none above it.
+ *
+ * The table is created through the registry, the way the picker creates one.
+ * This probe used to emit the old `table_insert` event: P2 removed the listener
+ * for it, and the probe went on measuring a document that never changed — and
+ * passing, because the harness only reads the exit status.
+ *
+ * @covers src/ui/markdown/editing/table.ts, src/ui/markdown/editing/blank_lines.ts
+ */
 (async () => {
   const t = window.__t;
-  const emit = (event, payload) =>
-    window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event, payload });
-  const doc = ['First paragraph.', '', '', 'Second paragraph.', ''].join('\n');
-
-  await t.load(doc);
-  const blocks = t.blocks();
-  // The second block is the empty paragraph between the two paragraphs.
-  await t.click(blocks[1]);
-  await emit('table_insert', { rows: 3, columns: 2 });
-  await t.sleep(400);
-  const emptyLine = await t.raw();
-  const caretInEmptyLine = t.caretRect();
-  t.report({ emptyLine, caretInEmptyLine, blockCount: blocks.length });
-
-  await t.load(doc);
-  // `click` measures an element's box, so aim through the text node's parent.
-  await t.click(t.textNodesIn(t.blocks()[0]).pop().parentElement, 0.99);
-  await emit('table_insert', { rows: 2, columns: 3 });
-  await t.sleep(400);
-  return {
-    emptyLine,
-    caretInEmptyLine,
-    midParagraph: await t.raw(),
-    caret: t.caretRect(),
-    firstBlockTop: t.rectOf(t.blocks()[0]).top,
-    blocks: t.blocks().map((block) => ({
-      lineStart: Number(block.dataset.lineStart),
-      text: block.textContent.slice(0, 24)
-    }))
+  const registry = await t.app('/src/ui/markdown/commands/registry.ts');
+  const insert = (rows, columns) => registry.runCommand('table:insert', { rows, columns });
+  /** The markdown `tableMarkdown` writes, so the expectation is the same shape. */
+  const table = (columns, rows) => {
+    const header = `| ${Array.from({ length: columns }, () => '').join(' | ')} |`;
+    const delimiter = `| ${Array.from({ length: columns }, () => '---').join(' | ')} |`;
+    return [header, delimiter, ...Array.from({ length: rows - 1 }, () => header)].join('\n');
   };
+  const doc = ['First paragraph.', '', '', 'Second paragraph.', ''].join('\n');
+  /** The editor renders on a frame; wait for the shape before reading it. */
+  const settle = async (ready) => {
+    for (let attempt = 0; attempt < 40 && !ready(); attempt += 1) {
+      await t.sleep(50);
+    }
+    await t.sleep(50);
+  };
+  const checks = [];
+  const check = (name, actual, expected) => {
+    checks.push({ name, actual, expected });
+  };
+  const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+
+  // An empty paragraph becomes the table: it is the line, not a break around it.
+  await t.load(doc);
+  await t.click(t.blocks()[1], 0.5);
+  check('the command ran', insert(3, 2), true);
+  await settle(() => t.prose().querySelectorAll('tr').length === 3);
+  check(
+    'an empty paragraph becomes the table',
+    await t.raw(),
+    `First paragraph.\n\n${table(2, 3)}\n\nSecond paragraph.\n`
+  );
+  check('three rows, two of them body rows', t.prose().querySelectorAll('tr').length, 3);
+  check('two header cells and four body cells', [
+    t.prose().querySelectorAll('thead th').length,
+    t.prose().querySelectorAll('tbody td').length
+  ], [2, 4]);
+
+  // Inside a paragraph: the paragraph is split, and the table keeps a blank line
+  // on the side that would otherwise merge into the text.
+  await t.load(doc);
+  await t.click(t.textNodesIn(t.blocks()[0]).pop().parentElement, 0.99);
+  check('the command ran again', insert(2, 3), true);
+  await t.sleep(400);
+  check(
+    'a paragraph is split around the table',
+    await t.raw(),
+    `First paragraph.\n\n${table(3, 2)}\n\n\nSecond paragraph.\n`
+  );
+
+  // At the very top: nothing above the first line needs separating from, so the
+  // table does not push blank lines into the document.
+  await t.load('First paragraph.\n');
+  await t.click(t.textNodesIn(t.blocks()[0])[0].parentElement, 0);
+  check('the command ran at the top', insert(3, 2), true);
+  await t.sleep(400);
+  check(
+    'at the top of the document the table needs nothing above it',
+    await t.raw(),
+    `${table(2, 3)}\n\nFirst paragraph.\n`
+  );
+
+  return { checks, failed: checks.filter((entry) => !same(entry.actual, entry.expected)).map((entry) => entry.name) };
 })()

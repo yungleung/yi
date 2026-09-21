@@ -68,6 +68,14 @@ check(
   thematicBreakInsertion('a\n\nb\n', 3),
   '---\n\n'
 );
+// Nothing above the first line needs separating from: the same rule `Enter`
+// follows at the start of a file (`paragraphStart` in `editing/blank_lines.ts`),
+// so a rule inserted there does not push two blank lines into the document.
+check(
+  'at the top of the document the rule needs no blank line above it',
+  applied('b\n', 0),
+  '---\n\nb\n'
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
