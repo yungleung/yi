@@ -28,7 +28,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | --- | --- | --- |
 | Syntax (pure) | `blocks.ts`, `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `state.ts` | syntax |
-| Render | `virtual_block_renderer.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
+| Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
 
@@ -117,12 +117,21 @@ way out (a document offset turned into the text node and offset that hold it).
 
 ## Extension points
 
-- `registry.ts: registerComponent(type, factory, showsSource)` — `showsSource` marks
-  a node type whose markdown can stand in for its rendering.
-- `nodes/revealable_node.ts: sourceViewFor(...)` — builds that source view.
-- `source_mode.ts` — which source is shown, and where a click enters it.
-- `commands/registry.ts: registerCommand(...)` — the one table of commands, and
-  `runCommand(id)` the one way to run one.
+Every extension point is a named file — never "the renderer" — and each one is
+reached in a way the next person can copy:
 
-The recipes that use them are `docs/adding-a-node.md` and
+| Extension point | The file that owns it | Adding one |
+| --- | --- | --- |
+| A markdown construct's rendering | `nodes/<type>.ts`, registered in `create_node.ts` | `docs/adding-a-node.md` |
+| Whether a node's markdown can stand in for its rendering | the `showsSource` flag in `registry.ts: registerComponent` | `docs/adding-a-node.md`, step 4 |
+| Which source is shown, and where a click enters it | `source_mode.ts`, with `nodes/revealable_node.ts` | `docs/adding-a-node.md`, step 4 |
+| A command the author can ask for | the id in `commands/registry.ts`, the work registered in `markdown_editor.ts: registerCommandEvents`, the trigger | `docs/adding-a-command.md` |
+| How the document splits into blocks | `blocks.ts` | a task in the block model, plus `test/checks/check-blocks.mjs` |
+| A pure rule about markdown | the matching `syntax/*.ts`, named in the one-fact-one-home table above | `docs/testing.md` — rule-shaped means `test/checks/` |
+| What a block is worth in pixels | `block_sizes.ts` | a case in `test/checks/check-block-sizes.mjs` |
+| Which blocks are mounted | `viewport_window.ts` | the same |
+
+The registry (`registry.ts`) is the one place that says which node types exist, so
+the renderer can stay a consumer of that table rather than a second list of what
+markdown means. The recipes that use these points are `docs/adding-a-node.md` and
 `docs/adding-a-command.md`.
