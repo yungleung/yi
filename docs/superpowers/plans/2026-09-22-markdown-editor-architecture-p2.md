@@ -118,3 +118,49 @@ code calls a command id; nothing outside `commands/registry.ts` names a command
 event. Verify with `npm run check`, then the probes by name against a **freshly
 started** app (`npm run tauri dev` — a long-running dev app degrades and makes every
 probe time out), then `npm run probe:all`.
+
+---
+
+## Handoff (2026-09-22, P2 complete)
+
+**Where the branch is.** `codex/editor-commands`, twelve commits ahead of `main`.
+All four tasks are done: the registry and its check, every trigger routed through
+it, the shell split (`click_routing.ts`, `src/ui/editor_panel.ts`), and the recipe
+(`docs/adding-a-command.md`) proved by adding `edit:insertRule`
+(`Cmd/Ctrl+Shift+R`). `npx tsc --noEmit` is clean, `npm run check` is 13/13 and
+`npm run probe:all` is 59/59 (6 skipped) from a freshly started app.
+
+**Two corrections to the handoff above.** The footnote button was never broken:
+`test/probes/footnote-button.js` threw on `querySelectorAll(...).pop()` before it
+could measure, and the `definitions: 0` the earlier handoff read was the probe's
+*before* snapshot. Rewiring the button to `runCommand` was safe all along — the
+command runs synchronously in the click, and the caret it works from is the one
+the click left (the titlebar is exempt from the click that hides the caret), so no
+`queueMicrotask` and no re-focus were needed. And `test/probes/table-menu.js` had
+never run: `b3e3fe6` put `@needs-foreground-window` after the header's closing
+`*/`, so the file was a syntax error, `probe:all` skipped it on that very string,
+and the bridge answers an unevaluatable script with a timeout. The harness now
+parses every probe before sending it, and checks the helper surface it needs.
+
+**What the recipe cost, in case a later phase writes another one.** Three things
+were not obvious from the plan and are now written down in
+`docs/adding-a-command.md`: a command's caret is a decision (the default lands at
+the end of a marker, where the next keystroke takes the block with it, and a blank
+line *between* two blocks is not a caret position at all); a set that several
+modules need is a `const` tuple with its type read off it, not a union; and a
+trigger the native menu does not claim needs the keymap, because the menu's
+accelerators never reach the webview.
+
+**Left for later, in rough priority.**
+
+- A thematic break shows remark's canonical `***` as its source view while the
+  caret is in it, not the `---` the author wrote (`nodes/thematic_break.ts` builds
+  the view from the node). Every other source mode shows the raw text.
+- `table:insert` and `edit:insertRule` at offset 0 of a document still put two
+  blank lines above the block (`blockPadding`), where `paragraphStart` already
+  knows that nothing above needs no separator.
+- `list:outdent` is registered but no trigger names it: `Shift+Tab` calls
+  `applyListCommand` directly, as the text path.
+- Task 3 left `markdown_editor.ts` holding both the wiring and the command
+  registrations; P2 asked for the wiring, and the registrations could follow
+  `click_routing.ts` into their own module when it earns one.

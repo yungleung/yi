@@ -46,6 +46,11 @@ Harness flags:
 
 - **Editing a probe reloads the page** (Vite watches the repo). Wait ~10 s after
   editing before running it, or the probe runs against a half-loaded page.
+- **Two writes to one source file in the same moment leave Vite serving the first
+  transform** — its cache key is the file's mtime — and a page reload keeps serving
+  it, so the app runs a module the file on disk no longer holds. `touch` the file,
+  then `npm run probe -- --reload`. A probe reporting something impossible (a
+  `ReferenceError` for a function you just wrote) is usually this, not the app.
 - A probe that outlives the bridge's budget still leaves its last `t.report(...)` in
   `window.__probeSteps`; the harness prints it as *"recovered after the bridge timed
   out"*. That is a result, not a failure — but check the app is fresh, because a
