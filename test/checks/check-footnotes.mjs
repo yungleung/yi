@@ -18,8 +18,14 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-footnotes-'));
 const file = join(directory, 'footnotes.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { footnoteLabels, nextFootnoteNumber, footnoteOffsets, withFootnoteDefinitions, footnoteInsertEdit } =
-  await import(file);
+const {
+  footnoteLabels,
+  labelsAfterEdit,
+  nextFootnoteNumber,
+  footnoteOffsets,
+  withFootnoteDefinitions,
+  footnoteInsertEdit
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -107,6 +113,80 @@ check('a block with no references is untouched',
 check('the inserted marker parses as a reference beside the old one',
   inlineTypes(applied(doc, inserted)),
   ['text', 'footnoteReference', 'text', 'footnoteReference', 'text']);
+
+/**
+ * Applies a sequence of edits, folding the labels in the way the state does —
+ * `labelsAfterEdit` against the text each edit produced — and reports the labels
+ * that walk ends with and the edits it made.
+ */
+const folded = (markdown, edits) => {
+  let text = markdown;
+  let labels = footnoteLabels(text);
+  const applied_ = [];
+  for (const [from, to, inserted] of edits) {
+    const edit = { from, to, removed: text.slice(from, to), inserted };
+    text = `${text.slice(0, from)}${inserted}${text.slice(to)}`;
+    labels = labelsAfterEdit(labels, text, edit);
+    applied_.push({ edit, labels: [...labels], scan: [...footnoteLabels(text)] });
+  }
+  return { text, labels: [...labels], scan: [...footnoteLabels(text)], applied: applied_ };
+};
+
+// The labels an edit leaves behind are the labels of the text it produced. The
+// rule may fall back to a scan whenever it is unsure; what it may not do is come
+// back one label short, which is a reference that stops parsing as a footnote.
+const cases = [
+  ['a definition typed into a document', 'Body[^1].\n', [[9, 9, '\n\n[^1]: note\n']]],
+  ['a label renamed', '[^1]: one\n\nBody[^1].\n', [[2, 3, '2'], [17, 18, '2']]],
+  ['a definition line deleted', '[^1]: one\n\nBody.\n', [[0, 10, '']]],
+  ['two lines joined, swallowing a definition', 'text\n[^1]: note\n', [[4, 5, '']]],
+  ['a line split, opening a definition', 'text[^1]: note\n', [[4, 4, '\n']]],
+  [
+    'a definition written in front of a character',
+    'note[^1]\n\n[^1]: the note\n',
+    [[14, 14, 'x']]
+  ],
+  ['the text of a definition typed in', '[^1]: note\n', [[8, 8, 'x'], [9, 9, 'y']]],
+  ['a paragraph rewritten around a definition', 'para\n\n[^1]: note\n\nmore\n', [[0, 4, 'text']]]
+];
+for (const [name, markdown, edits] of cases) {
+  const result = folded(markdown, edits);
+  const wrong = result.applied.find((step) => JSON.stringify(step.labels) !== JSON.stringify(step.scan));
+  check(`an edit leaves the right labels: ${name}`, wrong ? wrong.labels : result.labels, result.scan);
+}
+
+// A hundred pseudo-random edits, inserting the characters that decide where a
+// line starts: the rule has to hold where a definition can be made and unmade.
+let seed = 20260922;
+const nextRandom = () => {
+  seed = (seed * 1103515245 + 12345) % 2147483648;
+  return seed / 2147483648;
+};
+const alphabet = ['a', ' ', '\n', '[', '^', ']', ':', '1', '2'];
+const randomEdits = [];
+const start = 'Body[^1] and [^2]\n\n[^1]: one\n\n[^2]: two\n';
+let length = start.length;
+for (let step = 0; step < 100; step += 1) {
+  const from = Math.floor(nextRandom() * (length + 1));
+  const to = Math.min(length, from + Math.floor(nextRandom() * 3));
+  let inserted = '';
+  const size = Math.floor(nextRandom() * 4);
+  for (let index = 0; index < size; index += 1) {
+    inserted += alphabet[Math.floor(nextRandom() * alphabet.length)];
+  }
+  randomEdits.push([from, to, inserted]);
+  length += inserted.length - (to - from);
+}
+const random = folded(start, randomEdits);
+const wrongStep = random.applied.find((step) => JSON.stringify(step.labels) !== JSON.stringify(step.scan));
+check('a hundred pseudo-random edits leave the right labels', wrongStep ? wrongStep.labels : random.labels, random.scan);
+
+// The cheap half of the rule: an edit that cannot touch a definition line hands
+// back the set it was given, rather than scanning a long document again.
+const labels = new Set(['1', '2']);
+const typed = 'a paragraph with no definitions in it\n';
+check('a keystroke in a paragraph keeps the set it had',
+  labelsAfterEdit(labels, `a${typed.slice(1)}`, { from: 1, to: 1, removed: '', inserted: 'a' }) === labels, true);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

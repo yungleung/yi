@@ -38,6 +38,78 @@ export function footnoteLabels(text: string): Set<string> {
   return labels;
 }
 
+/**
+ * A replacement of a range of the raw text: where it was, what it removed and
+ * what it put in its place. The same shape the edit history records
+ * (`document/history.ts`, `DocumentEdit`), written out here because this module
+ * reads raw text and never the editor that made it.
+ */
+export interface TextReplacement {
+  from: number;
+  to: number;
+  removed: string;
+  inserted: string;
+}
+
+/** Whether a piece of text holds a line that defines a footnote. */
+const DEFINITION_LINE = /^ {0,3}\[\^[^\]\n]+\]:/m;
+
+/**
+ * The labels the document defines after `edit`, given the labels it had.
+ *
+ * A definition is a whole line — `[^1]: note` — so an edit changes which labels
+ * exist by changing which lines are definitions: typing `[^1]: ` on a line
+ * starts one, typing a character in front of one stops it being one, and moving
+ * a line boundary can leave a definition's own `[^x]:` in the middle of the line
+ * that swallowed it. When the edit can do none of those things, no line has
+ * changed what it defines and the set is the set it was; when it can, the
+ * document is scanned again. Falling back costs a scan the edit did not need;
+ * being wrong costs a reference that silently stops parsing as a footnote.
+ */
+export function labelsAfterEdit(
+  labels: ReadonlySet<string>,
+  text: string,
+  edit: TextReplacement
+): ReadonlySet<string> {
+  if (definesALine(edit.removed) || definesALine(edit.inserted) || movesALine(edit)) {
+    return footnoteLabels(text);
+  }
+  const line = lineAt(text, edit.from + edit.inserted.length);
+  if (definesALine(line.text) || definesALine(lineBefore(line, edit))) {
+    return footnoteLabels(text);
+  }
+  return labels;
+}
+
+/** Whether a document — or a piece of one — holds a definition line. */
+function definesALine(text: string): boolean {
+  return DEFINITION_LINE.test(text);
+}
+
+/** Whether the edit removes or adds a line ending, which moves every line below. */
+function movesALine(edit: TextReplacement): boolean {
+  return edit.removed.includes('\n') || edit.inserted.includes('\n');
+}
+
+/** The line of `text` that holds `offset`, and where it starts. */
+function lineAt(text: string, offset: number): { text: string; start: number } {
+  const at = Math.max(0, Math.min(offset, text.length));
+  const start = text.lastIndexOf('\n', Math.max(0, at - 1)) + 1;
+  const end = text.indexOf('\n', at);
+  return { text: text.slice(start, end === -1 ? text.length : end), start };
+}
+
+/**
+ * The line the edit landed on as it was before the edit: what it inserted
+ * swapped back for what it removed. Only an edit inside one line has a line
+ * that was there before — an edit that moves a line ending is scanned for
+ * anyway.
+ */
+function lineBefore(line: { text: string; start: number }, edit: TextReplacement): string {
+  const at = Math.max(0, edit.from - line.start);
+  return `${line.text.slice(0, at)}${edit.removed}${line.text.slice(at + edit.inserted.length)}`;
+}
+
 /** The number a new footnote takes: one past the highest numbered label. */
 export function nextFootnoteNumber(text: string): number {
   let highest = 0;

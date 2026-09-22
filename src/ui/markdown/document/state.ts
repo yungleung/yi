@@ -19,7 +19,7 @@
 
 import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
-import { footnoteLabels, withFootnoteDefinitions } from '../syntax/footnotes';
+import { footnoteLabels, labelsAfterEdit, withFootnoteDefinitions } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit } from './history';
@@ -44,8 +44,8 @@ export class MarkdownEditorState {
    * and a shifted block's parse is still valid.
    */
   private readonly blockContent = new Map<string, RootContent[]>();
-  /** The labels the document defines, recomputed after every edit. */
-  private labels: Set<string> | null = null;
+  /** The labels the document defines, read once per text. */
+  private labels: ReadonlySet<string> | null = null;
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
 
@@ -129,7 +129,13 @@ export class MarkdownEditorState {
     apply();
     this.cachedText = null;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
-    this.labels = null;
+    // The labels follow the edit rather than being thrown away with it: reading
+    // every definition in the document is a scan per keystroke on a note with
+    // footnotes in it, and an edit that cannot touch a definition line does not
+    // change which labels exist (`labelsAfterEdit`).
+    if (this.labels) {
+      this.labels = labelsAfterEdit(this.labels, this.getText(), edit);
+    }
   }
 
   /** The labels the document defines, read once per text. */
