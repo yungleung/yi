@@ -54,7 +54,7 @@ an innocent import. `test/checks/layering.mjs` enforces it.
 1. **The document text is the only source of truth.** Every edit is a raw-text range
    replacement (`editing/context.ts: applyEdit`).
 2. **A block's rendering is a pure function of its own source**, never of where it
-   sits, so caches key on content rather than line numbers (`blocks.ts:
+   sits, so caches key on content rather than line numbers (`document/blocks.ts:
    blockContentKey`, `virtual_block_renderer.ts`).
 3. **A caret's document offset is the truth.** A rendered position is derived from
    it and re-derived after any DOM rebuild (`caret/caret.ts`, `caret/offsets.ts`,

@@ -75,7 +75,7 @@ under *AI agents*.
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
-2. `npm run check` → `15/15 checks passed` (or more, if you added one).
+2. `npm run check` → `16/16 checks passed` (or more, if you added one).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report, and check the app is freshly started —
    a dev app left running for hours gets slow and probes will time out.
