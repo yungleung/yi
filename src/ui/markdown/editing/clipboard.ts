@@ -12,7 +12,7 @@
  */
 
 import { editorSelection, rangeOffsets, applyEdit, proseRoot, type EditorContext } from './context';
-import { materializeInsertion } from './blank_lines';
+import { materializeInsertion, pasteInsertion } from './blank_lines';
 
 /** The selected raw range and its text, or null when nothing is selected. */
 function selectedRawRange(
@@ -78,7 +78,12 @@ export function pasteText(context: EditorContext, event: ClipboardEvent): void {
     materializeInsertion(context, offsets, replacement);
     return;
   }
-  applyEdit(context, offsets.from, offsets.to, replacement);
+  // Blocks pasted where they were not alone get the blank lines they need at the
+  // seam, and the caret lands at the end of what was pasted; one line, or one
+  // paragraph broken across lines, is spliced where the caret is.
+  const text = context.state.getText();
+  const insertion = pasteInsertion(text, offsets.from, offsets.to, replacement);
+  applyEdit(context, offsets.from, offsets.to, insertion.replacement, insertion.caret);
 }
 
 /**

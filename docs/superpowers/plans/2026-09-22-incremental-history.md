@@ -110,8 +110,24 @@ The design document's target layout puts `state.ts` and `blocks.ts` in
 because history is the third owner of the document model — and it is the wrong
 moment to sweep `render/` into a folder, which nothing needs. So: create
 `src/ui/markdown/document/` and move the two files into it in Task 3, with
-`history.ts` already there from Task 1. If review decides against the move, only
-Task 3 disappears; nothing else in the plan depends on it.
+`history.ts` already there from Task 2. If review decides against the move, only
+Task 4 disappears; nothing else in the plan depends on it.
+
+### 1.6 What is already incremental, and what is not
+
+Asked while planning: is incremental *rendering* in place? Yes, and it has been
+since before P0. `virtual_block_renderer.ts: renderChanged` compares each mounted
+element against its block's content key and drops only the ones that changed; the
+parse cache (`state.ts: blockContent`) and the measured heights (`block_sizes.ts`)
+are keyed the same way, so an edit — including a paste that adds several blocks —
+rebuilds the blocks it touched and leaves the rest of the DOM alone. Task 1's probe
+asserts exactly that, by element identity, rather than by watching a stopwatch.
+
+What is *not* incremental is the text: `replaceRange` builds the new document with
+`slice` and `splitBlocks` re-splits every line, so an edit costs O(document) in
+memory traffic even though the rendering is O(change). A rope or a piece table
+would fix that. It is not this phase, and history does not need it: a delta log is
+small either way.
 
 ---
 
@@ -128,7 +144,61 @@ Task 3 disappears; nothing else in the plan depends on it.
 
 ## Part 3 — tasks
 
-### Task 1: The `History` module, and the check that pins its algebra
+### Task 1: The paste cases, before anything about history changes
+
+**Files:**
+- Create: `test/probes/paste-blocks.js`
+- Modify: `src/ui/markdown/editing/clipboard.ts`, `src/ui/markdown/editing/blank_lines.ts`
+
+**Interfaces:**
+
+- Produces: `pasteInsertion(text: string, from: number, to: number, pasted: string): string`
+  in `editing/blank_lines.ts` — what a paste replaces the range with. A paste that
+  carries its own paragraph breaks (`\n[ \t]*\n`) is a *block* paste and gets the
+  blank lines a block needs at each seam (`blockPadding`); anything else is spliced
+  exactly as written, which is what a one-line paste, or one paragraph broken across
+  lines, has always done.
+
+- [ ] **Step 1: Write the probe (RED)**
+
+Copy two paragraphs — a real selection across blocks — then paste it in each of the
+four places, asserting the document, the caret, and that the blocks the paste did
+not touch kept their DOM elements (which is the incremental rendering, measured):
+
+```js
+// copy:  select from the start of the first paragraph to the start of the third,
+//        dispatch `copy`, keep its DataTransfer
+// paste: click `where`, dispatch `paste` with that DataTransfer
+check('at the start of a paragraph the pasted blocks stay blocks',
+  raw, 'one\n\ntwo\n\nAlpha beta\n\ngamma\n');
+check('in the middle the paragraph splits around them',
+  raw, 'Al\n\none\n\ntwo\n\npha beta\n\ngamma\n');
+check('at the end they follow the paragraph',
+  raw, 'Alpha beta\n\none\n\ntwo\n\ngamma\n');
+check('on a blank line the line becomes them',
+  raw, 'alpha\n\none\n\ntwo\n\ngamma\n');
+check('one line pasted mid-word is spliced as it is', raw, 'AlphaXbeta\n');
+check('the blocks the paste did not touch keep their elements',
+  after.farBlock === before.farBlock, true);
+```
+
+Run it: the four block cases fail today — a multi-paragraph paste is spliced into
+the words around it (`Alone\n\ntwopha`), because only the blank-line case is
+block-aware.
+
+- [ ] **Step 2: The rule, and the wiring**
+
+`pasteInsertion` in `blank_lines.ts`, where the paragraph-break facts live, and
+`pasteText` uses it for the non-blank-line path; the caret goes after the pasted
+text, before the trailing blank lines. The blank-line path keeps
+`materializeInsertion`, which already turns the line into the pasted content.
+
+- [ ] **Step 3: Verify** — `npx tsc --noEmit`, `npm run check` (16/16), the probe by
+  name, and the existing paste-free probes untouched.
+
+- [ ] **Step 4: Commit** — `fix(editor): a paste that carries paragraph breaks lands as blocks`
+
+### Task 2: The `History` module, and the check that pins its algebra
 
 **Files:**
 - Create: `src/ui/markdown/history.ts`, `test/checks/check-history.mjs`
@@ -186,7 +256,7 @@ The header takes the house shape; the body is a cursor over an array, with
 - [ ] **Step 3: Verify and commit** — `npx tsc --noEmit`, `npm run check` (16/16),
   commit `refactor(history): keep the edits, not the document`.
 
-### Task 2: The state records deltas, and undo applies them
+### Task 3: The state records deltas, and undo applies them
 
 **Files:**
 - Modify: `src/ui/markdown/state.ts`
@@ -194,7 +264,7 @@ The header takes the house shape; the body is a cursor over an array, with
 
 **Interfaces:**
 
-- Consumes: `History`, `DocumentEdit`, `invert` from Task 1.
+- Consumes: `History`, `DocumentEdit`, `invert` from Task 2.
 - Produces: the same public surface as today (`undo()`, `redo()`, `replaceRange`,
   `setText`, `loadText`) plus, for tests, `historyEdits(): readonly DocumentEdit[]`.
 
@@ -217,7 +287,7 @@ log holds one entry per edit.
 
 - [ ] **Step 4: Commit** — `refactor(history): record the edit instead of the document`
 
-### Task 3: `document/`, the home §5 promised
+### Task 4: `document/`, the home §5 promised
 
 **Files:**
 - Move: `src/ui/markdown/state.ts` → `src/ui/markdown/document/state.ts`,
@@ -242,7 +312,7 @@ log holds one entry per edit.
 
 - [ ] **Step 5: Commit** — `refactor(document): give the document model its folder`
 
-### Task 4: The probe for the seam — undo after the window moved
+### Task 5: The probe for the seam — undo after the window moved
 
 **Files:**
 - Create: `test/probes/undo-after-scroll.js`
@@ -271,7 +341,7 @@ what lets an undo reuse the parses of the text it returns to.
 
 - [ ] **Step 4: Commit** — `test(history): prove undo across a window move`
 
-### Task 5: The phase's acceptance run, and the handoff
+### Task 6: The phase's acceptance run, and the handoff
 
 - [ ] `npx tsc --noEmit`; `npm run check`; fresh app; `npm run probe:all`.
 - [ ] Append the handoff to this plan: what changed, what the check enforces, what
