@@ -45,16 +45,18 @@ and stops there.
 
 ## Part 1 — the design
 
-### 1.1 The two costs
+### 1.1 The three costs
 
 | Cost | Where | Today | With this phase |
 | --- | --- | --- | --- |
 | the text | `state.replaceRange` | `slice` + `slice` + concat: O(document) bytes per edit | O(pieces touched), O(1) amortised for the appended text |
 | the blocks | `state.updateText` → `splitBlocks` | every line, every edit | from the changed block until the new split re-synchronises |
+| the footnote labels | `state.getBlockContent` → `footnoteLabels(text)` | a whole-document `matchAll`, recomputed once per edit | folded in from the edit (Task 4) |
 
 Everything else is already incremental: the parse cache is keyed by block content
 (P0), the renderer rebuilds only blocks whose content key changed (P4), and the
-history records a delta (P5).
+history records a delta (P5). Of the three, only the first two are about the store;
+the third is a walk the editor does for itself, and it is why Task 4 exists.
 
 ### 1.2 The piece table
 
@@ -89,6 +91,14 @@ less copying. Existing text is never rewritten, only re-viewed, and in exchange 
 text it replaced stays reachable until `compact()` runs (Task 1). That is the trade
 in one line: a rope pays in rebalancing, a piece table pays in retention.
 
+The choice is also reversible, which is why it should be made and then measured
+rather than argued: Task 1's interface (`length`, `slice`, `replace`, `toString`,
+`pieceCount`, `compact`) is the whole contract, and its check is a property test
+against a plain string, so a rope is a second implementation of one module. Task 1
+therefore lands the pieces as an array with a lazily rebuilt prefix index — correct,
+and easy to trust while the checks are being written — and the balanced tree is the
+same interface, taken when Task 5's probe says the walk is the cost.
+
 ### 1.3 The re-synchronising split
 
 `splitBlocks` is a line walk whose result depends on more than one line: a fence
@@ -120,6 +130,10 @@ things this design spent two phases getting: a whole-document history entry per
 save, a rebuild of every block's content key, and a caret that has to be mapped
 rather than kept. If source readability ever becomes a real requirement it is a
 phase of its own, with the store's per-paragraph `replace` as its tool.
+The consequence to know about: with no wrapping pass, a note that is one enormous
+paragraph stays one enormous *block*, and the renderer virtualises between blocks,
+not inside one — so if such a note ever feels slow, that is a renderer question
+(splitting a block's rendering) rather than anything the text store can answer.
 
 ---
 
