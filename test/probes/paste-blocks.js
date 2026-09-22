@@ -101,5 +101,17 @@
   await caretAt('Alpha', 3);
   await paste(word, 'AlpXha beta\n\ngamma\n', 'midWord', 'gamma');
 
+  // Two blocks pasted are one edit: one undo takes the whole paste back.
+  await t.load(target);
+  await caretAt('Alpha beta', 'Al'.length);
+  await paste(clipboard, 'alpha\n\nAl\n\none\n\ntwo\n\npha beta\n\n\ngamma\n\nomega\n', 'oneStep');
+  await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'undo' });
+  await t.sleep(250);
+  const undone = await t.raw();
+  checks.undoAfterAPaste = { raw: undone, expected: target };
+  if (undone !== target) {
+    failed.push('undoAfterAPaste');
+  }
+
   return { checks, failed };
 })()

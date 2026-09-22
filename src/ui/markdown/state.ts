@@ -18,16 +18,7 @@ import type { RootContent } from 'mdast';
 import { footnoteLabels, withFootnoteDefinitions } from './syntax/footnotes';
 import { parseMarkdown } from './syntax/parser';
 import { blockParseInput } from './blocks';
-
-/**
- * One undo step: the document text before the edit and after it. Whole-text
- * snapshots keep undo trivial and exact for a block-based document, and the
- * renderer only rebuilds the blocks whose source actually changed.
- */
-interface HistoryEntry {
-  before: string;
-  after: string;
-}
+import { History, type DocumentEdit } from './history';
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
@@ -43,8 +34,8 @@ export class MarkdownEditorState {
   private readonly blockContent = new Map<string, RootContent[]>();
   /** The labels the document defines, recomputed after every edit. */
   private labels: Set<string> | null = null;
-  private readonly history: HistoryEntry[] = [];
-  private historyIndex = 0;
+  /** The edits applied to the loaded text, and where in them the document is. */
+  private readonly history = new History();
 
   constructor(text = '') {
     this.text = text;
@@ -107,7 +98,10 @@ export class MarkdownEditorState {
     }
     const before = this.text;
     this.updateText(text);
-    this.recordHistory({ before, after: text });
+    // A command that computes a whole document is recorded as one whole-document
+    // edit: still one undo step, and still exact, for the two commands that do
+    // this (inline formatting, find and replace all).
+    this.history.record({ from: 0, to: before.length, removed: before, inserted: text });
   }
 
   private updateText(text: string): void {
@@ -126,9 +120,9 @@ export class MarkdownEditorState {
   replaceRange(from: number, to: number, replacement: string): void {
     const start = Math.max(0, Math.min(from, this.text.length));
     const end = Math.max(start, Math.min(to, this.text.length));
-    const before = this.text;
-    this.updateText(`${before.slice(0, start)}${replacement}${before.slice(end)}`);
-    this.recordHistory({ before, after: this.text });
+    const removed = this.text.slice(start, end);
+    this.updateText(`${this.text.slice(0, start)}${replacement}${this.text.slice(end)}`);
+    this.history.record({ from: start, to: end, removed, inserted: replacement });
   }
 
   /**
@@ -140,34 +134,41 @@ export class MarkdownEditorState {
     this.blocks = splitBlocks(text);
     this.labels = null;
     this.blockContent.clear();
-    this.history.length = 0;
-    this.historyIndex = 0;
+    this.history.clear();
   }
 
   /** Steps back one edit. Returns false when there is nothing to undo. */
   undo(): boolean {
-    if (this.historyIndex === 0) {
+    const edit = this.history.undo();
+    if (!edit) {
       return false;
     }
-    this.updateText(this.history[this.historyIndex - 1].before);
-    this.historyIndex -= 1;
+    this.updateText(this.applyToText(edit));
     return true;
   }
 
   /** Re-applies the last undone edit. Returns false when there is none. */
   redo(): boolean {
-    if (this.historyIndex >= this.history.length) {
+    const edit = this.history.redo();
+    if (!edit) {
       return false;
     }
-    this.updateText(this.history[this.historyIndex].after);
-    this.historyIndex += 1;
+    this.updateText(this.applyToText(edit));
     return true;
   }
 
-  private recordHistory(entry: HistoryEntry): void {
-    this.history.splice(this.historyIndex);
-    this.history.push(entry);
-    this.historyIndex += 1;
+  /**
+   * The text `edit` produces from the current one. History edits are applied
+   * through `updateText` rather than `replaceRange`, so undoing cannot record
+   * itself as a new edit.
+   */
+  private applyToText(edit: DocumentEdit): string {
+    return `${this.text.slice(0, edit.from)}${edit.inserted}${this.text.slice(edit.to)}`;
+  }
+
+  /** The edits in force, oldest first — the history, for tests and tooling. */
+  historyEdits(): readonly DocumentEdit[] {
+    return this.history.edits();
   }
 
   /**

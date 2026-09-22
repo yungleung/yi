@@ -75,6 +75,49 @@ const typed = new History();
 typed.record(insert(0, 'x'));
 check('a one-character edit is a few bytes of history', JSON.stringify(typed.edits()).length < 60, true);
 
+// The state records what it changed and undo applies the inverse — the same
+// behaviour the whole-document pair had, with the log holding the edit itself.
+globalThis.document = {
+  addEventListener() {},
+  createElement: () => ({ style: {}, classList: { add() {} }, appendChild() {}, setAttribute() {} }),
+  querySelectorAll: () => [],
+  querySelector: () => null,
+  createRange: () => ({})
+};
+globalThis.window = {
+  getSelection: () => null,
+  addEventListener() {},
+  __TAURI_INTERNALS__: { transformCallback: () => 1, invoke: async () => null }
+};
+
+const stateBundle = await rolldown({ input: 'src/ui/markdown/state.ts', logLevel: 'silent' });
+const { output: stateOutput } = await stateBundle.generate({ format: 'esm' });
+await stateBundle.close();
+const stateFile = join(directory, 'state.mjs');
+writeFileSync(stateFile, stateOutput.find((chunk) => chunk.type === 'chunk').code);
+const { MarkdownEditorState } = await import(stateFile);
+
+const document_ = new MarkdownEditorState('one\ntwo\n');
+document_.replaceRange(3, 3, 'X');
+check('a range replacement changes the text', document_.getText(), 'oneX\ntwo\n');
+check('and is one entry in the log', document_.historyEdits(), [
+  { from: 3, to: 3, removed: '', inserted: 'X' }
+]);
+document_.undo();
+check('undo puts the text back', document_.getText(), 'one\ntwo\n');
+document_.redo();
+check('redo applies it again', document_.getText(), 'oneX\ntwo\n');
+document_.undo();
+check('undoing past the first edit returns false', document_.undo(), false);
+document_.replaceRange(0, 3, 'ONE');
+check('a new edit truncates the redo tail', [document_.getText(), document_.historyEdits().length], [
+  'ONE\ntwo\n',
+  1
+]);
+check('and the log holds the edit, not the document', document_.historyEdits()[0].removed, 'one');
+document_.loadText('fresh\n');
+check('a new document has no history', [document_.historyEdits().length, document_.undo()], [0, false]);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
