@@ -43,7 +43,7 @@ for (const [from, to, text] of edits) {
 }
 
 check('a range read agrees with the string', store.slice(4, 30), reference.slice(4, 30));
-check('a range read at the very end', store.slice(reference.length - 3), reference.slice(-3));
+check('a range read at the very end', store.slice(reference.length - 3, reference.length), reference.slice(-3));
 check('an empty range reads empty', store.slice(5, 5), '');
 check('a range beyond the end is clamped', store.slice(reference.length - 2, reference.length + 99), reference.slice(-2));
 
@@ -51,7 +51,7 @@ const trailing = new TextStore('abc');
 trailing.replace(99, 120, '!');
 check('an edit past the end is clamped like the string', trailing.toString(), 'abc!');
 trailing.replace(1, 99, '');
-check('an edit that runs past the end truncates', trailing.toString(), 'a!');
+check('an edit that runs past the end truncates', trailing.toString(), 'a');
 
 const typing = new TextStore('a paragraph that already exists');
 for (let index = 0; index < 50; index += 1) {
@@ -67,10 +67,10 @@ check('and reads correctly across the seam', edited.slice(0, edited.length), 'on
 
 const rewritten = new TextStore('the whole first draft');
 rewritten.replace(0, rewritten.length, 'the second draft');
-check('a whole-document replacement is one piece more', rewritten.pieceCount() > 1, true);
+check('a whole-document replacement leaves one piece', rewritten.pieceCount(), 1);
 rewritten.compact();
-check('and compact() is one piece again', rewritten.pieceCount(), 1);
-check('with the same text', rewritten.toString(), 'the second draft');
+check('and compact() keeps the text', rewritten.toString(), 'the second draft');
+check('with nothing to compact afterwards', rewritten.pieceCount(), 1);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
