@@ -363,3 +363,55 @@ what lets an undo reuse the parses of the text it returns to.
   feed itself.
 - Probes are the safety net again: a delta that is off by one byte still compiles.
   Restart `npm run tauri dev` before the acceptance run.
+
+---
+
+## Handoff (2026-09-22, incremental history complete)
+
+**Where the branch is.** `codex/editor-history`, six commits: the plan, the paste
+fix, the `History` module, the state on deltas, the `document/` move, and the seam
+probe. `npx tsc --noEmit` clean, `npm run check` 16/16, `npm run probe:all` **61/61
+(6 skipped)** from a freshly started app.
+
+**What changed.** The log is edits rather than documents: `document/history.ts`
+holds invertible `{ from, to, removed, inserted }`, `replaceRange` and `setText`
+record them, `updateText` applies them (so an undo cannot record itself), and
+`loadText` clears. The document model moved to `document/` as section 5 asked —
+the move is the phase's own decision, taken because history is a third owner of
+that model. `docs/architecture.md` gained "The history" with the two rules that
+keep the log a derivation.
+
+**Two bugs found on the way, both by the tests this phase added.**
+
+- A pasted paragraph was welded to the words around it: only the empty-line case
+  in `pasteText` was block-aware, so `Al` + `one\n\ntwo` + `pha` came out
+  `Alone\n\ntwopha`. `pasteInsertion` pads each seam for a paste that carries its
+  own paragraph breaks; a paste without one is spliced as before.
+- `edit-stability.js` crashed inside its own `find` when run by name without the
+  demo document (a tree walker on `undefined`), which reads like an editor bug; it
+  now says which document it needs.
+
+**What the suite now says about the seams.**
+
+- `check-history.mjs`: the algebra (invert twice is the edit), the edges of undo
+  and redo, and the phase's point as a property — a keystroke's history is bytes.
+- `paste-blocks.js`: the four placements, the splice case, one undo for a
+  multi-block paste, and (per case) that a block the paste did not touch kept its
+  DOM element.
+- `undo-after-scroll.js`: an edit whose block has left the window, undone from the
+  bottom of the document — text exact, window still 61 of 200 blocks, caret
+  rendered.
+
+**Left for later, in the order I would take them.**
+
+1. **A rope or piece table for the text.** Rendering is incremental already
+   (§1.6); `replaceRange` + `splitBlocks` are not — an edit is O(document) in
+   memory traffic. That is the remaining half of "incremental", and it is a phase
+   of its own.
+2. **Store the caret in the edit.** Today undo restores the offset the caret had
+   (clamped), as the snapshot implementation did; recording `caretBefore` /
+   `caretAfter` on the edit would put the caret where the author actually was.
+   A behaviour change, so it needs its own probes.
+3. **Coalesce typing.** One keystroke is one undo step today; a word per step is
+   what most editors do, and it needs a rule about when a step ends (a pause, a
+   block change, a non-typing command).
