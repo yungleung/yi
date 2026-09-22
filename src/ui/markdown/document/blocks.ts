@@ -21,14 +21,16 @@
  * Blank lines are separators, not blocks.
  *
  * May import: the pure syntax rules (`syntax/markers.ts`,
- * `syntax/trailing_spaces.ts`, `syntax/blank_lines.ts`). Upholds: a block is a
- * slice of the raw text — the split is computed from the text alone, never from
- * what is rendered or where the caret is.
+ * `syntax/trailing_spaces.ts`, `syntax/blank_lines.ts`) and the edit shape the
+ * history records (`./history.ts`, types only). Upholds: a block is a slice of
+ * the raw text — the split is computed from the text alone, never from what is
+ * rendered or where the caret is.
  */
 
 import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from '../syntax/markers';
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
+import type { DocumentEdit } from './history';
 
 export type BlockKind =
   | 'frontmatter'
@@ -122,18 +124,163 @@ interface SourceLine {
 
 /** Splits a raw markdown document into blocks, in document order. */
 export function splitBlocks(text: string): MarkdownBlock[] {
-  const lines = splitLines(text);
-  const blocks: MarkdownBlock[] = [];
-  let i = 0;
+  return [...blocksFrom(text, splitLines(text), 0, 0)];
+}
+
+/**
+ * Re-splits the document after `edit`, reusing the blocks the edit did not
+ * reach.
+ *
+ * The walk starts above the change — an edit re-decides a block from its own
+ * first line, because a fence closes where its matching fence is and a list runs
+ * while its items do — and it stops at the first block that ends exactly where
+ * one of `previous` ended, once the change lies above that end. Below that end
+ * the text is the text it was, so the old blocks below are still the blocks a
+ * full split produces; they move by the edit's own deltas, in lines and in
+ * characters, and a block the edit did not move at all comes back as itself.
+ *
+ * The stop is given the edit rather than only the line it starts on, because
+ * "the text below this block is unchanged" has to be known and not assumed: an
+ * edit that replaces one character and an edit that deletes the rest of the
+ * document start on the same line.
+ */
+export function splitBlocksFrom(
+  text: string,
+  previous: readonly MarkdownBlock[],
+  edit: DocumentEdit
+): MarkdownBlock[] {
+  const resume = resumeFrom(previous, edit.from);
+  if (!resume) {
+    return splitBlocks(text);
+  }
+  const blocks = previous.slice(0, resume.above);
+  // An edit moves everything below it by its two own deltas, characters and
+  // lines, and those are what the blocks it did not reach move by.
+  const lines = countLines(edit.inserted) - countLines(edit.removed);
+  const characters = edit.inserted.length - edit.removed.length;
+  let produced = 0;
+  for (const block of blocksFrom(text, splitLines(text, resume.start, resume.line), 0, resume.above)) {
+    blocks.push(block);
+    const old = previous[resume.above + produced];
+    produced += 1;
+    if (!old) {
+      continue;
+    }
+    // The block is the one the edit left alone when it has the old block's own
+    // lines and ends where the edit's own length change puts the old end: below
+    // that end the text is the text it was, so the old blocks below it are still
+    // what a full split produces, moved by the same change.
+    if (
+      block.kind === old.kind &&
+      block.lineStart === old.lineStart + lines &&
+      block.lineEnd === old.lineEnd + lines &&
+      edit.to <= old.charEnd &&
+      block.charEnd === old.charEnd + characters
+    ) {
+      for (const tail of previous.slice(resume.above + produced)) {
+        blocks.push(moved(tail, lines, characters));
+      }
+      return blocks;
+    }
+  }
+  return blocks;
+}
+
+/** An old block where the edit put it: `lines` more lines, `characters` further in. */
+function moved(block: MarkdownBlock, lines: number, characters: number): MarkdownBlock {
+  if (lines === 0 && characters === 0) {
+    return block;
+  }
+  return {
+    ...block,
+    lineStart: block.lineStart + lines,
+    lineEnd: block.lineEnd + lines,
+    charStart: block.charStart + characters,
+    charEnd: block.charEnd + characters
+  };
+}
+
+/** How many lines a replacement spans — its own count of line endings. */
+function countLines(text: string): number {
+  let count = 0;
+  for (let at = text.indexOf('\n'); at >= 0; at = text.indexOf('\n', at + 1)) {
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * Where the walk has to start to re-decide the change, and how many of the old
+ * blocks sit above it.
+ *
+ * The walk starts at a non-blank block, and at the one above the change rather
+ * than the one holding it: a block is decided forward from its own first line,
+ * and a `: details` line is enough to pull the term run above it into its own
+ * description list — the block a change lands in is not necessarily where the
+ * construct it belongs to begins. A change on a blank line starts at the
+ * non-blank block above the run, so that the run is inside the walk: a run of
+ * blank lines is decided from its first line, which is a separator rather than a
+ * block, and re-deciding it half way through would drop the block above the
+ * change.
+ */
+function resumeFrom(
+  previous: readonly MarkdownBlock[],
+  from: number
+): { line: number; start: number; above: number } | null {
+  if (previous.length === 0) {
+    return null;
+  }
+  let index = 0;
+  for (let low = 0, high = previous.length - 1; low <= high; ) {
+    const middle = (low + high) >> 1;
+    if (previous[middle].charStart <= from) {
+      index = middle;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  const inBlanks = previous[index].kind === 'blank';
+  while (index > 0 && previous[index].kind === 'blank') {
+    index -= 1;
+  }
+  if (!inBlanks) {
+    let earlier = index - 1;
+    while (earlier >= 0 && previous[earlier].kind === 'blank') {
+      earlier -= 1;
+    }
+    if (earlier >= 0) {
+      index = earlier;
+    }
+  }
+  return { line: previous[index].lineStart, start: previous[index].charStart, above: index };
+}
+
+/**
+ * The blocks of `lines`, from `startIndex` on, in document order.
+ *
+ * A generator, because the caller may already have seen enough: a full split
+ * drains it, and the re-split after an edit stops consuming it at the block the
+ * document's own blocks come back. `blocksBefore` is how many blocks the
+ * document already has above this walk, which the blank-line rule needs — a run
+ * of blank lines opens the file only when nothing sits above it.
+ */
+function* blocksFrom(
+  text: string,
+  lines: readonly SourceLine[],
+  startIndex: number,
+  blocksBefore: number
+): Generator<MarkdownBlock> {
+  let i = startIndex;
 
   // Frontmatter must start at the very first line of the document.
-  if (i < lines.length) {
+  if (startIndex === 0 && blocksBefore === 0) {
     const delimiter = frontmatterDelimiter(lines[0].text);
     if (delimiter) {
       const close = lines.findIndex((line, index) => index > 0 && line.text.trim() === delimiter);
       if (close >= 0) {
         const last = lines[close];
-        blocks.push({
+        yield {
           kind: 'frontmatter',
           format: delimiter === '+++' ? 'toml' : 'yaml',
           lineStart: lines[0].number,
@@ -141,7 +288,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
           charStart: lines[0].start,
           charEnd: last.end,
           text: text.slice(lines[0].start, last.end)
-        });
+        };
         i = close + 1;
       }
     }
@@ -158,17 +305,17 @@ export function splitBlocks(text: string): MarkdownBlock[] {
       // doing, not a blank line the author wrote.
       const phantom = i === lines.length && text.endsWith('\n') ? 1 : 0;
       const run = lines.slice(runStart, i - phantom);
-      const separator = blocks.length > 0 && i < lines.length;
+      const separator = (blocksBefore > 0 || runStart > startIndex) && i < lines.length;
       for (const index of emptyParagraphIndexes(run.length, separator)) {
         const line = run[index];
-        blocks.push({
+        yield {
           kind: 'blank',
           lineStart: line.number,
           lineEnd: line.number,
           charStart: line.start,
           charEnd: line.start,
           text: ''
-        });
+        };
       }
       continue;
     }
@@ -194,7 +341,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
         charEnd = lines[j].end;
         j += 1;
       }
-      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
       i = j;
       continue;
     }
@@ -216,7 +363,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
           }
         }
       }
-      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
       i = j;
       continue;
     }
@@ -245,7 +392,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
       if (scan > j) {
         j = scan;
       }
-      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
       i = j;
       continue;
     }
@@ -267,7 +414,7 @@ export function splitBlocks(text: string): MarkdownBlock[] {
         charEnd = lines[j].end;
         j += 1;
       }
-      blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+      yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
       i = j;
       continue;
     }
@@ -377,10 +524,8 @@ export function splitBlocks(text: string): MarkdownBlock[] {
       i = j;
     }
 
-    blocks.push(makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd));
+    yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
   }
-
-  return blocks;
 }
 
 function makeBlock(
@@ -394,14 +539,26 @@ function makeBlock(
   return { kind, lineStart, lineEnd, charStart, charEnd, text: text.slice(charStart, charEnd) };
 }
 
-function splitLines(text: string): SourceLine[] {
+/**
+ * The lines of `text` from `start` on, numbered from `number`.
+ *
+ * A re-split only needs the lines it walks, so the offset it resumes at is
+ * passed in: the lines above it are the blocks that were kept, and their own
+ * line numbers are already known.
+ */
+function splitLines(text: string, start = 0, number = 1): SourceLine[] {
   const out: SourceLine[] = [];
-  let start = 0;
-  let number = 1;
-  for (const line of text.split('\n')) {
-    out.push({ number, start, end: start + line.length, text: line });
-    start += line.length + 1;
-    number += 1;
+  let offset = start;
+  let line = number;
+  while (offset <= text.length) {
+    const end = text.indexOf('\n', offset);
+    const stop = end === -1 ? text.length : end;
+    out.push({ number: line, start: offset, end: stop, text: text.slice(offset, stop) });
+    if (end === -1) {
+      break;
+    }
+    offset = end + 1;
+    line += 1;
   }
   return out;
 }

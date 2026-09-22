@@ -17,7 +17,7 @@
  * from it, and an edit re-splits only what it touched.
  */
 
-import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';
+import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import { footnoteLabels, withFootnoteDefinitions } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
@@ -110,22 +110,25 @@ export class MarkdownEditorState {
     if (text === before) {
       return;
     }
-    this.updateText(() => this.text.replace(0, this.text.length, text));
+    const edit = { from: 0, to: before.length, removed: before, inserted: text };
+    this.updateText(edit, () => this.text.replace(0, this.text.length, text));
     // A command that computes a whole document is recorded as one whole-document
     // edit: still one undo step, and still exact, for the two commands that do
     // this (inline formatting, find and replace all).
-    this.history.record({ from: 0, to: before.length, removed: before, inserted: text });
+    this.history.record(edit);
   }
 
   /**
    * Applies one change to the text, then re-derives everything computed from it.
    * The change is expressed as the edit itself rather than as the text it
-   * produces, which is what lets the store take it piece by piece.
+   * produces, which is what lets the store take it piece by piece and the blocks
+   * keep the halves the edit did not reach.
    */
-  private updateText(apply: () => void): void {
+  private updateText(edit: DocumentEdit, apply: () => void): void {
+    const previous = this.blocks;
     apply();
     this.cachedText = null;
-    this.blocks = splitBlocks(this.getText());
+    this.blocks = splitBlocksFrom(this.getText(), previous, edit);
     this.labels = null;
   }
 
@@ -141,8 +144,9 @@ export class MarkdownEditorState {
     const start = Math.max(0, Math.min(from, length));
     const end = Math.max(start, Math.min(to, length));
     const removed = this.text.slice(start, end);
-    this.updateText(() => this.text.replace(start, end, replacement));
-    this.history.record({ from: start, to: end, removed, inserted: replacement });
+    const edit = { from: start, to: end, removed, inserted: replacement };
+    this.updateText(edit, () => this.text.replace(start, end, replacement));
+    this.history.record(edit);
   }
 
   /**
@@ -151,7 +155,8 @@ export class MarkdownEditorState {
    * old one, so the pieces the old one's edits replaced are dropped with it.
    */
   loadText(text: string): void {
-    this.updateText(() => {
+    const replace = { from: 0, to: this.text.length, removed: '', inserted: text };
+    this.updateText(replace, () => {
       this.text.replace(0, this.text.length, text);
       this.text.compact();
     });
@@ -167,7 +172,7 @@ export class MarkdownEditorState {
     }
     // History edits are applied through `updateText` rather than `replaceRange`,
     // so undoing cannot record itself as a new edit.
-    this.updateText(() => this.text.replace(edit.from, edit.to, edit.inserted));
+    this.updateText(edit, () => this.text.replace(edit.from, edit.to, edit.inserted));
     return true;
   }
 
@@ -177,7 +182,7 @@ export class MarkdownEditorState {
     if (!edit) {
       return false;
     }
-    this.updateText(() => this.text.replace(edit.from, edit.to, edit.inserted));
+    this.updateText(edit, () => this.text.replace(edit.from, edit.to, edit.inserted));
     return true;
   }
 
