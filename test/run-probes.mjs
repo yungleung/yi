@@ -32,6 +32,34 @@ const probes = readdirSync(directory)
 const failed = [];
 let skipped = 0;
 
+// Is there an app to drive? Without this, a stopped dev server reports all
+// sixty-odd probes as failures — a wall of red that says nothing about the code
+// (it happened, and cost a suite run). One connection attempt, one clear message.
+async function bridgeIsUp() {
+  for (let port = 9223; port < 9233; port += 1) {
+    const reachable = await new Promise((resolve) => {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}`);
+      const settle = (value) => {
+        socket.close();
+        resolve(value);
+      };
+      socket.addEventListener('open', () => settle(true), { once: true });
+      socket.addEventListener('error', () => settle(false), { once: true });
+      setTimeout(() => settle(false), 2000);
+    });
+    if (reachable) {
+      return true;
+    }
+  }
+  return false;
+}
+if (!(await bridgeIsUp())) {
+  console.error(
+    'no Tauri MCP bridge on 9223-9232 — start the app first:\n  npm run tauri dev'
+  );
+  process.exit(1);
+}
+
 // Every probe has to parse, whether or not this run starts it: a marker that
 // lands outside the header comment leaves the file a syntax error,
 // `probe:all` skips it on that very string, and by the time anyone runs it by
