@@ -37,10 +37,11 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Sixty-four of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Sixty-seven of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
-`regression-arrows`, `edit-stability`, `regression-undo`), source mode
+`regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`),
+paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`), the fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).

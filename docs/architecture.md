@@ -91,6 +91,28 @@ and none of them is stored: every mapping is re-derived from the one above it.
 plus the rendered-length model both directions share); `dom_position.ts` is the
 way out (a document offset turned into the text node and offset that hold it).
 
+## The history
+
+Undo and redo are a log of edits, not a stack of documents: `document/history.ts`
+holds `{ from, to, removed, inserted }` per change, and an edit is its own inverse
+with the two texts exchanged. The document text stays the only source of truth —
+the log is a *derivation* of it, and at any moment replaying the edits below the
+cursor from the loaded text reproduces the text in the editor.
+
+Two rules keep that true, and they are the ones to preserve when touching this
+area:
+
+- `replaceRange` and `setText` are the only places an edit is recorded; every
+  mutation in the editor goes through one of them.
+- `updateText` is the only place a text is applied, and undo and redo go through
+  it rather than through `replaceRange` — which is what stops an undo from
+  recording itself as a new edit.
+
+The parse cache is keyed by block content, so an undo back to text the editor has
+seen before reuses the parses it had, and the renderer rebuilds only the blocks
+whose content key changed (`test/probes/undo-after-scroll.js` is the case where
+the edit's block had left the window entirely).
+
 ## One keystroke
 
 1. `markdown_editor.ts` sees the key and calls a command (`editing/*`).
