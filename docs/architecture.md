@@ -6,7 +6,8 @@ layers, the invariants that hold them together, and where a change belongs.
 
 ## The model
 
-- **Document** — the raw markdown string. Every edit is a range replacement in it.
+- **Document** — the raw markdown, held as a piece table (`document/text_store.ts`).
+  Every edit is a range replacement in it.
 - **Block** — a slice of consecutive lines the renderer treats as one unit
   (`frontmatter`, `fencedCode`, `displayMath`, `paragraph`, …), described by a line
   range and a character range. `src/ui/markdown/document/blocks.ts` splits the document.
@@ -27,7 +28,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | Layer | Files | May import |
 | --- | --- | --- |
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
-| Document | `document/state.ts`, `document/blocks.ts`, `document/history.ts` | syntax |
+| Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
@@ -90,6 +91,30 @@ and none of them is stored: every mapping is re-derived from the one above it.
 `offsets.ts` is the way in (a rendered position read back into the document,
 plus the rendered-length model both directions share); `dom_position.ts` is the
 way out (a document offset turned into the text node and offset that hold it).
+
+## The text
+
+The document text is held as a **piece table** (`document/text_store.ts`): the text
+it was loaded with, an append-only buffer of everything inserted since, and the
+pieces that name ranges of those two buffers, in order. An edit cuts at its two
+ends, drops the pieces between them and adds one piece for what was inserted, so a
+keystroke costs the piece it touches rather than a copy of the document — and text
+that already exists is never rewritten, only re-viewed. What that trades away is
+retention: the text an edit replaced stays reachable until `compact()` runs, which
+is the point of loading a document.
+
+The store **is** the text, and `getText()` is a view of it: a string, materialised
+once per text version, because whole-document readers are what the commands are
+written for. Callers above this file keep the signature they had — the caret, the
+source mode, the renderer and the history are all written in document offsets, and
+none of them learns what a piece is. Two derived things follow the edit rather
+than the document: the blocks, re-split from the block the change reached and
+stopping where the new split lines up with the blocks it had
+(`document/blocks.ts: splitBlocksFrom`), and the footnote labels, folded in from
+the edit instead of re-read (`syntax/footnotes.ts: labelsAfterEdit`). Each has a
+property check beside it that compares it with the full computation, which is the
+strongest statement available for "nothing changed" (`test/checks/check-text-store.mjs`,
+`check-blocks.mjs`, `check-footnotes.mjs`).
 
 ## The history
 
