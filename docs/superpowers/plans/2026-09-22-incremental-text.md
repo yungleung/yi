@@ -106,6 +106,15 @@ O(log lines), so nothing shifts — and that is the natural follow-on; it change
 what `MarkdownBlock` means, and it is not needed for the text and the split to stop
 copying the document.
 
+**Also not this phase, and deliberately: a prettify / format-on-save pass.** Wrapping
+a long paragraph into several source lines was considered and dropped. The file
+saved on disk is the editor's text (that is invariant 1), so nothing needs the file
+to be *tidied* — only to be the text — and a whole-text rewrite would have cost the
+things this design spent two phases getting: a whole-document history entry per
+save, a rebuild of every block's content key, and a caret that has to be mapped
+rather than kept. If source readability ever becomes a real requirement it is a
+phase of its own, with the store's per-paragraph `replace` as its tool.
+
 ---
 
 ## Part 2 — what the tree has today
@@ -129,7 +138,8 @@ copying the document.
 **Interfaces:**
 
 - Produces: `class TextStore` — `constructor(text?: string)`, `length`,
-  `slice(from, to)`, `replace(from, to, replacement)`, `toString()`, `pieceCount()`.
+  `slice(from, to)`, `replace(from, to, replacement)`, `toString()`, `pieceCount()`,
+  `compact()`.
 - Consumes: nothing.
 
 - [ ] **Step 1: Write the check (RED)**
@@ -149,11 +159,20 @@ for (const [from, to, text] of edits) {
 check('a range read agrees with the string', store.slice(1, 9), reference.slice(1, 9));
 check('an edit past either end is clamped like the string', (store.replace(999, 999, '!'), store.toString()), `${reference}!`);
 check('typing appends rather than fragmenting', store.pieceCount(), 2);
+check('a whole-document replacement can be compacted away', (store.replace(0, store.length, 'fresh'), store.compact(), store.pieceCount()), 1);
 ```
 
 - [ ] **Step 2: Write the store** — the house header; no DOM, no editor, no state.
-- [ ] **Step 3: Verify** — `npx tsc --noEmit`, `npm run check` (17/17).
-- [ ] **Step 4: Commit** — `refactor(document): hold the text as a piece table`
+- [ ] **Step 3: Compaction** — `compact()` rebuilds the table with the current text
+  as its `original` and an empty `added`, so the dead half of a session's edits can
+  be dropped; `loadText` calls it, and a byte budget can. It is not optional
+  tidiness: two callers *already* rewrite the whole
+  document through `setText` (`editing/formatting.ts`, `editing/find_controller.ts`),
+  and each leaves the text it replaced sitting in `original` — which is what the
+  check asserts: after a whole-document `setText` and a `compact()`, the piece count
+  and the reachable buffers are back to one.
+- [ ] **Step 4: Verify** — `npx tsc --noEmit`, `npm run check` (17/17).
+- [ ] **Step 5: Commit** — `refactor(document): hold the text as a piece table`
 
 ### Task 2: `state.ts` on the store
 
