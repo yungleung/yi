@@ -118,6 +118,40 @@ check('and the log holds the edit, not the document', document_.historyEdits()[0
 document_.loadText('fresh\n');
 check('a new document has no history', [document_.historyEdits().length, document_.undo()], [0, false]);
 
+// The state holds the text in a store rather than a string, so the statement to
+// prove is the same one the store's own check makes: after any sequence of edits
+// the state's text is the text a string ends up with. The sequence is pseudo-
+// random and seeded, so a failure is reproducible, and it inserts the characters
+// that change the shape of a document (newlines, markers, fences) rather than
+// only letters.
+let seed = 20260922;
+const nextRandom = () => {
+  seed = (seed * 1103515245 + 12345) % 2147483648;
+  return seed / 2147483648;
+};
+const alphabet = ['a', 'b', ' ', '\n', '#', '`', '-', '\t'];
+const randomText = (limit) => {
+  const length = Math.floor(nextRandom() * limit);
+  let text = '';
+  for (let index = 0; index < length; index += 1) {
+    text += alphabet[Math.floor(nextRandom() * alphabet.length)];
+  }
+  return text;
+};
+
+const random = new MarkdownEditorState('one\ntwo\n\nthree');
+let reference = 'one\ntwo\n\nthree';
+for (let step = 0; step < 100; step += 1) {
+  const from = Math.floor(nextRandom() * (reference.length + 1));
+  const to = Math.min(reference.length, from + Math.floor(nextRandom() * 4));
+  const inserted = randomText(6);
+  random.replaceRange(from, to, inserted);
+  reference = `${reference.slice(0, from)}${inserted}${reference.slice(to)}`;
+}
+check('a hundred pseudo-random edits leave the state holding the string', random.getText(), reference);
+check('and its blocks still agree with it', random.validateBlocks(), true);
+check('each of those edits is one entry in the log', random.historyEdits().length, 100);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

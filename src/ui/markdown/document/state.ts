@@ -7,10 +7,14 @@
  * {@link MarkdownBlockView} per block) and will apply edits against the raw
  * text through this state, re-splitting only the affected region.
  *
- * May import: the block model (`blocks.ts`) and the parser (`syntax/parser.ts`
- * with its repairs). Upholds: the raw document is the only source of truth —
- * blocks, parses and the undo history are all derived from it, and an edit
- * re-splits only what it touched.
+ * The text itself is a piece table (`text_store.ts`), so an edit costs the piece
+ * it touches rather than a copy of the document; everyone above this file still
+ * asks for the text and gets a string.
+ *
+ * May import: the block model (`blocks.ts`), the text store (`text_store.ts`) and
+ * the parser (`syntax/parser.ts` with its repairs). Upholds: the raw document is
+ * the only source of truth — blocks, parses and the undo history are all derived
+ * from it, and an edit re-splits only what it touched.
  */
 
 import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';
@@ -19,12 +23,20 @@ import { footnoteLabels, withFootnoteDefinitions } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit } from './history';
+import { TextStore } from './text_store';
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
 
 export class MarkdownEditorState {
-  private text: string;
+  /** The document's text, as the pieces every edit is applied to. */
+  private readonly text: TextStore;
+  /**
+   * The text as a string, materialised once per text version. Many callers read
+   * the whole document per command (find, formatting, the clipboard), and each
+   * of them walking the pieces would be the store's cost without its point.
+   */
+  private cachedText: string | null = null;
   private blocks: MarkdownBlock[];
   /**
    * Parses per block content (`kind:text`), with block-relative positions.
@@ -38,13 +50,14 @@ export class MarkdownEditorState {
   private readonly history = new History();
 
   constructor(text = '') {
-    this.text = text;
+    this.text = new TextStore(text);
     this.blocks = splitBlocks(text);
   }
 
   /** The raw markdown document. */
   getText(): string {
-    return this.text;
+    this.cachedText ??= this.text.toString();
+    return this.cachedText;
   }
 
   /** The document's blocks, in document order. */
@@ -93,46 +106,55 @@ export class MarkdownEditorState {
    * retains cached parses for unchanged blocks.
    */
   setText(text: string): void {
-    if (text === this.text) {
+    const before = this.getText();
+    if (text === before) {
       return;
     }
-    const before = this.text;
-    this.updateText(text);
+    this.updateText(() => this.text.replace(0, this.text.length, text));
     // A command that computes a whole document is recorded as one whole-document
     // edit: still one undo step, and still exact, for the two commands that do
     // this (inline formatting, find and replace all).
     this.history.record({ from: 0, to: before.length, removed: before, inserted: text });
   }
 
-  private updateText(text: string): void {
-    this.text = text;
-    this.blocks = splitBlocks(text);
+  /**
+   * Applies one change to the text, then re-derives everything computed from it.
+   * The change is expressed as the edit itself rather than as the text it
+   * produces, which is what lets the store take it piece by piece.
+   */
+  private updateText(apply: () => void): void {
+    apply();
+    this.cachedText = null;
+    this.blocks = splitBlocks(this.getText());
     this.labels = null;
   }
 
   /** The labels the document defines, read once per text. */
   private footnoteLabels(): ReadonlySet<string> {
-    this.labels ??= footnoteLabels(this.text);
+    this.labels ??= footnoteLabels(this.getText());
     return this.labels;
   }
 
   /** Replaces a raw document range with `replacement`. */
   replaceRange(from: number, to: number, replacement: string): void {
-    const start = Math.max(0, Math.min(from, this.text.length));
-    const end = Math.max(start, Math.min(to, this.text.length));
+    const length = this.text.length;
+    const start = Math.max(0, Math.min(from, length));
+    const end = Math.max(start, Math.min(to, length));
     const removed = this.text.slice(start, end);
-    this.updateText(`${this.text.slice(0, start)}${replacement}${this.text.slice(end)}`);
+    this.updateText(() => this.text.replace(start, end, replacement));
     this.history.record({ from: start, to: end, removed, inserted: replacement });
   }
 
   /**
    * Loads a new document without parsing it eagerly. Blocks are parsed as they
-   * enter the virtualized viewport.
+   * enter the virtualized viewport. A new document is not a continuation of the
+   * old one, so the pieces the old one's edits replaced are dropped with it.
    */
   loadText(text: string): void {
-    this.text = text;
-    this.blocks = splitBlocks(text);
-    this.labels = null;
+    this.updateText(() => {
+      this.text.replace(0, this.text.length, text);
+      this.text.compact();
+    });
     this.blockContent.clear();
     this.history.clear();
   }
@@ -143,7 +165,9 @@ export class MarkdownEditorState {
     if (!edit) {
       return false;
     }
-    this.updateText(this.applyToText(edit));
+    // History edits are applied through `updateText` rather than `replaceRange`,
+    // so undoing cannot record itself as a new edit.
+    this.updateText(() => this.text.replace(edit.from, edit.to, edit.inserted));
     return true;
   }
 
@@ -153,17 +177,8 @@ export class MarkdownEditorState {
     if (!edit) {
       return false;
     }
-    this.updateText(this.applyToText(edit));
+    this.updateText(() => this.text.replace(edit.from, edit.to, edit.inserted));
     return true;
-  }
-
-  /**
-   * The text `edit` produces from the current one. History edits are applied
-   * through `updateText` rather than `replaceRange`, so undoing cannot record
-   * itself as a new edit.
-   */
-  private applyToText(edit: DocumentEdit): string {
-    return `${this.text.slice(0, edit.from)}${edit.inserted}${this.text.slice(edit.to)}`;
   }
 
   /** The edits in force, oldest first — the history, for tests and tooling. */
@@ -177,17 +192,18 @@ export class MarkdownEditorState {
    * This checks that block offsets stayed in sync with the raw document.
    */
   validateBlocks(): boolean {
+    const text = this.getText();
     let rebuilt = '';
     let prevEnd = 0;
     for (const block of this.blocks) {
       if (block.charStart > prevEnd) {
-        rebuilt += this.text.slice(prevEnd, block.charStart);
+        rebuilt += text.slice(prevEnd, block.charStart);
       }
       rebuilt += block.text;
       prevEnd = block.charEnd;
     }
-    rebuilt += this.text.slice(prevEnd);
-    return rebuilt === this.text;
+    rebuilt += text.slice(prevEnd);
+    return rebuilt === text;
   }
 
   /** The block containing a 1-based line number, or null (e.g. a blank line). */
