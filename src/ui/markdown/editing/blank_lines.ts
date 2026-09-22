@@ -12,7 +12,7 @@
  * here is a pure function of the text and an offset, applied as one replacement.
  */
 
-import type { MarkdownBlock } from '../blocks';
+import type { MarkdownBlock } from '../document/blocks';
 import { isEmptyParagraphLine } from '../syntax/blank_lines';
 import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
 import { applyEdit, restoreCaret, type EditorContext } from './context';

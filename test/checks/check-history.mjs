@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/history.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/markdown/document/history.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-history-'));
@@ -90,7 +90,7 @@ globalThis.window = {
   __TAURI_INTERNALS__: { transformCallback: () => 1, invoke: async () => null }
 };
 
-const stateBundle = await rolldown({ input: 'src/ui/markdown/state.ts', logLevel: 'silent' });
+const stateBundle = await rolldown({ input: 'src/ui/markdown/document/state.ts', logLevel: 'silent' });
 const { output: stateOutput } = await stateBundle.generate({ format: 'esm' });
 await stateBundle.close();
 const stateFile = join(directory, 'state.mjs');

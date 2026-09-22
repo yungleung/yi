@@ -15,8 +15,8 @@
 
 import { blockContentKey, isRawRendered, splitBlocks, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
-import { footnoteLabels, withFootnoteDefinitions } from './syntax/footnotes';
-import { parseMarkdown } from './syntax/parser';
+import { footnoteLabels, withFootnoteDefinitions } from '../syntax/footnotes';
+import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit } from './history';
 

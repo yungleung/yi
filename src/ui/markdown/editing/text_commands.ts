@@ -29,7 +29,7 @@ import {
   restoreCaret,
   type EditorContext
 } from './context';
-import { isRawRendered } from '../blocks';
+import { isRawRendered } from '../document/blocks';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 

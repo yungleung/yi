@@ -52,7 +52,7 @@ import defaultDocument from '../../../test/fixtures/workspace/default-document.m
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
 import { runCommand } from './commands/registry';
-import { MarkdownEditorState } from './state';
+import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
 

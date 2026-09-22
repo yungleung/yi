@@ -7,7 +7,7 @@
  * it cannot invalidate it, and a rebuild cannot lose it.
  */
 
-import type { MarkdownBlock } from './blocks';
+import type { MarkdownBlock } from './document/blocks';
 
 /**
  * Height of one line of body text, and the skip a paragraph leaves after it

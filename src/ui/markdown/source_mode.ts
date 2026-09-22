@@ -35,7 +35,7 @@
  */
 
 import type { AstNode } from './ast';
-import { hasSourceMode, type MarkdownBlock } from './blocks';
+import { hasSourceMode, type MarkdownBlock } from './document/blocks';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;

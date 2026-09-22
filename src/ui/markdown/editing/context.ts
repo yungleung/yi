@@ -21,7 +21,7 @@ import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
 import type { RootContent } from 'mdast';
-import type { MarkdownEditorState } from '../state';
+import type { MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
 /** What every editing command needs to read and change the document. */

@@ -13,7 +13,7 @@
  * position in the rendered DOM.
  */
 
-import type { MarkdownBlock } from '../blocks';
+import type { MarkdownBlock } from '../document/blocks';
 import { lineSpanAt } from '../syntax/lines';
 import { caretLocation } from '../caret/offsets';
 import { cellBelow, readTableSource, rowAt, type TableSource } from '../syntax/table_source';

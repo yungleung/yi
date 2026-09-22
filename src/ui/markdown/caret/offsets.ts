@@ -24,8 +24,8 @@
 
 import type { RootContent } from 'mdast';
 import { bibliographyManager } from '../../../services/bibliography';
-import type { MarkdownBlock } from '../blocks';
-import type { MarkdownEditorState } from '../state';
+import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownEditorState } from '../document/state';
 import { readTableSource } from '../syntax/table_source';
 import { getCaretRange } from './caret';
 
