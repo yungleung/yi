@@ -83,6 +83,12 @@ Why a tree and not an array of pieces: an array makes the walk O(pieces), which
 after an hour of typing is O(document) again. The tree's per-node length is what
 makes "the offset 900,000" reachable without counting every piece before it.
 
+The balancing is the price of either structure: a rope needs the same rotations
+and the same per-node lengths, and this choice buys no less machinery — it buys
+less copying. Existing text is never rewritten, only re-viewed, and in exchange the
+text it replaced stays reachable until `compact()` runs (Task 1). That is the trade
+in one line: a rope pays in rebalancing, a piece table pays in retention.
+
 ### 1.3 The re-synchronising split
 
 `splitBlocks` is a line walk whose result depends on more than one line: a fence
@@ -224,7 +230,36 @@ check('a whole-document replacement can be compacted away', (store.replace(0, st
   `empty-paragraphs`, `edit-stability`, and `scroll-cost` with the large note.
 - [ ] **Step 4: Commit** — `refactor(document): re-split from the change, not the document`
 
-### Task 4: What it cost, measured
+### Task 4: The footnote-label scan — the third cost, and the one no store fixes
+
+**Files:**
+- Modify: `src/ui/markdown/syntax/footnotes.ts` (the rule),
+  `document/state.ts` (the cache), `test/checks/check-footnotes.mjs`
+
+**Interfaces:**
+
+- Produces: `labelsAfterEdit(labels, text, edit): ReadonlySet<string>` — the labels
+  a document defines after one range replacement, given the labels before it and the
+  edit (`DocumentEdit`, the shape the history already records).
+- Consumes: `footnoteLabels(text)` from the same module, as the full-scan fallback.
+
+- [ ] **Step 1: The check (RED)** — a property test: for a deterministic sequence of
+  edits that creates a definition, renames a label, deletes a definition line and
+  joins two lines into one, `labelsAfterEdit` must equal `footnoteLabels(text)` on the
+  result. The cheap rule may be conservative — falling back is always correct — it may
+  not be wrong.
+- [ ] **Step 2: The implementation** — `state.ts: updateText` stops nulling the label
+  cache; `replaceRange` folds the edit into the set (`labelsAfterEdit`), and
+  `setText`/`loadText` recompute it. The rule rescan only when the edit's own
+  removed/inserted text or the line it lands on can hold a definition
+  (`/^\[\^[^\]]+\]:/m`).
+- [ ] **Step 3: Verify** — `npx tsc --noEmit`, `npm run check` (17/17), and the
+  timing in Task 5's probe, which gains a document with a thousand footnotes: that is
+  where the scan shows, because `getBlockContent` asks for the labels on every
+  non-raw block parse.
+- [ ] **Step 4: Commit** — `refactor(document): keep the footnote labels across an edit`
+
+### Task 5: What it cost, measured
 
 **Files:**
 - Create: `test/probes/edit-cost.js`
@@ -235,11 +270,12 @@ check('a whole-document replacement can be compacted away', (store.replace(0, st
   note (`@needs-large-document`), reporting per-keystroke settle time, how many
   blocks were rebuilt and how many elements survived. Running the same probe against
   the demo document gives the other end of the comparison, so "an edit does not cost
-  what the document costs" is measured rather than asserted.
+  what the document costs" is measured rather than asserted. A third run adds a
+  thousand footnote definitions, which is what makes Task 4's scan visible.
 - [ ] **Step 2: Verify** — the probe by name with the large note, then `npm run probe:all`.
 - [ ] **Step 3: Commit** — `test(document): measure what a keystroke costs`
 
-### Task 5: The acceptance run, and the handoff
+### Task 6: The acceptance run, and the handoff
 
 - [ ] `npx tsc --noEmit`; `npm run check`; a fresh app; `npm run probe:all`.
 - [ ] `docs/architecture.md`: the text is a store, and what that means for "the
