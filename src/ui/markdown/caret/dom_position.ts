@@ -12,8 +12,8 @@
 
 import type { RootContent } from 'mdast';
 import { SOURCE_SELECTOR, nodeRawRange, renderedLength } from './offsets';
-import type { MarkdownBlock } from '../blocks';
-import type { MarkdownEditorState } from '../state';
+import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownEditorState } from '../document/state';
 import { locateCell, readTableSource } from '../syntax/table_source';
 
 /** The text position a character offset inside a revealed source lands on. */

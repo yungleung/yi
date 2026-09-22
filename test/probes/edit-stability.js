@@ -16,6 +16,11 @@
   };
 
   const paragraph = t.blocks().find((b) => b.textContent.includes('This paragraph'));
+  if (!paragraph) {
+    // Run by name without the demo document, this probe used to crash inside its
+    // own `find` (a tree walker on `undefined`), which reads like an editor bug.
+    return { checks: [{ name: 'the demo document is loaded', actual: false, expected: true }], failed: ['the demo document is loaded'] };
+  }
   const node = t.textNodesIn(paragraph).find((n) => n.data.includes('strikethrough'));
   const range = document.createRange();
   range.setStart(node, node.data.length);

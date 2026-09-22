@@ -25,9 +25,9 @@
 
 import { BlockSizes } from './block_sizes';
 import { createBlockComponent } from './create_block';
-import { blockContentKey, type BlockNode, type MarkdownBlock } from './blocks';
+import { blockContentKey, type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
-import type { MarkdownEditorState } from './state';
+import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
 
 /**

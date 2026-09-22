@@ -12,7 +12,7 @@
  * the caret is somewhere it applies.
  */
 
-import { isRawRendered } from '../blocks';
+import { isRawRendered } from '../document/blocks';
 import { codeIndentEdit } from '../syntax/code_edits';
 import { shiftOffset } from '../syntax/edit_range';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';

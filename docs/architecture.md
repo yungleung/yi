@@ -9,7 +9,7 @@ layers, the invariants that hold them together, and where a change belongs.
 - **Document** — the raw markdown string. Every edit is a range replacement in it.
 - **Block** — a slice of consecutive lines the renderer treats as one unit
   (`frontmatter`, `fencedCode`, `displayMath`, `paragraph`, …), described by a line
-  range and a character range. `src/ui/markdown/blocks.ts` splits the document.
+  range and a character range. `src/ui/markdown/document/blocks.ts` splits the document.
 - **Node component** — the DOM component for one mdast node inside a block
   (`src/ui/markdown/nodes/`), created through the registry
   (`registry.ts` + `create_node.ts`).
@@ -26,8 +26,8 @@ layers, the invariants that hold them together, and where a change belongs.
 
 | Layer | Files | May import |
 | --- | --- | --- |
-| Syntax (pure) | `blocks.ts`, `syntax/**` | other syntax modules, mdast types, the remark plugins |
-| Document | `state.ts` | syntax |
+| Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
+| Document | `document/state.ts`, `document/blocks.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
@@ -91,6 +91,28 @@ and none of them is stored: every mapping is re-derived from the one above it.
 plus the rendered-length model both directions share); `dom_position.ts` is the
 way out (a document offset turned into the text node and offset that hold it).
 
+## The history
+
+Undo and redo are a log of edits, not a stack of documents: `document/history.ts`
+holds `{ from, to, removed, inserted }` per change, and an edit is its own inverse
+with the two texts exchanged. The document text stays the only source of truth —
+the log is a *derivation* of it, and at any moment replaying the edits below the
+cursor from the loaded text reproduces the text in the editor.
+
+Two rules keep that true, and they are the ones to preserve when touching this
+area:
+
+- `replaceRange` and `setText` are the only places an edit is recorded; every
+  mutation in the editor goes through one of them.
+- `updateText` is the only place a text is applied, and undo and redo go through
+  it rather than through `replaceRange` — which is what stops an undo from
+  recording itself as a new edit.
+
+The parse cache is keyed by block content, so an undo back to text the editor has
+seen before reuses the parses it had, and the renderer rebuilds only the blocks
+whose content key changed (`test/probes/undo-after-scroll.js` is the case where
+the edit's block had left the window entirely).
+
 ## One keystroke
 
 1. `markdown_editor.ts` sees the key and calls a command (`editing/*`).
@@ -107,7 +129,7 @@ way out (a document offset turned into the text node and offset that hold it).
 
 | Change | Where |
 | --- | --- |
-| How the document is split into blocks | `blocks.ts` |
+| How the document is split into blocks | `document/blocks.ts` |
 | How one markdown construct looks | `nodes/<type>.ts` |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
 | A new keystroke or command | `docs/adding-a-command.md` — the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger |
@@ -126,7 +148,7 @@ reached in a way the next person can copy:
 | Whether a node's markdown can stand in for its rendering | the `showsSource` flag in `registry.ts: registerComponent` | `docs/adding-a-node.md`, step 4 |
 | Which source is shown, and where a click enters it | `source_mode.ts`, with `nodes/revealable_node.ts` | `docs/adding-a-node.md`, step 4 |
 | A command the author can ask for | the id in `commands/registry.ts`, the work registered in `markdown_editor.ts: registerCommandEvents`, the trigger | `docs/adding-a-command.md` |
-| How the document splits into blocks | `blocks.ts` | a task in the block model, plus `test/checks/check-blocks.mjs` |
+| How the document splits into blocks | `document/blocks.ts` | a task in the block model, plus `test/checks/check-blocks.mjs` |
 | A pure rule about markdown | the matching `syntax/*.ts`, named in the one-fact-one-home table above | `docs/testing.md` — rule-shaped means `test/checks/` |
 | What a block is worth in pixels | `block_sizes.ts` | a case in `test/checks/check-block-sizes.mjs` |
 | Which blocks are mounted | `viewport_window.ts` | the same |

@@ -12,7 +12,7 @@
  * here is a pure function of the text and an offset, applied as one replacement.
  */
 
-import type { MarkdownBlock } from '../blocks';
+import type { MarkdownBlock } from '../document/blocks';
 import { isEmptyParagraphLine } from '../syntax/blank_lines';
 import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
 import { applyEdit, restoreCaret, type EditorContext } from './context';
@@ -157,6 +157,37 @@ export function emptyLineInsertion(text: string, offset: number, inserted: strin
   const lineEnd = text.indexOf('\n', offset);
   const followedByBlock = text.slice(lineEnd < 0 ? text.length : lineEnd + 1).trim() !== '';
   return followedByBlock ? `${inserted}\n` : inserted;
+}
+
+/**
+ * What a paste replaces its range with.
+ *
+ * A paste that carries its own paragraph breaks is a paste of *blocks*: the
+ * author copied two paragraphs, and dropping them inside a sentence must not
+ * weld their first and last lines to the words around it — `Al` + `one` would
+ * become a word of its own. So a block paste gets the blank lines a block needs
+ * at each seam (`blockPadding`), and the blocks on both sides stay the blocks
+ * they were.
+ *
+ * A paste with no paragraph break of its own — one line, or one paragraph whose
+ * lines are soft breaks — is spliced exactly where the caret is, which is what
+ * every editor does and what this one has always done.
+ */
+export function pasteInsertion(
+  text: string,
+  from: number,
+  to: number,
+  pasted: string
+): { replacement: string; caret: number } {
+  if (!/\n[ \t]*\n/.test(pasted)) {
+    return { replacement: pasted, caret: from + pasted.length };
+  }
+  const { leading } = blockPadding(text, from);
+  const { trailing } = blockPadding(text, to);
+  return {
+    replacement: `${leading}${pasted}${trailing}`,
+    caret: from + leading.length + pasted.length
+  };
 }
 
 /** `Enter` at the end of a block: add a line and move the caret onto it. */

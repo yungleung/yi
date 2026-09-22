@@ -16,7 +16,7 @@
 import { EditableNodeComponent } from './editable_node';
 import { highlightLatex } from './latex_highlight';
 import type { AstNode } from '../ast';
-import type { BlockNode } from '../blocks';
+import type { BlockNode } from '../document/blocks';
 
 export class SourceText extends EditableNodeComponent {
   constructor(node: BlockNode) {

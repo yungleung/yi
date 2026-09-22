@@ -26,9 +26,9 @@
  * what is rendered or where the caret is.
  */
 
-import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from './syntax/markers';
-import { withVisibleTrailingSpaces } from './syntax/trailing_spaces';
-import { emptyParagraphIndexes, isEmptyParagraphLine } from './syntax/blank_lines';
+import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from '../syntax/markers';
+import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
+import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 
 export type BlockKind =
   | 'frontmatter'
