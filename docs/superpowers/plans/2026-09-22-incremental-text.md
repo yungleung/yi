@@ -311,3 +311,109 @@ check('a whole-document replacement can be compacted away', (store.replace(0, st
 - The caret, the source mode and the renderer are offset-based and must not learn
   about pieces. If a change would make one of them ask the store a question the old
   `string` could not answer, the design has gone wrong.
+
+---
+
+## Handoff (2026-09-22, incremental text complete)
+
+**Where the branch is.** `codex/editor-text-store`, eight commits on top of main
+(`36a8a2a`): the plan, the store and its check, the state on the store, the
+re-synchronising split, the footnote-label fold, the cost probe, and this handoff.
+`npx tsc --noEmit` clean, `npm run check` **17/17**, `npm run probe:all` **62/62 (6
+skipped)** from a freshly started app. The suite is the sixty-one it was plus
+`edit-cost`, the probe this phase added; the six skips are unchanged.
+
+**What changed.**
+
+- `document/text_store.ts` *is* the text: an immutable `original`, an append-only
+  `added`, and the pieces that name ranges of them, with a lazily rebuilt prefix
+  index. `replace` cuts at its two ends and appends what is new; `compact()` drops
+  the text an earlier edit replaced, and `loadText` calls it.
+  `state.ts` holds the store, `getText()` returns a string materialised once per
+  text version, and every caller above it kept its signature — the caret, the source
+  mode, the renderer and the history still speak document offsets only.
+- `document/blocks.ts` walks blocks through a generator, and `splitBlocksFrom` drains
+  it only as far as it has to. The walk starts one non-blank block above the change
+  (a `: details` line pulls the term run above it into its own block, so the block a
+  change lands in is not necessarily where the construct begins) and stops at the
+  first block that has an old block's lines and ends where the edit's own length
+  change puts that block's end. The old blocks below come back moved by the edit's
+  two deltas, in lines and in characters — as themselves when neither changed, so
+  the content-keyed renderer keeps their elements.
+- `syntax/footnotes.ts: labelsAfterEdit` folds an edit into the label set instead of
+  re-reading the document, and `state.ts: updateText` uses it instead of clearing the
+  cache. It is conservative on purpose: a definition is a whole line, so the rule
+  rescans when the edit touches text that could start one, lands on a line that is
+  one (or was one), or moves a line boundary. Falling back costs a scan the edit did
+  not need; being wrong costs a reference that silently stops parsing as a footnote.
+- `test/probes/edit-cost.js` types fifty characters at the end of the document,
+  reporting per keystroke the edit's own time, the time to the next frame, the
+  blocks rebuilt and the elements that survived; then it pastes a thousand footnote
+  definitions and types twenty more beside them.
+- `docs/architecture.md` gained "The text"; the model and the layer table name the
+  store. `test/README.md` and `docs/ai-context.md` carry the new check and the count.
+
+**Two plan details came out differently, and why.**
+
+- `splitBlocksFrom` takes the *edit*, not the first changed line. The stop is only
+  sound where "the text below this block is unchanged" is *known*, and a line number
+  cannot say that: an edit that replaces one character and an edit that deletes the
+  rest of the document start on the same line.
+- A block that matches an old block by kind and line range can still be a different
+  block — that is what the check found first. The stop needs all three conditions
+  together: the old block's kind and lines (moved by the edit's line delta), the
+  change ending above the old block's end, and the produced block ending exactly
+  where the edit's own length delta puts that end. Two weaker versions each passed
+  the easy cases and failed a real one.
+
+**What the new checks pin.**
+
+- `check-text-store.mjs`: the store against a plain string after every edit of a
+  sequence, and what "incremental" looks like from outside — fifty typed characters
+  are two pieces, a whole-document rewrite is one, and `compact()` keeps it there.
+- `check-blocks.mjs`: the existing rules unchanged, plus `splitBlocksFrom` against
+  `splitBlocks` — every field — after the store's edit sequence, after the cases that
+  move a boundary (inside a fence, opening one, closing one, joining two blocks,
+  splitting one, changing a table, opening a definition list, the frontmatter, a file
+  with no final line ending), and after two hundred seeded pseudo-random edits. Plus
+  the identity case: an edit above hands back the blocks below as the objects they
+  were.
+- `check-footnotes.mjs`: `labelsAfterEdit` against `footnoteLabels` after every step
+  of eight hand-written edits — a definition typed, a label renamed, a definition
+  deleted, two lines joined so a definition is swallowed, a line split so one opens —
+  and after a hundred seeded random ones; plus the cheap half, that a keystroke in a
+  paragraph hands back the set it was given rather than a new one.
+
+**What the suite still says, measured.** On a freshly started app, typing at the end
+of the 323 KB fixture note is a median 36 ms of edit and 40 ms to the next frame,
+rebuilding exactly one block per keystroke; the same probe on the 2 KB demo document
+is 87 ms per keystroke, rebuilding one block and leaving the other 24 mounted
+elements where they were. The document's size does not appear in the numbers — and
+on this fixture neither does the split: with `splitBlocks` put back in place of
+`splitBlocksFrom` for the length of one measurement the median was 37 ms, because
+this note is a thousand lines of very long paragraphs and the walk was never where a
+keystroke spent its time. What the numbers do show is the phase's own non-goal: a
+keystroke costs the block it lands in (4.6 KB of rendered text at the end of that
+note) and whatever that block renders (the demo document's blocks carry citations and
+wikilinks). The text and the split are now below the noise; a stopwatch on them is
+worth another look after a phase that makes one block's rendering cheaper.
+
+**Left for later, in the order I would take them.**
+
+1. **A line index for the text.** An edit still materialises the document as a string
+   for the split, and still shifts every block below it, because `charStart`/`charEnd`
+   are absolute — O(document) and O(blocks) per keystroke, invisible at this size and
+   the last of the old shape. A line index answering "where does line N start" in
+   O(log lines) makes the offsets lazy and lets the split read its lines from the
+   index; it changes what `MarkdownBlock` means, so it needs its own probes.
+2. **Store the caret in the edit** (P5's first follow-on). Undo restores the offset
+   the caret had, clamped, as the snapshot implementation did; `caretBefore` and
+   `caretAfter` on the edit would put the caret where the author actually was. A
+   behaviour change, so probes of its own.
+3. **Coalesce typing** (P5's second follow-on). One keystroke is one undo step today;
+   a word per step is what most editors do, and it needs a rule about when a step
+   ends — a pause, a block change, a non-typing command.
+4. **Virtualise inside a block.** A note that is one enormous paragraph is one
+   enormous block, and the renderer mounts a block whole — `edit-cost` shows that
+   cost. It is a renderer question, and the phase deliberately has no prettify pass
+   that would split such a paragraph on the way to disk.
