@@ -400,3 +400,57 @@ git rev-parse HEAD^{tree} codex/plain-edit-spaces^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-23 — a space is a keystroke like a letter
+
+**What changed.** `syntax/plain_edit.ts` accepts a single space between two words.
+The guards that were already there cover more than the old comment claimed — a run
+with punctuation in it (a destination, a bare URL, a label, an entity, a marker) is
+refused by the run guard, the joins that would move a marker (`# heading` →
+`#heading`) by the neighbour guard, and the two constructs a space can open, a hard
+break and an indented code block, by the line-edge guard. What was missing is the
+run on the *right* of the edit: a space glued to a URL's left turns the run into an
+autolink (`seehttps://x` → `see https://x`) and the parse changes under the caret.
+The rule now looks at both runs, and refuses a run of two spaces as well, because
+`nodes/text.ts: preserveSpaces` renders the second of them as a no-break space.
+
+**The gate.** `check-plain-edit.mjs`'s property is now "the new parse is the old
+parse with the edit applied where it lands, and every other node's source is the
+source it had" — checked node by node against the editor's own parse, block by block.
+That is what sees a link whose *extent* changed, which node types cannot. Over the
+corpus it accepts 644 edits (530 before this phase) and finds nothing; with the old
+guards alone it found the URL cases (5), which is why the right-hand guard exists.
+
+**The numbers.** The fixture note's last block (4773 characters after the probe's own
+typing, 189 elements), the same caret as P7's and P9's measurements:
+
+| Keystroke | Before | Now |
+| --- | --- | --- |
+| a letter inside a word | 3–4 ms, fast path | 3 ms, fast path, one height read |
+| **a space between two words** | **40 ms** (27 ms rebuild, 9 ms parse) | **4 ms**, fast path, one height read |
+| a full stop | 46 ms, ordinary path | 46 ms, ordinary path |
+
+`block-rebuild-cost.js` reports all three (its space round types the letter before
+the space, since a space is prose only with a word on its left, and counts the reads
+of the timed keystroke alone). `typed-text.js` checks the space against the same
+three things a letter is checked against and keeps a full stop as the refusal;
+`plain-edit-parse.js` times a full stop where it used to time a space.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` 19/19, a freshly started
+app and `npm run probe:all` **66/66 (6 skipped)**.
+
+**What is left.**
+
+- **Punctuation and digits.** A full stop, a comma, a quote, a hyphen or a digit
+  still takes the ordinary path (~40 ms on that block, 9 ms of it the parse). Each
+  can open or close something (`1.` a list, `"` a title, `.` a URL), so the same
+  gate would have to decide them case by case; nothing here suggests they are worth
+  it yet.
+- **A line index for the text (lazy block offsets).** P6's first item, deferred in
+  P7 §1.4: the last O(document) + O(blocks) shape per keystroke, worth doing for
+  much larger documents.
+- **Undo ergonomics.** `caretBefore`/`caretAfter` on the edit, and coalescing a
+  typing burst into one step.
+- **The footnote gap.** A footnote reference cannot be clicked into and edited.
