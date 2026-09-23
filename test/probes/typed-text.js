@@ -18,6 +18,8 @@
  *   `data-text-from`, so `editing/typed_text.ts` refuses to write into it;
  * - typing that makes the block taller re-measures it, so the heights the spacers
  *   are built from still add up to the page;
+ * - a write moves the text after it, and the offsets the block's elements carry
+ *   with it: a caret later in the same block has to map to where that text is now;
  * - and the deferred check behind all of it: a burst of typing captures the
  *   block's parse shape once (not once a keystroke) and checks it when the typing
  *   stops, rendering the block again if the parse moved after all.
@@ -321,6 +323,70 @@
   check('a growing block grows the page with it', out.growingBlock.pageGrowth === out.growingBlock.blockGrowth);
   check('a growing block does not grow the spacer', out.growingBlock.spacerGrowth === 0);
   check('a growing block is remembered at its new height', out.growingBlock.remembered);
+
+  // A write moves the text after it, and the tags in a block name its own text: a
+  // caret later in the same block has to map to where that text is now, not to
+  // where it was before the keystrokes. The case is two edits — plain typing in an
+  // early word, then a click into a later one — because a copy of the offsets that
+  // never moves shows up only when something after the edit reads them.
+  out.movedOffsets = await (async () => {
+    await t.load('A paragraph with *emphasised* and fairly plain words in it.\n\nsecond\n');
+    const put = async (node, at) => {
+      const caret = document.createRange();
+      caret.setStart(node, at);
+      caret.collapse(true);
+      const box = caret.getBoundingClientRect();
+      node.parentElement.dispatchEvent(
+        new MouseEvent('click', {
+          bubbles: true,
+          clientX: box.left,
+          clientY: box.top + box.height / 2
+        })
+      );
+      await t.sleep(150);
+    };
+    const block = t.blocks()[0];
+    const early = t.textNodesIn(block).find((leaf) => leaf.data.includes('with'));
+    await put(early, early.data.indexOf('with') + 2);
+    for (const key of ['x', 'y', 'z']) {
+      t.key(key);
+    }
+    await t.sleep(200);
+    // What the document holds now, and what every tag in the block claims: a tag
+    // that named its text before the keystrokes names three characters too early
+    // afterwards (the read here is the literal, so the caret is left alone for the
+    // click below).
+    const typed = 'A paragraph wixyzth *emphasised* and fairly plain words in it.\n\nsecond\n';
+    const afterTyping = t.blocks()[0];
+    const charStart = Number(afterTyping.dataset.charStart);
+    const tags = [...afterTyping.querySelectorAll('[data-text-from], [data-source-from]')]
+      .filter(
+        (element) =>
+          !element.classList.contains('markdown-list-placeholder') &&
+          !element.classList.contains('markdown-empty-line-placeholder')
+      )
+      .map((element) => {
+        const tag = Number(element.dataset.textFrom ?? element.dataset.sourceFrom);
+        const holds = element.textContent;
+        return {
+          tag,
+          holds,
+          names: typed.slice(charStart + tag, charStart + tag + holds.length)
+        };
+      });
+    const later = t.textNodesIn(afterTyping).find((leaf) => leaf.data.includes('words'));
+    await put(later, later.data.indexOf('words') + 2);
+    t.key('Q');
+    await t.sleep(250);
+    return {
+      document: await t.raw(),
+      expected: 'A paragraph wixyzth *emphasised* and fairly plain woQrds in it.\n\nsecond\n',
+      tags,
+      tagged: tags.every((tag) => tag.names === tag.holds)
+    };
+  })();
+  check('a caret later in the block stays exact', out.movedOffsets.document === out.movedOffsets.expected);
+  check('the tags in a block name the text they hold', out.movedOffsets.tagged);
   out.failed = failures;
   t.report(out);
 
