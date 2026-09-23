@@ -21,6 +21,16 @@ stays per block: this phase is about the DOM, not the parser.
 the invariant this phase serves — a block's rendering is a pure function of its own
 source — and stops there, as it did for P5 and P6.
 
+> **Change of design, 2026-09-23, after Task 2.** Tasks 3–5 below describe patching a
+> block's interior from its parse. That was built and abandoned: it worked on a
+> simple paragraph and duplicated elements on real content (189 → 294, 363, 1744
+> across three attempts), for three reasons recorded in `1.4`. The phase continues
+> with a **plain-edit fast path** instead: an edit that cannot change how its block
+> parses is written into the rendered text node and nothing is rendered or parsed.
+> Its design is `syntax/plain_edit.ts` + `editing/typed_text.ts`, its property is
+> `test/checks/check-plain-edit.mjs`, and the handoff at the end of this plan has the
+> numbers. Tasks 3–5 below are kept as the record of the abandoned design.
+
 ## Global Constraints
 
 - **Behaviour is preserved.** The same edits produce the same text, the same
