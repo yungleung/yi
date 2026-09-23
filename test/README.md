@@ -18,7 +18,6 @@ methodology; this file is the index and the conventions.
 
 | Check | Covers |
 | --- | --- |
-| `check-block-children.mjs` | Which of a block's children an edit left alone (`document/block_children.ts`), which is what lets the renderer keep their elements |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
