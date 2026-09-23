@@ -84,7 +84,7 @@ and none of them is stored: every mapping is re-derived from the one above it.
 | Flavour | → document offset | document offset → | Re-derived when |
 | --- | --- | --- | --- |
 | document | it *is* the truth | — | never: the offset is recomputed from the caret on the next keystroke, and nothing holds one across a rebuild |
-| block-relative | `caret/offsets.ts`: the block's `charStart` plus the node positions and `data-*-from` tags | `caret/offsets.ts: renderedOffsetAtRaw` (the block's `charStart` comes off) | on every edit: `charStart` moves, and so do the tags it is added to |
+| block-relative | `caret/offsets.ts`: the block's `charStart` plus the node positions and `data-*-from` tags | `caret/offsets.ts: renderedOffsetAtRaw` (the block's `charStart` comes off) | on every edit: `charStart` moves, and so do the tags it is added to — a rebuild re-tags the block from the document, and a plain write moves the tags after it (`editing/typed_text.ts: writeRun`, whose list `test/checks/check-tag-offsets.mjs` holds to every tag the editor writes) |
 | rendered | `caret/offsets.ts: mapRenderedOffset` (through `textOffsetInElement`) | `caret/dom_position.ts: textNodeAtRenderedOffset` | after any DOM rebuild, because a block is rendered from its source again |
 | DOM range | `caret/offsets.ts: documentOffsetAt` | `caret/caret.ts`: a fresh collapsed range, by `editing/context.ts: placeCaret` | after a rebuild, always: the browser *relocates* a range into the node that replaced its text, so a range that looks connected may sit where the author never put it |
 
