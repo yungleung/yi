@@ -40,34 +40,61 @@ const { MarkdownEditorState } = await load('src/ui/markdown/document/state.ts', 
 const parser = unified().use(remarkParse).use(remarkGfm);
 const shape = (text) => nodeShape(parser.parse(text).children);
 
-/**
- * The path of node types down to the node an offset sits in, e.g.
- * `paragraph>link>text`. The caret is "in" the outermost node whose source can
- * stand in for its rendering, which is why the path is compared and not the leaf:
- * the fast path trusts that an edit it accepts leaves the caret in the node it was
- * in, and the source to show at it unchanged (see `editing/context.ts`).
- */
-const nodePathAt = (state, offset) => {
+/** Every node of the block an offset sits in, with the source it covers. */
+const nodesOf = (state, offset) => {
   const block = state.getBlockAtOffset(offset);
   if (!block) {
     return null;
   }
-  const path = [];
-  let nodes = state.getBlockContent(block);
-  const within = offset - block.charStart;
-  while (Array.isArray(nodes) && nodes.length > 0) {
-    const node = nodes.find((child) => {
-      const start = child.position?.start?.offset ?? 0;
-      const end = child.position?.end?.offset ?? start;
-      return within >= start && within <= end;
-    });
-    if (!node) {
-      break;
+  const list = [];
+  const walk = (nodes, path) => {
+    for (const node of nodes) {
+      const start = block.charStart + (node.position?.start?.offset ?? 0);
+      const end = block.charStart + (node.position?.end?.offset ?? 0);
+      list.push({
+        path: `${path}>${node.type}`,
+        start,
+        end,
+        source: state.getText().slice(start, end)
+      });
+      if (Array.isArray(node.children)) {
+        walk(node.children, `${path}>${node.type}`);
+      }
     }
-    path.push(node.type);
-    nodes = node.children;
+  };
+  walk(state.getBlockContent(block), block.kind);
+  return list;
+};
+
+/**
+ * The property the fast path trusts: the new parse is the old one with the edit
+ * applied where it lands. Node types are what the renderer draws and a node's source
+ * is what it holds, so comparing both catches what types alone cannot — a link whose
+ * *extent* changed (`seehttps://x` → `see https://x`) has the same types. A node the
+ * edit never reached keeps the source it had; a boundary offset belongs to one leaf
+ * or the other, so a node satisfying either form is accepted.
+ */
+const derivable = (before, after, from, to, inserted) => {
+  const one = nodesOf(new MarkdownEditorState(before), from);
+  const other = nodesOf(new MarkdownEditorState(after), from + inserted.length);
+  if (!one || !other || one.length !== other.length) {
+    return false;
   }
-  return path.join('>');
+  for (let index = 0; index < one.length; index += 1) {
+    if (one[index].path !== other[index].path) {
+      return false;
+    }
+    const applied =
+      one[index].start <= from && from <= one[index].end
+        ? one[index].source.slice(0, from - one[index].start) +
+          inserted +
+          one[index].source.slice(from - one[index].start + (to - from))
+        : null;
+    if (other[index].source !== one[index].source && other[index].source !== applied) {
+      return false;
+    }
+  }
+  return true;
 };
 
 const failures = [];
@@ -82,7 +109,13 @@ check('a letter inside a word is plain', isPlainEdit('a quick fox', 3, 3, 'x'), 
 check('a letter replacing a letter is plain', isPlainEdit('a quick fox', 2, 3, 'u'), true);
 check('a deletion inside a word is plain', isPlainEdit('a quick fox', 2, 3, ''), true);
 check('a run of letters is plain', isPlainEdit('a quick fox', 3, 3, 'very'), true);
-check('a space is not plain', isPlainEdit('a quick fox', 3, 3, ' '), false);
+check('a single space is plain', isPlainEdit('a quick fox', 3, 3, ' '), true);
+check('deleting the space between two words is plain', isPlainEdit('two words', 3, 4, ''), true);
+check('a space inside a URL is not plain',
+  isPlainEdit('see https://example.com now', 15, 15, ' '), false);
+check('a space before a glued URL is not plain',
+  isPlainEdit('seehttps://x.example', 3, 3, ' '), false);
+check('a second space in a row is not plain', isPlainEdit('a  b', 2, 2, ' '), false);
 check('a full stop is not plain', isPlainEdit('a quick fox', 3, 3, '.'), false);
 
 // ...and refuses everything that could change structure.
@@ -110,7 +143,10 @@ const documents = [
   '| a | b |\n| --- | --- |\n| 1 | 2 |\n',
   'term\n\n: detail\n\n```js\nconst x = 1;\n```\n',
   'Body[^1]\n\n[^1]: note\n',
-  '中文段落，裡面有一些文字。\n\n第二段。\n'
+  '中文段落，裡面有一些文字。\n\n第二段。\n',
+  'see https://example.com and seehttps://glued.example now\n',
+  'a link to [the title](https://example.com/dest) and [t](<the dest>)\n',
+  'a double  space, a footnote label [^label] and its definition\n\n[^label]: note\n'
 ];
 /**
  * Two walks per document: one that types ordinary letters (which is where the
@@ -152,16 +188,14 @@ for (const alphabet of walks) {
               `  ${one}\n  ${other}`
           );
         }
-        // The caret is the offset the edit leaves behind, and the editor's own parse
-        // is what decides which node that is — block by block, the way the editor
-        // reads it.
-        const left = nodePathAt(new MarkdownEditorState(before), from);
-        const arrived = nodePathAt(new MarkdownEditorState(after), from + inserted.length);
-        if (left !== arrived) {
+        // ...and the tree it parses to has to be that same tree, with this edit in
+        // the one leaf it lands in. Types alone cannot say that: a link whose extent
+        // changed has the same types.
+        if (!derivable(before, after, from, to, inserted)) {
           failures.push(
-            `the rule accepted an edit that moved the caret's node\n  before ${JSON.stringify(before)}\n` +
-              `  edit ${JSON.stringify({ from, to, inserted })}\n  after ${JSON.stringify(after)}\n` +
-              `  ${left} → ${arrived}`
+            `the rule accepted an edit that is not the parse with that edit in it\n` +
+              `  before ${JSON.stringify(before)}\n  edit ${JSON.stringify({ from, to, inserted })}\n` +
+              `  after ${JSON.stringify(after)}`
           );
         }
       }
