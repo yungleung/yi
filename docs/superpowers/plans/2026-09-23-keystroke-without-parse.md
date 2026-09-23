@@ -122,6 +122,18 @@ source-block case handled separately. Same saving, more machinery.
 - [ ] **Step 1: Add the property**
 
 ```js
+// The parse reaches `decode-named-character-reference`, whose bundled build makes an
+// element at import time; `check-history.mjs` installs the same stub before it
+// bundles this module.
+globalThis.document = {
+  addEventListener() {},
+  createElement: () => ({ style: {}, classList: { add() {} }, appendChild() {}, setAttribute() {} }),
+  querySelectorAll: () => [],
+  querySelector: () => null,
+  createRange: () => ({})
+};
+globalThis.window = { getSelection: () => null, addEventListener() {} };
+
 const { MarkdownEditorState } = await load('src/ui/markdown/document/state.ts', 'state');
 
 /**
@@ -477,3 +489,59 @@ git rev-parse HEAD^{tree} codex/keystroke-without-parse^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-23 — the fast path parses nothing
+
+**What changed.** `applyEdit`'s fast path no longer resolves the source the caret is
+in. That lookup (`sourceRangeAt`, through `showSourceAt`) was the only parse a plain
+keystroke paid, and it paid it once a keystroke: after a write the block's text is a
+new content key, so the parse was a miss every time. The decision is now held while
+the caret is placed (`source_mode.ts: withHeldShownSource`, which `showSourceAt`
+honours), and the shown range is moved with the edit by
+`source_mode.ts: moveShownSource` — `syntax/edit_range.ts: shiftOffset`, the rule the
+block's tags already move by. The ordinary path and the deferred check keep deciding
+from the parse, and the parse they read is the one their rebuild renders from.
+
+**The numbers.** `test/probes/block-rebuild-cost.js` on the fixture note's last
+block (4760 characters, 41 lines, 189 elements), same caret as P7's measurement:
+
+| What | P7 | Now |
+| --- | --- | --- |
+| a plain keystroke (a letter inside a word) | 11 ms | **4 ms** |
+| a structural keystroke (a space, the same caret) | 42 ms | 40 ms — unchanged, and it is the ordinary path |
+| that block's parse, measured in the same run | 8–10 ms | 9 ms (still what the ordinary path and the check pay) |
+| geometry reads per plain keystroke | 1 height, no rect | the same |
+
+`test/probes/plain-edit-parse.js` reports it by caller: a burst of letters asks
+`scheduleVerify` once (the shape capture, a cache hit) and `verifyBlock` once (the
+burst's single parse) and never asks `sourceRangeAt`; typing a space asks the lookup,
+parses, and builds the block again.
+
+**What the checks pin.** `check-plain-edit.mjs` now checks, against the editor's own
+parse (`document/state.ts`, block by block), that an edit the rule accepts leaves the
+caret in a node of the same type path — the property the skip rests on, over the
+corpus's 530 accepted edits. `check-math-source.mjs` checks that the shown range
+moves with an edit: a deletion inside a block that shows its own text used to push
+the range past the block, which would bring a formula back as KaTeX the next time it
+was built without a fresh decision. Acceptance: `npx tsc --noEmit` clean, `npm run
+check` 19/19, a freshly started app and `npm run probe:all` **66/66 (6 skipped)**.
+
+**What is left.**
+
+- **The ordinary path's parse.** A structural keystroke still parses its block once
+  (40 ms on the fixture note's last block, of which the parse is 9 ms), because the
+  rebuild renders from it. Making that cheaper is a parser measurement, not a caret
+  one.
+- **Deriving the parse.** A plain edit could produce the new tree from the old one
+  (positions shifted, the leaf rewritten) and cache it under the new content key, so
+  that every consumer is free — at the cost of a cache whose entries the parser did
+  not produce, and a deferred check that would have to parse freshly to stay a check.
+- **Spaces.** The rule refuses them, which costs one ordinary re-render per word;
+  extending it needs link destinations and bare URLs handled first.
+- **Lazy block offsets.** Deferred, with the reason in the block-rendering phase's
+  §1.4: line numbers are what the renderer, the caret tags and `getBlockAtLine` key
+  on, so laziness needs stable line handles first.
+- **The footnote gap.** A footnote reference cannot be clicked into and edited today;
+  that is a small feature of its own.

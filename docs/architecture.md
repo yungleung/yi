@@ -164,6 +164,14 @@ once the typing stops: one coalesced check a burst, one parse a burst, and a blo
 whose parse no longer has that shape is rendered again
 (`editing/context.ts: scheduleVerify`).
 
+The write parses nothing either. Which source the caret is in is decided from the
+document, but an accepted edit cannot move the caret out of the node it is in —
+`test/checks/check-plain-edit.mjs` checks that against the editor's own parse — so
+the fast path holds that decision while it places the caret and moves the shown
+range with the edit (`source_mode.ts: moveShownSource`) instead of re-deciding it.
+The ordinary path and the deferred check keep asking, and the parse they read is the
+one their rebuild renders from.
+
 ## Where does this change go?
 
 | Change | Where |
