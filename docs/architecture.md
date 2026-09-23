@@ -150,6 +150,20 @@ the edit's block had left the window entirely).
 4. Rendering rebuilds only the blocks whose content key or shape key changed; the
    rest keep their DOM, which is what keeps typing cheap in a long document.
 
+Most typing never gets that far. A keystroke that cannot change how its block
+parses is written into the rendered text node and nothing is rendered at all:
+`applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters, and only
+letters, in a position where no marker, line edge or setext underline could change
+what the line means — and then asks `editing/typed_text.ts` whether the edit maps
+into one text node whose `[data-text-from]` span spells the document's own
+characters, one for one. Both halves have to agree, and anything either is unsure
+of takes the ordinary path above, which is always correct. Because the rule reads
+one word of the text while a parse can turn on more, the fast path also captures
+the block's parse shape (from the parse the renderer already cached) and checks it
+once the typing stops: one coalesced check a burst, one parse a burst, and a block
+whose parse no longer has that shape is rendered again
+(`editing/context.ts: scheduleVerify`).
+
 ## Where does this change go?
 
 | Change | Where |

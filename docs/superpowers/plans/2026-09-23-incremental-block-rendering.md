@@ -1043,7 +1043,7 @@ Expected: clean, `18/18 checks passed`.
 
 Run: `npm run probe:all`
 Expected: `64/64 probes passed (6 skipped)` from a freshly started app — the
-sixty-four are P6's sixty-two plus this phase's two.
+sixty-eight P6 left plus this phase's `block-rebuild-cost` and `typed-text`.
 
 ```bash
 git add src/ui/markdown/virtual_block_renderer.ts test/probes/block-patch.js
@@ -1078,3 +1078,85 @@ git commit -m "refactor(render): keep the shape, heights and spares through a pa
 - Keep the pure decision (`block_children.ts`) free of the DOM. It is the half a
   check can drive, and it is the half the next phase — whatever re-renders blocks
   after this one — will want to reuse.
+
+---
+
+## Handoff, 2026-09-23 — the plain-edit fast path
+
+**What this phase became.** Tasks 3–5 above are the record of a design that was
+built and abandoned: patching a block's interior from its parse. It worked on a
+simple paragraph and duplicated elements on real content (189 → 294, 363, 1744
+across three attempts) for the three reasons in §1.4, and the child-matching module
+it needed is gone — the last commit of the attempt was reverted, and the attempt
+itself is `stash@{0}` on `codex/editor-block-render`, not to be resurrected unless a
+future phase wants to re-render *parts* of a block. The phase continued with the
+plain-edit fast path, and that is what shipped: an edit that cannot change how its
+block parses is written into the rendered text node and nothing is rendered or
+parsed. `state.replaceRange` runs on both paths, so the text, the history and the
+blocks are identical either way — the fast path is a rendering shortcut and nothing
+else.
+
+**The rule, and its two halves.** `syntax/plain_edit.ts` accepts a keystroke only
+when every character it inserts and every character it removes is a letter, when
+the word the edit leaves behind is letters as well, when the characters beside the
+edit are letters or a space, when neither end of the edit is a line edge, and when
+the line below is not a setext underline. `editing/typed_text.ts` then refuses
+anything whose mapping is not exact: both ends of the edit have to land in one text
+node, that node has to be the only child of its `[data-text-from]` span, and the
+span's text has to be the document's own characters one for one. Anything the rule
+or the mapping is unsure of takes the ordinary path.
+
+**The numbers.** `test/probes/block-rebuild-cost.js`, on the 323 KB fixture note's
+last block (4757 characters, 41 lines, 189 elements):
+
+| What | Before this phase | Now |
+| --- | --- | --- |
+| a plain keystroke (letter inside a word) | — (the rule refused at the caret the probe used: it sat at a line edge) | **11 ms**, one geometry read |
+| a structural keystroke (a space, the same caret) | 36–38 ms, 2 rect reads and 1 height read | **42 ms** — unchanged, and that is the ordinary path |
+| rebuilding the block, detached build + replace + layout | ~40 ms | 28 ms (the measurement, not the keystroke: nothing rebuilds on the plain path) |
+| patching one text node + layout | ~0 ms | 0 ms |
+
+`test/probes/typed-text.js`, on the demo document: a plain letter costs 4 ms and
+**no** `getBoundingClientRect` read at all (the one geometry read per keystroke is
+`measureEditedBlock` asking the edited block for its height, so the spacers stay
+right); the same keystroke on the fixture note costs 11 ms because the caret's own
+source lookup re-parses the block once a keystroke — see "what is left" below. The
+seams are in the same probe: a selection spanning two nodes, an edit that joins two
+lines and a caret inside a link's shown source all take the ordinary path (the
+source view is tagged `data-source-from`, not `data-text-from`, so nothing is
+written into it); typing that grows the block is still the fast path and the
+heights the spacers are built from follow it; and the deferred check is measured —
+one capture and one check a burst whatever its number of keystrokes, one re-render
+when the staged parse does not match, and the caret still typing in the same block
+afterwards.
+
+`test/checks/check-plain-edit.mjs` accepts 530 edits over its corpus and finds no
+counterexample; it caught two while the rule was being written (a letter inside a
+link's destination, including a bare URL, and one inside a footnote's label — places
+where what is on screen is not what the document holds), which is why the rule also
+refuses a word that is not letters.
+
+**Two repairs the deferred check needed.** It calls `renderBlock`, and that in-place
+render was broken in two ways, both found by the probe above and fixed in this
+phase: `renderBlock` detached the element it was replacing before `replaceWith`,
+which left the block off the page until the next window sync; and `reanchorCaret`
+treated a caret as surviving when its range was merely connected, though the browser
+*relocates* a range whose node is replaced — onto a position between blocks — so the
+next keystroke replaced the whole block.
+
+**What is left.**
+
+- **Spaces.** The rule refuses them, which costs one ordinary re-render per word.
+  Extending it needs the destinations and bare URLs handled first: a space inside
+  `[title](https://example.com)` or inside a URL is not a space the prose owns.
+- **The parse.** ~10 ms a keystroke on the fixture note, the largest term left, and
+  the fast path pays it once a keystroke today: `restoreCaret` → `showSourceAt`
+  resolves the caret's source through `getBlockContent`, so a burst of typing
+  re-parses the block per keystroke (measured with a probe that counts the calls).
+  Making that lookup use the offsets already at hand — or making the parse
+  incremental — is the next phase's measurement.
+- **Lazy block offsets.** Deferred, with the reason in §1.4: line numbers are what
+  the renderer, the caret tags and `getBlockAtLine` key on, so laziness needs stable
+  line handles first, and the prize is ~1 ms a keystroke.
+- **The footnote gap.** A footnote reference cannot be clicked into and edited
+  today; that is a small feature of its own, not a rendering question.
