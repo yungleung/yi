@@ -169,6 +169,7 @@ whose parse no longer has that shape is rendered again
 | Change | Where |
 | --- | --- |
 | How the document is split into blocks | `document/blocks.ts` |
+| A new markdown construct — a node type or a block kind | `docs/adding-a-node.md`, including what it owes the typing fast path |
 | How one markdown construct looks | `nodes/<type>.ts` |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
 | A new keystroke or command | `docs/adding-a-command.md` — the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger |

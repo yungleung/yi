@@ -38,7 +38,11 @@ it may import, and the invariant it upholds (`docs/writing-comments.md`).
 
 If your node has text leaves, tag them with the block-relative raw offset they start
 at (`element.dataset.textFrom = String(offset)`), which is what lets the caret map
-back to the document exactly. `nodes/text.ts` is the smallest example.
+back to the document exactly. `nodes/text.ts` is the smallest example. That tag has
+to be exact — the span's text has to be the document's own characters from that
+offset — because it is also what lets a plain keystroke be written straight into the
+leaf's text node instead of rendering the block (`syntax/plain_edit.ts`,
+`editing/typed_text.ts`).
 
 ## 3. Register it
 
@@ -111,7 +115,35 @@ the raw document — the shape `test/probes/revealable-flows.js` uses:
 })()
 ```
 
-## 6. Run everything
+## 6. Say whether a letter could open or close it
+
+Nothing in the renderer has to know about your construct: the fast path that writes
+a keystroke into the text node instead of rendering the block is decided by
+characters and tags, not by node types. `syntax/plain_edit.ts` accepts letters, and
+only letters, where no marker, line edge or setext underline could change what the
+line means, and `editing/typed_text.ts` then refuses any edit that does not map into
+one span whose text is the document's own characters.
+
+What the rule *assumes* is that every construct needs a character that is not a
+letter to open or close it. If yours does not — if a letter typed into prose could
+start or end it — the rule is wrong about it, and that has one home and two proofs:
+
+- `syntax/plain_edit.ts`: the guard that refuses the edit, beside the word guard that
+  already refuses a word which is not letters (which is what keeps a link's
+  destination, a bare URL and a footnote's label out of the write).
+- `test/checks/check-plain-edit.mjs`: a document in its corpus. That list is written
+  by hand, so a construct it does not name is a construct the property does not
+  cover.
+- `test/probes/typed-text.js`: a case that types where the construct is, and says
+  which path took the keystroke.
+
+The deferred check behind the fast path (`editing/context.ts: scheduleVerify`) is a
+safety net rather than a licence: it renders a block again when the parse it now has
+is not the shape it was built from, which heals a stale rendering a moment later —
+but only when the shape moved, and a construct that changes a rendering without
+adding or removing nodes is not covered by it.
+
+## 7. Run everything
 
 ```bash
 npx tsc --noEmit
@@ -122,3 +154,26 @@ npm run probe -- test/probes/<your-probe>.js        # terminal 2
 
 If a rendering rule is a pure function of the text, put it in a syntax module and
 test it in `test/checks/` instead — that is faster and it cannot rot.
+
+## When it is a block kind, not a node type
+
+A construct the splitter cuts into a block of its own is a different job from a node
+type inside one: display maths, fenced and indented code, HTML and frontmatter are
+block kinds. They are the `BlockKind` union in `document/blocks.ts`, the splitter
+that assigns the kind, and two tables that say what the renderer may do with it:
+
+- `isRawRendered(kind)` — whether the block renders its raw source as it stands,
+  without the markdown inside it being parsed into nodes (a `- ` inside a code block
+  is code, not an empty list item).
+- `hasSourceMode(kind)` — whether the block's own text can stand in for its view,
+  the way a display formula shows its `$$…$$` while the caret is inside it. A kind
+  that should be editable as its own source and is missing here renders its view
+  instead, and the caret has nothing to sit on.
+
+The invariants above apply here too: a block kind whose text stands in for its view
+is tagged as the block's own text from offset `0` (`nodes/source_text.ts`), which is
+what makes a keystroke inside it exact. And the renderer keys an element by its
+content *and* by the shape it was built in — for a block, the shape comes from
+`source_mode.ts: shownSourceWithinBlock` (`virtual_block_renderer.ts: renderKey`) —
+so a kind that can render two ways has to go through that, or the text and the view
+are handed each other's element.
