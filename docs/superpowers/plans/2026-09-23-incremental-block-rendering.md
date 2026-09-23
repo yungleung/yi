@@ -232,7 +232,26 @@ timeout still yields the numbers.
   const scroller = t.scroller();
   scroller.scrollTop = scroller.scrollHeight;
   await t.sleep(500);
-  const element = t.blocks()[t.blocks().length - 1];
+  // The caret goes after the last character of the last block, which is where the
+  // keystrokes land. (A probe that only scrolls to the end measures nothing: the
+  // keystrokes go nowhere and report zero.)
+  const last = t.blocks()[t.blocks().length - 1];
+  const caretNode = last ? t.textNodesIn(last).pop() : null;
+  if (!caretNode) {
+    return { error: 'no block to put the caret in' };
+  }
+  const caret = document.createRange();
+  caret.setStart(caretNode, caretNode.data.length);
+  caret.collapse(true);
+  const caretBox = caret.getBoundingClientRect();
+  caretNode.parentElement.dispatchEvent(
+    new MouseEvent('click', {
+      bubbles: true,
+      clientX: caretBox.left,
+      clientY: caretBox.top + caretBox.height / 2
+    })
+  );
+  await t.sleep(200);
   const reads = { rect: 0, height: 0 };
   const rects = Element.prototype.getBoundingClientRect;
   const heights = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
@@ -266,6 +285,16 @@ timeout still yields the numbers.
   const block = blocks[blocks.length - 1];
   const state = new MarkdownEditorState(text);
   const children = state.getBlockContent(block);
+  // The live element the keystrokes landed in — the block itself was replaced
+  // under them, which is the behaviour this probe is about.
+  const element = t.blocks()[t.blocks().length - 1];
+  out.block = {
+    kind: block.kind,
+    characters: block.text.length,
+    lines: block.text.split('\n').length,
+    elements: element ? element.querySelectorAll('*').length : 0
+  };
+
   const parse = [];
   const build = [];
   for (let index = 0; index < 12; index += 1) {
@@ -278,13 +307,6 @@ timeout still yields the numbers.
     createBlockComponent({ ...block, type: 'block' }, children);
     build.push(performance.now() - startedBuild);
   }
-
-  out.block = {
-    kind: block.kind,
-    characters: block.text.length,
-    lines: block.text.split('\n').length,
-    elements: element.querySelectorAll('*').length
-  };
 
   // Rebuilding it, as the renderer does today: build, replace, force layout.
   const rebuild = [];
