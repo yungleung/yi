@@ -30,6 +30,7 @@ methodology; this file is the index and the conventions.
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
+| `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
@@ -39,10 +40,11 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Seventy of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Seventy-one of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
-`regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`),
+`regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
+`plain-edit-offsets`),
 what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`, `typed-text`), paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`), the fixture workspace (`fixture-*`), and the real

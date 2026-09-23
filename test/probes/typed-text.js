@@ -22,6 +22,9 @@
  *   block's parse shape once (not once a keystroke) and checks it when the typing
  *   stops, rendering the block again if the parse moved after all.
  *
+ * Where those writes leave the block's offsets — the caret later in the same block
+ * — is `test/probes/plain-edit-offsets.js`.
+ *
  * @covers src/ui/markdown/editing/typed_text.ts, src/ui/markdown/editing/context.ts
  */
 (async () => {
@@ -321,6 +324,7 @@
   check('a growing block grows the page with it', out.growingBlock.pageGrowth === out.growingBlock.blockGrowth);
   check('a growing block does not grow the spacer', out.growingBlock.spacerGrowth === 0);
   check('a growing block is remembered at its new height', out.growingBlock.remembered);
+
   out.failed = failures;
   t.report(out);
 

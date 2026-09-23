@@ -15,12 +15,18 @@
  * every widget that draws a *rendering* of its source fail that test, and the
  * caller renders the edit the ordinary way, which is always correct.
  *
- * May import: the offset mapping (`caret/dom_position.ts`) and the state. Upholds:
- * what is rendered is a function of the document — this only ever writes characters
- * the document already holds.
+ * Writing is also what moves the offsets the block's elements carry: they name
+ * positions in the block's own text, so the ones after the edit move with the text
+ * it gained (see `writeRun`).
+ *
+ * May import: the offset mapping (`caret/dom_position.ts`), the edit arithmetic
+ * (`syntax/edit_range.ts`) and the state. Upholds: what is rendered is a function
+ * of the document — this only ever writes characters the document already holds,
+ * and every offset it moves is moved to where the text went.
  */
 
 import { domPositionAtOffset } from '../caret/dom_position';
+import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
 
 /** The rendered text a plain edit can be written into, and where in it. */
@@ -30,7 +36,25 @@ export interface TypedRun {
   start: number;
   /** Where it ends. */
   end: number;
+  /** The same range as block-relative raw offsets, which is what the tags name. */
+  from: number;
+  to: number;
 }
+
+/** The attributes whose value is a raw offset within the block. */
+const OFFSET_TAGS = [
+  'textFrom',
+  'sourceFrom',
+  'formatFrom',
+  'formatTo',
+  'tableRowStart',
+  'taskSourceFrom'
+];
+
+/** The elements that carry one of them. */
+const TAGGED =
+  '[data-text-from], [data-source-from], [data-format-from], [data-table-row-start], ' +
+  '[data-task-source-from]';
 
 /**
  * The text node this edit can be written into, or null when the mapping is not
@@ -61,15 +85,46 @@ export function plainRun(
   // refuses a link's title, a citation's formatted reference, KaTeX, an entity and
   // an escaped character — none of which is the text the author typed.
   const text = state.getText();
-  const rawStart = block.charStart + Number(span.dataset.textFrom);
+  const tag = Number(span.dataset.textFrom);
+  const rawStart = block.charStart + tag;
   const raw = text.slice(rawStart, rawStart + span.textContent.length);
   if (!Number.isFinite(rawStart) || span.textContent !== raw) {
     return null;
   }
-  return { node, start: start.offset, end: end.offset };
+  return {
+    node,
+    start: start.offset,
+    end: end.offset,
+    from: tag + start.offset,
+    to: tag + end.offset
+  };
 }
 
-/** Writes the replacement into the run, which `plainRun` has already vouched for. */
+/**
+ * Writes the replacement into the run, which `plainRun` has already vouched for,
+ * and moves the offsets the block's elements carry to match.
+ *
+ * A tag names where its element's own text starts in the block, so the characters
+ * this write added before it move it, and the element the caret is in does not move
+ * at all: the edit is inside its text. Where an offset ends up is
+ * `syntax/edit_range.ts: shiftOffset`, the rule the caret and the table commands
+ * already share, and a tag strictly inside the replaced range cannot happen — the
+ * range lives inside one text node.
+ */
 export function writeRun(run: TypedRun, inserted: string): void {
   run.node.data = `${run.node.data.slice(0, run.start)}${inserted}${run.node.data.slice(run.end)}`;
+  const blockElement = run.node.parentElement?.closest<HTMLElement>('.markdown-block') ?? null;
+  if (!blockElement) {
+    return;
+  }
+  const edit: TextEdit = { from: run.from, to: run.to, replacement: inserted };
+  for (const element of blockElement.querySelectorAll<HTMLElement>(TAGGED)) {
+    for (const tag of OFFSET_TAGS) {
+      const value = element.dataset[tag];
+      const offset = Number(value);
+      if (value !== undefined && Number.isFinite(offset)) {
+        element.dataset[tag] = String(shiftOffset(offset, edit));
+      }
+    }
+  }
 }
