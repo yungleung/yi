@@ -26,6 +26,7 @@ methodology; this file is the index and the conventions.
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
+| `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
@@ -38,11 +39,11 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Sixty-eight of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Seventy of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`),
-what a keystroke costs (`edit-cost`, `scroll-cost`), paste (`paste-blocks`), source mode
+what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`, `typed-text`), paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`), the fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).

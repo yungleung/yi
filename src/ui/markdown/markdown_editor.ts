@@ -323,10 +323,20 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * Keeps the caret alive across virtualized window changes: if its block
    * survived the swap only the caret span has to be re-created, and if the
    * block was dropped the offset is restored once it is mounted again.
+   *
+   * A caret survived only if it still names a document offset. Being connected is
+   * not enough: replacing a block relocates the caret's live range to the point
+   * the old element occupied — connected, sitting between blocks, and not a
+   * position any edit can use (the browser relocates a range rather than dropping
+   * it; see the four offsets in `docs/architecture.md`).
    */
   private reanchorCaret(snapshot: unknown): void {
     const caret = getCaretRange();
-    if (caret && caret.startContainer.isConnected) {
+    const survived =
+      caret !== null &&
+      caret.startContainer.isConnected &&
+      documentOffsetAt(this.state, caret.startContainer, caret.startOffset) !== null;
+    if (survived) {
       this.pendingCaretOffset = null;
       ensureCaretRendered();
       return;

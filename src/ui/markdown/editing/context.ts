@@ -10,9 +10,11 @@
  * inside a block, or a Select-All range anchored to the prose root.
  *
  * May import: the caret, the offsets mapping (`caret/offsets.ts`,
- * `caret/dom_position.ts`), the renderer, the state and `source_mode.ts`.
- * Upholds: every command funnels its change through `applyEdit`, so the
- * change → re-render → place-the-caret sequence is identical everywhere.
+ * `caret/dom_position.ts`), the renderer, the state, `source_mode.ts` and the
+ * syntax rules the typing fast path reads (`syntax/plain_edit.ts`,
+ * `syntax/node_shape.ts`). Upholds: every command funnels its change through
+ * `applyEdit`, so the change → re-render → place-the-caret sequence is
+ * identical everywhere.
  */
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
@@ -20,7 +22,11 @@ import { setShownRange } from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
+import { isPlainEdit } from '../syntax/plain_edit';
+import { nodeShape } from '../syntax/node_shape';
+import { plainRun, writeRun } from './typed_text';
 import type { RootContent } from 'mdast';
+import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
@@ -30,6 +36,29 @@ export interface EditorContext {
   readonly renderer: VirtualBlockRenderer;
   readonly contentView: HTMLElement;
 }
+
+/**
+ * How long after the last plain keystroke a block's parse is checked, in
+ * milliseconds: long enough that a burst of typing costs one check rather than
+ * one per keystroke, short enough that a block rendered in the wrong shape is
+ * put right while the author is still looking at it.
+ */
+const VERIFY_DELAY_MS = 200;
+
+/** A block whose plain keystroke has not been checked yet. */
+interface PendingVerify {
+  /** The parse shape the block's element was built from (see `scheduleVerify`). */
+  readonly shape: string;
+  /** The timer that will do the check, replaced by every keystroke of the burst. */
+  timer: ReturnType<typeof setTimeout>;
+}
+
+/**
+ * The checks waiting, one entry per block and one map per editor. Keyed by the
+ * context rather than by the module, so a second editor — or the next document
+ * loaded into this one — cannot inherit another editor's pending checks.
+ */
+const pendingVerify = new WeakMap<EditorContext, Map<number, PendingVerify>>();
 
 /** The rendered prose root, or null while the editor is not mounted. */
 export function proseRoot(context: EditorContext): HTMLElement | null {
@@ -268,6 +297,63 @@ function sourceNodeAt(nodes: RootContent[], offset: number): RootContent | null 
 export type CaretTarget = number | ((state: MarkdownEditorState) => number);
 
 /**
+ * Remembers the shape the block's element was built from, and schedules the check
+ * that a plain keystroke did not quietly change it.
+ *
+ * The rule (`syntax/plain_edit.ts`) refuses everything it is not sure of, but it
+ * reads one word of the text while a markdown parse can turn on more than that,
+ * and a keystroke it let through to a parse that changed would leave the element
+ * showing the old shape until the next edit happened to rebuild it. So the shape
+ * is captured here and compared with the parse the block has once the typing
+ * stops; `renderBlock` then puts a block whose parse moved out from under it back
+ * on screen, which is the repair and the parse the next edit will want.
+ *
+ * Capturing is free — it reads the parse the renderer already cached, the parse
+ * the element was built from — and one check covers a burst: a keystroke replaces
+ * the pending timer instead of queueing another, and keeps the shape it was
+ * captured with. A block an ordinary edit rebuilt in between is then compared
+ * with a shape it never had, which costs one render and cannot produce a wrong
+ * page: the check only ever decides whether to render again from the document.
+ */
+function scheduleVerify(context: EditorContext, block: MarkdownBlock): void {
+  const lineStart = block.lineStart;
+  const pending = pendingFor(context);
+  const waiting = pending.get(lineStart);
+  const shape = waiting?.shape ?? nodeShape(context.state.getBlockContent(block));
+  if (waiting) {
+    clearTimeout(waiting.timer);
+  }
+  const timer = setTimeout(() => {
+    pending.delete(lineStart);
+    verifyBlock(context, lineStart, shape);
+  }, VERIFY_DELAY_MS);
+  pending.set(lineStart, { shape, timer });
+}
+
+/** The checks pending for this editor, creating the map on first use. */
+function pendingFor(context: EditorContext): Map<number, PendingVerify> {
+  const existing = pendingVerify.get(context);
+  if (existing) {
+    return existing;
+  }
+  const created = new Map<number, PendingVerify>();
+  pendingVerify.set(context, created);
+  return created;
+}
+
+/**
+ * Renders the block again when it no longer parses to the shape it was built
+ * from. A block that is gone, or is not mounted, has nothing to put right.
+ */
+function verifyBlock(context: EditorContext, lineStart: number, shape: string): void {
+  const block = context.state.getBlockAtLine(lineStart);
+  if (!block || nodeShape(context.state.getBlockContent(block)) === shape) {
+    return;
+  }
+  context.renderer.renderBlock(lineStart);
+}
+
+/**
  * Applies a raw-text edit, re-syncs the rendered window and moves the caret.
  * Every command funnels through here so the change/render/caret sequence is
  * identical everywhere.
@@ -280,8 +366,33 @@ export function applyEdit(
   caret: CaretTarget = from + replacement.length
 ): void {
   const anchor = context.contentView.scrollTop;
-  context.state.replaceRange(from, to, replacement);
   const target = typeof caret === 'function' ? caret(context.state) : caret;
+  // The fast path: a keystroke that cannot change how its block parses is written
+  // into the text node the caret is in, and nothing is rendered or parsed — which
+  // is what keeps the page's layout (and the 26 ms it costs to invalidate) out of a
+  // typed character's way. Everything the rule or the mapping is unsure about falls
+  // through to the ordinary path below, which is always correct.
+  const rule = isPlainEdit(context.state.getText(), from, to, replacement);
+  const root = rule ? proseRoot(context) : null;
+  const run = root ? plainRun(context.state, root, from, to) : null;
+  // The shape is captured before the edit is applied: afterwards the parse it
+  // names is the one the edit replaced, and this block is being written into
+  // without being built again (see `scheduleVerify`).
+  const written = run ? context.state.getBlockAtOffset(from) : null;
+  if (written) {
+    scheduleVerify(context, written);
+  }
+  context.state.replaceRange(from, to, replacement);
+  if (run) {
+    writeRun(run, replacement);
+    const block = context.state.getBlockAtOffset(from + replacement.length);
+    if (block) {
+      context.renderer.measureEditedBlock(block.lineStart);
+    }
+    restoreCaret(context, target);
+    keepScroll(context, anchor);
+    return;
+  }
   // The source the caret lands in is the source that is shown (see
   // `source_mode.ts`). Deciding that before the rebuild is what has the blocks
   // built in the shape the caret is about to need — and it is decided from the

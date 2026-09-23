@@ -101,13 +101,40 @@ export class VirtualBlockRenderer {
     }
     const snapshot = this.hooks?.capture();
     const element = this.createBlockElement(block);
-    this.releaseElement(current, this.builtFrom.get(current));
+    // The element being replaced is kept as the spare for the content it was
+    // built from — undo brings that content back — but it stays in the document
+    // until `replaceWith` puts the new one where it was: a removed node has no
+    // parent to be replaced in, and the block would simply leave the page.
+    this.keepSpare(current, this.builtFrom.get(current));
     current.replaceWith(element);
     this.mounted.set(lineStart, element);
     this.rememberHeight(block, element);
     this.updateSpacers();
     this.refreshBlockTags();
     this.hooks?.restore(snapshot);
+  }
+
+  /**
+   * Re-measures one block and, only if its height moved, the spacers — for a block
+   * somebody wrote inside without the renderer (`editing/typed_text.ts` writes a
+   * plain keystroke straight into the text node the caret is in).
+   *
+   * The spacer write is skipped when the height is unchanged because a spacer write
+   * is a layout invalidation, and avoiding exactly that is what the fast path is
+   * for (`test/probes/block-rebuild-cost.js` measures the difference).
+   */
+  measureEditedBlock(lineStart: number): void {
+    const block = this.state.getBlockAtLine(lineStart);
+    const element = this.mounted.get(lineStart);
+    if (!block || !element) {
+      return;
+    }
+    const before = this.sizes.heightOf(block);
+    this.rememberHeight(block, element);
+    this.refreshBlockTags();
+    if (Math.abs(this.sizes.heightOf(block) - before) >= 1) {
+      this.updateSpacers();
+    }
   }
 
   /**
@@ -328,6 +355,16 @@ export class VirtualBlockRenderer {
   /** Keeps a block's element for later instead of throwing its rendering away. */
   private releaseElement(element: HTMLElement, key: string | undefined): void {
     element.remove();
+    this.keepSpare(element, key);
+  }
+
+  /**
+   * Remembers an element under the key it was built from, so a block that comes
+   * back with that content is reused instead of built again. Whether the element
+   * leaves the document is the caller's business: `releaseElement` takes it out,
+   * `renderBlock` replaces it in place.
+   */
+  private keepSpare(element: HTMLElement, key: string | undefined): void {
     if (!key) {
       return;
     }
