@@ -31,6 +31,8 @@ Two recipes cover the changes an editor like this gets most: `docs/adding-a-node
 for a markdown construct, and `docs/adding-a-command.md` for a name the author can
 ask for. `docs/writing-comments.md` is the third page a contributor needs — the
 module header every file opens with, and the voice the rest of the comments use.
+`docs/roadmap.md` is what is planned next and what is closed, with the numbers each
+decision was taken on.
 
 ## The rules
 
