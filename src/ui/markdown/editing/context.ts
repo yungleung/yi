@@ -18,7 +18,7 @@
  */
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
-import { setShownRange } from '../source_mode';
+import { moveShownSource, setShownRange, shownSourceHeld, withHeldShownSource } from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
@@ -228,6 +228,12 @@ export function caretOffset(context: EditorContext): number | null {
  * what puts the text — or the view — in the document.
  */
 export function showSourceAt(context: EditorContext, offset: number | null): void {
+  // The plain write's caret placement holds this: it knows the caret is in the node
+  // it was in, so the decision cannot have changed, and asking would parse the
+  // block (see `source_mode.ts: withHeldShownSource`).
+  if (shownSourceHeld()) {
+    return;
+  }
   const range = offset === null ? null : sourceRangeAt(context.state, offset);
   if (!setShownRange(range)) {
     return;
@@ -389,7 +395,15 @@ export function applyEdit(
     if (block) {
       context.renderer.measureEditedBlock(block.lineStart);
     }
-    restoreCaret(context, target);
+    // The caret is in the text node the write went into, and that node is the
+    // document's own text (`plainRun` proved it): an edit the rule accepts cannot
+    // move the caret into another node, so which source is shown cannot have
+    // changed — asking would parse the block (see `source_mode.ts`, and the property
+    // in `test/checks/check-plain-edit.mjs`). The range the edit did move is moved
+    // with it, and the decision stays held while the caret is placed: placing it
+    // notifies the caret observer (`markdown_editor.ts: followCaret`), which asks.
+    moveShownSource({ from, to, replacement });
+    withHeldShownSource(() => restoreCaret(context, target));
     keepScroll(context, anchor);
     return;
   }
