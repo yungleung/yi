@@ -9,8 +9,10 @@
  * the deferred check's — one capture when the burst starts, one comparison when it
  * ends, and that comparison is the burst's single parse.
  *
- * A structural keystroke is the contrast: it renders, so it asks the lookup, parses
- * the block it landed in, and builds it again.
+ * A structural keystroke — a full stop, which can close a sentence or open a list —
+ * is the contrast: it renders, so it asks the lookup, parses the block it landed in,
+ * and builds it again. A space is not: it is prose between two words, and it is
+ * written like a letter (see `syntax/plain_edit.ts`).
  *
  * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/source_mode.ts
  */
@@ -79,13 +81,13 @@
     plain.document
   );
 
-  const structural = await count('fairly', [' ']);
+  const structural = await count('fairly', ['.']);
   check('a structural keystroke asks the caret lookup', structural.lookups >= 1, structural.calls);
   check('a structural keystroke rebuilds the block', structural.builds >= 1, structural.calls);
   check('a structural keystroke replaces the block', !structural.sameBlock, structural.sameBlock);
   check(
     'a structural keystroke reaches the document',
-    structural.document === 'A paragraph with f airly plain words in it.\n\nsecond\n',
+    structural.document === 'A paragraph with f.airly plain words in it.\n\nsecond\n',
     structural.document
   );
 

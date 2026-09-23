@@ -125,12 +125,15 @@ line means, and `editing/typed_text.ts` then refuses any edit that does not map 
 one span whose text is the document's own characters.
 
 What the rule *assumes* is that every construct needs a character that is not a
-letter to open or close it. If yours does not — if a letter typed into prose could
-start or end it — the rule is wrong about it, and that has one home and two proofs:
+letter — or, for the two a space can open, an indented code block and a hard break, a
+space at a line edge, which the rule refuses outright. If yours is opened by neither
+— if a letter typed into prose could start or end it — the rule is wrong about it,
+and that has one home and two proofs:
 
-- `syntax/plain_edit.ts`: the guard that refuses the edit, beside the word guard that
-  already refuses a word which is not letters (which is what keeps a link's
-  destination, a bare URL and a footnote's label out of the write).
+- `syntax/plain_edit.ts`: the guard that refuses the edit, beside the guard on the
+  runs on both sides of it, which already refuses a run that is not letters (that is
+  what keeps a link's destination, a bare URL and a footnote's label out of the
+  write, and what keeps a space from turning one into a link).
 - `test/checks/check-plain-edit.mjs`: a document in its corpus. That list is written
   by hand, so a construct it does not name is a construct the property does not
   cover.

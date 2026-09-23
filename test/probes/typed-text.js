@@ -4,10 +4,11 @@
  * A letter typed inside a word cannot change how its block parses, so the
  * keystroke is written into the text node the caret is in and nothing is rendered:
  * the block's element and that text node both survive, the characters reach the
- * document, and what is on screen is what the document says. A character that
- * could change how the text parses — an asterisk, a space — still goes through the
- * ordinary path and rebuilds the block, which is what keeps this an optimisation
- * rather than a second renderer.
+ * document, and what is on screen is what the document says. The space between two
+ * words is the same path (see `syntax/plain_edit.ts`); a character that could change
+ * how the text parses — an asterisk, a full stop — still goes through the ordinary
+ * path and rebuilds the block, which is what keeps this an optimisation rather than
+ * a second renderer.
  *
  * The rest of the probe is the seams on either side of that rule:
  *
@@ -221,9 +222,15 @@
   check('an asterisk rebuilds the block', !out.structuralAsterisk.blockSurvived);
   check('an asterisk reaches the document', showsDocument(out.structuralAsterisk));
 
-  out.structuralSpace = await typeAt(paragraph, inWord('plain', 2), [' ']);
-  check('a space rebuilds the block', !out.structuralSpace.blockSurvived);
-  check('a space reaches the document', showsDocument(out.structuralSpace));
+  out.plainSpace = await typeAt(paragraph, inWord('plain', 2), [' ']);
+  check('a space keeps the block', out.plainSpace.blockSurvived);
+  check('a space keeps the text node', out.plainSpace.textNodeSurvived);
+  check('a space reaches the document', showsDocument(out.plainSpace));
+  check('a space reads no rect', out.plainSpace.reads.rects === 0);
+
+  out.structuralFullStop = await typeAt(paragraph, inWord('plain', 2), ['.']);
+  check('a full stop rebuilds the block', !out.structuralFullStop.blockSurvived);
+  check('a full stop reaches the document', showsDocument(out.structuralFullStop));
 
   // A selection over more than one node: two ends, so no single node to write into.
   out.selectionAcrossNodes = await typeAt(

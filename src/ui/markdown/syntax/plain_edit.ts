@@ -23,20 +23,21 @@
  * What a plain edit may consist of: letters, and nothing else.
  *
  * Every markdown construct that a typed character could open or close needs
- * something that is not a letter — the `*` of an emphasis, the `[]()` of a link,
- * the `` ` `` of code, the `#` or a line edge of a heading, the `-` or digit of a
- * list, the `|` of a table, the `.` and `:` and `/` of a URL, the `&` of an entity,
- * the `-=` of a setext underline, the `$` of math, the `<>` of HTML. A letter
- * typed inside an existing construct leaves that construct as it was.
+ * something that is not a letter and is not the space inside a line — the `*` of an
+ * emphasis, the `[]()` of a link, the `` ` `` of code, the `#` or a line edge of a
+ * heading, the `-` or digit of a list, the `|` of a table, the `.` and `:` and `/`
+ * of a URL, the `&` of an entity, the `-=` of a setext underline, the `$` of math,
+ * the `<>` of HTML. A letter typed inside an existing construct leaves that
+ * construct as it was, and so does a space between two words.
  *
- * Whitespace and punctuation are therefore *not* plain, and that is a deliberate
- * cost: a space typed inside a link's destination breaks the link, and the rule
- * cannot see the destination from here. Refusing spaces costs one ordinary
- * re-render per word; it buys a rule that can be proved (see the property in
- * `test/checks/check-plain-edit.mjs`). Extending it to spaces is a follow-on, and
- * it needs the destination and URL cases handled first.
+ * The two constructs a space can open are line edges — the two trailing spaces of a
+ * hard break, and the ones that begin an indented code block — and the rule refuses
+ * a line edge outright. What it has to watch instead is the *run* a space joins: a
+ * space that glues itself to one side of a URL turns a word into an autolink, and a
+ * space inside a run with punctuation in it is a space in a destination or a label.
+ * Both sides of the edit therefore have to be words (see `isPlainEdit`).
  */
-const PLAIN = /^\p{L}*$/u;
+const PLAIN = /^[\p{L} ]*$/u;
 
 /** Whether every character of this text is one markdown reads as itself. */
 function isPlainText(text: string): boolean {
@@ -46,7 +47,10 @@ function isPlainText(text: string): boolean {
 /** A space, a letter… or nothing at all: what may sit beside a plain edit. */
 const PLAIN_NEIGHBOUR = /^(?:\p{L}| )?$/u;
 
-/** The word holding `at`: the run of characters between the whitespace around it. */
+/**
+ * The word holding `at`: the run of characters between the whitespace around it.
+ * For a space the edit inserted, that is the word on its *left*.
+ */
 function wordAt(text: string, at: number): string {
   let start = Math.max(0, Math.min(at, text.length));
   let end = start;
@@ -54,6 +58,28 @@ function wordAt(text: string, at: number): string {
     start -= 1;
   }
   while (end < text.length && !/\s/.test(text[end])) {
+    end += 1;
+  }
+  return text.slice(start, end);
+}
+
+/** The run of characters from `at` up to the next whitespace: the word on its right. */
+function runAfter(text: string, at: number): string {
+  let end = Math.max(0, Math.min(at, text.length));
+  while (end < text.length && !/\s/.test(text[end])) {
+    end += 1;
+  }
+  return text.slice(at, end);
+}
+
+/** The run of spaces touching `at`, on either side of it. */
+function spacesAt(text: string, at: number): string {
+  let start = Math.max(0, Math.min(at, text.length));
+  let end = start;
+  while (start > 0 && text[start - 1] === ' ') {
+    start -= 1;
+  }
+  while (end < text.length && text[end] === ' ') {
     end += 1;
   }
   return text.slice(start, end);
@@ -67,13 +93,24 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   if (!isPlainText(inserted) || !isPlainText(before.slice(from, to))) {
     return false;
   }
-  // The word the edit leaves behind has to be a plain one as well. That is what
+  // The runs the edit lands between have to be plain words as well. That is what
   // refuses the places where a letter is not just a letter: a link's destination
-  // (`https://example.com`), a bare URL, a footnote's label — runs a typed letter
+  // (`https://example.com`), a bare URL, a footnote's label — runs a typed character
   // can break, and whose characters are hidden from any rendering, so nothing
-  // downstream would notice.
+  // downstream would notice. Both sides, because a space is the one character whose
+  // *neighbour* decides what it belongs to: `seehttps://x` is a word, and one space
+  // before the URL makes its tail an autolink.
   const after = `${before.slice(0, from)}${inserted}${before.slice(to)}`;
   if (!isPlainText(wordAt(after, from))) {
+    return false;
+  }
+  if (!isPlainText(runAfter(after, from + inserted.length))) {
+    return false;
+  }
+  // A run of two spaces does not render as the characters say (`nodes/text.ts:
+  // preserveSpaces` turns the second into a no-break space), so writing one in would
+  // put the DOM out of step with the document.
+  if (/ {2}/.test(inserted) || spacesAt(after, from).length > 1) {
     return false;
   }
   // The characters beside the edit. An asterisk next to the caret is an emphasis

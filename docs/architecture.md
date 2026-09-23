@@ -152,9 +152,10 @@ the edit's block had left the window entirely).
 
 Most typing never gets that far. A keystroke that cannot change how its block
 parses is written into the rendered text node and nothing is rendered at all:
-`applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters, and only
-letters, in a position where no marker, line edge or setext underline could change
-what the line means — and then asks `editing/typed_text.ts` whether the edit maps
+`applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters and single
+spaces, where no marker, line edge or setext underline could change what the line
+means and where the runs on both sides of the edit are words — and then asks
+`editing/typed_text.ts` whether the edit maps
 into one text node whose `[data-text-from]` span spells the document's own
 characters, one for one. Both halves have to agree, and anything either is unsure
 of takes the ordinary path above, which is always correct. Because the rule reads
