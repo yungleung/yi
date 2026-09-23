@@ -101,7 +101,11 @@ export class VirtualBlockRenderer {
     }
     const snapshot = this.hooks?.capture();
     const element = this.createBlockElement(block);
-    this.releaseElement(current, this.builtFrom.get(current));
+    // The element being replaced is kept as the spare for the content it was
+    // built from — undo brings that content back — but it stays in the document
+    // until `replaceWith` puts the new one where it was: a removed node has no
+    // parent to be replaced in, and the block would simply leave the page.
+    this.keepSpare(current, this.builtFrom.get(current));
     current.replaceWith(element);
     this.mounted.set(lineStart, element);
     this.rememberHeight(block, element);
@@ -351,6 +355,16 @@ export class VirtualBlockRenderer {
   /** Keeps a block's element for later instead of throwing its rendering away. */
   private releaseElement(element: HTMLElement, key: string | undefined): void {
     element.remove();
+    this.keepSpare(element, key);
+  }
+
+  /**
+   * Remembers an element under the key it was built from, so a block that comes
+   * back with that content is reused instead of built again. Whether the element
+   * leaves the document is the caller's business: `releaseElement` takes it out,
+   * `renderBlock` replaces it in place.
+   */
+  private keepSpare(element: HTMLElement, key: string | undefined): void {
     if (!key) {
       return;
     }

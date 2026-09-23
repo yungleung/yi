@@ -6,8 +6,10 @@
  * replacing it in the page is not, and the layout that replacement invalidates is
  * what the next geometry read pays for. Runs against the document the runner was
  * given — the 323 KB fixture note under `probe:all`, the demo document by name —
- * and the app's own keystroke is measured with the geometry reads it makes counted,
- * which is what says which of the two the editor is paying for today.
+ * and the app's own keystrokes are measured with the geometry reads they make
+ * counted: a letter typed inside a word, which the fast path writes into the text
+ * node, and a space, which the ordinary path renders the block for. Which of the
+ * two the editor pays for is the phase's whole question, so both are reported.
  *
  * @covers src/ui/markdown/virtual_block_renderer.ts, src/ui/markdown/create_block.ts
  * @needs-large-document — run against the 323 KB fixture note.
@@ -26,6 +28,63 @@
   const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
   const round = (value) => Math.round(value * 100) / 100;
 
+  /**
+   * The `index`-th last run of letters in this block, as a position inside it, or
+   * null when the block has fewer runs than that. Letters are what the plain-edit
+   * rule accepts, and a caret between them is a place where a typed letter cannot
+   * open or close anything — which is what makes the keystrokes measured from
+   * there the fast path's.
+   */
+  const letterRun = (block, index) => {
+    if (!block) {
+      return null;
+    }
+    const nodes = t.textNodesIn(block);
+    const runs = [];
+    for (const node of nodes) {
+      for (const run of node.data.matchAll(/[A-Za-z]{4,}/g)) {
+        runs.push({ node, offset: run.index + 2 });
+      }
+    }
+    return runs[runs.length - 1 - index] ?? null;
+  };
+
+  /** Types `key` `count` times at the caret, timing each keystroke and its reads. */
+  const timeKeystrokes = async (key, count) => {
+    const element = t.blocks().find((candidate) => Number(candidate.dataset.lineStart) === lineStart);
+    const reads = { rect: 0, height: 0 };
+    const rects = Element.prototype.getBoundingClientRect;
+    const heights = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    const times = [];
+    try {
+      Element.prototype.getBoundingClientRect = function () {
+        reads.rect += 1;
+        return rects.call(this);
+      };
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get() {
+          reads.height += 1;
+          return heights.get.call(this);
+        }
+      });
+      for (let index = 0; index < count; index += 1) {
+        const started = performance.now();
+        t.key(key);
+        times.push(performance.now() - started);
+      }
+    } finally {
+      Element.prototype.getBoundingClientRect = rects;
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heights);
+    }
+    await t.sleep(300);
+    return {
+      medianMs: round(median(times)),
+      path: t.blocks().includes(element) ? 'fast' : 'ordinary',
+      reads: { rects: round(reads.rect / count), offsetHeight: round(reads.height / count) }
+    };
+  };
+
   // The app's own keystroke first, and the document after it: reading the whole
   // text is the bridge's slow path, so it comes once the page has been driven.
   // Scrolling has to converge before anything is clicked: blocks are measured as
@@ -36,54 +95,56 @@
     scroller.scrollTop = scroller.scrollHeight;
     await t.sleep(300);
   }
-  // The caret goes after the last character of the last block, which is where the
-  // keystrokes below land — and the block the rest of the probe parses, builds and
-  // patches is the one those keystrokes went into, found by its first line.
+  // The caret goes inside a word of the last block's own text. That is where the
+  // fast path applies — a letter typed between letters cannot change how the text
+  // parses — and the pair of numbers below is measured from there: the plain
+  // keystroke that path is for, and the structural one it hands to the ordinary
+  // path. (At the end of the last line, where this probe used to put the caret,
+  // the rule refuses, and the keystrokes measured the ordinary path twice over.)
   const last = t.blocks()[t.blocks().length - 1];
   const lineStart = Number(last?.dataset.lineStart);
-  const caretNode = last ? t.textNodesIn(last).pop() : null;
-  if (!caretNode) {
-    return { error: 'no block to put the caret in' };
-  }
-  const caret = document.createRange();
-  caret.setStart(caretNode, caretNode.data.length);
-  caret.collapse(true);
-  const caretBox = caret.getBoundingClientRect();
-  caretNode.parentElement.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      clientX: caretBox.left,
-      clientY: caretBox.top + caretBox.height / 2
-    })
-  );
-  await t.sleep(200);
-  const reads = { rect: 0, height: 0 };
-  const rects = Element.prototype.getBoundingClientRect;
-  const heights = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
-  const keystrokes = [];
-  try {
-    Element.prototype.getBoundingClientRect = function () {
-      reads.rect += 1;
-      return rects.call(this);
-    };
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-      configurable: true,
-      get() {
-        reads.height += 1;
-        return this.getBoundingClientRect().height;
+  /**
+   * Puts the caret on a run of letters where a typed letter keeps the block, and
+   * says which run it was. Not every run of letters on screen is a word of the
+   * document: a citation's formatted reference and a link's title are rendered
+   * text, and the rule — correctly — refuses there, so a candidate is tried by
+   * typing one letter and seeing whether the block survived it.
+   */
+  const findSpot = async () => {
+    let block = last;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const spot = letterRun(block, attempt);
+      if (!spot) {
+        return null;
       }
-    });
-    t.key('x');
-    await t.sleep(300);
-    for (let index = 0; index < 10; index += 1) {
-      const started = performance.now();
-      t.key('x');
-      keystrokes.push(performance.now() - started);
+      const caret = document.createRange();
+      caret.setStart(spot.node, spot.offset);
+      caret.collapse(true);
+      const caretBox = caret.getBoundingClientRect();
+      spot.node.parentElement.dispatchEvent(
+        new MouseEvent('click', {
+          bubbles: true,
+          clientX: caretBox.left,
+          clientY: caretBox.top + caretBox.height / 2
+        })
+      );
+      await t.sleep(150);
+      t.key('y');
+      await t.sleep(250);
+      if (t.blocks().includes(block)) {
+        return attempt;
+      }
+      block =
+        t.blocks().find((element) => Number(element.dataset.lineStart) === lineStart) ?? block;
     }
-  } finally {
-    Element.prototype.getBoundingClientRect = rects;
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heights);
+    return null;
+  };
+  const caretRun = await findSpot();
+  if (caretRun === null) {
+    return { error: 'no word to put the caret in' };
   }
+  const plain = await timeKeystrokes('x', 10);
+  const structural = await timeKeystrokes(' ', 6);
 
   const text = await t.raw();
   const blocks = splitBlocks(text);
@@ -100,6 +161,8 @@
     lines: block.text.split('\n').length,
     elements: element ? element.querySelectorAll('*').length : 0
   };
+  /** Which run of letters the caret went to, latest first: 0 is the last one. */
+  out.caretRun = caretRun;
 
   const parse = [];
   const build = [];
@@ -145,11 +208,10 @@
     buildDetachedDom: round(median(build)),
     rebuildBlockAndForceLayout: round(median(rebuild)),
     patchTextNodeAndForceLayout: round(median(patch)),
-    keystroke: round(median(keystrokes))
+    plainKeystroke: plain.medianMs,
+    structuralKeystroke: structural.medianMs
   };
-  out.perKeystrokeReads = {
-    rects: round(reads.rect / 11),
-    offsetHeight: round(reads.height / 11)
-  };
+  out.keystrokePath = { plain: plain.path, structural: structural.path };
+  out.perKeystrokeReads = { plain: plain.reads, structural: structural.reads };
   return out;
 })()
