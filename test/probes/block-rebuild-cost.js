@@ -28,12 +28,19 @@
 
   // The app's own keystroke first, and the document after it: reading the whole
   // text is the bridge's slow path, so it comes once the page has been driven.
+  // Scrolling has to converge before anything is clicked: blocks are measured as
+  // they are mounted, so one jump to `scrollHeight` lands where the estimates said
+  // the end was, not where it is.
   const scroller = t.scroller();
-  scroller.scrollTop = scroller.scrollHeight;
-  await t.sleep(500);
+  for (let step = 0; step < 6; step += 1) {
+    scroller.scrollTop = scroller.scrollHeight;
+    await t.sleep(300);
+  }
   // The caret goes after the last character of the last block, which is where the
-  // keystrokes below land.
+  // keystrokes below land — and the block the rest of the probe parses, builds and
+  // patches is the one those keystrokes went into, found by its first line.
   const last = t.blocks()[t.blocks().length - 1];
+  const lineStart = Number(last?.dataset.lineStart);
   const caretNode = last ? t.textNodesIn(last).pop() : null;
   if (!caretNode) {
     return { error: 'no block to put the caret in' };
@@ -80,7 +87,8 @@
 
   const text = await t.raw();
   const blocks = splitBlocks(text);
-  const block = blocks[blocks.length - 1];
+  const block =
+    blocks.find((candidate) => candidate.lineStart === lineStart) ?? blocks[blocks.length - 1];
   const state = new MarkdownEditorState(text);
   const children = state.getBlockContent(block);
   // The live element the keystrokes landed in — the block itself was replaced
