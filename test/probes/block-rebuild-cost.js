@@ -7,9 +7,10 @@
  * what the next geometry read pays for. Runs against the document the runner was
  * given — the 323 KB fixture note under `probe:all`, the demo document by name —
  * and the app's own keystrokes are measured with the geometry reads they make
- * counted: a letter typed inside a word, which the fast path writes into the text
- * node, and a space, which the ordinary path renders the block for. Which of the
- * two the editor pays for is the phase's whole question, so both are reported.
+ * counted: a letter typed inside a word and the space between two words, which the
+ * fast path writes into the text node, and a full stop, which the ordinary path
+ * renders the block for. Which of the two the editor pays for is the phase's whole
+ * question, so all three are reported.
  *
  * @covers src/ui/markdown/virtual_block_renderer.ts, src/ui/markdown/create_block.ts
  * @needs-large-document — run against the 323 KB fixture note.
@@ -49,14 +50,23 @@
     return runs[runs.length - 1 - index] ?? null;
   };
 
-  /** Types `key` `count` times at the caret, timing each keystroke and its reads. */
-  const timeKeystrokes = async (key, count) => {
+  /**
+   * Types the cycle of `keys` `count` times at the caret, timing the *last* key of
+   * each round and counting the reads it makes. The keys before it are the setup a
+   * keystroke needs to stay the fast path's: a space is only prose when a letter is
+   * on its left, so the space's round types a letter first.
+   */
+  const timeKeystrokes = async (keys, count, label) => {
     const element = t.blocks().find((candidate) => Number(candidate.dataset.lineStart) === lineStart);
-    const reads = { rect: 0, height: 0 };
     const rects = Element.prototype.getBoundingClientRect;
     const heights = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
     const times = [];
-    try {
+    const reads = { rect: 0, height: 0 };
+    const timed = keys[keys.length - 1];
+    /** Counts the geometry reads one timed keystroke makes, and only those. */
+    const measure = (build) => {
+      reads.rect = 0;
+      reads.height = 0;
       Element.prototype.getBoundingClientRect = function () {
         reads.rect += 1;
         return rects.call(this);
@@ -68,10 +78,28 @@
           return heights.get.call(this);
         }
       });
+      try {
+        build();
+      } finally {
+        Element.prototype.getBoundingClientRect = rects;
+        Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heights);
+      }
+      return { rect: reads.rect, height: reads.height };
+    };
+    try {
       for (let index = 0; index < count; index += 1) {
-        const started = performance.now();
-        t.key(key);
-        times.push(performance.now() - started);
+        for (const key of keys) {
+          if (key !== timed) {
+            t.key(key);
+            continue;
+          }
+          let read = { rect: 0, height: 0 };
+          const started = performance.now();
+          read = measure(() => t.key(key));
+          times.push(performance.now() - started);
+          reads.total = (reads.total ?? 0) + read.rect;
+          reads.heightTotal = (reads.heightTotal ?? 0) + read.height;
+        }
       }
     } finally {
       Element.prototype.getBoundingClientRect = rects;
@@ -81,7 +109,11 @@
     return {
       medianMs: round(median(times)),
       path: t.blocks().includes(element) ? 'fast' : 'ordinary',
-      reads: { rects: round(reads.rect / count), offsetHeight: round(reads.height / count) }
+      reads: {
+        rects: round((reads.total ?? 0) / count),
+        offsetHeight: round((reads.heightTotal ?? 0) / count)
+      },
+      label
     };
   };
 
@@ -107,8 +139,10 @@
    * Puts the caret on a run of letters where a typed letter keeps the block, and
    * says which run it was. Not every run of letters on screen is a word of the
    * document: a citation's formatted reference and a link's title are rendered
-   * text, and the rule — correctly — refuses there, so a candidate is tried by
-   * typing one letter and seeing whether the block survived it.
+   * text, and the rule — correctly — refuses there; nor is every word a place a
+   * space is prose (a run with punctuation or a URL after it is not). So a candidate
+   * is tried by typing a letter, and then a space, and kept when the block survived
+   * both.
    */
   const findSpot = async () => {
     let block = last;
@@ -128,9 +162,16 @@
           clientY: caretBox.top + caretBox.height / 2
         })
       );
-      await t.sleep(150);
+      await t.sleep(120);
       t.key('y');
-      await t.sleep(250);
+      await t.sleep(150);
+      if (!t.blocks().includes(block)) {
+        block =
+          t.blocks().find((element) => Number(element.dataset.lineStart) === lineStart) ?? block;
+        continue;
+      }
+      t.key(' ');
+      await t.sleep(150);
       if (t.blocks().includes(block)) {
         return attempt;
       }
@@ -143,8 +184,24 @@
   if (caretRun === null) {
     return { error: 'no word to put the caret in' };
   }
-  const plain = await timeKeystrokes('x', 10);
-  const structural = await timeKeystrokes(' ', 6);
+  const plain = await timeKeystrokes(['x'], 10, 'a letter inside a word');
+  const space = await timeKeystrokes(['y', ' '], 6, 'a space between two words');
+  const structural = await timeKeystrokes(['.'], 6, 'a full stop');
+  // Reported before the parse and build measurements, so a bridge that gives up on
+  // this note still has the numbers the probe exists for.
+  out.medianMs = {
+    plainKeystroke: plain.medianMs,
+    spaceKeystroke: space.medianMs,
+    structuralKeystroke: structural.medianMs
+  };
+  out.keystrokePath = { plain: plain.path, space: space.path, structural: structural.path };
+  out.perKeystrokeReads = {
+    plain: plain.reads,
+    space: space.reads,
+    structural: structural.reads
+  };
+  out.keystrokes = { plain, space, structural };
+  t.report(out);
 
   const text = await t.raw();
   const blocks = splitBlocks(text);
@@ -209,9 +266,8 @@
     rebuildBlockAndForceLayout: round(median(rebuild)),
     patchTextNodeAndForceLayout: round(median(patch)),
     plainKeystroke: plain.medianMs,
+    spaceKeystroke: space.medianMs,
     structuralKeystroke: structural.medianMs
   };
-  out.keystrokePath = { plain: plain.path, structural: structural.path };
-  out.perKeystrokeReads = { plain: plain.reads, structural: structural.reads };
   return out;
 })()
