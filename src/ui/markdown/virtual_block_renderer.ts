@@ -111,6 +111,29 @@ export class VirtualBlockRenderer {
   }
 
   /**
+   * Re-measures one block and, only if its height moved, the spacers — for a block
+   * somebody wrote inside without the renderer (`editing/typed_text.ts` writes a
+   * plain keystroke straight into the text node the caret is in).
+   *
+   * The spacer write is skipped when the height is unchanged because a spacer write
+   * is a layout invalidation, and avoiding exactly that is what the fast path is
+   * for (`test/probes/block-rebuild-cost.js` measures the difference).
+   */
+  measureEditedBlock(lineStart: number): void {
+    const block = this.state.getBlockAtLine(lineStart);
+    const element = this.mounted.get(lineStart);
+    if (!block || !element) {
+      return;
+    }
+    const before = this.sizes.heightOf(block);
+    this.rememberHeight(block, element);
+    this.refreshBlockTags();
+    if (Math.abs(this.sizes.heightOf(block) - before) >= 1) {
+      this.updateSpacers();
+    }
+  }
+
+  /**
    * Re-syncs the window after a document edit. Blocks whose source is
    * unchanged keep their DOM; the rest are rebuilt.
    */

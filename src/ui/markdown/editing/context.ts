@@ -20,6 +20,8 @@ import { setShownRange } from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
+import { isPlainEdit } from '../syntax/plain_edit';
+import { plainRun, writeRun } from './typed_text';
 import type { RootContent } from 'mdast';
 import type { MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
@@ -280,8 +282,26 @@ export function applyEdit(
   caret: CaretTarget = from + replacement.length
 ): void {
   const anchor = context.contentView.scrollTop;
-  context.state.replaceRange(from, to, replacement);
   const target = typeof caret === 'function' ? caret(context.state) : caret;
+  // The fast path: a keystroke that cannot change how its block parses is written
+  // into the text node the caret is in, and nothing is rendered or parsed — which
+  // is what keeps the page's layout (and the 26 ms it costs to invalidate) out of a
+  // typed character's way. Everything the rule or the mapping is unsure about falls
+  // through to the ordinary path below, which is always correct.
+  const rule = isPlainEdit(context.state.getText(), from, to, replacement);
+  const root = rule ? proseRoot(context) : null;
+  const run = root ? plainRun(context.state, root, from, to) : null;
+  context.state.replaceRange(from, to, replacement);
+  if (run) {
+    writeRun(run, replacement);
+    const block = context.state.getBlockAtOffset(from + replacement.length);
+    if (block) {
+      context.renderer.measureEditedBlock(block.lineStart);
+    }
+    restoreCaret(context, target);
+    keepScroll(context, anchor);
+    return;
+  }
   // The source the caret lands in is the source that is shown (see
   // `source_mode.ts`). Deciding that before the rebuild is what has the blocks
   // built in the shape the caret is about to need — and it is decided from the
