@@ -23,9 +23,52 @@ const load = async (input, name) => {
 };
 const { isPlainEdit } = await load('src/ui/markdown/syntax/plain_edit.ts', 'plain_edit');
 const { nodeShape } = await load('src/ui/markdown/syntax/node_shape.ts', 'node_shape');
+// The parse reaches `decode-named-character-reference`, whose bundled build makes an
+// element at import time; `check-history.mjs` installs the same stub before it
+// bundles this module.
+globalThis.document = {
+  addEventListener() {},
+  createElement: () => ({ style: {}, classList: { add() {} }, appendChild() {}, setAttribute() {} }),
+  querySelectorAll: () => [],
+  querySelector: () => null,
+  createRange: () => ({})
+};
+globalThis.window = { getSelection: () => null, addEventListener() {} };
+
+const { MarkdownEditorState } = await load('src/ui/markdown/document/state.ts', 'state');
 
 const parser = unified().use(remarkParse).use(remarkGfm);
 const shape = (text) => nodeShape(parser.parse(text).children);
+
+/**
+ * The path of node types down to the node an offset sits in, e.g.
+ * `paragraph>link>text`. The caret is "in" the outermost node whose source can
+ * stand in for its rendering, which is why the path is compared and not the leaf:
+ * the fast path trusts that an edit it accepts leaves the caret in the node it was
+ * in, and the source to show at it unchanged (see `editing/context.ts`).
+ */
+const nodePathAt = (state, offset) => {
+  const block = state.getBlockAtOffset(offset);
+  if (!block) {
+    return null;
+  }
+  const path = [];
+  let nodes = state.getBlockContent(block);
+  const within = offset - block.charStart;
+  while (Array.isArray(nodes) && nodes.length > 0) {
+    const node = nodes.find((child) => {
+      const start = child.position?.start?.offset ?? 0;
+      const end = child.position?.end?.offset ?? start;
+      return within >= start && within <= end;
+    });
+    if (!node) {
+      break;
+    }
+    path.push(node.type);
+    nodes = node.children;
+  }
+  return path.join('>');
+};
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -107,6 +150,18 @@ for (const alphabet of walks) {
             `the rule accepted an edit that changed the parse\n  before ${JSON.stringify(before)}\n` +
               `  edit ${JSON.stringify({ from, to, inserted })}\n  after ${JSON.stringify(after)}\n` +
               `  ${one}\n  ${other}`
+          );
+        }
+        // The caret is the offset the edit leaves behind, and the editor's own parse
+        // is what decides which node that is — block by block, the way the editor
+        // reads it.
+        const left = nodePathAt(new MarkdownEditorState(before), from);
+        const arrived = nodePathAt(new MarkdownEditorState(after), from + inserted.length);
+        if (left !== arrived) {
+          failures.push(
+            `the rule accepted an edit that moved the caret's node\n  before ${JSON.stringify(before)}\n` +
+              `  edit ${JSON.stringify({ from, to, inserted })}\n  after ${JSON.stringify(after)}\n` +
+              `  ${left} → ${arrived}`
           );
         }
       }
