@@ -18,7 +18,7 @@
  */
 
 import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
-import { setShownRange } from '../source_mode';
+import { setShownRange, shownSourceHeld } from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
@@ -228,6 +228,12 @@ export function caretOffset(context: EditorContext): number | null {
  * what puts the text — or the view — in the document.
  */
 export function showSourceAt(context: EditorContext, offset: number | null): void {
+  // The plain write's caret placement holds this: it knows the caret is in the node
+  // it was in, so the decision cannot have changed, and asking would parse the
+  // block (see `source_mode.ts: withHeldShownSource`).
+  if (shownSourceHeld()) {
+    return;
+  }
   const range = offset === null ? null : sourceRangeAt(context.state, offset);
   if (!setShownRange(range)) {
     return;

@@ -13,8 +13,15 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-math-'));
 const file = join(directory, 'source_mode.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { isSourceBlock, setShownRange, shownSourceText, sourceEntryOffset, withRenderFrame } =
-  await import(file);
+const {
+  isSourceBlock,
+  moveShownSource,
+  setShownRange,
+  shownSourceText,
+  shownSourceWithinBlock,
+  sourceEntryOffset,
+  withRenderFrame
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -57,6 +64,24 @@ check(
   (setShownRange({ from: 0, to: 400 }), isSourceBlock(formula)),
   false
 );
+setShownRange(null);
+
+// A shown range moves with an edit the way any other offset does: an edit inside it
+// moves it, one after it does not (`syntax/edit_range.ts: shiftOffset`). The case
+// that matters is a deletion inside a block that shows its own text: without the
+// move the range ends up past the block, `isSourceBlock` answers false, and the
+// block comes back as its rendering the next time it is built without a fresh
+// decision (a window sync, a rebuild).
+setShownRange({ from: formula.charStart, to: formula.charEnd });
+moveShownSource({ from: formula.charStart + 4, to: formula.charStart + 5, replacement: '' });
+check(
+  'a deletion inside the shown range leaves the block its own source',
+  isSourceBlock({ ...formula, charEnd: formula.charEnd - 1 }),
+  true
+);
+setShownRange({ from: formula.charStart, to: formula.charStart + 4 });
+moveShownSource({ from: formula.charEnd, to: formula.charEnd, replacement: 'zz' });
+check('an edit after the shown range leaves it where it is', shownSourceWithinBlock(formula), 0);
 setShownRange(null);
 
 // Where a click on the rendering enters the text: the end of the last line

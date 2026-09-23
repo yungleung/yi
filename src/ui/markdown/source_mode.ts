@@ -28,20 +28,61 @@
  * being shown (see `editing/context.ts`).
  *
  * May import: the registry (which node types show a source), the renderer's
- * rebuild and the editing context's offsets. Upholds: source mode is decided
- * from the document — the range shown is computed from the caret's offset, and
- * the blocks that change shape are rebuilt, so nothing ever swaps an element
- * behind the caret.
+ * rebuild, the editing context's offsets and the edit arithmetic
+ * (`syntax/edit_range.ts`). Upholds: source mode is decided from the document —
+ * the range shown is computed from the caret's offset, and the blocks that change
+ * shape are rebuilt, so nothing ever swaps an element behind the caret.
  */
 
 import type { AstNode } from './ast';
 import { hasSourceMode, type MarkdownBlock } from './document/blocks';
+import { shiftOffset, type TextEdit } from './syntax/edit_range';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;
 
+/** How many callers are holding the decision (see `withHeldShownSource`). */
+let held = 0;
+
 /** The block the renderer is building right now, or null (see `withRenderFrame`). */
 let renderFrame: MarkdownBlock | null = null;
+
+/**
+ * Moves the shown range with an edit: it names document offsets, so an edit inside
+ * it or before it moves it, and an edit after it does not.
+ *
+ * The plain-edit fast path calls this. It writes into a text node without deciding
+ * the source again — the caret is still in the node it was in — and this is the
+ * half of that decision an edit can still change: a deletion inside a block that
+ * shows its own text would otherwise leave the range past the block's end.
+ */
+export function moveShownSource(edit: TextEdit): void {
+  if (!shownRange) {
+    return;
+  }
+  const from = shiftOffset(shownRange.from, edit);
+  shownRange = { from, to: Math.max(from, shiftOffset(shownRange.to, edit)) };
+}
+
+/**
+ * Holds the decision while `build` runs. What calls this knows the answer cannot
+ * have changed — the caret is in the node it was in — and asking again would cost
+ * the block's parse (see `editing/context.ts: showSourceAt`). A decision asked for
+ * while held does nothing at all.
+ */
+export function withHeldShownSource<T>(build: () => T): T {
+  held += 1;
+  try {
+    return build();
+  } finally {
+    held -= 1;
+  }
+}
+
+/** Whether the shown source is held, which is what `showSourceAt` checks. */
+export function shownSourceHeld(): boolean {
+  return held > 0;
+}
 
 /**
  * Shows this range's own text, or no source at all. Returns whether that
