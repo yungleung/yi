@@ -78,7 +78,7 @@ relative href is left alone.
 
 - Produces: no new names; the anchor's shape changes and the click split widens.
 
-- [ ] **Step 1: The anchor as the label's own text**
+- [x] **Step 1: The anchor as the label's own text**
 
 ```ts
     const label = String(node.label ?? node.identifier ?? 'note');
@@ -94,7 +94,7 @@ relative href is left alone.
     anchor.title = 'Click to edit the label, ⌘-click to jump to the marker';
 ```
 
-- [ ] **Step 2: The same click split for both anchors**
+- [x] **Step 2: The same click split for both anchors**
 
 ```ts
   // Both a marker and a definition's label are text the author can edit where they
@@ -108,13 +108,13 @@ relative href is left alone.
 replacing the `jumping` test, and `routeFootnoteMenu` accepting a
 `[data-footnote-def]` as well.
 
-- [ ] **Step 3: The label regex**
+- [x] **Step 3: The label regex**
 
 `footnoteOffsets`'s `reference` and `definition` patterns get the `i` flag, and
 `check-footnotes.mjs` gains a case: a label written `[^Note]` and referred to as
 `[^note]` still finds its definition and its reference.
 
-- [ ] **Step 4: The probe, and the run**
+- [x] **Step 4: The probe, and the run**
 
 `footnote-jump-back.js` becomes the mirror of `footnote-jump.js`: a plain click on
 the definition's label puts the caret in it (asserted by typing a character and
@@ -126,7 +126,7 @@ npm run probe -- --fixture default-document.md test/probes/footnote-jump-back.js
 npm run probe -- --fixture default-document.md test/probes/footnote-jump.js
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/nodes/footnote.ts src/ui/markdown/click_routing.ts src/ui/markdown/syntax/footnotes.ts test/checks/check-footnotes.mjs test/probes/footnote-jump-back.js
@@ -143,7 +143,7 @@ git commit -m "feat(footnote): edit a definition's label where it sits"
 
 - Produces: no new names; the card's manners change.
 
-- [ ] **Step 1: The card's manners**
+- [x] **Step 1: The card's manners**
 
 ```ts
 const HIDE_GRACE_MS = 250;
@@ -173,7 +173,7 @@ starting the grace. A delegated click handler on the card:
 
 with `import { openUrl } from '@tauri-apps/plugin-opener';`
 
-- [ ] **Step 2: The probe learns the manners**
+- [x] **Step 2: The probe learns the manners**
 
 `footnote-preview.js` gains: the card stays while the pointer is inside it (hover the
 card, wait past the grace, the card is still there); a link inside it is followed —
@@ -186,7 +186,7 @@ grace.
 npm run probe -- --fixture default-document.md test/probes/footnote-preview.js
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/ui/markdown/footnote_preview.ts test/probes/footnote-preview.js
@@ -195,13 +195,13 @@ git commit -m "feat(footnote): a preview you can read and follow"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/architecture.md`: the two footnote rows say the label is edited where it sits
 (⌘-click jumps, for both anchors) and that the card is read-only against the
 document but can follow a link out through the opener.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -210,7 +210,7 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 70/70 probes, 6 skipped
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 Append to this plan: what changed, the case-insensitive label fix, the card's grace,
 the opener path and how the probe stubs it, and what is left (nothing in this
@@ -221,7 +221,7 @@ git add docs/architecture.md docs/superpowers/plans/2026-09-24-footnote-interact
 git commit -m "docs: close the footnote interaction handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -230,3 +230,70 @@ git rev-parse HEAD^{tree} codex/footnote-interaction^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**Both leftovers are done, and nothing in this neighbourhood is open.**
+
+### The label you can edit where it sits
+
+`FootnoteDefinition`'s anchor renders `[^label]` from the node's own `label` (not the
+normalised `identifier`) and tags itself `data-text-from="0"`, so it is a text leaf with
+an exact mapping into the document: a click in it puts the caret there, and typing edits
+the *document's* characters — the same path a marker's source uses. The click split is
+now one rule for both anchors (`click_routing.ts: routeFootnoteClick`): a plain click
+belongs to the editor, Ctrl-click or ⌘-click jumps. `routeFootnoteMenu` takes a
+`[data-footnote-def]` as well, so the form macOS delivers as a context menu jumps from a
+definition too, back to the marker.
+
+One bug fell out of writing the probe: `footnoteOffsets` matched a label
+case-sensitively, so `[^Note]` was not found from `[^note]` — markdown labels are not
+case-sensitive. Both patterns got the `i` flag and `check-footnotes.mjs` keeps the case
+(`test/checks/check-footnotes.mjs`).
+
+### The card you can read and follow
+
+`footnote_preview.ts`: the card takes the pointer (`pointer-events: auto`), so the note
+can be read and selected; the marker and the card count as one region, so moving between
+them keeps it; leaving for anywhere else now waits `HIDE_GRACE_MS` (250 ms) before the
+card goes, because the pointer has to cross the gap under the marker. A click inside the
+card no longer hides it (the content view's own click listener never sees it — the card
+lives on `document.body`), and a link in a note is followed through
+`@tauri-apps/plugin-opener`'s `openUrl`, with the click prevented so the webview never
+navigates. A fragment or a relative href is left alone.
+
+### The probe lesson worth keeping
+
+A probe **cannot** stand in for the app's IPC: `window.__TAURI_INTERNALS__.invoke` (and
+`ipc`, `postMessage`, and the `__TAURI_INTERNALS__` slot itself) are defined
+non-writable and non-configurable, so assigning over them fails silently and a probe
+records nothing. The observable edge is one level lower: every command is posted with
+the page's `fetch` to `ipc://localhost/<cmd>` (percent-encoded, e.g.
+`ipc://localhost/plugin%3Aopener%7Copen_url`). `footnote-preview.js: watchOpener` wraps
+`window.fetch`, records the opener's command and body, and answers it with a canned
+`null` so the test never opens a browser; the wrapper is restored in a `finally`.
+
+**Restart the dev app before a probe run.** Two probes in this phase failed on an app
+that had been up since the previous session — `footnote-jump-back.js` reported the caret
+at `null` and the marker un-revealed, and the bridge read a *stale* stashed result from
+an earlier timed-out probe. Both passed on a freshly started app, `probe:all` included.
+
+### Evidence
+
+- `npx tsc --noEmit` — clean; `npm run check` — 20/20.
+- Fresh `npm run tauri dev`, `npm run probe:all` — **70/70 probes, 6 skipped**.
+- `footnote-jump-back.js`: the label shows `[^1]`; a plain click lands the caret in it
+  and a Backspace takes the `^` (the click's *position*, not an end); a ⌘-click lands on
+  the marker, which shows its own source.
+- `footnote-preview.js`: the card takes the pointer, stays while hovered, and a click on
+  its link is prevented, asks the app for `plugin:opener|open_url` with
+  `{"url":"https://example.com"}`, and leaves the document untouched.
+
+### What is left
+
+Nothing in the footnote neighbourhood. The standing candidates are still the ones the
+older handoffs list: a caret in the *edit* (P5's seed, `caretBefore`/`caretAfter`, done in
+P12), typing coalescing (done in P12), and the roadmap's remaining items in
+`docs/roadmap.md` — which is empty of open footnote work.

@@ -57,6 +57,14 @@ Harness flags:
   long-running dev app gets slow and makes every probe look broken.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
+- **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and
+  its `invoke`, `ipc` and `postMessage` are defined non-writable and
+  non-configurable, so assigning over them fails silently and the probe records
+  nothing. Every command is posted with the page's `fetch` to
+  `ipc://localhost/<cmd>` (percent-encoded, e.g. `ipc://localhost/plugin%3Aopener%7Copen_url`),
+  so wrap `window.fetch`, record what you need, answer the command yourself, and
+  restore the original in a `finally` — `test/probes/footnote-preview.js` does this to
+  check a link is opened by the app without opening a browser.
 
 ## The fixture workspace
 
