@@ -53,11 +53,14 @@ are absolute numbers on the block itself.
 
 ### 1.2 The index
 
-`charStart(i)` is the sum of the lengths of the blocks before `i`; `lineStart(i)` is
-the same over their line counts. An edit inside one block changes one length and no
-tail; an edit that rebuilds `k` blocks changes `k` entries; only an edit that changes
-the number of blocks moves the blocks after it, and those have to be renumbered
-whatever the representation is.
+`charStart(i)` is the sum of the *strides* of the blocks before `i` — a block's own
+length plus the gap to the next block, which is the blank lines between them and the
+line ending that ends the block's own last line (the blocks do not tile the text: a
+blank block is zero characters long and the newlines between blocks belong to no
+block, see `state.ts: validateBlocks`). `lineStart(i)` is the sum of their line spans.
+An edit inside one block changes one stride and no tail; an edit that rebuilds `k`
+blocks changes `k` entries; only an edit that changes the number of blocks moves the
+blocks after it, and those have to be renumbered whatever the representation is.
 
 So: a Fenwick tree over the lengths and another over the line counts, and a map from
 block to position. A block's getters ask the index it was built with. A point update
@@ -91,16 +94,20 @@ could be a descent over the tree instead; not worth it until a profile says so.)
 
 **Interfaces:**
 
-- Produces: `interface BlockSource { readonly text: string; readonly span: number }`
-  and `class BlockIndex` with `constructor(blocks: readonly BlockSource[])`,
-  `place(position: number, block: BlockSource): void`,
-  `rebuild(blocks: readonly BlockSource[]): void`, `startAt(position: number)`,
-  `endAt(position: number)`, `lineAt(position: number)`, `startOf(block: BlockSource)`,
-  `endOf(block: BlockSource)` and `lineOf(block: BlockSource)`.
-  Every entry is read from the block itself — its own text length and its span — so
-  the index keeps no copy that could disagree.
+- Produces: `interface BlockEntry { length, span, gap }`,
+  `interface IndexedEntry extends BlockEntry { key: object }` and `class BlockIndex`
+  with `constructor(entries: readonly IndexedEntry[])`,
+  `set(key: object, entry: BlockEntry): void`,
+  `place(position: number, key: object, entry: BlockEntry): void`,
+  `rebuild(keys: readonly object[]): void`, `startAt(position)`, `endAt(position)`,
+  `lineAt(position)`, `endLineAt(position)`, `startOf(key)`, `endOf(key)`,
+  `lineOf(key)` and `endLineOf(key)`.
+  `gap` is the characters between this block's end and the next block's start; the
+  index sums `length + gap` per block, which is the distance to the next start.
+  `set` remembers a block that is about to arrive past the end of a list that has to
+  be rebuilt; `place` is the typing case, which keeps every position it can.
 
-- [ ] **Step 1: Write the check (RED)**
+- [x] **Step 1: Write the check (RED)**
 
 ```js
 /**
@@ -173,7 +180,7 @@ Run: `node test/checks/check-block-index.mjs`
 
 Expected: FAIL — the module does not exist.
 
-- [ ] **Step 2: Write the index**
+- [x] **Step 2: Write the index**
 
 ```ts
 /**
@@ -213,13 +220,14 @@ and a private `prefix(tree, count)` helper. Positions in the trees are 1-based;
 positions in the API are 0-based and out-of-range asks are clamped, because callers
 read `endOf(last)` for the document length.
 
-- [ ] **Step 3: Run it**
+- [x] **Step 3: Run it**
 
 Run: `node test/checks/check-block-index.mjs`
 
-Expected: `block index: all checks passed`.
+Expected: `block index: all checks passed`. Done — `check-block-index.mjs` as
+committed is the version to read; the snippets above are what it was written from.
 
-- [ ] **Step 4: Index it, and commit**
+- [x] **Step 4: Index it, and commit**
 
 `test/README.md` gains the row for `check-block-index.mjs` beside `check-blocks.mjs`.
 

@@ -1,32 +1,53 @@
 /**
  * Where the blocks are, kept as arithmetic rather than written on every block.
  *
- * A block starts where the blocks before it end, and its first line is one past the
- * lines they span. Keeping those two sums here is what lets an edit move every block
- * below it without touching any of them: a block holds its own text and its own span,
- * and a Fenwick tree over each carries the rest — a point update and a prefix sum are
- * each O(log blocks), where rewriting the tail was O(blocks) per keystroke.
+ * A block starts one stride after the block before it, where a stride is the block's
+ * own length plus the gap to the next one — the blank lines between them, and the
+ * line ending that ends the block's own last line. (Blocks do not tile the text: a
+ * blank line is a block of no characters, and the newlines between blocks belong to
+ * no block. `state.ts: validateBlocks` says the same thing from the other side.)
+ * Keeping the sums here is what lets an edit move every block below it without
+ * touching any of them: a Fenwick tree over the strides and another over the line
+ * spans answer a point update and a prefix sum in O(log blocks) each, where
+ * rewriting the tail was O(blocks) per keystroke.
  *
- * May import: nothing — a block is anything with its own text and its span. Upholds:
- * one fact about where a block sits has one home, this one, and it is read from the
- * block's own text, so nothing here can disagree with what a block holds.
+ * May import: nothing. Upholds: one fact about where a block sits has one home, this
+ * one, and it holds only counts a caller gave it — a block's own text stays the only
+ * source of its length.
  */
 
-/** What the index needs of a block: its own source, and the lines it spans. */
-export interface BlockSource {
-  readonly text: string;
+/** How much of the document one block is worth, and what sits between them. */
+export interface BlockEntry {
+  /** The block's own length, in characters. */
+  readonly length: number;
+  /** How many lines the block spans, at least one. */
   readonly span: number;
+  /**
+   * The characters between this block's end and the next block's start: the line
+   * ending that closes its last line, and any blank lines between them. Zero for the
+   * last block of the document.
+   */
+  readonly gap: number;
+}
+
+/** An entry, and the block it belongs to. */
+export interface IndexedEntry extends BlockEntry {
+  readonly key: object;
 }
 
 export class BlockIndex {
-  private keys: BlockSource[] = [];
-  /** Fenwick trees, 1-based: the lengths of the blocks, and their line spans. */
-  private lengths: number[] = [];
+  private keys: object[] = [];
+  /** Fenwick trees, 1-based: the strides of the blocks, and their line spans. */
+  private strides: number[] = [];
   private spans: number[] = [];
-  private readonly positions = new WeakMap<BlockSource, number>();
+  private readonly entries = new WeakMap<object, BlockEntry>();
+  private readonly positions = new WeakMap<object, number>();
 
-  constructor(blocks: readonly BlockSource[] = []) {
-    this.rebuild(blocks);
+  constructor(entries: readonly IndexedEntry[] = []) {
+    for (const entry of entries) {
+      this.set(entry.key, entry);
+    }
+    this.rebuild(entries.map((entry) => entry.key));
   }
 
   /** How many blocks the index holds. */
@@ -42,35 +63,51 @@ export class BlockIndex {
    * A list that grew or shrank is `rebuild`'s: a position past the end is out of
    * range here, and does nothing.
    */
-  place(position: number, block: BlockSource): void {
+  place(position: number, key: object, entry: BlockEntry): void {
     if (this.keys.length === 0 || position < 0 || position >= this.keys.length) {
       return;
     }
     const replaced = this.keys[position];
-    if (replaced !== block) {
+    const previous = this.entries.get(replaced);
+    if (replaced !== key) {
+      this.entries.delete(replaced);
       this.positions.delete(replaced);
     }
-    this.keys[position] = block;
-    this.positions.set(block, position);
-    this.add(this.lengths, position, block.text.length - this.lengthAt(position));
-    this.add(this.spans, position, block.span - this.spanAt(position));
+    this.keys[position] = key;
+    this.entries.set(key, entry);
+    this.positions.set(key, position);
+    this.add(this.strides, position, strideOf(entry) - (previous ? strideOf(previous) : 0));
+    this.add(this.spans, position, entry.span - (previous ? previous.span : 0));
   }
 
-  /** Recomputes every sum and every position from these blocks, in this order. */
-  rebuild(blocks: readonly BlockSource[]): void {
-    this.keys = [...blocks];
-    this.lengths = new Array(blocks.length + 1).fill(0);
-    this.spans = new Array(blocks.length + 1).fill(0);
-    for (let at = 0; at < blocks.length; at += 1) {
-      this.positions.set(blocks[at], at);
-      this.add(this.lengths, at, blocks[at].text.length);
-      this.add(this.spans, at, blocks[at].span);
+  /**
+   * Remembers what a block is worth without placing it yet — for a block that is
+   * about to arrive past the end of a list that has to be rebuilt.
+   */
+  set(key: object, entry: BlockEntry): void {
+    this.entries.set(key, entry);
+  }
+
+  /**
+   * Recomputes every sum and every position from these blocks, in this order, out of
+   * the entries they were remembered with. This is the structural case: the list
+   * changed length, so the blocks after the change have no old position to keep.
+   */
+  rebuild(keys: readonly object[]): void {
+    this.keys = [...keys];
+    this.strides = new Array(keys.length + 1).fill(0);
+    this.spans = new Array(keys.length + 1).fill(0);
+    for (let at = 0; at < keys.length; at += 1) {
+      const entry = this.entryOf(keys[at]);
+      this.positions.set(keys[at], at);
+      this.add(this.strides, at, strideOf(entry));
+      this.add(this.spans, at, entry.span);
     }
   }
 
   /** The document offset the block at `position` starts at. */
   startAt(position: number): number {
-    return this.prefix(this.lengths, this.clamp(position, this.lengths));
+    return this.prefix(this.strides, this.clamp(position, this.strides));
   }
 
   /** The document offset just past the block at `position`. */
@@ -83,36 +120,52 @@ export class BlockIndex {
     return 1 + this.prefix(this.spans, this.clamp(position, this.spans));
   }
 
-  /** The same three, asked about a block. */
-  startOf(block: BlockSource): number {
-    return this.startAt(this.positionOf(block));
+  /** The 1-based line the block at `position` ends on. */
+  endLineAt(position: number): number {
+    return this.lineAt(position) + this.entryAt(position).span - 1;
   }
 
-  endOf(block: BlockSource): number {
-    return this.startAt(this.positionOf(block)) + block.text.length;
+  /** The same four, asked about a block. */
+  startOf(key: object): number {
+    return this.startAt(this.positionOf(key));
   }
 
-  lineOf(block: BlockSource): number {
-    return this.lineAt(this.positionOf(block));
+  endOf(key: object): number {
+    return this.startOf(key) + this.entryOf(key).length;
+  }
+
+  lineOf(key: object): number {
+    return this.lineAt(this.positionOf(key));
+  }
+
+  endLineOf(key: object): number {
+    return this.endLineAt(this.positionOf(key));
   }
 
   /** Where a block sits, or an error: a block this index does not hold has no place. */
-  private positionOf(block: BlockSource): number {
-    const at = this.positions.get(block);
+  private positionOf(key: object): number {
+    const at = this.positions.get(key);
     if (at === undefined) {
       throw new Error('this block is not in the index');
     }
     return at;
   }
 
-  private lengthAt(position: number): number {
-    const at = this.clamp(position, this.lengths);
-    return at < 0 ? 0 : this.prefix(this.lengths, at + 1) - this.prefix(this.lengths, at);
+  private entryOf(key: object): BlockEntry {
+    const entry = this.entries.get(key);
+    if (!entry) {
+      throw new Error('this block is not in the index');
+    }
+    return entry;
   }
 
-  private spanAt(position: number): number {
-    const at = this.clamp(position, this.spans);
-    return at < 0 ? 0 : this.prefix(this.spans, at + 1) - this.prefix(this.spans, at);
+  private entryAt(position: number): BlockEntry {
+    const key = this.keys[this.clamp(position, this.strides)];
+    return key === undefined ? { length: 0, span: 1, gap: 0 } : this.entryOf(key);
+  }
+
+  private lengthAt(position: number): number {
+    return this.entryAt(position).length;
   }
 
   /** A position inside the tree's own entries, clamped to the first or the last. */
@@ -139,4 +192,9 @@ export class BlockIndex {
       tree[at] += delta;
     }
   }
+}
+
+/** How far this block's start is from the next block's start. */
+function strideOf(entry: BlockEntry): number {
+  return entry.length + entry.gap;
 }
