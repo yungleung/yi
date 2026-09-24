@@ -40,21 +40,22 @@ export function routeTaskClick(context: EditorContext, event: MouseEvent): void 
 /** Jumps between a footnote's marker and its definition. */
 export function routeFootnoteClick(context: EditorContext, event: MouseEvent): void {
   const target = event.target as Element | null;
+  // A marker in the text is the note's address: a click on it goes to the note, and the
+  // caret lands at the start of the note's text, ready to be written. It is not the place
+  // to edit the label — the notes run has the label itself, where a click opens its source
+  // — so the marker's click does not open anything in place.
   const reference = target?.closest<HTMLElement>('[data-footnote-ref]');
   const definition = target?.closest<HTMLElement>('[data-footnote-def]');
-  // Both a marker and a definition's label are text the author edits where it sits, so
-  // a plain click belongs to the editor — the marker opens its source, the label holds
-  // the caret — and what jumps is Ctrl-click or ⌘-click (see `routeFootnoteMenu` for
-  // the form macOS delivers as a context menu).
-  const jumping = event.ctrlKey || event.metaKey;
-  const element = jumping ? reference ?? definition : null;
+  // The label is text the author edits where it sits, so a plain click there belongs to
+  // the editor and only Ctrl-click (or ⌘-click) jumps back to the marker (see
+  // `routeFootnoteMenu` for the form macOS delivers as a context menu).
+  const element = reference ?? (event.ctrlKey || event.metaKey ? definition : null);
   const label = element?.dataset.footnoteRef ?? element?.dataset.footnoteDef;
-  if (!element || !label) {
+  if (!element || !label || !jumpToFootnote(context, label, reference ? 'reference' : 'definition')) {
     return;
   }
   event.preventDefault();
   event.stopPropagation();
-  jumpToFootnote(context, label, element.dataset.footnoteRef ? 'reference' : 'definition');
 }
 
 /**

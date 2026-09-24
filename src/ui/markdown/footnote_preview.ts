@@ -6,7 +6,9 @@
  * body is rendered with the components the notes run uses (`nodes/footnote.ts:
  * renderFootnoteBody`) — a second *place* to read a note, never a second renderer of
  * one. The rendered notes run itself cannot be copied: blocks are virtualised, so the
- * definition is usually not in the DOM at all.
+ * definition is usually not in the DOM at all. The card is the note's own words: the
+ * label it is filed under is the marker the pointer is already on (`nodes/footnote.ts`
+ * draws the notes run's label, and only there).
  *
  * The card is deliberately dumb: `pointer-events: none`, so it can never take a click
  * or a hover from the text under it, and it hides on everything that moves — leaving
@@ -20,7 +22,7 @@
 
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { footnoteOffsets } from './syntax/footnotes';
-import { renderFootnoteBody, renderFootnoteLabel } from './nodes/footnote';
+import { renderFootnoteBody } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
 import type { AstFootnoteDefinition } from './ast';
 import type { MarkdownBlock } from './document/blocks';
@@ -106,16 +108,14 @@ export function installFootnotePreview(context: EditorContext): void {
     const element = document.createElement('div');
     // The find bar's own shape: the same surface, shadow and `rounded-md` — they are the app's
     // only floating surfaces, and they should not disagree about their corners.
-    element.className = `${PREVIEW_CLASS} flex items-start gap-2 rounded-md border border-base-300 bg-base-200 p-2 shadow-lg`;
+    element.className = `${PREVIEW_CLASS} inline-block rounded-md border border-base-300 bg-base-200 p-2 shadow-lg`;
     element.style.position = 'fixed';
     element.style.zIndex = '50';
     element.style.maxWidth = '34rem';
     // Unlike the first version, the card takes the pointer: a note is there to be
     // read, selected, and linked out of.
     element.style.pointerEvents = 'auto';
-    // The marker first, as the notes run draws it, so the card says which note it is.
     element.append(
-      renderFootnoteLabel(definition.node),
       withRenderFrame(definition.block, () => renderFootnoteBody(definition.node))
     );
     element.addEventListener('mouseenter', keep);

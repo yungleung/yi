@@ -11,7 +11,7 @@
  */
 
 import type { RootContent } from 'mdast';
-import { SOURCE_SELECTOR, nodeRawRange, renderedLength } from './offsets';
+import { SOURCE_SELECTOR, drawnMarkerLength, nodeRawRange, renderedLength } from './offsets';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { locateCell, readTableSource } from '../syntax/table_source';
@@ -199,24 +199,50 @@ function mapNodeRawToRendered(
     const delta = Math.min(Math.max(rawOffset - range.start, 0), node.value.length);
     return acc + delta;
   }
-  if ('children' in node && Array.isArray(node.children) && node.children.length > 0) {
-    let inner = acc;
-    for (const child of node.children as RootContent[]) {
-      const childRange = nodeRawRange(child, block);
-      if (childRange && rawOffset < childRange.start) {
-        return inner;
-      }
-      if (childRange && rawOffset <= childRange.end) {
-        return mapNodeRawToRendered(child, block, rawOffset, inner);
-      }
-      inner += renderedLength(child);
+  if (node.type === 'footnoteDefinition') {
+    // The label is drawn as the marker it is — `[1]` for `[^1]` — and the note's text
+    // follows that drawing, so a raw offset inside the marker belongs to the label's own
+    // characters and one past it belongs to the note (see `offsets.ts: mapNode`, the
+    // other direction of this same rule).
+    const drawn = drawnMarkerLength(node);
+    if (rawOffset <= range.start + drawn) {
+      return acc + Math.min(Math.max(rawOffset - range.start, 0), drawn);
     }
-    return inner;
+    return mapChildrenRawToRendered(
+      node.children as RootContent[],
+      block,
+      rawOffset,
+      acc + drawn
+    );
+  }
+  if ('children' in node && Array.isArray(node.children) && node.children.length > 0) {
+    return mapChildrenRawToRendered(node.children as RootContent[], block, rawOffset, acc);
   }
   // A leaf widget (citation, math, image, ...): clamp into its rendered
   // length, matching the forward mapping's approximation.
   const delta = Math.min(Math.max(rawOffset - range.start, 0), renderedLength(node));
   return acc + delta;
+}
+
+/** The rendered offset of a child list, after the offsets already counted before it. */
+function mapChildrenRawToRendered(
+  children: RootContent[],
+  block: MarkdownBlock,
+  rawOffset: number,
+  acc: number
+): number {
+  let inner = acc;
+  for (const child of children) {
+    const childRange = nodeRawRange(child, block);
+    if (childRange && rawOffset < childRange.start) {
+      return inner;
+    }
+    if (childRange && rawOffset <= childRange.end) {
+      return mapNodeRawToRendered(child, block, rawOffset, inner);
+    }
+    inner += renderedLength(child);
+  }
+  return inner;
 }
 
 /**
