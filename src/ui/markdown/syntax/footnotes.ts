@@ -137,8 +137,8 @@ export interface FootnoteOffsets {
 /** Where a label's reference and definition sit in the document. */
 export function footnoteOffsets(text: string, label: string): FootnoteOffsets {
   const escaped = escapeLabel(label);
-  const reference = new RegExp(`\\[\\^${escaped}\\](?!:)`).exec(text);
-  const definition = new RegExp(`^ {0,3}\\[\\^${escaped}\\]:[ \\t]*`, 'm').exec(text);
+  const reference = new RegExp(`\\[\\^${escaped}\\](?!:)`, 'i').exec(text);
+  const definition = new RegExp(`^ {0,3}\\[\\^${escaped}\\]:[ \\t]*`, 'im').exec(text);
   return {
     reference: reference ? reference.index : null,
     referenceEnd: reference ? reference.index + reference[0].length : null,
