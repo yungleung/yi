@@ -142,6 +142,20 @@ column below.
   read — a quote opening or closing a string, a comment starting — that rest keeps the old
   colours until the burst stops (~200 ms of idle, the deferred check's timer). That is the
   decision the numbers were gathered for, and it is the user's to take.
+
+  **It was built, and measured out — the simulation above was optimistic.** The write is in
+  `main`'s history for one afternoon (P27: `2026-09-25-code-you-can-type-into-now.md`); it
+  works — a code keystroke takes the fast path, the block and its `<code>` element survive,
+  the markup is repaired when the burst stops and the caret survives that — but it does **not**
+  cost less in the app: **28 ms against the rebuild's 30 ms** on the same 80-line block. The
+  table above measures the *patch alone* (a text node and one height read, 2–4 ms); the app's
+  path also measures the block, restores the caret and lets the page lay out again, which is
+  where the milliseconds are. So the shape is not worth its visible trade-off and was
+  reverted. What the keystroke in a code block *is* spending 15–30 ms on is still open: not
+  the parse, not the block swap, and not its horizontal overflow container (forcing
+  `overflow-x: visible` by hand took 18 ms to 15). The next measurement is to find it — most
+  likely with the same shape as P21 and P26: measure the parts, in the app, before designing
+  anything.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
