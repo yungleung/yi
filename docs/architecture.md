@@ -46,7 +46,7 @@ an innocent import. `test/checks/layering.mjs` enforces it.
 | Empty-paragraph lines | `syntax/blank_lines.ts` |
 | Trailing-space rewriting | `syntax/trailing_spaces.ts` |
 | Table source, table/list/code edits, `TextEdit` | `syntax/table_source.ts`, `syntax/table_edits.ts`, `syntax/list_edits.ts`, `syntax/code_edits.ts`, `syntax/edit_range.ts` |
-| Parser repairs (empty items, footnote labels) and the remark pipeline | `syntax/empty_items.ts`, `syntax/footnotes.ts`, `syntax/parser.ts` |
+| Parser repairs (empty items, footnote labels, what a description list can hold) and the remark pipeline | `syntax/empty_items.ts`, `syntax/footnotes.ts`, `syntax/parser.ts` |
 
 `test/checks/syntax-home.mjs` fails if any of those facts is defined anywhere else.
 

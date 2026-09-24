@@ -54,6 +54,15 @@ elements) unless it says otherwise.
   characters say. On the fixture note's big block a full stop went from **46 ms to
   5 ms**, against 47 ms for an asterisk; the gate now parses with the editor's own
   pipeline instead of a stand-in.
+- **The parse crash P17's fuzz found** (a citation in a description detail). Landed in
+  P18, as `docs/superpowers/plans/2026-09-24-description-list-nodes.md`: the list plugin
+  rebuilds a paragraph with a CommonMark-only writer, which threw on every node the
+  editor adds to a line — a citation, a wikilink, inline math, a footnote reference — so
+  the note did not open; the same write-back was also used to *locate* the list, and an
+  entity coming back decoded made the offset repair give up silently. Terms and details
+  now parse, hold those nodes with absolute offsets, and the path has the check and the
+  probe it never had. The check's corpus caught a **plain-edit bug** on the way: a
+  character typed between the two spaces of a hard break deleted the break.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -67,11 +76,11 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — what P17 left (a citation
-inside a description detail makes `syntax/parser.ts: fixDescriptionPositions` throw,
-which the fuzz found and nobody has fixed), and what P16 left: the two whole-document
-commands (inline formatting, find and replace all) still record no marks, so undoing one
-keeps the caret where it is rather than restoring the selection it covered.
+the order I would take them, is in each phase's handoff — what P18 left (a footnote
+*reference* in a term or a detail renders as its own text, because those are re-parsed as
+fragments with no definitions in them), and what P16 left: the two whole-document commands
+(inline formatting, find and replace all) still record no marks, so undoing one keeps the
+caret where it is rather than restoring the selection it covered.
 
 ## Measure before deciding
 
