@@ -19,7 +19,12 @@
 
 import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
-import { footnoteLabels, labelsAfterEdit, withFootnoteDefinitions } from '../syntax/footnotes';
+import {
+  footnoteLabels,
+  isOwnNode,
+  labelsAfterEdit,
+  withFootnoteDefinitions
+} from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
@@ -89,7 +94,7 @@ export class MarkdownEditorState {
       ? prepared
       : withFootnoteDefinitions(prepared, this.footnoteLabels());
     const content = parseMarkdown(withContext)
-      .children.filter((child) => isOwnContent(child, prepared.length));
+      .children.filter((child) => isOwnNode(child, prepared.length));
     this.blockContent.set(key, content);
     // Every edit mints one new key, so the cache needs a bound of its own.
     if (this.blockContent.size > PARSED_BLOCK_LIMIT) {
@@ -300,14 +305,4 @@ export class MarkdownEditorState {
     }
     return null;
   }
-}
-
-/**
- * Whether a parsed node comes from the block's own text rather than from the
- * footnote definitions borrowed for the parse: the borrowed lines sit after it,
- * so anything starting past its end is not content.
- */
-function isOwnContent(node: RootContent, length: number): boolean {
-  const start = (node as { position?: { start: { offset?: number } } }).position?.start.offset;
-  return start === undefined || start < length;
 }

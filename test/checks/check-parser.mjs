@@ -73,9 +73,8 @@ const parse = (markdown) => {
 
 /**
  * The constructs, each of which is a node the list plugin's own writer cannot serialize
- * — and, for the footnote reference, the one that does not survive a term or a detail:
- * those are re-parsed as fragments, where the definition that makes a reference a
- * reference is not there, so it stays the text it was written as.
+ * — a set the flattened text hides from the plugin and the re-parse of each term and
+ * detail brings back.
  */
 const cases = [
   { name: 'a citation', type: 'citation', source: '@smith2020' },
@@ -87,12 +86,11 @@ const cases = [
     name: 'a footnote reference',
     type: 'footnoteReference',
     source: '[^1]',
-    suffix: '\n[^1]: note\n',
-    fragmentIsText: true
+    suffix: '\n[^1]: note\n'
   }
 ];
 
-for (const { name, type, source, suffix = '', fragmentIsText = false } of cases) {
+for (const { name, type, source, suffix = '' } of cases) {
   const detail = `term\n: detail with ${source} in it\n${suffix}`;
   const term = `a term with ${source}\n: detail\n${suffix}`;
   const control = `a paragraph with ${source} in it\n${suffix}`;
@@ -117,17 +115,11 @@ for (const { name, type, source, suffix = '', fragmentIsText = false } of cases)
       continue;
     }
     check(`and ${where} is a description list`, nodeShape(parsed.tree.children).includes('descriptionlist'), true);
-    // A reference needs its definition in the same parse: a term or a detail is
-    // re-parsed as a fragment, so the reference stays text there.
-    if (fragmentIsText) {
-      const text = nodesOfType(parsed.tree, 'text')
-        .map((node) => node.value ?? '')
-        .join('');
-      check(`and the reference stays text in ${where}`, text.includes(source), true);
-    } else {
-      const sources = nodesOfType(parsed.tree, type).map((node) => sourceOf(markdown, node));
-      check(`and ${name} comes back in ${where}`, sources, [source]);
-    }
+    // A reference needs its definition in the same parse, and a term or a detail is
+    // re-parsed as a fragment: the fragment borrows the document's definitions, so the
+    // node comes back — and the definition it borrowed may not appear in the list.
+    const sources = nodesOfType(parsed.tree, type).map((node) => sourceOf(markdown, node));
+    check(`and ${name} comes back in ${where}`, sources, [source]);
   }
 }
 

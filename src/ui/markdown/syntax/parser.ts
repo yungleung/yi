@@ -22,6 +22,7 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
+import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
 
@@ -153,6 +154,10 @@ function flattenUnwritableNodes(node: unknown): void {
  * every other node.
  */
 function fixDescriptionPositions(tree: Root, markdown: string): void {
+  // A term or a detail is re-parsed from its own line, which is a fragment: the
+  // definitions its references need are borrowed here, exactly as a whole block borrows
+  // them (`footnotes.ts`), so the borrow is read once for the whole document.
+  const definitions = footnoteLabels(markdown);
   /** Visits every child list of `children`, which are one parent's. */
   const visit = (children: RootContent[]): void => {
     children.forEach((child, index) => {
@@ -197,7 +202,12 @@ function fixDescriptionPositions(tree: Root, markdown: string): void {
               start: { offset: line.start },
               end: { offset: line.end }
             };
-            reparseDescriptionContent(detail, content, line.start + sourceLine.length - content.length);
+            reparseDescriptionContent(
+              detail,
+              content,
+              line.start + sourceLine.length - content.length,
+              definitions
+            );
           }
         } else if (line.kind === 'term') {
           const term = terms[termIndex++];
@@ -210,7 +220,12 @@ function fixDescriptionPositions(tree: Root, markdown: string): void {
             // the non-breaking spaces `trailing_spaces.ts` writes) so a space typed at
             // the end of a term stays visible and editable.
             const content = sourceLine.trimStart();
-            reparseDescriptionContent(term, content, line.start + sourceLine.length - content.length);
+            reparseDescriptionContent(
+              term,
+              content,
+              line.start + sourceLine.length - content.length,
+              definitions
+            );
           }
         }
       }
@@ -296,18 +311,26 @@ function readDescriptionLines(
 }
 
 /**
- * Replaces a term/details element's children with the full-pipeline parse of
- * its raw content, shifting the fragment-relative positions to absolute.
+ * Replaces a term/details element's children with the full-pipeline parse of its raw
+ * content, shifting the fragment-relative positions to absolute.
+ *
+ * A fragment is a parse with no document around it, and markdown reads `[^1]` as a
+ * footnote reference only when its definition is in the same parse — so the fragment
+ * borrows the definitions the document holds, the way a block does (`footnotes.ts`), and
+ * the nodes that come from the borrowed lines are dropped again: they belong to the
+ * document, not to the term or the detail.
  */
 function reparseDescriptionContent(
   element: RootContent & { children: RootContent[] },
   source: string,
-  absoluteStart: number
+  absoluteStart: number,
+  definitions: ReadonlySet<string>
 ): void {
-  const root = fragmentProcessor.runSync(fragmentProcessor.parse(source)) as Root;
-  const children = root.children.flatMap((child) =>
-    child.type === 'paragraph' ? (child.children ?? []) : [child]
-  );
+  const withContext = withFootnoteDefinitions(source, definitions);
+  const root = fragmentProcessor.runSync(fragmentProcessor.parse(withContext)) as Root;
+  const children = root.children
+    .filter((child) => isOwnNode(child, source.length))
+    .flatMap((child) => (child.type === 'paragraph' ? (child.children ?? []) : [child]));
   for (const child of children) {
     walk(child, (desc) => {
       const position = (

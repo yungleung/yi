@@ -177,6 +177,20 @@ export function withFootnoteDefinitions(blockText: string, defined: ReadonlySet<
 }
 
 /**
+ * Whether a node of such a parse belongs to the caller's own text, rather than to the
+ * definitions borrowed for it: the borrowed lines are appended, so their nodes start
+ * after that text ends.
+ *
+ * The nodes have to be dropped, not just ignored: they are markdown like any other, and
+ * rendering them would put a note the document keeps elsewhere inside the block that
+ * borrowed it.
+ */
+export function isOwnNode(node: unknown, length: number): boolean {
+  const start = (node as { position?: { start?: { offset?: number } } }).position?.start?.offset;
+  return start === undefined || start < length;
+}
+
+/**
  * The one edit the footnote button makes: the marker at the caret, and the
  * definition line at the end of the document.
  *
