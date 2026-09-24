@@ -22,7 +22,7 @@ import type { RootContent } from 'mdast';
 import { footnoteLabels, labelsAfterEdit, withFootnoteDefinitions } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
-import { History, type DocumentEdit } from './history';
+import { History, type DocumentEdit, type EditKind } from './history';
 import { TextStore } from './text_store';
 
 /** Parsed blocks kept before the oldest is dropped. */
@@ -145,14 +145,23 @@ export class MarkdownEditorState {
   }
 
   /** Replaces a raw document range with `replacement`. */
-  replaceRange(from: number, to: number, replacement: string): void {
+  replaceRange(
+    from: number,
+    to: number,
+    replacement: string,
+    options: { carets?: { before: number; after: number }; kind?: EditKind } = {}
+  ): void {
     const length = this.text.length;
     const start = Math.max(0, Math.min(from, length));
     const end = Math.max(start, Math.min(to, length));
     const removed = this.text.slice(start, end);
-    const edit = { from: start, to: end, removed, inserted: replacement };
+    const edit: DocumentEdit = { from: start, to: end, removed, inserted: replacement };
+    if (options.carets) {
+      edit.caretBefore = options.carets.before;
+      edit.caretAfter = options.carets.after;
+    }
     this.updateText(edit, () => this.text.replace(start, end, replacement));
-    this.history.record(edit);
+    this.history.record(edit, options.kind);
   }
 
   /**
@@ -170,26 +179,26 @@ export class MarkdownEditorState {
     this.history.clear();
   }
 
-  /** Steps back one edit. Returns false when there is nothing to undo. */
-  undo(): boolean {
+  /** Steps back one edit, and hands back the edit it applied, or null. */
+  undo(): DocumentEdit | null {
     const edit = this.history.undo();
     if (!edit) {
-      return false;
+      return null;
     }
     // History edits are applied through `updateText` rather than `replaceRange`,
     // so undoing cannot record itself as a new edit.
     this.updateText(edit, () => this.text.replace(edit.from, edit.to, edit.inserted));
-    return true;
+    return edit;
   }
 
-  /** Re-applies the last undone edit. Returns false when there is none. */
-  redo(): boolean {
+  /** Re-applies the last undone edit, and hands back the edit, or null. */
+  redo(): DocumentEdit | null {
     const edit = this.history.redo();
     if (!edit) {
-      return false;
+      return null;
     }
     this.updateText(edit, () => this.text.replace(edit.from, edit.to, edit.inserted));
-    return true;
+    return edit;
   }
 
   /** The edits in force, oldest first — the history, for tests and tooling. */

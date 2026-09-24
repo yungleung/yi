@@ -1,9 +1,10 @@
 /**
- * Checks the edit algebra in Node: what an edit inverts to, and how the log
- * behaves at its edges.
+ * Checks the edit algebra in Node: what an edit inverts to, how the log behaves at
+ * its edges, and which keystrokes a run holds.
  *
  * The phase's point, as a property rather than a benchmark: a keystroke in a long
- * document must cost a few bytes of history, not two copies of the document.
+ * document must cost a few bytes of history, not two copies of the document — and a
+ * run of typing is one step, with a letter as its boundary in any script.
  */
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -16,7 +17,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-history-'));
 const file = join(directory, 'history.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { History, invert } = await import(file);
+const { History, invert, coalesceRun } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -75,6 +76,85 @@ const typed = new History();
 typed.record(insert(0, 'x'));
 check('a one-character edit is a few bytes of history', JSON.stringify(typed.edits()).length < 60, true);
 
+// The carets: an edit remembers where its author was, so undo can put the caret
+// back there and redo can put it where the edit left off.
+const withCarets = { from: 4, to: 4, removed: '', inserted: 'x', caretBefore: 4, caretAfter: 5 };
+check('an edit inverts with its carets exchanged', invert(withCarets), {
+  from: 4,
+  to: 5,
+  removed: 'x',
+  inserted: '',
+  caretBefore: 5,
+  caretAfter: 4
+});
+check('an edit without carets inverts without them', invert(insert(1, 'x')), {
+  from: 1,
+  to: 2,
+  removed: 'x',
+  inserted: ''
+});
+const careful = new History();
+careful.record(withCarets, 'other');
+check('undo hands back the carets the author left', careful.undo().caretBefore, 5);
+check('and redo hands back the edit`s own', careful.redo().caretAfter, 5);
+
+// The run: what one undo step holds. A letter extends it, the first character that
+// is not a letter belongs to it and closes it, and the boundary is any script's.
+const letter = (from, text, caret) => ({
+  from,
+  to: from,
+  removed: '',
+  inserted: text,
+  caretBefore: caret,
+  caretAfter: caret + text.length
+});
+const closed = (edit) => ({ ...edit, to: edit.from + edit.inserted.length });
+check('two letters in a row are one step', coalesceRun(letter(4, 'h', 4), letter(5, 'e', 5), 'typing'),
+  letter(4, 'he', 4));
+check('a space joins the word', coalesceRun(letter(4, 'he', 4), letter(6, ' ', 6), 'typing').inserted, 'he ');
+check('and closes it, so the next letter starts a step',
+  coalesceRun(closed(letter(4, 'he ', 4)), letter(7, 'w', 7), 'typing'), null);
+check('a caret jump is not adjacent', coalesceRun(letter(4, 'h', 4), letter(20, 'e', 20), 'typing'), null);
+check('another kind does not merge', coalesceRun(letter(4, 'h', 4), letter(5, 'e', 5), 'deleting'), null);
+check('a letter that is not Latin merges too',
+  coalesceRun(letter(0, '你', 0), letter(1, '好', 1), 'typing').inserted, '你好');
+check('a CJK full stop closes the step',
+  coalesceRun(closed(letter(0, '你好。', 0)), letter(3, '好', 3), 'typing'), null);
+check('a paste is a step of its own',
+  coalesceRun(letter(0, 'a', 0), { from: 1, to: 1, removed: '', inserted: 'word' }, 'typing'), null);
+check('a run stops at the cap',
+  coalesceRun(letter(0, 'x'.repeat(24), 0), letter(24, 'x', 24), 'typing'), null);
+const erased = { from: 1, to: 2, removed: 'b', inserted: '', caretBefore: 2, caretAfter: 1 };
+const erasedBefore = { from: 0, to: 1, removed: 'a', inserted: '', caretBefore: 1, caretAfter: 0 };
+check('backspaces merge as deletions', coalesceRun(erased, erasedBefore, 'deleting'), {
+  from: 0,
+  to: 2,
+  removed: 'ab',
+  inserted: '',
+  // The run starts where the first backspace was asked for and ends where the last
+  // one left the caret.
+  caretBefore: 2,
+  caretAfter: 0
+});
+const deletedForward = { from: 1, to: 2, removed: 'b', inserted: '', caretBefore: 1, caretAfter: 1 };
+check('Delete merges forwards too',
+  coalesceRun(deletedForward, { from: 1, to: 2, removed: 'c', inserted: '', caretBefore: 1, caretAfter: 1 }, 'deleting'),
+  { from: 1, to: 3, removed: 'bc', inserted: '', caretBefore: 1, caretAfter: 1 });
+check('a run of typing is one entry in the log', (() => {
+  const step = new History();
+  for (const [at, key] of [[0, 'h'], [1, 'e'], [2, 'l'], [3, 'l'], [4, 'o']]) {
+    step.record(letter(at, key, at), 'typing');
+  }
+  return [step.length, step.edits()[0].inserted];
+})(), [1, 'hello']);
+check('a non-typing edit ends the run', (() => {
+  const step = new History();
+  step.record(letter(0, 'h', 0), 'typing');
+  step.record({ from: 1, to: 1, removed: '', inserted: '\n' }, 'other');
+  step.record(letter(2, 'e', 2), 'typing');
+  return step.length;
+})(), 3);
+
 // The state records what it changed and undo applies the inverse — the same
 // behaviour the whole-document pair had, with the log holding the edit itself.
 globalThis.document = {
@@ -108,7 +188,7 @@ check('undo puts the text back', document_.getText(), 'one\ntwo\n');
 document_.redo();
 check('redo applies it again', document_.getText(), 'oneX\ntwo\n');
 document_.undo();
-check('undoing past the first edit returns false', document_.undo(), false);
+check('undoing past the first edit returns null', document_.undo(), null);
 document_.replaceRange(0, 3, 'ONE');
 check('a new edit truncates the redo tail', [document_.getText(), document_.historyEdits().length], [
   'ONE\ntwo\n',
@@ -116,7 +196,7 @@ check('a new edit truncates the redo tail', [document_.getText(), document_.hist
 ]);
 check('and the log holds the edit, not the document', document_.historyEdits()[0].removed, 'one');
 document_.loadText('fresh\n');
-check('a new document has no history', [document_.historyEdits().length, document_.undo()], [0, false]);
+check('a new document has no history', [document_.historyEdits().length, document_.undo()], [0, null]);
 
 // The state holds the text in a store rather than a string, so the statement to
 // prove is the same one the store's own check makes: after any sequence of edits

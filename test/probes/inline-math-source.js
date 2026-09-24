@@ -14,6 +14,11 @@
   await t.load(doc);
 
   for (let round = 1; round <= 3; round += 1) {
+    // Away from the formula first. The round before ended with an undo, and an undo
+    // puts the caret back where the change was made — inside this formula's source —
+    // so the rendering is not there to click until the caret leaves again.
+    await t.click([...t.prose().querySelectorAll('.markdown-block')].pop(), 0.5);
+    await t.sleep(250);
     await t.click(math(), 0.5);
     check(`round ${round}: the click opens the formula's source`, source() !== null, true);
     t.key('Backspace');

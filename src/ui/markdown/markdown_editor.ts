@@ -350,18 +350,24 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Undo/redo keeps the caret at the same document offset when it can. */
   private applyHistory(direction: 'undo' | 'redo'): void {
-    const offset = caretOffset(this.context) ?? this.state.getText().length;
+    const current = caretOffset(this.context) ?? this.state.getText().length;
     const anchor = this.contentView.scrollTop;
-    const applied = direction === 'undo' ? this.state.undo() : this.state.redo();
-    if (!applied) {
+    const edit = direction === 'undo' ? this.state.undo() : this.state.redo();
+    if (!edit) {
       return;
     }
+    // The edit that was applied carries the caret it leaves behind — for an undo that
+    // is where the change started, for a redo where it left off (see
+    // `history.ts: invert`). An edit recorded without carets — the whole-document
+    // command formatting and find-and-replace use — keeps the caret where it is,
+    // because those commands place their own selection afterwards.
+    const target = Math.min(edit.caretAfter ?? current, this.state.getText().length);
     // Undo and redo move the caret to a document offset like an edit does, so
     // the block that shows its own text is the block that offset lands in —
     // decided before the rebuild, so the block is built in the right shape.
-    showSourceAt(this.context, Math.min(offset, this.state.getText().length));
+    showSourceAt(this.context, target);
     this.renderer.renderChanged();
-    restoreCaret(this.context, Math.min(offset, this.state.getText().length));
+    restoreCaret(this.context, target);
     // Undo and redo restore a caret the same way an edit does, and the browser
     // scrolls a focused element or a synchronised selection into view just the
     // same: keep the reader where they were.
