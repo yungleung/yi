@@ -1,11 +1,13 @@
 /**
- * A marker in the text draws `[1]` for the `[^1]` that was written, and shows its own
- * source while the caret is inside it, where the label is typed. A click on the marker
- * goes to the note instead (`footnote-jump.js`), so the caret walks in from the text
- * beside it — and the edge of a node whose rendering hides characters is the node's own
- * raw edge, which is what lets the caret land on the marker at all.
+ * A marker in the text draws `[1]` for the `[^1]` that was written, and a click opens it as
+ * its own source — the characters the author typed — with the caret at the end of the
+ * label, where it is typed. ⌘-click is what jumps to the note (`footnote-jump.js`).
  *
- * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/caret/offsets.ts
+ * The rendering is an `<a href="#fn-label">`, so the click must not take the webview to the
+ * fragment: that scrolls the page to the note under the reader's hands, which is the bug
+ * `nodes/editable_node.ts` prevents for every node.
+ *
+ * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/click_routing.ts
  */
 (async () => {
   const t = window.__t;
@@ -13,20 +15,8 @@
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const marker = () => t.prose().querySelector('[data-footnote-ref]');
   const source = () => t.prose().querySelector('[data-footnote-ref].markdown-footnote-source');
-  /** Puts the caret at an offset in a text node, the way a click does. */
-  const place = async (text, offset) => {
-    const range = document.createRange();
-    range.setStart(text, offset);
-    range.collapse(true);
-    const rect = range.getBoundingClientRect();
-    text.parentElement.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-    );
-    await t.sleep(300);
-  };
-  const doc = 'Body text[^1] here.\n\n[^1]: first note\n\n[^2]: second note\n';
 
-  await t.load(doc);
+  await t.load('Body text[^1] here.\n\n[^1]: first note\n\n[^2]: second note\n');
   check(
     'the marker carries no tooltip',
     marker().getAttribute('title') === null,
@@ -34,28 +24,38 @@
   );
   check('and draws its label, not its source', marker().textContent === '[1]', marker().textContent);
 
-  // The caret beside the marker belongs to it, and a marker holding the caret is built as
-  // its own source: the characters the author wrote, at the offsets the caret maps through.
-  const after = t.textNodesIn(t.blocks()[0]).find((node) => node.data.includes(' here'));
-  await place(after, 0);
+  const anchor = marker().querySelector('a') ?? marker();
+  const anchorBox = anchor.getBoundingClientRect();
+  const hashBefore = location.hash;
+  const onAnchor = new MouseEvent('click', {
+    bubbles: true,
+    cancelable: true,
+    clientX: anchorBox.left + anchorBox.width / 2,
+    clientY: anchorBox.top + anchorBox.height / 2
+  });
+  anchor.dispatchEvent(onAnchor);
+  await t.sleep(350);
   check(
-    'the caret beside the marker shows its source',
+    'a click on the marker`s own label does not follow its href',
+    onAnchor.defaultPrevented && location.hash === hashBefore,
+    { prevented: onAnchor.defaultPrevented, hash: location.hash, before: hashBefore }
+  );
+  check(
+    'and it opens the marker as its source',
     source()?.textContent === '[^1]',
     source()?.textContent ?? null
   );
 
-  // `[^1]` becomes `[^2]`, the label the second note carries, so the pair stays one.
-  t.key('ArrowLeft');
-  await t.sleep(250);
+  // The caret is at the end of the label, so two edits turn [^1] into [^2].
   t.key('Backspace');
   await t.sleep(250);
   t.key('2');
   await t.sleep(300);
-  const edited = await t.raw();
+  const after = await t.raw();
   check(
-    'and the label is typed there',
-    edited === 'Body text[^2] here.\n\n[^1]: first note\n\n[^2]: second note\n',
-    edited
+    'the label is editable',
+    after === 'Body text[^2] here.\n\n[^1]: first note\n\n[^2]: second note\n',
+    after
   );
   check(
     'and the marker is the label it now has',
@@ -63,8 +63,8 @@
     marker()?.dataset.footnoteRef ?? null
   );
   check(
-    'with the note it names still in the document',
-    t.prose().querySelector('[data-footnote-def="2"]') !== null,
+    'and the note it names is still the note it names',
+    t.prose().querySelector('[data-footnote-def="2"]')?.textContent === '[2]',
     t.prose().querySelector('[data-footnote-def="2"]')?.textContent ?? null
   );
 

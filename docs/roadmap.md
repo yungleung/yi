@@ -98,9 +98,10 @@ elements) unless it says otherwise.
   notes run draws the label as the marker it is (`[1]`, what the marker in the text
   draws) and shows `[^1]` only while the caret is in it, so the reveal is a change of
   characters rather than of weight; the preview card is the note's words alone, with no
-  label in front of them; and a click on a marker goes to its note — scrolled into view,
-  the caret at the start of its text — instead of opening the marker's label in place.
-  That last one cost a caret rule: with the label drawn a character shorter than it is
+  label in front of them; and Ctrl-click (⌘-click) on a marker goes to its note — scrolled
+  into view, the caret at the start of its text — while a plain click still opens the
+  marker's own label, in place, as its source. That last one cost a caret rule: with the
+  label drawn a character shorter than it is
   written, a caret that walked into it landed **three characters into the note**
   (measured: `The first note.` came out `ThXe first note.`), which is why
   `caret/offsets.ts` now says what a definition draws. `test/probes/footnote-jump.js`,
