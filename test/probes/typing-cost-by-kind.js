@@ -44,10 +44,16 @@
         (_, index) =>
           `const fairlyPlain${index} = someFairlyLongFunction(argument${index}, anotherArgument);`
       ).join('\n')}\n\`\`\`\n`,
-      needle: 'fairlyPlain40'
+      // A word on the *first* line: a block 80 lines deep has most of itself below the
+      // window, and a click on a rect outside it lands nowhere (the caret then falls back
+      // to the block's start, where the rule refuses — which measures the ordinary path for
+      // the wrong reason).
+      needle: 'fairlyPlain0'
     }
   ];
   const results = [];
+  const { MarkdownEditorState } = await t.app('/src/ui/markdown/document/state.ts');
+  const { createBlockComponent } = await t.app('/src/ui/markdown/create_block.ts');
   for (const entry of cases) {
     await t.load(entry.document);
     const block = t.blocks()[0];
@@ -95,9 +101,23 @@
     // is inside the word it looked for, so the word is not there to search for any more.
     const lineStart = Number(before.block.dataset.lineStart);
     const after = t.blocks().find((element) => Number(element.dataset.lineStart) === lineStart);
+    // The floor for a write that re-renders the block's own markup in place instead of
+    // replacing the block: the detached build alone — for a code block, that is
+    // highlight.js and the DOM under it, with no swap and no page layout.
+    const built = [];
+    for (let round = 0; round < 2; round += 1) {
+      const state = new MarkdownEditorState(entry.document);
+      const block = state.getBlocks()[0];
+      const started_ = performance.now();
+      if (block) {
+        createBlockComponent(block, state.getBlockContent(block));
+      }
+      built.push(Math.round((performance.now() - started_) * 10) / 10);
+    }
     results.push({
       kind: entry.kind,
       ms: Math.round(ms * 10) / 10,
+      detachedBuildMs: built,
       path: after === before.block ? 'fast' : 'ordinary',
       textNodeSurvived: after ? t.textNodesIn(after).includes(before.node) : false,
       heightChange: after ? Math.round(after.getBoundingClientRect().height - before.height) : null,
