@@ -25,7 +25,7 @@
 
 import { BlockSizes } from './block_sizes';
 import { createBlockComponent } from './create_block';
-import { blockContentKey, type BlockNode, type MarkdownBlock } from './document/blocks';
+import { type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
@@ -75,7 +75,9 @@ export class VirtualBlockRenderer {
    * never share a remembered element or size.
    */
   private renderKey(block: MarkdownBlock): string {
-    const key = blockContentKey(block);
+    // The state's key, not the block's own: a block holding a footnote marker also
+    // renders from the definitions the document borrows for it (`state.parseKey`).
+    const key = this.state.parseKey(block);
     const source = shownSourceWithinBlock(block);
     return source === null ? key : `${key}:source@${source}`;
   }

@@ -20,9 +20,11 @@
 import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
 import {
+  containsReference,
   footnoteLabels,
   isOwnNode,
   labelsAfterEdit,
+  sameLabels,
   withFootnoteDefinitions
 } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
@@ -51,6 +53,8 @@ export class MarkdownEditorState {
   private readonly blockContent = new Map<string, RootContent[]>();
   /** The labels the document defines, read once per text. */
   private labels: ReadonlySet<string> | null = null;
+  /** How many times the set of labels has changed (see {@link parseKey}). */
+  private labelsVersion = 0;
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
 
@@ -71,6 +75,28 @@ export class MarkdownEditorState {
   }
 
   /**
+   * The key a block's parse is held under — and, because a rendering is built from
+   * that parse, the key a block is re-rendered by (`virtual_block_renderer`).
+   *
+   * A block's own text is not the whole input to its parse. Markdown reads `[^x]`
+   * as a footnote reference only when the definition is in the same parse, so a
+   * block holding a marker is parsed with the document's definitions *borrowed*
+   * (`withFootnoteDefinitions`): renaming or removing a definition elsewhere
+   * rewrites how this block's brackets read. The labels' version is therefore part
+   * of its key, and the version moves only when the *set* of labels really changed —
+   * not on every keystroke in a note that sits on a definition line, which is what
+   * folding the labels after each edit otherwise lets through.
+   *
+   * A block with no marker in it cannot be affected by any of that, and keeps the
+   * key it had: the label version may not throw away the parses — or the heights
+   * remembered against these keys — of blocks the change cannot reach.
+   */
+  parseKey(block: MarkdownBlock): string {
+    const key = blockContentKey(block);
+    return containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
+  }
+
+  /**
    * The block's mdast nodes, parsed from its own raw slice with
    * block-relative positions, and cached per block.
    */
@@ -78,7 +104,7 @@ export class MarkdownEditorState {
     if (block.kind === 'blank') {
       return [];
     }
-    const key = blockContentKey(block);
+    const key = this.parseKey(block);
     const cached = this.blockContent.get(key);
     if (cached) {
       return cached;
@@ -147,7 +173,14 @@ export class MarkdownEditorState {
     // footnotes in it, and an edit that cannot touch a definition line does not
     // change which labels exist (`labelsAfterEdit`).
     if (this.labels) {
-      this.labels = labelsAfterEdit(this.labels, this.getText(), edit);
+      const next = labelsAfterEdit(this.labels, this.getText(), edit);
+      // A rescan that finds the same labels is not a change: the version moves only
+      // when the set itself does, so that blocks which borrowed the labels are
+      // re-parsed and re-rendered then and not on every keystroke (`parseKey`).
+      if (!sameLabels(this.labels, next)) {
+        this.labels = next;
+        this.labelsVersion += 1;
+      }
     }
   }
 
