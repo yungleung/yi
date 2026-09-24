@@ -268,6 +268,32 @@ check('a replacement records the selection it replaced', document_.historyEdits(
 check('and undoing it hands that selection back', document_.undo().after, { from: 6, to: 11 });
 check('with the text the edit replaced', document_.getText(), 'hello world\n');
 
+// A command that computes the whole document records the marks it was given — the two
+// that do (inline formatting, find and replace all) know different things about where
+// their author was, so an edit may carry both marks or only the one it started from.
+document_.loadText('the old text\n');
+document_.setText('the new text\n', { before: { from: 4, to: 7 }, after: { from: 4, to: 7 } });
+check('a whole-document edit records the marks it was given', document_.historyEdits(), [
+  {
+    from: 0,
+    to: 13,
+    removed: 'the old text\n',
+    inserted: 'the new text\n',
+    before: { from: 4, to: 7 },
+    after: { from: 4, to: 7 }
+  }
+]);
+check('and undoing it hands the mark the command started from', document_.undo().after, { from: 4, to: 7 });
+check('with the text it replaced', document_.getText(), 'the old text\n');
+
+document_.loadText('one two three\n');
+document_.setText('one Three\n', { before: { from: 4, to: 7 } });
+check('a command with nowhere to leave the author records one mark', document_.historyEdits(), [
+  { from: 0, to: 14, removed: 'one two three\n', inserted: 'one Three\n', before: { from: 4, to: 7 } }
+]);
+check('and its undo still gives that mark back', document_.undo().after, { from: 4, to: 7 });
+check('and redoing it leaves no mark of its own', document_.redo().after, undefined);
+
 // The state holds the text in a store rather than a string, so the statement to
 // prove is the same one the store's own check makes: after any sequence of edits
 // the state's text is the text a string ends up with. The sequence is pseudo-

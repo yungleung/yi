@@ -110,16 +110,24 @@ export class MarkdownEditorState {
    * Replaces the document: re-splits the blocks (cheap, line-based) and
    * retains cached parses for unchanged blocks.
    */
-  setText(text: string): void {
+  setText(text: string, marks?: { before: EditMark; after?: EditMark }): void {
     const before = this.getText();
     if (text === before) {
       return;
     }
-    const edit = { from: 0, to: before.length, removed: before, inserted: text };
+    const edit: DocumentEdit = { from: 0, to: before.length, removed: before, inserted: text };
+    if (marks) {
+      edit.before = marks.before;
+      if (marks.after) {
+        edit.after = marks.after;
+      }
+    }
     this.updateText(edit, () => this.text.replace(0, this.text.length, text));
     // A command that computes a whole document is recorded as one whole-document
-    // edit: still one undo step, and still exact, for the two commands that do
-    // this (inline formatting, find and replace all).
+    // edit: still one undo step, and still exact, for the two commands that do this
+    // (inline formatting, find and replace all). What it remembers of its author comes
+    // in with the call: those two know different things about where they were (see
+    // `formatting.ts` and `find_controller.ts`).
     this.history.record(edit);
   }
 

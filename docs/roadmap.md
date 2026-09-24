@@ -70,6 +70,11 @@ elements) unless it says otherwise.
   is in the same parse. The fragment now borrows the document's definitions the way a
   whole block does — through the same `footnotes.ts` rule, which moved out of `state.ts`
   so both callers read it from its one home — and the borrowed lines are dropped again.
+- **Marks for the whole-document commands** (P16's last leftover). Landed in P20, as
+  `docs/superpowers/plans/2026-09-25-marks-for-commands.md`: `state.setText` takes marks,
+  so undoing bold gives the word back *selected* and undoing "replace all" puts the match
+  the find bar was on back under the selection, rather than leaving the caret wherever it
+  happened to be afterwards.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -83,9 +88,9 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — one item, what P16 left: the two
-whole-document commands (inline formatting, find and replace all) still record no marks,
-so undoing one keeps the caret where it is rather than restoring the selection it covered.
+the order I would take them, is in each phase's handoff — and it is empty: every leftover
+the handoffs named is closed above, and what is left is the "measure before deciding"
+column below.
 
 ## Measure before deciding
 

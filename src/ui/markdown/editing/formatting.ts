@@ -51,7 +51,13 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
   const unit = coveredFormattingUnit(context, range, range.toString().trim());
   const unitRange = unit ? unitRangeOf(context, unit) : undefined;
   const edit = formatRange(text, from, to, style, unitRange);
-  context.state.setText(edit.text);
+  // The whole document is one edit, and it remembers its author: the selection it
+  // formatted — which undo puts back, so the style can be toggled off where it was
+  // applied — and the span it leaves, which it selects again below.
+  context.state.setText(edit.text, {
+    before: { from, to },
+    after: { from: edit.from, to: edit.to }
+  });
 
   const root = proseRoot(context);
   const sameBlock = start.block.lineStart === end.block.lineStart;
