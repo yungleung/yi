@@ -100,6 +100,12 @@ range for the caret in `editing/context.ts: sourceRangeIn`, and keep the shape o
 part in one place under `syntax/` (`syntax/footnotes.ts: markerShape` is the worked
 example, and `test/probes/footnote-jump-back.js` is its proof).
 
+And if what you draw is a *different length* from the source it stands for — a marker
+draws `[1]` for `[^1]` — say what it draws in `caret/offsets.ts: renderedLength`, and carry
+an offset inside the drawing to the source it stands for in `offsets.ts: mapNode` and
+`caret/dom_position.ts: mapNodeRawToRendered`. A length the caret model does not know
+shifts every caret that walks into the drawing by the difference.
+
 A rendering never navigates, whatever element it is made of: the app owns a node's clicks, and
 an `<a href>` a rendering happens to be — a footnote marker's `#fn-1` — would otherwise take the
 webview to a fragment and scroll the page under the reader's hands. `nodes/editable_node.ts`

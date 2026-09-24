@@ -93,6 +93,18 @@ elements) unless it says otherwise.
   a character of the **first** definition, and in ` [^1]: note` (markdown allows up to
   three leading spaces) it landed one character early. `test/probes/footnote-jump-back.js`
   holds both cases, the reveal, the exact-click caret and the ⌘-click jump.
+- **The label drawn, and the marker a jump.** Landed as the next phase,
+  `docs/superpowers/plans/2026-09-25-a-rendered-label-and-a-jumping-marker.md`: the
+  notes run draws the label as the marker it is (`[1]`, what the marker in the text
+  draws) and shows `[^1]` only while the caret is in it, so the reveal is a change of
+  characters rather than of weight; the preview card is the note's words alone, with no
+  label in front of them; and a click on a marker goes to its note — scrolled into view,
+  the caret at the start of its text — instead of opening the marker's label in place.
+  That last one cost a caret rule: with the label drawn a character shorter than it is
+  written, a caret that walked into it landed **three characters into the note**
+  (measured: `The first note.` came out `ThXe first note.`), which is why
+  `caret/offsets.ts` now says what a definition draws. `test/probes/footnote-jump.js`,
+  `footnote-source.js`, `footnote-jump-back.js` and `footnote-preview.js` hold it.
 
 ## Open, in the order to take them
 
