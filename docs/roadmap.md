@@ -104,10 +104,18 @@ column below.
   recovered from its stash — and `test/probes/load-cost.js` plus the harness's
   `bridge: …` line are what tell the two apart.
 
-- **The ordinary path's parse.** A structural keystroke still parses the block it
-  rebuilds (9 ms of its ~40 ms). Spaces, punctuation and digits no longer reach it —
-  P17 left it the markers and the line's own beginning — and making the parse itself
-  cheaper is a parser measurement, not a caret one.
+- **Where typing is slow** (the item this column used to call "the ordinary path's parse").
+  Measured in P23, as `docs/superpowers/plans/2026-09-25-where-typing-is-slow.md`, by typing
+  one letter in the same place in each kind of block: a paragraph 2 ms, a heading 1 ms, a
+  list item 1 ms, a table cell 3 ms — all the fast path — a one-line fenced code block 6 ms
+  and a **4.7 KB one 32 ms**, both the ordinary path, and display math not at all (its source
+  is highlighted, so no single text node holds the word). The rule is not what refuses a code
+  block: the *write* half needs one tagged text node, which every raw rendering lacks
+  (highlight.js spans for code and math, a revealed source for a link). So the cost that
+  matters is not the occasional structural keystroke but **every keystroke inside a raw
+  block**, and that is what the next design is for: write the text and re-render that one
+  span in place, instead of rebuilding the block — the DOM swap and its layout are ~20 of the
+  32 ms by P7's breakdown. `test/probes/typing-cost-by-kind.js` keeps the numbers honest.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then

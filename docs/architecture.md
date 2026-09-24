@@ -196,7 +196,13 @@ and then asks
 `editing/typed_text.ts` whether the edit maps
 into one text node whose `[data-text-from]` span spells the document's own
 characters, one for one. Both halves have to agree, and anything either is unsure
-of takes the ordinary path above, which is always correct. Because the rule reads
+of takes the ordinary path above, which is always correct. Which kinds that rules out is
+worth knowing, because it is not the rule that refuses them: the *write* needs one tagged
+text node, and everything the app renders as *source* is many — highlight.js spans for a
+fenced code block and for a formula, a revealed source span for a link. So a keystroke in
+any of those is a rebuild: measured, one letter costs 1–3 ms in a paragraph, a heading, a
+list item or a table cell, 6 ms in a small code block and **32 ms in a 4.7 KB one**
+(`test/probes/typing-cost-by-kind.js`). Because the rule reads
 one word of the text while a parse can turn on more, the fast path also captures
 the block's parse shape (from the parse the renderer already cached) and checks it
 once the typing stops: one coalesced check a burst, one parse a burst, and a block
