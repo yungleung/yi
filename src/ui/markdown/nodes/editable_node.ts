@@ -60,6 +60,11 @@ export abstract class EditableNodeComponent implements EditableMarkdownNode {
     element.classList.add('markdown-node');
     element.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
+      // A node's rendering never navigates: the app owns its clicks, and a rendering that
+      // happens to be an `<a>` — a footnote marker's `#fn-1` — would otherwise take the
+      // webview to the fragment, which is a page jump on a click that meant "edit this".
+      // (`nodes/link.ts` prevents it privately as well; this is the home for the rule.)
+      event.preventDefault();
       // Resolve the root before placing the caret: overrides (e.g. an image
       // revealing its source) may detach `this.element`.
       const root = this.element.closest('.prose') as HTMLElement | null;

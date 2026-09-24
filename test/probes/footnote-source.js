@@ -12,13 +12,45 @@
 
   await t.load('Body text[^1] here.\n\n[^1]: first note\n\n[^2]: second note\n');
   const marker = t.prose().querySelector('[data-footnote-ref]');
-  const box = marker.getBoundingClientRect();
-  marker.dispatchEvent(
+  check(
+    'the marker carries no tooltip',
+    marker.getAttribute('title') === null,
+    marker.getAttribute('title')
+  );
+  // The click a person makes is on the `[1]` inside the marker, and that element is an
+  // `<a href="#fn-1">` — so the click must not take the webview to the fragment, which
+  // scrolls the page to the note under the reader's hands.
+  const anchor = marker.querySelector('a');
+  const anchorBox = (anchor ?? marker).getBoundingClientRect();
+  const hashBefore = location.hash;
+  const onAnchor = new MouseEvent('click', {
+    bubbles: true,
+    cancelable: true,
+    clientX: anchorBox.left + anchorBox.width / 2,
+    clientY: anchorBox.top + anchorBox.height / 2
+  });
+  (anchor ?? marker).dispatchEvent(onAnchor);
+  await t.sleep(350);
+  check(
+    'a click on the marker`s own label does not follow its href',
+    onAnchor.defaultPrevented && location.hash === hashBefore,
+    { prevented: onAnchor.defaultPrevented, hash: location.hash, before: hashBefore }
+  );
+  check(
+    'and it opens the marker as its source',
+    t.prose().querySelector('.markdown-footnote-source')?.textContent === '[^1]',
+    t.prose().querySelector('.markdown-footnote-source')?.textContent ?? null
+  );
+
+  await t.load('Body text[^1] here.\n\n[^1]: first note\n\n[^2]: second note\n');
+  const second = t.prose().querySelector('[data-footnote-ref]');
+  const secondBox = second.getBoundingClientRect();
+  second.dispatchEvent(
     new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
-      clientX: box.left + box.width / 2,
-      clientY: box.top + box.height / 2
+      clientX: secondBox.left + secondBox.width / 2,
+      clientY: secondBox.top + secondBox.height / 2
     })
   );
   await t.sleep(350);

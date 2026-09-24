@@ -36,24 +36,30 @@ export class FootnoteDefinition extends EditableNodeComponent {
       'markdown-footnote text-sm flex items-start gap-2'
     );
 
-    const id = String(node.identifier ?? node.label ?? 'note');
-    const label = String(node.label ?? node.identifier ?? 'note');
-
-    const anchor = document.createElement('a');
-    anchor.id = `fn-${id}`;
-    anchor.className = 'mr-2 font-semibold inline-block align-top';
-    // The label as the author wrote it — `label`, not the normalised `identifier` —
-    // tagged as the block's own text from its first character, so the caret can be put
-    // in it and typing edits the document there (see `caret/offsets.ts`). A plain click
-    // edits it, ⌘-click jumps back to the marker.
-    anchor.textContent = `[^${label}]`;
-    anchor.dataset.textFrom = '0';
-    anchor.dataset.footnoteDef = id;
-    anchor.title = 'Click to edit the label, ⌘-click to jump to the marker';
-    this.element.appendChild(anchor);
-
-    this.element.appendChild(renderFootnoteBody(node));
+    this.element.append(renderFootnoteLabel(node), renderFootnoteBody(node));
   }
+}
+
+/**
+ * The `[^label]` a definition is named by, as the author wrote it: one function for the two
+ * places it is drawn — the notes run and the marker's preview card, which shows which note it
+ * is showing.
+ *
+ * It is tagged as the block's own text from its first character, so the caret can be put in it
+ * and typing edits the document there (see `caret/offsets.ts`); a plain click edits the label,
+ * ⌘-click jumps back to the marker. Its `id` is the name the marker links to, and `footnoteDef`
+ * is the normalised one the jump is asked for.
+ */
+export function renderFootnoteLabel(node: AstFootnoteDefinition): HTMLElement {
+  const id = String(node.identifier ?? node.label ?? 'note');
+  const label = String(node.label ?? node.identifier ?? 'note');
+  const anchor = document.createElement('a');
+  anchor.id = `fn-${id}`;
+  anchor.className = 'mr-2 font-semibold inline-block align-top';
+  anchor.textContent = `[^${label}]`;
+  anchor.dataset.textFrom = '0';
+  anchor.dataset.footnoteDef = id;
+  return anchor;
 }
 
 /**
@@ -97,7 +103,6 @@ export class FootnoteReference extends RevealableNodeComponent {
     // Both shapes are a jump target: the definition's label links back to the marker
     // by this name, and it names the marker whether or not the marker shows its text.
     this.element.dataset.footnoteRef = id;
-    this.element.title = 'Click to edit the label, ⌘-click to jump to the note';
     if (sourceView) {
       return;
     }

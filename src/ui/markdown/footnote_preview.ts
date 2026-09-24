@@ -20,7 +20,7 @@
 
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { footnoteOffsets } from './syntax/footnotes';
-import { renderFootnoteBody } from './nodes/footnote';
+import { renderFootnoteBody, renderFootnoteLabel } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
 import type { AstFootnoteDefinition } from './ast';
 import type { MarkdownBlock } from './document/blocks';
@@ -104,15 +104,18 @@ export function installFootnotePreview(context: EditorContext): void {
       return;
     }
     const element = document.createElement('div');
-    element.className = `${PREVIEW_CLASS} card bg-base-200 border border-base-300 shadow-lg`;
+    // The find bar's own shape: the same surface, shadow and `rounded-md` — they are the app's
+    // only floating surfaces, and they should not disagree about their corners.
+    element.className = `${PREVIEW_CLASS} flex items-start gap-2 rounded-md border border-base-300 bg-base-200 p-2 shadow-lg`;
     element.style.position = 'fixed';
     element.style.zIndex = '50';
     element.style.maxWidth = '34rem';
-    element.style.padding = '0.6rem 0.8rem';
     // Unlike the first version, the card takes the pointer: a note is there to be
     // read, selected, and linked out of.
     element.style.pointerEvents = 'auto';
+    // The marker first, as the notes run draws it, so the card says which note it is.
     element.append(
+      renderFootnoteLabel(definition.node),
       withRenderFrame(definition.block, () => renderFootnoteBody(definition.node))
     );
     element.addEventListener('mouseenter', keep);

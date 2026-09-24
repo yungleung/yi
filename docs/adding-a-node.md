@@ -92,6 +92,12 @@ function contentRange(source: string): { start: number; end: number } {
 A click on the rendering then enters the source at the end of that content, and the
 next click lands on the character clicked.
 
+A rendering never navigates, whatever element it is made of: the app owns a node's clicks, and
+an `<a href>` a rendering happens to be — a footnote marker's `#fn-1` — would otherwise take the
+webview to a fragment and scroll the page under the reader's hands. `nodes/editable_node.ts`
+prevents it for every node; if your rendering needs its own handler, do that there rather than
+in the node.
+
 ## 5. Prove it
 
 Write a probe in `test/probes/` that clicks the node, types a character, and asserts
