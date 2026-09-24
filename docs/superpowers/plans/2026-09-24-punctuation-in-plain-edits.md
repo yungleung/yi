@@ -345,3 +345,12 @@ processor that has no citation handler), so no walk types `@`. It is in
   or a heading's text goes the ordinary path — the rule allows it (it is past a complete
   marker) but the write half still refuses that boundary — and a table cell's text is
   plain only away from its edges, because a `|` is not in the alphabet.
+
+**Correction, later.** The first of those two residues was measured again when the roadmap
+finally listed it, and it is wrong: a caret at the very start of a list item's or a heading's
+text is **the fast path** (2 ms, block and text node kept — `test/probes/typing-cost-by-kind.js`,
+its two `text start` cases). The measurement behind the claim looked the block up by a
+hard-coded line number 0 while blocks are numbered from 1, so it compared against `undefined`
+and read every case as a rebuild. The table cell's residue is real, but it is about the
+*start* of a cell's text, not its edges: a cell's middle and end are the fast path, its start
+is not.

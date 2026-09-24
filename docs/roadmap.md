@@ -137,3 +137,31 @@ column below.
   it and every later call waited seconds. The marker is on it now,
   `test/checks/probe-markers.mjs` fails until a probe that opens a menu says so, and
   `docs/testing.md` has the symptom.
+
+## Accepted, for now
+
+Not tasks: each of these is a residue a phase handoff named and left on purpose, with what
+changing it would take. They are written down here so the ledger above and the handoffs agree
+— "the open list is empty" means these are decisions taken, not work forgotten.
+
+- **A caret at the very start of a table cell's text takes the ordinary path.** Its middle is
+  the fast path (3 ms) and so is its end; its start is not (10 ms, a rebuild) —
+  `test/probes/typing-cost-by-kind.js` measures all three. Changing it means teaching
+  `editing/typed_text.ts: plainRun` about a caret that sits on the cell's boundary rather than
+  inside one text node.
+- **The description-list line reader describes the plugin's shape.**
+  `syntax/parser.ts: readDescriptionLines` holds for the two forms `remark-deflist` makes —
+  a term with its `: ` detail on the next line, and the same pair split by a blank line — and
+  for the lists the plugin merges. It is a description of that plugin, not of markdown, so it
+  is the first thing to look at if the plugin's rule ever changes (P18, P19).
+
+One claim that *was* in this section, and in P17's handoff, turned out to be wrong when it was
+finally measured: **a caret at the very start of a list item's or a heading's text is not the
+ordinary path** — both are the fast path (2 ms, block and text node kept,
+`test/probes/typing-cost-by-kind.js`'s two `text start` cases). P17's measurement had looked
+the block up by a hard-coded line number 0, and blocks are numbered from 1, so it compared
+against `undefined` and read every case as a rebuild.
+
+One thing deliberately *not* in this list, because it is not a residue but a visible change
+waiting on a decision: the shape of a fast path for raw blocks — a local write into the
+highlighted span, re-highlighted when a burst stops — at the end of "Measure before deciding".
