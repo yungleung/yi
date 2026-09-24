@@ -50,3 +50,41 @@ npm run probe -- --fixture default-document.md test/probes/footnote-preview.js
 npm run probe -- --fixture default-document.md test/probes/footnote-jump-back.js
 npm run probe:all                               # 79/79 probes, 7 skipped
 ```
+
+---
+
+## Handoff — what this left
+
+**All four are done**, and the jump was not the revealable inconsistency it looked like: it was
+a *fragment navigation*.
+
+### What was measured before touching anything
+
+- The preview card's text was `The definition, with a note.` — no `[^1]`.
+- Clicking the marker's own `<a href="#fn-1">`: `defaultPrevented: false`, `location.hash`
+  `"" → "#fn-1"`, and in a long note `scrollTop 0 → 11`. Clicking the `<sup>` *around* it did
+  not — which is why every probe passed and a person saw a jump: the probes dispatched on the
+  `<sup>`, a person clicks the `[1]`.
+- Clicking the *definition's* label (the `[^1]` in the notes run) was already clean.
+
+### The changes
+
+1. `nodes/editable_node.ts`: a node's rendering never navigates — `preventDefault()` in the
+   click handler it already owns. `nodes/link.ts` had this privately, which is exactly why the
+   footnote marker, written like every other revealable node, was the only one that followed
+   its `href`. `docs/adding-a-node.md` now says so where a node author reads.
+2. `nodes/footnote.ts`: `renderFootnoteLabel(node)` — one function for the two places the
+   `[^label]` is drawn, the notes run and the card, which now says which note it is showing.
+3. Both markers lost their `title`s: the gestures are every other revealable node's, and those
+   carry none.
+4. The card wears the find bar's `rounded-md` and the same surface and shadow: measured, both
+   compute to 6 px, where the card was 16.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` 22/22.
+- A freshly started app and `npm run probe:all`: **79/79 probes, 7 skipped** — including the
+  link and revealable probes, which the `preventDefault` could have disturbed and did not.
+- The new assertions: the marker's own anchor click is `prevented: true` with the hash
+  unchanged, the card carries `[^1]` and `[^2]` for the markers that name them, the two floating
+  surfaces agree on their corners, and neither marker carries a tooltip.
