@@ -105,17 +105,24 @@ column below.
   `bridge: …` line are what tell the two apart.
 
 - **Where typing is slow** (the item this column used to call "the ordinary path's parse").
-  Measured in P23, as `docs/superpowers/plans/2026-09-25-where-typing-is-slow.md`, by typing
-  one letter in the same place in each kind of block: a paragraph 2 ms, a heading 1 ms, a
-  list item 1 ms, a table cell 3 ms — all the fast path — a one-line fenced code block 6 ms
-  and a **4.7 KB one 32 ms**, both the ordinary path, and display math not at all (its source
-  is highlighted, so no single text node holds the word). The rule is not what refuses a code
-  block: the *write* half needs one tagged text node, which every raw rendering lacks
-  (highlight.js spans for code and math, a revealed source for a link). So the cost that
-  matters is not the occasional structural keystroke but **every keystroke inside a raw
-  block**, and that is what the next design is for: write the text and re-render that one
-  span in place, instead of rebuilding the block — the DOM swap and its layout are ~20 of the
-  32 ms by P7's breakdown. `test/probes/typing-cost-by-kind.js` keeps the numbers honest.
+  Measured in P23 (`.../2026-09-25-where-typing-is-slow.md`) and P24
+  (`.../2026-09-25-code-you-can-type-into.md`). By kind, one letter in the same place: a
+  paragraph 2 ms, a heading 1 ms, a list item 1 ms, a table cell 3 ms, a one-line fenced code
+  block 4–6 ms — all the fast path — and a **4.7 KB fenced block 25–34 ms**, the ordinary
+  path, with display math not writable into at all (its source is highlighted, so no single
+  text node holds the word). The rule is not what refuses a code block: the *write* half needs
+  one tagged text node, which every raw rendering lacks (highlight.js spans for code and
+  math, a revealed source for a link). So the cost is not the occasional structural keystroke
+  but **every keystroke inside a raw block**.
+  **The design P23 named was built and measured out**: a write that re-renders the block's
+  own markup in place keeps the element and the highlighting, but it costs the same — 31 ms
+  against the rebuild's 25 ms — because the `innerHTML` swap invalidates exactly the layout
+  the element swap did (highlight.js is only 5–8 ms of it). What is left to try is the other
+  shape: write the character into the text node *inside* the highlighted span that holds it
+  (the plain write's own 0–1 ms patch) and re-highlight once the burst stops — which trades a
+  stale highlight for the length of a burst against the whole cost, and is a visible change
+  that wants a decision of its own. `test/probes/typing-cost-by-kind.js` keeps the numbers
+  honest, detached build included.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
