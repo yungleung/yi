@@ -39,6 +39,7 @@ import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { applyCodeIndent } from './editing/code';
+import { installFootnotePreview } from './footnote_preview';
 import { continueTableDown, moveTableCell } from './editing/table';
 import {
   routeContextMenu,
@@ -132,6 +133,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       true
     );
     this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
+    // Resting the pointer on a footnote marker shows the note it names, in a card the
+    // pointer cannot interact with (see `footnote_preview.ts`).
+    installFootnotePreview(this.context);
     // The context menu is routed to the table menu first, and to a footnote marker's
     // jump for the one gesture that arrives as a context menu rather than a click —
     // a Ctrl-click on macOS (see `click_routing.ts`).
