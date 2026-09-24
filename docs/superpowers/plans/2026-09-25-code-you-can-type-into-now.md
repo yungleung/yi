@@ -55,40 +55,31 @@ the repair belongs, because it is already one coalesced pass a burst.
    element's own characters (`caret/offsets.ts: positionInElementAt`, the inverse of the
    `textOffsetInElement` already there).
 
-## Part 2 — tasks
+## Part 2 — what happened
 
-### Task 1: the write
+- [x] The write was built: `fenceContent` with its check cases, `renderCode`, `elementFor`,
+  `positionInElementAt`, `codeWriteFor`, the second attempt in `applyEdit`, and the
+  re-highlight riding `scheduleVerify`'s timer (one coalesced pass a burst).
+- [x] The probe passed and proved all of it: a code keystroke takes the fast path, the block
+  and its `<code>` element survive, the letters reach the document in order, a letter at a
+  code line's start still rebuilds (the rule's line edge), a quote's markup is **stale until
+  the burst stops** and then identical to a fresh render, with the caret surviving the
+  repair (proved by typing the next character).
+- [x] Then the number it was for: **28 ms, against the rebuild's 30 ms.** P26's simulation
+  measured the patch alone and the browser answered its height read from a layout it had not
+  re-run; the app's path also measures the block, restores the caret and lays the page out
+  again. The write is therefore *equivalent in cost and worse in behaviour* (stale markup for
+  a burst), so it was reverted, like P24's.
+- [x] What is kept: the correction to P26's item in `docs/roadmap.md`, a warning in
+  `code-local-write.js` that its `writeMs` is a floor rather than a forecast, and the next
+  question — a code block's keystroke spends 15–30 ms on something that is neither the parse,
+  nor the block swap, nor its horizontal overflow container (18 ms → 15 ms when forced
+  visible by hand).
 
-- [ ] `fenceContent` with its check cases; `renderCode`; `elementFor`; `positionInElementAt`;
-  `codeWriteFor`; the attempt and the branch; the re-highlight on the verify timer.
-
-```bash
-npx tsc --noEmit && npm run check
-```
-
-### Task 2: the proof, in the app
-
-- [ ] `test/probes/code-typing.js`: a letter inside a code line keeps the block and the
-  `<code>` element, reaches the document, and leaves the caret where the next letter goes
-  (proved by typing it); a letter at the *start* of a code line still rebuilds (the rule's
-  line edge); a **quote** shows stale markup and is **repaired when the burst stops**, with
-  the caret still where it was.
-
-```bash
-npm run probe -- --fixture default-document.md test/probes/code-typing.js
-```
-
-### Task 3: Acceptance, docs, handoff, merge
-
-- [ ] `docs/architecture.md` (the fast path has two places it can write), `docs/roadmap.md`
-  (the item closes with the numbers), the handoff.
+## Part 3 — evidence
 
 ```bash
-npx tsc --noEmit
-npm run check                                   # 22/22 checks
-npm run tauri dev                               # terminal 1, freshly started
-npm run probe:all                               # 78/78 probes, 7 skipped
-git checkout main
-git merge --no-ff codex/code-local-write -m "merge: a keystroke in a code block writes, and the markup catches up (typing)"
-git rev-parse HEAD^{tree} codex/code-local-write^{tree}   # must be equal
+npx tsc --noEmit            # clean
+npm run check               # 22/22 checks
+npm run probe:all           # 77/77 probes, 7 skipped (no code change ships)
 ```

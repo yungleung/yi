@@ -16,6 +16,12 @@
  * the wrong styling when it is not, and what the repair costs when the burst ends.
  *
  * @covers src/ui/markdown/nodes/code_block.ts, src/ui/markdown/editing/typed_text.ts
+ *
+ * **Read `writeMs` with care.** It is the patch alone — a text node and one height read — and
+ * the browser can answer that read from a layout it has not re-run. The app's own path (P27
+ * built it and reverted it) measured 28 ms against the rebuild's 30: it also measures the
+ * block, restores the caret and lets the page lay out again. The staleness numbers here are
+ * what this probe is for; its write figure is a floor, not a forecast.
  */
 (async () => {
   const t = window.__t;
