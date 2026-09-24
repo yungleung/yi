@@ -48,28 +48,36 @@ export class FootnoteDefinition extends EditableNodeComponent {
     anchor.title = 'Jump to the marker this note is attached to';
     this.element.appendChild(anchor);
 
-    const content = document.createElement('span');
-    content.className = 'inline';
+    this.element.appendChild(renderFootnoteBody(node));
+  }
+}
 
-    // Flatten paragraph children to inline content so the number and text stay on one line.
-    for (const child of node.children) {
-      if (child.type === 'paragraph') {
-        for (const grandChild of child.children) {
-          const component = createComponent(grandChild);
-          if (component) {
-            content.appendChild(component.element);
-          }
-        }
-      } else {
-        const component = createComponent(child);
+/**
+ * A definition's content, inline: what the notes run shows after the label, and what
+ * the marker's preview shows on its own (see `footnote_preview.ts`). One renderer for
+ * both, so a note cannot look like two different things.
+ */
+export function renderFootnoteBody(node: AstFootnoteDefinition): HTMLElement {
+  const content = document.createElement('span');
+  content.className = 'inline';
+
+  // Flatten paragraph children to inline content so the number and text stay on one line.
+  for (const child of node.children) {
+    if (child.type === 'paragraph') {
+      for (const grandChild of child.children) {
+        const component = createComponent(grandChild);
         if (component) {
           content.appendChild(component.element);
         }
       }
+    } else {
+      const component = createComponent(child);
+      if (component) {
+        content.appendChild(component.element);
+      }
     }
-
-    this.element.appendChild(content);
   }
+  return content;
 }
 
 /**
