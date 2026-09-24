@@ -81,9 +81,29 @@
     'and the note is the one it names, rendered',
     shown !== null &&
       shown.textContent.includes('A note with a link.') &&
+      shown.textContent.includes('[^1]') &&
       shown.querySelector('em, i') !== null &&
       shown.querySelector('a') !== null,
     shown ? shown.textContent : null
+  );
+  check(
+    'and the card says which note it is showing, as the notes run does',
+    shown !== null && shown.querySelector('[data-footnote-def]')?.textContent === '[^1]',
+    shown ? shown.querySelector('[data-footnote-def]')?.textContent ?? null : null
+  );
+  // The two floating surfaces should not disagree about their corners: open the find bar and
+  // compare what the browser says each is rounded by.
+  const { runCommand } = await t.app('/src/ui/markdown/commands/registry.ts');
+  await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'find' });
+  await t.sleep(250);
+  const bar = document.querySelector('[data-find-bar]');
+  const barRadius = bar ? getComputedStyle(bar).borderRadius : null;
+  runCommand('find:close');
+  await t.sleep(150);
+  check(
+    'and its corners are the find bar`s',
+    shown !== null && barRadius !== null && getComputedStyle(shown).borderRadius === barRadius,
+    { card: shown ? getComputedStyle(shown).borderRadius : null, bar: barRadius }
   );
   check(
     'the card points at the marker it came from',
@@ -121,7 +141,8 @@
   await hover(markers[1]);
   check(
     'each marker shows its own note',
-    card()?.textContent.trim() === 'The second note.',
+    card()?.textContent.includes('The second note.') === true &&
+      card()?.querySelector('[data-footnote-def]')?.textContent === '[^2]',
     card() ? card().textContent : null
   );
 

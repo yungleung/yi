@@ -30,6 +30,11 @@
   await t.load(doc);
   const label = t.prose().querySelector('[data-footnote-def]');
   check('the label shows the characters the author wrote', label?.textContent === '[^1]', label?.textContent);
+  check(
+    'and carries no tooltip, like every other revealable node',
+    label?.getAttribute('title') === null,
+    label?.getAttribute('title')
+  );
 
   // A plain click puts the caret in the label: typing then edits the document there.
   click(label, false);
