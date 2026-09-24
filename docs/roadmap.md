@@ -198,3 +198,25 @@ against `undefined` and read every case as a rebuild.
 One thing deliberately *not* in this list, because it is not a residue but a visible change
 waiting on a decision: the shape of a fast path for raw blocks — a local write into the
 highlighted span, re-highlighted when a burst stops — at the end of "Measure before deciding".
+
+## Where a code block's keystroke goes
+
+Measured in P28, as `docs/superpowers/plans/2026-09-25-keystroke-parts.md`, by timing the
+app's own methods from inside a probe (`test/probes/keystroke-parts.js`):
+
+| One letter | Keystroke | `renderChanged` | Parse calls | Detached build |
+| --- | --- | --- | --- | --- |
+| inside an 80-line fenced code block | **31 ms** | **24 ms** | 12 calls, 4 ms (all cache hits) | 11 ms |
+| inside a paragraph | **3 ms** | — | 1 call | 2 ms |
+
+The paragraph is written, not rendered; the code block is rebuilt, and the rebuild is the
+whole cost. Inside its 24 ms, the detached build (highlight.js and its DOM) is 11 ms, so the
+rest is the swap and the window sync — and, more to the point, **both write designs avoided
+`renderChanged` entirely and still cost ~28 ms** (P24's markup re-render, P27's text write),
+which leaves the layout that *any* change to that block triggers: an 80-line block of this
+shape holds a few hundred highlight spans to re-lay, against a paragraph's one line.
+
+**The next measurement** is whether that span count is the cost: force the same text change
+into the element with the spans and without them, and time a forced layout of each. If the
+spans are it, the designs that follow are about the markup (fewer spans, or unhighlighted
+while a burst runs — the trade-off P26 measured) rather than about the write.
