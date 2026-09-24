@@ -135,6 +135,10 @@ class BlockView implements MarkdownBlock {
   readonly format?: 'yaml' | 'toml';
   readonly text: string;
   readonly index: BlockIndex;
+  declare readonly lineStart: number;
+  declare readonly lineEnd: number;
+  declare readonly charStart: number;
+  declare readonly charEnd: number;
 
   constructor(
     index: BlockIndex,
@@ -146,22 +150,23 @@ class BlockView implements MarkdownBlock {
     this.kind = kind;
     this.text = text;
     this.format = format;
-  }
-
-  get lineStart(): number {
-    return this.index.lineOf(this);
-  }
-
-  get lineEnd(): number {
-    return this.index.endLineOf(this);
-  }
-
-  get charStart(): number {
-    return this.index.startOf(this);
-  }
-
-  get charEnd(): number {
-    return this.index.endOf(this);
+    // Where the block is, as *own* properties: they are still derived — every read
+    // asks the index — but a caller that copies a block gets what it read.
+    // `virtual_block_renderer.ts` spreads one into the DOM factory, and a prototype
+    // getter does not survive a spread.
+    const derived: Record<string, () => number> = {
+      lineStart: () => index.lineOf(this),
+      lineEnd: () => index.endLineOf(this),
+      charStart: () => index.startOf(this),
+      charEnd: () => index.endOf(this)
+    };
+    for (const [name, read] of Object.entries(derived)) {
+      Object.defineProperty(this, name, {
+        configurable: true,
+        enumerable: true,
+        get: () => read.call(this)
+      });
+    }
   }
 }
 

@@ -181,6 +181,14 @@ const reuse = [
   // is now, so comparing them to their old values would ask it where it used to be.
   JSON.stringify(segments(grown)) === JSON.stringify(segments(splitBlocks('aX\n\nb\n\nc\n')))
 ];
+// A block's positions are own properties, so a copy carries them: the renderer
+// spreads one into the DOM factory, and a prototype getter would not survive that.
+const copied = { ...reworded[0] };
+reuse.push(
+  copied.lineStart === reworded[0].lineStart &&
+    copied.charEnd === reworded[0].charEnd &&
+    copied.text === reworded[0].text
+);
 if (reuse.every(Boolean)) {
   console.log('ok   an edit above keeps the blocks below');
 } else {
