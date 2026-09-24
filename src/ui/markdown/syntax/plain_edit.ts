@@ -78,6 +78,15 @@ function lineAt(text: string, at: number): string {
   return text.slice(start, end === -1 ? text.length : end);
 }
 
+/** How many spaces the line ends with: two of them are a hard break. */
+function trailingSpaces(line: string): number {
+  let count = 0;
+  while (count < line.length && line[line.length - 1 - count] === ' ') {
+    count += 1;
+  }
+  return count;
+}
+
 /**
  * The text from the start of the run `from` sits in to the end of the run `to` ends in,
  * read as one span. The characters *between* the two ends are the run's too — the ones
@@ -150,11 +159,14 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   ) {
     return false;
   }
-  // A run of two spaces does not render as the characters say (`nodes/text.ts:
-  // preserveSpaces` turns the second into a no-break space), and the two at the end of
-  // a line are a hard break. The line is the scope, because the run an edit straddles
-  // is not the run a character of it sits in (`ax, \n` + `. ` is a hard break).
-  if (/ {2}/.test(lineAt(after, from))) {
+  // The spaces of the line the edit is in are the line's own business: a run of two does
+  // not render as the characters say (`nodes/text.ts: preserveSpaces` turns the second
+  // into a no-break space), and the two at the end of a line are a hard break — a
+  // construct a character typed *between* them would quietly delete. The line is the
+  // scope, because the run an edit straddles is not the run a character of it sits in
+  // (`ax, \n` + `. ` is a hard break).
+  const line = lineAt(after, from);
+  if (/ {2}/.test(line) || trailingSpaces(line) !== trailingSpaces(lineAt(before, from))) {
     return false;
   }
   // The characters beside the edit. An asterisk next to the caret is an emphasis

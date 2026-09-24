@@ -13,7 +13,6 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-plain-edit-'));
-/** Bundles one module with rolldown and imports it, the way every check does. */
 const load = async (input, name) => {
   const bundle = await rolldown({ input, logLevel: 'silent' });
   const { output } = await bundle.generate({ format: 'esm' });
@@ -187,6 +186,13 @@ check('typing inside a www run is not plain',
 check('a full stop and a space before a trailing space is not plain',
   isPlainEdit('ax, \n', 3, 3, '. '), false);
 check('a space before a trailing space is not plain', isPlainEdit('ax \n', 2, 2, ' '), false);
+check('a character between the two spaces of a hard break is not plain',
+  isPlainEdit('one two  \n', 8, 8, 'x'), false);
+check('deleting one of the two spaces of a hard break is not plain',
+  isPlainEdit('one two  \n', 8, 9, ''), false);
+check('and a line holding a hard break is not plain at all',
+  isPlainEdit('one two  \n', 7, 7, 'x'), false);
+check('but a line with one trailing space still is', isPlainEdit('one two \n', 7, 7, 'x'), true);
 
 // The property: whatever the rule accepts must parse to the same shape.
 const documents = [
