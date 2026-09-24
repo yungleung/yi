@@ -11,10 +11,10 @@
  *
  * May import: the caret, the offsets mapping (`caret/offsets.ts`,
  * `caret/dom_position.ts`), the renderer, the state, `source_mode.ts` and the
- * syntax rules the typing fast path reads (`syntax/plain_edit.ts`,
- * `syntax/node_shape.ts`). Upholds: every command funnels its change through
- * `applyEdit`, so the change → re-render → place-the-caret sequence is
- * identical everywhere.
+ * syntax rules it reads (`syntax/plain_edit.ts`, `syntax/node_shape.ts`, and
+ * `syntax/footnotes.ts` for the shape of a definition's label). Upholds: every
+ * command funnels its change through `applyEdit`, so the change → re-render →
+ * place-the-caret sequence is identical everywhere.
  */
 
 import {
@@ -27,6 +27,7 @@ import { moveShownSource, setShownRange, shownSourceHeld, withHeldShownSource } 
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
+import { markerShape } from '../syntax/footnotes';
 import { isPlainEdit } from '../syntax/plain_edit';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
@@ -279,25 +280,27 @@ function sourceRangeAt(
   if (!block) {
     return null;
   }
-  const node = sourceNodeAt(state.getBlockContent(block), offset - block.charStart);
-  const position = (
-    node as { position?: { start?: { offset?: number }; end?: { offset?: number } } } | null
-  )?.position;
-  if (position?.start?.offset === undefined || position.end?.offset === undefined) {
-    return null;
-  }
-  return {
-    from: block.charStart + position.start.offset,
-    to: block.charStart + position.end.offset
-  };
+  const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);
+  return range === null
+    ? null
+    : { from: block.charStart + range.start, to: block.charStart + range.end };
 }
 
 /**
- * The node at this block-relative offset whose source can stand in for its
- * rendering, or null. The tree is walked in document order, so the outermost
- * such node wins: a caret inside a link inside a paragraph belongs to the link.
+ * The source at this block-relative offset whose markdown can stand in for its
+ * rendering, as its range in the block's own text, or null. The tree is walked in
+ * document order, so the outermost such node wins: a caret inside a link inside a
+ * paragraph belongs to the link.
+ *
+ * A definition's label is the one source that is not a whole node: the node's range
+ * covers the note as well as its marker, and the note's text is rendered and editable
+ * where it sits, so only the `[^label]` at the definition's head is asked for by name
+ * (see `syntax/footnotes.ts: markerShape`).
  */
-function sourceNodeAt(nodes: RootContent[], offset: number): RootContent | null {
+function sourceRangeIn(
+  nodes: RootContent[],
+  offset: number
+): { start: number; end: number } | null {
   for (const node of nodes) {
     const position = (node as { position?: { start?: { offset?: number } } }).position;
     if (position?.start?.offset === undefined || offset < position.start.offset) {
@@ -308,10 +311,17 @@ function sourceNodeAt(nodes: RootContent[], offset: number): RootContent | null 
       continue;
     }
     if (showsSource(node.type)) {
-      return node;
+      return end === undefined ? null : { start: position.start.offset, end };
+    }
+    if (node.type === 'footnoteDefinition') {
+      const label = String((node as { label?: string }).label ?? '');
+      const marker = markerShape(label);
+      return offset < position.start.offset + marker.end
+        ? { start: position.start.offset, end: position.start.offset + marker.end }
+        : null;
     }
     const children = (node as { children?: RootContent[] }).children;
-    return Array.isArray(children) ? sourceNodeAt(children, offset) : null;
+    return Array.isArray(children) ? sourceRangeIn(children, offset) : null;
   }
   return null;
 }

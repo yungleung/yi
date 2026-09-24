@@ -92,6 +92,14 @@ function contentRange(source: string): { start: number; end: number } {
 A click on the rendering then enters the source at the end of that content, and the
 next click lands on the character clicked.
 
+If what you show is only *part* of the node — a footnote definition's node covers the
+whole note, and only the `[^label]` at its head is the label — then `sourceViewFor`
+cannot ask the question for you, because `isShownSource` compares the node's whole range.
+Ask `source_mode.ts: isShownSourceRange` with your own block-relative range, name that
+range for the caret in `editing/context.ts: sourceRangeIn`, and keep the shape of the
+part in one place under `syntax/` (`syntax/footnotes.ts: markerShape` is the worked
+example, and `test/probes/footnote-jump-back.js` is its proof).
+
 A rendering never navigates, whatever element it is made of: the app owns a node's clicks, and
 an `<a href>` a rendering happens to be — a footnote marker's `#fn-1` — would otherwise take the
 webview to a fragment and scroll the page under the reader's hands. `nodes/editable_node.ts`
