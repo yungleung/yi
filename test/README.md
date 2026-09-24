@@ -19,6 +19,7 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs |
+| `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |

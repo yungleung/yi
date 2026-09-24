@@ -156,7 +156,7 @@ check('and the block it replaced is not asked about', index.startAt(1), 3);
 const spliced = [blocks[0], longer, { text: 'abcdefg', span: 3 }, { text: 'h', span: 1 }, blocks[3]];
 index.rebuild(spliced);
 check('a rebuild renumbers the tail', spliced.map((_, at) => index.startAt(at)), [0, 3, 11, 18, 19]);
-check('and its line numbers', spliced.map((_, at) => index.lineAt(at)), [1, 2, 5, 8, 9]);
+check('and its line numbers', spliced.map((_, at) => index.lineAt(at)), [1, 2, 4, 7, 8]);
 
 index.rebuild(blocks);
 check('a rebuild puts it back', starts(index), [0, 3, 8, 10]);
