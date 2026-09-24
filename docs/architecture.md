@@ -135,6 +135,22 @@ with the two texts exchanged. The document text stays the only source of truth �
 the log is a *derivation* of it, and at any moment replaying the edits below the
 cursor from the loaded text reproduces the text in the editor.
 
+An edit also carries **the caret it started from and the one it left**
+(`caretBefore`, `caretAfter`), so undoing a change puts the caret back where the
+author was when they made it, rather than where the reader happens to be when they
+ask for the undo — and redoing puts it where the change left off. An edit recorded
+without carets, which is the whole-document `setText` a format or a find-and-replace
+uses, leaves the caret where it is; those commands place their own selection
+afterwards.
+
+Consecutive keystrokes of one kind **run together into one step**: a letter extends
+a run, the first character that is not a letter ends it — so the space after a word
+belongs to that word's step, and so does a `。` — and the boundary is `\p{L}`, any
+script's letters, with a run capped at `STEP_LIMIT` characters so a language that
+does not write spaces cannot make one undo of a paragraph. Backspaces run together
+the same way; a paste, an input method's commit, a newline, a format or any other
+command is a step of its own and ends whatever run was open.
+
 Two rules keep that true, and they are the ones to preserve when touching this
 area:
 

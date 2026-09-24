@@ -98,7 +98,7 @@ edit replaced one.
   `replaceRange(from, to, replacement, options?: { carets?: { before: number; after: number } })`;
   `undo(): DocumentEdit | null` and `redo(): DocumentEdit | null`.
 
-- [ ] **Step 1: The carets on the edit, and through the inverse**
+- [x] **Step 1: The carets on the edit, and through the inverse**
 
 ```ts
 export interface DocumentEdit {
@@ -130,7 +130,7 @@ export function invert(edit: DocumentEdit): DocumentEdit {
 }
 ```
 
-- [ ] **Step 2: Record them, hand the edit back, and place the caret from it**
+- [x] **Step 2: Record them, hand the edit back, and place the caret from it**
 
 `state.ts`: `replaceRange(from, to, replacement, options: { carets?: { before: number; after: number } } = {})`
 builds `{ from, to, removed, inserted, caretBefore: options.carets?.before, caretAfter: options.carets?.after }`
@@ -156,7 +156,7 @@ passes `{ carets: { before, after: target } }`.
     const target = Math.min(remembered ?? fallback, this.state.getText().length);
 ```
 
-- [ ] **Step 3: The check, and the run**
+- [x] **Step 3: The check, and the run**
 
 `check-history.mjs` gains: `invert` swaps the carets (an edit with both, and one with
 neither, whose inverse has neither); an edit recorded with carets is handed back by
@@ -165,7 +165,7 @@ neither, whose inverse has neither); an edit recorded with carets is handed back
 Run: `node test/checks/check-history.mjs && node test/run-checks.mjs`
 Expected: green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/document/history.ts src/ui/markdown/document/state.ts src/ui/markdown/editing/context.ts src/ui/markdown/markdown_editor.ts test/checks/check-history.mjs
@@ -190,7 +190,7 @@ git commit -m "feat(document): an edit remembers the caret it started from"
   `replaceRange(…, options?: { carets?; kind?: EditKind })`;
   `applyEdit(…, kind?: EditKind)`.
 
-- [ ] **Step 1: The rule, in the check first (RED)**
+- [x] **Step 1: The rule, in the check first (RED)**
 
 ```js
 const { coalesceRun } = history;
@@ -223,7 +223,7 @@ run is the first edit's `caretBefore` and the last one's `caretAfter`.)
 Run: `node test/checks/check-history.mjs`
 Expected: FAIL — `coalesceRun` is not a function.
 
-- [ ] **Step 2: The rule, and the run in the History**
+- [x] **Step 2: The rule, and the run in the History**
 
 ```ts
 /** What a keystroke was: a run of one kind becomes one undo step. */
@@ -282,7 +282,7 @@ and, when the kind is not `other` and matches, replaces the last entry with
 `coalesceRun(last, edit, kind)` when it is not null; every other record pushes a new
 entry and resets `lastKind`.
 
-- [ ] **Step 3: The commands declare their kind**
+- [x] **Step 3: The commands declare their kind**
 
 `editing/text_commands.ts`: `insertText` calls
 `applyEdit(context, offsets.from, offsets.to, text, undefined, 'typing')` and
@@ -294,7 +294,7 @@ keeps the default, which is a step of its own and ends any run.
 Run: `node test/checks/check-history.mjs && node test/run-checks.mjs`
 Expected: green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/document/history.ts src/ui/markdown/document/state.ts src/ui/markdown/editing/context.ts src/ui/markdown/editing/text_commands.ts test/checks/check-history.mjs
@@ -311,7 +311,7 @@ git commit -m "feat(document): a word of typing is one undo step"
 
 - Produces: the phase's evidence.
 
-- [ ] **Step 1: The probe**
+- [x] **Step 1: The probe**
 
 ```js
 /**
@@ -385,21 +385,21 @@ The caret starts at the end of `one`, so the typing goes there: one undo takes b
 Run: `npm run probe -- test/probes/undo-typing.js`
 Expected: `failed: []`.
 
-- [ ] **Step 2: The probes this changes, and the rest of the suite**
+- [x] **Step 2: The probes this changes, and the rest of the suite**
 
 One at a time: `regression-undo`, `undo-after-scroll`, `paste-blocks`,
 `empty-line-editing`, `table-cell-typing`, `edit-stability`, `plain-edit-parse`.
 Expected: the same results, except where a probe counted keystrokes as steps — read
 each one's report rather than assuming.
 
-- [ ] **Step 3: The docs**
+- [x] **Step 3: The docs**
 
 `docs/architecture.md`'s undo/redo paragraph: an edit remembers the caret it started
 from and the one it left, and a run of typing or deleting is one step, with the
 letter/`STEP_LIMIT` rule and the note that it is script-neutral.
 `docs/roadmap.md`: the undo-ergonomics item moves to Closed with what it did.
 
-- [ ] **Step 4: Acceptance, handoff, merge**
+- [x] **Step 4: Acceptance, handoff, merge**
 
 ```bash
 npx tsc --noEmit
@@ -419,3 +419,46 @@ git rev-parse HEAD^{tree} codex/undo-ergonomics^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-24 — undo that remembers
+
+**What changed.** `DocumentEdit` carries `caretBefore` and `caretAfter`; `invert`
+swaps them with the text, `state.replaceRange` takes them from `applyEdit` (which
+already reads the caret before the edit and holds the target after it), and
+`applyHistory` places the caret from the edit it applied — so undoing returns the
+caret to where the change was made and redoing to where it left off. `undo()` and
+`redo()` hand back that edit instead of `true`; every caller's truthiness check still
+reads correctly, and `check-history.mjs` says what they return now. An edit recorded
+without carets — the whole-document `setText` a format or a find-and-replace uses —
+keeps the old clamp, because those commands place their own selection afterwards.
+
+**The step rule**, in `history.ts` for the check to drive: one run per kind
+(`typing`, `deleting`, `other`), merging only when the next edit is adjacent in the
+direction that kind grows — `next.from` just past the previous insertion, or a
+deletion meeting the previous one's edge (Backspace) or repeating at its caret
+(Delete). For typing the run is a **word**: a letter (`\p{L}`, any script's) extends
+it, the first character that is not a letter belongs to it and closes it, and a run
+stops at `STEP_LIMIT = 24` characters so a language that writes no spaces cannot make
+one undo of a paragraph. A multi-character insertion — a paste, and an input
+method's commit when the editor learns to take one — is never part of a run. `other`
+is a step of its own and ends whatever run was open. No timers: a caret jump ends a
+run by not being adjacent.
+
+**The probes.** `undo-typing.js` types "hello world" and asserts the two steps (one
+undo takes "world", the next takes "hello " and the space the author typed, next to
+the space the document already had), then types in one place, leaves, undoes and
+types again to prove where the caret landed — the only way a caret can be proved.
+`inline-math-source.js` needed a line of setup: a previous round ends with an undo,
+and an undo now leaves the caret inside the formula it edited, so the next round has
+to click away before it can click the rendering. That is the phase working, and it
+is worth noticing that the suite's only regression was a probe *learning* it.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` 20/20, a freshly started
+app and `npm run probe:all` **68/68 (6 skipped)**.
+
+**What is left.** Coalescing *across* kinds (the composed step that trims a run's own
+text when a Backspace follows typing), and restoring the *selection* a replaced edit
+covered rather than a caret at its start. Both are the same machinery with more
+cases; neither is needed for the ergonomics this phase was for.

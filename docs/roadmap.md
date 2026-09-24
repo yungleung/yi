@@ -24,6 +24,11 @@ elements) unless it says otherwise.
   glued to a URL's left turns it into an autolink) and refuses a run of two spaces.
   `docs/superpowers/plans/2026-09-23-spaces-in-plain-edits.md` has the numbers and
   the cases that stay refused: a destination, a label, a line edge, a marker.
+- **Undo ergonomics** (P5's second and third follow-ons). Landed in P12: an edit
+  carries the caret it started from and the one it left, so undo returns to where the
+  author was; and a run of typing or deleting is one step, with a letter (`\p{L}`, any
+  script's) as the step boundary and `STEP_LIMIT` as the cap for scripts that write no
+  spaces. `docs/superpowers/plans/2026-09-24-undo-ergonomics.md` has the rule.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -35,12 +40,7 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
-1. **Undo ergonomics** (P5's second and third follow-ons). `caretBefore` and
-   `caretAfter` on the edit, so undo lands where the author was; and coalescing, so
-   a typing burst is one step with a rule for when a step ends (a pause, a block
-   change, a non-typing command). Both are behaviour changes, and they belong in one
-   phase: a coalesced step wants the caret of each end.
-2. **The footnote gap.** A footnote reference cannot be clicked into and edited —
+1. **The footnote gap.** A footnote reference cannot be clicked into and edited —
    a click routes to the jump. A small feature of its own, not a rendering question.
 
 ## Measure before deciding
