@@ -224,6 +224,7 @@ reached in a way the next person can copy:
 | Whether a node's markdown can stand in for its rendering | the `showsSource` flag in `registry.ts: registerComponent` | `docs/adding-a-node.md`, step 4 |
 | Which source is shown, and where a click enters it | `source_mode.ts`, with `nodes/revealable_node.ts` | `docs/adding-a-node.md`, step 4 |
 | A footnote marker that can be clicked into | `nodes/footnote.ts`, `click_routing.ts` | a click opens the label's source (`[^label]`), Ctrl-click (and ⌘-click, and the `contextmenu` macOS makes of it) jumps to the note; a definition's label still jumps, because its own label is not editable yet |
+| What a marker shows while the pointer rests on it | `footnote_preview.ts`, with `nodes/footnote.ts: renderFootnoteBody` | a read-only card holding the note the marker names, rendered by the same components the notes run uses and read from the *document* (a definition's block is usually not mounted); it appears after a 200 ms dwell and leaves on mouseout, scroll, click or `Escape` |
 | A command the author can ask for | the id in `commands/registry.ts`, the work registered in `markdown_editor.ts: registerCommandEvents`, the trigger | `docs/adding-a-command.md` |
 | How the document splits into blocks | `document/blocks.ts` | a task in the block model, plus `test/checks/check-blocks.mjs` |
 | A pure rule about markdown | the matching `syntax/*.ts`, named in the one-fact-one-home table above | `docs/testing.md` — rule-shaped means `test/checks/` |

@@ -81,7 +81,7 @@ itself focusable), and the definition's own label, which is still not editable.
 - Produces: `renderFootnoteBody(node: AstFootnoteDefinition): HTMLElement` and
   `installFootnotePreview(context: EditorContext): void`.
 
-- [ ] **Step 1: The body, in one place**
+- [x] **Step 1: The body, in one place**
 
 In `nodes/footnote.ts`, lift the content building out of the constructor:
 
@@ -112,7 +112,7 @@ export function renderFootnoteBody(node: AstFootnoteDefinition): HTMLElement {
 
 and have `FootnoteDefinition`'s constructor append `renderFootnoteBody(node)`.
 
-- [ ] **Step 2: The preview module**
+- [x] **Step 2: The preview module**
 
 ```ts
 /**
@@ -160,18 +160,18 @@ function bodyNodeFor(context: EditorContext, label: string): {
 }
 ```
 
-- [ ] **Step 3: Install it**
+- [x] **Step 3: Install it**
 
 In `markdown_editor.ts`'s constructor, beside the click routing:
 `installFootnotePreview(this.context);`
 
-- [ ] **Step 4: Run the app, by hand and by probe**
+- [x] **Step 4: Run the app, by hand and by probe**
 
 `npm run tauri dev`, open a note with footnotes, hover a marker: the card appears
 after a moment with the note's text, and leaves when the pointer does. Then Task 2's
 probe.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/nodes/footnote.ts src/ui/markdown/footnote_preview.ts src/ui/markdown/markdown_editor.ts
@@ -188,7 +188,7 @@ git commit -m "feat(footnote): a marker shows its note when the pointer rests on
 
 - Produces: the phase's evidence.
 
-- [ ] **Step 1: The probe**
+- [x] **Step 1: The probe**
 
 ```js
 /**
@@ -256,14 +256,14 @@ git commit -m "feat(footnote): a marker shows its note when the pointer rests on
 Fill any expectation in from a run rather than guessing, and prefer the exact strings
 the app produces.
 
-- [ ] **Step 2: Run it, and the neighbours**
+- [x] **Step 2: Run it, and the neighbours**
 
 `npm run probe -- test/probes/footnote-preview.js` → `failed: []`, then the footnote
 probes one at a time: `footnote-source`, `footnote-jump`, `footnote-jump-back`,
 `footnote-button`, `footnote-notes-run`, `footnote-enter`, `footnote-block` — the
 preview must not have disturbed any of them.
 
-- [ ] **Step 3: Index it, and commit**
+- [x] **Step 3: Index it, and commit**
 
 `test/README.md`: seventy-five probes become seventy-six.
 
@@ -274,12 +274,12 @@ git commit -m "test(footnote): rest on a marker and read its note"
 
 ### Task 3: Acceptance, docs, handoff, merge
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/architecture.md`: the footnote row of the extension table gains the preview —
 where the text comes from, that it is read-only, and the dwell/hide rule.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -288,7 +288,7 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 70/70 probes, 6 skipped
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 Append to this plan: what changed, where the text comes from and why it is not the
 rendered notes run, the card's manners, and what is left (an interactive card).
@@ -298,7 +298,7 @@ git add docs/architecture.md docs/superpowers/plans/2026-09-24-footnote-preview.
 git commit -m "docs: close the footnote preview handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -307,3 +307,40 @@ git rev-parse HEAD^{tree} codex/footnote-preview^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-24 — resting on a marker reads its note
+
+**What changed.** `nodes/footnote.ts` grew `renderFootnoteBody(node)`, the content
+span `FootnoteDefinition` was already building — one renderer for the notes run and
+for the preview, so a note cannot look like two different things. A new module,
+`footnote_preview.ts`, watches the editor's content view: a pointer on
+`[data-footnote-ref]` starts a 200 ms dwell, and then one card appears — appended to
+the page rather than inside the scroller, `position: fixed`, positioned under its
+marker and clamped into the window, `pointer-events: none` so it can never take a
+click. It hides on leaving the marker, on scroll, on a click and on `Escape`. Two
+silences: nothing while the marker shows its own source (that is the author editing
+the label) and nothing for a label the document does not define.
+
+**Where the text comes from.** The document, not the notes run:
+`syntax/footnotes.ts: footnoteOffsets` says where the definition body starts, the
+block there is parsed like any block, and its body is rendered inside the definition
+block's render frame. The rendered notes run itself would be the wrong source — a
+definition's block is usually not mounted at all.
+
+**The probe.** `footnote-preview.js` checks that the card appears with the note
+*rendered* (the italic and the link are elements, not characters), that it points at
+the marker it came from, that it cannot take the pointer and sits outside the prose,
+that it leaves on `mouseout`, that each marker shows its own note, and that a marker
+being edited shows no card. Two things it had to learn: a label the document does not
+define never becomes a marker at all (so the "no definition" silence is defensive
+code, not a state a pointer can reach), and the card must be found by class, since it
+lives outside the editor's own tree.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` 20/20, a freshly started
+app and `npm run probe:all` **70/70 (6 skipped)**.
+
+**What is left.** An interactive card (a link inside a note that can be followed), and
+the definition's own label, which is still not editable.
+*** End Patch
