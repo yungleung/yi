@@ -13,8 +13,14 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-plain-edit-'));
+/**
+ * Bundles one module with rolldown for Node and imports it, the way every check does.
+ * The platform matters here: the browser build of `decode-named-character-reference`
+ * decodes an entity by making a DOM element, and a document with `&amp;` in it would
+ * throw inside this check rather than parse.
+ */
 const load = async (input, name) => {
-  const bundle = await rolldown({ input, logLevel: 'silent' });
+  const bundle = await rolldown({ input, logLevel: 'silent', platform: 'node' });
   const { output } = await bundle.generate({ format: 'esm' });
   await bundle.close();
   const file = join(directory, `${name}.mjs`);
@@ -208,6 +214,7 @@ const documents = [
   'a link to [the title](https://example.com/dest) and [t](<the dest>)\n',
   'a double  space, a footnote label [^label] and its definition\n\n[^label]: note\n',
   'term\n: detail with a comma, and a full stop.\n\nanother term\n: another detail\n',
+  'a term with ~~struck~~ and an entity &amp; in it\n: a detail with @smith2020 in it\n',
   '1. one\n2. two\n\n3) three\n\n10. ten\n',
   'a paragraph that wraps\nonto a second line, and a third\n\ntitle\n---\n',
   'see www.example.org and example.com and https://example.com now\n',

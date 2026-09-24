@@ -83,12 +83,15 @@ export function parseMarkdown(markdown: string): Root {
 }
 
 /**
- * remark-deflist serializes deflist paragraphs with a CommonMark-only
- * `toMarkdown` that throws on GFM nodes (strikethrough is parsed into a
- * `delete` node by remark-gfm's parser extensions before deflist runs).
- * Convert those nodes back to their raw markdown text inside deflist
- * paragraphs; the details are re-parsed with the full pipeline afterwards
- * (see {@link fixDescriptionPositions}), restoring the GFM constructs.
+ * remark-deflist serializes deflist paragraphs with a CommonMark-only `toMarkdown`,
+ * and everything the editor's pipeline adds to a line is a node that writer does not
+ * know: it throws on GFM's `delete`, on a citation, a wikilink, inline math and a
+ * footnote reference (all of them parsed before deflist runs, because they are
+ * micromark constructs rather than transformers).
+ *
+ * So a description list holding any of them is rewritten as its own text first, and
+ * the terms and details are re-parsed with the full pipeline afterwards
+ * ({@link fixDescriptionPositions}), where the nodes come back.
  */
 function remarkDeflistCompat() {
   return (tree: Root): void => {
@@ -100,20 +103,33 @@ function remarkDeflistCompat() {
       if (!/^:\s/.test(text) && !/\n:\s/.test(text)) {
         return;
       }
-      flattenDeleteNodes(node);
+      flattenUnwritableNodes(node);
     });
   };
 }
 
-/** Replaces `delete` nodes with text containing their raw `~~…~~` markers. */
-function flattenDeleteNodes(node: unknown): void {
+/**
+ * The node types that writer cannot serialize. `delete` is GFM's; the rest are this
+ * editor's own (a citation, a wikilink), remark-math's and remark-gfm's — each one a
+ * node `stringifyProcessor` can write back as the source it was parsed from.
+ */
+const UNWRITABLE_NODES = new Set([
+  'delete',
+  'citation',
+  'wikilink',
+  'inlineMath',
+  'footnoteReference'
+]);
+
+/** Replaces the nodes the list writer cannot serialize with the text they came from. */
+function flattenUnwritableNodes(node: unknown): void {
   const children = (node as { children?: unknown[] }).children;
   if (!Array.isArray(children)) {
     return;
   }
   for (let index = 0; index < children.length; index += 1) {
     const child = children[index] as { type?: string; children?: unknown[] };
-    if (child.type === 'delete') {
+    if (child.type !== undefined && UNWRITABLE_NODES.has(child.type)) {
       children[index] = {
         type: 'text',
         // Stringify appends a document-level trailing newline; without
@@ -122,98 +138,161 @@ function flattenDeleteNodes(node: unknown): void {
         value: String(stringifyProcessor.stringify(child as never)).trimEnd()
       };
     } else if (Array.isArray(child.children)) {
-      flattenDeleteNodes(child);
+      flattenUnwritableNodes(child);
     }
   }
 }
 
 /**
- * remark-deflist rebuilds description lists by re-parsing their fragments
- * with plain CommonMark, so the term/details nodes have no positions, their
- * descendants carry 0-based fragment-relative ones, and GFM constructs
- * (strikethrough, ...) are dropped. Reconstruct each element's span against
- * the source document and re-parse the terms' and details' raw content with
- * the full pipeline, so rendering and offset mapping see correct absolute
- * positions like every other node.
+ * remark-deflist rebuilds description lists by re-parsing their fragments with plain
+ * CommonMark, so the term/details nodes have no positions, their descendants carry
+ * 0-based fragment-relative ones, and the constructs the editor adds are dropped (or,
+ * with `remarkDeflistCompat`, flattened to text). Reconstruct each element's span
+ * against the source document and re-parse the terms' and details' raw content with the
+ * full pipeline, so rendering and offset mapping see correct absolute positions like
+ * every other node.
  */
 function fixDescriptionPositions(tree: Root, markdown: string): void {
-  walk(tree, (node) => {
-    if (node.type !== 'descriptionlist') {
-      return;
-    }
-    const list = node as RootContent & {
-      children: RootContent[];
-      position?: { start: { offset: number }; end: { offset: number } };
-    };
-    const terms = list.children.filter((child) => child.type === 'descriptionterm');
-    const details = list.children.filter((child) => child.type === 'descriptiondetails');
-    if (terms.length === 0) {
-      return;
-    }
-    // Locate the list by its first term at a line boundary, then walk the
-    // source lines in order: non-blank lines are terms, `: ` lines are
-    // details. This stays correct even when GFM markers (dropped by the
-    // plugin's fragment re-parse) differ between the source and the tree.
-    const firstTerm = String(stringifyProcessor.stringify(terms[0] as never)).trim();
-    const listStart = findLineStart(markdown, firstTerm);
-    if (listStart < 0) {
-      return;
-    }
-    let termIndex = 0;
-    let detailIndex = 0;
-    let lineStart = listStart;
-    let lastEnd = listStart;
-    while (termIndex < terms.length || detailIndex < details.length) {
-      const nextNewline = markdown.indexOf('\n', lineStart);
-      const lineEnd = nextNewline < 0 ? markdown.length : nextNewline;
-      const sourceLine = markdown.slice(lineStart, lineEnd);
-      if (/^:\s+/.test(sourceLine) && detailIndex < details.length) {
-        const detail = details[detailIndex++];
-        if (detail) {
-          const content = sourceLine.replace(/^:\s+/, '');
-          (detail as { position?: unknown }).position = {
-            start: { offset: lineStart },
-            end: { offset: lineEnd }
-          };
-          reparseDescriptionContent(detail, content, lineStart + sourceLine.length - content.length);
-        }
-      } else if (sourceLine.trim() !== '' && termIndex < terms.length) {
-        const term = terms[termIndex++];
-        if (term) {
-          (term as { position?: unknown }).position = {
-            start: { offset: lineStart },
-            end: { offset: lineEnd }
-          };
-          // Only the indentation is dropped: the term's trailing spaces are
-          // kept (as the non-breaking spaces `trailing_spaces.ts` writes) so a
-          // space typed at the end of a term stays visible and editable.
-          const content = sourceLine.trimStart();
-          reparseDescriptionContent(term, content, lineStart + sourceLine.length - content.length);
+  /** Visits every child list of `children`, which are one parent's. */
+  const visit = (children: RootContent[]): void => {
+    children.forEach((child, index) => {
+      const node = child as RootContent & { children?: RootContent[]; position?: NodePosition };
+      if (Array.isArray(node.children)) {
+        visit(node.children);
+      }
+      if (node.type !== 'descriptionlist' || !node.children) {
+        return;
+      }
+      const terms = node.children.filter((entry) => entry.type === 'descriptionterm');
+      const details = node.children.filter((entry) => entry.type === 'descriptiondetails');
+      if (terms.length === 0) {
+        return;
+      }
+      // The plugin swaps the paragraphs it rewrote for the list, so the list covers the
+      // gap between its neighbours — one paragraph (`term\n: detail`) or two, split by a
+      // blank line (`term\n\n: detail`), with every gap between them inside it. Matching
+      // a *serialized* term against the source is what this used to do, and it is lossy
+      // in the way the crash above was: the writer drops what a reader cannot see, so
+      // `&amp;` comes back as `&`, the line was not found, and the whole repair silently
+      // gave up — leaving every node in the list with fragment-relative offsets.
+      const lines = readDescriptionLines(
+        markdown,
+        positionEnd(children.slice(0, index)),
+        positionStart(children.slice(index + 1)),
+        terms.length,
+        details.length
+      );
+      if (!lines) {
+        return;
+      }
+      let termIndex = 0;
+      let detailIndex = 0;
+      for (const line of lines) {
+        const sourceLine = markdown.slice(line.start, line.end);
+        if (line.kind === 'detail') {
+          const detail = details[detailIndex++];
+          if (detail) {
+            const content = sourceLine.replace(/^:\s+/, '');
+            (detail as { position?: unknown }).position = {
+              start: { offset: line.start },
+              end: { offset: line.end }
+            };
+            reparseDescriptionContent(detail, content, line.start + sourceLine.length - content.length);
+          }
+        } else if (line.kind === 'term') {
+          const term = terms[termIndex++];
+          if (term) {
+            (term as { position?: unknown }).position = {
+              start: { offset: line.start },
+              end: { offset: line.end }
+            };
+            // Only the indentation is dropped: the term's trailing spaces are kept (as
+            // the non-breaking spaces `trailing_spaces.ts` writes) so a space typed at
+            // the end of a term stays visible and editable.
+            const content = sourceLine.trimStart();
+            reparseDescriptionContent(term, content, line.start + sourceLine.length - content.length);
+          }
         }
       }
-      lastEnd = lineEnd;
-      if (nextNewline < 0) {
-        break;
-      }
-      lineStart = nextNewline + 1;
-    }
-    list.position = {
-      start: { offset: listStart },
-      end: { offset: lastEnd }
-    };
-  });
+      node.position = {
+        start: { offset: lines[0].start },
+        end: { offset: lines[lines.length - 1].end }
+      };
+    });
+  };
+  visit(tree.children);
 }
 
-/** The offset of the first line of `content` in `markdown`, or -1. */
-function findLineStart(markdown: string, content: string): number {
-  if (content === '') {
-    return -1;
+interface NodePosition {
+  start: { offset: number };
+  end: { offset: number };
+}
+
+/** Where the last positioned sibling ends, or the document's start. */
+function positionEnd(siblings: RootContent[]): number {
+  for (let index = siblings.length - 1; index >= 0; index -= 1) {
+    const position = (siblings[index] as { position?: NodePosition }).position;
+    if (position) {
+      return position.end.offset;
+    }
   }
-  if (markdown.startsWith(content)) {
-    return 0;
+  return 0;
+}
+
+/** Where the next positioned sibling starts, or the document's end. */
+function positionStart(siblings: RootContent[]): number {
+  for (const sibling of siblings) {
+    const position = (sibling as { position?: NodePosition }).position;
+    if (position) {
+      return position.start.offset;
+    }
   }
-  const index = markdown.indexOf('\n' + content);
-  return index < 0 ? -1 : index + 1;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * The lines a description list of these counts covers between two offsets: from the
+ * first non-blank line to the line that completes the counts, or null when they do not
+ * complete. A `: ` line is the next detail and any other line is the next term; blank
+ * lines are the paragraph break the two-line form is written with, so they are the
+ * list's but not one of its parts.
+ */
+function readDescriptionLines(
+  markdown: string,
+  from: number,
+  to: number,
+  terms: number,
+  details: number
+): { start: number; end: number; kind: 'term' | 'detail' | 'ignored' }[] | null {
+  const lines: { start: number; end: number; kind: 'term' | 'detail' | 'ignored' }[] = [];
+  let termCount = 0;
+  let detailCount = 0;
+  let lineStart = Math.max(0, Math.min(from, markdown.length));
+  const limit = Math.max(lineStart, Math.min(to, markdown.length));
+  while (lineStart < limit) {
+    const newline = markdown.indexOf('\n', lineStart);
+    const lineEnd = newline < 0 || newline > limit ? limit : newline;
+    const line = markdown.slice(lineStart, lineEnd);
+    if (line.trim() !== '') {
+      if (/^:\s+/.test(line) && detailCount < details) {
+        detailCount += 1;
+        lines.push({ start: lineStart, end: lineEnd, kind: 'detail' });
+      } else if (termCount < terms) {
+        termCount += 1;
+        lines.push({ start: lineStart, end: lineEnd, kind: 'term' });
+      } else {
+        // A line the list's own node does not name — the rest of a detail that runs on,
+        // or a term the plugin left out. The list's span keeps it: the line is inside
+        // the gap the list covers, and dropping it would move every span after it.
+        lines.push({ start: lineStart, end: lineEnd, kind: 'ignored' });
+      }
+    }
+    if (newline < 0 || newline >= limit) {
+      break;
+    }
+    lineStart = newline + 1;
+  }
+  return termCount === terms && detailCount === details ? lines : null;
 }
 
 /**
