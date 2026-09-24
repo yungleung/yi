@@ -297,13 +297,22 @@ function mapNode(
   }
   if (node.type === 'footnoteDefinition') {
     // A definition draws its label as the marker the text holds — `[1]` for `[^1]`, a
-    // character shorter — and its note after that. A caret inside the drawn label belongs
-    // to the marker's own characters, which is what puts it in the source it shows; the
-    // note's offsets start where the label's drawing ends.
+    // character shorter — and its note after that. A caret *inside* the drawn label
+    // belongs to the marker's own characters, which is what puts it in the source it
+    // shows; the position just past the drawing is the note's own start.
+    //
+    // That last position is the `]: ` boundary, and it is the note's on purpose: the
+    // drawn label is one character shorter than its source, so a caret at its right edge
+    // has to land somewhere, and letting the label own it made one visual position mean
+    // two things — a click in the gap right of the label wrote *into* it (a freshly
+    // inserted note's `[^1]: ` came out `[^1H]: `) while a click on the note's own first
+    // character, one pixel further along, wrote into the note. An empty note has no text
+    // node of its own to map into, so the boundary falls through to the children and
+    // then past the node, which is the position after its `]:`.
     const drawn = drawnMarkerLength(node);
     const rawStart = rawStartOf(node, block);
-    if (rawStart !== null && renderedOffset <= acc + drawn) {
-      return rawStart + Math.min(Math.max(renderedOffset - acc, 0), drawn);
+    if (rawStart !== null && renderedOffset < acc + drawn) {
+      return rawStart + Math.max(renderedOffset - acc, 0);
     }
     return mapChildren(node.children as RootContent[], block, renderedOffset, acc + drawn);
   }
