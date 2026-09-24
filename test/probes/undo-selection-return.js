@@ -99,6 +99,32 @@
     after
   );
 
+  // A whole-document command remembers its author too. Bold computes the whole text and
+  // records one edit with no marks without this phase, so its undo left a caret wherever
+  // the reader was instead of the word that was formatted.
+  await t.load('hello world\n');
+  await select('world', 0, 5);
+  const bold = [...document.querySelectorAll('button')].find(
+    (element) => element.getAttribute('aria-label') === 'Bold'
+  );
+  check('the toolbar has a bold button', bold !== undefined, Boolean(bold));
+  if (bold) {
+    bold.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    bold.click();
+    await t.sleep(300);
+    const bolded = await t.raw();
+    check('bold wraps the word', bolded === 'hello **world**\n', bolded);
+    await undo();
+    const restored = selectionNow();
+    const text = await t.raw();
+    check('undo puts the text back', text === 'hello world\n', text);
+    check(
+      'and the word it formatted is selected again',
+      restored.text === 'world' && restored.collapsed === false,
+      restored
+    );
+  }
+
   // A selection that spans blocks is restored across them.
   await t.load('alpha\n\nbeta\n');
   const startNode = t.textNodesIn(t.blocks()[0]).find((leaf) => leaf.data.includes('alpha'));
