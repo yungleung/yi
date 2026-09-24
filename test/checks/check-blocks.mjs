@@ -159,17 +159,27 @@ reSplit(
   randomEdits
 );
 
-// The blocks an edit did not reach are the blocks it had, not copies of them:
-// the renderer keys by content, and a copy is a rebuild of the element.
+// The blocks an edit did not reach are the blocks it had, not copies of them: the
+// renderer keys by content, a copy is a rebuild of the element, and their positions
+// are derived from the index — so an edit that moves them moves them without
+// touching them. (Each case starts from its own split: an edit that lands in a block
+// replaces it, and a replaced block is not the document's any more.)
 const before = splitBlocks('a\n\nb\n\nc\n');
 const reworded = splitBlocksFrom('A\n\nb\n\nc\n', before, { from: 0, to: 1, removed: 'a', inserted: 'A' });
-const grown = splitBlocksFrom('aX\n\nb\n\nc\n', before, { from: 1, to: 1, removed: '', inserted: 'X' });
+const growFrom = splitBlocks('a\n\nb\n\nc\n');
+const grown = splitBlocksFrom('aX\n\nb\n\nc\n', growFrom, { from: 1, to: 1, removed: '', inserted: 'X' });
+const segments = (blocks) =>
+  blocks.map(
+    (block) => `${block.kind}@${block.lineStart}-${block.lineEnd}[${block.charStart},${block.charEnd})`
+  );
 const reuse = [
   reworded.length === 3 && reworded[1] === before[1] && reworded[2] === before[2],
   reworded[0].text === 'A',
   grown[0].text === 'aX',
-  grown[1].text === 'b' && grown[1].lineStart === 3 && grown[1].charStart === before[1].charStart + 1,
-  grown[2].lineStart === 5 && grown[2].charStart === before[2].charStart + 1
+  grown[1] === growFrom[1] && grown[2] === growFrom[2],
+  // Where they are is a full split's answer: a moved block's own fields show where it
+  // is now, so comparing them to their old values would ask it where it used to be.
+  JSON.stringify(segments(grown)) === JSON.stringify(segments(splitBlocks('aX\n\nb\n\nc\n')))
 ];
 if (reuse.every(Boolean)) {
   console.log('ok   an edit above keeps the blocks below');

@@ -251,7 +251,7 @@ git commit -m "feat(document): hold where the blocks are in an index"
   signatures, with `index` defaulting to a fresh one; the four position properties
   are getters over it.
 
-- [ ] **Step 1: Make the block a view over the index**
+- [x] **Step 1: Make the block a view over the index**
 
 ```ts
 /** A block: its own source and kind, and where it is — which the index knows. */
@@ -309,7 +309,7 @@ list whose length changed is `index.rebuild(blocks)`ed once. The generator's
 `position` / `lineStart` bookkeeping becomes the `span` it already knows; `moved()`
 goes.
 
-- [ ] **Step 2: Hand the tail back, and keep the index honest**
+- [x] **Step 2: Hand the tail back, and keep the index honest**
 
 In `splitBlocksFrom`, the tail becomes:
 
@@ -331,7 +331,7 @@ whole document is split — the index is rebuilt from the finished list:
 `index.rebuild(blocks)`. `state.ts` creates one `BlockIndex` in its constructor and
 passes it to every split; `loadText` rebuilds it with the new document.
 
-- [ ] **Step 3: Strengthen the check**
+- [x] **Step 3: Strengthen the check**
 
 `check-blocks.mjs` already compares `splitBlocksFrom` against `splitBlocks` field by
 field after every edit of its sequences, and has an identity case for an edit that
@@ -356,7 +356,7 @@ Run: `node test/checks/check-blocks.mjs && node test/run-checks.mjs`
 
 Expected: all checks green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/document/blocks.ts src/ui/markdown/document/state.ts test/checks/check-blocks.mjs
