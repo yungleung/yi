@@ -1,18 +1,22 @@
 /**
  * Whether an edit can only change characters, never how the text parses.
  *
- * The editor's fast path turns a keystroke into a write to one rendered text node
- * and no rendering at all, and this is the rule it trusts. The rule is deliberately
- * narrow: markdown is context-sensitive, so `x` typed between two asterisks is an
- * emphasis, a character at the start of a line can make it a list item or a
- * heading, and a character typed on the line above a `---` line makes that line a
- * setext underline. Anything that could do one of those falls back to the ordinary
- * re-render, which is always correct.
- *
- * What it may not do is call an edit plain when the parse would change, and
- * `test/checks/check-plain-edit.mjs` is the property that keeps it honest: over a
- * seeded corpus of documents and edits, every accepted edit must leave the parse's
- * shape (`node_shape.ts`) unchanged.
+* The editor's fast path turns a keystroke into a write to one rendered text node
+ * and no rendering at all, and this is the rule it trusts. Markdown is
+ * context-sensitive: `x` typed between two asterisks is an emphasis, a character at the
+ * start of a line can make it a list item or a heading, `.` after the `1` of `1 x` makes
+ * it a list, and a character typed on the line above a `---` line makes that line a
+ * setext underline. What the rule admits is a letter, a digit, a space and the
+ * punctuation that means itself, in a place where none of those can happen; everything
+ * else falls back to the ordinary re-render, which is always correct.
+*
+* What it may not do is call an edit plain when the parse would change, and
+* `test/checks/check-plain-edit.mjs` is the property that keeps it honest: over a
+ * seeded corpus of documents and edits it parses with the editor's own pipeline, so
+ * every accepted edit must leave the parse's shape (`node_shape.ts`) unchanged, and
+ * the tree it parses to must be the old one with the edit in the one leaf it lands in.
+ * Read that check before widening the alphabet: each of the guards below is there
+ * because it found an accepted edit whose parse had moved.
  *
  * May import: nothing — the text and the edit are passed in. Upholds: one fact
  * about markdown syntax has one home, and this is the home of which characters can
@@ -20,32 +24,76 @@
  */
 
 /**
- * What a plain edit may consist of: letters, and nothing else.
+ * What a plain edit may consist of: letters, digits, spaces, and the punctuation that
+ * means itself in every inline position.
  *
- * Every markdown construct that a typed character could open or close needs
- * something that is not a letter and is not the space inside a line — the `*` of an
- * emphasis, the `[]()` of a link, the `` ` `` of code, the `#` or a line edge of a
- * heading, the `-` or digit of a list, the `|` of a table, the `.` and `:` and `/`
- * of a URL, the `&` of an entity, the `-=` of a setext underline, the `$` of math,
- * the `<>` of HTML. A letter typed inside an existing construct leaves that
- * construct as it was, and so does a space between two words.
+ * What is *not* here is the point. A markdown construct needs a marker, and every
+ * marker is a character this alphabet leaves out: the `*` and `_` of emphasis, the
+ * `` ` `` of code, the `[]()` of a link, the `<>` of an autolink and the `&` of an
+ * entity, the `\` of an escape, the `$` of math, the `~` of a strikethrough, the `|`
+ * of a table, the `#` and `>` and `-` and `=` and `+` of a line's own beginning (which
+ * the guards below answer for), the `:` of an email or a scheme and the `.` and `/`
+ * and `@` of a URL. None of them can be typed as a plain edit, so no construct can be
+ * opened from the inside of one.
  *
- * The two constructs a space can open are line edges — the two trailing spaces of a
- * hard break, and the ones that begin an indented code block — and the rule refuses
- * a line edge outright. What it has to watch instead is the *run* a space joins: a
- * space that glues itself to one side of a URL turns a word into an autolink, and a
- * space inside a run with punctuation in it is a space in a destination or a label.
- * Both sides of the edit therefore have to be words (see `isPlainEdit`).
+ * That leaves the characters an author actually writes in a sentence, and three things
+ * a run of them can still do — `www.`, a block marker at a line's beginning, and two
+ * spaces — each of which is a guard below, and each of which was found by the fuzz in
+ * `test/checks/check-plain-edit.mjs` (16 of ~5 000 accepted edits changed the parse
+ * without the marker guard; 1 without the autolink one).
  */
-const PLAIN = /^[\p{L} ]*$/u;
+const PLAIN = /^[\p{L}\p{N} .,;:!?'"%+-]*$/u;
 
 /** Whether every character of this text is one markdown reads as itself. */
 function isPlainText(text: string): boolean {
   return PLAIN.test(text);
 }
 
-/** A space, a letter… or nothing at all: what may sit beside a plain edit. */
-const PLAIN_NEIGHBOUR = /^(?:\p{L}| )?$/u;
+/**
+ * Characters a block marker can be made of (see `document/blocks.ts`): an indent, a
+ * bullet or a number, and the punctuation of a quote, a heading, a fence, a rule, a
+ * setext underline, a table row or a description list.
+ */
+const MARKER_MATERIAL = /^[ \t\d+\-*.:>#`~=|]*$/;
+
+/**
+ * A marker and the space that ends it, so the line's content has begun: `# x`, `1. x`,
+ * `- x`, `> x`, `: x`. Past one of these, a typed character is inside the line's text.
+ */
+const MARKER_PREFIX = /^ {0,3}(?:[-+*]|\d{1,9}[.)]|#{1,6}|>|:)\s+/;
+
+/**
+ * The runs of these characters that can still become a link. `www.` is the only
+ * autolink they can spell — a scheme needs `/` and an email `@`, neither of which is
+ * plain — and a link's *extent* is a node, so the characters are checked on both sides
+ * of the edit and in the text on both sides of it: a character put into a run can start
+ * the link and one taken out of it can end it.
+ */
+const AUTOLINK_RUN = /www\./i;
+
+/** The line holding `at`, without its newline. */
+function lineAt(text: string, at: number): string {
+  const start = text.lastIndexOf('\n', Math.max(0, at - 1)) + 1;
+  const end = text.indexOf('\n', Math.max(0, at));
+  return text.slice(start, end === -1 ? text.length : end);
+}
+
+/**
+ * The text from the start of the run `from` sits in to the end of the run `to` ends in,
+ * read as one span. The characters *between* the two ends are the run's too — the ones
+ * a deletion takes out of the middle of it — which the ends alone would miss.
+ */
+function touchedRun(text: string, from: number, to: number): string {
+  let start = Math.max(0, Math.min(from, text.length));
+  let end = Math.max(start, Math.min(to, text.length));
+  while (start > 0 && !/\s/.test(text[start - 1])) {
+    start -= 1;
+  }
+  while (end < text.length && !/\s/.test(text[end])) {
+    end += 1;
+  }
+  return text.slice(start, end);
+}
 
 /**
  * The word holding `at`: the run of characters between the whitespace around it.
@@ -72,19 +120,6 @@ function runAfter(text: string, at: number): string {
   return text.slice(at, end);
 }
 
-/** The run of spaces touching `at`, on either side of it. */
-function spacesAt(text: string, at: number): string {
-  let start = Math.max(0, Math.min(at, text.length));
-  let end = start;
-  while (start > 0 && text[start - 1] === ' ') {
-    start -= 1;
-  }
-  while (end < text.length && text[end] === ' ') {
-    end += 1;
-  }
-  return text.slice(start, end);
-}
-
 /**
  * Whether the edit `before[from, to) → inserted` can change how its text parses.
  * `before` is the text the edit was applied to.
@@ -93,33 +128,42 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   if (!isPlainText(inserted) || !isPlainText(before.slice(from, to))) {
     return false;
   }
-  // The runs the edit lands between have to be plain words as well. That is what
-  // refuses the places where a letter is not just a letter: a link's destination
-  // (`https://example.com`), a bare URL, a footnote's label — runs a typed character
-  // can break, and whose characters are hidden from any rendering, so nothing
-  // downstream would notice. Both sides, because a space is the one character whose
-  // *neighbour* decides what it belongs to: `seehttps://x` is a word, and one space
-  // before the URL makes its tail an autolink.
+  // The runs the edit lands between have to be plain as well. That is what refuses the
+  // places where a character is not just a character: a link's destination, a bare URL,
+  // a footnote's label — runs whose characters are hidden from any rendering, so
+  // nothing downstream would notice a change. Both sides, because the character whose
+  // neighbour decides what it belongs to is not always the one being typed:
+  // `seehttps://x` is a word, and one space before the URL makes its tail an autolink.
   const after = `${before.slice(0, from)}${inserted}${before.slice(to)}`;
-  if (!isPlainText(wordAt(after, from))) {
+  const left = wordAt(after, from);
+  const right = runAfter(after, from + inserted.length);
+  if (!isPlainText(left) || !isPlainText(right)) {
     return false;
   }
-  if (!isPlainText(runAfter(after, from + inserted.length))) {
+  // A run that holds `www.` is the one autolink these characters can spell, and the
+  // link's extent is a node — so the characters are read on both sides of the edit and
+  // in the text on both sides of it: what is typed can start the link and what is
+  // deleted can end it.
+  if (
+    AUTOLINK_RUN.test(touchedRun(before, from, to)) ||
+    AUTOLINK_RUN.test(touchedRun(after, from, from + inserted.length))
+  ) {
     return false;
   }
   // A run of two spaces does not render as the characters say (`nodes/text.ts:
-  // preserveSpaces` turns the second into a no-break space), so writing one in would
-  // put the DOM out of step with the document.
-  if (/ {2}/.test(inserted) || spacesAt(after, from).length > 1) {
+  // preserveSpaces` turns the second into a no-break space), and the two at the end of
+  // a line are a hard break. The line is the scope, because the run an edit straddles
+  // is not the run a character of it sits in (`ax, \n` + `. ` is a hard break).
+  if (/ {2}/.test(lineAt(after, from))) {
     return false;
   }
   // The characters beside the edit. An asterisk next to the caret is an emphasis
   // waiting for a character, and what closes it can be an entirely plain one; the
   // characters on the far side of a deletion are the ones a marker would meet.
-  if (!PLAIN_NEIGHBOUR.test(before.slice(Math.max(0, from - 1), from))) {
+  if (!isPlainText(before.slice(Math.max(0, from - 1), from))) {
     return false;
   }
-  if (!PLAIN_NEIGHBOUR.test(before.slice(to, to + 1))) {
+  if (!isPlainText(before.slice(to, to + 1))) {
     return false;
   }
   // Line edges. A character typed at the start of a line can open a list, a
@@ -129,6 +173,14 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   const newline = before.indexOf('\n', to);
   const lineEnd = newline === -1 ? before.length : newline;
   if (from === lineStart || to === lineEnd) {
+    return false;
+  }
+  // A block marker is a few characters at a line's beginning, and a typed character can
+  // finish one: `1 x` is prose and `1. x` is a list, `-x` is not a list once it has a
+  // letter. So while everything before the caret is marker material the edit waits for
+  // a marker that is already there and whose space has gone by (`1. x`, `# x`, `> x`).
+  const prefix = before.slice(lineStart, from);
+  if (MARKER_MATERIAL.test(prefix) && !MARKER_PREFIX.test(prefix)) {
     return false;
   }
   // A setext underline is made by the line below, so the line below is the rule's
