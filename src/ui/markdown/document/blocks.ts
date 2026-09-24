@@ -21,15 +21,18 @@
  * Blank lines are separators, not blocks.
  *
  * May import: the pure syntax rules (`syntax/markers.ts`,
- * `syntax/trailing_spaces.ts`, `syntax/blank_lines.ts`) and the edit shape the
- * history records (`./history.ts`, types only). Upholds: a block is a slice of
- * the raw text — the split is computed from the text alone, never from what is
- * rendered or where the caret is.
+ * `syntax/trailing_spaces.ts`, `syntax/blank_lines.ts`), the edit shape the history
+ * records (`./history.ts`, types only) and the index that holds where the blocks are
+ * (`./block_index.ts`). Upholds: a block is a slice of the raw text — the split is
+ * computed from the text alone, never from what is rendered or where the caret is —
+ * and where a block sits is derived from the blocks' own sizes, so an edit above it
+ * moves it without touching it.
  */
 
 import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from '../syntax/markers';
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
+import { BlockIndex, type BlockEntry } from './block_index';
 import type { DocumentEdit } from './history';
 
 export type BlockKind =
@@ -122,9 +125,81 @@ interface SourceLine {
   text: string;
 }
 
-/** Splits a raw markdown document into blocks, in document order. */
-export function splitBlocks(text: string): MarkdownBlock[] {
-  return [...blocksFrom(text, splitLines(text), 0, 0)];
+/**
+ * A block: its own kind and its own source. Where it sits is the index's business
+ * (`block_index.ts`), so a block keeps no position of its own to go stale — an edit
+ * above it moves it by arithmetic, without touching the block.
+ */
+class BlockView implements MarkdownBlock {
+  readonly kind: BlockKind;
+  readonly format?: 'yaml' | 'toml';
+  readonly text: string;
+  readonly index: BlockIndex;
+  declare readonly lineStart: number;
+  declare readonly lineEnd: number;
+  declare readonly charStart: number;
+  declare readonly charEnd: number;
+
+  constructor(
+    index: BlockIndex,
+    kind: BlockKind,
+    text: string,
+    format?: 'yaml' | 'toml'
+  ) {
+    this.index = index;
+    this.kind = kind;
+    this.text = text;
+    this.format = format;
+    // Where the block is, as *own* properties: they are still derived — every read
+    // asks the index — but a caller that copies a block gets what it read.
+    // `virtual_block_renderer.ts` spreads one into the DOM factory, and a prototype
+    // getter does not survive a spread.
+    const derived: Record<string, () => number> = {
+      lineStart: () => index.lineOf(this),
+      lineEnd: () => index.endLineOf(this),
+      charStart: () => index.startOf(this),
+      charEnd: () => index.endOf(this)
+    };
+    for (const [name, read] of Object.entries(derived)) {
+      Object.defineProperty(this, name, {
+        configurable: true,
+        enumerable: true,
+        get: () => read.call(this)
+      });
+    }
+  }
+}
+
+/**
+ * What the walk produces: the block's own facts, and the positions it computed with
+ * them. A block is built from one of these together with the gap after it, which is
+ * known once the next seed arrives.
+ */
+interface BlockSeed {
+  kind: BlockKind;
+  format?: 'yaml' | 'toml';
+  text: string;
+  lineStart: number;
+  lineEnd: number;
+  charStart: number;
+  charEnd: number;
+}
+
+/**
+ * Splits a raw markdown document into blocks, in document order, indexing them so
+ * that their positions are derived from the blocks' own lengths.
+ *
+ * The index is the caller's when it has one — the state keeps a single index for the
+ * life of a document, so the blocks of one split are the ones the next split moves.
+ */
+export function splitBlocks(text: string, index: BlockIndex = new BlockIndex()): MarkdownBlock[] {
+  const seeds = [...blocksFrom(text, splitLines(text), 0, 0)];
+  const blocks = seeds.map((seed) => view(seed, index));
+  for (const [at, seed] of seeds.entries()) {
+    index.set(blocks[at], entryFor(seed, stridesAfter(seeds, at)));
+  }
+  index.rebuild(blocks);
+  return blocks;
 }
 
 /**
@@ -147,57 +222,123 @@ export function splitBlocks(text: string): MarkdownBlock[] {
 export function splitBlocksFrom(
   text: string,
   previous: readonly MarkdownBlock[],
-  edit: DocumentEdit
+  edit: DocumentEdit,
+  index: BlockIndex = indexOf(previous)
 ): MarkdownBlock[] {
   const resume = resumeFrom(previous, edit.from);
   if (!resume) {
-    return splitBlocks(text);
+    return splitBlocks(text, index);
   }
-  const blocks = previous.slice(0, resume.above);
   // An edit moves everything below it by its two own deltas, characters and
   // lines, and those are what the blocks it did not reach move by.
   const lines = countLines(edit.inserted) - countLines(edit.removed);
   const characters = edit.inserted.length - edit.removed.length;
-  let produced = 0;
-  for (const block of blocksFrom(text, splitLines(text, resume.start, resume.line), 0, resume.above)) {
-    blocks.push(block);
-    const old = previous[resume.above + produced];
-    produced += 1;
+  // The walk runs until a produced block is the one the edit left alone — the old
+  // block is read before the new one takes its place in the index.
+  const seeds: BlockSeed[] = [];
+  let matched: MarkdownBlock | null = null;
+  for (const seed of blocksFrom(text, splitLines(text, resume.start, resume.line), 0, resume.above)) {
+    seeds.push(seed);
+    const old = previous[resume.above + seeds.length - 1];
     if (!old) {
       continue;
     }
-    // The block is the one the edit left alone when it has the old block's own
-    // lines and ends where the edit's own length change puts the old end: below
-    // that end the text is the text it was, so the old blocks below it are still
-    // what a full split produces, moved by the same change.
     if (
-      block.kind === old.kind &&
-      block.lineStart === old.lineStart + lines &&
-      block.lineEnd === old.lineEnd + lines &&
+      seed.kind === old.kind &&
+      seed.lineStart === old.lineStart + lines &&
+      seed.lineEnd === old.lineEnd + lines &&
       edit.to <= old.charEnd &&
-      block.charEnd === old.charEnd + characters
+      seed.charEnd === old.charEnd + characters
     ) {
-      for (const tail of previous.slice(resume.above + produced)) {
-        blocks.push(moved(tail, lines, characters));
-      }
-      return blocks;
+      matched = old;
+      break;
     }
   }
+  const blocks = previous.slice(0, resume.above);
+  const entries = seeds.map((seed, at) => {
+    // The strides after the last block this walk produced are the ones the edit
+    // changes: the block after it moved by the edit's deltas — or not at all, when
+    // the edit lies above them both. That block's own start is the old one it was
+    // read at, and the tail's is the old one plus the deltas.
+    const tail = previous[resume.above + seeds.length];
+    const tailStart = tail
+      ? { charStart: tail.charStart + characters, lineStart: tail.lineStart + lines }
+      : null;
+    const entry =
+      at + 1 < seeds.length
+        ? entryFor(seed, stridesAfter(seeds, at))
+        : entryFor(seed, {
+            charStride: tailStart ? tailStart.charStart - seed.charStart : 0,
+            lineStride: tailStart ? tailStart.lineStart - seed.lineStart : 0
+          });
+    const block = view(seed, index);
+    index.set(block, entry);
+    blocks.push(block);
+    return { block, entry };
+  });
+  if (matched === null) {
+    // The walk ended without a block that matches one of the old ones: the list
+    // changed length, so the blocks after the change have no old position to keep and
+    // are renumbered from the blocks themselves.
+    index.rebuild(blocks);
+    return blocks;
+  }
+  for (const [at, { block, entry }] of entries.entries()) {
+    index.place(resume.above + at, block, entry);
+  }
+  // The block above the walk kept its own text, but its stride — how far the next
+  // block's start is — is one of the two things this edit can have changed.
+  const above = previous[resume.above - 1];
+  const first = blocks[resume.above];
+  const aboveEntry = above ? index.entryOf(above) : null;
+  if (above && first && aboveEntry) {
+    index.place(resume.above - 1, above, {
+      length: aboveEntry.length,
+      span: aboveEntry.span,
+      charStride: first.charStart - above.charStart,
+      lineStride: first.lineStart - above.lineStart
+    });
+  }
+  blocks.push(...previous.slice(resume.above + seeds.length));
   return blocks;
 }
 
-/** An old block where the edit put it: `lines` more lines, `characters` further in. */
-function moved(block: MarkdownBlock, lines: number, characters: number): MarkdownBlock {
-  if (lines === 0 && characters === 0) {
-    return block;
+/** How far the next seed's start is from this one's, in characters and in lines. */
+function stridesAfter(
+  seeds: readonly BlockSeed[],
+  at: number
+): { charStride: number; lineStride: number } {
+  if (at + 1 >= seeds.length) {
+    return { charStride: 0, lineStride: 0 };
   }
   return {
-    ...block,
-    lineStart: block.lineStart + lines,
-    lineEnd: block.lineEnd + lines,
-    charStart: block.charStart + characters,
-    charEnd: block.charEnd + characters
+    charStride: seeds[at + 1].charStart - seeds[at].charStart,
+    lineStride: seeds[at + 1].lineStart - seeds[at].lineStart
   };
+}
+
+/** A block for this seed, in this index. */
+function view(seed: BlockSeed, index: BlockIndex): MarkdownBlock {
+  return new BlockView(index, seed.kind, seed.text, seed.format);
+}
+
+/** What the index needs about this block: what it holds, and how far the next starts. */
+function entryFor(
+  seed: BlockSeed,
+  strides: { charStride: number; lineStride: number }
+): BlockEntry {
+  return {
+    length: seed.charEnd - seed.charStart,
+    span: seed.lineEnd - seed.lineStart + 1,
+    charStride: Math.max(0, strides.charStride),
+    lineStride: Math.max(0, strides.lineStride)
+  };
+}
+
+/** The index the blocks of a list were built in, so a re-split can carry it on. */
+function indexOf(blocks: readonly MarkdownBlock[]): BlockIndex {
+  const first = blocks[0] as BlockView | undefined;
+  return first instanceof BlockView ? first.index : new BlockIndex();
 }
 
 /** How many lines a replacement spans — its own count of line endings. */

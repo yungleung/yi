@@ -28,7 +28,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | Layer | Files | May import |
 | --- | --- | --- |
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
-| Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/history.ts` | syntax |
+| Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
@@ -115,6 +115,17 @@ the edit instead of re-read (`syntax/footnotes.ts: labelsAfterEdit`). Each has a
 property check beside it that compares it with the full computation, which is the
 strongest statement available for "nothing changed" (`test/checks/check-text-store.mjs`,
 `check-blocks.mjs`, `check-footnotes.mjs`).
+
+Where a block *is* is derived too. A block keeps its own kind and its own text, and
+its four positions — `charStart`, `charEnd`, `lineStart`, `lineEnd` — come from an
+index the document owns (`document/block_index.ts`): a prefix sum over each block's
+character stride and another over its line stride, where a stride is the distance to
+the next block's start. Both are more than a block's own size, because blocks tile
+neither the text (a blank line is a block of no characters) nor the lines (a run of
+blank lines is fewer blocks than it has lines). An edit is therefore a point update
+per block it rebuilt, and the blocks below it move by arithmetic instead of being
+rewritten — 484 of 484 rewritten for a character typed at the top of the fixture
+note, against a handful now.
 
 ## The history
 

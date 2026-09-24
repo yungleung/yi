@@ -24,22 +24,23 @@ elements) unless it says otherwise.
   glued to a URL's left turns it into an autolink) and refuses a run of two spaces.
   `docs/superpowers/plans/2026-09-23-spaces-in-plain-edits.md` has the numbers and
   the cases that stay refused: a destination, a label, a line edge, a marker.
+- **A line index for the text (lazy block offsets).** Landed in P11, as a block
+  offset index rather than a line index — the measurement showed the string
+  materialisation P6 worried about is free (V8 hands back a sliced string) and the
+  cost was `blocks.ts: moved()`, which rewrote every block below the edit: **484 of
+  484 blocks for a character typed at the top** of the fixture note, against a
+  handful now, and the count no longer grows with the document (2 of 1933 in a note
+  four times as long). The wall clock at this size is inside the probe's noise; this
+  was the last O(blocks)-per-keystroke shape, and the win is the shape.
 
 ## Open, in the order to take them
 
-1. **A line index for the text (lazy block offsets).** P6's first item, deferred in
-   P7 §1.4 with its reason. The last O(document) + O(blocks) shape per keystroke: an
-   edit materialises the document as a string for the rule, the exactness test and
-   the split, and shifts every block below it. The measured prize at this size is
-   ~1 ms plus ~1 ms, "inside the probe's noise" — so this is for much larger
-   documents, not for this note. It changes what `MarkdownBlock` means, so it is a
-   phase with its own probes.
-2. **Undo ergonomics** (P5's second and third follow-ons). `caretBefore` and
+1. **Undo ergonomics** (P5's second and third follow-ons). `caretBefore` and
    `caretAfter` on the edit, so undo lands where the author was; and coalescing, so
    a typing burst is one step with a rule for when a step ends (a pause, a block
    change, a non-typing command). Both are behaviour changes, and they belong in one
    phase: a coalesced step wants the caret of each end.
-3. **The footnote gap.** A footnote reference cannot be clicked into and edited —
+2. **The footnote gap.** A footnote reference cannot be clicked into and edited —
    a click routes to the jump. A small feature of its own, not a rendering question.
 
 ## Measure before deciding
