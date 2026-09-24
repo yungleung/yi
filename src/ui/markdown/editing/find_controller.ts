@@ -108,7 +108,13 @@ export class FindController {
       cursor = match.to;
     }
     result += source.slice(cursor);
-    this.context.state.setText(result);
+    // One edit for the whole document, remembering the match the bar had put the author
+    // on: undo replaces the text it replaced, so that mark is still a position — and a
+    // selection — and the author comes back to the match they were reading. There is no
+    // `after`: the matches this edit leaves behind are recomputed, and none of them is
+    // the one they were on.
+    const active = this.matches[this.activeIndex];
+    this.context.state.setText(result, active ? { before: { from: active.from, to: active.to } } : undefined);
     this.context.renderer.renderChanged();
     this.updateMatches(true);
   }

@@ -36,7 +36,12 @@ export interface DocumentEdit {
   inserted: string;
   /** Where the author was; absent when the edit was made without a caret. */
   before?: EditMark;
-  /** Where the edit left the author; absent with `before`. */
+  /**
+   * Where the edit left the author; absent when the edit has nowhere in particular to
+   * leave them — a whole-document command whose text is gone, so there is nothing to put
+   * a caret back on (see `find_controller.ts: replaceAll`). An undo of such an edit still
+   * uses the mark it does carry.
+   */
   after?: EditMark;
 }
 
