@@ -57,20 +57,20 @@ down where the next author of a probe will look.
 - Add: `test/checks/probe-markers.mjs`
 - Modify: `test/README.md` (the check count in the pure-checks table)
 
-- [ ] **Step 1: The check, failing**
+- [x] **Step 1: The check, failing**
 
 Write `probe-markers.mjs` first and run it: it must fail on `table-menu-open.js`.
 
-- [ ] **Step 2: The marker**
+- [x] **Step 2: The marker**
 
 Its header gains `@needs-foreground-window` (and the reason, in the header's own voice).
 `npm run check` then passes.
 
-- [ ] **Step 3: The docs rule**
+- [x] **Step 3: The docs rule**
 
 `docs/testing.md`: the symptom and what it means.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add test/probes/table-menu-open.js test/checks/probe-markers.mjs test/README.md docs/testing.md
@@ -79,7 +79,7 @@ git commit -m "fix(probes): the probe that leaves a native menu open is marked"
 
 ### Task 2: Acceptance, roadmap, handoff
 
-- [ ] **Step 1: Acceptance**
+- [x] **Step 1: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -91,18 +91,18 @@ npm run probe:all                               # 76/76 probes, 7 skipped
 And the `bridge:` lines: no probe should show a multi-second *median* any more (the nine
 5 s budget cut-offs stay — they are probes that sleep, not stalls).
 
-- [ ] **Step 2: The docs**
+- [x] **Step 2: The docs**
 
 `docs/roadmap.md`: the picker entry closes with what it was.
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 ```bash
 git add docs/roadmap.md docs/superpowers/plans/2026-09-25-native-menu-in-the-suite.md
 git commit -m "docs: close the native menu handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -111,3 +111,48 @@ git rev-parse HEAD^{tree} codex/native-menu-probe^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**The stall was never the picker.** P21's outlier is closed, and the cause was one missing
+marker in the probe before it.
+
+### What it was
+
+`table-menu-open.js` right-clicks a table cell, which opens the table's **native** context
+menu. A native menu blocks the webview until something closes it, and a scripted run
+cannot — its sibling `table-menu.js` does the same thing and says so in its header
+(*"the table menu, which a scripted run cannot close"*), carrying
+`@needs-foreground-window` so `probe:all` skips it. `table-menu-open.js` had the same
+behaviour and no marker, so the suite ran it, and `table-picker-insert.js` — the probe
+after the *skipped* sibling — paid: `bridge: 7 calls, median 8005.8 ms, max 9504.2 ms,
+5 failed` while its own script took 1.3 s.
+
+Run alone, the picker probe was always fine (`median 8.8 ms`), which is what sent the
+first look at the picker itself.
+
+### What changed
+
+- `table-menu-open.js` carries `@needs-foreground-window`, with the reason beside it. It is
+  still runnable by name with the window in front, which is what it is for — its header
+  says the screenshot script captures what is on screen.
+- `test/checks/probe-markers.mjs` (new, the 22nd check): a probe that builds a
+  `contextmenu` MouseEvent must carry that marker, or the check fails and says what would
+  happen. It read 0 probes at first — my pattern matched `dispatchEvent(new MouseEvent(…))`
+  and both probes build the event first — so the check itself was measured against the two
+  probes it is about: it fails on `table-menu-open.js` and passes once the marker is there.
+- `docs/testing.md`: the symptom, in the rules that save time. A `bridge:` line with a
+  seconds-long *median* and a small probe time means an open native menu — nothing is slow,
+  the webview is blocked — and the fix is the marker, not a restart.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` **22/22**.
+- A freshly started app and `npm run probe:all`: **75/75 probes, 7 skipped** (the picker's
+  neighbour is now one of the skipped), with **no bridge line above a 100 ms median** —
+  `table-picker-insert.js` is `bridge: 3 calls, median 6.2 ms, max 53.9 ms; the probe
+  itself 1331 ms`, against `median 8005.8 ms` in P21's run.
+- The nine probes whose own script crosses the bridge's 5 s budget are unchanged and still
+  recovered (`1 failed`, `the probe itself ~5007 ms`) — that is P21's finding, not a stall.

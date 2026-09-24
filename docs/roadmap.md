@@ -115,8 +115,10 @@ column below.
   free.
 - **The deferred check's parse** (once a burst; 9 ms for that block) is the safety
   net's price, not a defect.
-- **`table-picker-insert.js` stalls the bridge.** In P21's acceptance suite it is the one
-  probe whose *infrastructure* calls were slow — `bridge: 7 calls, median 8005.8 ms, max
-  9504.2 ms, 5 failed` — while its own script took 1.3 s. The app stops answering the
-  bridge for eight to nine seconds around the picker panel and the table it inserts; the
-  probe passes, and nothing else in the suite looks like it.
+- **`table-picker-insert.js` stalls the bridge** — closed in P22, and it was never the
+  picker. The probe before it, `table-menu-open.js`, opens the table's **native** context
+  menu, which blocks the webview until something closes it; it lacked the
+  `@needs-foreground-window` marker its sibling `table-menu.js` carries, so `probe:all` ran
+  it and every later call waited seconds. The marker is on it now,
+  `test/checks/probe-markers.mjs` fails until a probe that opens a menu says so, and
+  `docs/testing.md` has the symptom.
