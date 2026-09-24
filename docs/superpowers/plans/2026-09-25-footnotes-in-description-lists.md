@@ -78,18 +78,18 @@ markdown it was handed — the same set a whole block would borrow from.
 - Produces: `footnotes.ts: isOwnNode(node, length)`; `reparseDescriptionContent` gains a
   definitions argument. `state.ts`'s private `isOwnContent` goes away.
 
-- [ ] **Step 1: The shared rule**
+- [x] **Step 1: The shared rule**
 
 `isOwnNode` in `footnotes.ts`, with the comment saying what it is for (the borrowed
 definitions start past the text the caller parsed), and `state.ts` calling it.
 
-- [ ] **Step 2: The fragment borrows**
+- [x] **Step 2: The fragment borrows**
 
 `fixDescriptionPositions` computes `footnoteLabels(markdown)` once and passes it down;
 `reparseDescriptionContent` parses `withFootnoteDefinitions(source, definitions)` and
 filters with `isOwnNode`.
 
-- [ ] **Step 3: The check**
+- [x] **Step 3: The check**
 
 `check-parser.mjs`'s footnote case flips: the term and the detail assert the reference
 *node* comes back with its source, instead of asserting it stays text. The case's
@@ -99,7 +99,7 @@ comments (in the file and in the corpus) stop calling it an exception.
 npm run check
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/footnotes.ts src/ui/markdown/syntax/parser.ts \
@@ -117,7 +117,7 @@ git commit -m "feat(parser): a footnote reference in a description list"
 - Produces: a case in the probe that a reference in a detail renders as a reference, and
   that the definition is *not* rendered inside the list.
 
-- [ ] **Step 1: The probe case**
+- [x] **Step 1: The probe case**
 
 A document with a description list whose detail cites a footnote defined below it: the
 detail renders the reference widget (`[data-footnote-ref]`) and the definition line stays
@@ -127,7 +127,7 @@ its own block. Typing after the reference still lands where the document says.
 npm run probe -- --fixture default-document.md test/probes/description-list.js
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add test/probes/description-list.js
@@ -136,12 +136,12 @@ git commit -m "test(parser): a footnote reference in a description list"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/roadmap.md` closes the boundary P18 named; the plan's handoff records what the
 fragment parse borrows now.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -150,14 +150,14 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 74/74 probes, 6 skipped
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 ```bash
 git add docs/roadmap.md docs/superpowers/plans/2026-09-25-footnotes-in-description-lists.md
 git commit -m "docs: close the footnote in a description list handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -166,3 +166,51 @@ git rev-parse HEAD^{tree} codex/footnotes-in-description^{tree}   # must be equa
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**A footnote reference in a description term or detail is a reference again.** P18 fixed
+the crash; this is the half a reader would still notice, and it was one borrowing away.
+
+### The change
+
+`parser.ts: reparseDescriptionContent` parses a term or a detail's own line — a fragment,
+which has no document around it, and markdown reads `[^1]` as a reference only when its
+definition is in the same parse. So the fragment now parses
+`withFootnoteDefinitions(source, definitions)`, exactly as a block does in
+`state.ts: getBlockContent`, and filters the nodes that came from the borrowed lines with
+`isOwnNode`: they start past `source.length`, so they never reach the renderer and never
+move an offset. `fixDescriptionPositions` reads the labels once per parse, from the
+markdown it was handed — the same set a block would borrow from.
+
+### The rule that moved
+
+`state.ts` had a private `isOwnContent` saying which nodes of a borrowed parse are the
+caller's own. That fact belongs with `withFootnoteDefinitions`, which is what makes it
+true, so it is now `footnotes.ts: isOwnNode` and both callers read it from there — the
+block parse and the fragment parse. One rule, one home, and the second caller is what
+found it.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` **21/21**.
+- A freshly started app and `npm run probe:all`: **74/74 probes, 6 skipped**.
+- The check proved it before the fix did: with the fragment parsing unborrowed,
+  `check-parser.mjs` reports
+  `and a footnote reference comes back in a detail — expected ["[^1]"] actual []`, for
+  both a term and a detail; with the borrowing it passes. Its footnote case used to assert
+  the opposite (that the reference stayed text) — that assertion is gone, not weakened.
+- The probe (`test/probes/description-list.js`) adds the case in the app: the reference in
+  a detail renders as `[data-footnote-ref]`, the definition it borrowed does **not** appear
+  inside the list block, it still renders as its own block, and typing after the reference
+  lands where the document says (`… a note[^1] inw it …`).
+
+### What is left
+
+- **P16's marks** are now the only open item in `docs/roadmap.md`'s list: inline
+  formatting and find-and-replace-all record their edit without marks, so undoing one
+  leaves the caret where it is rather than restoring the selection it covered.
+- P18's note still stands: the description-list line reader describes the plugin's shape,
+  and wants a look if the plugin's rule changes.

@@ -63,6 +63,13 @@ elements) unless it says otherwise.
   now parse, hold those nodes with absolute offsets, and the path has the check and the
   probe it never had. The check's corpus caught a **plain-edit bug** on the way: a
   character typed between the two spaces of a hard break deleted the break.
+- **The footnote reference P18 left behind.** Landed in P19, as
+  `docs/superpowers/plans/2026-09-25-footnotes-in-description-lists.md`: a `[^1]` in a
+  description term or detail rendered as its own text, because a term and a detail are
+  re-parsed from their own lines and markdown reads a reference only when its definition
+  is in the same parse. The fragment now borrows the document's definitions the way a
+  whole block does — through the same `footnotes.ts` rule, which moved out of `state.ts`
+  so both callers read it from its one home — and the borrowed lines are dropped again.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -76,11 +83,9 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — what P18 left (a footnote
-*reference* in a term or a detail renders as its own text, because those are re-parsed as
-fragments with no definitions in them), and what P16 left: the two whole-document commands
-(inline formatting, find and replace all) still record no marks, so undoing one keeps the
-caret where it is rather than restoring the selection it covered.
+the order I would take them, is in each phase's handoff — one item, what P16 left: the two
+whole-document commands (inline formatting, find and replace all) still record no marks,
+so undoing one keeps the caret where it is rather than restoring the selection it covered.
 
 ## Measure before deciding
 
