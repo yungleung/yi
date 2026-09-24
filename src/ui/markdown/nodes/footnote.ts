@@ -11,9 +11,9 @@
  * which is a character its rendering spells out. Ctrl-click jumps.
  *
  * May import: the node contract (`editable_node.ts`, `revealable_node.ts`), the
- * registry (`createComponent`), `source_mode.ts` and the AST types. Upholds: a
- * block's rendering is a pure function of its own source — the anchor is named from
- * the node's own label.
+ * registry (`createComponent`), the marker's shape (`syntax/footnotes.ts:
+ * markerShape`), `source_mode.ts` and the AST types. Upholds: a block's rendering is
+ * a pure function of its own source — the anchor is named from the node's own label.
  */
 
 import { createComponent } from '../registry';
@@ -25,16 +25,6 @@ import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
 
 /** The class a marker's source view carries, so the caret mapping can find it. */
 const SOURCE_CLASS = 'markdown-footnote-source';
-
-/**
- * The label's characters inside the `[^label]` a marker is written as, taken from the
- * label the parse kept rather than from what is being drawn: the document's own
- * characters and the serializer's spelling of the same label are the same string
- * between the same two markers (see `syntax/footnotes.ts: markerShape`).
- */
-function labelRange(label: string): { start: number; end: number } {
-  return markerShape(label).label;
-}
 
 export class FootnoteDefinition extends EditableNodeComponent {
   constructor(node: AstFootnoteDefinition) {
@@ -149,7 +139,7 @@ export class FootnoteReference extends RevealableNodeComponent {
   constructor(node: AstFootnoteReference) {
     const id = String(node.identifier ?? node.label ?? 'note');
     const label = String(node.label ?? node.identifier ?? 'note');
-    const content = labelRange(label);
+    const content = markerShape(label).label;
     const sourceView = sourceViewFor(node, SOURCE_CLASS, () => content);
     super('footnoteReference', node, sourceView ?? document.createElement('sup'));
     this.content = content;
@@ -169,7 +159,11 @@ export class FootnoteReference extends RevealableNodeComponent {
     this.element.appendChild(link);
   }
 
-  /** The label, which is the part of the source a click lands in. */
+  /**
+   * The label, which is the part of the source a click lands in: the text being drawn
+   * and the parse's label are the same characters between the same two markers, so the
+   * range is the shape's own and the `source` handed in is not read.
+   */
   protected sourceContentRange(): { start: number; end: number } {
     return this.content;
   }
