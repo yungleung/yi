@@ -8,8 +8,9 @@
  * definitions its references need (see `withFootnoteDefinitions`), and the
  * nodes that come from that borrowed text are dropped again.
  *
- * Everything here is pure text: labels, offsets, numbering, and the single
- * edit that writes a new marker and its definition line.
+ * Everything here is pure text: labels, the shape of the `[^label]` a footnote is
+ * written as, offsets, numbering, and the single edit that writes a new marker and
+ * its definition line.
  *
  * May import: nothing — the raw document text is passed in. Upholds: one fact
  * about markdown syntax has one home, and this is the home of footnote labels,
@@ -36,6 +37,25 @@ export function footnoteLabels(text: string): Set<string> {
     labels.add(match[1]);
   }
   return labels;
+}
+
+/**
+ * The `[^label]` a footnote is written as: the length of the whole marker, and where
+ * the label's own characters sit inside it (`[^` … `]`).
+ *
+ * This is the one home of the marker's shape. Everything that has to know where a
+ * marker's label begins and ends asks here: a source view of a marker enters at the
+ * label's end and edits inside the marker (`nodes/footnote.ts`), and a definition's
+ * label is the part of the definition the caret shows the source of
+ * (`editing/context.ts`), so the two cannot disagree about the characters a caret
+ * inside a label is inside.
+ */
+export function markerShape(label: string): {
+  end: number;
+  label: { start: number; end: number };
+} {
+  const end = label.length + 3;
+  return { end, label: { start: 2, end: end - 1 } };
 }
 
 /**

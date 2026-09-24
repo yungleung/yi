@@ -132,16 +132,31 @@ export function withRenderFrame<T>(block: MarkdownBlock, build: () => T): T {
 
 /** Whether this node's own source is the one being shown. */
 export function isShownSource(node: AstNode): boolean {
-  const frame = renderFrame;
   const position = (
     node as { position?: { start?: { offset?: number }; end?: { offset?: number } } }
   ).position;
-  if (!frame || !shownRange || position?.start?.offset === undefined) {
+  if (position?.start?.offset === undefined) {
     return false;
   }
-  const from = frame.charStart + position.start.offset;
-  const to = position.end?.offset === undefined ? from : frame.charStart + position.end.offset;
-  return from === shownRange.from && to === shownRange.to;
+  const from = position.start.offset;
+  return isShownSourceRange(from, position.end?.offset ?? from);
+}
+
+/**
+ * Whether the shown source covers exactly this range of the block being built —
+ * {@link isShownSource}'s question, asked of a range instead of a node.
+ *
+ * A node whose own markdown is only *part* of it asks this way, because its position
+ * cannot say which part: a footnote definition's node covers the whole note, so its
+ * label asks whether the source shown is the `[^label]` at the definition's head (see
+ * `nodes/footnote.ts`).
+ */
+export function isShownSourceRange(from: number, to: number): boolean {
+  const frame = renderFrame;
+  if (!frame || !shownRange) {
+    return false;
+  }
+  return frame.charStart + from === shownRange.from && frame.charStart + to === shownRange.to;
 }
 
 /**
