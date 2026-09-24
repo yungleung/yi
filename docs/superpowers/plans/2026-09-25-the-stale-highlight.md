@@ -84,3 +84,44 @@ git checkout main
 git merge --no-ff codex/local-write-measured -m "merge: the stale highlight, measured (typing)"
 git rev-parse HEAD^{tree} codex/local-write-measured^{tree}   # must be equal
 ```
+
+---
+
+## Handoff — what this phase left
+
+**The decision has its numbers, and they say build it.** Measured in the running app by
+patching a text node by hand — what a local write *is* — with the app's own block factory
+rendering the same document as the reference:
+
+| Typed at the middle of a word | Write | Stale characters | Repair |
+| --- | --- | --- | --- |
+| a letter in an identifier, a string, a comment | 2–4 ms | 0 | 1–2 ms |
+| a digit in an identifier | 3 ms | 0 | 1–2 ms |
+| a backtick inside a string | 3 ms | 0 | 1 ms |
+| a slash inside a comment | 3 ms | 0 | 1 ms |
+| **a quote in an identifier** | 4 ms | **62** — `language-js` where it should be `hljs-string` | 1 ms |
+| **a quote closing a string** | 2 ms | **27** — the tail of the line back to code | 1 ms |
+
+So the trade is exactly one thing: ordinary typing is invisible, and a delimiter that changes
+how the rest of the line reads shows its old colours until the burst stops — the deferred
+check's existing timer, ~200 ms of idle — with a 1–2 ms re-highlight to put it right. Against
+that: a keystroke in a code block goes from **25–34 ms to 2–4 ms**, which is 8–10×.
+
+### What the next phase would be, if the decision is yes
+
+1. A raw-block write beside the plain one in `editing/context.ts`, refusing unless the block
+   is a fenced code block whose element holds its content one for one *and* the edit lies
+   inside that content (P24's shape, which worked: `code_write.ts`'s conditions are in that
+   handoff and the reason its *re-render* lost is the reason this shape is different — it
+   writes one text node and does not touch the markup).
+2. The re-highlight hung on the deferred check's timer (`editing/context.ts: scheduleVerify`
+   already coalesces one check a burst), which is the piece that does not exist yet.
+3. A probe asserting the fast path in the app (the block survives, the document holds the
+   character, the caret follows — P24's `code-typing.js` did exactly this and is in that
+   handoff), and one asserting that the highlight is what a fresh render would produce once
+   the burst has ended.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` 22/22.
+- A freshly started app and `npm run probe:all`: 77/77 probes, 7 skipped.

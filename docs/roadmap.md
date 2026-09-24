@@ -117,12 +117,31 @@ column below.
   **The design P23 named was built and measured out**: a write that re-renders the block's
   own markup in place keeps the element and the highlighting, but it costs the same — 31 ms
   against the rebuild's 25 ms — because the `innerHTML` swap invalidates exactly the layout
-  the element swap did (highlight.js is only 5–8 ms of it). What is left to try is the other
-  shape: write the character into the text node *inside* the highlighted span that holds it
-  (the plain write's own 0–1 ms patch) and re-highlight once the burst stops — which trades a
-  stale highlight for the length of a burst against the whole cost, and is a visible change
-  that wants a decision of its own. `test/probes/typing-cost-by-kind.js` keeps the numbers
-  honest, detached build included.
+  the element swap did (highlight.js is only 5–8 ms of it). The other shape is measured in
+  the item below; `test/probes/typing-cost-by-kind.js` keeps these numbers honest, detached
+  build included.
+- **What a local write into highlighted code would cost, and show.** Measured in P26, as
+  `docs/superpowers/plans/2026-09-25-the-stale-highlight.md`. The shape: write the character
+  into the text node *inside* the highlighted span that holds it — the plain write's own
+  patch — and refresh the highlight when the burst stops, on the deferred check's existing
+  timer. Measured in the running app, with the app's own renderer as the reference for what a
+  fresh render would produce (`test/probes/code-local-write.js`):
+
+  | Typed | Write | Stale characters on screen | Re-highlight when the burst ends |
+  | --- | --- | --- | --- |
+  | a letter in an identifier / a string / a comment | 2–4 ms | **0** — the markup is identical | 1–2 ms |
+  | a digit in an identifier | 3 ms | **0** | 1–2 ms |
+  | a backtick inside a string, a slash inside a comment | 3–4 ms | **0** | 1–2 ms |
+  | **a quote in an identifier** | 4 ms | **62** (`language-js` where it should be `hljs-string`) | 1 ms |
+  | **a quote closing a string** | 2 ms | **27** (the tail of the line back to code) | 1 ms |
+
+  **The recommendation is to build it.** Ordinary typing in a code block — letters, digits,
+  and anything that does not open or close a token — would be invisible, and a keystroke
+  would cost 2–4 ms instead of 25–34, with one 1–2 ms re-highlight per burst. The visible
+  cost is narrow and named: the moment a delimiter *changes* how the rest of the line is
+  read — a quote opening or closing a string, a comment starting — that rest keeps the old
+  colours until the burst stops (~200 ms of idle, the deferred check's timer). That is the
+  decision the numbers were gathered for, and it is the user's to take.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
