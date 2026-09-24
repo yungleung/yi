@@ -124,6 +124,16 @@ elements) unless it says otherwise.
   markers markdown allows, the drawn label's right edge belongs to the note, and a block
   holding a marker keys its parse and its rendering on the labels it borrowed
   (`document/state.ts: parseKey`).
+- **A click that opens a source moved the page.** Reported by the user as a click on a
+  citation or a wikilink "causing a jump", and fixed as its own small phase
+  (`docs/superpowers/plans/2026-09-25-a-click-that-does-not-move-the-page.md`). Measured
+  on the demo document with its thematic break just below the fold — the arrangement the
+  report is about, reached by scrolling *down*: a click on the citation above it moved
+  the scroll **24px** a frame later, with the layout unchanged and the caret on screen.
+  Every source-opening click goes through one seam (`markdown_editor.ts: enterSource`),
+  and it now keeps the scroll the way an edit does (`editing/context.ts: keepScroll`).
+  `test/probes/reveal-click-scroll.js` holds it (it fails without the fix by 24px), and
+  the footnote jump — a move the reader asks for — still scrolls.
 
 ## Open, in the order to take them
 

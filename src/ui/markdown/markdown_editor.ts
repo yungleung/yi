@@ -319,6 +319,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * at the end of its last content line. The rendering cannot name the
    * character that was clicked, so this is the entry point that is always
    * true; the next click lands on the text, where the mapping is exact.
+   *
+   * Opening a source rebuilds the block it sits in, and the browser moves the view
+   * for the same reason it does after an edit: measured on the demo document with
+   * its thematic break just below the fold, a click on the citation above it moved
+   * the scroll **24px** a frame later, with the layout unchanged and the caret on
+   * screen. The reader clicked something they could see, so they stay where they
+   * were — the same rule, and the same helper, the edits already use (an entry that
+   * genuinely lands out of view still scrolls it in; see `keepScroll`).
    */
   private enterSource(blockElement: HTMLElement, offset: number | null): void {
     const block = this.state.getBlockAtLine(Number(blockElement.dataset.lineStart));
@@ -326,7 +334,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     const within = offset ?? sourceEntryOffset(block.text);
+    const anchor = this.contentView.scrollTop;
     restoreCaret(this.context, block.charStart + within);
+    keepScroll(this.context, anchor);
   }
 
   /**
