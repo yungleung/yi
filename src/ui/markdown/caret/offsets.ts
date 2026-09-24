@@ -306,9 +306,10 @@ function mapNode(
     // has to land somewhere, and letting the label own it made one visual position mean
     // two things — a click in the gap right of the label wrote *into* it (a freshly
     // inserted note's `[^1]: ` came out `[^1H]: `) while a click on the note's own first
-    // character, one pixel further along, wrote into the note. An empty note has no text
-    // node of its own to map into, so the boundary falls through to the children and
-    // then past the node, which is the position after its `]:`.
+    // character, one pixel further along, wrote into the note. An empty note still has a
+    // position to land on — the space markdown drops after `]:` is drawn as a character
+    // of its own (`syntax/trailing_spaces.ts`) — and a definition with nothing in it at
+    // all falls past the node, to the position right after it.
     const drawn = drawnMarkerLength(node);
     const rawStart = rawStartOf(node, block);
     if (rawStart !== null && renderedOffset < acc + drawn) {
