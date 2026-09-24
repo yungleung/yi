@@ -374,7 +374,7 @@ git commit -m "refactor(document): derive a block's position from the index"
 - Consumes: `document/state.ts`, `document/text_store.ts` through `t.app`.
 - Produces: the numbers the handoff quotes.
 
-- [ ] **Step 1: The probe**
+- [x] **Step 1: The probe**
 
 ```js
 /**
@@ -430,7 +430,7 @@ git commit -m "refactor(document): derive a block's position from the index"
 })()
 ```
 
-- [ ] **Step 2: Run it, before and after**
+- [x] **Step 2: Run it, before and after**
 
 Run:
 
@@ -444,7 +444,7 @@ Expected (from the throwaway run on `main`): `materialiseMs: 0`, `atTheTop.ms: 1
 `atTheTop.rewritten` counts only the blocks the edit itself rebuilt (a handful), and
 `atTheTop.ms` is at or below 0.5. Report both runs in the handoff.
 
-- [ ] **Step 3: Index it, and commit**
+- [x] **Step 3: Index it, and commit**
 
 ```bash
 git add test/probes/block-offset-cost.js test/README.md
@@ -458,7 +458,7 @@ git commit -m "test(document): measure an edit without rewriting the tail"
 - Modify: `docs/roadmap.md`
 - Modify: `docs/superpowers/plans/2026-09-24-block-offset-index.md`
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/architecture.md`: where the block model is described, say that a block keeps its
 own text and its counts and that where it sits is the index's arithmetic — so an edit
@@ -466,7 +466,7 @@ moves the blocks below it without touching them. `docs/roadmap.md`: item 1 moves
 Closed, with the numbers and the one thing that stays O(blocks) (a structural edit
 renumbers, and `renderChanged` walks the window).
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -475,7 +475,7 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 67/67 probes, 6 skipped
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 Append to this plan: what changed, the numbers (the state's edit at the top and the
 end of the note, before and after; the rewritten-block counts; the check counts), and
@@ -487,7 +487,7 @@ git add docs/architecture.md docs/roadmap.md docs/superpowers/plans/2026-09-24-b
 git commit -m "docs: close the block index handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -496,3 +496,58 @@ git rev-parse HEAD^{tree} codex/block-offset-index^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-24 — where the blocks are, kept as arithmetic
+
+**What changed.** A block is its own kind and its own text; `charStart`, `charEnd`,
+`lineStart` and `lineEnd` are derived from an index the document owns
+(`document/block_index.ts`) — a Fenwick tree over each block's **character stride**
+and another over its **line stride**, where a stride is the distance from a block's
+start to the next block's start. Both are more than a block's own size, because
+blocks tile neither the text (a blank line is a block of no characters, and the
+newlines between blocks belong to no block) nor the lines (a run of blank lines is
+fewer blocks than it has lines — `emptyParagraphIndexes`). The walk still computes
+the positions it decides with and hands them over as seeds; `splitBlocksFrom` stops
+at the block the edit left alone, places the blocks it rebuilt, patches the stride
+above the walk and the one at the seam, and appends the tail as the objects it was.
+`moved()` is gone.
+
+**The numbers.** `test/probes/block-offset-cost.js`, the state alone on the fixture
+note (314 266 characters, 484 blocks):
+
+| What | On `main` | Now |
+| --- | --- | --- |
+| blocks that come back as new objects, a character at the **top** | **484** of 484 | **2** |
+| the same at the **end** | 2 | 2 |
+| the state's own edit, top / end | ~1 ms / ~0 ms | 0–1 ms / 0 ms |
+| the same at the top of a note **four times as long** (1933 blocks) | ~1933 objects | **2** |
+| materialising the text as a string | 0 ms | 0 ms |
+
+The wall clock at this size is inside the probe's noise — the store and the split are
+what is left of it — and the point is the shape: the work no longer grows with the
+number of blocks below the edit, which is what a book-length note would have paid.
+
+**Two errors the checks caught, and one the probes did.** `check-blocks.mjs` found a
+length sum and a span sum that each looked right and were not (the two stride
+stories above), and `check-block-index.mjs` pins the index's own cases, including
+that a block a rebuild dropped is refused rather than answered for. The probes found
+the third: `virtual_block_renderer.ts` spreads a block into the DOM factory, and a
+prototype getter does not survive a spread — a clicked link stopped revealing its
+source — so the positions are *own* getters now, still derived, and `check-blocks.mjs`
+pins the copy.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` 20/20 (`check-block-index`
+is new), a freshly started app and `npm run probe:all` **67/67 (6 skipped)**.
+
+**What is left.**
+
+- **Undo ergonomics** (P5's second and third follow-ons): `caretBefore`/`caretAfter`
+  on the edit, and coalescing a typing burst into one step.
+- **The footnote gap**: a footnote reference cannot be clicked into and edited.
+- **Punctuation and digits**: a full stop or a digit still takes the ordinary path.
+- **Two O(blocks) passes this phase did not touch**: `renderChanged` builds a map of
+  every block per edit (cheap, ~484 inserts) and `updateSpacers` walks every block
+  when a height changed or the window moves. Neither is the split's shape; a height
+  index is a follow-on if a profile ever asks for one.
