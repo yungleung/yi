@@ -50,6 +50,23 @@ check('the next number follows the highest one', nextFootnoteNumber('a[^1] b[^3]
 check('labelled footnotes do not number the next one', nextFootnoteNumber('a[^note]\n\n[^note]: x\n'), 1);
 check('an empty document starts at 1', nextFootnoteNumber(''), 1);
 
+// A definition written inside a container defines its label for the whole
+// document — the block-by-block parse borrows it across blocks by this shape, so
+// a `>` or a list marker in front of it may not hide it.
+check('a definition inside a blockquote is read',
+  [...footnoteLabels('Body[^1] here.\n\n> [^1]: the note in the quote\n')], ['1']);
+check('and so is one behind two containers',
+  [...footnoteLabels('Body[^1] here.\n\n> - item\n>\n>   [^1]: the note\n')], ['1']);
+check('an indented code block is not a definition',
+  [...footnoteLabels('Body[^x] here.\n\n    [^x]: a code block, not a note\n')], []);
+check('a definition the line opens as an item is read',
+  [...footnoteLabels('Body[^1] here.\n\n- [^1]: the note\n')], ['1']);
+// The line rule describes the definition's own line, not markdown's containers:
+// four spaces in, a definition and an indented code block look the same, and the
+// code block's reading is the one kept. `docs/roadmap.md` holds this as a residue.
+check('a definition indented inside a wide item is left as the text it is',
+  [...footnoteLabels('Body[^1] here.\n\n10. item\n\n    [^1]: the note\n')], []);
+
 // Offsets: where the jump lands.
 const doc = 'Body text[^1] more.\n\n[^1]: The definition.\n';
 const offsets = footnoteOffsets(doc, '1');
@@ -70,6 +87,23 @@ const mixed = footnoteOffsets(mixedCase, 'note');
 check('a label is matched however it is cased',
   [mixedCase.slice(mixed.reference, mixed.referenceEnd), mixedCase.slice(mixed.definitionBody)],
   ['[^Note]', 'The definition.\n']);
+// A definition inside a container: the jump target is the note's own text, not
+// the container's marker — the body offset is measured after `]: ` wherever the
+// definition line sits.
+const inQuote = 'Body[^1] here.\n\n> [^1]: The definition.\n';
+const quoted = footnoteOffsets(inQuote, '1');
+check('a definition inside a blockquote is found for the jump',
+  inQuote.slice(quoted.definitionBody), 'The definition.\n');
+check('and its reference is the marker in the text',
+  inQuote.slice(quoted.reference, quoted.referenceEnd), '[^1]');
+const inItem = 'Body[^1] here.\n\n10. item\n\n    [^1]: The definition.\n';
+// The same residue as above, from the jump's side: a definition four columns into
+// a wide item is not found, so the marker's jump has nowhere to go.
+check('a definition indented inside a wide item has no jump target',
+  footnoteOffsets(inItem, '1').definitionBody, null);
+const inItemBeside = 'Body[^1] here.\n\n- [^1]: The definition.\n';
+check('and one the line opens as an item does',
+  inItemBeside.slice(footnoteOffsets(inItemBeside, '1').definitionBody), 'The definition.\n');
 
 // The insertion: marker at the caret, definition at the end.
 const inserted = footnoteInsertEdit(doc, 4, '2');

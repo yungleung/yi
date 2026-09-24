@@ -42,9 +42,13 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Eighty-six of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Ninety-four of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
-(`table-*`), footnotes (`footnote-*`, `footnote-source`, `footnote-preview`), description
+(`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
+the preview card, the label's own edits, and the shapes a definition is written in:
+`footnote-containers`, `footnote-container-jump`, `footnote-table-cell`,
+`footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,
+`footnote-label-rebuild`, `footnote-label-edge`), description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`),

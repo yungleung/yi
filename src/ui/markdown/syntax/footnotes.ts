@@ -19,16 +19,38 @@
 
 import type { TextEdit } from './edit_range';
 
+/**
+ * What a definition line may sit behind: markdown's container openers — a quote
+ * marker, a list marker — and the spaces it allows at the start of a line or an
+ * item's content, repeated because containers nest (`> - [^1]: the note`).
+ *
+ * A definition written inside a container is a definition of the *document*:
+ * markdown collects them from anywhere, and this editor borrows them across
+ * blocks by their line shape (`withFootnoteDefinitions`), so the shape has to
+ * look past the container's own markers — a `> [^1]: note` inside a blockquote
+ * defines its label for a reference in any other block. At the top level the
+ * spaces are still capped at three: `    [^1]: note` is an indented code block,
+ * and reads as the text it is.
+ *
+ * One shape is deliberately outside it, and it leaves the line as the text it is
+ * rather than invent a definition: a container whose content column is wider than
+ * the three spaces read here — a `10. ` item, a nested list — whose definitions
+ * sit four or more columns in, exactly like an indented code block that the line
+ * alone cannot be told apart from. `docs/roadmap.md` records it as a residue.
+ */
+const CONTAINERS = '(?: {0,3}(?:>[ \\t]+|[-*+][ \\t]+|\\d+[.)][ \\t]+))* {0,3}';
 /** The label a definition line defines, or null. */
-const DEFINITION = /^ {0,3}\[\^([^\]\n]+)\]:/gm;
+const DEFINITION = new RegExp(`^${CONTAINERS}\\[\\^([^\\]\\n]+)\\]:`, 'gm');
 /**
  * A line that starts a definition. Kept separate from `DEFINITION` on purpose:
  * that one is global, so it carries a last-index between calls, which a plain
  * `test` would inherit.
  */
-const DEFINITION_START = /^ {0,3}\[\^[^\]\n]+\]:/;
+const DEFINITION_START = new RegExp(`^${CONTAINERS}\\[\\^[^\\]\\n]+\\]:`);
 /** A reference: a labelled bracket that is not a definition. */
 const REFERENCE = /\[\^([^\]\n]+)\](?!:)/g;
+/** The same shape, without the global flag, for a caller that only asks *whether*. */
+const REFERENCE_SHAPE = /\[\^[^\]\n]+\](?!:)/;
 
 /** The labels of the definitions the document holds. */
 export function footnoteLabels(text: string): Set<string> {
@@ -37,6 +59,27 @@ export function footnoteLabels(text: string): Set<string> {
     labels.add(match[1]);
   }
   return labels;
+}
+
+/** Whether a piece of text holds a marker a definition could turn into a reference. */
+export function containsReference(text: string): boolean {
+  return REFERENCE_SHAPE.test(text);
+}
+
+/** Whether two sets of labels hold the same labels. */
+export function sameLabels(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const label of a) {
+    if (!b.has(label)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -72,7 +115,7 @@ export interface TextReplacement {
 }
 
 /** Whether a piece of text holds a line that defines a footnote. */
-const DEFINITION_LINE = /^ {0,3}\[\^[^\]\n]+\]:/m;
+const DEFINITION_LINE = new RegExp(`^${CONTAINERS}\\[\\^[^\\]\\n]+\\]:`, 'm');
 
 /**
  * The labels the document defines after `edit`, given the labels it had.
@@ -158,7 +201,7 @@ export interface FootnoteOffsets {
 export function footnoteOffsets(text: string, label: string): FootnoteOffsets {
   const escaped = escapeLabel(label);
   const reference = new RegExp(`\\[\\^${escaped}\\](?!:)`, 'i').exec(text);
-  const definition = new RegExp(`^ {0,3}\\[\\^${escaped}\\]:[ \\t]*`, 'im').exec(text);
+  const definition = new RegExp(`^${CONTAINERS}\\[\\^${escaped}\\]:[ \\t]*`, 'im').exec(text);
   return {
     reference: reference ? reference.index : null,
     referenceEnd: reference ? reference.index + reference[0].length : null,
