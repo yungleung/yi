@@ -37,15 +37,19 @@ export class FootnoteDefinition extends EditableNodeComponent {
     );
 
     const id = String(node.identifier ?? node.label ?? 'note');
+    const label = String(node.label ?? node.identifier ?? 'note');
 
     const anchor = document.createElement('a');
     anchor.id = `fn-${id}`;
     anchor.className = 'mr-2 font-semibold inline-block align-top';
-    anchor.textContent = `[${id}]`;
-    // Clicking the label of a definition jumps back to its reference; the
-    // editor owns that jump, so the label only has to name itself.
+    // The label as the author wrote it — `label`, not the normalised `identifier` —
+    // tagged as the block's own text from its first character, so the caret can be put
+    // in it and typing edits the document there (see `caret/offsets.ts`). A plain click
+    // edits it, ⌘-click jumps back to the marker.
+    anchor.textContent = `[^${label}]`;
+    anchor.dataset.textFrom = '0';
     anchor.dataset.footnoteDef = id;
-    anchor.title = 'Jump to the marker this note is attached to';
+    anchor.title = 'Click to edit the label, ⌘-click to jump to the marker';
     this.element.appendChild(anchor);
 
     this.element.appendChild(renderFootnoteBody(node));

@@ -27,6 +27,13 @@ elements) unless it says otherwise.
 - **The footnote gap.** Landed in P13: a marker is a revealable node now, so a click
   opens its label as its source and the label can be typed in, while Ctrl-click (and
   the `contextmenu` macOS delivers it as) jumps to the note.
+- **Footnote interaction** (P13's and P14's leftovers). Landed in P15, as
+  `docs/superpowers/plans/2026-09-24-footnote-interaction.md`: a definition's label
+  renders the characters the author wrote (`[^label]`) and is editable where it sits —
+  one click rule for both anchors, a plain click edits and Ctrl-click or ⌘-click jumps —
+  and the preview card can be read and followed: it takes the pointer, waits a 250 ms
+  grace after the pointer is on neither it nor its marker, and opens a link in a note
+  through the app's opener instead of letting the webview navigate.
 - **Undo ergonomics** (P5's second and third follow-ons). Landed in P12: an edit
   carries the caret it started from and the one it left, so undo returns to where the
   author was; and a run of typing or deleting is one step, with a letter (`\p{L}`, any
@@ -45,9 +52,9 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — the definition's own label
-(`[^label]:`) from P13, coalescing across kinds and restoring a selection from P12,
-and punctuation and digits in the plain-edit rule from P10.
+the order I would take them, is in each phase's handoff — coalescing across kinds and
+restoring a selection from P12, and punctuation and digits in the plain-edit rule from
+P10.
 
 ## Measure before deciding
 

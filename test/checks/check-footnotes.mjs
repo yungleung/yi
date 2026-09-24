@@ -63,6 +63,13 @@ check('an unknown label has no offsets', footnoteOffsets(doc, '9'), {
 const emptyDefinition = 'x[^2]\n\n[^2]:';
 check('an empty definition is found too',
   emptyDefinition.slice(footnoteOffsets(emptyDefinition, '2').definitionBody), '');
+// Markdown labels are not case-sensitive, and the normalised one is what a marker
+// carries, so a label written `[^Note]` has to be found from `[^note]`.
+const mixedCase = 'Body[^Note] here.\n\n[^Note]: The definition.\n';
+const mixed = footnoteOffsets(mixedCase, 'note');
+check('a label is matched however it is cased',
+  [mixedCase.slice(mixed.reference, mixed.referenceEnd), mixedCase.slice(mixed.definitionBody)],
+  ['[^Note]', 'The definition.\n']);
 
 // The insertion: marker at the caret, definition at the end.
 const inserted = footnoteInsertEdit(doc, 4, '2');
