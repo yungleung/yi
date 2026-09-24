@@ -141,10 +141,13 @@ the author had. Undoing therefore puts the author back where they were when they
 the change, rather than where the reader happens to be when they ask for the undo — a
 caret, or the selection the edit replaced, selected again so it can be typed over — and
 redoing puts them where the change left off. An edit recorded without marks, which is
-the whole-document `setText` a format or a find-and-replace uses, leaves the caret where
-it is; those commands place their own selection afterwards. `editing/context.ts:
-restoreMark` is the one place a mark is put back, and the range placement it uses for a
-selection is the one a formatting command uses to re-select what it formatted.
+one with nowhere in particular to leave its author, leaves the caret where it is — and
+that is now the exception rather than the rule for the two whole-document commands:
+`state.ts: setText` takes marks, so inline formatting records the selection it replaced
+and the span it leaves selected, and find-and-replace-all records the match the bar was
+on. `editing/context.ts: restoreMark` is the
+one place a mark is put back, and the range placement it uses for a selection is the one a
+formatting command uses to re-select what it formatted.
 
 Consecutive keystrokes of one kind **run together into one step**: a letter extends
 a run, the first character that is not a letter ends it — so the space after a word

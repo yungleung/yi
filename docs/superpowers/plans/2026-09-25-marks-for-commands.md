@@ -71,17 +71,17 @@ is today's behaviour and stays).
 
 - Produces: `state.setText(text, marks?: { before: EditMark; after?: EditMark })`.
 
-- [ ] **Step 1: `setText` takes marks**
+- [x] **Step 1: `setText` takes marks**
 
 Record them the way `replaceRange` does, and say in the comment what a whole-document
 command can know about its author.
 
-- [ ] **Step 2: The two commands**
+- [x] **Step 2: The two commands**
 
 Formatting: `before` = the selection it formatted, `after` = the span it selects.
 Replace-all: `before` = the active match (and no `after`, with a comment saying why).
 
-- [ ] **Step 3: The checks**
+- [x] **Step 3: The checks**
 
 `check-history.mjs`'s state section: a whole-document edit records the marks it was given
 with one text, undoes to the mark it started from, and an edit with only a `before` mark
@@ -91,7 +91,7 @@ inverts to one with only an `after`.
 npm run check
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/document/state.ts src/ui/markdown/document/history.ts \
@@ -111,12 +111,12 @@ git commit -m "feat(undo): the whole-document commands remember their author"
 
 - Produces: the find bar's first probe (replace all, and what undoing it gives back).
 
-- [ ] **Step 1: Undo of formatting**
+- [x] **Step 1: Undo of formatting**
 
 In `undo-selection-return.js`: select a word, click Bold, undo — the document is back and
 the word is selected again. It belongs there: the probe is about what an undo gives back.
 
-- [ ] **Step 2: The find bar's first probe**
+- [x] **Step 2: The find bar's first probe**
 
 `test/probes/find-replace.js`: open the replace bar (the `replace` menu event), type a
 query, type a replacement, click **All**, and assert the document holds the replacement —
@@ -126,7 +126,7 @@ then undo, and assert the match the bar had selected is selected again.
 npm run probe -- --fixture default-document.md test/probes/find-replace.js
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add test/probes/undo-selection-return.js test/probes/find-replace.js test/README.md
@@ -135,11 +135,11 @@ git commit -m "test(undo): the whole-document commands in the app"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/roadmap.md`: the list closes; what is left is the "measure before deciding" columns.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -148,14 +148,14 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 75/75 probes, 6 skipped
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 ```bash
 git add docs/roadmap.md docs/superpowers/plans/2026-09-25-marks-for-commands.md
 git commit -m "docs: close the marks-for-commands handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -164,3 +164,53 @@ git rev-parse HEAD^{tree} codex/undo-marks-for-commands^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**Undo puts the author back after the two whole-document commands, and the roadmap's open
+list is empty.** The machinery was all in place since P16 — an edit carries marks,
+`applyHistory` restores them, a non-collapsed mark comes back as a selection — and the only
+missing piece was that `state.ts: setText` could not *take* marks at all: the two commands
+that compute the whole document recorded one edit with none, so undo left the caret
+wherever the reader happened to be.
+
+### What each command records
+
+| Command | `before` | `after` |
+| --- | --- | --- |
+| Inline formatting | the selection it formatted (trimmed of surrounding whitespace) | the span it selects again, so redo puts the author back in it |
+| Find and replace all | the active match the bar had put the author on | none — the matches this edit leaves are recomputed, and none is the one they were on |
+
+The second row is why the history's field comment changed rather than the type: an edit may
+carry **one** mark. `invert` already swaps whatever is there, so an undo of a
+before-only edit hands that mark back and a redo of it keeps the caret where it is — which
+is exactly what replace-all did before, kept deliberately for the half it cannot know.
+
+The two marks for formatting are in different coordinate systems on purpose (the selection
+in the text it replaced, the span in the text it produced), which is the same shape every
+other edit's marks have.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` **21/21** (the state-level cases in
+  `check-history.mjs`: a whole-document edit records the marks it was given, undoes to the
+  one it started from, and a before-only edit inverts to an after-only one).
+- A freshly started app and `npm run probe:all`: **75/75 probes, 6 skipped**.
+- Both probe cases were run against the unmarked callers first, and both fail exactly
+  where they should: `find-replace.js` reports
+  `and the match the bar was on is selected again — {collapsed: true, text: ""}`, and
+  `undo-selection-return.js` reports `and the word it formatted is selected again`.
+- `test/probes/find-replace.js` is the find bar's **first** probe: open the replace bar
+  through the menu event, type a query and a replacement, click **All**, and check the
+  text and then what undo gives back. The bar (`1 of 2` in its status, the first match
+  selected) had no coverage before this.
+
+### What is left
+
+`docs/roadmap.md`'s open list is empty — every leftover the phase handoffs named is closed.
+What remains is the "measure before deciding" column, none of which frees a keystroke
+today: the ordinary path's 9 ms parse, deriving the parse for a plain edit, and the
+deferred check's once-a-burst parse. P18's note also stands: the description-list line
+reader describes the plugin's shape, and wants a look if the plugin's rule changes.
