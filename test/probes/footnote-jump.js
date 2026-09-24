@@ -1,4 +1,7 @@
-/** Clicking a footnote marker jumps to its definition. */
+/**
+ * Ctrl-clicking a footnote marker jumps to its definition; a plain click does not,
+ * because a marker is a node whose label can be typed in (see `footnote-source.js`).
+ */
 (async () => {
   const t = window.__t;
   const box = (element) => {
@@ -15,14 +18,31 @@
   const definition = t.prose().querySelector('.markdown-footnote');
   const before = { caret: t.caretRect(), sup: box(sup), definition: box(definition) };
   t.report({ before });
-  sup.querySelector('a').dispatchEvent(
-    new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 })
-  );
+  const click = (element, modifier) =>
+    element.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 0,
+        ...(modifier ? { ctrlKey: true } : {})
+      })
+    );
+  // A plain click opens the marker as its source; it is the Ctrl-click that jumps.
+  click(sup.querySelector('a'), false);
+  await t.sleep(300);
+  const plainCaret = t.caretRect();
+  const showedSource = Boolean(t.prose().querySelector('.markdown-footnote-source'));
+  // The marker is its source now — the element the plain click was on is gone — so the
+  // Ctrl-click goes to the marker as the document now renders it.
+  click(t.prose().querySelector('[data-footnote-ref]'), true);
   await t.sleep(300);
   const caret = t.caretRect();
   const definitionBox = box(t.prose().querySelector('.markdown-footnote'));
   return {
     before,
+    plainCaret,
+    showedSource,
     caret,
     definitionBox,
     caretInDefinition:

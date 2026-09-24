@@ -41,9 +41,9 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Seventy-four of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Seventy-five of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
-(`table-*`), footnotes (`footnote-*`), the caret (`boundary-caret`, `pointer`,
+(`table-*`), footnotes (`footnote-*`, `footnote-source`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`),
 what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`, `typed-text`,
