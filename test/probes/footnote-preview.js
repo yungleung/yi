@@ -1,11 +1,17 @@
 /**
  * The card a footnote marker shows when the pointer rests on it.
  *
- * Three things: it appears with the definition's text after the dwell, and that text
+ * Four things: it appears with the definition's text after the dwell, and that text
  * is *rendered* (the note's italic and its link are elements, not asterisks and
  * brackets); it does not appear for a label the document does not define, not even
- * empty; and it leaves when the pointer does. Its position is checked against the
- * marker's rect, because a card pointing at the wrong marker is worse than none.
+ * empty; it stays while the pointer is inside it, so a note can be read and selected;
+ * and it leaves once the pointer is outside both it and its marker. Its position is
+ * checked against the marker's rect, because a card pointing at the wrong marker is
+ * worse than none.
+ *
+ * Reading a note must not touch the document, so the link in it is opened by the app
+ * rather than by the webview: the probe stands in for the backend for that one
+ * command (`watchOpener`) and checks what the app asked it for.
  *
  * @covers src/ui/markdown/footnote_preview.ts
  */
@@ -14,6 +20,38 @@
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const card = () => document.querySelector('.markdown-footnote-preview');
+  /**
+   * Stands in for the backend for one command, so a note's link can be followed
+   * without a browser opening: the app's `invoke` posts every command through the
+   * page's `fetch` (the IPC surface itself, `window.__TAURI_INTERNALS__.invoke`, is
+   * defined non-writable, so this is the outer edge a probe can reach), and what it
+   * posts is recorded here and answered instead of being delivered.
+   */
+  const watchOpener = () => {
+    const calls = [];
+    const real = window.fetch;
+    window.fetch = async (input, init) => {
+      // The command travels as the request's path, percent-encoded:
+      // `ipc://localhost/plugin%3Aopener%7Copen_url`.
+      const url = decodeURIComponent(
+        typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
+      );
+      if (!url.includes('plugin:opener')) {
+        return await real.call(window, input, init);
+      }
+      calls.push({ url, body: typeof init?.body === 'string' ? init.body : String(init?.body) });
+      return new Response('null', {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
+      });
+    };
+    return {
+      calls,
+      stop: () => {
+        window.fetch = real;
+      }
+    };
+  };
   /** Rests the pointer on an element for longer than the dwell. */
   const hover = async (element) => {
     const box = element.getBoundingClientRect();
@@ -65,8 +103,8 @@
     shown ? t.rectOf(shown) : null
   );
   check(
-    'the card cannot take the pointer',
-    shown !== null && getComputedStyle(shown).pointerEvents === 'none',
+    'the card can take the pointer, so a note can be read and selected',
+    shown !== null && getComputedStyle(shown).pointerEvents === 'auto',
     shown ? getComputedStyle(shown).pointerEvents : null
   );
   check(
@@ -76,7 +114,8 @@
   );
 
   t.prose().dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }));
-  await t.sleep(300);
+  // The card waits a grace so the pointer can cross the gap to it.
+  await t.sleep(600);
   check('leaving the marker takes the card away', card() === null, Boolean(card()));
 
   await hover(markers[1]);
@@ -85,6 +124,34 @@
     card()?.textContent.trim() === 'The second note.',
     card() ? card().textContent : null
   );
+
+  // The card is a place to read: hovering it keeps it, and a link in a note is
+  // followed through the app rather than by navigating the webview.
+  await hover(markers[0]);
+  const open = card();
+  check('the first marker is showing again', open !== null, Boolean(open));
+  if (open) {
+    open.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+    await t.sleep(600);
+    check('resting on the card keeps it', card() === open, Boolean(card()));
+    const link = open.querySelector('a[href]');
+    check('the note has a link to follow', link !== null, link ? link.getAttribute('href') : null);
+    const opener = watchOpener();
+    const clicked = new MouseEvent('click', { bubbles: true, cancelable: true });
+    try {
+      link?.dispatchEvent(clicked);
+      await t.sleep(200);
+    } finally {
+      opener.stop();
+    }
+    check('following the link does not navigate the page', clicked.defaultPrevented, clicked.defaultPrevented);
+    check(
+      'and asks the app to open it',
+      opener.calls.some((entry) => entry.url.includes('open_url') && entry.body.includes('example.com')),
+      opener.calls
+    );
+    check('the document is untouched by reading a note', (await t.raw()).endsWith('[^2]: The second note.\n'), true);
+  }
 
   // And the marker being edited is left alone: a card in the way of the label the
   // author is typing would be noise.

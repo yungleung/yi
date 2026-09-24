@@ -18,6 +18,7 @@
  * nothing — no edit, no caret, no state.
  */
 
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { footnoteOffsets } from './syntax/footnotes';
 import { renderFootnoteBody } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
@@ -27,6 +28,12 @@ import type { EditorContext } from './editing/context';
 
 /** How long the pointer has to rest on a marker before the card appears. */
 const DWELL_MS = 200;
+
+/**
+ * How long the card waits before leaving, once the pointer is on neither it nor its
+ * marker: the pointer needs a moment to cross the few pixels between them.
+ */
+const HIDE_GRACE_MS = 250;
 
 /** The card's class, which the probe finds it by. */
 export const PREVIEW_CLASS = 'markdown-footnote-preview';
@@ -58,6 +65,7 @@ export function installFootnotePreview(context: EditorContext): void {
   let card: HTMLElement | null = null;
   let marker: HTMLElement | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let leaving: ReturnType<typeof setTimeout> | null = null;
 
   const cancel = () => {
     if (timer !== null) {
@@ -66,11 +74,28 @@ export function installFootnotePreview(context: EditorContext): void {
     }
   };
 
+  const keep = () => {
+    if (leaving !== null) {
+      clearTimeout(leaving);
+      leaving = null;
+    }
+  };
+
   const hide = () => {
     cancel();
+    keep();
     marker = null;
     card?.remove();
     card = null;
+  };
+
+  /** Leaves, unless the pointer comes back first (see `HIDE_GRACE_MS`). */
+  const hideSoon = () => {
+    keep();
+    leaving = setTimeout(() => {
+      leaving = null;
+      hide();
+    }, HIDE_GRACE_MS);
   };
 
   const show = (label: string) => {
@@ -84,9 +109,36 @@ export function installFootnotePreview(context: EditorContext): void {
     element.style.zIndex = '50';
     element.style.maxWidth = '34rem';
     element.style.padding = '0.6rem 0.8rem';
-    element.style.pointerEvents = 'none';
+    // Unlike the first version, the card takes the pointer: a note is there to be
+    // read, selected, and linked out of.
+    element.style.pointerEvents = 'auto';
     element.append(
       withRenderFrame(definition.block, () => renderFootnoteBody(definition.node))
+    );
+    element.addEventListener('mouseenter', keep);
+    element.addEventListener('mouseleave', hideSoon);
+    // Captured, because a link inside the card carries the editor's own click
+    // handler (`nodes/link.ts`) which stops its propagation: this has to have the
+    // first word, or the editor would try to open a source view in a block that may
+    // not even be mounted.
+    element.addEventListener(
+      'click',
+      (event) => {
+        const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]');
+        if (!anchor) {
+          keep();
+          return;
+        }
+        // A note may link out; opening it is the app's job, and the webview must never
+        // navigate to it.
+        event.preventDefault();
+        event.stopPropagation();
+        const href = anchor.getAttribute('href') ?? '';
+        if (/^https?:/i.test(href)) {
+          void openUrl(href).catch(() => undefined);
+        }
+      },
+      true
     );
     // The card lives on the page rather than inside the scroller: `fixed` inside a
     // scroll container is only fixed while no ancestor transforms anything.
@@ -128,16 +180,20 @@ export function installFootnotePreview(context: EditorContext): void {
     if (!marker) {
       return;
     }
+    // The marker and its card are one region: moving between them is not leaving.
     const to = event.relatedTarget as Node | null;
-    if (to && marker.contains(to)) {
+    if (to && (marker.contains(to) || card?.contains(to))) {
+      keep();
       return;
     }
-    hide();
+    hideSoon();
   });
 
   // Everything that moves the page or the text takes the card with it.
   context.contentView.addEventListener('scroll', hide, { passive: true });
   context.contentView.addEventListener('click', hide, true);
+  // A click inside the card must not be read as the page moving on: the card's own
+  // handler above keeps it, and only clicks in the text take it away.
   context.contentView.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       hide();
