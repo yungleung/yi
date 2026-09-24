@@ -42,14 +42,36 @@ export function routeFootnoteClick(context: EditorContext, event: MouseEvent): v
   const target = event.target as Element | null;
   const reference = target?.closest<HTMLElement>('[data-footnote-ref]');
   const definition = target?.closest<HTMLElement>('[data-footnote-def]');
-  const element = reference ?? definition;
-  const label = reference?.dataset.footnoteRef ?? definition?.dataset.footnoteDef;
+  // A marker's own click belongs to the editor: the marker is a node whose label can
+  // be typed in, so a click opens it as its source (see `editable_node.ts`). What
+  // jumps is Ctrl-click — the definition's label, which has no editable label of its
+  // own yet, still jumps on a plain click.
+  const jumping = reference !== null && definition === null && (event.ctrlKey || event.metaKey);
+  const element = jumping ? reference : definition;
+  const label = element?.dataset.footnoteRef ?? element?.dataset.footnoteDef;
   if (!element || !label) {
     return;
   }
   event.preventDefault();
   event.stopPropagation();
-  jumpToFootnote(context, label, reference ? 'reference' : 'definition');
+  jumpToFootnote(context, label, element.dataset.footnoteRef ? 'reference' : 'definition');
+}
+
+/**
+ * The macOS form of a Ctrl-click on a marker.
+ *
+ * There the system delivers Ctrl-left-click as a `contextmenu` event, so the `click`
+ * this file waits for never arrives and the jump would be unreachable. The gesture is
+ * the same, so the result is: a Ctrl-held context menu on a marker jumps.
+ */
+export function routeFootnoteMenu(context: EditorContext, event: MouseEvent): void {
+  const marker = (event.target as Element | null)?.closest<HTMLElement>('[data-footnote-ref]');
+  const label = marker?.dataset.footnoteRef;
+  if (!marker || !label || !event.ctrlKey) {
+    return;
+  }
+  event.preventDefault();
+  jumpToFootnote(context, label, 'reference');
 }
 
 /** Places the caret for a click that no markdown node handled. */

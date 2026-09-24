@@ -45,7 +45,8 @@ export const SOURCE_SELECTOR = [
   '.markdown-wikilink-source',
   '.markdown-math-source',
   '.markdown-break-source',
-  '.markdown-thematic-break-source'
+  '.markdown-thematic-break-source',
+  '.markdown-footnote-source'
 ].join(', ');
 
 /** The caret's location in the document, or null when it cannot be mapped. */

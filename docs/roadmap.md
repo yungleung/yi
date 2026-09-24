@@ -24,6 +24,9 @@ elements) unless it says otherwise.
   glued to a URL's left turns it into an autolink) and refuses a run of two spaces.
   `docs/superpowers/plans/2026-09-23-spaces-in-plain-edits.md` has the numbers and
   the cases that stay refused: a destination, a label, a line edge, a marker.
+- **The footnote gap.** Landed in P13: a marker is a revealable node now, so a click
+  opens its label as its source and the label can be typed in, while Ctrl-click (and
+  the `contextmenu` macOS delivers it as) jumps to the note.
 - **Undo ergonomics** (P5's second and third follow-ons). Landed in P12: an edit
   carries the caret it started from and the one it left, so undo returns to where the
   author was; and a run of typing or deleting is one step, with a letter (`\p{L}`, any
@@ -40,8 +43,11 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
-1. **The footnote gap.** A footnote reference cannot be clicked into and edited —
-   a click routes to the jump. A small feature of its own, not a rendering question.
+The roadmap's own list is empty: every item the phase handoffs left is either closed
+above or waiting in "measure before deciding". What the closed items left behind, in
+the order I would take them, is in each phase's handoff — the definition's own label
+(`[^label]:`) from P13, coalescing across kinds and restoring a selection from P12,
+and punctuation and digits in the plain-edit rule from P10.
 
 ## Measure before deciding
 

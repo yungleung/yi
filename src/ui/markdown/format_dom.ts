@@ -104,7 +104,7 @@ function isWidget(element: HTMLElement): boolean {
         '.markdown-image, .markdown-break, .markdown-thematic-break, ' +
         '.markdown-link-source, .markdown-image-source, .markdown-citation-source, ' +
         '.markdown-wikilink-source, .markdown-math-source, .markdown-break-source, ' +
-        '.markdown-thematic-break-source'
+        '.markdown-thematic-break-source, .markdown-footnote-source'
     ) !== null
   );
 }

@@ -42,6 +42,7 @@ import { applyCodeIndent } from './editing/code';
 import { continueTableDown, moveTableCell } from './editing/table';
 import {
   routeContextMenu,
+  routeFootnoteMenu,
   routeFootnoteClick,
   routePointerClick,
   routeTaskClick
@@ -131,9 +132,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       true
     );
     this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
-    this.contentView.addEventListener('contextmenu', (event) =>
-      routeContextMenu(this.context, event)
-    );
+    // The context menu is routed to the table menu first, and to a footnote marker's
+    // jump for the one gesture that arrives as a context menu rather than a click —
+    // a Ctrl-click on macOS (see `click_routing.ts`).
+    this.contentView.addEventListener('contextmenu', (event) => {
+      routeFootnoteMenu(this.context, event);
+      routeContextMenu(this.context, event);
+    });
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
     this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
 
