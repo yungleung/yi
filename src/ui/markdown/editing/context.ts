@@ -17,7 +17,12 @@
  * identical everywhere.
  */
 
-import { getCaretRange, scheduleCaret, setSelectionRange } from '../caret/caret';
+import {
+  getCaretRange,
+  scheduleCaret,
+  scheduleNativeSelection,
+  setSelectionRange
+} from '../caret/caret';
 import { moveShownSource, setShownRange, shownSourceHeld, withHeldShownSource } from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
@@ -25,7 +30,7 @@ import { showsSource } from '../registry';
 import { isPlainEdit } from '../syntax/plain_edit';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
-import type { EditKind } from '../document/history';
+import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
@@ -223,6 +228,17 @@ export function caretOffset(context: EditorContext): number | null {
 }
 
 /**
+ * Where the author is, as the mark an edit remembers: the range they have selected, or
+ * the caret when the range is collapsed. It reads the same selection the commands edit,
+ * through the same mapping (`rangeOffsets`), so what an edit remembers and what it
+ * replaces cannot disagree.
+ */
+function authorMark(context: EditorContext): EditMark | null {
+  const range = editorSelection(context, true);
+  return range ? rangeOffsets(context, range) : null;
+}
+
+/**
  * The block holding `offset` shows its own text, if it is a block whose
  * rendering cannot hold a caret; `null` shows no block's source at all (see
  * `source_mode.ts`). The blocks whose shape changed are re-rendered, which is
@@ -374,9 +390,11 @@ export function applyEdit(
   kind: EditKind = 'other'
 ): void {
   const anchor = context.contentView.scrollTop;
-  // Where the author was before the edit: the history keeps it, so undo can put the
-  // caret back there rather than wherever it happens to be when the undo is asked for.
-  const before = caretOffset(context) ?? from;
+  // Where the author was before the edit — a caret, or the selection this edit is about
+  // to replace. The history keeps it (`history.ts: EditMark`), so undo can put the
+  // author back there rather than wherever they are when the undo is asked for: a
+  // selection comes back selected, ready to be typed over.
+  const before = authorMark(context) ?? { from, to: from };
   const target = typeof caret === 'function' ? caret(context.state) : caret;
   // The fast path: a keystroke that cannot change how its block parses is written
   // into the text node the caret is in, and nothing is rendered or parsed — which
@@ -394,7 +412,7 @@ export function applyEdit(
     scheduleVerify(context, written);
   }
   context.state.replaceRange(from, to, replacement, {
-    carets: { before, after: target },
+    marks: { before, after: { from: target, to: target } },
     kind
   });
   if (run) {
@@ -474,6 +492,51 @@ export function restoreCaret(context: EditorContext, offset: number): boolean {
   // exactly instead of being mapped into a rendering that cannot hold it.
   showSourceAt(context, clamped);
   return placeCaret(context, clamped);
+}
+
+/**
+ * Puts the author back where an edit's mark says: a caret, or — when the edit replaced
+ * a selection — that selection again, so the text it covered can be typed over rather
+ * than having to be selected a second time. A selection whose far end is not on screen
+ * cannot be drawn, and then the caret at the end it can reach is the honest fallback.
+ */
+export function restoreMark(context: EditorContext, mark: EditMark): boolean {
+  if (mark.from === mark.to) {
+    return restoreCaret(context, mark.from);
+  }
+  return restoreSelection(context, mark.from, mark.to) || restoreCaret(context, mark.to);
+}
+
+/**
+ * Selects a document range in the rendered window, with the caret anchored at its end
+ * so the next command has somewhere to start.
+ *
+ * The editor's own selection state is updated synchronously, so the command that
+ * follows sees it immediately; only the visible highlight and the caret geometry are
+ * deferred, because forcing a selection paint costs a frame on a large document (see
+ * `caret.ts: scheduleNativeSelection`). This is what a formatting command does to the
+ * text it just formatted, and what an undo does to the text it just put back.
+ */
+export function restoreSelection(context: EditorContext, from: number, to: number): boolean {
+  const root = proseRoot(context);
+  if (!root) {
+    return false;
+  }
+  const start = domPositionAtOffset(context.state, root, from);
+  const end = domPositionAtOffset(context.state, root, to);
+  if (!start || !end) {
+    return false;
+  }
+  const range = document.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  const caret = document.createRange();
+  caret.setStart(end.node, end.offset);
+  caret.collapse(true);
+  setSelectionRange(range);
+  scheduleCaret(caret);
+  scheduleNativeSelection(range);
+  return true;
 }
 
 /**

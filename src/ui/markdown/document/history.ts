@@ -13,6 +13,17 @@
  * document already uses, and a new edit discards what redo would have replayed.
  */
 
+/**
+ * Where an edit's author stood, and where the edit left them: a caret is a mark whose
+ * two ends meet, a selection is the range the author had. Undo puts the mark its edit
+ * started from back, so an edit that replaced a selection gets the selection returned
+ * rather than a caret at the start of it (see `markdown_editor.ts: applyHistory`).
+ */
+export interface EditMark {
+  from: number;
+  to: number;
+}
+
 /** One change to the document, in pre-edit offsets. */
 export interface DocumentEdit {
   /** Where the change starts in the text it was made against. */
@@ -23,10 +34,10 @@ export interface DocumentEdit {
   removed: string;
   /** The text that took its place; empty for a deletion. */
   inserted: string;
-  /** The caret the edit started from; absent when it was made without one. */
-  caretBefore?: number;
-  /** The caret the edit left behind; absent with `caretBefore`. */
-  caretAfter?: number;
+  /** Where the author was; absent when the edit was made without a caret. */
+  before?: EditMark;
+  /** Where the edit left the author; absent with `before`. */
+  after?: EditMark;
 }
 
 /** The edit that undoes `edit`. */
@@ -37,13 +48,12 @@ export function invert(edit: DocumentEdit): DocumentEdit {
     removed: edit.inserted,
     inserted: edit.removed
   };
-  // Undoing starts where the edit left off and leaves the caret where it began, so
-  // the carets exchange with the text.
-  if (edit.caretBefore !== undefined) {
-    inverted.caretBefore = edit.caretAfter;
-  }
-  if (edit.caretAfter !== undefined) {
-    inverted.caretAfter = edit.caretBefore;
+  // Undoing starts where the edit left off and leaves the author where they began, so
+  // the marks exchange with the text — and a selection stays a selection, because the
+  // swap moves whole marks rather than the two ends separately.
+  if (edit.before !== undefined || edit.after !== undefined) {
+    inverted.before = edit.after;
+    inverted.after = edit.before;
   }
   return inverted;
 }
@@ -96,7 +106,7 @@ export function coalesceRun(
       to: previous.to,
       removed: previous.removed,
       inserted: `${previous.inserted}${next.inserted}`,
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   if (previous.inserted !== '' || next.inserted !== '') {
@@ -110,7 +120,7 @@ export function coalesceRun(
       to: previous.to,
       removed: `${next.removed}${previous.removed}`,
       inserted: '',
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   // Delete removes at the caret, so its next edit removes the same range of what is
@@ -121,7 +131,7 @@ export function coalesceRun(
       to: previous.to + next.removed.length,
       removed: `${previous.removed}${next.removed}`,
       inserted: '',
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   return null;
@@ -155,18 +165,18 @@ export function trimRun(previous: DocumentEdit, next: DocumentEdit): DocumentEdi
     to: previous.to,
     removed: previous.removed,
     inserted: previous.inserted.slice(0, -1),
-    ...caretsOf(previous, next)
+    ...marksOf(previous, next)
   };
 }
 
-/** A run's carets: the first edit's start, the last edit's end. */
-function caretsOf(previous: DocumentEdit, next: DocumentEdit): {
-  caretBefore?: number;
-  caretAfter?: number;
+/** A run's marks: where the first edit found the author, where the last one left them. */
+function marksOf(previous: DocumentEdit, next: DocumentEdit): {
+  before?: EditMark;
+  after?: EditMark;
 } {
-  return previous.caretBefore === undefined
+  return previous.before === undefined
     ? {}
-    : { caretBefore: previous.caretBefore, caretAfter: next.caretAfter };
+    : { before: previous.before, after: next.after };
 }
 
 /** The log of edits, and where in it the document currently is. */

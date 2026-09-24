@@ -30,6 +30,7 @@ import {
   keepScroll,
   proseRoot,
   restoreCaret,
+  restoreMark,
   showSourceAt,
   type EditorContext
 } from './editing/context';
@@ -365,18 +366,20 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (!edit) {
       return;
     }
-    // The edit that was applied carries the caret it leaves behind — for an undo that
-    // is where the change started, for a redo where it left off (see
-    // `history.ts: invert`). An edit recorded without carets — the whole-document
-    // command formatting and find-and-replace use — keeps the caret where it is,
-    // because those commands place their own selection afterwards.
-    const target = Math.min(edit.caretAfter ?? current, this.state.getText().length);
+    // The edit that was applied carries the mark it leaves behind — for an undo that is
+    // where the change started, a caret or the selection it replaced, and for a redo
+    // where it left off (see `history.ts: invert`). An edit recorded without marks — the
+    // whole-document command formatting and find-and-replace use — keeps the caret where
+    // it is, because those commands place their own selection afterwards.
+    const length = this.state.getText().length;
+    const mark = edit.after ?? { from: current, to: current };
+    const target = { from: Math.min(mark.from, length), to: Math.min(mark.to, length) };
     // Undo and redo move the caret to a document offset like an edit does, so
     // the block that shows its own text is the block that offset lands in —
     // decided before the rebuild, so the block is built in the right shape.
-    showSourceAt(this.context, target);
+    showSourceAt(this.context, target.to);
     this.renderer.renderChanged();
-    restoreCaret(this.context, target);
+    restoreMark(this.context, target);
     // Undo and redo restore a caret the same way an edit does, and the browser
     // scrolls a focused element or a synchronised selection into view just the
     // same: keep the reader where they were.
