@@ -127,13 +127,13 @@ the author had a caret when they pressed it.
 - Produces: `trimRun(previous, next)`, exported beside `coalesceRun`; `History.record`
   admits the cross-kind case and can drop the step it was in.
 
-- [ ] **Step 1: The rule**
+- [x] **Step 1: The rule**
 
 `trimRun` as in §1.1, with the header comment saying what makes a Backspace a trim (it
 takes back the run's *own* last character, from the run's own end) and what the rule
 leaves alone.
 
-- [ ] **Step 2: The log**
+- [x] **Step 2: The log**
 
 In `History.record`, a merge is offered to `coalesceRun` when the kind matches and to
 `trimRun` when the last step was typing and this one is a deletion; a merged step whose
@@ -161,7 +161,7 @@ text is empty is dropped:
     }
 ```
 
-- [ ] **Step 3: The checks**
+- [x] **Step 3: The checks**
 
 `check-history.mjs`, in the run section: a Backspace at the run's end trims it; one that
 reaches past it, a Delete, and a caret that moved do not; a run trimmed to nothing leaves
@@ -172,7 +172,7 @@ after a trim join the same step.
 npm run check
 ```
 
-- [ ] **Step 4: The probe**
+- [x] **Step 4: The probe**
 
 `test/probes/undo-run-taken-back.js`, four cases:
 
@@ -187,7 +187,7 @@ npm run check
 npm run probe -- --fixture default-document.md test/probes/undo-run-taken-back.js
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/document/history.ts test/checks/check-history.mjs test/probes/undo-run-taken-back.js
@@ -211,24 +211,24 @@ git commit -m "feat(undo): a backspace takes back the run's own text"
   `caretAfter`), `state.replaceRange(…, { marks })`, `context.ts: authorMark` and
   `context.ts: restoreSelection`.
 
-- [ ] **Step 1: The mark in the algebra**
+- [x] **Step 1: The mark in the algebra**
 
 `history.ts`: `EditMark` and the two fields; `invert` swaps them; `coalesceRun` and
 `trimRun` compose them with one shared helper. `state.ts`: `replaceRange` takes
 `{ marks?: { before: EditMark; after: EditMark } }`.
 
-- [ ] **Step 2: Where the author was**
+- [x] **Step 2: Where the author was**
 
 `context.ts`: `authorMark(context)` from `editorSelection` + `rangeOffsets`, used by
 `applyEdit` for `before` (falling back to `from`); `after` is the caret target as today.
 
-- [ ] **Step 3: Putting it back**
+- [x] **Step 3: Putting it back**
 
 `context.ts`: `restoreSelection(context, from, to)` — the merged copy. `markdown_editor.ts:
 applyHistory` restores `edit.after` through it when the mark is not collapsed, and
 `formatting.ts` uses the same function instead of its private copy.
 
-- [ ] **Step 4: The checks**
+- [x] **Step 4: The checks**
 
 `check-history.mjs`: an edit's marks invert with the text, a selection stays a selection
 through an invert, a run composes the first edit's `before` with the last one's `after`,
@@ -238,7 +238,7 @@ and the state records the marks it was given.
 npx tsc --noEmit && npm run check
 ```
 
-- [ ] **Step 5: The probe**
+- [x] **Step 5: The probe**
 
 `test/probes/undo-selection-return.js`: select "world", type over it, undo → the word is
 back and selected (checked through `window.getSelection()`, and the document read
@@ -249,7 +249,7 @@ leaves a caret, not a selection.
 npm run probe -- --fixture default-document.md test/probes/undo-selection-return.js
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/document/history.ts src/ui/markdown/document/state.ts \
@@ -261,13 +261,13 @@ git commit -m "feat(undo): an edit remembers the selection it replaced"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/architecture.md`'s history section: the marks instead of the two caret offsets, and
 the Backspace that trims the run it came from. `test/README.md`: the probe count and the
 new names. `docs/roadmap.md`: P12's leftovers closed.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -276,7 +276,7 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 70/70 probes plus the two new ones
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 Append to this plan: what changed, the two rules, what the probes prove, the boundary the
 whole-document commands keep, and what is left.
@@ -286,7 +286,7 @@ git add docs/architecture.md docs/roadmap.md test/README.md docs/superpowers/pla
 git commit -m "docs: close the undo marks and runs handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -295,3 +295,80 @@ git rev-parse HEAD^{tree} codex/undo-across-kinds^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**Both of P12's leftovers are done.** What is left of undo in this repository is the
+boundary named at the end of this note, and nothing else.
+
+### The run that takes itself back
+
+`history.ts: trimRun` is the cross-kind rule: when the last step is a typing run and the
+next edit is a Backspace that removes exactly the character at the run's *end*, and that
+character is the last one the run itself inserted, the deletion does not start a step —
+it shortens the run. `History.record` offers the edit to `coalesceRun` when the kinds
+match and to `trimRun` when the step was typing and this one is a deletion, and it
+**drops** a step a trim leaves empty (`inserted === '' && removed === ''`): the burst
+changed nothing, so undo goes to the edit before it.
+
+The design decision worth recording, because a reader will wonder: a run deleted *whole*
+leaves no step rather than an empty one that would put the typed word back on the next
+undo. Type "hello", delete it, and undo takes what came before the burst; you do not walk
+back through a word you already decided not to write. Everything else is unchanged: a
+Backspace that reaches past the run into the document's own text (including the one that
+follows a run already trimmed away), Delete, a paste, and a caret that moved are steps of
+their own. A run that had *replaced* text keeps its `removed` when it is trimmed away —
+that deletion is what the author ended up making. And a trim does not close the run:
+"hel", Backspace, "l" is one step again, because a merged step keeps the kind it was in.
+
+### The mark an edit remembers
+
+`DocumentEdit.caretBefore`/`caretAfter` are gone; an edit carries `before?: EditMark` and
+`after?: EditMark`, and a mark is a range whose ends meet for a caret. That one change
+made the algebra simpler rather than more complex: `invert` is a swap (`caretsOf` became
+`marksOf` and lost its two branches), a selection survives the swap, and coalescing
+composes marks the same way it composes text.
+
+`editing/context.ts: authorMark` says where the author was — the live selection through
+`rangeOffsets`, the same mapping the commands edit with, so what an edit remembers and
+what it replaces cannot disagree — and `applyEdit` records it with the caret it leaves
+behind. `markdown_editor.ts: applyHistory` restores `edit.after` through
+`context.ts: restoreMark`: a caret for a collapsed mark, and for a selection the range
+placement `restoreSelection`. **That function was a duplicate**: `formatting.ts` had the
+identical private copy (`domPositionAtOffset` both ends, `setSelectionRange`,
+`scheduleCaret` at the end, `scheduleNativeSelection`); the two are now one function in
+`context.ts`, called by the formatting command and by the undo.
+
+### Evidence
+
+- `npx tsc --noEmit` — clean; `npm run check` — 20/20 (two new cases in
+  `check-history.mjs` beyond the existing ones: the trim rules, and the marks through
+  `invert`, a run, and the state).
+- Fresh `npm run tauri dev`, `npm run probe:all` — **72/72 probes, 6 skipped** (the two
+  new ones included).
+- `undo-run-taken-back.js`: type "alpha", Backspace twice, **one** undo takes the three
+  letters that survived; type "beta" after an Enter and delete all four, and one undo
+  takes the *line break*, which is the observable that separates "no step" from "an empty
+  step"; Delete after typing is a step of its own; a letter typed after a trim joins the
+  same step.
+- `undo-selection-return.js`: select "world", type "there", undo → the document is
+  `hello world\n` **and the word is selected again**; undoing a Backspace leaves a
+  *collapsed* selection; and a selection spanning two blocks comes back spanning them
+  (`anchor` "alpha" at 2, `focus` "beta" at 2), which is the case a single-offset caret
+  could never have restored.
+- The neighbouring undo probes (`undo-typing`, `undo-after-scroll`, `regression-undo`,
+  `paste-blocks`) and the formatting and revealable-source ones were run by name as well
+  as in the suite.
+
+### What is left
+
+- `docs/roadmap.md`'s open list is down to P10's **punctuation and digits** in the
+  plain-edit rule.
+- The boundary this phase keeps: the two whole-document commands (`state.ts: setText` —
+  inline formatting, and find and replace all) record no marks, so undoing one still
+  leaves the caret where it is rather than restoring the selection it covered. Giving
+  them marks is a small change with its own probes (formatting knows both ranges; the
+  find bar's replace-all does not obviously have one to restore), and it was not this
+  phase's job.

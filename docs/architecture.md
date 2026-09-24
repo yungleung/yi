@@ -135,21 +135,27 @@ with the two texts exchanged. The document text stays the only source of truth �
 the log is a *derivation* of it, and at any moment replaying the edits below the
 cursor from the loaded text reproduces the text in the editor.
 
-An edit also carries **the caret it started from and the one it left**
-(`caretBefore`, `caretAfter`), so undoing a change puts the caret back where the
-author was when they made it, rather than where the reader happens to be when they
-ask for the undo — and redoing puts it where the change left off. An edit recorded
-without carets, which is the whole-document `setText` a format or a find-and-replace
-uses, leaves the caret where it is; those commands place their own selection
-afterwards.
+An edit also carries **where its author was and where it left them** (`before`,
+`after`), each a *mark*: a caret is a mark whose ends meet, a selection is the range
+the author had. Undoing therefore puts the author back where they were when they made
+the change, rather than where the reader happens to be when they ask for the undo — a
+caret, or the selection the edit replaced, selected again so it can be typed over — and
+redoing puts them where the change left off. An edit recorded without marks, which is
+the whole-document `setText` a format or a find-and-replace uses, leaves the caret where
+it is; those commands place their own selection afterwards. `editing/context.ts:
+restoreMark` is the one place a mark is put back, and the range placement it uses for a
+selection is the one a formatting command uses to re-select what it formatted.
 
 Consecutive keystrokes of one kind **run together into one step**: a letter extends
 a run, the first character that is not a letter ends it — so the space after a word
 belongs to that word's step, and so does a `。` — and the boundary is `\p{L}`, any
 script's letters, with a run capped at `STEP_LIMIT` characters so a language that
 does not write spaces cannot make one undo of a paragraph. Backspaces run together
-the same way; a paste, an input method's commit, a newline, a format or any other
-command is a step of its own and ends whatever run was open.
+the same way, and a Backspace that takes back the run's *own* last character **trims
+that run** instead of starting a step (`history.ts: trimRun`): type "alpha", delete two
+letters, and one undo takes the three that are left, while a word typed and deleted
+whole leaves no step at all. A paste, an input method's commit, a newline, a format or
+any other command is a step of its own and ends whatever run was open.
 
 Two rules keep that true, and they are the ones to preserve when touching this
 area:

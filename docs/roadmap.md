@@ -39,6 +39,13 @@ elements) unless it says otherwise.
   author was; and a run of typing or deleting is one step, with a letter (`\p{L}`, any
   script's) as the step boundary and `STEP_LIMIT` as the cap for scripts that write no
   spaces. `docs/superpowers/plans/2026-09-24-undo-ergonomics.md` has the rule.
+- **Undo across kinds, and the selection an edit replaced** (P12's two leftovers).
+  Landed in P16, as `docs/superpowers/plans/2026-09-24-undo-marks-and-runs.md`: a
+  Backspace that takes back the run's *own* last character trims the run rather than
+  starting a step — type a word, delete part of it, and one undo takes what is left,
+  while a word typed and deleted whole leaves no step at all — and an edit remembers
+  its author as a *mark* rather than an offset, so undoing an edit that replaced a
+  selection puts the selection back, ready to be typed over.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -52,9 +59,10 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — coalescing across kinds and
-restoring a selection from P12, and punctuation and digits in the plain-edit rule from
-P10.
+the order I would take them, is in each phase's handoff — punctuation and digits in the
+plain-edit rule from P10, and what P16 left: the two whole-document commands (inline
+formatting, find and replace all) still record no marks, so undoing one keeps the caret
+where it is rather than restoring the selection it covered.
 
 ## Measure before deciding
 
