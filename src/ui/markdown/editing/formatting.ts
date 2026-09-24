@@ -14,12 +14,11 @@
  * again instead.
  */
 
-import { getSelectionRange, scheduleCaret, scheduleNativeSelection, setSelectionRange } from '../caret/caret';
+import { getSelectionRange } from '../caret/caret';
 import { documentOffsetAt } from '../caret/offsets';
-import { domPositionAtOffset } from '../caret/dom_position';
 import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
-import { proseRoot, type EditorContext } from './context';
+import { proseRoot, restoreSelection, type EditorContext } from './context';
 
 /** Applies a formatting style to the current selection. */
 export function applyFormatting(context: EditorContext, style: FormattingStyle): void {
@@ -64,36 +63,9 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
     }
   }
   context.renderer.refreshBlockTags();
+  // The formatted range is selected again, and the caret anchored at its end, so
+  // further formatting can be applied in sequence.
   restoreSelection(context, edit.from, edit.to);
-}
-
-/**
- * Re-selects the formatted range in the re-rendered document and anchors the
- * caret at its end, so further formatting can be applied in sequence.
- */
-function restoreSelection(context: EditorContext, from: number, to: number): void {
-  const root = proseRoot(context);
-  if (!root) {
-    return;
-  }
-  const startPos = domPositionAtOffset(context.state, root, from);
-  const endPos = domPositionAtOffset(context.state, root, to);
-  if (!startPos || !endPos) {
-    return;
-  }
-  const range = document.createRange();
-  range.setStart(startPos.node, startPos.offset);
-  range.setEnd(endPos.node, endPos.offset);
-  const caret = document.createRange();
-  caret.setStart(endPos.node, endPos.offset);
-  caret.collapse(true);
-  // The editor's selection state is updated synchronously so the next
-  // formatting command sees it immediately; only the visible highlight and
-  // the caret geometry are deferred (both are expensive to apply right after
-  // the block re-render).
-  setSelectionRange(range);
-  scheduleCaret(caret);
-  scheduleNativeSelection(range);
 }
 
 /**

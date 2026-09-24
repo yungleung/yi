@@ -17,7 +17,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-history-'));
 const file = join(directory, 'history.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { History, invert, coalesceRun } = await import(file);
+const { History, invert, coalesceRun, trimRun } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -76,37 +76,42 @@ const typed = new History();
 typed.record(insert(0, 'x'));
 check('a one-character edit is a few bytes of history', JSON.stringify(typed.edits()).length < 60, true);
 
-// The carets: an edit remembers where its author was, so undo can put the caret
-// back there and redo can put it where the edit left off.
-const withCarets = { from: 4, to: 4, removed: '', inserted: 'x', caretBefore: 4, caretAfter: 5 };
-check('an edit inverts with its carets exchanged', invert(withCarets), {
+// The marks: an edit remembers where its author was, so undo can put them back there
+// and redo can put them where the edit left off. A caret is a mark whose ends meet, so
+// a selection is the same fact with two different ends — and it survives an undo.
+const mark = (from, to = from) => ({ from, to });
+const marked = { from: 4, to: 4, removed: '', inserted: 'x', before: mark(4), after: mark(5) };
+check('an edit inverts with its marks exchanged', invert(marked), {
   from: 4,
   to: 5,
   removed: 'x',
   inserted: '',
-  caretBefore: 5,
-  caretAfter: 4
+  before: mark(5),
+  after: mark(4)
 });
-check('an edit without carets inverts without them', invert(insert(1, 'x')), {
+check('and a selection stays a selection through the invert',
+  invert({ from: 2, to: 4, removed: 'cd', inserted: 'xy', before: mark(2, 4), after: mark(4) }),
+  { from: 2, to: 4, removed: 'xy', inserted: 'cd', before: mark(4), after: mark(2, 4) });
+check('an edit without marks inverts without them', invert(insert(1, 'x')), {
   from: 1,
   to: 2,
   removed: 'x',
   inserted: ''
 });
 const careful = new History();
-careful.record(withCarets, 'other');
-check('undo hands back the carets the author left', careful.undo().caretBefore, 5);
-check('and redo hands back the edit`s own', careful.redo().caretAfter, 5);
+careful.record(marked, 'other');
+check('undo hands back the mark the author left', careful.undo().after, mark(4));
+check('and redo hands back the edit`s own', careful.redo().after, mark(5));
 
 // The run: what one undo step holds. A letter extends it, the first character that
 // is not a letter belongs to it and closes it, and the boundary is any script's.
-const letter = (from, text, caret) => ({
+const letter = (from, text, caretAt) => ({
   from,
   to: from,
   removed: '',
   inserted: text,
-  caretBefore: caret,
-  caretAfter: caret + text.length
+  before: mark(caretAt),
+  after: mark(caretAt + text.length)
 });
 const closed = (edit) => ({ ...edit, to: edit.from + edit.inserted.length });
 check('two letters in a row are one step', coalesceRun(letter(4, 'h', 4), letter(5, 'e', 5), 'typing'),
@@ -124,8 +129,8 @@ check('a paste is a step of its own',
   coalesceRun(letter(0, 'a', 0), { from: 1, to: 1, removed: '', inserted: 'word' }, 'typing'), null);
 check('a run stops at the cap',
   coalesceRun(letter(0, 'x'.repeat(24), 0), letter(24, 'x', 24), 'typing'), null);
-const erased = { from: 1, to: 2, removed: 'b', inserted: '', caretBefore: 2, caretAfter: 1 };
-const erasedBefore = { from: 0, to: 1, removed: 'a', inserted: '', caretBefore: 1, caretAfter: 0 };
+const erased = { from: 1, to: 2, removed: 'b', inserted: '', before: mark(2), after: mark(1) };
+const erasedBefore = { from: 0, to: 1, removed: 'a', inserted: '', before: mark(1), after: mark(0) };
 check('backspaces merge as deletions', coalesceRun(erased, erasedBefore, 'deleting'), {
   from: 0,
   to: 2,
@@ -133,13 +138,58 @@ check('backspaces merge as deletions', coalesceRun(erased, erasedBefore, 'deleti
   inserted: '',
   // The run starts where the first backspace was asked for and ends where the last
   // one left the caret.
-  caretBefore: 2,
-  caretAfter: 0
+  before: mark(2),
+  after: mark(0)
 });
-const deletedForward = { from: 1, to: 2, removed: 'b', inserted: '', caretBefore: 1, caretAfter: 1 };
+const deletedForward = { from: 1, to: 2, removed: 'b', inserted: '', before: mark(1), after: mark(1) };
 check('Delete merges forwards too',
-  coalesceRun(deletedForward, { from: 1, to: 2, removed: 'c', inserted: '', caretBefore: 1, caretAfter: 1 }, 'deleting'),
-  { from: 1, to: 3, removed: 'bc', inserted: '', caretBefore: 1, caretAfter: 1 });
+  coalesceRun(deletedForward, { from: 1, to: 2, removed: 'c', inserted: '', before: mark(1), after: mark(1) }, 'deleting'),
+  { from: 1, to: 3, removed: 'bc', inserted: '', before: mark(1), after: mark(1) });
+
+// A Backspace that takes back the run's *own* last character is not a step of its own:
+// it trims the run, so what the author typed and then part-deleted is one step, and a
+// run deleted whole is no step at all.
+const backspaceAt = (from, removed, caretAt) => ({
+  from,
+  to: from + removed.length,
+  removed,
+  inserted: '',
+  before: mark(caretAt),
+  after: mark(from)
+});
+check('a backspace at the run`s end trims it',
+  trimRun(letter(4, 'hel', 4), backspaceAt(6, 'l', 7)),
+  { from: 4, to: 4, removed: '', inserted: 'he', before: mark(4), after: mark(6) });
+check('but a backspace that reaches past the run does not',
+  trimRun(letter(4, 'x', 4), backspaceAt(3, 'e', 4)), null);
+check('nor does a Delete, which removes forwards',
+  trimRun(letter(4, 'x', 4), { from: 5, to: 6, removed: ' ', inserted: '', before: mark(5), after: mark(5) }),
+  null);
+check('nor one that removes a character the run did not write',
+  trimRun(letter(4, 'x', 4), backspaceAt(4, 'y', 5)), null);
+check('a run trimmed away leaves no step', (() => {
+  const log = new History();
+  log.record(letter(0, 'h', 0), 'typing');
+  log.record(letter(1, 'e', 1), 'typing');
+  log.record(backspaceAt(1, 'e', 2), 'deleting');
+  log.record(backspaceAt(0, 'h', 1), 'deleting');
+  return [log.length, log.canUndo(), log.canRedo()];
+})(), [0, false, false]);
+check('and a run that had replaced text keeps that deletion', (() => {
+  const log = new History();
+  log.record({ from: 2, to: 4, removed: 'cd', inserted: 'xy', before: mark(2, 4), after: mark(4) }, 'typing');
+  log.record(backspaceAt(3, 'y', 4), 'deleting');
+  log.record(backspaceAt(2, 'x', 3), 'deleting');
+  return log.edits();
+})(), [{ from: 2, to: 4, removed: 'cd', inserted: '', before: mark(2, 4), after: mark(2) }]);
+check('and the letters after a trim join the same step', (() => {
+  const log = new History();
+  log.record(letter(4, 'h', 4), 'typing');
+  log.record(letter(5, 'e', 5), 'typing');
+  log.record(backspaceAt(5, 'e', 6), 'deleting');
+  log.record(letter(5, 'y', 5), 'typing');
+  return [log.length, log.edits()[0].inserted];
+})(), [1, 'hy']);
 check('a run of typing is one entry in the log', (() => {
   const step = new History();
   for (const [at, key] of [[0, 'h'], [1, 'e'], [2, 'l'], [3, 'l'], [4, 'o']]) {
@@ -197,6 +247,26 @@ check('a new edit truncates the redo tail', [document_.getText(), document_.hist
 check('and the log holds the edit, not the document', document_.historyEdits()[0].removed, 'one');
 document_.loadText('fresh\n');
 check('a new document has no history', [document_.historyEdits().length, document_.undo()], [0, null]);
+
+// The mark reaches the log: the state records where the author was, and undoing the
+// edit hands that mark back — a selection here, so the word the edit replaced can be
+// typed over again rather than selected a second time.
+document_.loadText('hello world\n');
+document_.replaceRange(6, 11, 'there', {
+  marks: { before: { from: 6, to: 11 }, after: { from: 11, to: 11 } }
+});
+check('a replacement records the selection it replaced', document_.historyEdits(), [
+  {
+    from: 6,
+    to: 11,
+    removed: 'world',
+    inserted: 'there',
+    before: { from: 6, to: 11 },
+    after: { from: 11, to: 11 }
+  }
+]);
+check('and undoing it hands that selection back', document_.undo().after, { from: 6, to: 11 });
+check('with the text the edit replaced', document_.getText(), 'hello world\n');
 
 // The state holds the text in a store rather than a string, so the statement to
 // prove is the same one the store's own check makes: after any sequence of edits

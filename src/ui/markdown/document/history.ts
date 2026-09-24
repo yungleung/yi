@@ -13,6 +13,17 @@
  * document already uses, and a new edit discards what redo would have replayed.
  */
 
+/**
+ * Where an edit's author stood, and where the edit left them: a caret is a mark whose
+ * two ends meet, a selection is the range the author had. Undo puts the mark its edit
+ * started from back, so an edit that replaced a selection gets the selection returned
+ * rather than a caret at the start of it (see `markdown_editor.ts: applyHistory`).
+ */
+export interface EditMark {
+  from: number;
+  to: number;
+}
+
 /** One change to the document, in pre-edit offsets. */
 export interface DocumentEdit {
   /** Where the change starts in the text it was made against. */
@@ -23,10 +34,10 @@ export interface DocumentEdit {
   removed: string;
   /** The text that took its place; empty for a deletion. */
   inserted: string;
-  /** The caret the edit started from; absent when it was made without one. */
-  caretBefore?: number;
-  /** The caret the edit left behind; absent with `caretBefore`. */
-  caretAfter?: number;
+  /** Where the author was; absent when the edit was made without a caret. */
+  before?: EditMark;
+  /** Where the edit left the author; absent with `before`. */
+  after?: EditMark;
 }
 
 /** The edit that undoes `edit`. */
@@ -37,13 +48,12 @@ export function invert(edit: DocumentEdit): DocumentEdit {
     removed: edit.inserted,
     inserted: edit.removed
   };
-  // Undoing starts where the edit left off and leaves the caret where it began, so
-  // the carets exchange with the text.
-  if (edit.caretBefore !== undefined) {
-    inverted.caretBefore = edit.caretAfter;
-  }
-  if (edit.caretAfter !== undefined) {
-    inverted.caretAfter = edit.caretBefore;
+  // Undoing starts where the edit left off and leaves the author where they began, so
+  // the marks exchange with the text — and a selection stays a selection, because the
+  // swap moves whole marks rather than the two ends separately.
+  if (edit.before !== undefined || edit.after !== undefined) {
+    inverted.before = edit.after;
+    inverted.after = edit.before;
   }
   return inverted;
 }
@@ -96,7 +106,7 @@ export function coalesceRun(
       to: previous.to,
       removed: previous.removed,
       inserted: `${previous.inserted}${next.inserted}`,
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   if (previous.inserted !== '' || next.inserted !== '') {
@@ -110,7 +120,7 @@ export function coalesceRun(
       to: previous.to,
       removed: `${next.removed}${previous.removed}`,
       inserted: '',
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   // Delete removes at the caret, so its next edit removes the same range of what is
@@ -121,20 +131,52 @@ export function coalesceRun(
       to: previous.to + next.removed.length,
       removed: `${previous.removed}${next.removed}`,
       inserted: '',
-      ...caretsOf(previous, next)
+      ...marksOf(previous, next)
     };
   }
   return null;
 }
 
-/** A run's carets: the first edit's start, the last edit's end. */
-function caretsOf(previous: DocumentEdit, next: DocumentEdit): {
-  caretBefore?: number;
-  caretAfter?: number;
+/**
+ * The typing run a Backspace takes one character back off, or null when it does not.
+ *
+ * Typing a word and deleting part of it again is one thing the author did, so the
+ * deletion does not start a step of its own — it shortens the run, and a run it
+ * shortens to nothing is no step at all (`History.record` drops it). What makes the
+ * character the run's own is all three of: the deletion sits at the run's *end*, it
+ * removes exactly the character that is there, and that character is the last one the
+ * run inserted. So a Backspace that reaches past the run into the document's own text
+ * — including the one that follows a run already trimmed away — a Delete, a paste, and
+ * a caret that moved are all steps of their own.
+ */
+export function trimRun(previous: DocumentEdit, next: DocumentEdit): DocumentEdit | null {
+  if (previous.inserted === '' || next.inserted !== '' || next.removed === '') {
+    return null;
+  }
+  const end = previous.from + previous.inserted.length;
+  if (next.from !== end - 1 || next.to !== end) {
+    return null;
+  }
+  if (next.removed !== previous.inserted.slice(-1)) {
+    return null;
+  }
+  return {
+    from: previous.from,
+    to: previous.to,
+    removed: previous.removed,
+    inserted: previous.inserted.slice(0, -1),
+    ...marksOf(previous, next)
+  };
+}
+
+/** A run's marks: where the first edit found the author, where the last one left them. */
+function marksOf(previous: DocumentEdit, next: DocumentEdit): {
+  before?: EditMark;
+  after?: EditMark;
 } {
-  return previous.caretBefore === undefined
+  return previous.before === undefined
     ? {}
-    : { caretBefore: previous.caretBefore, caretAfter: next.caretAfter };
+    : { before: previous.before, after: next.after };
 }
 
 /** The log of edits, and where in it the document currently is. */
@@ -150,13 +192,30 @@ export class History {
    * Records an edit the document has just applied, discarding the redo tail.
    *
    * An edit that continues the run the last one was in replaces it instead of being
-   * pushed: a word of typing is one step (see `coalesceRun`).
+   * pushed: a word of typing is one step (see `coalesceRun`), and a Backspace that
+   * takes back the run's own last character trims that step rather than starting one
+   * (see `trimRun`). A step a trim leaves empty was not an edit at all, so it is
+   * dropped and the burst leaves no trace in the log.
    */
   record(edit: DocumentEdit, kind: EditKind = 'other'): void {
     const previous = this.cursor > 0 ? this.log[this.cursor - 1] : null;
-    if (previous && kind === this.lastKind) {
-      const merged = coalesceRun(previous, edit, kind);
+    if (previous) {
+      const merged =
+        kind === this.lastKind
+          ? coalesceRun(previous, edit, kind)
+          : this.lastKind === 'typing' && kind === 'deleting'
+            ? trimRun(previous, edit)
+            : null;
       if (merged) {
+        if (merged.inserted === '' && merged.removed === '') {
+          // The run took back the last of its own text: the burst ends up having
+          // changed nothing, so the step it was — and anything a redo would have
+          // replayed after it — goes with it.
+          this.log.splice(this.cursor - 1);
+          this.cursor -= 1;
+          this.lastKind = 'other';
+          return;
+        }
         this.log[this.cursor - 1] = merged;
         return;
       }

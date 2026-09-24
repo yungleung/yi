@@ -22,7 +22,7 @@ import type { RootContent } from 'mdast';
 import { footnoteLabels, labelsAfterEdit, withFootnoteDefinitions } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
-import { History, type DocumentEdit, type EditKind } from './history';
+import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
 import { TextStore } from './text_store';
 
 /** Parsed blocks kept before the oldest is dropped. */
@@ -149,16 +149,16 @@ export class MarkdownEditorState {
     from: number,
     to: number,
     replacement: string,
-    options: { carets?: { before: number; after: number }; kind?: EditKind } = {}
+    options: { marks?: { before: EditMark; after: EditMark }; kind?: EditKind } = {}
   ): void {
     const length = this.text.length;
     const start = Math.max(0, Math.min(from, length));
     const end = Math.max(start, Math.min(to, length));
     const removed = this.text.slice(start, end);
     const edit: DocumentEdit = { from: start, to: end, removed, inserted: replacement };
-    if (options.carets) {
-      edit.caretBefore = options.carets.before;
-      edit.caretAfter = options.carets.after;
+    if (options.marks) {
+      edit.before = options.marks.before;
+      edit.after = options.marks.after;
     }
     this.updateText(edit, () => this.text.replace(start, end, replacement));
     this.history.record(edit, options.kind);
