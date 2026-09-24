@@ -17,11 +17,17 @@
   anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 }));
   await t.sleep(300);
   const caret = t.caretRect();
-  const supBox = box(t.prose().querySelector('sup'));
+  // The caret lands *in* the marker, and a marker holding the caret is built as its
+  // own source — so what to measure is the marker element, not the superscript it
+  // wears otherwise.
+  const marker = t.prose().querySelector('[data-footnote-ref]');
+  const markerBox = marker ? box(marker) : null;
   return {
     before,
     caret,
-    supBox,
-    caretAtMarker: caret && supBox ? caret.y >= supBox.top - 6 && caret.y <= supBox.bottom + 6 : null
+    showsSource: Boolean(t.prose().querySelector('.markdown-footnote-source')),
+    markerBox,
+    caretAtMarker:
+      caret && markerBox ? caret.y >= markerBox.top - 6 && caret.y <= markerBox.bottom + 6 : null
   };
 })()

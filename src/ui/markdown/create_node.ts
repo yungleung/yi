@@ -78,7 +78,7 @@ registerComponent(
   (node) => new DescriptionDetails(node as AstDescriptionDetails)
 );
 registerComponent('footnoteDefinition', (node) => new FootnoteDefinition(node as AstFootnoteDefinition));
-registerComponent('footnoteReference', (node) => new FootnoteReference(node as AstFootnoteReference));
+registerComponent('footnoteReference', (node) => new FootnoteReference(node as AstFootnoteReference), true);
 registerComponent('inlineMath', (node) => new InlineMath(node as InlineMathNode), true);
 registerComponent('math', (node) => new DisplayMath(node as MathNode), true);
 registerComponent('code', (node) => new CodeBlock(node as AstCode));

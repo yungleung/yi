@@ -223,6 +223,7 @@ reached in a way the next person can copy:
 | A markdown construct's rendering | `nodes/<type>.ts`, registered in `create_node.ts` | `docs/adding-a-node.md` |
 | Whether a node's markdown can stand in for its rendering | the `showsSource` flag in `registry.ts: registerComponent` | `docs/adding-a-node.md`, step 4 |
 | Which source is shown, and where a click enters it | `source_mode.ts`, with `nodes/revealable_node.ts` | `docs/adding-a-node.md`, step 4 |
+| A footnote marker that can be clicked into | `nodes/footnote.ts`, `click_routing.ts` | a click opens the label's source (`[^label]`), Ctrl-click (and ⌘-click, and the `contextmenu` macOS makes of it) jumps to the note; a definition's label still jumps, because its own label is not editable yet |
 | A command the author can ask for | the id in `commands/registry.ts`, the work registered in `markdown_editor.ts: registerCommandEvents`, the trigger | `docs/adding-a-command.md` |
 | How the document splits into blocks | `document/blocks.ts` | a task in the block model, plus `test/checks/check-blocks.mjs` |
 | A pure rule about markdown | the matching `syntax/*.ts`, named in the one-fact-one-home table above | `docs/testing.md` — rule-shaped means `test/checks/` |

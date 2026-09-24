@@ -259,3 +259,38 @@ git rev-parse HEAD^{tree} codex/footnote-source^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff, 2026-09-24 — a marker you can click into
+
+Built in a parallel session on this branch and taken over and finished here, which is
+why two small things changed in the takeover: the marker's `title` says **⌘-click**
+(the routing accepts `ctrlKey` or `metaKey`, and the tooltip should name the gesture
+this machine has), and `footnote-jump-back.js` had to stop measuring the marker's
+`<sup>` — a definition's label jumps back to the marker, the jump puts the caret *in*
+it, and a marker holding the caret is built as its source, so the element to measure
+is `[data-footnote-ref]`.
+
+**What changed.** `FootnoteReference` is a `RevealableNodeComponent` registered with
+`showsSource: true`: while the caret is inside it the node is built as `[^label]`
+instead of as its superscript — the shape a link already has — and its class joins
+`SOURCE_SELECTOR` (and `format_dom.ts`'s copy) so a caret inside the revealed label
+maps exactly and the arrows can step in at the content boundary. `click_routing.ts`
+gives a marker's plain click back to the editor (the node enters its source) and jumps
+on ⌘-click; a definition's label has nothing of its own to edit, so it still jumps on
+a plain click. `routeFootnoteMenu` catches the one gesture macOS delivers as a
+`contextmenu` rather than a click — Ctrl-click — so the jump is reachable there too.
+
+**The probes.** `footnote-source.js` clicks a marker, sees `[^1]`, types over the
+label and checks the document and the re-rendered marker. `footnote-jump.js` shows a
+plain click does *not* jump and a Ctrl-click does. `footnote-jump-back.js` walks the
+other way, from a definition's label to the marker — and now asserts the marker is
+showing its source, which is what a caret in a marker means.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` 20/20, a freshly started
+app and `npm run probe:all` **69/69 (6 skipped)**.
+
+**What is left.** The definition's own label (`[^label]:`) still cannot be edited: the
+whole definition line is that node's source, which is a different and larger shape
+than a marker's.
