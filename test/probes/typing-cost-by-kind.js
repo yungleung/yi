@@ -16,6 +16,10 @@
  * "measure before deciding" column asks for, and the answer decides whether the write half
  * is worth widening.
  *
+ * Like the other cost probes it wins its numbers by doing many small things slowly — eight
+ * documents, one load each — so its own script outlives the bridge's 5 s budget and the
+ * harness recovers the report from its stash. That is this probe's normal way to report.
+ *
  * @covers src/ui/markdown/editing/typed_text.ts, src/ui/markdown/create_block.ts
  */
 (async () => {
@@ -28,6 +32,22 @@
       kind: 'table cell',
       document: '| Head | Other |\n| --- | --- |\n| some fairly plain words | b |\n',
       needle: 'plain'
+    },
+    // The two boundaries a phase handoff named as residues, measured rather than assumed:
+    // the start of a *list item's* text is past its marker, so it takes the fast path, while
+    // the start of a *table cell's* text does not — the cell's middle (its case above) and
+    // its end do.
+    {
+      kind: 'list item, text start',
+      document: '- An item with some fairly plain words in it\n',
+      needle: 'An item',
+      inside: 0
+    },
+    {
+      kind: 'table cell, text start',
+      document: '| Head | Other |\n| --- | --- |\n| some fairly plain words | b |\n',
+      needle: 'some',
+      inside: 0
     },
     {
       kind: 'fenced code',
@@ -65,7 +85,7 @@
       continue;
     }
     const caret = document.createRange();
-    caret.setStart(node, node.data.indexOf(entry.needle) + 2);
+    caret.setStart(node, node.data.indexOf(entry.needle) + (entry.inside ?? 2));
     caret.collapse(true);
     const box = caret.getBoundingClientRect();
     node.parentElement.dispatchEvent(
@@ -75,7 +95,7 @@
         clientY: box.top + box.height / 2
       })
     );
-    await t.sleep(120);
+    await t.sleep(100);
     const before = { block, node, height: block.getBoundingClientRect().height };
     const reads = { rects: 0, heights: 0 };
     const rects = Element.prototype.getBoundingClientRect;
@@ -96,7 +116,7 @@
     const ms = performance.now() - started;
     Element.prototype.getBoundingClientRect = rects;
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', heights);
-    await t.sleep(160);
+    await t.sleep(120);
     // The block is found by its line again, not by its text: the letter this probe typed
     // is inside the word it looked for, so the word is not there to search for any more.
     const lineStart = Number(before.block.dataset.lineStart);
