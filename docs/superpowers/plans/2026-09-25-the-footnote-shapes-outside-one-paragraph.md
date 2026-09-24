@@ -81,18 +81,72 @@ labels are a second input to that parse and to the rendering built from it.
 ## Part 3 — tasks
 
 - [x] Task 1: measure the uncovered shapes on the app (scratch probes; §1).
-- [ ] Task 2: fix the definition-line rule, with the pure check in
+- [x] Task 2: fix the definition-line rule, with the pure check in
       `test/checks/check-footnotes.mjs`.
-- [ ] Task 3: fix the drawn label's right boundary.
-- [ ] Task 4: fix the label-dependent parse and render key, with a check.
-- [ ] Task 5: the probes — `footnote-containers.js`, `footnote-container-jump.js`,
+- [x] Task 3: fix the drawn label's right boundary.
+- [x] Task 4: fix the label-dependent parse and render key, with a check.
+- [x] Task 5: the probes — `footnote-containers.js`, `footnote-container-jump.js`,
       `footnote-table-cell.js`, `footnote-repeat-label.js`, `footnote-labelled.js`,
       `footnote-label-undo.js`, `footnote-label-rebuild.js`, `footnote-label-edge.js` —
       and checks for `footnote-block.js`, which only reported.
-- [ ] Task 6: acceptance and docs — `npx tsc --noEmit`, `npm run check`, a fresh
+- [x] Task 6: acceptance and docs — `npx tsc --noEmit`, `npm run check`, a fresh
       `npm run tauri dev`, `npm run probe:all`; `docs/roadmap.md`, `docs/architecture.md`,
       `test/README.md`; then the merge into `main`.
 
 ## Handoff
 
-To be written when the phase closes.
+**What the phase was for.** The probes that held the last four phases were written on
+one-paragraph documents and the straightforward shapes. Each case below was measured on
+the app *first*, from a scratch probe under `/private/tmp`, and then written as a probe
+that fails without what it holds.
+
+**What the measurements found, and what it cost to fix.** Three bugs, none of them
+visible to the compiler or to the suite as it stood:
+
+1. A definition written inside a **container** — `> [^1]: note` in a blockquote, and a
+   definition four columns into a `10. ` item — was invisible to the document's label
+   scan, and to the jump's own line rule. Measured: `Body[^1] here.` stayed the literal
+   text `[^1]` when the note was written in a quote, and a ⌘-click on a marker inside a
+   quote landed the caret *in the marker* (`[^1]`, offset 3) instead of at the start of
+   the note. Fixed by one home for the prefix a definition may sit behind
+   (`syntax/footnotes.ts: CONTAINERS`): quote markers, list markers and the up-to-three
+   spaces markdown allows at each level, repeated, which covers `> [^1]:`,
+   `> - [^1]:` and `- [^1]:`. Four spaces at the top of a document are still an indented
+   code block, and the wide-item case is a residue the roadmap records.
+2. The position just after a **drawn label** belonged to the label. Measured on the
+   button's own output: a click in the gap right of `[1]` then typing `H` gave
+   `[^1H]: ` — the note lost the character — while a click on the note's first character
+   gave `[^1]: H`. Fixed by letting the drawn label own only what is strictly inside it
+   (`caret/offsets.ts: mapNode`), so the boundary falls through to the note's own first
+   position.
+3. A block that had **borrowed** the document's definitions kept its stale parse. Measured:
+   renaming the label of `First[^a] and[^a] again.` in the notes run left both markers
+   drawing `[a]` (checked 700 ms later, and again after clicking their block). Fixed by
+   keying a block that holds a marker on the labels it borrowed (`document/state.ts:
+   parseKey`, used by the renderer's own `renderKey`), with the version moving only when
+   the label *set* changes — typing in a note must not re-parse the document.
+
+**The probes.** `footnote-containers.js` (a definition inside a description detail, a list
+item and a blockquote: the drawn label, the click's source at the definition's own
+block-relative offset, and typing in it), `footnote-container-jump.js` (the ⌘-click to the
+note and back, per container), `footnote-table-cell.js` (a marker in a cell, and a
+definition written in one, which markdown has no reading for), `footnote-repeat-label.js`
+(two markers, one label: both jump, renaming in the notes run turns both into text, one
+undo brings them back), `footnote-labelled.js` (`[^note]` and `[^Ab]`: both ends draw the
+identifier, both sources spell the author's characters), `footnote-label-undo.js` (an
+undone label edit, with the caret back in the label), `footnote-label-rebuild.js` (a label
+mid-edit across the rebuild its own keystroke causes, and a label deleted out from under
+the caret), `footnote-label-edge.js` (the `]: ` boundary, on a written note and on the
+button's fresh one), and `footnote-block.js`, which only reported and now checks.
+`test/checks/check-footnotes.mjs` gained the container cases and `check-parse-keys.mjs` is
+new, for the parse key itself.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` **23/23**, a freshly started
+`npm run tauri dev`, and `npm run probe:all` **87/87 (7 skipped)** — ninety-four probes,
+of which seven need the fixture workspace or a foreground window and are run by name.
+
+**What is left.** One visible decision, and it is the user's: a drawn footnote label shows
+the *identifier*, so `[^Ab]` reads `[ab]` at rest while the source spells `[^Ab]`
+(`docs/roadmap.md`, *Measure before deciding*). And one measured residue: a definition
+indented inside an item wider than three columns is read as the code block it looks like
+(*Accepted, for now*).
