@@ -46,6 +46,14 @@ elements) unless it says otherwise.
   while a word typed and deleted whole leaves no step at all — and an edit remembers
   its author as a *mark* rather than an offset, so undoing an edit that replaced a
   selection puts the selection back, ready to be typed over.
+- **Punctuation and digits in the plain-edit rule** (P10's leftover). Landed in P17, as
+  `docs/superpowers/plans/2026-09-24-punctuation-in-plain-edits.md`: the rule accepts a
+  letter, a digit, a space or the punctuation that means itself, and gains the three
+  guards that alphabet needs — the `www.` autolink a run of them can spell, a line's own
+  beginning (`1 x` + `.` is a list), and a two-space run, which does not render as the
+  characters say. On the fixture note's big block a full stop went from **46 ms to
+  5 ms**, against 47 ms for an asterisk; the gate now parses with the editor's own
+  pipeline instead of a stand-in.
 - **A line index for the text (lazy block offsets).** Landed in P11, as a block
   offset index rather than a line index — the measurement showed the string
   materialisation P6 worried about is free (V8 hands back a sliced string) and the
@@ -59,17 +67,18 @@ elements) unless it says otherwise.
 
 The roadmap's own list is empty: every item the phase handoffs left is either closed
 above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — punctuation and digits in the
-plain-edit rule from P10, and what P16 left: the two whole-document commands (inline
-formatting, find and replace all) still record no marks, so undoing one keeps the caret
-where it is rather than restoring the selection it covered.
+the order I would take them, is in each phase's handoff — what P17 left (a citation
+inside a description detail makes `syntax/parser.ts: fixDescriptionPositions` throw,
+which the fuzz found and nobody has fixed), and what P16 left: the two whole-document
+commands (inline formatting, find and replace all) still record no marks, so undoing one
+keeps the caret where it is rather than restoring the selection it covered.
 
 ## Measure before deciding
 
 - **The ordinary path's parse.** A structural keystroke still parses the block it
-  rebuilds (9 ms of its ~40 ms). Spaces no longer reach it, punctuation and digits
-  still do, and making the parse itself cheaper is a parser measurement, not a caret
-  one.
+  rebuilds (9 ms of its ~40 ms). Spaces, punctuation and digits no longer reach it —
+  P17 left it the markers and the line's own beginning — and making the parse itself
+  cheaper is a parser measurement, not a caret one.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then

@@ -138,12 +138,12 @@ those missed the run a `. ` insertion *straddles*, which is a hard break
 - Produces: the same `isPlainEdit(before, from, to, inserted)` signature; the alphabet
   and the three guards change. No new exports.
 
-- [ ] **Step 1: The rule**
+- [x] **Step 1: The rule**
 
 As §1.2 and §1.3, with the module header rewritten around the new alphabet: what a
 character may be, what the three guards are for, and the measurement that decided them.
 
-- [ ] **Step 2: The gate uses the editor's own parse**
+- [x] **Step 2: The gate uses the editor's own parse**
 
 `check-plain-edit.mjs` currently shapes text with `unified().use(remarkParse).use(remarkGfm)`
 — a stand-in that has none of the editor's plugins (description lists, math, wikilinks,
@@ -156,7 +156,7 @@ detail** makes `fixDescriptionPositions` throw (it stringifies with a processor 
 no citation handler). No walk may type `@`; the bug goes in the roadmap, not in this
 phase.
 
-- [ ] **Step 3: The named cases**
+- [x] **Step 3: The named cases**
 
 Flip the two the phase changes (`a full stop is not plain`, `a digit is not plain`) and
 add the refusals of §1.4 that are new — `1 x` + `.`, a delimiter row, `www.` both ways,
@@ -167,7 +167,7 @@ of a word, a comma between two words, a digit mid-line).
 npm run check
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/plain_edit.ts test/checks/check-plain-edit.mjs
@@ -186,24 +186,24 @@ git commit -m "feat(plain edit): punctuation and digits are plain keystrokes"
 - Produces: no new names; the refusals the probes stage become characters that still
   refuse (`*`), and the fast cases gain the punctuation.
 
-- [ ] **Step 1: `typed-text.js`**
+- [x] **Step 1: `typed-text.js`**
 
 A full stop is now the fast path: the block, its text node and the page all stay put,
 and the document holds the character. The refusal case stays a `*` (and the header's
 "an asterisk, a full stop" loses the full stop).
 
-- [ ] **Step 2: `plain-edit-parse.js`**
+- [x] **Step 2: `plain-edit-parse.js`**
 
 The contrast is read as "a structural keystroke asks the caret lookup, parses and
 rebuilds" — staged with `*` now, and a comma and a full stop join the plain rounds.
 
-- [ ] **Step 3: `block-rebuild-cost.js`**
+- [x] **Step 3: `block-rebuild-cost.js`**
 
 The third round types a `*` rather than a full stop, so the pair of costs is still
 reported; the full stop joins the fast rounds. Record what a full stop costs now on the
 fixture note's big block (it was 46 ms) for the handoff.
 
-- [ ] **Step 4: Run them**
+- [x] **Step 4: Run them**
 
 ```bash
 npm run probe -- --fixture default-document.md test/probes/typed-text.js
@@ -212,7 +212,7 @@ npm run probe -- --fixture "notes/Western Philosophy/Hannah Arendt/The Human Con
   test/probes/block-rebuild-cost.js
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add test/probes/typed-text.js test/probes/plain-edit-parse.js test/probes/block-rebuild-cost.js
@@ -221,14 +221,14 @@ git commit -m "test(plain edit): the punctuation probes and their numbers"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/architecture.md`'s "One keystroke" passage says what the rule accepts now and why
 the three guards exist; `docs/adding-a-node.md`'s fast-path step says the same in one
 line; `docs/roadmap.md` closes P10's leftover and records the parser crash the fuzz
 found.
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -237,7 +237,7 @@ npm run tauri dev                               # terminal 1, freshly started
 npm run probe:all                               # 72/72 probes
 ```
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 Append to this plan: the alphabet, the three guards with the facts behind them, the
 numbers from the probes, the gate's move to the editor's own parse, and what is left.
@@ -248,7 +248,7 @@ git add docs/architecture.md docs/adding-a-node.md docs/roadmap.md \
 git commit -m "docs: close the punctuation handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -257,3 +257,91 @@ git rev-parse HEAD^{tree} codex/plain-punctuation^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**P10's last item is closed: the punctuation of a sentence is a plain keystroke.** On
+the fixture note's big block (the same one P9, P10 and P11 measured) a full stop went
+from **46 ms to 5 ms**, next to 4 ms for a letter and a space and 47 ms for an asterisk.
+
+### The rule
+
+`syntax/plain_edit.ts` accepts a letter, a digit, a space, and `, . ; : ! ? ' " % + -`.
+What is *not* in the alphabet is the point — `*`, `_`, `` ` ``, `[`, `]`, `(`, `)`, `<`,
+`>`, `&`, `\`, `$`, `^`, `|`, `{`, `}`, `#`, `~`, `=`, `@`, `/` each need a plain
+character beside them to make something, so they keep going the ordinary way — and the
+three things a run of the accepted ones can *still* do are guards:
+
+- **`www.`** — the one autolink they can spell (a scheme needs `/`, an email `@`).
+  `touchedRun` reads the run the edit touched as one span, in the text on both sides of
+  the edit, because a character put into a run can start the link and one taken out of it
+  can end it. That second half is what the gate found after the first version looked
+  only at the run *after* the edit: deleting the space before `www.` ends the link.
+- **the line's own beginning** — `MARKER_MATERIAL` (`blanks, digits, + - * . : > # ` ~
+  = |`) with `MARKER_PREFIX` (`- x`, `1. x`, `## x`, `> x`, `: x`): typing inside a
+  marker's own characters can finish it (`1 x` + `.` is a list, and a table's delimiter
+  row is not a row once it has a full stop), while a caret past a marker that is already
+  there is in the content.
+- **two spaces** — `preserveSpaces` renders the second as a no-break space and the two at
+  a line's end are a hard break. The scope is the *line*, which replaces P10's two
+  checks: they missed the run an edit straddles (`ax, \n` + `. ` is a hard break).
+
+The three guards were not guessed. A seeded fuzz over 20 documents × 4 alphabets × 4
+seeds (paragraphs, lists, headings, quotes, tables, description lists, frontmatter,
+fenced and indented code, footnotes, CJK, URLs) comparing every accepted edit's parse
+before and after found them: without the marker guard 16 of ~5 000 accepted edits change
+the parse, without the autolink guard 1, and the space guard's straddling case three
+times. With all three, 19 587 accepted edits and none.
+
+### The gate
+
+`check-plain-edit.mjs` now shapes text with the editor's **own** pipeline
+(`syntax/parser.ts: parseMarkdown`) instead of `remarkParse + remarkGfm` — which had none
+of the editor's plugins (description lists, math, wikilinks, frontmatter, citations) and
+none of its repairs, so "the parse" in that check was not this editor's parse. It runs
+three walks (letters, the new punctuation, the structural characters) over 17 documents
+and 2 306 accepted edits, and each accepted edit must leave the shape alone *and* parse
+to the old tree with the edit in the one leaf it lands in.
+
+**The fuzz also found a bug that is not this phase's:** a citation inside a description
+detail makes `syntax/parser.ts: fixDescriptionPositions` throw (it stringifies with a
+processor that has no citation handler), so no walk types `@`. It is in
+`docs/roadmap.md`'s open list.
+
+### The probes
+
+- `typed-text.js`: a full stop and a comma keep the block, the text node and the
+  document, and read no rect; the refusal it stages is an asterisk. It keeps the number
+  of cases it had, because the fuller version timed out inside the bridge's budget late
+  in a suite run — a long-running app makes every case slower, and this probe sits
+  closest to the edge. Splitting the deferred-check section out is the next step if it
+  ever times out again.
+- `plain-edit-markers.js` (new): the punctuation the rule refuses *because of a marker* —
+  a full stop after the `1` of `1 x` (the line becomes a list), a full stop inside a
+  `www.` run, and a Backspace that would leave `--` under `title` — each rebuild the
+  block and still reach the document. These moved out of `typed-text.js` because they
+  perturbed its staged section from a distance (the staged shape was consumed by a
+  pending check), and they are a subject of their own: what the rule refuses in the app,
+  as opposed to what the fast path writes.
+- `plain-edit-parse.js`: the contrast between the plain and the ordinary path is staged
+  with `*`; a comma and a full stop join the plain rounds.
+- `block-rebuild-cost.js`: the rounds are a letter, a space, a full stop (all fast) and
+  an asterisk (ordinary): **4–6 / 4–5 / 5 / 47 ms** on that block across two runs, with
+  one height read for the fast ones and eight for the asterisk.
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` 20/20 (the plain-edit check reports 2 306
+  accepted edits).
+- A freshly started app and `npm run probe:all`: **73/73 probes, 6 skipped**.
+
+### What is left
+
+- `docs/roadmap.md`'s open list: the citation-in-a-detail parse crash the fuzz found, and
+  P16's boundary (the two whole-document commands record no marks for undo).
+- The rule's own residue, both conservative: a caret at the very start of a list item's
+  or a heading's text goes the ordinary path — the rule allows it (it is past a complete
+  marker) but the write half still refuses that boundary — and a table cell's text is
+  plain only away from its edges, because a `|` is not in the alphabet.
