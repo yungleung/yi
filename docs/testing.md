@@ -51,10 +51,14 @@ Harness flags:
   it, so the app runs a module the file on disk no longer holds. `touch` the file,
   then `npm run probe -- --reload`. A probe reporting something impossible (a
   `ReferenceError` for a function you just wrote) is usually this, not the app.
-- A probe that outlives the bridge's budget still leaves its last `t.report(...)` in
-  `window.__probeSteps`; the harness prints it as *"recovered after the bridge timed
-  out"*. That is a result, not a failure — but check the app is fresh, because a
-  long-running dev app gets slow and makes every probe look broken.
+- **The bridge gives one script 5 s** (measured: a 3 s probe answers, a 6 s one is cut
+  off at ~5005 ms). A probe that outlives it still leaves its last `t.report(...)` in
+  `window.__probeSteps`, and the harness prints it as *"recovered after the bridge timed
+  out"* — a result, not a failure, and not the app being slow: the `bridge: …` line the
+  harness prints beside it says what the app's own calls cost (median ~3 ms on an idle
+  app, whatever the probe's length). Split a probe that needs longer than 5 s, or make
+  its rounds cheaper; `test/probes/load-cost.js` is the probe that says whether the app
+  itself has started to cost more.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
 - **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and

@@ -79,8 +79,10 @@ Before claiming a change works:
 1. `npx tsc --noEmit` → silent.
 2. `npm run check` → `20/20 checks passed` (or more, if you added one).
 3. Run the probes that touch what you changed; if a probe fails, read
-   `test/README.md` for how probes report, and check the app is freshly started —
-   a dev app left running for hours gets slow and probes will time out.
+   `test/README.md` for how probes report. A probe that "timed out" is usually its own
+   length: the bridge gives a script **5 s**, and the harness recovers anything longer
+   from the stash (`P21` measured it, with the app's own cost flat over a whole suite —
+   a load of the 314 KB fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
 4. If you changed behaviour, add or update a test that fails without your change and
    say which one proves it. Pure rules go in `test/checks/`; anything about DOM,
    caret or rendering goes in `test/probes/`.

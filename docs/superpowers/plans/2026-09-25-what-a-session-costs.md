@@ -85,10 +85,10 @@ suite are all the same mechanism.
 - Produces: the probe's report (`loadMs`, `loadMedian`, `loadGrowth`, `parseMs`, `sizes`)
   and the harness's trailing `bridge: …` line.
 
-- [ ] **Step 1: The probe** (as implemented; header rewritten around what it measures and
+- [x] **Step 1: The probe** (as implemented; header rewritten around what it measures and
   why the trend, not the level, is the claim).
 
-- [ ] **Step 2: The harness line**, printed from an `exit` hook so every path carries it,
+- [x] **Step 2: The harness line**, printed from an `exit` hook so every path carries it,
   and counted per call with the connect time folded in.
 
 ```bash
@@ -96,7 +96,7 @@ npm run probe -- --fixture "notes/Western Philosophy/Hannah Arendt/The Human Con
   test/probes/load-cost.js
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add test/probes/load-cost.js test/tauri-probe.mjs test/README.md
@@ -108,13 +108,13 @@ git commit -m "test(probes): what a load costs, and what the bridge costs"
 **Files:**
 - Modify: `test/tauri-probe.mjs`
 
-- [ ] **Step 1: Reload on the timeout path**
+- [x] **Step 1: Reload on the timeout path**
 
 One helper, called before each exit on the timeout path: `location.reload()` through the
 bridge, best effort (a short timeout, errors ignored), with a comment saying why — the
 script the bridge gave up on is still running, and the next call would queue behind it.
 
-- [ ] **Step 2: Prove it**
+- [x] **Step 2: Prove it**
 
 Run a probe that deliberately outlives the budget (a scratch file in `/private/tmp` that
 sleeps past 20 s), then a normal probe, and check the harness's `bridge:` line for the
@@ -125,7 +125,7 @@ node test/tauri-probe.mjs /private/tmp/yi-slow-probe.js     # times out
 npm run probe -- --fixture default-document.md test/probes/load-cost.js
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add test/tauri-probe.mjs
@@ -134,13 +134,13 @@ git commit -m "fix(probes): a timed-out probe reloads the page"
 
 ### Task 3: Acceptance, docs, handoff
 
-- [ ] **Step 1: The docs**
+- [x] **Step 1: The docs**
 
 `docs/ai-context.md` (the warning under "Before claiming a change works") and `AGENTS.md`
 (the same sentence) get the measured numbers and the real failure mode;
 `docs/roadmap.md` records the measurement under "measure before deciding".
 
-- [ ] **Step 2: Acceptance**
+- [x] **Step 2: Acceptance**
 
 ```bash
 npx tsc --noEmit
@@ -152,7 +152,7 @@ npm run probe:all                               # 76/76 probes, 6 skipped
 And, in the suite's output, the `bridge:` lines: none of them should show a call waiting
 seconds (that is the acceptance for the reload helper).
 
-- [ ] **Step 3: The handoff, and the commit**
+- [x] **Step 3: The handoff, and the commit**
 
 ```bash
 git add docs/ai-context.md AGENTS.md docs/roadmap.md \
@@ -160,7 +160,7 @@ git add docs/ai-context.md AGENTS.md docs/roadmap.md \
 git commit -m "docs: close the session cost handoff"
 ```
 
-- [ ] **Step 4: Merge**
+- [x] **Step 4: Merge**
 
 ```bash
 git checkout main
@@ -169,3 +169,69 @@ git rev-parse HEAD^{tree} codex/session-cost^{tree}   # must be equal
 ```
 
 Keep the branch, and report the tree hash.
+
+---
+
+## Handoff — what this phase left
+
+**The app does not get slower while it stays open; a probe can be longer than the bridge
+allows, and that is what "probes time out" always was.** Two entry-point files carried the
+opposite as advice; both now carry the measurement.
+
+### What was measured
+
+The 323 KB fixture note, one app instance kept running for the whole comparison:
+
+| Measurement | Fresh app | After a whole suite (~15 min, 76 probes) |
+| --- | --- | --- |
+| Load, 8× the 314 266-character note | 334/331/332/331/336/332/329/324 ms | 325/325/319/326/323/323/325/350 ms |
+| What the page mounted | 27 blocks, 1 root, 1 caret | the same, every round |
+| A fresh state's first-block parse | 2/1/2 ms | 5/3/3 ms |
+| Bridge round trips, no probe running | 120: median 2.9 ms, p90 4.1 ms, 0 failed | 120: median 2.9 ms, p90 3.9 ms, max 59 ms, 0 failed |
+
+Flat, both ways. The last row was measured with a scratch script, not a probe, because a
+probe's own length is part of what it reports.
+
+### The budget that actually bites
+
+Measured with three scratch probes: a script that sleeps 3 s answers, one that sleeps 6 s
+is cut off at **~5005 ms**, and so is one that sleeps 8 s. The bridge gives a script 5 s.
+The harness waits 20 s and then polls for the stash, which is why a longer probe still
+*reports* — as `recovered after the bridge timed out` — and why the phase notes that read
+like app decay were really a probe outliving that budget.
+
+In a full suite this is not rare: **nine** probes are cut off that way and recovered —
+`block-rebuild-cost`, `display-math-source`, `edit-cost`, `inline-math-source`,
+`paste-blocks`, `revealable-flows`, `typed-text`, `undo-run-taken-back`,
+`undo-selection-return` — every one of them a probe that sleeps a lot, with the app's own
+calls at a 6–12 ms median while it happens. Before this phase that was invisible: a probe
+that took 5.0 s and one that took 30 s looked the same.
+
+### What was added
+
+- `test/probes/load-cost.js`: eight loads of the document the runner gave, what the page
+  has mounted after each, and a fresh state's first-block parse. `@needs-large-document`,
+  so the suite runs it against the 323 KB note. The trend is the claim.
+- The harness prints, per run,
+  `bridge: 4 calls, median 8.6 ms, max 54.2 ms, 1 failed; the probe itself 5018 ms` — the
+  bridge's own calls and the probe's life separated, because the call that carries a probe
+  holds the whole probe. A stalled call is now visible in a probe's own output.
+- The harness's recovery note says the budget out loud, and `docs/testing.md` carries it
+  with how to respond: split a probe that needs longer than 5 s.
+- `docs/ai-context.md` and `AGENTS.md`: the "hours / 10 s loads" warning is replaced by the
+  numbers above and by what to actually do when a probe "times out".
+
+### The one outlier, for the next phase
+
+`table-picker-insert.js` is the only probe whose *infrastructure* calls are slow: in the
+acceptance suite `bridge: 7 calls, median 8005.8 ms, max 9504.2 ms, 5 failed; the probe
+itself 1328 ms`. Its own script is 1.3 s — the app stopped answering the *bridge* for
+eight to nine seconds around it. Recorded in `docs/roadmap.md` rather than chased here:
+the harness line is what made it visible, and it wants a measurement of its own (the
+picker panel and the table it inserts are the only things that probe does).
+
+### Evidence
+
+- `npx tsc --noEmit` clean; `npm run check` **21/21**.
+- A freshly started app and `npm run probe:all`: **76/76 probes, 6 skipped**, with 85
+  `bridge:` lines and only the nine budget cut-offs plus the picker outlier among them.

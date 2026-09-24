@@ -94,6 +94,16 @@ column below.
 
 ## Measure before deciding
 
+- **What a session costs.** Measured in P21, as
+  `docs/superpowers/plans/2026-09-25-what-a-session-costs.md`: the app does **not** get
+  slower while it stays open. Over a whole suite (~15 minutes, 76 probes) a load of the
+  314 KB fixture note stayed at ~330 ms (fresh: 331 ms), the page mounted the same 27
+  blocks every time, a fresh state's first-block parse stayed at 2–5 ms, and 120 bridge
+  round trips stayed at a 2.9 ms median with no failures. What reads as decay is the
+  bridge's **5 s** budget for one script — a 6 s probe is cut off at ~5005 ms and
+  recovered from its stash — and `test/probes/load-cost.js` plus the harness's
+  `bridge: …` line are what tell the two apart.
+
 - **The ordinary path's parse.** A structural keystroke still parses the block it
   rebuilds (9 ms of its ~40 ms). Spaces, punctuation and digits no longer reach it —
   P17 left it the markers and the line's own beginning — and making the parse itself
@@ -105,3 +115,8 @@ column below.
   free.
 - **The deferred check's parse** (once a burst; 9 ms for that block) is the safety
   net's price, not a defect.
+- **`table-picker-insert.js` stalls the bridge.** In P21's acceptance suite it is the one
+  probe whose *infrastructure* calls were slow — `bridge: 7 calls, median 8005.8 ms, max
+  9504.2 ms, 5 failed` — while its own script took 1.3 s. The app stops answering the
+  bridge for eight to nine seconds around the picker panel and the table it inserts; the
+  probe passes, and nothing else in the suite looks like it.
