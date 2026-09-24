@@ -9,6 +9,11 @@
  * detail, and none), reads what the widgets are, and types inside the detail: the
  * character has to reach the document exactly where the document says it is.
  *
+ * A footnote reference in a detail is the same story one step on: a term and a detail are
+ * re-parsed from their own lines, so the definition that makes a reference a reference is
+ * borrowed for the re-parse and dropped again — rendered once, where the document keeps
+ * it, and not inside the list that borrowed it.
+ *
  * @covers src/ui/markdown/syntax/parser.ts, src/ui/markdown/nodes/citation.ts,
  *   src/ui/markdown/nodes/wikilink.ts
  */
@@ -92,6 +97,33 @@
     'and typing after three widgets lands where the document says',
     afterMath.document === afterMath.expected,
     afterMath
+  );
+
+  // A footnote reference in the detail, with its definition below the list: the reference
+  // has to render as a reference, and the borrowed definition may not land in the list.
+  const cited = 'a term\n: a detail with a note[^1] in it\n\n[^1]: the note itself\n';
+  await t.load(cited);
+  const blocks = t.blocks();
+  check(
+    'the reference in the detail renders',
+    t.prose().querySelector('[data-footnote-ref]') !== null,
+    t.prose().textContent
+  );
+  check(
+    'and the definition it borrowed is not inside the list',
+    !(blocks[0]?.textContent ?? '').includes('the note itself'),
+    blocks[0]?.textContent ?? null
+  );
+  check(
+    'it still renders as its own block',
+    blocks.some((block) => block.textContent.includes('the note itself')),
+    blocks.map((block) => block.textContent)
+  );
+  const afterReference = await typeAt(cited, 'in it', 2, 'w');
+  check(
+    'and typing after the reference lands where the document says',
+    afterReference.document === afterReference.expected,
+    afterReference
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
