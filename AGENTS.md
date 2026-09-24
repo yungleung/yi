@@ -11,8 +11,12 @@ brief — read it first; this file is the short version and the non-negotiables.
   `{ checks, failed }` and using the helpers in `test/probes/lib.js`.
 - `npm run check` covers pure rules in Node and must stay green; the probes cover
   what a compiler cannot see (caret placement, typing, scrolling, rendering).
-- A dev app left running for hours degrades (document loads go from ~0.3 s to
-  ~10 s and probes time out). Restart it before blaming a probe.
+- Measured, a long-running dev app does not degrade: over a whole suite (~15 minutes,
+  76 probes) a load of the 314 KB fixture note stayed at ~330 ms and a bridge call at
+  ~3 ms (`test/probes/load-cost.js` reports both, and the harness prints its own
+  `bridge: …` line per run). What looks like decay is the bridge's **5 s** budget for
+  one script: a longer probe is cut off and recovered from its stash, and the harness
+  says so. Split a probe that needs longer; restarting the app is not the fix.
 - Setting the bridge up from scratch — the MCP server and CLI that drive the app,
   and the skills this project uses — is `README.md` → *AI agents*.
 

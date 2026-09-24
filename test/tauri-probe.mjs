@@ -111,10 +111,38 @@ async function connect() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * What this run's calls cost, so "the app is slow" and "the probe took a while" can be
+ * told apart: every call opens its own WebSocket, and the call that runs the probe holds
+ * *the probe's* whole life (every `t.load` and every sleep in it), which would otherwise
+ * swamp the numbers. The bridge's own calls are the ones that say whether the app is
+ * answering; the probe's is reported separately, and a failure in either is named.
+ * Printed once, after the probe's result.
+ */
+const calls = [];
+process.on('exit', () => {
+  if (calls.length === 0) {
+    return;
+  }
+  const bridgeCalls = calls.filter((entry) => entry.kind === 'bridge');
+  const probeCalls = calls.filter((entry) => entry.kind === 'probe');
+  const times = bridgeCalls.map((entry) => entry.ms).sort((a, b) => a - b);
+  const median = times[Math.floor(times.length / 2)];
+  const failed = calls.filter((entry) => !entry.ok).length;
+  const probe = probeCalls[0];
+  console.log(
+    `bridge: ${times.length} calls, median ${Math.round(median * 10) / 10} ms, ` +
+      `max ${Math.round(times[times.length - 1] * 10) / 10} ms` +
+      (failed === 0 ? '' : `, ${failed} failed`) +
+      (probe ? `; the probe itself ${Math.round(probe.ms)} ms` : '')
+  );
+});
+
 /** Sends one script and resolves with the bridge's reply. */
-async function call(script, timeoutMs = 20000) {
+async function call(script, timeoutMs = 20000, kind = 'bridge') {
+  const started = performance.now();
   const ws = await connect();
-  return await new Promise((resolve) => {
+  const reply = await new Promise((resolve) => {
     const timer = setTimeout(() => {
       ws.close();
       resolve({ success: false, error: 'timeout waiting for the bridge' });
@@ -136,6 +164,8 @@ async function call(script, timeoutMs = 20000) {
       })
     );
   });
+  calls.push({ ms: performance.now() - started, ok: reply.success === true, kind });
+  return reply;
 }
 
 if (installing) {
@@ -196,7 +226,7 @@ async function runProbe() {
   // Clear any earlier probe's stash first, so a timed-out run can never be
   // mistaken for the previous one's result.
   await call('window.__probeResult = undefined; window.__probeSteps = undefined; null');
-  return await call(wrappedProbe);
+  return await call(wrappedProbe, 20000, 'probe');
 }
 
 /**
@@ -282,7 +312,11 @@ for (let attempt = 0; attempt < 8; attempt += 1) {
   }
   if (state && state.result !== null) {
     console.log(JSON.stringify(state.result, null, 2));
-    console.log('(recovered after the bridge timed out; the probe had already run)');
+    console.log(
+      '(recovered after the bridge timed out; the probe had already run — the bridge gives a ' +
+        'script 5 s, so this is what a longer probe always looks like, and the bridge: line ' +
+        'below says whether the app was answering while it ran)'
+    );
     process.exit(0);
   }
   if (state && state.steps !== null) {
