@@ -127,6 +127,38 @@ export function coalesceRun(
   return null;
 }
 
+/**
+ * The typing run a Backspace takes one character back off, or null when it does not.
+ *
+ * Typing a word and deleting part of it again is one thing the author did, so the
+ * deletion does not start a step of its own — it shortens the run, and a run it
+ * shortens to nothing is no step at all (`History.record` drops it). What makes the
+ * character the run's own is all three of: the deletion sits at the run's *end*, it
+ * removes exactly the character that is there, and that character is the last one the
+ * run inserted. So a Backspace that reaches past the run into the document's own text
+ * — including the one that follows a run already trimmed away — a Delete, a paste, and
+ * a caret that moved are all steps of their own.
+ */
+export function trimRun(previous: DocumentEdit, next: DocumentEdit): DocumentEdit | null {
+  if (previous.inserted === '' || next.inserted !== '' || next.removed === '') {
+    return null;
+  }
+  const end = previous.from + previous.inserted.length;
+  if (next.from !== end - 1 || next.to !== end) {
+    return null;
+  }
+  if (next.removed !== previous.inserted.slice(-1)) {
+    return null;
+  }
+  return {
+    from: previous.from,
+    to: previous.to,
+    removed: previous.removed,
+    inserted: previous.inserted.slice(0, -1),
+    ...caretsOf(previous, next)
+  };
+}
+
 /** A run's carets: the first edit's start, the last edit's end. */
 function caretsOf(previous: DocumentEdit, next: DocumentEdit): {
   caretBefore?: number;
@@ -150,13 +182,30 @@ export class History {
    * Records an edit the document has just applied, discarding the redo tail.
    *
    * An edit that continues the run the last one was in replaces it instead of being
-   * pushed: a word of typing is one step (see `coalesceRun`).
+   * pushed: a word of typing is one step (see `coalesceRun`), and a Backspace that
+   * takes back the run's own last character trims that step rather than starting one
+   * (see `trimRun`). A step a trim leaves empty was not an edit at all, so it is
+   * dropped and the burst leaves no trace in the log.
    */
   record(edit: DocumentEdit, kind: EditKind = 'other'): void {
     const previous = this.cursor > 0 ? this.log[this.cursor - 1] : null;
-    if (previous && kind === this.lastKind) {
-      const merged = coalesceRun(previous, edit, kind);
+    if (previous) {
+      const merged =
+        kind === this.lastKind
+          ? coalesceRun(previous, edit, kind)
+          : this.lastKind === 'typing' && kind === 'deleting'
+            ? trimRun(previous, edit)
+            : null;
       if (merged) {
+        if (merged.inserted === '' && merged.removed === '') {
+          // The run took back the last of its own text: the burst ends up having
+          // changed nothing, so the step it was — and anything a redo would have
+          // replayed after it — goes with it.
+          this.log.splice(this.cursor - 1);
+          this.cursor -= 1;
+          this.lastKind = 'other';
+          return;
+        }
         this.log[this.cursor - 1] = merged;
         return;
       }

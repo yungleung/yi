@@ -17,7 +17,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-history-'));
 const file = join(directory, 'history.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { History, invert, coalesceRun } = await import(file);
+const { History, invert, coalesceRun, trimRun } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -140,6 +140,51 @@ const deletedForward = { from: 1, to: 2, removed: 'b', inserted: '', caretBefore
 check('Delete merges forwards too',
   coalesceRun(deletedForward, { from: 1, to: 2, removed: 'c', inserted: '', caretBefore: 1, caretAfter: 1 }, 'deleting'),
   { from: 1, to: 3, removed: 'bc', inserted: '', caretBefore: 1, caretAfter: 1 });
+
+// A Backspace that takes back the run's *own* last character is not a step of its own:
+// it trims the run, so what the author typed and then part-deleted is one step, and a
+// run deleted whole is no step at all.
+const backspaceAt = (from, removed, caretBefore) => ({
+  from,
+  to: from + removed.length,
+  removed,
+  inserted: '',
+  caretBefore,
+  caretAfter: from
+});
+check('a backspace at the run`s end trims it',
+  trimRun(letter(4, 'hel', 4), backspaceAt(6, 'l', 7)),
+  { from: 4, to: 4, removed: '', inserted: 'he', caretBefore: 4, caretAfter: 6 });
+check('but a backspace that reaches past the run does not',
+  trimRun(letter(4, 'x', 4), backspaceAt(3, 'e', 4)), null);
+check('nor does a Delete, which removes forwards',
+  trimRun(letter(4, 'x', 4), { from: 5, to: 6, removed: ' ', inserted: '', caretBefore: 5, caretAfter: 5 }),
+  null);
+check('nor one that removes a character the run did not write',
+  trimRun(letter(4, 'x', 4), backspaceAt(4, 'y', 5)), null);
+check('a run trimmed away leaves no step', (() => {
+  const log = new History();
+  log.record(letter(0, 'h', 0), 'typing');
+  log.record(letter(1, 'e', 1), 'typing');
+  log.record(backspaceAt(1, 'e', 2), 'deleting');
+  log.record(backspaceAt(0, 'h', 1), 'deleting');
+  return [log.length, log.canUndo(), log.canRedo()];
+})(), [0, false, false]);
+check('and a run that had replaced text keeps that deletion', (() => {
+  const log = new History();
+  log.record({ from: 2, to: 4, removed: 'cd', inserted: 'xy', caretBefore: 2, caretAfter: 4 }, 'typing');
+  log.record(backspaceAt(3, 'y', 4), 'deleting');
+  log.record(backspaceAt(2, 'x', 3), 'deleting');
+  return log.edits();
+})(), [{ from: 2, to: 4, removed: 'cd', inserted: '', caretBefore: 2, caretAfter: 2 }]);
+check('and the letters after a trim join the same step', (() => {
+  const log = new History();
+  log.record(letter(4, 'h', 4), 'typing');
+  log.record(letter(5, 'e', 5), 'typing');
+  log.record(backspaceAt(5, 'e', 6), 'deleting');
+  log.record(letter(5, 'y', 5), 'typing');
+  return [log.length, log.edits()[0].inserted];
+})(), [1, 'hy']);
 check('a run of typing is one entry in the log', (() => {
   const step = new History();
   for (const [at, key] of [[0, 'h'], [1, 'e'], [2, 'l'], [3, 'l'], [4, 'o']]) {
