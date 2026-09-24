@@ -25,6 +25,7 @@ import { showsSource } from '../registry';
 import { isPlainEdit } from '../syntax/plain_edit';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
+import type { EditKind } from '../document/history';
 import type { RootContent } from 'mdast';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
@@ -369,9 +370,13 @@ export function applyEdit(
   from: number,
   to: number,
   replacement: string,
-  caret: CaretTarget = from + replacement.length
+  caret: CaretTarget = from + replacement.length,
+  kind: EditKind = 'other'
 ): void {
   const anchor = context.contentView.scrollTop;
+  // Where the author was before the edit: the history keeps it, so undo can put the
+  // caret back there rather than wherever it happens to be when the undo is asked for.
+  const before = caretOffset(context) ?? from;
   const target = typeof caret === 'function' ? caret(context.state) : caret;
   // The fast path: a keystroke that cannot change how its block parses is written
   // into the text node the caret is in, and nothing is rendered or parsed — which
@@ -388,7 +393,10 @@ export function applyEdit(
   if (written) {
     scheduleVerify(context, written);
   }
-  context.state.replaceRange(from, to, replacement);
+  context.state.replaceRange(from, to, replacement, {
+    carets: { before, after: target },
+    kind
+  });
   if (run) {
     writeRun(run, replacement);
     const block = context.state.getBlockAtOffset(from + replacement.length);

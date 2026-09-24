@@ -47,7 +47,7 @@ export function insertText(context: EditorContext, text: string): boolean {
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
   }
-  applyEdit(context, offsets.from, offsets.to, text);
+  applyEdit(context, offsets.from, offsets.to, text, undefined, 'typing');
   return true;
 }
 
@@ -86,7 +86,7 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
     return false;
   }
   const removal = characterRemoval(context.state.getText(), from, to);
-  applyEdit(context, removal.from, removal.to, '', from);
+  applyEdit(context, removal.from, removal.to, '', from, 'deleting');
   return true;
 }
 
