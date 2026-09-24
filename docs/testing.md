@@ -59,6 +59,12 @@ Harness flags:
   app, whatever the probe's length). Split a probe that needs longer than 5 s, or make
   its rounds cheaper; `test/probes/load-cost.js` is the probe that says whether the app
   itself has started to cost more.
+- **A `bridge:` line with a seconds-long *median* is an open native menu.** Nothing is
+  slow: the webview is blocked, and the menu it is blocked on cannot be closed by a
+  script. The tell is the probe's own time beside it (small) against the calls (seconds
+  apiece), and the culprit is the probe *before*: one that right-clicked. It must carry
+  `@needs-foreground-window` so `probe:all` skips it — `probe-markers.mjs` fails until it
+  does, and `table-menu-open.js` is why that check exists.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
 - **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and

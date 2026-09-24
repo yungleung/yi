@@ -4,6 +4,10 @@
  * The native menu blocks the webview while it is open, so this probe's last
  * statement is the right-click itself: the reply is already on its way when
  * the menu appears, and the screenshot script captures what is on screen.
+ *
+ * @needs-foreground-window — the menu it opens cannot be closed by a script, so
+ * `probe:all` skips it: run it by name with the window in front. Without the marker
+ * every probe *after* it in a suite waits seconds per call for the open menu.
  */
 (async () => {
   const t = window.__t;
