@@ -83,6 +83,16 @@ elements) unless it says otherwise.
   handful now, and the count no longer grows with the document (2 of 1933 in a note
   four times as long). The wall clock at this size is inside the probe's noise; this
   was the last O(blocks)-per-keystroke shape, and the win is the shape.
+- **The definition's own label** (P15's and P19's leftover). Landed as its own phase,
+  `docs/superpowers/plans/2026-09-25-a-definition-label-you-can-edit.md`: the
+  `[^label]` a definition is named by is a revealable node of its own now — while the
+  caret is in it, it is built as its own markdown source, the way a marker is — and it
+  maps through the *definition's* offset, which the old hand-written `data-text-from="0"`
+  only got right when the definition started its own block. Measured on the app before
+  the fix: in `[^1]: first\n[^2]: second` a Backspace typed into the *second* label took
+  a character of the **first** definition, and in ` [^1]: note` (markdown allows up to
+  three leading spaces) it landed one character early. `test/probes/footnote-jump-back.js`
+  holds both cases, the reveal, the exact-click caret and the ⌘-click jump.
 
 ## Open, in the order to take them
 
