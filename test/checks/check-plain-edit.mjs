@@ -2,14 +2,15 @@
  * Checks the rule the fast path trusts: an edit it accepts must not change how
  * the text parses. The rule may fall back as often as it likes; it may not be
  * wrong.
+ *
+ * "How the text parses" means the editor's own pipeline (`syntax/parser.ts`), not a
+ * stand-in: the plugins and repairs are what make a `:` a description list at a line's
+ * beginning, a `$` math, a `[[` a wikilink and a `www.` an autolink.
  */
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-plain-edit-'));
 /** Bundles one module with rolldown and imports it, the way every check does. */
@@ -35,10 +36,10 @@ globalThis.document = {
 };
 globalThis.window = { getSelection: () => null, addEventListener() {} };
 
+const { parseMarkdown } = await load('src/ui/markdown/syntax/parser.ts', 'parser');
 const { MarkdownEditorState } = await load('src/ui/markdown/document/state.ts', 'state');
 
-const parser = unified().use(remarkParse).use(remarkGfm);
-const shape = (text) => nodeShape(parser.parse(text).children);
+const shape = (text) => nodeShape(parseMarkdown(text).children);
 
 /** Every node of the block an offset sits in, with the source it covers. */
 const nodesOf = (state, offset) => {
@@ -116,14 +117,31 @@ check('a space inside a URL is not plain',
 check('a space before a glued URL is not plain',
   isPlainEdit('seehttps://x.example', 3, 3, ' '), false);
 check('a second space in a row is not plain', isPlainEdit('a  b', 2, 2, ' '), false);
-check('a full stop is not plain', isPlainEdit('a quick fox', 3, 3, '.'), false);
+// ...and the punctuation of a sentence, which is the phase's point: a marker is what
+// can change how the text reads, and none of these is one.
+check('a full stop is plain', isPlainEdit('a quick fox', 3, 3, '.'), true);
+check('a full stop inside a word is plain', isPlainEdit('a quick fox', 4, 4, '.'), true);
+check('a comma is plain', isPlainEdit('a quick fox', 3, 3, ','), true);
+check('a colon is plain', isPlainEdit('a quick fox', 4, 4, ':'), true);
+check('a semicolon is plain', isPlainEdit('a quick fox', 4, 4, ';'), true);
+check('an apostrophe is plain', isPlainEdit('dont stop', 4, 4, "'"), true);
+check('a quote is plain', isPlainEdit('a quick fox', 3, 3, '"'), true);
+check('a question mark is plain', isPlainEdit('a quick fox', 4, 4, '?'), true);
+check('an exclamation mark is plain', isPlainEdit('a quick fox', 4, 4, '!'), true);
+check('a hyphen inside a word is plain', isPlainEdit('well known', 4, 4, '-'), true);
+check('a digit is plain', isPlainEdit('a quick fox', 3, 3, '1'), true);
+check('a date is plain', isPlainEdit('on 1 January', 4, 4, '2'), true);
+check('a period after a digit mid-line is plain', isPlainEdit('see item 1 now', 10, 10, '.'), true);
+check('deleting a comma is plain', isPlainEdit('one, two', 3, 4, ''), true);
 
 // ...and refuses everything that could change structure.
 check('an asterisk is not plain', isPlainEdit('a quick fox', 3, 3, '*'), false);
 check('a backtick is not plain', isPlainEdit('a quick fox', 3, 3, '`'), false);
 check('a backslash is not plain', isPlainEdit('a quick fox', 3, 3, '\\'), false);
 check('a bracket is not plain', isPlainEdit('a quick fox', 3, 3, '['), false);
-check('a digit is not plain', isPlainEdit('a quick fox', 3, 3, '1'), false);
+check('an at sign is not plain', isPlainEdit('a quick fox', 3, 3, '@'), false);
+check('a slash is not plain', isPlainEdit('a quick fox', 3, 3, '/'), false);
+check('an equals sign is not plain', isPlainEdit('a quick fox', 3, 3, '='), false);
 check('a newline is not plain', isPlainEdit('a quick fox', 3, 3, '\n'), false);
 check('a tab is not plain', isPlainEdit('a quick fox', 3, 3, '\t'), false);
 check('typing beside a marker is not plain', isPlainEdit('*a*quick fox', 3, 3, 'x'), false);
@@ -133,6 +151,42 @@ check('typing at a line end is not plain', isPlainEdit('a\nquick fox', 1, 1, 'x'
 check('typing above a setext underline is not plain', isPlainEdit('title\n---\n', 3, 3, 'x'), false);
 check('typing above a setext equals line is not plain', isPlainEdit('title\n===\n', 3, 3, 'x'), false);
 check('an edit spanning a line edge is not plain', isPlainEdit('a\nquick fox', 1, 3, 'x'), false);
+// The line's own beginning: a marker is a few characters, and one typed character can
+// finish it — `1 x` is prose until the `.` arrives, `-x` is not a list once it has a
+// letter, and a table's delimiter row is not a row once it has a full stop.
+check('a full stop after a digit at a line start is not plain',
+  isPlainEdit('1 x', 1, 1, '.'), false);
+check('a paren after a digit at a line start is not plain',
+  isPlainEdit('1 x', 1, 1, ')'), false);
+check('a letter after a bullet is not plain', isPlainEdit('- well', 1, 1, 'x'), false);
+check('a space after a bullet is not plain', isPlainEdit('-x well', 1, 1, ' '), false);
+check('a full stop in a delimiter row is not plain',
+  isPlainEdit('| a | b |\n| --- | --- |\n', 19, 19, '.'), false);
+check('a full stop inside an indent is not plain',
+  isPlainEdit('x\n\n    code\n', 4, 4, '.'), false);
+// A marker already there and past its space is different: the caret is in the content.
+check('typing at the start of a list item`s text is plain',
+  isPlainEdit('- item', 2, 2, 'x'), true);
+check('typing at the start of a heading`s text is plain',
+  isPlainEdit('## item', 3, 3, 'x'), true);
+check('typing at the start of a quote`s text is plain',
+  isPlainEdit('> item', 2, 2, '.'), true);
+check('typing at the start of a detail`s text is plain',
+  isPlainEdit(': item', 2, 2, ','), true);
+// The autolink a run of plain characters can spell, on both sides of the edit.
+check('a full stop inside a www run is not plain', isPlainEdit('see wwwx now', 7, 7, '.'), false);
+check('deleting a character out of a www run is not plain',
+  isPlainEdit('see www.example now', 7, 9, ''), false);
+check('deleting the character before a www run is not plain',
+  isPlainEdit('see www.example now', 3, 5, "'"), false);
+check('typing beside a www run is not plain', isPlainEdit('see www.x now', 8, 8, 'y'), false);
+check('typing inside a www run is not plain',
+  isPlainEdit('see www.example now', 9, 9, 'y'), false);
+// Two spaces: the render turns the second into a no-break space, and the two at the end
+// of a line are a hard break — including the one an edit straddles.
+check('a full stop and a space before a trailing space is not plain',
+  isPlainEdit('ax, \n', 3, 3, '. '), false);
+check('a space before a trailing space is not plain', isPlainEdit('ax \n', 2, 2, ' '), false);
 
 // The property: whatever the rule accepts must parse to the same shape.
 const documents = [
@@ -146,16 +200,24 @@ const documents = [
   '中文段落，裡面有一些文字。\n\n第二段。\n',
   'see https://example.com and seehttps://glued.example now\n',
   'a link to [the title](https://example.com/dest) and [t](<the dest>)\n',
-  'a double  space, a footnote label [^label] and its definition\n\n[^label]: note\n'
+  'a double  space, a footnote label [^label] and its definition\n\n[^label]: note\n',
+  'term\n: detail with a comma, and a full stop.\n\nanother term\n: another detail\n',
+  '1. one\n2. two\n\n3) three\n\n10. ten\n',
+  'a paragraph that wraps\nonto a second line, and a third\n\ntitle\n---\n',
+  'see www.example.org and example.com and https://example.com now\n',
+  '| Item | Cost |\n| --- | ---: |\n| tea | 1.50 |\n',
+  '---\ntitle: x\n---\n\n+++\nname = "y"\n+++\n\nbody\n',
+  'x\n\n    indented code\n\n- item\n  - nested\n\nprice is $5, 5% off; 5.5 total\n'
 ];
 /**
- * Two walks per document: one that types ordinary letters (which is where the
- * accepted edits come from, and which must stay a large share of them), and one
- * that types the characters that can change a parse (which is where the rule is
- * most likely to be wrong).
+ * Three walks per document: one that types ordinary letters, one that types the
+ * punctuation of a sentence — which the rule accepts, and which is where a rule that
+ * does not know what a `:` or a `.` can do would be wrong — and one that types the
+ * characters that can change a parse, which is where it is most likely to be wrong.
  */
 const walks = [
   ['a', 'b', 'e', 'o', 'x', '中'],
+  ['a', 'o', 'x', ' ', '.', ',', '-', ':', "'", '1', '5'],
   ['a', 'x', '中', '*', '`', '[', '\n', '-', ':', '1', ' ']
 ];
 let seed = 20260923;

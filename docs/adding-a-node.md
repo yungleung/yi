@@ -119,16 +119,18 @@ the raw document — the shape `test/probes/revealable-flows.js` uses:
 
 Nothing in the renderer has to know about your construct: the fast path that writes
 a keystroke into the text node instead of rendering the block is decided by
-characters and tags, not by node types. `syntax/plain_edit.ts` accepts letters, and
-only letters, where no marker, line edge or setext underline could change what the
+characters and tags, not by node types. `syntax/plain_edit.ts` accepts a letter, a
+digit, a space or a piece of punctuation that means itself, in a place where no
+marker, line beginning, line edge, autolink or setext underline could change what the
 line means, and `editing/typed_text.ts` then refuses any edit that does not map into
 one span whose text is the document's own characters.
 
-What the rule *assumes* is that every construct needs a character that is not a
-letter — or, for the two a space can open, an indented code block and a hard break, a
-space at a line edge, which the rule refuses outright. If yours is opened by neither
-— if a letter typed into prose could start or end it — the rule is wrong about it,
-and that has one home and two proofs:
+What the rule *assumes* is that every construct needs a character it does not accept:
+a marker (`*`, `` ` ``, `[`, `|`, `$`, `@`, `/`, …), a line's own beginning (`1. `, `#`,
+`: `, `- `), or a space at a line edge — which is why `www.`, the one autolink the
+accepted characters can spell, has a guard of its own. If yours is opened by none of
+those — if a letter typed into prose could start or end it — the rule is wrong about
+it, and that has one home and two proofs:
 
 - `syntax/plain_edit.ts`: the guard that refuses the edit, beside the guard on the
   runs on both sides of it, which already refuses a run that is not letters (that is

@@ -7,10 +7,10 @@
  * what the next geometry read pays for. Runs against the document the runner was
  * given — the 323 KB fixture note under `probe:all`, the demo document by name —
  * and the app's own keystrokes are measured with the geometry reads they make
- * counted: a letter typed inside a word and the space between two words, which the
- * fast path writes into the text node, and a full stop, which the ordinary path
- * renders the block for. Which of the two the editor pays for is the phase's whole
- * question, so all three are reported.
+ * counted: a letter typed inside a word, the space between two words, and a full stop —
+ * all of which the fast path writes into the text node now — against an asterisk, which
+ * the ordinary path renders the block for. Which of the two the editor pays for is the
+ * phase's whole question, so every round is reported.
  *
  * @covers src/ui/markdown/virtual_block_renderer.ts, src/ui/markdown/create_block.ts
  * @needs-large-document — run against the 323 KB fixture note.
@@ -186,21 +186,31 @@
   }
   const plain = await timeKeystrokes(['x'], 10, 'a letter inside a word');
   const space = await timeKeystrokes(['y', ' '], 6, 'a space between two words');
-  const structural = await timeKeystrokes(['.'], 6, 'a full stop');
+  // A letter first: the probe times the *last* key of the cycle, and a full stop is
+  // prose with a letter on its left.
+  const fullStop = await timeKeystrokes(['z', '.'], 6, 'a full stop');
+  const structural = await timeKeystrokes(['*'], 6, 'an asterisk');
   // Reported before the parse and build measurements, so a bridge that gives up on
   // this note still has the numbers the probe exists for.
   out.medianMs = {
     plainKeystroke: plain.medianMs,
     spaceKeystroke: space.medianMs,
+    fullStopKeystroke: fullStop.medianMs,
     structuralKeystroke: structural.medianMs
   };
-  out.keystrokePath = { plain: plain.path, space: space.path, structural: structural.path };
+  out.keystrokePath = {
+    plain: plain.path,
+    space: space.path,
+    fullStop: fullStop.path,
+    structural: structural.path
+  };
   out.perKeystrokeReads = {
     plain: plain.reads,
     space: space.reads,
+    fullStop: fullStop.reads,
     structural: structural.reads
   };
-  out.keystrokes = { plain, space, structural };
+  out.keystrokes = { plain, space, fullStop, structural };
   t.report(out);
 
   const text = await t.raw();
@@ -267,6 +277,7 @@
     patchTextNodeAndForceLayout: round(median(patch)),
     plainKeystroke: plain.medianMs,
     spaceKeystroke: space.medianMs,
+    fullStopKeystroke: fullStop.medianMs,
     structuralKeystroke: structural.medianMs
   };
   return out;
