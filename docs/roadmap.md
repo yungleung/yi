@@ -201,22 +201,26 @@ highlighted span, re-highlighted when a burst stops — at the end of "Measure b
 
 ## Where a code block's keystroke goes
 
-Measured in P28, as `docs/superpowers/plans/2026-09-25-keystroke-parts.md`, by timing the
-app's own methods from inside a probe (`test/probes/keystroke-parts.js`):
+Measured across P28 and P29, in `docs/superpowers/plans/2026-09-25-keystroke-parts.md` and
+`.../2026-09-25-the-spans-behind-the-layout.md`, by timing the app's own methods from inside a
+probe (`test/probes/keystroke-parts.js`, `test/probes/code-markup-layout.js`):
 
-| One letter | Keystroke | `renderChanged` | Parse calls | Detached build |
-| --- | --- | --- | --- | --- |
-| inside an 80-line fenced code block | **31 ms** | **24 ms** | 12 calls, 4 ms (all cache hits) | 11 ms |
-| inside a paragraph | **3 ms** | — | 1 call | 2 ms |
+| One letter, 80-line fenced code block | Cost |
+| --- | --- |
+| the app as it stands (a rebuild) | **31 ms**, of which `renderChanged` 24 (the detached build 11, the fresh layout the rest) and the parse 4 of twelve cached lookups |
+| writing into the highlighted text node instead of rebuilding (P27) | **28 ms** — no win: the layout after a change in place is what is left |
+| that change, with each line in its own block box | **8 ms** of layout instead of 17 — no visible change |
+| that change, with the spans gone (plain text) | **1 ms** |
+| typing in a paragraph, for comparison | **3 ms** |
 
-The paragraph is written, not rendered; the code block is rebuilt, and the rebuild is the
-whole cost. Inside its 24 ms, the detached build (highlight.js and its DOM) is 11 ms, so the
-rest is the swap and the window sync — and, more to the point, **both write designs avoided
-`renderChanged` entirely and still cost ~28 ms** (P24's markup re-render, P27's text write),
-which leaves the layout that *any* change to that block triggers: an 80-line block of this
-shape holds a few hundred highlight spans to re-lay, against a paragraph's one line.
+Three designs were built and reverted on these numbers: re-rendering the markup in place (P24),
+writing into the highlighted text node (P27), and per-line block boxes (P29). The first two
+kept the colours and cost the same as the rebuild; the third halves an *in-place* change's
+layout but the app's keystroke is a rebuild, which lays a fresh element out in full, so it helps
+nothing today.
 
-**The next measurement** is whether that span count is the cost: force the same text change
-into the element with the spans and without them, and time a forced layout of each. If the
-spans are it, the designs that follow are about the markup (fewer spans, or unhighlighted
-while a burst runs — the trade-off P26 measured) rather than about the write.
+**What is left is one option, and it is a visible one:** *no highlighting while a burst runs* —
+1 ms a keystroke in the unhighlighted state, with the colours restored when the typing stops
+(one render, ~5–20 ms, on the deferred check's timer). The colours would be **absent** for the
+length of a burst, not merely stale, which is a bigger change than P26 measured; everything
+cheaper than that is measured out, so this is the decision, and it is the user's.

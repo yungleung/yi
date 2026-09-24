@@ -38,8 +38,35 @@ neighbourhood.
 
 ## Part 2 — tasks
 
-- [ ] The probe (`test/probes/code-markup-layout.js`), the README entry, the roadmap's answer
-  and the handoff.
+- [x] The probe (`test/probes/code-markup-layout.js`) and its README entry.
+
+## What was measured
+
+Every round is the same tiny edit — a character into a text node — plus the height read that
+forces the layout, five times, on an 80-line block:
+
+| The element's markup | Rounds (ms) | Median | Elements |
+| --- | --- | --- | --- |
+| as hljs leaves it — one inline flow, 160 spans | 25, 18, 16, 16, 17 | **17 ms** | 160 |
+| each line its own block box, spans kept | 28, 8, 9, 8, 8 | **8 ms** | 240 |
+| the same characters as one text node | 2, 1, 1, 0, 1 | **1 ms** | 0 |
+| a paragraph of the same length | 1, 0, 1, 0, 0 | **0 ms** | 2 |
+
+So the spans *are* the layout's cost, and half of it is the fact that they are one inline
+flow: putting each line in a block box of its own costs 240 elements instead of 160 and still
+halves the layout, with the characters and classes untouched.
+
+## What came of it
+
+The per-line rendering was built (`nodes/code_block.ts: wrapLines`, called from the highlight
+call so the first render and any refresh both wrap) and then **reverted**: the app's keystroke
+is a *rebuild*, and a rebuild lays a fresh element out in full, where per-line boxes change
+nothing (30 ms, unchanged). It halves the layout of a change *in place* — which is the shape a
+write would have, and the write itself is measured out (P27: 28 ms).
+
+So the neighbourhood is closed to one option, and it is a visible one: no highlighting while a
+burst runs (1 ms a keystroke in the unhighlighted state, colours restored when the typing
+stops). The roadmap says so, and the decision is the user's.
 
 ```bash
 npx tsc --noEmit
