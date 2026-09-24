@@ -2,13 +2,12 @@
  * Renders a `footnoteDefinition` with its reference anchor on the same line, and
  * a `footnoteReference` as the superscript link that jumps to it.
  *
- * Neither end of a footnote holds the label's characters: the marker renders `[1]` for
- * `[^1]`, exactly as a link renders its title, so the label's source stands in for it
- * while the caret is inside it (see `source_mode.ts`). A definition's label is drawn
- * that way too — it is the only source that is part of a node rather than a node, so it
- * asks with its own range — and a click on either end enters the label where it can:
- * the marker at the end of its content, the definition's label at the character clicked,
- * which is a character its rendering spells out. Ctrl-click jumps.
+ * Both ends of a footnote draw the same marker — `[1]` for `[^1]`, exactly as a link
+ * renders its title — so both hide the characters the author typed, and both are shown as
+ * their own source while the caret is inside them (see `source_mode.ts`). A definition's
+ * label is the only source that is part of a node rather than a node, so it asks with its
+ * own range; a click on either end enters the label at the end of its content, and
+ * Ctrl-click jumps between the two.
  *
  * May import: the node contract (`editable_node.ts`, `revealable_node.ts`), the
  * registry (`createComponent`), the marker's shape (`syntax/footnotes.ts:
@@ -35,68 +34,83 @@ export class FootnoteDefinition extends EditableNodeComponent {
       'markdown-footnote text-sm flex items-start gap-2'
     );
 
-    this.element.append(renderFootnoteLabel(node), renderFootnoteBody(node));
+    this.element.append(new FootnoteLabel(node).element, renderFootnoteBody(node));
   }
 }
 
 /**
- * The `[^label]` a definition is named by, as the author wrote it: one function for the two
- * places it is drawn — the notes run and the marker's preview card, which shows which note it
- * is showing.
+ * The `[^label]` a definition is named by: drawn as the marker it is — `[1]`, the shape the
+ * reference in the text draws — and shown as its own source while the caret is inside it.
  *
- * It is tagged as the block's own text from the definition's first character — not the
- * block's, which is only the same thing when the definition starts its own block — so a
- * caret put in the label maps back to the document at the label (see `caret/offsets.ts`);
- * a plain click edits the label, ⌘-click jumps back to the marker. Its `id` is the name
- * the marker links to, and `footnoteDef` is the normalised one the jump is asked for.
+ * The label is not a node of the parse: it is the head of the definition's own text, which
+ * is why it asks whether the source being shown is its own range rather than its node's
+ * (`source_mode.ts: isShownSourceRange`), and why the caret model has to know that a
+ * definition draws a marker's worth of characters before its note (`caret/offsets.ts`).
+ * `id` is the name the marker links to and `footnoteDef` the one the jump is asked for;
+ * both ride both shapes, so the jump's target exists whether or not the caret is in the
+ * label.
  */
-export function renderFootnoteLabel(node: AstFootnoteDefinition): HTMLElement {
-  const id = String(node.identifier ?? node.label ?? 'note');
-  const label = String(node.label ?? node.identifier ?? 'note');
-  const start = node.position?.start?.offset;
-  const marker = markerShape(label);
-  const text = `[^${label}]`;
-  const element =
-    start !== undefined && isShownSourceRange(start, start + marker.end)
-      ? renderShownLabel(marker, start, shownSourceText() ?? text)
-      : renderLabelAnchor(text);
-  element.id = `fn-${id}`;
-  // The tag names the definition's own first character, not the block's: a notes run
-  // holds one definition after another, and the second one's label is nowhere near the
-  // block's start. It stays on the source view as well, because this source *is* the
-  // characters the author typed — the text leaf `editing/typed_text.ts` writes into,
-  // exactly as the rendering is.
-  element.dataset.textFrom = String(start ?? 0);
-  element.dataset.footnoteDef = id;
-  return element;
-}
+class FootnoteLabel extends RevealableNodeComponent {
+  /** Where the label's own characters sit inside the marker, from the parse's label. */
+  private readonly content: { start: number; end: number };
+  /** Whether the definition has a position, which is what names the text a click shows. */
+  private readonly named: boolean;
 
-/** The label as the notes run and the preview card draw it. */
-function renderLabelAnchor(text: string): HTMLAnchorElement {
-  const anchor = document.createElement('a');
-  anchor.className = 'mr-2 font-semibold inline-block align-top';
-  anchor.textContent = text;
-  return anchor;
+  constructor(node: AstFootnoteDefinition) {
+    const id = String(node.identifier ?? node.label ?? 'note');
+    const label = String(node.label ?? node.identifier ?? 'note');
+    const start = node.position?.start?.offset;
+    const marker = markerShape(label);
+    const shown = start !== undefined && isShownSourceRange(start, start + marker.end);
+    super('footnoteLabel', node, labelElement({ id, label, start, shown }));
+    this.content = marker.label;
+    this.named = start !== undefined;
+    this.element.id = `fn-${id}`;
+    this.element.dataset.footnoteDef = id;
+  }
+
+  /** A label whose definition has no position cannot name the text a click would show. */
+  protected override shouldReveal(): boolean {
+    return this.named;
+  }
+
+  /** The label, which is the part of the source a click lands in. */
+  protected sourceContentRange(): { start: number; end: number } {
+    return this.content;
+  }
 }
 
 /**
- * The label as its own source: the shape every source view wears, over the definition's
- * own characters. The label's layout classes stay — it is still the first thing in the
- * notes run, and the note's text must not move because the caret came to rest on it —
- * while its weight comes from the source rather than from the rendering.
+ * The label as the notes run draws it: the marker, or its own source while that is what
+ * the caret shows. Both keep the run's own layout classes — the label is the first thing
+ * on the line and the note's text follows it, so a shape that changed its box would move
+ * the note under the reader.
  */
-function renderShownLabel(
-  marker: { end: number; label: { start: number; end: number } },
-  start: number,
-  text: string
-): HTMLElement {
+function labelElement(shape: {
+  id: string;
+  label: string;
+  start: number | undefined;
+  shown: boolean;
+}): HTMLElement {
+  if (!shape.shown || shape.start === undefined) {
+    const anchor = document.createElement('a');
+    anchor.className = 'mr-2 font-semibold inline-block align-top';
+    anchor.textContent = `[${shape.id}]`;
+    return anchor;
+  }
+  const marker = markerShape(shape.label);
   const span = document.createElement('span');
   span.className = `markdown-source-view ${SOURCE_CLASS} mr-2 inline-block align-top`;
-  span.textContent = text;
+  span.textContent = shownSourceText() ?? `[^${shape.label}]`;
   // Block-relative, like every source view: the caret mapping adds the block's start.
-  span.dataset.sourceFrom = String(start);
+  span.dataset.sourceFrom = String(shape.start);
   span.dataset.contentStart = String(marker.label.start);
   span.dataset.contentEnd = String(marker.label.end);
+  // This source *is* the characters the author typed, so it keeps the tag that says so:
+  // the caret mapping and the local write both read it (`caret/offsets.ts`,
+  // `editing/typed_text.ts`). The drawn marker carries no tag — `[1]` is not the
+  // document's text, and a tag claiming it was would be a lie the write path acts on.
+  span.dataset.textFrom = String(shape.start);
   return span;
 }
 

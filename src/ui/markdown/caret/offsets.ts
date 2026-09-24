@@ -26,6 +26,7 @@ import type { RootContent } from 'mdast';
 import { bibliographyManager } from '../../../services/bibliography';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
+import { markerShape } from '../syntax/footnotes';
 import { readTableSource } from '../syntax/table_source';
 import { getCaretRange } from './caret';
 
@@ -294,16 +295,20 @@ function mapNode(
     }
     return null;
   }
-  if ('children' in node && Array.isArray(node.children) && node.children.length > 0) {
-    let inner = acc;
-    for (const child of node.children as RootContent[]) {
-      const mapped = mapNode(child, block, renderedOffset, inner);
-      if (mapped !== null) {
-        return mapped;
-      }
-      inner += renderedLength(child);
+  if (node.type === 'footnoteDefinition') {
+    // A definition draws its label as the marker the text holds — `[1]` for `[^1]`, a
+    // character shorter — and its note after that. A caret inside the drawn label belongs
+    // to the marker's own characters, which is what puts it in the source it shows; the
+    // note's offsets start where the label's drawing ends.
+    const drawn = drawnMarkerLength(node);
+    const rawStart = rawStartOf(node, block);
+    if (rawStart !== null && renderedOffset <= acc + drawn) {
+      return rawStart + Math.min(Math.max(renderedOffset - acc, 0), drawn);
     }
-    return null;
+    return mapChildren(node.children as RootContent[], block, renderedOffset, acc + drawn);
+  }
+  if ('children' in node && Array.isArray(node.children) && node.children.length > 0) {
+    return mapChildren(node.children as RootContent[], block, renderedOffset, acc);
   }
   // A leaf without text children (citation, math, image, wikilink, break...):
   // the caret inside it maps into its raw source, approximated by value length.
@@ -315,10 +320,44 @@ function mapNode(
   return null;
 }
 
+/** The rendered offset of a child list, added to the offsets already counted. */
+function mapChildren(
+  children: RootContent[],
+  block: MarkdownBlock,
+  renderedOffset: number,
+  acc: number
+): number | null {
+  let inner = acc;
+  for (const child of children) {
+    const mapped = mapNode(child, block, renderedOffset, inner);
+    if (mapped !== null) {
+      return mapped;
+    }
+    inner += renderedLength(child);
+  }
+  return null;
+}
+
+/**
+ * The characters a footnote's marker is *drawn* with: `[label]` for the `[^label]` that
+ * was written, one shorter (see `syntax/footnotes.ts: markerShape`). Both ends of a
+ * footnote draw this shape, so both measure and map through it.
+ */
+export function drawnMarkerLength(node: { label?: string | null; identifier?: string | null }): number {
+  return markerShape(String(node.label ?? node.identifier ?? '')).end - 1;
+}
+
 /** The rendered text length a node consumes (approximated for widgets). */
 export function renderedLength(node: RootContent): number {
   if (node.type === 'text') {
     return node.value.length;
+  }
+  if (node.type === 'footnoteDefinition') {
+    // The drawn label, then the note: counting only the note would make a caret that
+    // walks into the label three characters into the note (`The first note.` came out
+    // `ThXe first note.` while the label was drawn without this).
+    const children = (node as { children?: RootContent[] }).children ?? [];
+    return drawnMarkerLength(node) + children.reduce((sum, child) => sum + renderedLength(child), 0);
   }
   if ('children' in node && Array.isArray(node.children)) {
     return (node.children as RootContent[]).reduce((sum, child) => sum + renderedLength(child), 0);
@@ -331,8 +370,7 @@ export function renderedLength(node: RootContent): number {
     // The marker renders as `[label]`, and the caret has to be able to sit
     // after it: a marker counted as no width would pull the caret back in
     // front of itself, and the next marker typed would land on the wrong side.
-    const label = node as { label?: string; identifier?: string };
-    return 2 + String(label.label ?? label.identifier ?? '').length;
+    return drawnMarkerLength(node);
   }
   return (node as { value?: string }).value?.length ?? 0;
 }

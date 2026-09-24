@@ -1,9 +1,11 @@
 /**
  * The card a footnote marker shows when the pointer rests on it.
  *
- * Four things: it appears with the definition's text after the dwell, and that text
- * is *rendered* (the note's italic and its link are elements, not asterisks and
- * brackets); it does not appear for a label the document does not define, not even
+ * Four things: it appears with the definition's text after the dwell — the note's own
+ * words, with no label in front of them, since the marker the pointer is on already says
+ * which note it is — and that text is *rendered* (the note's italic and its link are
+ * elements, not asterisks and brackets); it does not appear for a label the document does
+ * not define, not even
  * empty; it stays while the pointer is inside it, so a note can be read and selected;
  * and it leaves once the pointer is outside both it and its marker. Its position is
  * checked against the marker's rect, because a card pointing at the wrong marker is
@@ -78,18 +80,14 @@
   const shown = card();
   check('resting on a marker shows its note', shown !== null, Boolean(shown));
   check(
-    'and the note is the one it names, rendered',
+    'and the note is the one it names, rendered and without a label',
     shown !== null &&
       shown.textContent.includes('A note with a link.') &&
-      shown.textContent.includes('[^1]') &&
+      !shown.textContent.includes('[') &&
+      shown.querySelector('[data-footnote-def]') === null &&
       shown.querySelector('em, i') !== null &&
       shown.querySelector('a') !== null,
     shown ? shown.textContent : null
-  );
-  check(
-    'and the card says which note it is showing, as the notes run does',
-    shown !== null && shown.querySelector('[data-footnote-def]')?.textContent === '[^1]',
-    shown ? shown.querySelector('[data-footnote-def]')?.textContent ?? null : null
   );
   // The two floating surfaces should not disagree about their corners: open the find bar and
   // compare what the browser says each is rounded by.
@@ -140,9 +138,9 @@
 
   await hover(markers[1]);
   check(
-    'each marker shows its own note',
-    card()?.textContent.includes('The second note.') === true &&
-      card()?.querySelector('[data-footnote-def]')?.textContent === '[^2]',
+    'each marker shows its own note, and only its words',
+    card()?.textContent === 'The second note.' &&
+      card()?.querySelector('[data-footnote-def]') === null,
     card() ? card().textContent : null
   );
 
@@ -175,17 +173,16 @@
   }
 
   // And the marker being edited is left alone: a card in the way of the label the
-  // author is typing would be noise.
+  // author is typing would be noise. The marker is reached by walking into it, since a
+  // click on it goes to the note (`footnote-jump.js`).
   await t.load('Body text[^1] here.\n\n[^1]: A note.\n');
-  const marker = t.prose().querySelector('[data-footnote-ref]');
-  const box = marker.getBoundingClientRect();
-  marker.dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: box.left + box.width / 2,
-      clientY: box.top + box.height / 2
-    })
+  const beside = t.textNodesIn(t.blocks()[0]).find((node) => node.data.includes(' here'));
+  const atMarker = document.createRange();
+  atMarker.setStart(beside, 0);
+  atMarker.collapse(true);
+  const point = atMarker.getBoundingClientRect();
+  beside.parentElement.dispatchEvent(
+    new MouseEvent('click', { bubbles: true, clientX: point.left + 1, clientY: point.top + 2 })
   );
   await t.sleep(300);
   const editing = t.prose().querySelector('[data-footnote-ref].markdown-footnote-source');
