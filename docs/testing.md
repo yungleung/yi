@@ -24,7 +24,10 @@ A probe is one JavaScript expression, evaluated in the running app through the T
 MCP bridge by `test/tauri-probe.mjs`. It returns `{ checks, failed }` (or a report
 object for a measurement), and it uses the helpers the harness installs
 (`window.__t`: `load`, `click`, `key`, `raw`, `blocks`, `caretRect`, `gaps`,
-`emptyLines`, `report`, `sleep`).
+`emptyLines`, `report`, `sleep`). The harness reads that verdict and exits non-zero
+when `failed` is not empty, which is what makes `npm run probe:all` count a probe
+with a failed check as failed — until 2026-09-25 it only counted probes that *ran*,
+so two of them had been failing quietly for a while (`docs/roadmap.md`).
 
 ```bash
 npm run tauri dev                                   # terminal 1
