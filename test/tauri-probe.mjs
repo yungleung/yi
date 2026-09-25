@@ -283,6 +283,29 @@ async function restoreConfig(previous) {
 // workspace is put back once the probe has reported.
 const previousConfig = withWorkspace ? await useFixtureWorkspace() : null;
 
+/**
+ * A probe's own verdict, as the harness reads it: a probe returns `{ checks, failed }`,
+ * so a probe with a non-empty `failed` list has *failed*, and the exit status has to say
+ * so — otherwise `npm run probe:all` counts every probe that ran as one that passed. A
+ * probe that only measures returns its numbers, with no `failed` key, and is read as one
+ * that passed.
+ */
+function failedChecks(data) {
+  const failed = data && typeof data === 'object' ? data.failed : null;
+  return Array.isArray(failed) ? failed.map(String) : [];
+}
+
+/** Prints a finished probe's result, and exits as its verdict. */
+function reportResult(result) {
+  console.log(JSON.stringify(result, null, 2));
+  const failed = failedChecks(result);
+  if (failed.length > 0) {
+    console.error(`the probe failed ${failed.length} of its checks:\n  ${failed.join('\n  ')}`);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 let reply = await runProbe();
 if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.error))) {
   await installHelpers();
@@ -290,8 +313,7 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
 }
 await restoreConfig(previousConfig);
 if (reply.success) {
-  console.log(JSON.stringify(reply.data, null, 2));
-  process.exit(0);
+  reportResult(reply.data);
 }
 
 // The page keeps working after the bridge gives up; poll for the stashed result
@@ -311,13 +333,12 @@ for (let attempt = 0; attempt < 8; attempt += 1) {
     state = null;
   }
   if (state && state.result !== null) {
-    console.log(JSON.stringify(state.result, null, 2));
     console.log(
       '(recovered after the bridge timed out; the probe had already run — the bridge gives a ' +
         'script 5 s, so this is what a longer probe always looks like, and the bridge: line ' +
         'below says whether the app was answering while it ran)'
     );
-    process.exit(0);
+    reportResult(state.result);
   }
   if (state && state.steps !== null) {
     console.error(JSON.stringify(state.steps, null, 2));
