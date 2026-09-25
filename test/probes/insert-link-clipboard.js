@@ -91,26 +91,29 @@
     return caret ? caret.startOffset : null;
   };
 
-  // 1. The app's own read answers with text that is not a URL.
+  // 1. The app's own read answers with text that is not a URL — while the webview's API
+  // is standing by with a URL, so a fall-through would show up as a filled destination.
   await t.load('Body text here.\n');
   let restoreBackend = stubBackend('two words, not a url');
+  let restoreWebview = stubWebviewClipboard('https://example.com/webview');
   try {
     const placed = await place();
     check('the probe put the caret after `Body`', placed === 4, placed);
     await press();
     check(
-      'a clipboard with no URL in it leaves the destination empty',
+      'the app`s own read is the answer: text that is not a URL leaves the destination empty',
       (await t.raw()) === 'Body[]() text here.\n',
       await t.raw()
     );
   } finally {
+    restoreWebview();
     restoreBackend();
   }
 
   // 2. The app's read is not there at all: the webview's own API answers instead.
   await t.load('Body text here.\n');
   restoreBackend = stubBackend(null);
-  let restoreWebview = stubWebviewClipboard('https://example.com/fallback');
+  restoreWebview = stubWebviewClipboard('https://example.com/fallback');
   try {
     const placed = await place();
     check('the probe put the caret after `Body` again', placed === 4, placed);
