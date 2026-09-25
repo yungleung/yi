@@ -1,3 +1,4 @@
+mod clipboard;
 mod menu;
 mod files;
 mod greeting;
@@ -25,6 +26,7 @@ pub fn run() {
             menu::set_as_main_menu(app)
         })
         .invoke_handler(tauri::generate_handler![
+            clipboard::read_clipboard_text,
             stats::get_word_count, 
             files::list_folder_files, 
             greeting::greet,

@@ -2,11 +2,10 @@
  * The Link button: a link at the caret, its destination from the clipboard, and the
  * caret left in the title part to be typed into.
  *
- * The one seam a probe cannot reach is the system clipboard: `navigator.clipboard.readText`
- * needs the user gesture a synthetic click is not. So the probe *stands in* for the
- * clipboard the way `footnote-preview.js` stands in for the app's opener — it answers
- * `readText` itself — and it reports whether the real API is there at all, which is the
- * part a person sees when they press the button for real.
+ * The one seam a probe cannot reach is the system clipboard. The app reads it natively
+ * (`src-tauri/src/clipboard.rs`, so the webview never asks the reader to confirm a paste
+ * they did not make), and a probe *stands in* for that read the way `footnote-preview.js`
+ * stands in for the app's opener: it answers the `read_clipboard_text` command itself.
  *
  * @covers src/ui/toolbar/link_toolbar.ts, src/ui/markdown/editing/links.ts,
  *   src/ui/markdown/syntax/link_edits.ts
@@ -20,18 +19,27 @@
     [...document.querySelectorAll('button')].find(
       (element) => element.getAttribute('aria-label') === 'Link'
     );
-  /** Answers the clipboard with `text`, and hands back the way to put it back. */
+  /**
+   * Answers the app's own clipboard read with `text`, and hands back the way to put the
+   * page's `fetch` back. The app asks the backend for the clipboard (`read_clipboard_text`)
+   * and the answer travels as the reply's JSON body, which is what this returns.
+   */
   const stubClipboard = (text) => {
-    const real = Object.getOwnPropertyDescriptor(Navigator.prototype, 'clipboard');
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { readText: async () => text }
-    });
-    return () => {
-      if (real) {
-        Object.defineProperty(Navigator.prototype, 'clipboard', real);
+    const real = window.fetch;
+    window.fetch = async (input, init) => {
+      const url = decodeURIComponent(
+        typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
+      );
+      if (!url.includes('read_clipboard_text')) {
+        return await real.call(window, input, init);
       }
-      delete navigator.clipboard;
+      return new Response(JSON.stringify(text), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
+      });
+    };
+    return () => {
+      window.fetch = real;
     };
   };
   const press = async () => {
@@ -82,13 +90,15 @@
     'and it draws the link icon the user gave',
     (() => {
       const svg = linkButton()?.querySelector('svg');
-      const paths = [...(svg?.querySelectorAll('path') ?? [])];
+      const box = svg?.querySelector('path[fill="none"]');
+      const group = svg?.querySelector('g[fill="currentColor"]');
+      const glyphs = [...(group?.querySelectorAll('path') ?? [])];
       return (
-        svg?.getAttribute('viewBox') === '0 0 640 512' &&
-        paths.length === 2 &&
-        paths[0].getAttribute('fill') === 'none' &&
-        paths[1].getAttribute('fill') === 'currentColor' &&
-        (paths[1].getAttribute('d') ?? '').startsWith('M579.8 267.7')
+        svg?.getAttribute('viewBox') === '0 0 16 16' &&
+        box?.getAttribute('d') === 'M0 0h16v16H0z' &&
+        glyphs.length === 2 &&
+        (glyphs[0].getAttribute('d') ?? '').startsWith('M4.715 6.542') &&
+        (glyphs[1].getAttribute('d') ?? '').startsWith('M6.586 4.672')
       );
     })(),
     linkButton()?.querySelector('svg')?.outerHTML?.slice(0, 120) ?? null
