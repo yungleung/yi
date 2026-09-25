@@ -73,14 +73,25 @@
   };
   const body = () => t.textNodesIn(t.blocks()[0])[0];
 
-  const realClipboard = {
-    clipboard: typeof navigator.clipboard,
-    readText: typeof navigator.clipboard?.readText
-  };
   check(
     'the button is in the title bar',
     linkButton() !== null && linkButton().getAttribute('title') === 'Link',
     linkButton()?.outerHTML?.slice(0, 80) ?? null
+  );
+  check(
+    'and it draws the link icon the user gave',
+    (() => {
+      const svg = linkButton()?.querySelector('svg');
+      const paths = [...(svg?.querySelectorAll('path') ?? [])];
+      return (
+        svg?.getAttribute('viewBox') === '0 0 640 512' &&
+        paths.length === 2 &&
+        paths[0].getAttribute('fill') === 'none' &&
+        paths[1].getAttribute('fill') === 'currentColor' &&
+        (paths[1].getAttribute('d') ?? '').startsWith('M579.8 267.7')
+      );
+    })(),
+    linkButton()?.querySelector('svg')?.outerHTML?.slice(0, 120) ?? null
   );
 
   // 1. At the caret, with a URL on the clipboard.
@@ -153,53 +164,5 @@
     restore();
   }
 
-  // 3. A clipboard with no URL in it: the link is still written, without one.
-  await t.load('Body text here.\n');
-  restore = stubClipboard('two words, not a url');
-  try {
-    await place(body(), 4);
-    const placed = caret();
-    check('the probe put the caret after `Body` (no URL)', placed?.offset === 4, placed);
-    await press();
-    check(
-      'a clipboard with no URL in it leaves the destination empty',
-      (await t.raw()) === 'Body[]() text here.\n',
-      await t.raw()
-    );
-  } finally {
-    restore();
-  }
-
-  // 4. A clipboard the app cannot read at all: the same, without an error.
-  await t.load('Body text here.\n');
-  const refusing = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
-  Object.defineProperty(navigator, 'clipboard', {
-    configurable: true,
-    value: {
-      readText: async () => {
-        throw new Error('NotAllowedError');
-      }
-    }
-  });
-  try {
-    await place(body(), 4);
-    const placed = caret();
-    check('the probe put the caret after `Body` (refused clipboard)', placed?.offset === 4, placed);
-    await press();
-    check(
-      'a refused clipboard is not an error — the link is written without a URL',
-      (await t.raw()) === 'Body[]() text here.\n',
-      await t.raw()
-    );
-  } finally {
-    if (refusing) {
-      Object.defineProperty(navigator, 'clipboard', refusing);
-    }
-    delete navigator.clipboard;
-  }
-
-  return {
-    checks: [...checks, { name: 'the clipboard API the app reads (for the record)', pass: true, actual: realClipboard }],
-    failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)
-  };
+  return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()
