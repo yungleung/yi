@@ -4,7 +4,7 @@ import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
 import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
-import { WorkspaceTree } from './ui/workspace_tree';
+import { WorkspaceTree } from './ui/workspace/tree';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';

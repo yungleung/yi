@@ -13,7 +13,7 @@
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
-import { DOCUMENT_OPENED } from './workspace_tree';
+import { DOCUMENT_OPENED } from './workspace/tree';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
 

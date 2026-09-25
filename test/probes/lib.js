@@ -47,6 +47,49 @@ window.__t = (() => {
       new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true })
     );
 
+  /**
+   * Points the app at a workspace folder, the way opening one does, and hands back the
+   * config it had so the probe can put it back.
+   *
+   * A probe that drives the tree needs a folder it may write to and that is not the
+   * repository's own fixtures: it makes one with the app's own commands (under
+   * `/private/tmp`, on the platform these probes run on), points the app at it with this,
+   * and removes it when it is done.
+   */
+  const openWorkspace = async (path) => {
+    const previous = await window.__TAURI_INTERNALS__.invoke('get_config');
+    const cfg = {
+      ...previous,
+      workspace: path,
+      config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
+    };
+    await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+    await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'workspace_changed',
+      payload: path
+    });
+    await sleep(800);
+    return previous;
+  };
+
+  /** Puts a workspace back where a probe found it. */
+  const restoreWorkspace = async (previous) => {
+    if (!previous) {
+      return;
+    }
+    await window.__TAURI_INTERNALS__.invoke('set_config', {
+      cfg: {
+        ...previous,
+        config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
+      }
+    });
+    await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'workspace_changed',
+      payload: previous.workspace ?? ''
+    });
+    await sleep(400);
+  };
+
   const caretRect = () => {
     const rect = document.querySelector('.markdown-caret')?.getBoundingClientRect();
     return rect ? { x: Math.round(rect.left), y: Math.round(rect.top) } : null;
@@ -143,6 +186,8 @@ window.__t = (() => {
     textNodesIn,
     raw,
     load,
+    openWorkspace,
+    restoreWorkspace,
     key,
     click,
     caretRect,
