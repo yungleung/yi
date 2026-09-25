@@ -42,7 +42,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Ninety-seven of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Ninety-eight of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
@@ -59,8 +59,9 @@ paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
 page where it was), links (`insert-link` — the button, the clipboard destination and the
-caret in the title; `link-cmd-click` — ⌘-click opens in the browser, a plain click opens
-the source), the fixture workspace (`fixture-*`), and the real
+caret in the title; `insert-link-clipboard` — the two ways that clipboard read can fail;
+`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source), the
+fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
 
 `npm run probe:all` prints every probe's name and result as it goes, which is the
