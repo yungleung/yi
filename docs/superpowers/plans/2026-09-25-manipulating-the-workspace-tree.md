@@ -136,10 +136,14 @@ are `check-tree-menu.mjs`, the rules are `check-tree-rules.mjs`. The popup and t
 are a person's checks, and the probe headers say so.
 
 **Acceptance.** `cargo test` **9/9** (the filesystem commands), `npx tsc --noEmit` clean,
-`npm run check` **26/26**, a freshly started `npm run tauri dev`, `npm run probe:all`, and
-by hand on that fresh app: `tree-rename` (12 checks), `tree-create` (5), `tree-file-actions`
-(5), `tree-delete` (2), `tree-drag` (11), each of which makes its own workspace under
-`/private/tmp` with the app's own commands and removes it again.
+`npm run check` **26/26**, a freshly started `npm run tauri dev`, and `npm run probe:all`
+**88/90 (13 skipped)** — this branch is based on `main`, so the two failures are the
+pre-existing `format-buttons.js` (fixed on the unmerged `codex/format-render`) and
+`insert-rule.js` — with the five tree probes among the skipped-by-name ones, run by hand
+against that same fresh app: `tree-rename` (12 checks), `tree-create` (5),
+`tree-file-actions` (5), `tree-delete` (2), `tree-drag` (11). Each of those makes its own
+workspace under `/private/tmp` with the app's own commands and removes it again, so the
+repository's fixtures are only ever read.
 
 **What is left.** The popup and the delete's question are a person's checks (above). The
 format fix from the previous phase is on its own branch, not merged — with it, the suite is
