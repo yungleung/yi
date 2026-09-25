@@ -9,6 +9,7 @@ import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/toolbar/formatting_toolbar';
+import { LinkToolbar } from './ui/toolbar/link_toolbar';
 import { ListToolbar } from './ui/toolbar/list_toolbar';
 import { FootnoteToolbar } from './ui/toolbar/footnote_toolbar';
 import { TableToolbar } from './ui/toolbar/table_toolbar';
@@ -43,6 +44,7 @@ function createAppShell() {
     sidebar.setWidth(width);
   }, 180, 420, sidebar.getWidth());
   const formattingToolbar = new FormattingToolbar();
+  const linkToolbar = new LinkToolbar();
   const listToolbar = new ListToolbar();
   const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
@@ -62,6 +64,7 @@ function createAppShell() {
   titleActions.textContent = '⋯';
   titleBar.addComponent(titleActions, 'right');
   titleBar.addComponent(formattingToolbar, 'center');
+  titleBar.addComponent(linkToolbar, 'center');
   titleBar.addComponent(listToolbar, 'center');
   titleBar.addComponent(footnoteToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');

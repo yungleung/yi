@@ -26,6 +26,7 @@ import type { EditorContext } from '../editing/context';
 import { cutSelection, selectAll } from '../editing/clipboard';
 import { applyFormatting } from '../editing/formatting';
 import { insertFootnote } from '../editing/footnotes';
+import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
 import { registerCommand } from './registry';
 
@@ -48,6 +49,7 @@ export function registerEditorCommands(host: CommandHost): void {
   registerCommand({ id: 'edit:cut', run: () => void cutSelection(context) });
   registerCommand({ id: 'edit:selectAll', run: () => selectAll(context) });
   registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(context) });
+  registerCommand({ id: 'edit:insertLink', run: () => void insertLink(context) });
   registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(context) });
   registerCommand({ id: 'find:open', run: () => host.openFind(false) });
   registerCommand({ id: 'find:replace', run: () => host.openFind(true) });
