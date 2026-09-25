@@ -61,14 +61,49 @@ can represent it, and the same block (or blocks) is rendered again when it canno
 
 - [x] Task 1: measure it (Part 1), including the stack and the check against an older
       commit.
-- [ ] Task 2: `format-buttons.js` is the probe this fix owes — it fails before and must
+- [x] Task 2: `format-buttons.js` is the probe this fix owes — it fails before and must
       pass after. Watch it fail on the branch's first commit.
-- [ ] Task 3: the fix in `editing/formatting.ts`.
-- [ ] Task 4: acceptance and docs — `npx tsc --noEmit`, `npm run check`, a fresh
+- [x] Task 3: the fix in `editing/formatting.ts`.
+- [x] Task 4: acceptance and docs — `npx tsc --noEmit`, `npm run check`, a fresh
       `npm run tauri dev`, `npm run probe:all`; `docs/architecture.md` (the index's
       consequence for a command), `docs/roadmap.md` (the entry moves from *Open* to
       *Closed*), then ask the user about merging.
 
 ## Handoff
 
-To be written when the fix is in.
+**Two causes, one behind the other.** The plan's Part 1 named the first: `applyFormatting`
+held the blocks `documentOffsetAt` gave it *before* its own whole-document edit, and asked
+one of them for `lineStart` afterwards — a position the index no longer holds, since a
+block's four positions are derived and the edit re-split the blocks. Answering with an
+error rather than with another block's position is the index's design, so the command is
+what had to change: it now asks the state by offset after the edit (`getBlockAtOffset`),
+the same two offsets `patchFormatDom` reads its own block from.
+
+**The second cause was only reachable once the first was fixed**, and the strict harness
+found it immediately: with the throw gone the patch ran for the first time, `format-buttons`
+passed — and `undo-selection-return` failed with `wor` of `world` selected after an undo.
+The patch writes the block's markup behind the renderer's back, and the renderer remembers
+an element by the content it was built from: after a patch that record was the *pre-patch*
+content, so the undo (which puts that content back) compared equal and looked like nothing
+to re-render, leaving the `<strong>` and its shifted `data-text-from` on screen for the
+selection to map through. `virtual_block_renderer.ts: notePatchedBlock` is the patch saying
+what it wrote, and `editing/formatting.ts` calls it whenever the patch succeeds.
+
+**The probes.** `format-buttons.js` (each of the four styles: the raw text *and* the
+rendered element) is the probe the bug owed; it failed on the plan commit and passes with
+the fix. `undo-selection-return.js` is the regression the second cause produced, and it is
+green again. Neither was added for this phase: the first was silently failing since the
+probe harness stopped ignoring a probe's verdict, and the second was already there.
+
+**Acceptance.** `npx tsc --noEmit` clean, `npm run check` **24/24**, a freshly started
+`npm run tauri dev`, `npm run probe:all` **89/90 (8 skipped)** — the one failure left is
+`insert-rule.js`'s `atTheEnd`, a separate pre-existing bug the roadmap still lists under
+*Open* — plus by hand on that fresh app: `format-buttons`, `undo-selection-return`,
+`undo-typing`, `undo-run-taken-back`, `undo-after-scroll`, `plain-edit-parse`,
+`plain-edit-offsets`, `plain-edit-markers`, `edit-stability`, `revealable-flows`.
+
+**Still open, and not this branch's.** `insert-rule.js`'s caret at the document end
+(`docs/roadmap.md`, *Open*), and the formatting path's height bookkeeping after a patch —
+a patch that re-wraps a line changes the block's height and the spacers are not re-measured
+(the patch calls `refreshBlockTags`, not `measureEditedBlock`); nobody has reported it and
+it was not measured here, so it is written down rather than changed.
