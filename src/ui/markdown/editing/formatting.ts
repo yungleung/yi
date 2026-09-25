@@ -60,12 +60,20 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
   });
 
   const root = proseRoot(context);
-  const sameBlock = start.block.lineStart === end.block.lineStart;
+  // The blocks the edit left behind, asked for by offset. A block object from *before*
+  // the edit cannot be asked where it sits: a block's positions come from the document's
+  // index (`document/blocks.ts`, `document/block_index.ts`), the whole-document edit
+  // re-split the blocks, and the index answers for a block it no longer holds with an
+  // error rather than with a position that belongs to another block. These are the same
+  // two offsets the patch reads its own block from.
+  const first = context.state.getBlockAtOffset(edit.wrapFrom);
+  const last = context.state.getBlockAtOffset(edit.wrapTo);
+  const sameBlock = first !== null && last !== null && first.lineStart === last.lineStart;
   const patched = sameBlock && root !== null && patchFormatDom(context.state, root, style, edit);
-  if (!patched) {
-    context.renderer.renderBlock(start.block.lineStart);
-    if (!sameBlock) {
-      context.renderer.renderBlock(end.block.lineStart);
+  if (!patched && first !== null) {
+    context.renderer.renderBlock(first.lineStart);
+    if (last !== null && last.lineStart !== first.lineStart) {
+      context.renderer.renderBlock(last.lineStart);
     }
   }
   context.renderer.refreshBlockTags();
