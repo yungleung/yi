@@ -110,6 +110,25 @@ two phases that came before this one, so they are not mine: they are recorded in
 `docs/roadmap.md` under *Open* with what was measured, and they are why the suite now
 reads **87/89 (8 skipped)** rather than 89/89.
 
+**Second round, on the user's review.** Two changes. (1) The button draws the *other*
+link icon the user sent — the 16×16 one, `width="1em" height="1em"`, a transparent box
+and a `<g fill="currentColor">` of two glyph paths — and `insert-link.js` checks that
+shape (the viewBox, both glyph path prefixes and the group's fill), so an icon cannot be
+swapped by accident. (2) The clipboard is now read by the **app**: clicking the button in
+the webview made WebKit show its own paste confirmation ("a paste button"), which is not
+what the author asked for on a click that only meant "fill the URL in". `src-tauri/src/
+clipboard.rs` reads AppKit's general pasteboard (`NSPasteboard::generalPasteboard` →
+`stringForType`, macOS only; other platforms answer `None`), exposed as the app command
+`read_clipboard_text` and wrapped in `src/api/clipboard.ts`; `editing/links.ts` asks the
+app first and keeps `navigator.clipboard.readText` as the fallback for a platform without
+a native read. The dependency is already in the tree through tauri's own runtime
+(`objc2-app-kit` 0.3, no new crates), and the command was measured live in the app before
+the probes were written to stand in for it: the app's call answers a 200 with the JSON
+value, and `read_clipboard_text` returned the clipboard's text (the probe reports the
+*shape* of that answer, never its content). `insert-link-clipboard.js` now covers the
+three ways the read can come back — text that is not a URL, a backend without the command
+(the webview's API answers), and both refusing — and all pass.
+
 **Acceptance.** `npx tsc --noEmit` clean, `npm run check` **24/24**, a freshly started
 `npm run tauri dev`, `npm run probe:all` **87/89 (8 skipped)** with the two long-standing
 failures above, and by hand against that fresh app: `insert-link`, `link-cmd-click`

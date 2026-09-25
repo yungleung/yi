@@ -144,7 +144,12 @@ elements) unless it says otherwise.
   app's opener, while a plain click still opens the link's source for editing. What a
   link is written as, which clipboard text is a destination and which href the app may
   open are one home (`syntax/link_edits.ts`), and the preview card's own rule moved
-  there; `test/probes/insert-link.js` and `link-cmd-click.js` hold the two behaviours.
+  there; `test/probes/insert-link.js` and `link-cmd-click.js` hold the two behaviours. On
+  the user's review the icon became the 16×16 one they sent, and the clipboard is read by
+  the app rather than the webview (`src-tauri/src/clipboard.rs`, `src/api/clipboard.ts`);
+  WebKit answered a scripted read with its own paste confirmation, which a click that
+  only meant "fill the URL in" should not raise. `insert-link-clipboard.js` covers the
+  read's three outcomes.
 
 ## Open, in the order to take them
 
