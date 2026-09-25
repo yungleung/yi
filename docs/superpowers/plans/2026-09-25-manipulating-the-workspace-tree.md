@@ -82,15 +82,15 @@ Two consequences, both worth stating up front:
 
 ## Part 2 — tasks
 
-- [ ] Task 1: the filesystem commands and their Rust tests, with the wrappers in
+- [x] Task 1: the filesystem commands and their Rust tests, with the wrappers in
       `src/api/files.ts`.
-- [ ] Task 2: the pure rules — the menu model, the name selection, the drop rules — with
+- [x] Task 2: the pure rules — the menu model, the name selection, the drop rules — with
       Node checks.
-- [ ] Task 3: the tree in its new folder, with the context menu and its five actions
+- [x] Task 3: the tree in its new folder, with the context menu and its five actions
       (rename, delete, new file, new subfolder, reveal, copy path/name/id).
-- [ ] Task 4: the inline rename, with the layout assertion the user asked for.
-- [ ] Task 5: the drag and drop.
-- [ ] Task 6: the probes (a temporary workspace the probe makes and removes; the inline
+- [x] Task 4: the inline rename, with the layout assertion the user asked for.
+- [x] Task 5: the drag and drop.
+- [x] Task 6: the probes (a temporary workspace the probe makes and removes; the inline
       rename's layout and selection; a move and its refusals; the create/delete/copy/
       reveal actions), the docs (`docs/architecture.md`, `docs/ai-context.md`, `test/README.md`,
       `docs/roadmap.md`), and acceptance — `npx tsc --noEmit`, `npm run check`, a fresh
@@ -98,4 +98,49 @@ Two consequences, both worth stating up front:
 
 ## Handoff
 
-To be written when the feature is in.
+**What was built, and where.** `src-tauri/src/files.rs` gained four commands with nine Rust
+tests: `rename_entry` (refusing an empty name, a path separator, a hidden name, a
+non-markdown file, and a name already taken — while still allowing a case-only rename of the
+entry itself), `create_entry` (an empty `.md`, or a folder; `.md` appended when the author
+left the extension off), `delete_entry` (a file, or a folder and everything under it) and
+`move_entry` (refusing a non-folder, a name already there, and anything inside the entry's
+own subtree; a no-op where it already lives). `src/api/files.ts` wraps them and the frontend
+holds no filesystem rule of its own. `src/ui/workspace/` is the tree: `tree.ts` (rows,
+expansion, the wiring, and the host registration), `tree_menu_model.ts` (what a row is
+offered — a file, a folder and the workspace itself each have their own list; a folder gets
+"New file"/"New folder", a file gets "Copy id", and the workspace is neither renamed nor
+deleted), `tree_menu.ts` (the native popup, the table menu's shape), `tree_rules.ts` (the
+rename's selection and the drop rules), `tree_rename.ts` (the inline edit),
+`tree_drag.ts` (the drag, its target look and its refusals) and `tree_ops.ts` (the actions,
+the reload, the toast). `src/ui/workspace_tree.ts` is gone; `editor_panel.ts` and `main.ts`
+point at the new home.
+
+**The user's two requirements, as measurements.** The rename happens in the row's own
+label with `contenteditable`, and the probe compares the tree's `scrollWidth` and every
+row's rectangle before and during the edit: identical. The edit starts with the name part
+selected (`note.md` → `note`, `a.b.md` → `a.b`, a folder → all of it), so typing over it
+leaves the extension: the probe types through `document.execCommand('insertText')` — a
+synthetic key does not insert text into a `contenteditable` at all, which is written down
+in `docs/testing.md` now — and reads `renamed.md` back.
+
+**Decisions taken, worth a review.** A new *file* and a new *folder* are both left ready to
+be named (one rule, not two), the "new" actions are offered on folders (the user's words)
+and not on files, delete is permanent behind a native confirmation (moving to the trash
+would need a crate that is not in the tree), and a drop into a folder opens that folder so
+the entry is seen to land there.
+
+**What a probe can and cannot hold.** Every action runs through `tree_ops.ts`, which the
+probes drive directly — including the delete's `deleteNow`, the half a "yes" leaves, since
+the question itself is a native dialog nothing but a person can answer. The menu's contents
+are `check-tree-menu.mjs`, the rules are `check-tree-rules.mjs`. The popup and the question
+are a person's checks, and the probe headers say so.
+
+**Acceptance.** `cargo test` **9/9** (the filesystem commands), `npx tsc --noEmit` clean,
+`npm run check` **26/26**, a freshly started `npm run tauri dev`, `npm run probe:all`, and
+by hand on that fresh app: `tree-rename` (12 checks), `tree-create` (5), `tree-file-actions`
+(5), `tree-delete` (2), `tree-drag` (11), each of which makes its own workspace under
+`/private/tmp` with the app's own commands and removes it again.
+
+**What is left.** The popup and the delete's question are a person's checks (above). The
+format fix from the previous phase is on its own branch, not merged — with it, the suite is
+89/90; without it, `format-buttons.js` and `insert-rule.js` fail as `main` does today.

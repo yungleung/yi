@@ -22,7 +22,14 @@ mounted.
 | Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
 | Commands | `editing/*`, `commands/*` (the registry, the native-menu bridge, the keymap), `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one command, one name, one way in |
-| Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`), `src/services/*`, `src/api/*` (one file per backend command, through `invoke`) | the window, workspace, settings, bibliography |
+| Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend command, through `invoke`) | the window, workspace, settings, bibliography |
+
+The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
+through the app's own file commands (`src-tauri/src/files.rs`, wrapped in `src/api/files.ts`)
+and it re-reads the disk after a change instead of patching its own rows. What a row may be
+offered is a pure model (`src/ui/workspace/tree_menu_model.ts`), what a rename selects and
+which drops are allowed are pure rules (`src/ui/workspace/tree_rules.ts`), and a row's name
+is edited where it sits, without moving the tree (`src/ui/workspace/tree_rename.ts`).
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.

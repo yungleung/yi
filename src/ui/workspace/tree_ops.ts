@@ -34,6 +34,8 @@ export interface TreeHost {
   reload(): Promise<void>;
   /** Makes `path` visible — expanding the folders above it — and starts renaming it. */
   renameAt(path: string): Promise<void>;
+  /** Makes `path` visible, expanding the folders above it, and changes nothing else. */
+  reveal(path: string): Promise<void>;
 }
 
 let host: TreeHost | null = null;
@@ -54,7 +56,7 @@ export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): P
       await tree.renameAt(entry.path);
       return;
     case 'delete':
-      await deleteWithConfirm(entry, tree);
+      await deleteWithQuestion(entry, tree);
       return;
     case 'new-file':
       await createAndRename(tree, entry.path, 'Untitled', true);
@@ -83,13 +85,17 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
   if (!tree) {
     return false;
   }
+  let moved: string;
   try {
-    await moveEntry(entry.path, targetDir);
+    moved = await moveEntry(entry.path, targetDir);
   } catch (error) {
     notify(error);
     return false;
   }
   await tree.reload();
+  // The folder that took the entry is opened on it, so the reader sees where it went —
+  // dropping onto a folded folder would otherwise look like the entry vanished.
+  await tree.reveal(moved);
   return true;
 }
 
@@ -105,14 +111,34 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
   return true;
 }
 
-/** A delete is asked about first: it takes the folder's contents with it. */
-async function deleteWithConfirm(entry: TreeEntry, tree: TreeHost): Promise<void> {
+/**
+ * A delete is asked about first: it takes a folder's contents with it.
+ *
+ * The question is a native dialog, and nothing but a person can answer one — the same
+ * limit a native menu has (`docs/testing.md`) — so a probe drives `deleteNow`, which is
+ * what a yes leaves to do, and the question itself is a person's check.
+ */
+export async function deleteWithQuestion(
+  entry: TreeEntry,
+  tree: TreeHost | null = host
+): Promise<void> {
+  if (!tree) {
+    return;
+  }
   const what = entry.isFile ? `“${entry.basename}”` : `the folder “${entry.basename}” and everything in it`;
   const answer = await ask(`Delete ${what}? This cannot be undone.`, {
     title: 'Delete',
     kind: 'warning'
   });
   if (!answer) {
+    return;
+  }
+  await deleteNow(entry, tree);
+}
+
+/** Deletes an entry and reloads the tree: the half of it a yes leaves. */
+export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host): Promise<void> {
+  if (!tree) {
     return;
   }
   try {

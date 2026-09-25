@@ -292,6 +292,11 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
     node?.startRename();
   }
 
+  /** Opens `path`'s folder, so a row inside a folded folder can be seen. */
+  async reveal(path: string): Promise<void> {
+    await this.rootNode?.reveal(path);
+  }
+
   private renderEmptyState(): void {
     const empty = document.createElement('div');
     empty.className = 'text-sm text-base-content/70';

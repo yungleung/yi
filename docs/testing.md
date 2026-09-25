@@ -78,6 +78,15 @@ Harness flags:
   so wrap `window.fetch`, record what you need, answer the command yourself, and
   restore the original in a `finally` — `test/probes/footnote-preview.js` does this to
   check a link is opened by the app without opening a browser.
+- **A synthetic key cannot type into a `contenteditable`.** An untrusted key event does
+  not insert text, so a probe that drives an inline edit types the way the browser does:
+  `document.execCommand('insertText', false, 'X')` after focusing the element and setting
+  the selection — `test/probes/tree-rename.js` does exactly that.
+- **A native menu and a native dialog cannot be driven by a probe** (nor read: nothing can
+  choose an item of one but a person). Their *contents* belong in a pure model with a Node
+  check (`check-table-menu.mjs`, `check-tree-menu.mjs`), the *actions* behind them are
+  functions a probe runs directly (`runCommand`, `tree_ops.ts`), and the popup or the
+  question itself is a person's check — say so where the model is checked.
 
 ## The fixture workspace
 
