@@ -140,6 +140,27 @@ export class VirtualBlockRenderer {
   }
 
   /**
+   * Records that a block's mounted element now holds what the block holds, after
+   * somebody patched it in place rather than rebuilding it (`format_dom.ts`, for a
+   * formatting command).
+   *
+   * An element is remembered by the content it was *built* from (`builtFrom`), and the
+   * patch leaves it holding content the block did not have then. Leaving that record
+   * alone made the next edit that went back to the older text look like "nothing to
+   * re-render" — the key it compares against was the one from before the patch — so
+   * undoing a formatting command left the padded markup on screen, `<strong>` and its
+   * shifted `data-text-from` and all, with the selection mapped through it (measured:
+   * undo of Bold over `world` left only `wor` selected).
+   */
+  notePatchedBlock(lineStart: number): void {
+    const block = this.state.getBlockAtLine(lineStart);
+    const element = this.mounted.get(lineStart);
+    if (block && element) {
+      this.builtFrom.set(element, this.renderKey(block));
+    }
+  }
+
+  /**
    * Re-syncs the window after a document edit. Blocks whose source is
    * unchanged keep their DOM; the rest are rebuilt.
    */

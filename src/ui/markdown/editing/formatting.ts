@@ -70,7 +70,13 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
   const last = context.state.getBlockAtOffset(edit.wrapTo);
   const sameBlock = first !== null && last !== null && first.lineStart === last.lineStart;
   const patched = sameBlock && root !== null && patchFormatDom(context.state, root, style, edit);
-  if (!patched && first !== null) {
+  if (patched && first !== null) {
+    // The patch wrote the block's markup where the renderer could not see it, so the
+    // renderer is told what its element now holds: without that, an edit back to the
+    // older text (an undo) looks like nothing to re-render, and the padded markup stays
+    // on screen with the selection mapped through it.
+    context.renderer.notePatchedBlock(first.lineStart);
+  } else if (first !== null) {
     context.renderer.renderBlock(first.lineStart);
     if (last !== null && last.lineStart !== first.lineStart) {
       context.renderer.renderBlock(last.lineStart);
