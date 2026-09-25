@@ -46,6 +46,7 @@ import {
   routeContextMenu,
   routeFootnoteMenu,
   routeFootnoteClick,
+  routeLinkClick,
   routePointerClick,
   routeTaskClick
 } from './click_routing';
@@ -124,15 +125,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.element.appendChild(this.findBar.element);
 
     this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
-    // The four routed clicks, in the order they have to run: a checkbox and a
-    // footnote marker are handled before a node can place a caret where the
-    // click landed, and a click that missed every node still places one.
+    // The routed clicks, in the order they have to run: a checkbox and a footnote
+    // marker are handled before a node can place a caret where the click landed, a
+    // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
+    // its source, and a click that missed every node still places a caret.
     this.contentView.addEventListener('click', (event) => routeTaskClick(this.context, event), true);
     this.contentView.addEventListener(
       'click',
       (event) => routeFootnoteClick(this.context, event),
       true
     );
+    this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
     this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
     // Resting the pointer on a footnote marker shows the note it names, in a card the
     // pointer cannot interact with (see `footnote_preview.ts`).

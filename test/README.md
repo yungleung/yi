@@ -42,7 +42,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Ninety-five of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+Ninety-eight of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
@@ -58,7 +58,10 @@ what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`, `typed
 paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
-page where it was), the fixture workspace (`fixture-*`), and the real
+page where it was), links (`insert-link` — the button, the clipboard destination and the
+caret in the title; `insert-link-clipboard` — the two ways that clipboard read can fail;
+`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source), the
+fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
 
 `npm run probe:all` prints every probe's name and result as it goes, which is the
@@ -82,7 +85,9 @@ live index; the newest probes carry a header naming what they cover:
   the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
   (the editor window must be visible, so `probe:all` skips it).
 - A probe is one expression returning `{ checks, failed }`; a probe that only
-  measures returns its numbers. Use `t.report(...)` for progress, so a bridge
-  timeout still yields evidence.
+  measures returns its numbers. The harness reads that verdict: a probe with a
+  non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did
+  not always — two probes had been failing quietly, see `docs/roadmap.md`). Use
+  `t.report(...)` for progress, so a bridge timeout still yields evidence.
 - Name probes for the behaviour, not the file they touch.
 - A check prints `all checks passed` on success and the failures on stderr.

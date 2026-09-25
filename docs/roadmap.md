@@ -134,14 +134,44 @@ elements) unless it says otherwise.
   and it now keeps the scroll the way an edit does (`editing/context.ts: keepScroll`).
   `test/probes/reveal-click-scroll.js` holds it (it fails without the fix by 24px), and
   the footnote jump — a move the reader asks for — still scrolls.
+- **Writing a link, and opening one.** Landed as
+  `docs/superpowers/plans/2026-09-25-link-insertion-and-cmd-click.md`, on the user's ask:
+  a Link button in the title bar carrying the icon they gave; `edit:insertLink` writing
+  `[title](destination)` at the caret — or around the selection, which becomes the title
+  — with the destination taken from the clipboard when it holds one `http:`/`https:`/
+  `mailto:` token, and the caret left in the title part to be typed into; and ⌘-click
+  (Ctrl-click) on a rendered link handing its href to the default browser through the
+  app's opener, while a plain click still opens the link's source for editing. What a
+  link is written as, which clipboard text is a destination and which href the app may
+  open are one home (`syntax/link_edits.ts`), and the preview card's own rule moved
+  there; `test/probes/insert-link.js` and `link-cmd-click.js` hold the two behaviours. On
+  the user's review the icon became the 16×16 one they sent, and the clipboard is read by
+  the app rather than the webview (`src-tauri/src/clipboard.rs`, `src/api/clipboard.ts`);
+  WebKit answered a scripted read with its own paste confirmation, which a click that
+  only meant "fill the URL in" should not raise. `insert-link-clipboard.js` covers the
+  read's three outcomes.
 
 ## Open, in the order to take them
 
-The roadmap's own list is empty: every item the phase handoffs left is either closed
-above or waiting in "measure before deciding". What the closed items left behind, in
-the order I would take them, is in each phase's handoff — and it is empty: every leftover
-the handoffs named is closed above, and what is left is the "measure before deciding"
-column below.
+- **Two probes had been failing quietly, and their checks are real.** The probe harness
+  never judged a probe's own verdict: it exited 0 whenever the probe had *run*, so
+  `npm run probe:all` counted every probe that ran as one that passed. It reads the
+  verdict now (`test/tauri-probe.mjs`), and the suite says **87/89 (8 skipped)** — two
+  failures that predate the two phases above (both checked at `d4a26cf`), and both
+  measured on the app:
+  - `format-buttons.js` — pressing any formatting button changes the raw text and leaves
+    the *rendering* stale: `Alpha beta.` with `Alpha` selected and Bold gives the raw
+    `**Alpha** beta.` and no `<strong>` in the DOM, and the press logs `Error: this block
+    is not in the index` (`document/block_index.ts:111`). An undo and redo redraw it
+    correctly (`<strong data-format-from="0" data-format-to="9">`), so the edit and the
+    parse are right: the throw happens on the path that re-renders after the command
+    (`editing/formatting.ts`'s patch-or-render, and the index arithmetic under it).
+  - `insert-rule.js`, its `atTheEnd` check — a rule written at the end of the document
+    writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of
+    the document (`y 49`) instead of on the line under the rule.
+
+Everything else the phase handoffs left is either closed above or waiting in "measure
+before deciding"; what is left is the "measure before deciding" column below.
 
 ## Measure before deciding
 

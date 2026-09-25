@@ -30,6 +30,7 @@ export type CommandId =
   | 'edit:cut'
   | 'edit:selectAll'
   | 'edit:insertFootnote'
+  | 'edit:insertLink'
   | 'edit:insertRule'
   | 'find:open'
   | 'find:replace'

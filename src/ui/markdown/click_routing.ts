@@ -19,9 +19,11 @@
 
 import { showTableMenu } from '../table/table_menu';
 import { tableMenuModel } from '../table/table_menu_model';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
 import { placeCaretFromPointer } from './editing/pointer';
+import { isOpenableUrl } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
 import { toggleTask } from './editing/text_commands';
 
@@ -89,6 +91,38 @@ export function routePointerClick(context: EditorContext, event: MouseEvent): vo
     return;
   }
   placeCaretFromPointer(context, event.clientY);
+}
+
+/**
+ * Opens a link in the system browser, for the click that asks for it.
+ *
+ * A plain click on a link belongs to the editor — it opens the link's source for
+ * editing, like every other node whose rendering holds none of its characters — and
+ * ⌘-click (Ctrl-click, the same gesture the footnote marker jumps with) is the one
+ * that leaves the app. The webview must never navigate to the URL itself: the app
+ * hands it to the system's opener, which is what the preview card's links do too, and
+ * the same rule decides which hrefs may go (`syntax/link_edits.ts: isOpenableUrl`).
+ *
+ * A link the app cannot open — a relative path, a fragment, an empty href — keeps the
+ * plain click, because opening the source is the only thing left that it can mean.
+ */
+export function routeLinkClick(event: MouseEvent): void {
+  if (!event.metaKey && !event.ctrlKey) {
+    return;
+  }
+  const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]');
+  // A footnote marker renders as an `<a href="#fn-1">` too, and its own gesture is the
+  // jump (`routeFootnoteClick`), which runs on the same event.
+  if (!anchor || anchor.closest('[data-footnote-ref], [data-footnote-def]')) {
+    return;
+  }
+  const href = anchor.getAttribute('href') ?? '';
+  if (!isOpenableUrl(href)) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  void openUrl(href).catch(() => undefined);
 }
 
 /**
