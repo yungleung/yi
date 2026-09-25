@@ -21,6 +21,7 @@
  */
 
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { isOpenableUrl } from './syntax/link_edits';
 import { footnoteOffsets } from './syntax/footnotes';
 import { renderFootnoteBody } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
@@ -137,7 +138,7 @@ export function installFootnotePreview(context: EditorContext): void {
         event.preventDefault();
         event.stopPropagation();
         const href = anchor.getAttribute('href') ?? '';
-        if (/^https?:/i.test(href)) {
+        if (isOpenableUrl(href)) {
           void openUrl(href).catch(() => undefined);
         }
       },
