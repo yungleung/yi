@@ -103,7 +103,7 @@ export class DocumentManager {
     const names = await this.buildNameIndex();
     const index = new Map<string, string>();
     for (const path of names.values()) {
-      const id = await readFrontmatterId(path);
+      const id = await readDocumentId(path);
       if (id) {
         index.set(id, path);
       }
@@ -116,7 +116,13 @@ export class DocumentManager {
 /** The app-wide document manager singleton. */
 export const documentManager = new DocumentManager();
 
-async function readFrontmatterId(path: string): Promise<string | null> {
+/**
+ * The `id` a document's frontmatter gives it, or null when it has none.
+ *
+ * Exported beside the manager because the tree's "copy id" wants the same answer the
+ * wikilink resolver's id index is built from: one reader, not two.
+ */
+export async function readDocumentId(path: string): Promise<string | null> {
   try {
     const content = await readTextFile(path);
     const frontmatter = readFrontmatterBlock(content);

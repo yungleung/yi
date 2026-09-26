@@ -170,6 +170,37 @@ elements) unless it says otherwise.
   tells the renderer what it holds (`virtual_block_renderer.ts: notePatchedBlock`).
   `test/probes/format-buttons.js` fails without the fix and passes with it; the undo case is
   `test/probes/undo-selection-return.js`.
+- **Manipulating the workspace tree.** Landed as
+  `docs/superpowers/plans/2026-09-25-manipulating-the-workspace-tree.md`, on the user's ask:
+  a right-click on a file or a folder opens a menu that renames, deletes, makes a file or a
+  folder under it, reveals it in the system file manager, or copies its path, its name or
+  its frontmatter id; and entries drag into folders to move. The filesystem's rules are the
+  backend's (`src-tauri/src/files.rs` with Rust tests, wrapped in `src/api/files.ts`) and
+  the tree holds none of them twice; what a row may be offered is a pure model
+  (`tree_menu_model.ts`) and so are the rename's selection and the drops' rules
+  (`tree_rules.ts`), each with a Node check — because a native menu and a native dialog can
+  be neither read nor driven by a probe (`docs/testing.md`). A rename is edited in the row's
+  own label: the tree's geometry is asserted unchanged while it is open, and the edit starts
+  with the name — not the extension — selected, so typing replaces the name and the `.md`
+  stays (`test/probes/tree-rename.js`). The tree itself moved to `src/ui/workspace/`, one
+  module per interaction (menu, rename, drag, ops).
+  **On the user's review:** Copy name copies the name without its extension (one rule,
+  `tree_rules.ts: nameWithoutExtension`, shared with the rename's selection); the drag is
+  built from the pointer's own events rather than the browser's drag and drop — measured on
+  the app, the rows were `draggable` and WebKit agreed (`-webkit-user-drag: element`), and
+  the webview still never delivered a `drop` to a row — which is also the part a probe can
+  drive, and `tree-drag.js` now does; and the editable name keeps square corners.
+  **And the tree updates only what changed:** a change re-reads the one or two folders it
+  touched and reconciles their rows — an entry still there keeps its row, its open folders
+  and its listeners, and the rest of the tree is not touched — rather than rebuilding the
+  tree from the root; `tree-drag.js` asserts that the rows a move never reached are the very
+  same elements, and that no page reload happened.
+  **And the page itself stays put:** the app is opened on the fixture workspace, which is
+  inside the repository, so every tree write is a change under the dev server's watcher —
+  `vite.config.ts` now ignores it (data, not source), and a row is barred from being a
+  native drag source three ways over, so the webview can neither take the press over nor
+  be navigated to a dropped path. `test/probes/tree-no-reload.js` works *in* that workspace
+  for the first time and holds both.
 
 ## Open, in the order to take them
 

@@ -27,6 +27,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             clipboard::read_clipboard_text,
+            files::create_entry,
+            files::delete_entry,
+            files::move_entry,
+            files::rename_entry,
             stats::get_word_count, 
             files::list_folder_files, 
             greeting::greet,

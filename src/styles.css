@@ -317,6 +317,15 @@ body {
   color: var(--color-primary, currentColor);
 }
 
+/*
+ * A workspace row is moved by the tree's own pointer drag, never by the webview's drag:
+ * a native drag hides the pointer events the tree listens for, and a native drop can take
+ * the webview to the path it carries — which the reader sees as the page reloading.
+ */
+[data-tree-path] {
+  -webkit-user-drag: none;
+}
+
 @keyframes markdown-caret-blink {
   0% {
     opacity: 1;

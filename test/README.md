@@ -34,6 +34,8 @@ methodology; this file is the index and the conventions.
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
+| `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
+| `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
@@ -42,7 +44,12 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-Ninety-eight of them, grouped by area: blocks and spacing (`block-gaps`, `spacing`,
+A hundred and five of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+where it sits, the tree unmoved and the extension left out of the selection;
+`tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
+`tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
+moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
+the page it happened on in place), blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
