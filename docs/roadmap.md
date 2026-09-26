@@ -150,25 +150,39 @@ elements) unless it says otherwise.
   WebKit answered a scripted read with its own paste confirmation, which a click that
   only meant "fill the URL in" should not raise. `insert-link-clipboard.js` covers the
   read's three outcomes.
+- **The formatting buttons drew nothing.** Landed as
+  `docs/superpowers/plans/2026-09-25-the-format-buttons-stale-block.md`. Pressing Bold (or
+  Italic, Strikethrough, Inline code) wrote the markers into the text and left the view as
+  it was: the raw text said `**Alpha** beta.` and the paragraph still showed the plain
+  `Alpha beta.`, with `Error: this block is not in the index` thrown between the two. Two
+  causes, one behind the other.
+  `editing/formatting.ts` held the **blocks from before the edit**: a block's positions are
+  the document index's (`document/blocks.ts` over `block_index.ts`), the whole-document edit
+  re-splits the blocks, and the index answers for a block it no longer holds with an error —
+  by design, rather than with a position that belongs to another block. The command now asks
+  the state by offset after the edit, the same two offsets the patch reads its own block
+  from, so the blocks it patches and re-renders are the ones the edit left.
+  Behind that, the in-place **patch** (`format_dom.ts`) wrote the block's own markup where
+  the renderer could not see it: an element is remembered by the content it was *built*
+  from, so the next edit back to the older text looked like nothing to re-render — undoing
+  Bold over `world` left the `<strong>` and its shifted `data-text-from` on screen, and the
+  selection mapped through them (`wor` of `world` came back selected). A patched block now
+  tells the renderer what it holds (`virtual_block_renderer.ts: notePatchedBlock`).
+  `test/probes/format-buttons.js` fails without the fix and passes with it; the undo case is
+  `test/probes/undo-selection-return.js`.
 
 ## Open, in the order to take them
 
-- **Two probes had been failing quietly, and their checks are real.** The probe harness
-  never judged a probe's own verdict: it exited 0 whenever the probe had *run*, so
-  `npm run probe:all` counted every probe that ran as one that passed. It reads the
-  verdict now (`test/tauri-probe.mjs`), and the suite says **87/89 (8 skipped)** — two
-  failures that predate the two phases above (both checked at `d4a26cf`), and both
-  measured on the app:
-  - `format-buttons.js` — pressing any formatting button changes the raw text and leaves
-    the *rendering* stale: `Alpha beta.` with `Alpha` selected and Bold gives the raw
-    `**Alpha** beta.` and no `<strong>` in the DOM, and the press logs `Error: this block
-    is not in the index` (`document/block_index.ts:111`). An undo and redo redraw it
-    correctly (`<strong data-format-from="0" data-format-to="9">`), so the edit and the
-    parse are right: the throw happens on the path that re-renders after the command
-    (`editing/formatting.ts`'s patch-or-render, and the index arithmetic under it).
-  - `insert-rule.js`, its `atTheEnd` check — a rule written at the end of the document
-    writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of
-    the document (`y 49`) instead of on the line under the rule.
+- **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
+  writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
+  document (`y 49`) instead of on the line under the rule — measured on the app, and older
+  than the phases above (it fails at `d4a26cf` too). The caret the command resolves for the
+  document's end (`state.getText().length`, since no block starts after the rule) sits on a
+  blank line, and the placement snaps somewhere else; the fix belongs in that resolver or in
+  `nearestTextOffset`, with the probe as its test. It is the last check the strict harness
+  reports: the harness never judged a probe's own verdict until the link branch fixed that
+  (`test/tauri-probe.mjs: failedChecks`), which is why it and the formatting bug had both
+  been invisible. The suite now says **89/90 (8 skipped)**.
 
 Everything else the phase handoffs left is either closed above or waiting in "measure
 before deciding"; what is left is the "measure before deciding" column below.

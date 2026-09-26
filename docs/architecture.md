@@ -125,7 +125,12 @@ neither the text (a blank line is a block of no characters) nor the lines (a run
 blank lines is fewer blocks than it has lines). An edit is therefore a point update
 per block it rebuilt, and the blocks below it move by arithmetic instead of being
 rewritten — 484 of 484 rewritten for a character typed at the top of the fixture
-note, against a handful now.
+note, against a handful now. One consequence for every command: **a block object from
+before an edit cannot be asked where it sits.** The edit re-splits the blocks, the index
+drops the ones it replaced, and asking one of those is an error rather than a position
+that belongs to another block (`editing/formatting.ts` is where that bit: it held the
+selection's blocks across its own whole-document edit, so a formatting command wrote the
+markers and then threw before anything was rendered).
 
 ## The history
 
@@ -222,6 +227,15 @@ the fast path holds that decision while it places the caret and moves the shown
 range with the edit (`source_mode.ts: moveShownSource`) instead of re-deciding it.
 The ordinary path and the deferred check keep asking, and the parse they read is the
 one their rebuild renders from.
+
+Two writers put text into a mounted block without the renderer building it: the fast path
+above writes into the tagged text node, and a formatting command patches the block's own
+markup in place (`format_dom.ts`). Both leave the element holding content the renderer did
+not build, so both tell it — `measureEditedBlock`, and `notePatchedBlock` for the patch.
+An element is remembered by the content it was built from, and without that record the
+next edit back to the older text looks like nothing to re-render: undoing a formatting
+command left its `<strong>` on screen, with the selection mapped through the tags the
+patch had shifted.
 
 A **click** on a node whose rendering cannot hold a caret — a citation, a wikilink, a
 link, a formula, a footnote's label — is the same shape with no edit: it opens the node
