@@ -59,8 +59,16 @@ export default defineConfig(async () => ({
       }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. Tell Vite not to watch what it should not reload the page for:
+      //    - `src-tauri`, which the Rust watcher rebuilds on;
+      //    - the fixture workspace, which is a *notes folder* the app opens in
+      //      development and therefore *writes* to: renaming, moving or creating
+      //      anything in the tree is a change under this watcher, and Vite answers a
+      //      change with a full page reload — the reader's own drag would throw the page
+      //      away. Those files are data, not source; a change to one is picked up by
+      //      restarting the app, or by the app's own tree.
+      ignored: (path: string) =>
+        path.includes('/src-tauri/') || path.includes('/test/fixtures/workspace/'),
     },
   },
   optimizeDeps: {

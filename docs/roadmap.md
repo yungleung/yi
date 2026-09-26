@@ -175,6 +175,12 @@ elements) unless it says otherwise.
   and its listeners, and the rest of the tree is not touched — rather than rebuilding the
   tree from the root; `tree-drag.js` asserts that the rows a move never reached are the very
   same elements, and that no page reload happened.
+  **And the page itself stays put:** the app is opened on the fixture workspace, which is
+  inside the repository, so every tree write is a change under the dev server's watcher —
+  `vite.config.ts` now ignores it (data, not source), and a row is barred from being a
+  native drag source three ways over, so the webview can neither take the press over nor
+  be navigated to a dropped path. `test/probes/tree-no-reload.js` works *in* that workspace
+  for the first time and holds both.
 
 ## Open, in the order to take them
 

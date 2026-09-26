@@ -30,6 +30,12 @@ and it re-reads the disk after a change instead of patching its own rows. What a
 offered is a pure model (`src/ui/workspace/tree_menu_model.ts`), what a rename selects and
 which drops are allowed are pure rules (`src/ui/workspace/tree_rules.ts`), and a row's name
 is edited where it sits, without moving the tree (`src/ui/workspace/tree_rename.ts`).
+The dev server must not watch that folder: the app is opened on `test/fixtures/workspace`
+in development, and a tree write there is a file change Vite would answer with a full page
+reload (`vite.config.ts` ignores it), while a row is barred from being a native drag source
+so the webview cannot be navigated to a dropped path either. A probe that works *in* the
+fixture workspace rather than in `/private/tmp` is how that stays true
+(`test/probes/tree-no-reload.js`).
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.

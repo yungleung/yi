@@ -184,3 +184,31 @@ the rows the move never reached are asserted to be the *same DOM elements*, and 
 on the page (`window.__treeProbeLoaded`) is still there, which a page reload would have
 cleared. The refusals moved to their own probe (`tree-drag-refusals.js`) to keep both
 inside the bridge's five seconds.
+
+**Round four: the page must not reload at all.** The user's report: the tree updates
+immediately now, but the *webview* still refreshes and takes the page away. Measured, and
+the cause is the environment rather than the tree's own code: the app is opened on
+`test/fixtures/workspace`, which lives *inside the repository*, so every write the tree
+makes there is a change under Vite's watcher — and the dev server answers changes it cares
+about with a full page reload. Two changes, one of them a guard against the other way a
+page can be taken away:
+
+1. `vite.config.ts`'s watcher now ignores `/test/fixtures/workspace/`, beside the
+   `src-tauri` it already ignored: those files are *data* — a notes folder the app writes
+   to — not source. (Honest note: a probe with the marker below passes *with and without*
+   this ignore on this machine, because Vite only reloads for files it has in its module
+   graph and a fixture file is not one. It is kept because the fixtures are data, and
+   because what a dev server does with a file outside its graph is version-dependent.)
+2. A tree row is not a **native drag source**, three ways over: `draggable` is false, a
+   `dragstart` on a row is refused, and `styles.css` sets `-webkit-user-drag: none` on every
+   `[data-tree-path]`. That is what makes a *real* mouse drag safe: the webview cannot take
+   the press over (which is what left the pointer drag dead), and a native drop cannot take
+   the webview to the path it carries — the other way the page can disappear under the
+   reader.
+
+The new probe is `test/probes/tree-no-reload.js`, and it is the first one that works *in
+the fixture workspace* rather than in `/private/tmp`: it makes two folders with the app's
+own actions, moves one into the other, and checks that a mark left on the page is still
+there afterwards (plus that no row can be a native drag source). Before it, every
+workspace probe worked in a temporary folder outside the repository, which is exactly why
+none of them could have seen this.

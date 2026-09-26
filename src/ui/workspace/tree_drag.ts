@@ -49,6 +49,13 @@ let swallowClick = false;
 
 /** Makes a row a drag source. The workspace's own row is not one. */
 export function makeDragSource(row: HTMLElement, entry: TreeEntry, isRoot: boolean): void {
+  // No native drag may start from a row, three ways over: the webview takes the press
+  // over when one does — which is what left the pointer path dead before — and a native
+  // drop can *navigate* the webview to the path it carries, which looks like the page
+  // reloading. `draggable` stays false, a `dragstart` is refused outright, and
+  // `styles.css` keeps WebKit's own drag off every row.
+  row.draggable = false;
+  row.addEventListener('dragstart', (event) => event.preventDefault(), true);
   if (isRoot) {
     return;
   }

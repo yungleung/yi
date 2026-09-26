@@ -44,11 +44,12 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and four of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and five of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
-moves that are refused), blocks and spacing (`block-gaps`, `spacing`,
+moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
+the page it happened on in place), blocks and spacing (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
