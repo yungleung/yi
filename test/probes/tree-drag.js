@@ -24,25 +24,37 @@
   const note = `${workspace}/note.md`;
   const rowFor = (path) => document.querySelector(`[data-tree-path="${path}"]`);
   const namesIn = async (folder) => (await files.listFolderFiles(folder)).map((item) => item.basename).sort();
-  /** Drags `source` onto `target`; answers whether the target accepted the drag. */
-  const drag = async (sourcePath, targetPath, { drop = true } = {}) => {
+  /**
+   * Drags `sourcePath`'s row onto `targetPath`'s row, with the pointer's own events —
+   * which is what the tree listens for (`tree_drag.ts`), and what a probe can send.
+   */
+  const drag = async (sourcePath, targetPath) => {
     const source = rowFor(sourcePath);
     const target = rowFor(targetPath);
     if (!source || !target) {
       return { error: 'no row', source: sourcePath, target: targetPath, rows: [...document.querySelectorAll('[data-tree-path]')].map((row) => row.dataset.treePath) };
     }
-    const dataTransfer = new DataTransfer();
-    source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
-    const over = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer });
-    target.dispatchEvent(over);
-    const accepted = over.defaultPrevented;
+    const point = (row) => {
+      const rect = row.getBoundingClientRect();
+      return {
+        x: Math.round(rect.left + rect.width / 2),
+        y: Math.round(rect.top + rect.height / 2)
+      };
+    };
+    const from = point(source);
+    const to = point(target);
+    const move = (x, y) =>
+      document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: x, clientY: y }));
+    source.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0, clientX: from.x, clientY: from.y })
+    );
+    // Past the threshold, then onto the target row.
+    move(from.x + 6, from.y + 6);
+    move(to.x, to.y);
     const highlighted = target.className.includes('outline-primary/60');
-    if (drop) {
-      target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-      source.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer }));
-      await t.sleep(600);
-    }
-    return { accepted, highlighted };
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: to.x, clientY: to.y }));
+    await t.sleep(500);
+    return { highlighted };
   };
   let previous = null;
   try {
@@ -64,19 +76,20 @@
     );
 
     // The folder the entry already lives in is not a target: nothing would happen.
-    const pointless = await drag(note, workspace, { drop: false });
-    check('the folder it already lives in does not accept it', pointless.accepted === false, pointless);
+    const pointless = await drag(note, workspace);
+    check('the folder it already lives in is not a target', pointless.highlighted === false, pointless);
+    check('and nothing moved', await namesIn(workspace), ['note.md', 'other', 'sub']);
     // A file is not a place to put anything.
-    const ontoFile = await drag(note, `${workspace}/note.md`, { drop: false });
-    check('a file row does not accept a drop', ontoFile.accepted === false, ontoFile);
+    const ontoFile = await drag(note, note);
+    check('a file row is not a target', ontoFile.highlighted === false, ontoFile);
     // A folder inside its own subtree would take it off the tree.
-    await t.sleep(50);
-    const intoItself = await drag(sub, sub, { drop: false });
-    check('a folder does not accept itself', intoItself.accepted === false, intoItself);
+    const intoItself = await drag(sub, sub);
+    check('a folder is not a target for itself', intoItself.highlighted === false, intoItself);
+    check('and nothing moved then either', await namesIn(workspace), ['note.md', 'other', 'sub']);
 
     // The move itself: the file goes into `sub`, on the disk and in the tree.
     const moved = await drag(note, sub);
-    check('a folder accepts a file from elsewhere, and says so', moved.accepted === true && moved.highlighted === true, moved);
+    check('a folder takes a file from elsewhere, and shows it as the target', moved.highlighted === true, moved);
     check('the file is in the folder now', await namesIn(sub), ['inner.md', 'note.md']);
     check('and it is gone from where it was', await namesIn(workspace), ['other', 'sub']);
     check(
@@ -87,7 +100,7 @@
 
     // A folder moves too, children and all.
     const folderMoved = await drag(sub, other);
-    check('a folder moves as well', folderMoved.accepted === true, folderMoved);
+    check('a folder is a target for another folder', folderMoved.highlighted === true, folderMoved);
     check('with what was inside it', await namesIn(`${other}/sub`), ['inner.md', 'note.md']);
     check('and its old place is empty of it', await namesIn(workspace), ['other']);
   } finally {

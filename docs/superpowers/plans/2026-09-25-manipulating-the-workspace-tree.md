@@ -148,3 +148,25 @@ repository's fixtures are only ever read.
 **What is left.** The popup and the delete's question are a person's checks (above). The
 format fix from the previous phase is on its own branch, not merged — with it, the suite is
 89/90; without it, `format-buttons.js` and `insert-rule.js` fail as `main` does today.
+
+**Round two, on the user's review of the feature.** Three fixes.
+
+*Copy name* copies the name **without the extension** (`note.md` → `note`), which is the
+same fact the rename's selection is made of — `nameWithoutExtension` is now the one home for
+it in `tree_rules.ts`, and both callers read it. A folder is copied as the name it has.
+
+*The drag did not work in the app*, though the probe's synthetic HTML5 drag events passed.
+Measured on the app: the rows did carry `draggable` and WebKit agreed — `-webkit-user-drag`
+was `element` on a row — so the markup was right and the webview's own drag machinery was
+what never delivered a `drop` to a row. The drag is therefore built from the **pointer's own
+events** (`tree_drag.ts`): a press on a row that moves past 4px becomes a drag, the row under
+the pointer is the target (`document.elementFromPoint`), the drop rules decide whether it
+glows, and letting go moves the entry; the click that follows a drag is swallowed so a drag
+never opens the file, `Escape` and a window blur cancel, and the text a press may have begun
+to select is cleared. This is also the part a probe can drive — `tree-drag.js` now sends
+`mousedown`/`mousemove`/`mouseup` and the move is asserted on disk and in the tree — which
+the HTML5 path never was, and that is the lesson worth keeping: a synthetic `dragstart` is a
+test of the handler, not of the drag.
+
+*The editable name* keeps square corners (the `rounded-sm` came off the editing classes; the
+probe asserts the computed `border-radius` is `0px` while the edit is open).

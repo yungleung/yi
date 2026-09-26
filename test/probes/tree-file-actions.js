@@ -83,7 +83,14 @@
 
     await ops.runTreeAction('copy-path', entry(inner, 'inner.md', true));
     await ops.runTreeAction('copy-name', entry(inner, 'inner.md', true));
-    check('Copy path and Copy name put both on the clipboard', copied, [inner, 'inner.md']);
+    check(
+      'Copy path puts the path, and Copy name the name without its extension',
+      copied,
+      [inner, 'inner']
+    );
+    copied.length = 0;
+    await ops.runTreeAction('copy-name', entry(`${workspace}/sub`, 'sub', false));
+    check('and a folder is copied as the name it has', copied, ['sub']);
     copied.length = 0;
     await ops.runTreeAction('copy-id', entry(withId, 'Language and Thought.md', true));
     await t.sleep(120);

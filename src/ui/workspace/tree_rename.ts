@@ -34,8 +34,12 @@ export interface RenameTarget {
   commit(name: string): void | Promise<unknown>;
 }
 
-/** Classes that change how the label looks while it is editable, and nothing about its box. */
-const EDITING_CLASSES = ['bg-base-100', 'outline', 'outline-1', 'outline-primary/50', 'rounded-sm'];
+/**
+ * Classes that change how the label looks while it is editable, and nothing about its box.
+ * No rounding: the editable name is a field the author is typing in, and its corners stay
+ * square the way the text's do.
+ */
+const EDITING_CLASSES = ['bg-base-100', 'outline', 'outline-1', 'outline-primary/50'];
 
 /** Makes `label` editable and selects its name. Returns false when it was already editing. */
 export function beginRename(target: RenameTarget): boolean {

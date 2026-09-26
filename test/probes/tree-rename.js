@@ -73,6 +73,8 @@
     check('and it has the keyboard focus', document.activeElement === label, document.activeElement?.tagName ?? null);
     const selected = window.getSelection() ? window.getSelection().toString() : '';
     check('the edit starts with the name selected, without the extension', selected === 'note', selected);
+    const radius = label ? getComputedStyle(label).borderRadius : null;
+    check('and the editable name keeps square corners', radius === '0px', radius);
     const during = geometry();
     check(
       'and the tree`s layout is exactly what it was',

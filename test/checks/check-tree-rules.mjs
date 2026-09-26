@@ -18,7 +18,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-tree-rules-'));
 const file = join(directory, 'tree_rules.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { nameSelection, dropDecision } = await import(file);
+const { nameSelection, nameWithoutExtension, dropDecision } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -44,6 +44,13 @@ check(
   nameSelection('note.md', true),
   { start: 0, end: 4 }
 );
+
+// The name a reader means: what a rename selects, and what Copy name copies.
+check('the name without the extension is the file`s name', nameWithoutExtension('note.md', true), 'note');
+check('with a dotted name the last extension still goes', nameWithoutExtension('a.b.md', true), 'a.b');
+check('a folder keeps its whole name', nameWithoutExtension('sub', false), 'sub');
+check('and a folder named like a file too', nameWithoutExtension('a.md', false), 'a.md');
+check('a file with no extension has no extension to drop', nameWithoutExtension('notes', true), 'notes');
 
 // Whether a drop is allowed.
 const folder = (path, basename) => ({ path, basename, isFile: false });

@@ -164,6 +164,12 @@ elements) unless it says otherwise.
   with the name — not the extension — selected, so typing replaces the name and the `.md`
   stays (`test/probes/tree-rename.js`). The tree itself moved to `src/ui/workspace/`, one
   module per interaction (menu, rename, drag, ops).
+  **On the user's review:** Copy name copies the name without its extension (one rule,
+  `tree_rules.ts: nameWithoutExtension`, shared with the rename's selection); the drag is
+  built from the pointer's own events rather than the browser's drag and drop — measured on
+  the app, the rows were `draggable` and WebKit agreed (`-webkit-user-drag: element`), and
+  the webview still never delivered a `drop` to a row — which is also the part a probe can
+  drive, and `tree-drag.js` now does; and the editable name keeps square corners.
 
 ## Open, in the order to take them
 

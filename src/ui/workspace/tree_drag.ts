@@ -1,12 +1,17 @@
 /**
- * Dragging a tree entry into a folder.
+ * Dragging a tree entry into a folder, with the pointer's own events.
  *
- * The drag follows the browser's own drag and drop: the row says it is draggable and
- * carries the entry's path as text, and every folder row accepts a drop that the rules
- * allow (`tree_rules.ts: dropDecision`) while showing the one it would land in. What the
- * rules refuse — a file, the entry itself, a folder inside itself, the folder it already
- * lives in — shows no target and takes no drop, so the pointer never promises a move the
- * app would then refuse.
+ * **Why not the browser's drag and drop.** The rows were `draggable` and this webview
+ * agreed — WebKit reported `-webkit-user-drag: element` for a row — and a real pointer
+ * drag still moved nothing: on macOS the webview's drag machinery takes the press over and
+ * never delivers a `drop` to the row. The pointer's own events are the ones every other
+ * interaction in this app is already built on, and the ones a probe can send, so the drag
+ * is built from them: a press on a row that moves past a few pixels becomes a drag, the row
+ * under the pointer is the target, and letting go moves the entry.
+ *
+ * What the rules refuse (`tree_rules.ts: dropDecision`) shows no target and takes no drop,
+ * so the pointer never promises a move the app would then refuse; the click that would
+ * otherwise follow a drag is swallowed, so dragging a row never opens the file.
  *
  * May import: the drop rules (`./tree_rules`). Upholds: a drag is a request to move an
  * entry, and the tree only accepts the moves it can really make.
@@ -14,34 +19,41 @@
 
 import { dropDecision, type TreeEntry } from './tree_rules';
 
-/** The entry being dragged, as the page's rows see it (one drag at a time). */
-let dragging: TreeEntry | null = null;
-/** The row the pointer is over now, so the drag's end can clear it wherever it is. */
-let target: HTMLElement | null = null;
-
+/** How far the pointer moves before a press is a drag rather than a click. */
+const DRAG_THRESHOLD = 4;
 /** Classes a row wears while it is the drop target, and nothing about its box. */
 const TARGET_CLASSES = ['bg-base-300', 'outline', 'outline-1', 'outline-primary/60'];
+/** Classes the row being dragged wears. */
+const SOURCE_CLASSES = ['opacity-60'];
+/** The attribute that addresses a row; the tree writes it and this reads it. */
+const ROW_SELECTOR = '[data-tree-path]';
 
-/** Makes a row draggable, carrying its path. The workspace row itself is not draggable. */
+/** Every row this module was told about: what it stands for, and what a drop into it does. */
+const rows = new WeakMap<
+  HTMLElement,
+  {
+    entry: TreeEntry;
+    onDrop: ((dragged: TreeEntry, targetDir: string) => void) | null;
+    draggable: boolean;
+  }
+>();
+
+/** The press that may become a drag. */
+let pressed: { row: HTMLElement; entry: TreeEntry; x: number; y: number } | null = null;
+/** The drag in progress. */
+let dragging: { row: HTMLElement; entry: TreeEntry } | null = null;
+/** The row the pointer is over now. */
+let target: HTMLElement | null = null;
+/** Set for the click that follows a drag, so it is swallowed rather than acted on. */
+let swallowClick = false;
+
+/** Makes a row a drag source. The workspace's own row is not one. */
 export function makeDragSource(row: HTMLElement, entry: TreeEntry, isRoot: boolean): void {
   if (isRoot) {
     return;
   }
-  row.draggable = true;
-  row.addEventListener('dragstart', (event) => {
-    const drag = event as DragEvent;
-    dragging = entry;
-    row.classList.add('opacity-60');
-    drag.dataTransfer?.setData('text/plain', entry.path);
-    if (drag.dataTransfer) {
-      drag.dataTransfer.effectAllowed = 'move';
-    }
-  });
-  row.addEventListener('dragend', () => {
-    dragging = null;
-    row.classList.remove('opacity-60');
-    clearTargets();
-  });
+  const registered = rows.get(row) ?? { entry, onDrop: null, draggable: true };
+  rows.set(row, { ...registered, entry, draggable: true });
 }
 
 /**
@@ -53,49 +65,111 @@ export function makeDropTarget(
   entry: TreeEntry,
   onDrop: (dragged: TreeEntry, targetDir: string) => void
 ): void {
-  row.addEventListener('dragover', (event) => {
-    const drag = event as DragEvent;
-    if (!dragging || !dropDecision(dragging, entry).allowed) {
-      return;
-    }
-    // Saying yes to the event is what lets a drop happen at all; the classes are the
-    // only other sign the pointer gets.
-    drag.preventDefault();
-    if (drag.dataTransfer) {
-      drag.dataTransfer.dropEffect = 'move';
-    }
-    if (target !== row) {
-      clearTarget();
-      target = row;
-    }
-    row.classList.add(...TARGET_CLASSES);
-  });
-  row.addEventListener('dragleave', () => {
-    if (target === row) {
-      clearTarget();
-    }
-  });
-  row.addEventListener('drop', (event) => {
-    const drag = event as DragEvent;
-    clearTarget();
-    const dragged = dragging;
-    dragging = null;
-    if (!dragged || !dropDecision(dragged, entry).allowed) {
-      return;
-    }
-    drag.preventDefault();
-    drag.stopPropagation();
-    onDrop(dragged, entry.path);
-  });
+  rows.set(row, { entry, onDrop, draggable: rows.get(row)?.draggable ?? false });
 }
 
-/** The row a drop landed on stops glowing when the drag is over anywhere. */
-function clearTargets(): void {
-  clearTarget();
+/** The row a point is over, with what it stands for. */
+function rowAt(x: number, y: number): { row: HTMLElement; entry: TreeEntry } | null {
+  const element = document.elementFromPoint(x, y);
+  const row = element?.closest<HTMLElement>(ROW_SELECTOR) ?? null;
+  const registered = row ? rows.get(row) : null;
+  return row && registered ? { row, entry: registered.entry } : null;
 }
 
-/** Takes the target look off the row that has it, if any. */
-function clearTarget(): void {
+/** Whether a row is being renamed: a press in an editable name belongs to the text. */
+function editing(row: HTMLElement): boolean {
+  const label = row.querySelector('span');
+  return label?.isContentEditable === true;
+}
+
+/** Puts the target look on `row`, or takes it off everything when `row` is null. */
+function markTarget(row: HTMLElement | null): void {
+  if (target === row) {
+    return;
+  }
   target?.classList.remove(...TARGET_CLASSES);
-  target = null;
+  target = row;
+  target?.classList.add(...TARGET_CLASSES);
 }
+
+/** Ends whatever the pointer was doing, and puts every row back as it was. */
+function reset(): void {
+  pressed = null;
+  dragging?.row.classList.remove(...SOURCE_CLASSES);
+  dragging = null;
+  markTarget(null);
+  document.body.classList.remove('select-none');
+}
+
+document.addEventListener('mousedown', (event) => {
+  swallowClick = false;
+  if (event.button !== 0) {
+    return;
+  }
+  const over = rowAt(event.clientX, event.clientY);
+  if (!over || !rows.get(over.row)?.draggable || editing(over.row)) {
+    return;
+  }
+  pressed = { ...over, x: event.clientX, y: event.clientY };
+});
+
+document.addEventListener('mousemove', (event) => {
+  if (pressed && !dragging) {
+    const moved = Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y);
+    if (moved < DRAG_THRESHOLD) {
+      return;
+    }
+    dragging = { row: pressed.row, entry: pressed.entry };
+    dragging.row.classList.add(...SOURCE_CLASSES);
+    // Nothing is being selected while a row is being dragged — including anything the
+    // press itself had begun to select before the pointer moved far enough.
+    document.body.classList.add('select-none');
+    window.getSelection()?.removeAllRanges();
+  }
+  if (!dragging) {
+    return;
+  }
+  const over = rowAt(event.clientX, event.clientY);
+  const allowed = over !== null && dropDecision(dragging.entry, over.entry).allowed;
+  markTarget(allowed && over ? over.row : null);
+});
+
+document.addEventListener('mouseup', () => {
+  const drag = dragging;
+  const drop = target ? rows.get(target) ?? null : null;
+  const move = drag !== null && drop !== null && dropDecision(drag.entry, drop.entry).allowed;
+  const dragged = drag?.entry ?? null;
+  const onDrop = drop?.onDrop ?? null;
+  const into = drop?.entry.path ?? '';
+  if (drag) {
+    // The click that follows a drag is the drag's, not the row's: a drag must not open
+    // the file it grabbed.
+    swallowClick = true;
+  }
+  reset();
+  if (dragged && onDrop && move) {
+    onDrop(dragged, into);
+  }
+});
+
+document.addEventListener(
+  'click',
+  (event) => {
+    if (!swallowClick) {
+      return;
+    }
+    swallowClick = false;
+    event.stopPropagation();
+    event.preventDefault();
+  },
+  true
+);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && dragging) {
+    swallowClick = true;
+    reset();
+  }
+});
+
+window.addEventListener('blur', () => reset());

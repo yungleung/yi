@@ -34,16 +34,25 @@ export interface TreeEntry {
  * whole name, so the selection is over text that is really there.
  */
 export function nameSelection(basename: string, isFile: boolean): { start: number; end: number } {
-  const whole = { start: 0, end: basename.length };
+  return { start: 0, end: nameWithoutExtension(basename, isFile).length };
+}
+
+/**
+ * The name a reader means by "the file's name": the basename without its markdown
+ * extension (`note.md` → `note`, `a.b.md` → `a.b`), and a folder's name as it is.
+ *
+ * One home for it, because the rename selects it and Copy name copies it.
+ */
+export function nameWithoutExtension(basename: string, isFile: boolean): string {
   if (!isFile) {
-    return whole;
+    return basename;
   }
   const dot = basename.lastIndexOf('.');
   if (dot <= 0) {
-    return whole;
+    return basename;
   }
   const extension = basename.slice(dot + 1).toLowerCase();
-  return MARKDOWN_EXTENSIONS.includes(extension) ? { start: 0, end: dot } : whole;
+  return MARKDOWN_EXTENSIONS.includes(extension) ? basename.slice(0, dot) : basename;
 }
 
 /** Why a drop is or is not allowed, for the hint the pointer shows. */

@@ -24,7 +24,7 @@ import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
 import { TOAST_EVENT } from '../../services/workspace';
 import type { TreeMenuAction } from './tree_menu_model';
-import type { TreeEntry } from './tree_rules';
+import { nameWithoutExtension, type TreeEntry } from './tree_rules';
 
 /** What an action needs from the tree that is on screen. */
 export interface TreeHost {
@@ -71,7 +71,7 @@ export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): P
       await copy(entry.path, 'Path copied.');
       return;
     case 'copy-name':
-      await copy(entry.basename, 'Name copied.');
+      await copy(nameWithoutExtension(entry.basename, entry.isFile), 'Name copied.');
       return;
     case 'copy-id':
       await copyId(entry);
