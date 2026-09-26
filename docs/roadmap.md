@@ -170,6 +170,11 @@ elements) unless it says otherwise.
   the app, the rows were `draggable` and WebKit agreed (`-webkit-user-drag: element`), and
   the webview still never delivered a `drop` to a row — which is also the part a probe can
   drive, and `tree-drag.js` now does; and the editable name keeps square corners.
+  **And the tree updates only what changed:** a change re-reads the one or two folders it
+  touched and reconciles their rows — an entry still there keeps its row, its open folders
+  and its listeners, and the rest of the tree is not touched — rather than rebuilding the
+  tree from the root; `tree-drag.js` asserts that the rows a move never reached are the very
+  same elements, and that no page reload happened.
 
 ## Open, in the order to take them
 

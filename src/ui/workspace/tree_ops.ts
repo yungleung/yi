@@ -30,12 +30,17 @@ import { nameWithoutExtension, type TreeEntry } from './tree_rules';
 export interface TreeHost {
   /** The workspace folder, and the row that is not renamed or deleted. */
   readonly root: string;
-  /** Reloads the tree from the disk, keeping the folders that were open. */
-  reload(): Promise<void>;
-  /** Makes `path` visible — expanding the folders above it — and starts renaming it. */
-  renameAt(path: string): Promise<void>;
-  /** Makes `path` visible, expanding the folders above it, and changes nothing else. */
+  /**
+   * Re-reads the folders a change touched — and only those — leaving the rest of the
+   * tree alone: a change on the disk must not re-write rows it never reached.
+   */
+  refreshFolders(paths: string[]): Promise<void>;
+  /** Makes `path` visible, opening its folder, and changes nothing else. */
   reveal(path: string): Promise<void>;
+  /** Whether a folder is open now — a folder that was open stays open across a change. */
+  isOpen(path: string): boolean;
+  /** Makes `path`'s row visible and starts renaming it. */
+  renameAt(path: string): Promise<void>;
 }
 
 let host: TreeHost | null = null;
@@ -92,7 +97,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
     notify(error);
     return false;
   }
-  await tree.reload();
+  await tree.refreshFolders([parentOf(entry.path), targetDir]);
   // The folder that took the entry is opened on it, so the reader sees where it went —
   // dropping onto a folded folder would otherwise look like the entry vanished.
   await tree.reveal(moved);
@@ -101,14 +106,31 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
 
 /** Returns the name a rename left behind, or null when it failed; the reader is told why. */
 export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boolean> {
+  const tree = host;
+  if (!tree) {
+    return false;
+  }
+  // A folder that was open stays open through its own rename: the entry is the same
+  // folder, under a new name.
+  const wasOpen = tree.isOpen(entry.path);
+  let renamed: string;
   try {
-    await renameEntry(entry.path, name);
+    renamed = await renameEntry(entry.path, name);
   } catch (error) {
     notify(error);
     return false;
   }
-  await host?.reload();
+  await tree.refreshFolders([parentOf(renamed)]);
+  if (wasOpen) {
+    await tree.reveal(renamed);
+  }
   return true;
+}
+
+/** The folder an entry lives in, whichever separator the platform writes paths with. */
+function parentOf(path: string): string {
+  const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return cut > 0 ? path.slice(0, cut) : path;
 }
 
 /**
@@ -147,7 +169,7 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
     notify(error);
     return;
   }
-  await tree.reload();
+  await tree.refreshFolders([parentOf(entry.path)]);
 }
 
 /** Creates inside `folder`, trying `base`, `base 2`, … until the backend accepts one. */
@@ -161,7 +183,7 @@ async function createAndRename(
     const name = ordinal === 1 ? base : `${base} ${ordinal}`;
     try {
       const path = await createEntry(folder, name, isFile);
-      await tree.reload();
+      await tree.refreshFolders([folder]);
       await tree.renameAt(path);
       return;
     } catch (error) {

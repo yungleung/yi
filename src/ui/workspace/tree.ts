@@ -145,9 +145,50 @@ class TreeNode {
     }
   }
 
+  /** Whether this folder is open. */
+  get open(): boolean {
+    return this.expanded;
+  }
+
+  /** The node for `path` among the folders already open, or null when it is not there. */
+  find(path: string): TreeNode | null {
+    if (this.info.path === path) {
+      return this;
+    }
+    if (this.info.is_file || !path.startsWith(`${this.info.path}/`)) {
+      return null;
+    }
+    for (const child of this.children) {
+      const found = child.find(path);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  /** Re-reads this folder's own entries, and nothing else in the tree. */
+  async refresh(): Promise<void> {
+    if (this.info.is_file) {
+      return;
+    }
+    if (!this.expanded) {
+      // None of it is on screen: whatever it holds will be listed afresh when it opens.
+      this.loaded = false;
+      this.children = [];
+      this.childrenContainer.replaceChildren();
+      return;
+    }
+    await this.loadChildren();
+  }
+
   /** The node for `path`, opening the folders above it on the way down. */
   async reveal(path: string): Promise<TreeNode | null> {
     if (this.info.path === path) {
+      // A reveal shows what is inside the folder it names, not just where it is.
+      if (!this.info.is_file && !this.expanded) {
+        await this.toggle();
+      }
       return this;
     }
     if (this.info.is_file || !path.startsWith(`${this.info.path}/`)) {
@@ -187,9 +228,28 @@ class TreeNode {
   private async loadChildren(): Promise<void> {
     try {
       const children = await listFolderFiles(this.info.path);
-      this.children = children.map((child) => new TreeNode(this.tree, child, this.level + 1));
-      this.childrenContainer.replaceChildren();
-      this.children.forEach((child) => child.render(this.childrenContainer));
+      // What the folder holds is reconciled with what its rows are: an entry that is still
+      // there keeps its row — and with it its open folders, its listeners and the row a
+      // drag is over — instead of every row being written again. Only a folder that has
+      // really changed (a move, a rename, a new file) is touched at all, and the rest of
+      // the tree is not looked at: that is what keeps a change from flashing the tree.
+      const existing = new Map(this.children.map((node) => [node.info.path, node]));
+      const next: TreeNode[] = [];
+      for (const child of children) {
+        const node = existing.get(child.path);
+        existing.delete(child.path);
+        next.push(node ?? new TreeNode(this.tree, child, this.level + 1));
+      }
+      for (const gone of existing.values()) {
+        gone.element.remove();
+      }
+      this.children = next;
+      next.forEach((node, index) => {
+        const current = this.childrenContainer.children[index];
+        if (current !== node.element) {
+          this.childrenContainer.insertBefore(node.element, current ?? null);
+        }
+      });
       this.loaded = true;
     } catch (error) {
       console.error('Failed to load workspace entries:', error);
@@ -230,7 +290,6 @@ class TreeNode {
 export class WorkspaceTree extends SidebarSection implements TreeHost {
   readonly root: string = '';
   private rootNode: TreeNode | null = null;
-  private workspace: string | null = null;
 
   constructor() {
     super('Workspace');
@@ -246,7 +305,6 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
 
   async setWorkspace(path: string | null): Promise<void> {
     this.content.replaceChildren();
-    this.workspace = path;
     (this as { root: string }).root = path ?? '';
     if (!path) {
       this.rootNode = null;
@@ -271,19 +329,22 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
     await this.rootNode.toggle();
   }
 
-  /** Re-reads the disk, keeping the folders the reader had open. */
-  async reload(): Promise<void> {
-    if (!this.workspace) {
-      return;
+  /**
+   * Re-reads these folders — and only these — leaving every other row where it is.
+   *
+   * A change on the disk touched one or two folders; rebuilding the tree would drop the
+   * rows the change never reached, which flashes the tree and can fold folders the reader
+   * had open.
+   */
+  async refreshFolders(paths: string[]): Promise<void> {
+    for (const path of new Set(paths)) {
+      await this.rootNode?.find(path)?.refresh();
     }
-    const opened = this.rootNode?.openedPaths() ?? [];
-    await this.setWorkspace(this.workspace);
-    for (const path of opened) {
-      const node = await this.rootNode?.reveal(path);
-      if (node && !node.openedPaths().includes(path)) {
-        await node.toggle();
-      }
-    }
+  }
+
+  /** Whether a folder is open now. */
+  isOpen(path: string): boolean {
+    return this.rootNode?.find(path)?.open ?? false;
   }
 
   /** Opens `path`'s folder and puts its row into edit mode. */

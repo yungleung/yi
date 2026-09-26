@@ -53,7 +53,7 @@
     move(to.x, to.y);
     const highlighted = target.className.includes('outline-primary/60');
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: to.x, clientY: to.y }));
-    await t.sleep(500);
+    await t.sleep(150);
     return { highlighted };
   };
   let previous = null;
@@ -74,18 +74,28 @@
       rowFor(note) !== null && rowFor(sub) !== null && rowFor(other) !== null,
       [...document.querySelectorAll('[data-tree-path]')].map((row) => row.dataset.treePath)
     );
-
-    // The folder the entry already lives in is not a target: nothing would happen.
-    const pointless = await drag(note, workspace);
-    check('the folder it already lives in is not a target', pointless.highlighted === false, pointless);
-    check('and nothing moved', await namesIn(workspace), ['note.md', 'other', 'sub']);
-    // A file is not a place to put anything.
-    const ontoFile = await drag(note, note);
-    check('a file row is not a target', ontoFile.highlighted === false, ontoFile);
-    // A folder inside its own subtree would take it off the tree.
-    const intoItself = await drag(sub, sub);
-    check('a folder is not a target for itself', intoItself.highlighted === false, intoItself);
-    check('and nothing moved then either', await namesIn(workspace), ['note.md', 'other', 'sub']);
+    // The folder is opened first, so the rows inside it exist to be compared by identity.
+    // The click is repeated rather than only waited on: on the fresh tree it opens the
+    // folder, and the loop stops the moment the rows inside it are there.
+    for (let attempt = 0; attempt < 10 && rowFor(`${sub}/inner.md`) === null; attempt += 1) {
+      rowFor(sub)?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await t.sleep(150);
+    }
+    // What a move must not disturb: the page (a mark on it would be gone if the page were
+    // reloaded) and every row the move never reached. Both are taken before the drag and
+    // compared after it.
+    window.__treeProbeLoaded = true;
+    const untouched = {
+      root: rowFor(workspace),
+      other: rowFor(other),
+      sub: rowFor(sub),
+      inner: rowFor(`${sub}/inner.md`)
+    };
+    check(
+      'the rows to be compared are on screen before the move',
+      untouched.root !== null && untouched.other !== null && untouched.sub !== null && untouched.inner !== null,
+      { root: untouched.root !== null, other: untouched.other !== null, sub: untouched.sub !== null, inner: untouched.inner !== null }
+    );
 
     // The move itself: the file goes into `sub`, on the disk and in the tree.
     const moved = await drag(note, sub);
@@ -96,6 +106,24 @@
       'and the tree shows it inside the folder',
       rowFor(`${sub}/note.md`) !== null && rowFor(note) === null,
       [...document.querySelectorAll('[data-tree-path]')].map((row) => row.dataset.treePath)
+    );
+    check(
+      'only the tree was updated: the page was not reloaded',
+      window.__treeProbeLoaded === true,
+      window.__treeProbeLoaded ?? null
+    );
+    check(
+      'and the rows the move did not touch are the very same elements',
+      rowFor(workspace) === untouched.root &&
+        rowFor(other) === untouched.other &&
+        rowFor(sub) === untouched.sub &&
+        rowFor(`${sub}/inner.md`) === untouched.inner,
+      {
+        root: rowFor(workspace) === untouched.root,
+        other: rowFor(other) === untouched.other,
+        sub: rowFor(sub) === untouched.sub,
+        inner: rowFor(`${sub}/inner.md`) === untouched.inner
+      }
     );
 
     // A folder moves too, children and all.

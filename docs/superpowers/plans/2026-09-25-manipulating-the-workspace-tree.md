@@ -170,3 +170,17 @@ test of the handler, not of the drag.
 
 *The editable name* keeps square corners (the `rounded-sm` came off the editing classes; the
 probe asserts the computed `border-radius` is `0px` while the edit is open).
+
+**Round three: the tree updates what changed, and nothing else.** Every action used to
+rebuild the tree from the root — `setWorkspace`, which replaces every row and re-expands
+what was open, a visible flash of the whole sidebar. Now the host offers
+`refreshFolders(paths)` instead of `reload()`: a change re-reads the one or two folders it
+touched (`parentOf(moved)`, the drop's target, and for a rename the folder an open folder
+was renamed into) and *reconciles* their rows — an entry that is still there keeps its row,
+with its open folders, its listeners and anything a drag is over — while the rest of the
+tree is not looked at at all. A folder that is folded is not even listed: its `loaded` flag
+is dropped so it lists afresh when it opens. `tree-drag.js` holds the result: after a move,
+the rows the move never reached are asserted to be the *same DOM elements*, and a mark left
+on the page (`window.__treeProbeLoaded`) is still there, which a page reload would have
+cleared. The refusals moved to their own probe (`tree-drag-refusals.js`) to keep both
+inside the bridge's five seconds.
