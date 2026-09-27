@@ -228,6 +228,24 @@ elements) unless it says otherwise.
   change — and `source-highlight-caret.js` holds the characters: typing after a click in the
   frontmatter, on a line inside it, and at a character in the middle of a highlighted code
   block.
+- **The editor is a page of A4.** Landed as
+  `docs/superpowers/plans/2026-09-27-the-editor-becomes-a-page.md`, on the user's ask: make
+  editing feel like a printed page. The column was 962 px — 254 mm, **151 characters a
+  line** — and it is a 210 mm sheet with a 25 mm margin all round now, so the words sit in a
+  160 mm column centred on a desk of `base-200` with the page `base-100`, a hairline
+  `base-300` edge and a soft shadow (`.markdown-page` and `.markdown-scroller` in
+  `styles.css`; the root's `w-full max-w-full` became `markdown-page` in
+  `virtual_block_renderer.ts`, which is also what had been lifting the typography plugin's
+  `65ch` cap). The measure is **95 characters a line** — A4's own, long, which is why books
+  use narrower pages; the type size is the lever (18 px ≈ 84, 20 px ≈ 75) if the user wants
+  the book measure. **The page made one fix necessary:** the view keeps its scroll through an
+  edit, which was enough before because a short document was shorter than the pane and the
+  browser clamped the old scroll away — a fixed 297 mm sheet is taller than the pane, so
+  nothing clamps and opening a note from a scrolled one left the reader on the middle of the
+  paper. `markdown_editor.ts: setContent` now opens a document at the top of its own page;
+  `footnote-jump`, `footnote-label-edge` and `undo-run-taken-back` were the three probes that
+  found it, and `test/probes/a4-page.js` holds the page itself: its size, its margin, its
+  centre, its surfaces in both themes, and the measure a reader gets.
 - **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
   *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
   `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which

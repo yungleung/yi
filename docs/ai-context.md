@@ -37,6 +37,14 @@ so the webview cannot be navigated to a dropped path either. A probe that works 
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
 
+The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
+scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
+named in `virtual_block_renderer.ts`). Two consequences worth knowing before you touch it:
+the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
+and a document opens at the top of its own page (`markdown_editor.ts: setContent`) because a
+fixed 297 mm sheet is taller than the pane, so nothing clamps a scroll left over from the
+note before it.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 
