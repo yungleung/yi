@@ -228,6 +228,45 @@ elements) unless it says otherwise.
   change — and `source-highlight-caret.js` holds the characters: typing after a click in the
   frontmatter, on a line inside it, and at a character in the middle of a highlighted code
   block.
+- **The editor is a page of A4.** Landed as
+  `docs/superpowers/plans/2026-09-27-the-editor-becomes-a-page.md`, on the user's ask: make
+  editing feel like a printed page. The column was 962 px — 254 mm, **151 characters a
+  line** — and it is a 210 mm sheet with a 25 mm margin all round now, so the words sit in a
+  160 mm column centred on a desk of `base-200` with the page `base-100`, a hairline
+  `base-300` edge and a soft shadow (`.markdown-page` and `.markdown-scroller` in
+  `styles.css`; the root's `w-full max-w-full` became `markdown-page` in
+  `virtual_block_renderer.ts`, which is also what had been lifting the typography plugin's
+  `65ch` cap). The measure is **95 characters a line** — A4's own, long, which is why books
+  use narrower pages; the type size is the lever (18 px ≈ 84, 20 px ≈ 75) if the user wants
+  the book measure. **The page made one fix necessary:** the view keeps its scroll through an
+  edit, which was enough before because a short document was shorter than the pane and the
+  browser clamped the old scroll away — a fixed 297 mm sheet is taller than the pane, so
+  nothing clamps and opening a note from a scrolled one left the reader on the middle of the
+  paper. `markdown_editor.ts: setContent` now opens a document at the top of its own page;
+  `footnote-jump`, `footnote-label-edge` and `undo-run-taken-back` were the three probes that
+  found it, and `test/probes/a4-page.js` holds the page itself: its size, its margin, its
+  centre, its surfaces in both themes, and the measure a reader gets.
+  **And the page fits the pane** (`markdown_editor.ts: fitPage` sets `--page-scale`, capped
+  at 1, watched by a `ResizeObserver` on the scroller): a pane too narrow for A4 gets a
+  smaller page rather than a sideways scroll, with the sheet, its margin and its type all
+  taking that one scale — measured in a 600 px pane, a 552 px page at 11.13 px type with the
+  margin still 25/210 of the paper and no sideways scroll. The measure stays 95 characters a
+  line at every scale. One probe needed a line changed for it: `table-insert` aimed its caret
+  with a click at 99% of the text's *width*, which skims the last glyph, so a smaller type
+  size put the caret before the final `.`; it names the character now, as `insert-link` does.
+  **And the page's rhythm scales with it** (`.prose`'s `--md-page-scale`): the line height, the
+  paragraph skip, the steps around headings, quotes, tables, code and list items, a table
+  cell's padding, an empty line's height and the spacing the nodes carry themselves. In a
+  600 px pane 24 px of line height becomes 16.7 px and the paragraph skip 8 px becomes 5.6 px,
+  held by `a4-page.js` at `at full size × the scale`. **Two app bugs came out of it, both found
+  by the suite.** A window change re-anchored the caret over a selection the reader had made —
+  Select All then Copy came back empty — so `reanchorCaret` now leaves a non-collapsed
+  selection inside the prose alone (`undo-after-scroll` is the probe that caught it). And
+  `block_sizes.ts` estimated an unmeasured block as `lines × 24px + 8px`, the page's own line
+  height and skip in a second, absolute home: at 57% every estimate was 75% too tall, the
+  document's total height moved as blocks were measured, and an undo clamped a reader at the
+  bottom up a page (5464 px of estimate against 4728 px of truth). The estimate takes the
+  scale now, and a new scale forgets heights measured in the old pixels.
 - **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
   *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
   `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which
@@ -242,6 +281,13 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
+- **Two cost probes outlive the bridge in a narrow window.** `edit-cost.js` and
+  `block-rebuild-cost.js` type into the 323 KB note and are the suite's two longest probes.
+  In a pane narrower than the one `npm run tauri dev` opens with, that note wraps into more
+  lines and the probes no longer finish inside the harness's 5 s budget — measured at a 709 px
+  window: 5020 ms and 5037 ms, and the same on the layout without the A4 page, so it is the
+  window and not the page. The project's own answer to a probe that needs longer is to split it
+  (`docs/ai-context.md`); these two are the ones it now applies to.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older

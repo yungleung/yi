@@ -62,13 +62,13 @@ export class ListItem extends EditableNodeComponent {
     }
 
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex items-start gap-2';
+    wrapper.className = 'markdown-task-row flex items-start';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = checked;
     checkbox.dataset.taskCheckbox = 'true';
-    checkbox.className = 'mt-1 shrink-0';
+    checkbox.className = 'markdown-task-checkbox shrink-0';
     wrapper.appendChild(checkbox);
 
     // The checkbox and the item's text sit in a row; the item's *other* block

@@ -59,6 +59,8 @@ import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
+/** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
+const A4_WIDTH_PX = (210 * 96) / 25.4;
 
 /**
  * The WYSIWYG markdown editor.
@@ -84,6 +86,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly context: EditorContext;
   private readonly findBar: FindBar;
   private readonly find: FindController;
+  /** Keeps the page's scale in step with the width of the pane it is held in. */
+  private readonly pageFitter: ResizeObserver;
+  /** The scale the page is drawn at: A4 until the pane cannot hold it (`fitPage`). */
+  private pageScale = 1;
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
 
@@ -91,9 +97,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     super('div', ['relative', 'flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
 
     this.contentView = document.createElement('div');
-    this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto p-4';
+    this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto';
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
+    // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
+    // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
+    // type are drawn at (`styles.css`), and watching the pane keeps it right when the window
+    // or the workspace tree changes size.
+    this.pageFitter = new ResizeObserver(() => this.fitPage());
+    this.pageFitter.observe(this.contentView);
+    this.fitPage();
     this.context = {
       state: this.state,
       renderer: this.renderer,
@@ -172,12 +185,39 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   /** Loads a document and renders its first window. */
+  /**
+   * Draws the page at the largest scale the pane can hold, never larger than A4.
+   *
+   * What is left of the pane once the desk has its own margin is what the sheet may use.
+   * That margin is read from the stylesheet rather than repeated here, so the two cannot
+   * disagree about how much desk there is.
+   */
+  private fitPage(): void {
+    const desk = parseFloat(getComputedStyle(this.contentView).paddingLeft) || 0;
+    const available = Math.max(0, this.contentView.clientWidth - 2 * desk);
+    // Rounded, so a resize that lands a third of a pixel elsewhere is not a new scale.
+    const scale = Math.round(Math.min(1, available / A4_WIDTH_PX) * 1000) / 1000;
+    if (scale === this.pageScale) {
+      return;
+    }
+    this.pageScale = scale;
+    this.contentView.style.setProperty('--page-scale', String(scale));
+    this.renderer.setPageScale(scale);
+  }
+
   setContent(content: string): void {
     // A new document is a new set of blocks and nodes: whatever was showing
     // its own source is gone, and a range that named it must not fall on
     // whatever of the new document happens to start and end at the same
     // offsets.
     showSourceAt(this.context, null);
+    // A document opens at its own beginning. The view keeps the scroll it has through an
+    // edit, which is right — an edit is not a request to move the page — and that used to
+    // be enough here too, because a short document's content was shorter than the pane and
+    // the browser clamped the old scroll away. The page is a fixed 297 mm now, so nothing
+    // clamps: opening a note from a scrolled one left the reader looking at the middle of
+    // the paper, with the words it holds above the window.
+    this.contentView.scrollTop = 0;
     this.state.loadText(content);
     this.renderer.render();
   }
@@ -362,6 +402,22 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (survived) {
       this.pendingCaretOffset = null;
       ensureCaretRendered();
+      return;
+    }
+    // A reader who has *selected* something is looking at the selection, not at the caret, and
+    // a window change must not throw it away to put a caret back — restoring one is what makes
+    // Select All followed by Copy come back empty when the page re-syncs under it (measured:
+    // the selection a `select_all` had just made was gone 40 ms later, and the copy with it).
+    // The remembered offset is kept, so the caret returns the moment they click or type.
+    const selection = window.getSelection();
+    const selected = proseRoot(this.context);
+    if (
+      selected !== null &&
+      selection !== null &&
+      !selection.isCollapsed &&
+      selection.anchorNode !== null &&
+      selected.contains(selection.anchorNode)
+    ) {
       return;
     }
     const offset = this.pendingCaretOffset ?? (typeof snapshot === 'number' ? snapshot : null);

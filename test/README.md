@@ -72,6 +72,9 @@ app cannot read at all, either way with the webview's clipboard never asked;
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
+page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
+the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
+the whole rhythm coming down with it), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
 

@@ -31,10 +31,19 @@ export const PARAGRAPH_SKIP = 8;
  */
 export const BLOCK_GAP = 0;
 
-/** The height a block would have if it rendered as plain text. */
-export function estimateHeight(block: MarkdownBlock): number {
+/**
+ * The height a block would have if it rendered as plain text, at the scale the page is
+ * drawn at.
+ *
+ * The line height and the skip are the page's own (`styles.css`), so a page drawn smaller
+ * has shorter lines to estimate from. The estimate and the measured heights have to be in
+ * the same pixels: with the estimate left at full size, the document's total height moved as
+ * blocks were measured, and a reader at the very bottom was clamped up a page when an undo
+ * re-windowed the document (measured: 5464px of estimate against 4728px of truth).
+ */
+export function estimateHeight(block: MarkdownBlock, scale = 1): number {
   const lines = Math.max(1, block.text.split('\n').length);
-  return lines * LINE_HEIGHT + PARAGRAPH_SKIP;
+  return (lines * LINE_HEIGHT + PARAGRAPH_SKIP) * scale;
 }
 
 /**
@@ -47,6 +56,8 @@ export function estimateHeight(block: MarkdownBlock): number {
  */
 export class BlockSizes {
   private readonly heights = new Map<string, number>();
+  /** The page's own scale, so an estimate and a measurement are in the same pixels. */
+  private scale = 1;
 
   constructor(private readonly key: (block: MarkdownBlock) => string) {}
 
@@ -55,9 +66,21 @@ export class BlockSizes {
     this.heights.clear();
   }
 
+  /**
+   * The page is drawn at a new scale. Every measured height is in the old scale's pixels, so
+   * none of them is a measurement of what is on the page now.
+   */
+  setScale(scale: number): void {
+    if (scale === this.scale) {
+      return;
+    }
+    this.scale = scale;
+    this.heights.clear();
+  }
+
   /** The block's measured height, or the estimate until it has been measured. */
   heightOf(block: MarkdownBlock): number {
-    return this.heights.get(this.key(block)) ?? estimateHeight(block);
+    return this.heights.get(this.key(block)) ?? estimateHeight(block, this.scale);
   }
 
   /** Remembers a measured height. A block that lays out to nothing is no measurement. */

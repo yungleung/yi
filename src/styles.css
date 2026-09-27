@@ -36,7 +36,7 @@
 }
 
 .prose-tight h1 {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--md-space-block);
 }
 
 .prose-tight h2 {
@@ -48,8 +48,8 @@
 .prose-tight h4,
 .prose-tight h5,
 .prose-tight h6 {
-  margin-top: 1.25rem;
-  margin-bottom: 0.375rem;
+  margin-top: var(--md-space-heading-tight-before);
+  margin-bottom: var(--md-space-heading-tight-after);
 }
 
 .prose-tight ul,
@@ -61,8 +61,8 @@
 .prose-tight blockquote,
 .prose-tight table,
 .prose-tight pre {
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-top: var(--md-space-block);
+  margin-bottom: var(--md-space-block);
 }
 
 /* Remove paragraph margins inside list items to avoid double spacing */
@@ -73,8 +73,8 @@
 /* Slightly tighter spacing between list items */
 .prose-tight ul > li,
 .prose-tight ol > li {
-  margin-top: 0.25rem; /* ~4px */
-  margin-bottom: 0.25rem;
+  margin-top: var(--md-space-item);
+  margin-bottom: var(--md-space-item);
 }
 
 /* Slightly reduce blockquote spacing */
@@ -82,15 +82,109 @@
   margin: 0;
 }
 
+/* The spacing the nodes carry themselves, in the page's own scale — a description list, the
+   blank line around a display formula or a revealed source, a footnote's line under the text
+   it belongs to, a task item's checkbox beside its words. */
+.markdown-description-list {
+  margin-block: var(--md-space-block);
+}
+
+.markdown-description-term {
+  margin-top: var(--md-space-paragraph);
+}
+
+.markdown-description-details {
+  margin-left: calc(1rem * var(--md-page-scale));
+  margin-bottom: var(--md-space-paragraph);
+}
+
+.markdown-display-math,
+.markdown-source-text {
+  margin-block: calc(1rem * var(--md-page-scale));
+}
+
+/* A note is set smaller than the text that carries its marker, and its label keeps a
+   paragraph skip from the note's own words. */
+.markdown-footnote {
+  font-size: calc(0.875rem * var(--md-page-scale));
+  gap: var(--md-space-paragraph);
+}
+
+.markdown-footnote-label {
+  margin-right: var(--md-space-paragraph);
+}
+
+.markdown-task-row {
+  gap: var(--md-space-paragraph);
+}
+
+.markdown-task-checkbox {
+  margin-top: var(--md-space-item);
+}
+
+/*
+ * The editor is a page of A4 on a desk.
+ *
+ * The words sit on paper: 210 mm of sheet with a 25 mm margin all round — the printed A4
+ * spec, which leaves a 160 mm text column — centred in the pane and standing on the
+ * theme's own surfaces: `base-100` for the paper, `base-200` for the desk around it. That
+ * is what makes the page flip with the theme instead of being a white rectangle in the
+ * dark. A printed page also keeps its size, so a pane narrower than the sheet scrolls
+ * rather than shrinking the paper.
+ *
+ * `max-width: none` is doing real work: the typography plugin caps `.prose` at `65ch`, and
+ * the old `w-full max-w-full` on the root was what lifted that cap.
+ */
+.markdown-scroller {
+  padding: 1.5rem;
+  background-color: var(--color-base-200);
+  /* How big the page is drawn: 1 when the pane can hold an A4 sheet, less when it cannot,
+     set by `markdown_editor.ts: fitPage`. */
+  --page-scale: 1;
+}
+
+.markdown-page {
+  box-sizing: border-box;
+  width: calc(210mm * var(--page-scale));
+  max-width: none;
+  min-height: calc(297mm * var(--page-scale));
+  margin-inline: auto;
+  padding: calc(25mm * var(--page-scale));
+  border: 1px solid var(--color-base-300);
+  background-color: var(--color-base-100);
+  box-shadow:
+    0 1px 2px color-mix(in oklab, var(--color-base-content) 6%, transparent),
+    0 12px 32px color-mix(in oklab, var(--color-base-content) 10%, transparent);
+}
+
+/* The words take the page's own measure, so the sheet's scale is theirs too — and the
+   `.prose` in the selector is doing work: the typography plugin sets `font-size: 1rem` on
+   `.prose` itself, which is what the rest of its `em` sizes resolve against. */
+.prose.markdown-page {
+  font-size: calc(1rem * var(--page-scale));
+  line-height: var(--md-line);
+}
+
 .prose {
   font-family: 'Crimson', serif;
   /* Positioning host for the locally-anchored caret. */
   position: relative;
   /* Print-like vertical rhythm: spacing comes from the content's own margins,
-     which are already part of each block's measured height. */
-  --md-space-paragraph: 0.5rem; /* 8px */
-  --md-space-heading-before: 1.5rem; /* 24px */
-  --md-space-heading-after: 0.5rem; /* 8px */
+     which are already part of each block's measured height.
+
+     Each step is a fraction of the page's own type size, and every one of them is written in
+     terms of `--md-page-scale` — the scale the sheet is drawn at (`markdown_editor.ts:
+     fitPage`) — so a page drawn at half size has half the space between its lines and around
+     its headings, not the same space around smaller words. */
+  --md-page-scale: var(--page-scale, 1);
+  --md-line: calc(1.5rem * var(--md-page-scale));
+  --md-space-paragraph: calc(0.5rem * var(--md-page-scale));
+  --md-space-heading-before: calc(1.5rem * var(--md-page-scale));
+  --md-space-heading-after: calc(0.5rem * var(--md-page-scale));
+  --md-space-heading-tight-before: calc(1.25rem * var(--md-page-scale));
+  --md-space-heading-tight-after: calc(0.375rem * var(--md-page-scale));
+  --md-space-block: calc(0.75rem * var(--md-page-scale));
+  --md-space-item: calc(0.25rem * var(--md-page-scale));
 }
 
 html,
@@ -214,7 +308,7 @@ body {
 .prose table.markdown-table th,
 .prose table.markdown-table td {
   border: 1px solid var(--color-base-300, color-mix(in oklab, currentColor 22%, transparent));
-  padding: 0.25rem 0.6rem;
+  padding: var(--md-space-item) calc(0.6rem * var(--md-page-scale));
   vertical-align: top;
 }
 
@@ -262,7 +356,7 @@ body {
    has been laid out. */
 .markdown-block {
   content-visibility: auto;
-  contain-intrinsic-size: auto 60px;
+  contain-intrinsic-size: auto calc(60px * var(--md-page-scale));
 }
 
 /* Blocks carry no margin of their own: the spacing belongs to the content and
@@ -273,12 +367,12 @@ body {
 
 /* A blank line the author added renders as one empty paragraph line. */
 .markdown-block.markdown-blank {
-  contain-intrinsic-size: auto 32px;
+  contain-intrinsic-size: auto calc(32px * var(--md-page-scale));
 }
 
 /* An empty paragraph is a line the caret can live on: one line box tall. */
 .prose-tight p.markdown-empty-line {
-  min-height: 1.5rem;
+  min-height: var(--md-line);
   margin-top: 0;
   margin-bottom: var(--md-space-paragraph);
 }

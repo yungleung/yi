@@ -58,6 +58,21 @@ check('a remembered height wins over the estimate', sizes.heightOf(one), 100);
 sizes.remember(two, 0);
 check('a height of nothing is not remembered', sizes.heightOf(two), estimate('b\nc\n'));
 
+// The page is drawn at a scale (`markdown_editor.ts: fitPage`), and the estimate is made of
+// the page's own line height and paragraph skip — so it takes that scale, or the document's
+// total height moves as blocks are measured and a reader at the bottom is clamped up a page.
+const halved = new BlockSizes((candidate) => candidate.text);
+halved.setScale(0.5);
+check('a page drawn at half size estimates half the height', halved.heightOf(two), estimate('b\nc\n') / 2);
+halved.remember(two, 100);
+check('a height measured on that page is its own', halved.heightOf(two), 100);
+halved.setScale(0.25);
+check(
+  'and a height measured before the scale changed is not a measurement of it',
+  halved.heightOf(two),
+  estimate('b\nc\n') / 4
+);
+
 check('the document is its blocks', sizes.totalHeight(blocks), 100 + 80 + 32);
 check('one block is one block', sizes.totalHeight([one]), 100);
 check('no blocks is no height', sizes.totalHeight([]), 0);
