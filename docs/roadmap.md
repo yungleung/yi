@@ -246,6 +246,14 @@ elements) unless it says otherwise.
   `footnote-jump`, `footnote-label-edge` and `undo-run-taken-back` were the three probes that
   found it, and `test/probes/a4-page.js` holds the page itself: its size, its margin, its
   centre, its surfaces in both themes, and the measure a reader gets.
+  **And the page fits the pane** (`markdown_editor.ts: fitPage` sets `--page-scale`, capped
+  at 1, watched by a `ResizeObserver` on the scroller): a pane too narrow for A4 gets a
+  smaller page rather than a sideways scroll, with the sheet, its margin and its type all
+  taking that one scale — measured in a 600 px pane, a 552 px page at 11.13 px type with the
+  margin still 25/210 of the paper and no sideways scroll. The measure stays 95 characters a
+  line at every scale. One probe needed a line changed for it: `table-insert` aimed its caret
+  with a click at 99% of the text's *width*, which skims the last glyph, so a smaller type
+  size put the caret before the final `.`; it names the character now, as `insert-link` does.
 - **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
   *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
   `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which
@@ -260,6 +268,13 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
+- **Two cost probes outlive the bridge in a narrow window.** `edit-cost.js` and
+  `block-rebuild-cost.js` type into the 323 KB note and are the suite's two longest probes.
+  In a pane narrower than the one `npm run tauri dev` opens with, that note wraps into more
+  lines and the probes no longer finish inside the harness's 5 s budget — measured at a 709 px
+  window: 5020 ms and 5037 ms, and the same on the layout without the A4 page, so it is the
+  window and not the page. The project's own answer to a probe that needs longer is to split it
+  (`docs/ai-context.md`); these two are the ones it now applies to.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older

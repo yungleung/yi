@@ -19,9 +19,10 @@ lever if the user wants the book measure instead.
 ## What this does
 
 1. **The page.** `.markdown-page` on the prose root: `box-sizing: border-box`,
-   `width: 210mm`, `max-width: none` (the typography plugin caps `.prose` at `65ch`, and the
-   old `w-full max-w-full` was what lifted that cap), `min-height: 297mm` so a short note is
-   still a page, `padding: 25mm` — the printed margin, all four sides — and
+   `width: calc(210mm * var(--page-scale))`, `max-width: none` (the typography plugin caps
+   `.prose` at `65ch`, and the old `w-full max-w-full` was what lifted that cap),
+   `min-height: calc(297mm * var(--page-scale))` so a short note is still a page,
+   `padding: calc(25mm * var(--page-scale))` — the printed margin, all four sides — and
    `margin-inline: auto`. The root's class list in `virtual_block_renderer.ts` swaps
    `w-full max-w-full` for `markdown-page`.
 2. **The desk.** `.markdown-scroller` takes the desk: `padding: 1.5rem` (the space around
@@ -48,6 +49,27 @@ lever if the user wants the book measure instead.
 - [x] Task 3: the scroll on open, and the suite green again.
 - [x] Task 4: acceptance and docs — `npx tsc --noEmit`, `npm run check`,
       `npm run probe:all`, `docs/architecture.md`, `docs/roadmap.md`, `test/README.md`.
+
+## Second round, on the user's review
+
+The first version held the sheet at its true A4 size and let a narrower pane scroll sideways.
+The user asked for the other thing — *"Scale the paper size and font size"* — so the page now
+fits the pane it is in: `markdown_editor.ts: fitPage` sets `--page-scale` to what is left of
+the pane once the desk has its margin, capped at 1, and a `ResizeObserver` on the scroller
+keeps it right when the window or the workspace tree changes size. The sheet, its margin and
+its type all take that one scale (`.prose.markdown-page { font-size: calc(1rem *
+var(--page-scale)) }` — the `.prose` in the selector is doing work, because the typography
+plugin sets `font-size: 1rem` on `.prose` itself and the rest of its `em` sizes hang off it).
+Measured in a 600 px pane: a 552 px page with a font of 11.13 px, the margin still 25/210 of
+the paper, and no sideways scroll. The measure stays 95 characters a line at every scale,
+because the scale is uniform.
+
+`test/probes/table-insert.js` needed one line changed for this, and it is worth knowing why:
+it placed the caret with a click at 99% of the text's *width*, which skims the last glyph —
+with the type scaled down, the same fraction lands a fraction of a pixel earlier, and the
+caret went before the final `.` instead of after it. It now aims at the character
+(`range` at the end of the leaf, click its rect), the way `insert-link.js` does, so no type
+size can decide where it lands. It passes on both layouts.
 
 ## Handoff
 
