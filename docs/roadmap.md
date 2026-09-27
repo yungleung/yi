@@ -228,6 +228,17 @@ elements) unless it says otherwise.
   change — and `source-highlight-caret.js` holds the characters: typing after a click in the
   frontmatter, on a line inside it, and at a character in the middle of a highlighted code
   block.
+- **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
+  *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
+  `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which
+  resolves the nearest block edge: clicking on the `id` key put the caret at the document's
+  first character (typing `I` gave `I---`), and editing the middle of a line meant arrowing
+  there. It is `nodes/frontmatter.ts` now — a node component like `CodeBlock`, a `pre`
+  holding the markup and tagged `data-text-from="0"` because it *is* the block's text — so a
+  click lands on the character clicked and a keystroke writes there.
+  `test/probes/source-highlight-caret.js` holds it and fails without the change: a click on
+  the first key, a click on a later line, and the same click in a fenced code block, which
+  always worked.
 
 ## Open, in the order to take them
 
