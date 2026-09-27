@@ -91,7 +91,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     super('div', ['relative', 'flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
 
     this.contentView = document.createElement('div');
-    this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto p-4';
+    this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto';
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     this.context = {
@@ -178,6 +178,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // whatever of the new document happens to start and end at the same
     // offsets.
     showSourceAt(this.context, null);
+    // A document opens at its own beginning. The view keeps the scroll it has through an
+    // edit, which is right — an edit is not a request to move the page — and that used to
+    // be enough here too, because a short document's content was shorter than the pane and
+    // the browser clamped the old scroll away. The page is a fixed 297 mm now, so nothing
+    // clamps: opening a note from a scrolled one left the reader looking at the middle of
+    // the paper, with the words it holds above the window.
+    this.contentView.scrollTop = 0;
     this.state.loadText(content);
     this.renderer.render();
   }
