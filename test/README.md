@@ -66,7 +66,8 @@ paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
 page where it was), links (`insert-link` — the button, the clipboard destination and the
-caret in the title; `insert-link-clipboard` — the two ways that clipboard read can fail;
+caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
+app cannot read at all, either way with the webview's clipboard never asked;
 `link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).

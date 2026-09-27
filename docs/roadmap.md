@@ -149,7 +149,14 @@ elements) unless it says otherwise.
   the app rather than the webview (`src-tauri/src/clipboard.rs`, `src/api/clipboard.ts`);
   WebKit answered a scripted read with its own paste confirmation, which a click that
   only meant "fill the URL in" should not raise. `insert-link-clipboard.js` covers the
-  read's three outcomes.
+  read's three outcomes. The read itself then became a plugin, on the user's ask
+  (`docs/superpowers/plans/2026-09-27-the-clipboard-plugin.md`): the hand-written module
+  read the general pasteboard on macOS only and answered `None` everywhere else — where
+  the frontend's WebKit fallback put the very confirmation back. It is
+  `tauri-plugin-clipboard-manager` now, which reads natively on every platform the app
+  ships on (on macOS, through the same `NSPasteboard`), so the app owns no `unsafe`
+  binding and there is no fallback left; the probes stand in for the plugin's `read_text`
+  command, and both check the webview's clipboard is never asked.
 - **The formatting buttons drew nothing.** Landed as
   `docs/superpowers/plans/2026-09-25-the-format-buttons-stale-block.md`. Pressing Bold (or
   Italic, Strikethrough, Inline code) wrote the markers into the text and left the view as

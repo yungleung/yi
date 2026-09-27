@@ -32,6 +32,7 @@
     },
     "os:default",
     "dialog:default",
+    "clipboard-manager:allow-read-text",
     "core:webview:allow-create-webview-window",
     "core:window:allow-set-focus",
     "core:window:allow-start-dragging",

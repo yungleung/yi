@@ -13,41 +13,25 @@
  * destination and its author types one.
  *
  * May import: the link's own shape (`syntax/link_edits.ts`), the app's clipboard read
- * (`api/clipboard`) and the editing context. Upholds: the document text is the only
- * source of truth — one `applyEdit` writes the link, and the caret is placed by offset
- * from the text the edit leaves behind.
+ * (`api/clipboard`), which the plugin answers on every platform the app runs on, and the
+ * editing context. Upholds: the document text is the only source of truth — one
+ * `applyEdit` writes the link, and the caret is placed by offset from the text the edit
+ * leaves behind.
  */
 
 import { readClipboardText } from '../../../api/clipboard';
 import { clipboardDestination, linkInsertion } from '../syntax/link_edits';
 import { applyEdit, editorSelection, rangeOffsets, type EditorContext } from './context';
 
-/** The clipboard's text: the app's own read, with the webview's as the fallback. */
-async function clipboardText(): Promise<string | null> {
-  try {
-    // The app's own read. `null` is an answer — a clipboard holding no text — and it is
-    // final: asking the webview next would put its paste confirmation in front of the
-    // reader for nothing.
-    return await readClipboardText();
-  } catch {
-    // No such command in this build, or a platform without a native read.
-  }
-  try {
-    const text = await navigator.clipboard?.readText();
-    return typeof text === 'string' ? text : null;
-  } catch {
-    // Refused: a permission the webview did not get, or a clipboard the platform keeps
-    // to itself. The link is still made; its destination is left to the author.
-    return null;
-  }
-}
-
 /**
  * Writes a link at the caret, or around the selection. Returns false when there is no
  * caret to write at (the document has no selection the editor can map).
  */
 export async function insertLink(context: EditorContext): Promise<boolean> {
-  const clipboard = await clipboardText();
+  // The app's own read. `null` is an answer — a clipboard holding no text, or one the app
+  // may not read — and it is final: there is no webview fallback to ask, whose paste
+  // confirmation the reader never asked for.
+  const clipboard = await readClipboardText();
   const url = clipboard === null ? null : clipboardDestination(clipboard);
   const range = editorSelection(context, true);
   const offsets = range ? rangeOffsets(context, range) : null;

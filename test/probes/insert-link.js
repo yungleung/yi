@@ -2,10 +2,11 @@
  * The Link button: a link at the caret, its destination from the clipboard, and the
  * caret left in the title part to be typed into.
  *
- * The one seam a probe cannot reach is the system clipboard. The app reads it natively
- * (`src-tauri/src/clipboard.rs`, so the webview never asks the reader to confirm a paste
- * they did not make), and a probe *stands in* for that read the way `footnote-preview.js`
- * stands in for the app's opener: it answers the `read_clipboard_text` command itself.
+ * The one seam a probe cannot reach is the system clipboard. The app reads it natively —
+ * `tauri-plugin-clipboard-manager`, so the webview never asks the reader to confirm a
+ * paste they did not make — and a probe *stands in* for that read the way
+ * `footnote-preview.js` stands in for the app's opener: it answers the plugin's
+ * `plugin:clipboard-manager|read_text` command itself.
  *
  * @covers src/ui/toolbar/link_toolbar.ts, src/ui/markdown/editing/links.ts,
  *   src/ui/markdown/syntax/link_edits.ts
@@ -21,8 +22,9 @@
     );
   /**
    * Answers the app's own clipboard read with `text`, and hands back the way to put the
-   * page's `fetch` back. The app asks the backend for the clipboard (`read_clipboard_text`)
-   * and the answer travels as the reply's JSON body, which is what this returns.
+   * page's `fetch` back. The app asks the clipboard plugin (its command travels in the
+   * IPC url as `plugin:clipboard-manager|read_text`) and the answer arrives as the reply's
+   * JSON body, which is what this returns.
    */
   const stubClipboard = (text) => {
     const real = window.fetch;
@@ -30,7 +32,7 @@
       const url = decodeURIComponent(
         typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
       );
-      if (!url.includes('read_clipboard_text')) {
+      if (!url.includes('plugin:clipboard-manager|read_text')) {
         return await real.call(window, input, init);
       }
       return new Response(JSON.stringify(text), {

@@ -1,4 +1,3 @@
-mod clipboard;
 mod menu;
 mod files;
 mod greeting;
@@ -13,6 +12,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init());
 
     #[cfg(debug_assertions)]
@@ -26,7 +26,6 @@ pub fn run() {
             menu::set_as_main_menu(app)
         })
         .invoke_handler(tauri::generate_handler![
-            clipboard::read_clipboard_text,
             files::create_entry,
             files::delete_entry,
             files::move_entry,
