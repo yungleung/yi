@@ -9,9 +9,10 @@
  * towards the window's width fails rather than merely looking wrong.
  *
  * A pane too narrow to hold the sheet gets a *smaller page* rather than a sideways scroll:
- * the paper, its margin and its type all take one scale (`markdown_editor.ts: fitPage`, the
- * `--page-scale` the page is drawn with). So the page is A4 while A4 fits, and always fits
- * the pane it is in.
+ * the paper, its margin, its type and its whole vertical rhythm all take one scale
+ * (`markdown_editor.ts: fitPage`, the `--page-scale` the page is drawn with). So the page is
+ * A4 while A4 fits, always fits the pane it is in, and its lines keep their spacing relative
+ * to the words rather than to the window.
  *
  * @covers src/styles.css, src/ui/markdown/virtual_block_renderer.ts
  */
@@ -33,6 +34,16 @@
     '# A heading',
     '',
     'The quick brown fox jumps over the lazy dog, and then it does it again so the line is long enough to measure how many characters a reader actually gets per line.',
+    '',
+    '> A quote, for the space around a block.',
+    '',
+    '| one | two |',
+    '| --- | --- |',
+    '| a | b |',
+    '',
+    'A sentence with a note.[^1]',
+    '',
+    '[^1]: The note itself.',
     '',
     '```ts',
     'const a = 1;',
@@ -92,6 +103,21 @@
     };
   };
 
+  /** The page's rhythm: the line box, and the steps between its blocks. */
+  const rhythm = () => {
+    const root = sheet();
+    const paragraph = getComputedStyle(root.querySelector('p'));
+    const note = root.querySelector('.markdown-footnote');
+    return {
+      lineHeight: parseFloat(paragraph.lineHeight),
+      paragraphGap: parseFloat(paragraph.marginBottom),
+      headingGap: parseFloat(getComputedStyle(root.querySelector('h1')).marginBottom),
+      blockGap: parseFloat(getComputedStyle(root.querySelector('blockquote')).marginTop),
+      cellPadding: parseFloat(getComputedStyle(root.querySelector('.markdown-table th')).paddingTop),
+      noteType: note === null ? null : parseFloat(getComputedStyle(note).fontSize)
+    };
+  };
+
   const themeFacts = {};
   try {
     await setPane(1000);
@@ -101,6 +127,7 @@
       const style = getComputedStyle(root);
       themeFacts[theme] = {
         page: page(),
+        rhythm: rhythm(),
         deskBackground: getComputedStyle(desk()).backgroundColor,
         base100: resolveColour('var(--color-base-100)'),
         base200: resolveColour('var(--color-base-200)')
@@ -212,6 +239,7 @@
   await setPane(600);
   const scroller = desk();
   const narrow = page();
+  const narrowRhythm = rhythm();
   const narrowFont = parseFloat(getComputedStyle(sheet()).fontSize);
   const available = 600 - 2 * parseFloat(getComputedStyle(scroller).paddingLeft);
   const scale = narrow.width / A4_WIDTH_PX;
@@ -244,12 +272,34 @@
       scale: Math.round(scale * 1000) / 1000
     }
   );
+  // The rhythm is the page's, not the window's: every step of it comes down with the type.
+  const wideRhythm = themeFacts.winter.rhythm;
+  const steps = Object.keys(wideRhythm);
+  const unscaled = steps.filter(
+    (step) =>
+      wideRhythm[step] !== null &&
+      Math.abs(narrowRhythm[step] - wideRhythm[step] * scale) > 0.6
+  );
+  check(
+    'and the page`s whole rhythm comes down with it',
+    scale < 0.9 && unscaled.length === 0,
+    {
+      scale: Math.round(scale * 1000) / 1000,
+      unscaled: unscaled.map((step) => ({
+        step,
+        atFullSize: wideRhythm[step],
+        now: narrowRhythm[step],
+        expected: Math.round(wideRhythm[step] * scale * 100) / 100
+      }))
+    }
+  );
   await releasePane();
 
   return {
     page: winter.page,
     desk: { background: winter.deskBackground, padding: deskStyle.padding },
     measure,
+    rhythm: { atFullSize: wideRhythm, narrow: narrowRhythm },
     checks,
     failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)
   };

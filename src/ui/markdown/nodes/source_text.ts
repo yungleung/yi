@@ -26,7 +26,7 @@ export class SourceText extends EditableNodeComponent {
       'sourceText',
       node as unknown as AstNode,
       document.createElement('pre'),
-      'markdown-source-text my-4 overflow-x-auto'
+      'markdown-source-text overflow-x-auto'
     );
     this.element.dataset.textFrom = '0';
     this.element.innerHTML = highlightLatex(node.text);

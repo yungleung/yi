@@ -131,7 +131,7 @@ function formulaRange(source: string): { start: number; end: number } {
  */
 export class DisplayMath extends EditableNodeComponent {
   constructor(node: MathNode) {
-    super('math', node, document.createElement('div'), 'my-4 overflow-x-auto');
+    super('math', node, document.createElement('div'), 'markdown-display-math overflow-x-auto');
     this.element.classList.add('markdown-math-placeholder');
     this.element.dataset.math = node.value;
     this.element.dataset.display = 'true';

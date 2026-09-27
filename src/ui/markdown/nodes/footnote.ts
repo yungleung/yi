@@ -31,7 +31,7 @@ export class FootnoteDefinition extends EditableNodeComponent {
       'footnoteDefinition',
       node,
       document.createElement('div'),
-      'markdown-footnote text-sm flex items-start gap-2'
+      'markdown-footnote flex items-start'
     );
 
     this.element.append(new FootnoteLabel(node).element, renderFootnoteBody(node));
@@ -94,13 +94,13 @@ function labelElement(shape: {
 }): HTMLElement {
   if (!shape.shown || shape.start === undefined) {
     const anchor = document.createElement('a');
-    anchor.className = 'mr-2 font-semibold inline-block align-top';
+    anchor.className = 'markdown-footnote-label font-semibold inline-block align-top';
     anchor.textContent = `[${shape.id}]`;
     return anchor;
   }
   const marker = markerShape(shape.label);
   const span = document.createElement('span');
-  span.className = `markdown-source-view ${SOURCE_CLASS} mr-2 inline-block align-top`;
+  span.className = `markdown-source-view ${SOURCE_CLASS} markdown-footnote-label inline-block align-top`;
   span.textContent = shownSourceText() ?? `[^${shape.label}]`;
   // Block-relative, like every source view: the caret mapping adds the block's start.
   span.dataset.sourceFrom = String(shape.start);

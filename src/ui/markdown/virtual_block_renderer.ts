@@ -94,6 +94,16 @@ export class VirtualBlockRenderer {
     this.syncWindow(true);
   }
 
+  /**
+   * The page is drawn at a new scale: the height an unmeasured block is estimated at is a
+   * number of the page's own lines (`block_sizes.ts`), so it moves with the scale, and every
+   * height measured at the old one is stale.
+   */
+  setPageScale(scale: number): void {
+    this.sizes.setScale(scale);
+    this.refresh();
+  }
+
   /** Rebuilds a single block in place (used when an edit re-renders a block). */
   renderBlock(lineStart: number): void {
     const block = this.state.getBlockAtLine(lineStart);
@@ -339,7 +349,9 @@ export class VirtualBlockRenderer {
 
   private createRoot(): HTMLElement {
     const root = document.createElement('div');
-    root.className = 'prose prose-slate leading-6 prose-tight markdown-page outline-none';
+    // The page carries its own line height (`styles.css: .prose.markdown-page`), scaled with
+    // the rest of its rhythm, so the fixed `leading-6` is not wanted here.
+    root.className = 'prose prose-slate prose-tight markdown-page outline-none';
     root.tabIndex = 0;
     return root;
   }
