@@ -82,6 +82,38 @@
   margin: 0;
 }
 
+/*
+ * The editor is a page of A4 on a desk.
+ *
+ * The words sit on paper: 210 mm of sheet with a 25 mm margin all round — the printed A4
+ * spec, which leaves a 160 mm text column — centred in the pane and standing on the
+ * theme's own surfaces: `base-100` for the paper, `base-200` for the desk around it. That
+ * is what makes the page flip with the theme instead of being a white rectangle in the
+ * dark. A printed page also keeps its size, so a pane narrower than the sheet scrolls
+ * rather than shrinking the paper.
+ *
+ * `max-width: none` is doing real work: the typography plugin caps `.prose` at `65ch`, and
+ * the old `w-full max-w-full` on the root was what lifted that cap.
+ */
+.markdown-scroller {
+  padding: 1.5rem;
+  background-color: var(--color-base-200);
+}
+
+.markdown-page {
+  box-sizing: border-box;
+  width: 210mm;
+  max-width: none;
+  min-height: 297mm;
+  margin-inline: auto;
+  padding: 25mm;
+  border: 1px solid var(--color-base-300);
+  background-color: var(--color-base-100);
+  box-shadow:
+    0 1px 2px color-mix(in oklab, var(--color-base-content) 6%, transparent),
+    0 12px 32px color-mix(in oklab, var(--color-base-content) 10%, transparent);
+}
+
 .prose {
   font-family: 'Crimson', serif;
   /* Positioning host for the locally-anchored caret. */

@@ -339,7 +339,7 @@ export class VirtualBlockRenderer {
 
   private createRoot(): HTMLElement {
     const root = document.createElement('div');
-    root.className = 'prose prose-slate leading-6 prose-tight w-full max-w-full outline-none';
+    root.className = 'prose prose-slate leading-6 prose-tight markdown-page outline-none';
     root.tabIndex = 0;
     return root;
   }
