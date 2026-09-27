@@ -8,8 +8,10 @@
  * the exercise — the measure a reader gets — held in a range, so a column that drifts back
  * towards the window's width fails rather than merely looking wrong.
  *
- * The sheet keeps its true size in a narrow pane and the pane scrolls sideways; that is the
- * page metaphor, not an accident, so nothing here holds the page to the window.
+ * A pane too narrow to hold the sheet gets a *smaller page* rather than a sideways scroll:
+ * the paper, its margin and its type all take one scale (`markdown_editor.ts: fitPage`, the
+ * `--page-scale` the page is drawn with). So the page is A4 while A4 fits, and always fits
+ * the pane it is in.
  *
  * @covers src/styles.css, src/ui/markdown/virtual_block_renderer.ts
  */
@@ -45,6 +47,21 @@
   const rect = (element) => element.getBoundingClientRect();
   const mm = (value) => Math.round((value / MM) * 10) / 10;
   /**
+   * Holds the pane at a width of its own, so what this measures is the page rather than
+   * whatever size the window happens to be. The page fits the pane it is given.
+   */
+  const setPane = async (width) => {
+    const scroller = desk();
+    scroller.style.flex = 'none';
+    scroller.style.width = `${width}px`;
+    await t.sleep(250);
+  };
+  const releasePane = async () => {
+    desk().style.flex = '';
+    desk().style.width = '';
+    await t.sleep(200);
+  };
+  /**
    * What a background declaration actually computes to. A theme token and the surface that
    * uses it are the same colour written two ways (`oklch(100% 0 0)` and `oklch(1 0 0)`), so
    * the token is put through the engine before the two are compared.
@@ -77,6 +94,7 @@
 
   const themeFacts = {};
   try {
+    await setPane(1000);
     for (const theme of ['winter', 'dim']) {
       root.setAttribute('data-theme', theme);
       await t.sleep(60);
@@ -188,6 +206,45 @@
     typed === document_.replace(paragraphText, typedInto),
     typed.slice(0, 60)
   );
+
+  // 2. A pane too narrow for the sheet: the page shrinks to fit, and so do its margin and
+  // its type — nothing scrolls sideways.
+  await setPane(600);
+  const scroller = desk();
+  const narrow = page();
+  const narrowFont = parseFloat(getComputedStyle(sheet()).fontSize);
+  const available = 600 - 2 * parseFloat(getComputedStyle(scroller).paddingLeft);
+  const scale = narrow.width / A4_WIDTH_PX;
+  check(
+    'a pane too narrow for the sheet scales the page instead of scrolling it',
+    narrow.width <= available + 1 && scroller.scrollWidth <= scroller.clientWidth + 1,
+    {
+      width: narrow.width,
+      available: Math.round(available),
+      scrollWidth: scroller.scrollWidth,
+      clientWidth: scroller.clientWidth
+    }
+  );
+  check(
+    'and the paper keeps its shape: the margin is the same fraction of it',
+    Math.abs(narrow.paddingPx[0] / narrow.width - 25 / 210) <= 0.002,
+    {
+      padding: narrow.paddingPx[0],
+      width: narrow.width,
+      ratio: Number((narrow.paddingPx[0] / narrow.width).toFixed(4)),
+      expected: Number((25 / 210).toFixed(4))
+    }
+  );
+  check(
+    'and the words take that scale too',
+    Math.abs(narrowFont - 16 * scale) <= 0.3,
+    {
+      fontSize: narrowFont,
+      expected: Math.round(16 * scale * 100) / 100,
+      scale: Math.round(scale * 1000) / 1000
+    }
+  );
+  await releasePane();
 
   return {
     page: winter.page,

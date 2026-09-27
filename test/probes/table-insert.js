@@ -53,7 +53,18 @@
   // Inside a paragraph: the paragraph is split, and the table keeps a blank line
   // on the side that would otherwise merge into the text.
   await t.load(doc);
-  await t.click(t.textNodesIn(t.blocks()[0]).pop().parentElement, 0.99);
+  // The caret goes after the paragraph's last character, aimed at as a character: a click at a
+  // fraction of the text's width skims the last glyph, and which side of it the caret lands on
+  // depends on the type size (`a4-page.js` scales the page), so the position is named instead.
+  const lastLine = t.textNodesIn(t.blocks()[0]).pop();
+  const endRange = document.createRange();
+  endRange.setStart(lastLine, lastLine.data.length);
+  endRange.collapse(true);
+  const endRect = endRange.getBoundingClientRect();
+  lastLine.parentElement.dispatchEvent(
+    new MouseEvent('click', { bubbles: true, clientX: endRect.left + 1, clientY: endRect.top + 2 })
+  );
+  await t.sleep(200);
   check('the command ran again', insert(2, 3), true);
   await t.sleep(400);
   check(

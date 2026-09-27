@@ -59,6 +59,8 @@ import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 
+/** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
+const A4_WIDTH_PX = (210 * 96) / 25.4;
 
 /**
  * The WYSIWYG markdown editor.
@@ -84,6 +86,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly context: EditorContext;
   private readonly findBar: FindBar;
   private readonly find: FindController;
+  /** Keeps the page's scale in step with the width of the pane it is held in. */
+  private readonly pageFitter: ResizeObserver;
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
 
@@ -93,6 +97,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView = document.createElement('div');
     this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto';
     this.appendChild(this.contentView);
+    // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
+    // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
+    // type are drawn at (`styles.css`), and watching the pane keeps it right when the window
+    // or the workspace tree changes size.
+    this.pageFitter = new ResizeObserver(() => this.fitPage());
+    this.pageFitter.observe(this.contentView);
+    this.fitPage();
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     this.context = {
       state: this.state,
@@ -172,6 +183,22 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   /** Loads a document and renders its first window. */
+  /**
+   * Draws the page at the largest scale the pane can hold, never larger than A4.
+   *
+   * What is left of the pane once the desk has its own margin is what the sheet may use.
+   * That margin is read from the stylesheet rather than repeated here, so the two cannot
+   * disagree about how much desk there is.
+   */
+  private fitPage(): void {
+    const desk = parseFloat(getComputedStyle(this.contentView).paddingLeft) || 0;
+    const available = Math.max(0, this.contentView.clientWidth - 2 * desk);
+    this.contentView.style.setProperty(
+      '--page-scale',
+      String(Math.min(1, available / A4_WIDTH_PX))
+    );
+  }
+
   setContent(content: string): void {
     // A new document is a new set of blocks and nodes: whatever was showing
     // its own source is gone, and a range that named it must not fall on
