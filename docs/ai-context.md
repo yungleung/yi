@@ -45,9 +45,13 @@ narrow window gets a smaller page rather than a sideways scroll). Three conseque
 knowing before you touch it:
 the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
 the page's type size is `calc(1rem * var(--page-scale))` on `.prose.markdown-page` (the
-`.prose` in that selector is what beats the plugin's own `font-size: 1rem`), and a document
-opens at the top of its own page (`setContent`) because a fixed sheet is taller than the pane,
-so nothing clamps a scroll left over from the note before it.
+`.prose` in that selector is what beats the plugin's own `font-size: 1rem`), the whole
+vertical rhythm is written in the same scale (`.prose`'s `--md-page-scale`, which
+`block_sizes.ts` also reads: the estimator of an unmeasured block's height is the page's own
+line height and paragraph skip, and mixing a scaled page with an unscaled estimate moves the
+document's total height under the reader), and a document opens at the top of its own page
+(`setContent`) because a fixed sheet is taller than the pane, so nothing clamps a scroll left
+over from the note before it.
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.

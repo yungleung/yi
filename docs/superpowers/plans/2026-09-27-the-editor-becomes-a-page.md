@@ -71,6 +71,39 @@ caret went before the final `.` instead of after it. It now aims at the characte
 (`range` at the end of the leaf, click its rect), the way `insert-link.js` does, so no type
 size can decide where it lands. It passes on both layouts.
 
+## Third round, on the user's review
+
+*"You should also scale the line spacings."* The type and the paper scaled; the space around
+them did not. The page's rhythm is now written in the page's own scale: `.prose` defines
+`--md-page-scale` (the scroller's `--page-scale`, or 1), and every step of the rhythm comes
+off it — `--md-line`, the paragraph skip, the before/after steps of both heading sizes, the
+space around a quote, a table or a code block, the gap between list items, a table cell's
+padding, an empty line's height, the block-height estimates, and the spacing the nodes carry
+themselves (a description list, a display formula's blank line, a revealed source, a
+footnote's own line — which needed semantic classes, since Tailwind's fixed steps do not
+follow a page down). Measured in a 600 px pane: 24 px of line height becomes 16.7 px, the
+paragraph skip 8 px becomes 5.6 px, and the probe holds every step of the rhythm at
+`at full size × the scale`.
+
+Two app bugs surfaced, and the suite found both:
+
+1. **A window change threw away the reader's selection.** The virtualiser re-anchors the caret
+   after a rebuild, and `reanchorCaret` restored a caret even when the reader had something
+   selected — so Select All followed by Copy came back empty (measured: the selection made by
+   `select_all` was gone 40 ms later, and the copy with it). It now leaves a non-collapsed
+   selection inside the prose alone; the remembered offset keeps the caret for when they click
+   or type. `undo-after-scroll` is the probe that caught it.
+2. **The height estimator had the line height in a second home.** `block_sizes.ts` estimated an
+   unmeasured block as `lines × 24px + 8px` — the page's own numbers, in absolute pixels. With
+   the page drawn at 57%, every estimate was 75% too tall, so the document's total height moved
+   as blocks were measured: a reader at the very bottom was clamped up a page by an undo that
+   changed nothing near them (measured: 5464 px of estimate against 4728 px of truth, scroll
+   4710 → 3974, the mounted window 74 → 97 blocks). The estimate takes the scale now
+   (`estimateHeight(block, scale)`, `BlockSizes.setScale`, and a new scale forgets heights
+   measured in the old pixels — `markdown_editor.ts: fitPage` tells the renderer and
+   `check-block-sizes.mjs` holds the arithmetic). With it, the same undo leaves the scroll and
+   the window exactly where they were.
+
 ## Handoff
 
 **Waiting on the user's review — nothing is merged.** `codex/a4-page` holds this plan and the

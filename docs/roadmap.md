@@ -254,6 +254,19 @@ elements) unless it says otherwise.
   line at every scale. One probe needed a line changed for it: `table-insert` aimed its caret
   with a click at 99% of the text's *width*, which skims the last glyph, so a smaller type
   size put the caret before the final `.`; it names the character now, as `insert-link` does.
+  **And the page's rhythm scales with it** (`.prose`'s `--md-page-scale`): the line height, the
+  paragraph skip, the steps around headings, quotes, tables, code and list items, a table
+  cell's padding, an empty line's height and the spacing the nodes carry themselves. In a
+  600 px pane 24 px of line height becomes 16.7 px and the paragraph skip 8 px becomes 5.6 px,
+  held by `a4-page.js` at `at full size × the scale`. **Two app bugs came out of it, both found
+  by the suite.** A window change re-anchored the caret over a selection the reader had made —
+  Select All then Copy came back empty — so `reanchorCaret` now leaves a non-collapsed
+  selection inside the prose alone (`undo-after-scroll` is the probe that caught it). And
+  `block_sizes.ts` estimated an unmeasured block as `lines × 24px + 8px`, the page's own line
+  height and skip in a second, absolute home: at 57% every estimate was 75% too tall, the
+  document's total height moved as blocks were measured, and an undo clamped a reader at the
+  bottom up a page (5464 px of estimate against 4728 px of truth). The estimate takes the
+  scale now, and a new scale forgets heights measured in the old pixels.
 - **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
   *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
   `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which
