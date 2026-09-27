@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
-@import "highlight.js/styles/tokyo-night-dark.css";
 @import "./font.css";
 @plugin "@tailwindcss/typography";
 
@@ -155,7 +154,11 @@ body {
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
-/* Inline source view shown when a rendered image or link is clicked. */
+/* Inline source view shown when a rendered image or link is clicked. It sits on the
+   same surface the boxed sources do — the theme's own `base-200` (see the highlighted
+   source palette below) — so a revealed source reads as one wherever it appears.
+   Padding is left alone: the span is the author's characters in a line of prose, and
+   padding around it would move the text they are editing. */
 .markdown-image-source,
 .markdown-link-source,
 .markdown-citation-source,
@@ -165,6 +168,8 @@ body {
 .markdown-thematic-break-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
+  border-radius: 0.25rem;
+  background-color: var(--color-base-200);
 }
 
 /* Math sources can span multiple lines (display mode `$$…$$`). */
@@ -290,11 +295,103 @@ body {
   margin-bottom: var(--md-space-paragraph);
 }
 
-/* Frontmatter blocks render as their raw YAML/TOML source. */
-.markdown-frontmatter {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.875em;
-  opacity: 0.8;
+/*
+ * Highlighted source — a fenced code block, the frontmatter, a display formula's own
+ * text, an inline formula's revealed source. They carry one palette, defined here, so
+ * all of them follow the theme rather than a stylesheet drawn for a single dark
+ * background: highlight.js's tokyo-night tokens measure 1.70–2.15:1 against a light
+ * `base-200`, which is what the light theme's surface is.
+ *
+ * Each token is a hue mixed into `base-content` — the theme's own foreground — so its
+ * lightness is the theme's, which is what keeps it legible on either surface. The hue
+ * has to be most of the mix, though: a quarter of it left every token a pale grey that
+ * could not be told from the plain text (measured: `base-200` blue-grey vs a token two
+ * hundredths away from it in oklab). At 65% the three hues below separate well in both
+ * themes — winter blue/indigo/magenta on white, dim green/orange/violet on slate.
+ *
+ * The hues are `primary`, `secondary` and `accent` because those are the theme's dark
+ * colours in winter and light ones in dim. `success`, `info` and `warning` are *surface*
+ * colours in a light theme — they measure under 3:1 there — so they cannot carry text.
+ * Which hue a token gets is its meaning: the shape (keys, tags, keywords), text data
+ * (strings), values and names (numbers, literals, functions). Comments are the plain
+ * colour let down toward the surface, and a deletion is the theme's `error`.
+ */
+:root {
+  --md-source-plain: var(--color-base-content);
+  --md-source-comment: color-mix(in oklab, var(--color-base-content) 80%, var(--color-base-200));
+  --md-source-key: color-mix(in oklab, var(--color-primary) 65%, var(--color-base-content));
+  --md-source-string: color-mix(in oklab, var(--color-secondary) 65%, var(--color-base-content));
+  --md-source-number: color-mix(in oklab, var(--color-accent) 65%, var(--color-base-content));
+  --md-source-deleted: color-mix(in oklab, var(--color-error) 65%, var(--color-base-content));
+}
+
+/* The surface under it all: the prose gives every `pre` its box — radius, padding,
+   margins — and daisyUI paints that box `neutral`, the one thing that kept a code block
+   dark in a light theme. The frontmatter is a `pre` in the prose for the same reason. */
+.prose pre {
+  background-color: var(--color-base-200);
+  color: var(--md-source-plain);
+}
+
+.hljs-comment,
+.hljs-meta,
+.hljs-quote {
+  color: var(--md-source-comment);
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-char.escape_,
+.hljs-doctag,
+.hljs-keyword,
+.hljs-name,
+.hljs-operator,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo,
+.hljs-selector-tag,
+.hljs-tag,
+.hljs-template-tag,
+.hljs-variable.language_ {
+  color: var(--md-source-key);
+}
+
+.hljs-addition,
+.hljs-bullet,
+.hljs-code,
+.hljs-formula,
+.hljs-link,
+.hljs-regexp,
+.hljs-string,
+.hljs-symbol {
+  color: var(--md-source-string);
+}
+
+.hljs-built_in,
+.hljs-literal,
+.hljs-number,
+.hljs-params,
+.hljs-property,
+.hljs-section,
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_,
+.hljs-type,
+.hljs-variable {
+  color: var(--md-source-number);
+}
+
+.hljs-deletion {
+  color: var(--md-source-deleted);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
 }
 
 /* Inline code keeps the typography defaults; only the border goes away. */
