@@ -13,7 +13,7 @@ import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
-import { highlightFrontmatter } from './nodes/frontmatter_highlight';
+import { Frontmatter } from './nodes/frontmatter';
 import { SourceText } from './nodes/source_text';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
@@ -103,21 +103,16 @@ class BlockView implements BlockComponent {
   }
 
   private renderFrontmatter(node: BlockNode): HTMLElement {
-    // The block is shown as its own source at all times, highlighted the way a fenced
-    // code block is: a `pre` takes the box the prose gives code, and the `code` inside it
-    // takes the markup (see `nodes/frontmatter_highlight.ts`).
-    const pre = this.container(node, 'pre');
-    pre.className += ' markdown-frontmatter overflow-x-auto';
-    const code = document.createElement('code');
-    const format = node.format ?? 'yaml';
-    code.className = `language-${format}`;
-    code.innerHTML = highlightFrontmatter(node.text, format);
-    pre.appendChild(code);
-    return pre;
+    // The block is shown as its own source at all times, and it is a node like any other:
+    // a click in it lands on the character clicked and a keystroke writes there (see
+    // `nodes/frontmatter.ts`).
+    const element = this.container(node);
+    element.appendChild(new Frontmatter(node).element);
+    return element;
   }
 
-  private container(node: BlockNode, tag: 'div' | 'pre' = 'div'): HTMLElement {
-    const element = document.createElement(tag);
+  private container(node: BlockNode): HTMLElement {
+    const element = document.createElement('div');
     element.className = 'markdown-block';
     element.dataset.lineStart = String(node.lineStart);
     element.dataset.lineEnd = String(node.lineEnd);

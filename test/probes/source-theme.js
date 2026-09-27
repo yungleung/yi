@@ -140,7 +140,11 @@
 
   const root = document.documentElement;
   const frontmatter = () => t.prose().querySelector('.markdown-frontmatter');
-  const fence = () => t.prose().querySelector('pre.markdown-node');
+  /** The fenced block: the frontmatter is a `pre.markdown-node` too, so it is named. */
+  const fence = () =>
+    [...t.prose().querySelectorAll('pre.markdown-node')].find((pre) =>
+      pre.querySelector('code.language-ts')
+    );
   const inlineRendering = () => t.prose().querySelector('[data-display="false"]');
   const displayRendering = () => t.prose().querySelector('[data-display="true"]');
 
