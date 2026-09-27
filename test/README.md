@@ -69,6 +69,9 @@ page where it was), links (`insert-link` — the button, the clipboard destinati
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
 `link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source), the
+highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
+formula's source, measured in both themes; `source-highlight-caret` — typing still lands on
+the character the click meant, inside the markup), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
 

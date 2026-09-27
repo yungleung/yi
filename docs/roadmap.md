@@ -208,6 +208,26 @@ elements) unless it says otherwise.
   native drag source three ways over, so the webview can neither take the press over nor
   be navigated to a dropped path. `test/probes/tree-no-reload.js` works *in* that workspace
   for the first time and holds both.
+- **Highlighted source follows the theme.** Landed as
+  `docs/superpowers/plans/2026-09-27-highlighted-source-follows-the-theme.md`, on the user's
+  ask: highlight the frontmatter like a fenced code block with a light background that
+  changes with the theme, and then the same for fenced code and LaTeX source mode.
+  highlight.js's `tokyo-night-dark` stylesheet is gone — its tokens are drawn for one dark
+  background and measure 1.70–2.15:1 against winter's `base-200`. In its place
+  `src/styles.css` holds one palette for every piece of highlighted source (a fenced code
+  block, the frontmatter, a display formula's own text, a revealed inline formula), where
+  each token is two thirds of a daisyUI hue mixed into `base-content`, and the prose's own
+  `pre` box takes `base-200` instead of daisyUI's typography mapping of it to `neutral`.
+  The frontmatter is rendered through the highlighter now
+  (`nodes/frontmatter_highlight.ts`, `hljs.highlight(node.text, { language: node.format })`),
+  so it *is* a `pre` and wears the code block's own box. **The user caught the first
+  palette**: at a quarter of the hue every token came out a pale grey barely different from
+  the plain text it sat beside (0.02 in oklab; the probe holds 0.05 now and the palette
+  measures 0.076–0.17). `test/probes/source-theme.js` measures all four surfaces in *both*
+  themes — the surface, the contrast floors, the separation, and that the colours actually
+  change — and `source-highlight-caret.js` holds the characters: typing after a click in the
+  frontmatter, on a line inside it, and at a character in the middle of a highlighted code
+  block.
 
 ## Open, in the order to take them
 
@@ -220,7 +240,8 @@ elements) unless it says otherwise.
   `nearestTextOffset`, with the probe as its test. It is the last check the strict harness
   reports: the harness never judged a probe's own verdict until the link branch fixed that
   (`test/tauri-probe.mjs: failedChecks`), which is why it and the formatting bug had both
-  been invisible. The suite now says **89/90 (8 skipped)**.
+  been invisible. The suite says **91/92 (15 skipped)** now that the two highlighted-source
+  probes have joined it.
 
 Everything else the phase handoffs left is either closed above or waiting in "measure
 before deciding"; what is left is the "measure before deciding" column below.
