@@ -30,6 +30,11 @@ area (`editing/blank_lines.ts`), *not* inside the command. Then `test/checks` ca
 bundle it and assert it in Node. `thematicBreakInsertion` is the rule; the command
 is three lines.
 
+**A command need not be an edit.** `view:togglePage` (the A4-page/width switch) is the
+editor's own view state, so its behaviour is a method on `markdown_editor.ts` beside the
+scroller it changes — and there is no pure rule to bundle when the rule is one boolean. What
+every command owes the rest of the app is the same either way: one id, one home, one way in.
+
 ## 2. Name it
 
 Add the id to the union in `src/ui/markdown/commands/registry.ts`:

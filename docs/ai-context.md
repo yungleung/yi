@@ -41,8 +41,11 @@ The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, cent
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:
 fitPage` — the sheet, its margin and its type take one `--page-scale`, capped at 1, so a
-narrow window gets a smaller page rather than a sideways scroll). Three consequences worth
-knowing before you touch it:
+narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
+layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
+as it was before the page, switched by the titlebar's layout button (`view:togglePage`) and
+remembered in the app config (`editor_layout`). Four consequences worth knowing before you
+touch it:
 the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
 the page's type size is `calc(1rem * var(--page-scale))` on `.prose.markdown-page` (the
 `.prose` in that selector is what beats the plugin's own `font-size: 1rem`), the whole
@@ -51,7 +54,8 @@ vertical rhythm is written in the same scale (`.prose`'s `--md-page-scale`, whic
 line height and paragraph skip, and mixing a scaled page with an unscaled estimate moves the
 document's total height under the reader), and a document opens at the top of its own page
 (`setContent`) because a fixed sheet is taller than the pane, so nothing clamps a scroll left
-over from the note before it.
+over from the note before it. A probe that measures one layout should ask for it
+(`t.useLayout('page')`) rather than inherit whichever one the reader left behind.
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
