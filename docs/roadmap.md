@@ -396,14 +396,15 @@ elements) unless it says otherwise.
   inside the harness's 5 s budget — measured at a 709 px window: 5020 ms and 5037 ms, and the
   same on the layout without the A4 page, so it is the window and not the page. The project's
   own answer to a probe that needs longer is to split it (`docs/ai-context.md`); these are the
-  ones it now applies to. The same budget is what makes the suite's tail noisy: on the run that
-  landed New Markdown the suite was **97/101 (14 skipped)**, and its four failures were
-  `insert-rule.js` (below), `edit-cost.js`, `edit-stability.js` and `display-math-source.js` —
-  the last two both pass when run alone, and `display-math-source.js` measures 5006 ms with only
-  3000 ms of that in its own sleeps. A *click* is the other thing the pane decides, and a wider
-  one is not always kinder: at a 1200 px window `description-list.js`'s "typing after three
-  widgets" clicks the end of its line in the A4 layout and types in the right place in the
-  full-width one, so that check is measuring the page's scale as much as the caret's mapping.
+  ones it now applies to. The same budget is what makes the suite's tail noisy: the last full run
+  was **99/102 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
+  red, where the run before it (**97/101**) also failed `display-math-source.js` — which passes
+  when run alone, measuring 5006 ms with only 3000 ms of that in its own sleeps. A *click* is the
+  other thing the pane decides, and a wider one is not always kinder: at a 1200 px window
+  `description-list.js`'s "typing after three widgets" clicked the end of its line in the A4
+  layout in two runs and typed in the right place in the full-width one — and passed the next run
+  in the A4 layout — so that check is measuring the page's scale and the frame it lands on as much
+  as the caret's mapping.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older
