@@ -27,6 +27,7 @@ methodology; this file is the index and the conventions.
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
+| `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
@@ -44,12 +45,17 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and five of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and fifteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
 moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
-the page it happened on in place), blocks and spacing (`block-gaps`, `spacing`,
+the page it happened on in place), making a note (`new-markdown` — the card the menu item's
+command opens: the generated id in the name field, the workspace's folders, the file written
+where it was asked for with its frontmatter on screen and its title selected, and the tree's own
+*New file* through the same command; `new-note-template` — a template written through the app's
+config, the settings tab that shows it, and the note that comes out), blocks and spacing
+(`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
@@ -100,6 +106,12 @@ live index; the newest probes carry a header naming what they cover:
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it
   the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
   (the editor window must be visible, so `probe:all` skips it).
+- A probe whose subject is written *through the webview* — a new note is written with the file
+  plugin — needs a workspace under `$HOME`, because that is all the plugin is scoped to
+  (`src-tauri/capabilities/default.json`: a folder under `/private/tmp` can be listed, moved and
+  deleted by the app's own Rust commands, but reading or writing it from the page is refused).
+  `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
+  `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
 - A probe is one expression returning `{ checks, failed }`; a probe that only
   measures returns its numbers. The harness reads that verdict: a probe with a
   non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did
