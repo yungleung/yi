@@ -37,6 +37,7 @@ const {
   openDecision,
   openInto,
   parseSession,
+  reachable,
   restore,
   serializeSession,
   setPath,
@@ -59,7 +60,22 @@ check('the id is the one the frontmatter gives', documentId(NOTE, '/notes/a.md')
 check(
   'and the first fourteen digits when it has none',
   documentId('# A heading\n\nwritten 20250101121314 by hand\n', '/notes/b.md'),
+  '/notes/b.md'
+);
+check(
+  'a stamp after the opening paragraph is not the top, so it is not the id',
+  documentId('# A heading\n\n20250101121314\n\nBody.\n', '/notes/b.md'),
+  '/notes/b.md'
+);
+check(
+  'and one written above the text, with no frontmatter',
+  documentId('20250101121314\n\n# A heading\n', '/notes/b.md'),
   '20250101121314'
+);
+check(
+  'but a note that links to another by its id is not that note',
+  documentId('# A heading\n\nSee [[20250101121314]] for more.\n', '/notes/b.md'),
+  '/notes/b.md'
 );
 check('and only then the path', documentId('# No id here\n', '/notes/c.md'), '/notes/c.md');
 check('a document with neither has no id', documentId('# Nothing\n', null), null);
@@ -147,6 +163,11 @@ check('capturing writes the text and the view into the current document', {
 }, { content: true, view });
 check('and it is editing, not saved, once it differs', isSaved(currentDocument(captured)), false);
 check('the title follows the text', currentDocument(captured)?.title, 'A note about things');
+// A capture that cannot see the caret — the block holding it has been unmounted — keeps the one
+// the document already had, or a reader who scrolled away from their caret would be put back at
+// the beginning of the document.
+check('a capture that cannot see the caret keeps the one there was', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: null, scroll: view.scroll }))?.view.caret, 12);
+check('and one that cannot see the view keeps that too', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: 4, scroll: null }))?.view.scroll, view.scroll);
 check(
   'a written document is saved again',
   isSaved(currentDocument(markSaved(captured, noteId, currentDocument(captured).content))),
@@ -185,12 +206,43 @@ check('the version this build writes is the one it reads', roundTripped.version,
 check(
   'a document that does not make sense is dropped, not half-read',
   parseSession(JSON.stringify({ version: SESSION_VERSION, current: 'a', documents: [{ id: 'a' }, { id: 'b', path: null, title: 'B', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } }] })).documents.map((d) => d.id),
-  ['b']
+  // `a` cannot be read, so nothing is current, and `b` — neither stacked nor on screen — is
+  // unreachable and goes with it.
+  []
 );
 check(
   'and a current that names nothing leaves nothing current',
   parseSession(JSON.stringify({ version: SESSION_VERSION, current: 'gone', documents: [] })).current,
   null
+);
+// A document that is neither in the stack nor on screen cannot be reached — nothing names it —
+// so it is not kept: an older session file with one is tidied as it is read.
+check(
+  'a document that is neither stacked nor on screen is not kept',
+  reachable({
+    version: SESSION_VERSION,
+    current: 'a',
+    documents: [
+      { id: 'a', path: null, title: 'A', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } },
+      { id: 'b', path: null, title: 'B', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } },
+      { id: 'c', path: null, title: 'C', content: '', saved: '', stacked: true, view: { caret: 0, scroll: null } }
+    ]
+  }).documents.map((document) => document.id),
+  ['a', 'c']
+);
+check(
+  'and a file that held one is tidied as it is read',
+  parseSession(
+    JSON.stringify({
+      version: SESSION_VERSION,
+      current: 'a',
+      documents: [
+        { id: 'a', path: null, title: 'A', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } },
+        { id: 'b', path: null, title: 'B', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } }
+      ]
+    })
+  ).documents.map((document) => document.id),
+  ['a']
 );
 
 if (failures.length > 0) {
