@@ -13,7 +13,9 @@
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
-import type { EditorLayout } from './markdown/markdown_editor';
+import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
+import type { DocumentView } from '../services/document_session';
+import { documentSession } from '../services/session';
 import { DOCUMENT_OPENED } from './workspace/tree';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
@@ -31,6 +33,29 @@ export class MarkdownEditor extends BaseComponent {
       const content = event?.payload ?? event;
       this.setContent(String(content));
     });
+
+    // Every edit is news to the session, which keeps the document's own copy — and through it
+    // the file the document is written to — in step. The event carries nothing: the session
+    // reads the text when it captures, and it debounces both the copy and the write.
+    void eventManager.on(EDITOR_EDITED, () => documentSession.noteMoved());
+
+    // Scrolling is news too, and for a different reason: the reader who quits the app from the
+    // middle of a note expects to come back to the middle of it. A scroll event does not bubble,
+    // so this listens on the way *down* to the scroller inside the editor.
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    this.element.addEventListener(
+      'scroll',
+      () => {
+        if (scrollTimer !== null) {
+          clearTimeout(scrollTimer);
+        }
+        scrollTimer = setTimeout(() => {
+          scrollTimer = null;
+          documentSession.noteMoved();
+        }, 400);
+      },
+      true
+    );
   }
 
   setContent(content: string): void {
@@ -49,6 +74,16 @@ export class MarkdownEditor extends BaseComponent {
 
   getContent(): string {
     return this.innerEditor.getContent();
+  }
+
+  /** Where the reader is in the document on screen, for the session to keep. */
+  captureView(): DocumentView {
+    return this.innerEditor.captureView();
+  }
+
+  /** Puts the reader back where the session last saw them. */
+  restoreView(view: DocumentView): void {
+    this.innerEditor.restoreView(view);
   }
 
   refresh(): void {

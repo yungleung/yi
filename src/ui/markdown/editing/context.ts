@@ -42,6 +42,12 @@ export interface EditorContext {
   readonly state: MarkdownEditorState;
   readonly renderer: VirtualBlockRenderer;
   readonly contentView: HTMLElement;
+  /**
+   * Told after every edit, so whatever keeps a copy of the document — the session that holds
+   * the stack — can follow it. It carries nothing: the text is the state's, and a listener
+   * that wants it reads it then.
+   */
+  readonly onChanged?: () => void;
 }
 
 /**
@@ -441,6 +447,7 @@ export function applyEdit(
     moveShownSource({ from, to, replacement });
     withHeldShownSource(() => restoreCaret(context, target));
     keepScroll(context, anchor);
+    context.onChanged?.();
     return;
   }
   // The source the caret lands in is the source that is shown (see
@@ -452,6 +459,7 @@ export function applyEdit(
   context.renderer.renderChanged();
   restoreCaret(context, target);
   keepScroll(context, anchor);
+  context.onChanged?.();
 }
 
 /**

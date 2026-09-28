@@ -14,14 +14,17 @@ import { ListToolbar } from './ui/toolbar/list_toolbar';
 import { FootnoteToolbar } from './ui/toolbar/footnote_toolbar';
 import { TableToolbar } from './ui/toolbar/table_toolbar';
 import { LayoutToolbar } from './ui/toolbar/layout_toolbar';
+import { SessionToolbar } from './ui/toolbar/session_toolbar';
+import { SavedStatus, StackStatus } from './ui/document_status';
+import { registerSessionCommands } from './ui/session/session_commands';
+import { SessionPrompt } from './ui/session/session_prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { Toast } from './ui/toast';
-import { workspaceManager, TOAST_EVENT, WORKSPACE_CHANGED } from './services/workspace';
+import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
+import { documentSession } from './services/session';
 import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
-import { save } from '@tauri-apps/plugin-dialog';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
 
 function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
@@ -51,6 +54,10 @@ function createAppShell(): MarkdownEditor {
   const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
   const layoutToolbar = new LayoutToolbar();
+  const sessionToolbar = new SessionToolbar();
+  const savedStatus = new SavedStatus();
+  const stackStatus = new StackStatus();
+  const sessionPrompt = new SessionPrompt();
   const toast = new Toast();
 
   titleBar.mount(root);
@@ -61,42 +68,36 @@ function createAppShell(): MarkdownEditor {
   contentShell.mount(root);
   statusBar.mount(root);
   toast.mount(document.body);
+  sessionPrompt.mount(document.body);
 
-  const titleActions = document.createElement('button');
-  titleActions.className = 'btn btn-ghost btn-xs';
-  titleActions.textContent = '⋯';
-  titleBar.addComponent(titleActions, 'right');
   titleBar.addComponent(formattingToolbar, 'center');
   titleBar.addComponent(linkToolbar, 'center');
   titleBar.addComponent(listToolbar, 'center');
   titleBar.addComponent(footnoteToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');
+  titleBar.addComponent(sessionToolbar, 'right');
 
   sidebar.attachToTitleBar(titleBar.element);
 
   statusBar.addComponent(wordsCount, 'right');
   statusBar.addComponent(layoutToolbar, 'right');
+  statusBar.addComponent(stackStatus, 'right');
+  statusBar.addComponent(savedStatus, 'right');
+
+  // The session holds the documents; the editor panel is the view it drives.
+  documentSession.attach(editor);
+  documentSession.attachPrompter(sessionPrompt);
+  // Its commands — Save, Save As, and the stack — registered where the session's behaviour is.
+  registerSessionCommands();
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).
   void wordsCount.update(editor.getContent());
   void eventManager.emit(MARKDOWN_CONTENT_CHANGED, editor.getContent());
-  void eventManager.on('save_as', async () => {
-    try {
-      const path = await save({
-        defaultPath: 'untitled.md',
-        filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
-      });
-      if (!path) {
-        return;
-      }
-      await writeTextFile(path, editor.getContent());
-    } catch (error) {
-      console.error('Failed to save the document:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      void eventManager.emit(TOAST_EVENT, `Failed to save the document: ${message}`);
-    }
-  });
+  // Saving is the session's: a document may have been read from a file, may have no file yet,
+  // and may be one of several — only the session knows which.
+  void eventManager.on('save', () => void documentSession.save());
+  void eventManager.on('save_as', () => void documentSession.saveAs());
 
   return editor;
 }
@@ -131,6 +132,10 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
         void configManager.update({ editor_layout: chosen });
       }
     });
+
+    // The documents the reader had open, and where they were in them. After the workspace, so
+    // a restored document opens into a window that already knows its folder.
+    await documentSession.load();
   } catch (error) {
     console.error('Failed to load the app config:', error);
   }

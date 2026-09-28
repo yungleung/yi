@@ -58,12 +58,16 @@ import { MENU_COMMANDS } from './commands/menu';
 import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
+import type { DocumentView } from '../../services/document_session';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;
 
 /** The event that says which layout the editor is drawn in, for the button that switches it. */
 export const EDITOR_LAYOUT_CHANGED = 'editor_layout_changed';
+
+/** The event that says the document's text changed, for whatever keeps a copy of it. */
+export const EDITOR_EDITED = 'editor_edited';
 
 /** A page of A4, or the column at the width of the pane. */
 export type EditorLayout = 'page' | 'auto';
@@ -119,7 +123,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.context = {
       state: this.state,
       renderer: this.renderer,
-      contentView: this.contentView
+      contentView: this.contentView,
+      // Every edit funnels through `applyEdit`, and this is how the session behind the editor
+      // hears about one: the event carries nothing, since the text is the state's.
+      onChanged: () => void eventManager.emit(EDITOR_EDITED)
     };
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
@@ -260,6 +267,50 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** The raw markdown source. */
   getContent(): string {
     return this.state.getText();
+  }
+
+  /**
+   * Where the reader is: the caret's offset, and the top of the view of the document.
+   *
+   * The session keeps this beside a document's text, so that leaving one and coming back puts
+   * the reader where they were (`services/document_session.ts`). The caret is exact; the view
+   * is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
+   */
+  captureView(): DocumentView {
+    return {
+      // The remembered offset first: a caret whose block the window has since dropped has a
+      // range the browser has *relocated* rather than lost (`docs/architecture.md`, the four
+      // offsets), and reading it back would put the reader where they never were. Null when
+      // neither can say, so the session keeps the offset it already had for this document. The
+      // renderer's own caret hook reads it in the same order, for the same reason.
+      caret: this.pendingCaretOffset ?? caretOffset(this.context),
+      scroll: this.renderer.scrollAnchor()
+    };
+  }
+
+  /**
+   * Puts the reader back where `captureView` found them.
+   *
+   * The caret goes first and the view after it, because placing a caret can make the browser
+   * scroll it into view; the view is then asserted once more on the next frame, since that
+   * scroll arrives after this one.
+   */
+  restoreView(view: DocumentView): void {
+    if (view.caret !== null) {
+      this.pendingCaretOffset = restoreCaret(this.context, view.caret) ? null : view.caret;
+    }
+    this.renderer.scrollToAnchor(view.scroll);
+    const anchor = this.contentView.scrollTop;
+    // Two frames, the way `keepScroll` waits out an edit: placing a caret makes the browser
+    // scroll it into view, and that scroll arrives *after* the one just set here — a reader who
+    // left the view a screen away from their caret gets the view they left, not the caret.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (Math.abs(this.contentView.scrollTop - anchor) > 0.5) {
+          this.contentView.scrollTop = anchor;
+        }
+      });
+    });
   }
 
   /** Re-renders the mounted blocks (bibliography or settings changed). */
@@ -489,6 +540,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // scrolls a focused element or a synchronised selection into view just the
     // same: keep the reader where they were.
     keepScroll(this.context, anchor);
+    // An undo is a change like any other: whatever keeps a copy of the document has to hear it.
+    void eventManager.emit(EDITOR_EDITED);
   }
 
 }

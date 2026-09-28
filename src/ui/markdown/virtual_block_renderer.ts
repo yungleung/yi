@@ -14,8 +14,9 @@
  * which keeps the spacers — and therefore the scrollbar and `revealOffset` —
  * accurate on documents whose blocks differ wildly in size (display math, code
  * fences, ...). Because those heights can still change when a placeholder is
- * replaced by a measurement, the renderer also anchors the scroll position to the
- * block at the top of the viewport and restores it after every re-sync.
+ * replaced by a measurement, where the reader is is remembered as a *document*
+ * offset instead (`scrollAnchor`), and put back with it (`scrollToAnchor`): a
+ * pixel scrollTop means a different place each time the window turns over.
  *
  * May import: the document's blocks and state, the block factory, the size
  * arithmetic (`block_sizes.ts`) and the window (`viewport_window.ts`). Upholds:
@@ -23,7 +24,7 @@
  * sync — the DOM is a view of that arithmetic, never a second record of it.
  */
 
-import { BlockSizes } from './block_sizes';
+import { BLOCK_GAP, BlockSizes } from './block_sizes';
 import { createBlockComponent } from './create_block';
 import { type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
@@ -220,9 +221,93 @@ export class VirtualBlockRenderer {
     }
     this.scroller.scrollTop = Math.max(
       0,
-      this.sizes.offsetOf(this.state.getBlocks(), index) - this.scroller.clientHeight / 3
+      this.contentTop() +
+        this.sizes.offsetOf(this.state.getBlocks(), index) -
+        this.scroller.clientHeight / 3
     );
     this.syncWindow(true);
+  }
+
+  /**
+   * Where the first block sits, in the scroller's own pixels.
+   *
+   * A block's remembered offset is measured from the top of the prose, and the prose is not the
+   * top of the scroller: on a page (`styles.css`) there is the desk's padding and the sheet's
+   * margin above it — 118px of them at the default size. Every place that turns a block's
+   * offset into a scroll position has to add them, and every place that reads a scroll position
+   * back has to take them off; this is that one number.
+   */
+  private contentTop(): number {
+    const root = this.root;
+    if (!root) {
+      return 0;
+    }
+    return (
+      root.getBoundingClientRect().top -
+      this.scroller.getBoundingClientRect().top +
+      this.scroller.scrollTop
+    );
+  }
+
+  /**
+   * Where the reader is: the block at the top of the viewport, and how far the view is
+   * scrolled into it. A pixel scrollTop cannot be remembered — the window turns over as the
+   * reader moves and a block's estimated height changes when it is finally measured — while a
+   * document offset means the same place whenever it is read back.
+   *
+   * The walk starts where the mounted window starts, which is the first block at or above the
+   * viewport, so it costs the window rather than the document.
+   */
+  scrollAnchor(): { offset: number; within: number } | null {
+    const blocks = this.state.getBlocks();
+    if (blocks.length === 0) {
+      return null;
+    }
+    // The scroll position in the blocks' own pixels: the prose is not the top of the scroller.
+    const scrollTop = Math.max(0, this.scroller.scrollTop - this.contentTop());
+    const first = Math.max(0, Math.min(this.range?.first ?? 0, blocks.length - 1));
+    let index = first;
+    let top = this.sizes.offsetOf(blocks, first);
+    while (index < blocks.length - 1) {
+      const height = this.sizes.heightOf(blocks[index]) + BLOCK_GAP;
+      if (top + height > scrollTop) {
+        break;
+      }
+      top += height;
+      index += 1;
+    }
+    return { offset: blocks[index].charStart, within: Math.max(0, scrollTop - top) };
+  }
+
+  /**
+   * Puts the view back where `scrollAnchor` found it, and mounts the window around it. The
+   * anchor names a block rather than a pixel, so this lands in the same place whether or not
+   * the blocks above it have been measured yet; a few pixels of drift are possible until they
+   * are, because until then their heights are estimates.
+   */
+  scrollToAnchor(anchor: { offset: number; within: number } | null): void {
+    const blocks = this.state.getBlocks();
+    if (blocks.length === 0) {
+      return;
+    }
+    const offset = anchor?.offset ?? 0;
+    let index = 0;
+    for (let i = 0; i < blocks.length; i += 1) {
+      if (blocks[i].charStart <= offset) {
+        index = i;
+      } else {
+        break;
+      }
+    }
+    const top = this.sizes.offsetOf(blocks, index) + Math.max(0, anchor?.within ?? 0);
+    this.scroller.scrollTop = Math.max(0, this.contentTop() + top);
+    this.syncWindow(true);
+    // That sync mounts the blocks around the anchor and measures them, so the offsets above it
+    // are the real ones now: the first pass was close enough to bring them in, and this one
+    // lands on the place itself. (Blocks still outside the window keep their estimates, so a
+    // restore into a very long document can still be a few pixels out.)
+    const refined = this.sizes.offsetOf(blocks, index) + Math.max(0, anchor?.within ?? 0);
+    this.scroller.scrollTop = Math.max(0, this.contentTop() + refined);
   }
 
   /**

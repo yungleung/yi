@@ -25,8 +25,11 @@ export const SESSION_VERSION = 1;
 
 /** Where the reader was in a document. */
 export interface DocumentView {
-  /** The caret's document offset. */
-  caret: number;
+  /**
+   * The caret's document offset, or null when the editor cannot say where it is — the block
+   * holding it has been unmounted since — in which case the last offset that *was* known stands.
+   */
+  caret: number | null;
   /** The top of the viewport: the block there, and how far into it the view is scrolled. */
   scroll: { offset: number; within: number } | null;
 }
@@ -142,7 +145,7 @@ export function openInto(
     pushCurrent && document.id === state.current ? { ...document, stacked: true } : document
   );
   const opened = openDocument(incoming, id);
-  return { ...state, current: opened.id, documents: [...documents, opened] };
+  return reachable({ ...state, current: opened.id, documents: [...documents, opened] });
 }
 
 /** Puts a document into the stack, or takes it out again. */
@@ -192,7 +195,19 @@ export function capture(
     ...state,
     documents: state.documents.map((document) =>
       document.id === state.current
-        ? { ...document, content, title: documentTitle(content, document.path), view }
+        ? {
+            ...document,
+            content,
+            title: documentTitle(content, document.path),
+            // What the editor could not see keeps what the document already had: a reader who
+            // scrolled their caret's block out of the window before leaving the document is
+            // still in the paragraph they were in, and a capture taken then must not read that
+            // as "the beginning".
+            view: {
+              caret: view.caret ?? document.view.caret,
+              scroll: view.scroll ?? document.view.scroll
+            }
+          }
         : document
     )
   };
@@ -223,6 +238,24 @@ export function emptySession(): SessionState {
   return { version: SESSION_VERSION, current: null, documents: [] };
 }
 
+/**
+ * The documents worth keeping: the stack, and the one on screen.
+ *
+ * A document that is neither is unreachable — nothing on screen shows it and no row of the stack
+ * names it — so keeping it would be keeping something the reader can never get back to, and it
+ * would grow the session file with every file opened and left. Applied whenever the current
+ * document changes, and to a file as it is read, since one written by an older build can carry
+ * them.
+ */
+export function reachable(state: SessionState): SessionState {
+  return {
+    ...state,
+    documents: state.documents.filter(
+      (document) => document.stacked || document.id === state.current
+    )
+  };
+}
+
 /** The session as JSON, for `session_store.ts` to write. */
 export function serializeSession(state: SessionState): string {
   return JSON.stringify(state);
@@ -250,7 +283,7 @@ export function parseSession(text: string | null): SessionState {
       documents.some((document) => document.id === parsed.current)
         ? parsed.current
         : null;
-    return { version: SESSION_VERSION, current, documents };
+    return reachable({ version: SESSION_VERSION, current, documents });
   } catch {
     return emptySession();
   }

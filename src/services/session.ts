@@ -1,0 +1,324 @@
+/**
+ * The living session: the documents the reader has open, kept in step with the editor and with
+ * the file they are written to.
+ *
+ * The rules live in `document_session.ts` and are pure; this is the part that holds the editor
+ * and the dialog and the disk. It is the only place that knows all three, so it is the only
+ * place that decides what a click in the tree means:
+ *
+ * - the document on screen is **captured** — its text and its view — whenever it is about to be
+ *   left, and (debounced) whenever it is typed in, which is what makes a stacked document always
+ *   its own latest version;
+ * - a file being opened while an *unstacked* document is on screen **asks** first, because
+ *   saying no would lose it;
+ * - the session file is written soon after any change rather than on the way out, since the
+ *   webview is not promised a moment on the way out.
+ *
+ * May import: the session's rules (`document_session.ts`), the app's events and file commands,
+ * and the dialog plugin. Upholds: one copy of a document — the one in the session — so nothing
+ * here keeps a second text of its own.
+ */
+
+import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { loadSessionText, saveSessionText } from '../api/session';
+import { eventManager } from './event_manager';
+import { TOAST_EVENT } from './workspace';
+import {
+  capture as captureInto,
+  currentDocument,
+  dropFromStack,
+  emptySession,
+  isSaved,
+  keyFor,
+  markSaved,
+  openDecision,
+  openInto,
+  parseSession,
+  restore as restoreDocument,
+  serializeSession,
+  setPath,
+  setStacked,
+  stackedDocuments,
+  type DocumentView,
+  type IncomingDocument,
+  type SessionDocument,
+  type SessionState
+} from './document_session';
+
+/** Emitted whenever the documents, the stack or the current document change. */
+export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
+
+/** How long after the last edit the session is written. */
+const SAVE_DELAY_MS = 800;
+
+/** What the session needs from the editor: its text, and where the reader is in it. */
+export interface SessionEditor {
+  getContent(): string;
+  setContent(content: string): void;
+  /** Where the reader is, with null for what the editor cannot currently see (a dropped block). */
+  captureView(): { caret: number | null; scroll: DocumentView['scroll'] };
+  restoreView(view: DocumentView): void;
+}
+
+/** What the session asks when a document could be lost, and who answers it. */
+export interface SessionQuestion {
+  message: string;
+  /** What the answer that keeps the document says. */
+  yes: string;
+  /** …and the answer that lets it go. */
+  no: string;
+}
+
+export interface SessionPrompter {
+  ask(question: SessionQuestion): Promise<boolean>;
+}
+
+class DocumentSession {
+  private state: SessionState = emptySession();
+  private editor: SessionEditor | null = null;
+  private prompter: SessionPrompter | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private madeKeys = 0;
+  /**
+   * What a document with no id of its own is keyed by. It carries this run's stamp as well as a
+   * count, because the count starts again every time the app does: without the stamp, a new
+   * pathless document would be given the key of one the session file restored — a *different*
+   * document, whose text would then be kept and the new one never opened.
+   */
+  private readonly run = Date.now().toString(36);
+
+  /** Gives the session the editor whose documents it holds. */
+  attach(editor: SessionEditor): void {
+    this.editor = editor;
+  }
+
+  /** Gives the session the card it asks on. Without one it never asks — it keeps. */
+  attachPrompter(prompter: SessionPrompter): void {
+    this.prompter = prompter;
+  }
+
+  /** The documents, for the buttons and the status bar to read. */
+  get(): SessionState {
+    return this.state;
+  }
+
+  current(): SessionDocument | null {
+    return currentDocument(this.state);
+  }
+
+  stack(): SessionDocument[] {
+    return stackedDocuments(this.state);
+  }
+
+  /** Reads the session left by the last run and puts its current document back on screen. */
+  async load(): Promise<void> {
+    try {
+      this.state = parseSession(await loadSessionText());
+    } catch (error) {
+      console.error('Failed to read the session:', error);
+      this.state = emptySession();
+    }
+    const current = this.current();
+    if (current) {
+      this.show(current);
+    }
+    this.announce();
+  }
+
+  /**
+   * A file was clicked in the tree. What that means depends on what is on screen
+   * (`document_session.ts: openDecision`), and only the unstacked case has to ask.
+   */
+  async openFile(incoming: IncomingDocument): Promise<void> {
+    const id = keyFor(incoming.path, incoming.content, () => `${this.run}-${++this.madeKeys}`);
+    const action = openDecision(this.state, { id });
+    if (action === 'alreadyOpen') {
+      return;
+    }
+    if (action === 'bringForward') {
+      this.restore(id);
+      return;
+    }
+    let keep = true;
+    if (action === 'ask') {
+      const title = this.current()?.title ?? 'This document';
+      keep = await this.ask({
+        message: `“${title}” is not in the stack. Push it there, so it is kept, or open the new document without it?`,
+        yes: 'Push and open',
+        no: 'Open without it'
+      });
+    }
+    // The document being left is captured before it goes: a pushed one keeps its latest text
+    // and its view, whichever answer the reader gave.
+    this.capture();
+    this.state = openInto(this.state, incoming, id, keep);
+    const opened = this.current();
+    if (opened) {
+      this.show(opened);
+    }
+    this.announce();
+    await this.persist();
+  }
+
+  /** Pushes the document on screen into the stack, or takes it out again. */
+  toggleStack(): void {
+    const document = this.current();
+    if (!document) {
+      return;
+    }
+    this.capture();
+    this.state = setStacked(this.state, document.id, !document.stacked);
+    this.announce();
+    void this.persist();
+  }
+
+  /** Brings a document from the stack to the screen, where it left off. */
+  restore(id: string): void {
+    if (id === this.state.current) {
+      return;
+    }
+    this.capture();
+    this.state = restoreDocument(this.state, id);
+    const document = this.current();
+    if (document && this.editor) {
+      this.show(document);
+    }
+    this.announce();
+    void this.persist();
+  }
+
+  /**
+   * Drops a document from the stack. A document that is not on screen and has text the file
+   * does not have is asked about first: dropping it would be the only copy gone.
+   */
+  async drop(id: string): Promise<void> {
+    const document = this.state.documents.find((candidate) => candidate.id === id);
+    if (!document) {
+      return;
+    }
+    if (document.id !== this.state.current && !isSaved(document)) {
+      const saveIt = await this.ask({
+        message: `“${document.title}” has changes that are not in its file. Save it before dropping it?`,
+        yes: 'Save and drop',
+        no: 'Drop without saving'
+      });
+      if (saveIt && !(await this.writeDocument(document))) {
+        return;
+      }
+    }
+    this.state = dropFromStack(this.state, id);
+    this.announce();
+    await this.persist();
+  }
+
+  /** Writes the document on screen to its file, asking for one when it has none. */
+  async save(): Promise<void> {
+    const document = this.current();
+    if (!document || !this.editor) {
+      return;
+    }
+    this.capture();
+    const latest = this.current() ?? document;
+    if (latest.path) {
+      await this.writeDocument(latest);
+      return;
+    }
+    await this.saveAs();
+  }
+
+  /** Writes the document on screen to a file of its own, and follows it from then on. */
+  async saveAs(): Promise<void> {
+    const document = this.current();
+    if (!document || !this.editor) {
+      return;
+    }
+    this.capture();
+    const latest = this.current() ?? document;
+    const path = await saveDialog({
+      defaultPath: `${latest.title}.md`,
+      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
+    });
+    if (!path) {
+      return;
+    }
+    this.state = setPath(this.state, latest.id, path);
+    await this.writeDocument({ ...latest, path });
+  }
+
+  /**
+   * The reader has moved: they typed, or scrolled. Both mean the document's copy — its text and
+   * where they are in it — is out of date, and both are worth writing soon afterwards rather
+   * than waiting for them to leave the document, because the app is not promised a moment on
+   * the way out.
+   */
+  noteMoved(): void {
+    this.capture();
+    this.announce();
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
+    }
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.persist();
+    }, SAVE_DELAY_MS);
+  }
+
+  /** Writes one document's text to its file, and remembers that it is what the file holds. */
+  private async writeDocument(document: SessionDocument): Promise<boolean> {
+    if (!document.path) {
+      return false;
+    }
+    try {
+      await writeTextFile(document.path, document.content);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void eventManager.emit(TOAST_EVENT, `Failed to save ${document.title}: ${message}`);
+      return false;
+    }
+    this.state = markSaved(this.state, document.id, document.content);
+    this.announce();
+    await this.persist();
+    return true;
+  }
+
+  /** What the editor holds now, written into the document it is showing. */
+  private capture(): void {
+    if (!this.editor) {
+      return;
+    }
+    this.state = captureInto(this.state, this.editor.getContent(), this.editor.captureView());
+  }
+
+  /** Puts a document on screen, where it left off. */
+  private show(document: SessionDocument): void {
+    if (!this.editor) {
+      return;
+    }
+    this.editor.setContent(document.content);
+    this.editor.restoreView(document.view);
+  }
+
+  private async persist(): Promise<void> {
+    try {
+      await saveSessionText(serializeSession(this.state));
+    } catch (error) {
+      console.error('Failed to write the session:', error);
+    }
+  }
+
+  private announce(): void {
+    void eventManager.emit(DOCUMENT_SESSION_CHANGED, this.state);
+  }
+
+  /** The reader's answer, or — with no card to ask on — the answer that keeps the document. */
+  private async ask(question: SessionQuestion): Promise<boolean> {
+    if (!this.prompter) {
+      return true;
+    }
+    return await this.prompter.ask(question);
+  }
+}
+
+/** The app-wide session. */
+export const documentSession = new DocumentSession();

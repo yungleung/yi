@@ -18,6 +18,8 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
   redo: 'history:redo',
   cut: 'edit:cut',
   select_all: 'edit:selectAll',
+  save: 'file:save',
+  save_as: 'file:saveAs',
   find: 'find:open',
   replace: 'find:replace'
 };

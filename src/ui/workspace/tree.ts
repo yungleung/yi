@@ -19,6 +19,7 @@
 
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { listFolderFiles, type FileInfo } from '../../api/files';
+import { documentSession } from '../../services/session';
 import { eventManager } from '../../services/event_manager';
 import { TOAST_EVENT, WORKSPACE_CHANGED } from '../../services/workspace';
 import { SidebarSection } from '../sidebar_section';
@@ -276,7 +277,9 @@ class TreeNode {
   private async openFile(): Promise<void> {
     try {
       const content = await readTextFile(this.info.path);
-      void eventManager.emit(DOCUMENT_OPENED, content);
+      // What a click opens is the session's decision, not the tree's: it knows what is on
+      // screen, what the stack holds, and whether losing the one would lose work.
+      await documentSession.openFile({ path: this.info.path, content });
     } catch (error) {
       console.error('Failed to read file content:', error);
       void eventManager.emit(

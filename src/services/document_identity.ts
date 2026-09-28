@@ -39,11 +39,19 @@ export function readFrontmatterId(content: string): string | null {
 }
 
 /**
- * The first fourteen digits anywhere in the text — an id that was written without a key of
- * its own. Whole runs only: a longer number is not an id.
+ * The first fourteen digits at the *top* of the document — an id written without a key of its
+ * own. Whole runs only (a longer number is not an id), and only before the first blank line.
+ *
+ * The limit is not decoration: a note that links to another by its id — `[[20221031105857]]`,
+ * which is how this app's wikilinks name a note — mentions a stamp deep in its text that is not
+ * its own name. Measured on the fixture workspace, whose two documents both mention
+ * `20221031105857`: reading the whole text gave them the same id, and the session then took the
+ * second document for the one already open. Read at the top, neither has an id and both fall
+ * back to their paths, which is what they are.
  */
 export function firstIdDigits(content: string): string | null {
-  const match = content.match(/(?<!\d)(\d{14})(?!\d)/);
+  const opening = content.split(/\r?\n\s*\r?\n/, 1)[0] ?? '';
+  const match = opening.match(/(?<!\d)(\d{14})(?!\d)/);
   return match ? match[1] : null;
 }
 
