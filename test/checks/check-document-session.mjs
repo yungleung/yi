@@ -1,0 +1,200 @@
+/**
+ * Checks the session's rules in Node: which document a click opens, what pushing and dropping
+ * do, how the text and the view are captured, and what a session file is allowed to say.
+ *
+ * The rules are a pure function of the state — the DOM only reads and writes them — so they are
+ * asserted here rather than driven through the app (`test/probes/document-stack.js` drives the
+ * buttons, and `document-session-restart.js` the file).
+ */
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { rolldown } from 'rolldown';
+
+const directory = mkdtempSync(join(tmpdir(), 'yi-session-'));
+
+/** Bundles one module and imports it, the way every check loads its subject. */
+async function bundleModule(input, name) {
+  const bundle = await rolldown({ input, logLevel: 'silent' });
+  const { output } = await bundle.generate({ format: 'esm' });
+  await bundle.close();
+  const file = join(directory, `${name}.mjs`);
+  writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
+  return import(file);
+}
+
+const session = await bundleModule('src/services/document_session.ts', 'document_session');
+const identity = await bundleModule('src/services/document_identity.ts', 'document_identity');
+const {
+  SESSION_VERSION,
+  capture,
+  currentDocument,
+  dropFromStack,
+  emptySession,
+  isSaved,
+  keyFor,
+  markSaved,
+  openDecision,
+  openInto,
+  parseSession,
+  restore,
+  serializeSession,
+  setPath,
+  setStacked,
+  stackedDocuments
+} = session;
+const { documentId, documentTitle } = identity;
+
+const failures = [];
+const check = (name, actual, expected) => {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  if (a !== e) failures.push(`${name}\n  expected ${e}\n  actual   ${a}`);
+};
+
+// --- what a document is called ------------------------------------------------------------
+
+const NOTE = '---\nid: 20240707122715\ntitle: A note about things\n---\n\n# A heading\n\nBody.\n';
+check('the id is the one the frontmatter gives', documentId(NOTE, '/notes/a.md'), '20240707122715');
+check(
+  'and the first fourteen digits when it has none',
+  documentId('# A heading\n\nwritten 20250101121314 by hand\n', '/notes/b.md'),
+  '20250101121314'
+);
+check('and only then the path', documentId('# No id here\n', '/notes/c.md'), '/notes/c.md');
+check('a document with neither has no id', documentId('# Nothing\n', null), null);
+check(
+  'a longer run of digits is not an id',
+  documentId('# 202501011213140\n', '/notes/d.md'),
+  '/notes/d.md'
+);
+check('the title is the frontmatter one', documentTitle(NOTE, '/notes/a.md'), 'A note about things');
+check(
+  'else the first heading',
+  documentTitle('---\nid: 20240707122715\n---\n\n# Heading here\n', '/notes/a.md'),
+  'Heading here'
+);
+check('else the file name', documentTitle('plain text', '/notes/Some Note.md'), 'Some Note');
+check('else Untitled', documentTitle('plain text', null), 'Untitled');
+check('and a document with nothing gets a name too', documentTitle('', null), 'Untitled');
+
+// --- opening ------------------------------------------------------------------------------
+
+const openNote = (path, content) =>
+  openInto(emptySession(), { path, content }, keyFor(path, content, () => 'made'));
+
+let state = openNote('/notes/a.md', NOTE);
+const noteId = state.current;
+check('the first document is the current one and is not stacked', {
+  current: currentDocument(state)?.id,
+  stacked: stackedDocuments(state).length
+}, { current: noteId, stacked: 0 });
+check('and it is saved, having just been read', isSaved(currentDocument(state)), true);
+
+// Nothing on screen: no question.
+check(
+  'with nothing open, a file just opens',
+  openDecision(emptySession(), { id: 'other' }),
+  'open'
+);
+
+// The document on screen is not stacked: this is the case the ask is for.
+check('an unstacked document makes the app ask', openDecision(state, { id: 'other' }), 'ask');
+
+// …and saying yes keeps it.
+let withBoth = openInto(state, { path: '/notes/b.md', content: '# B\n' }, 'other', true);
+check('pushing keeps the document on screen', stackedDocuments(withBoth).map((d) => d.id), [noteId]);
+check('and the new one is current', currentDocument(withBoth)?.id, 'other');
+check(
+  'and it is the only document that is not stacked',
+  withBoth.documents.map((d) => d.stacked),
+  [true, false]
+);
+
+// …and saying no lets it go: it was never stacked, so there is no copy.
+let replaced = openInto(state, { path: '/notes/b.md', content: '# B\n' }, 'other', false);
+check('declining drops the document that was on screen', replaced.documents.map((d) => d.id), ['other']);
+
+// A stacked document needs no question: its latest version is already in the stack.
+const pushed = setStacked(state, noteId, true);
+check('a stacked document is replaced without asking', openDecision(pushed, { id: 'other' }), 'open');
+let openedOver = openInto(pushed, { path: '/notes/b.md', content: '# B\n' }, 'other', true);
+check(
+  'and the question is not asked, but it is still kept',
+  openedOver.documents.map((d) => ({ id: d.id, stacked: d.stacked })),
+  [{ id: noteId, stacked: true }, { id: 'other', stacked: false }]
+);
+
+// A document already in the stack is brought forward, not read again.
+check('a document in the stack is brought forward', openDecision(openedOver, { id: noteId }), 'bringForward');
+check('and the one on screen is already open', openDecision(openedOver, { id: 'other' }), 'alreadyOpen');
+state = restore(openedOver, noteId);
+check('restoring makes it current', currentDocument(state)?.id, noteId);
+check('and leaves the stack alone', stackedDocuments(state).map((d) => d.id), [noteId]);
+check(
+  'opening a document that is already here never adds a second copy',
+  openInto(openedOver, { path: '/notes/a.md', content: NOTE }, noteId, true).documents.length,
+  2
+);
+
+// --- capturing, saving, dropping ----------------------------------------------------------
+
+const view = { caret: 12, scroll: { offset: 40, within: 3 } };
+const captured = capture(state, `${NOTE}More.\n`, view);
+check('capturing writes the text and the view into the current document', {
+  content: currentDocument(captured)?.content.endsWith('More.\n'),
+  view: currentDocument(captured)?.view
+}, { content: true, view });
+check('and it is editing, not saved, once it differs', isSaved(currentDocument(captured)), false);
+check('the title follows the text', currentDocument(captured)?.title, 'A note about things');
+check(
+  'a written document is saved again',
+  isSaved(currentDocument(markSaved(captured, noteId, currentDocument(captured).content))),
+  true
+);
+check('and it can be given the path it was written to', currentDocument(setPath(captured, noteId, '/notes/a.md'))?.path, '/notes/a.md');
+
+// Dropping: the document on screen stays, one behind it goes.
+const three = openInto(
+  openInto(pushed, { path: '/notes/b.md', content: '# B\n' }, 'other', true),
+  { path: '/notes/c.md', content: '# C\n' },
+  'third',
+  true
+);
+check('three documents, two of them stacked', stackedDocuments(three).length, 2);
+check(
+  'dropping a document that is not on screen removes it',
+  dropFromStack(three, noteId).documents.map((d) => d.id),
+  ['other', 'third']
+);
+check(
+  'dropping the document on screen only takes it out of the stack',
+  dropFromStack(three, 'third').documents.map((d) => ({ id: d.id, stacked: d.stacked })),
+  [{ id: noteId, stacked: true }, { id: 'other', stacked: true }, { id: 'third', stacked: false }]
+);
+check('and it is still current', currentDocument(dropFromStack(three, 'third'))?.id, 'third');
+
+// --- the file -----------------------------------------------------------------------------
+
+const roundTripped = parseSession(serializeSession(three));
+check('a session survives the round trip', roundTripped, three);
+check('a session file this build does not know is discarded', parseSession('{"version":99,"documents":[]}'), emptySession());
+check('so is a file that is not JSON', parseSession('not json at all'), emptySession());
+check('and so is one with nothing in it', parseSession(null), emptySession());
+check('the version this build writes is the one it reads', roundTripped.version, SESSION_VERSION);
+check(
+  'a document that does not make sense is dropped, not half-read',
+  parseSession(JSON.stringify({ version: SESSION_VERSION, current: 'a', documents: [{ id: 'a' }, { id: 'b', path: null, title: 'B', content: '', saved: '', stacked: false, view: { caret: 0, scroll: null } }] })).documents.map((d) => d.id),
+  ['b']
+);
+check(
+  'and a current that names nothing leaves nothing current',
+  parseSession(JSON.stringify({ version: SESSION_VERSION, current: 'gone', documents: [] })).current,
+  null
+);
+
+if (failures.length > 0) {
+  console.error(failures.join('\n'));
+  process.exit(1);
+}
+console.log('document session: all checks passed');

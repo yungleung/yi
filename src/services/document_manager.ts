@@ -10,6 +10,11 @@
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { listFolderFiles, type FileInfo } from '../api/files';
 import { configManager } from './config_manager';
+import {
+  firstHeading,
+  readFrontmatterId,
+  readFrontmatterTitle
+} from './document_identity';
 import { eventManager } from './event_manager';
 import { WORKSPACE_CHANGED } from './workspace';
 
@@ -125,15 +130,7 @@ export const documentManager = new DocumentManager();
 export async function readDocumentId(path: string): Promise<string | null> {
   try {
     const content = await readTextFile(path);
-    const frontmatter = readFrontmatterBlock(content);
-    if (!frontmatter) {
-      return null;
-    }
-    const idMatch = frontmatter.match(/^\s*id:\s*(.+?)\s*$/m);
-    if (!idMatch) {
-      return null;
-    }
-    return idMatch[1].replace(/^["']|["']$/g, '').trim();
+    return readFrontmatterId(content);
   } catch {
     return null;
   }
@@ -146,30 +143,8 @@ async function readTitle(path: string): Promise<string | null> {
     if (frontmatterTitle) {
       return frontmatterTitle;
     }
-    // Skip the YAML frontmatter block when present.
-    const body = content.startsWith('---')
-      ? content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
-      : content;
-    const match = body.match(/^#\s+(.+)$/m);
-    return match ? match[1].trim() : null;
+    return firstHeading(content);
   } catch {
     return null;
   }
-}
-
-function readFrontmatterBlock(content: string): string | null {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  return match ? match[1] : null;
-}
-
-function readFrontmatterTitle(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
-    return null;
-  }
-  const titleMatch = frontmatter.match(/^\s*title:\s*(.+?)\s*$/m);
-  if (!titleMatch) {
-    return null;
-  }
-  return titleMatch[1].replace(/^["']|["']$/g, '').trim();
 }
