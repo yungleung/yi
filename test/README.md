@@ -72,6 +72,7 @@ app cannot read at all, either way with the webview's clipboard never asked;
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
+documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `document-session-restart` — the session file, and the startup path that reads it), the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
 the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two

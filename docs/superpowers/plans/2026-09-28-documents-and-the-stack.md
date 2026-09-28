@@ -13,6 +13,17 @@ has been pushed to stack in the statusbar."*
 **Spec:** the user's message; the branch is `codex/document-session` and the user reviews this
 plan before it is implemented.
 
+**Approved and clarified (2026-09-28).** The user confirmed the ask rule and added the one
+thing that keeps it honest: *"when the current document is stacked, and then we click to open a
+new file, if there are inconsistency or new edits between the current document and its stacked
+document, there is no need to ask, we should update the stacked document to its latest
+version."* That is the model below: **pushing stores no copy** — the stack holds the document
+itself, one of which may be the current one, so a stacked document is always its own latest
+version. What makes that true is capturing the live document's text and view **when the reader
+switches away from it**, which is Task 3's `captureView` and Task 4's wiring. And the startup
+document stays out of the ask, since the production build will open a path rather than the demo
+document.
+
 ## Why this is a refactor, and what is missing
 
 What the code does today, measured by reading it:
@@ -151,8 +162,13 @@ a small bound rather than pretending it is zero; the caret is an offset and is e
 1. **The session's copy of a document is the truth, and a restart never re-reads the file.**
    Edits are not written anywhere today, so re-reading disk would throw away the author's work
    — the opposite of what this is for.
-2. **The ask is the native `ask`**, the dialog the tree's delete already uses. It has Yes/No
-   and no Cancel, which is exactly the two outcomes the brief describes.
+2. **The ask is a small card in the page, not a native dialog** — and this one changed during
+   the work, with the reason written down. It began as the native `ask` the tree's delete uses,
+   and a probe cannot press one: the harness reaches the app through the webview, and a native
+   modal blocks the webview until a person answers (measured: two probes hung for their whole
+   budget on one, and the app had to be restarted). A card is a button like any other, so a
+   probe presses the answer it wants — and the question is asked *inside* an open, where the
+   reader's caret is about to be captured, so the card never takes focus either.
 3. **Pushing does not clear the screen**: the document stays where it is and is simply also in
    the stack. That is what the status component reports.
 4. **The id, not the path, is a document's identity** (the user's rule): a document is keyed by
@@ -195,4 +211,57 @@ a small bound rather than pretending it is zero; the caret is an offset and is e
 
 ## Handoff
 
-*(written when the work lands)*
+**Waiting on the user's review — nothing is merged.** `codex/document-session` holds this plan,
+the model with its check, the session file, the save command, the wiring and the interface, each
+as its own commit.
+
+**What was built.** `services/document_session.ts` is the model — pure, over a plain object, and
+`test/checks/check-document-session.mjs` holds it (30 checks: the id and title rules, opening
+with and without the question, pushing, dropping, restoring, capturing, and what a session file
+is allowed to say). `services/session.ts` is the living session: it holds the editor and the
+question and the disk, so it is the one place that knows what a click in the tree means.
+`session.rs` (with `src/api/session.ts`) is the file, written atomically — a temporary file and a
+rename, because a session is work in progress. `markdown_editor.ts` gained `captureView` /
+`restoreView` and `virtual_block_renderer.ts` gained `scrollAnchor` / `scrollToAnchor`, with the
+content top a page needs. `session_commands.ts` registers `file:save`, `file:saveAs` and the
+stack's commands; `ui/toolbar/session_toolbar.ts` draws the user's `stack-push`/`stack-pop`
+toggle and their layered `stack` glyph; `ui/session/stack_popover.ts` is the list; `ui/
+document_status.ts` is the two status pieces; and `ui/session/session_prompt.ts` is the card.
+The dead `⋯` button is gone.
+
+**Six things the work taught, and where they are written down.** (1) **A document's id is read
+at the top of it.** The user's rule — frontmatter `id`, else the first fourteen digits — read
+*anywhere* gave the two fixture documents the *same* id, because one lists a note's id in a
+table and the other links to it: the session then took the second for the one already open.
+`document_identity.ts` reads the opening paragraph only. (2) **A pathless document's key carries
+the run's stamp**, or a new one collides with one the file restored. (3) **Only the stack and
+the document on screen are kept** (`reachable`): anything else is unreachable, and it grew the
+session file with every file opened and left. (4) **A capture that cannot see the caret keeps
+the one it had** — a reader who scrolled away from their caret before leaving was otherwise put
+back at the beginning. (5) **A block's offset is not the scroller's**: on a page there are 118px
+of desk and margin above the prose, which `contentTop()` adds everywhere a scroll position is
+read or written (the footnote jump had been landing 118px out because of it). (6) **Restoring
+the view waits two frames**, like `keepScroll`: placing the caret makes the browser scroll it
+into view, and that scroll arrives after the one the restore sets.
+
+**What the view restore can promise, measured.** The caret is exact (a document offset). The
+view comes back to the right *block* and lands within about a hundred pixels on the demo
+document — the blocks above the view are *estimated* until they are laid out, and the estimate
+is a line of body text each, whatever the block is, so the headings above the view are twenty to
+thirty pixels short each. `scrollToAnchor` sets the scroll twice (the first pass mounts the
+blocks around the anchor so the second can use their real heights), and the probe holds it to
+within a screen rather than pretending it is exact.
+
+**Two things for whoever comes next.** A probe that answers *save* to the question writes a real
+file — one of mine wrote into `test/fixtures/workspace/default-document.md` and it had to be
+restored from git — so the probes here answer "no", and the ones that drive the tree should run
+in a workspace of their own (`t.openWorkspace`, as `tree-file-actions.js` does). And a document
+with no id of its own, when it is saved for the first time, is not yet given a `YYYYMMDDHHMMSS`
+id: the user said that generator comes later.
+
+**Acceptance.** `npx tsc --noEmit` clean; `npm run check` **28/28**; `cargo test` **12/12**
+(three of them the session file's); a fresh `npm run tauri dev`; and `npm run probe:all`
+**95/98 (15 skipped)** — `insert-rule.js` (the long-standing one), `edit-cost.js` (over the 5 s
+budget at this window size, as recorded) and `edit-stability.js` (whose settling guard passes on
+its own). The four new probes pass by name: `document-stack` (4 checks), `document-stack-restore`
+(3), `document-stack-ask` (4) and `document-session-restart` (2).

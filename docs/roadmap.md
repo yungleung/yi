@@ -228,6 +228,25 @@ elements) unless it says otherwise.
   change — and `source-highlight-caret.js` holds the characters: typing after a click in the
   frontmatter, on a line inside it, and at a character in the middle of a highlighted code
   block.
+- **Documents, and the stack behind them.** Landed as
+  `docs/superpowers/plans/2026-09-28-documents-and-the-stack.md`, on the user's ask: the editor
+  showed one unnamed string, so nothing survived a restart, opening a file destroyed the one
+  before it, and — since `⌘S` had no listener at all — the text in memory was the only copy of
+  the reader's work. A document is now a path (or none), its text, the text its file holds, and
+  where the reader was; the session keeps them, the stack behind the one on screen, and the
+  session file (written atomically) brings it all back. The titlebar's stack button pushes and
+  pops with the user's own glyphs, the button beside it lists the stack by **title**, and the
+  status bar says `Saved`/`Editing` and `In the stack`/`Not stacked` — the indicator the user
+  asked for, which needed a real **Save** (the `save` menu event now has a listener at last, and
+  Save As adopts the path it writes to). The whole model is pure and held by
+  `check-document-session.mjs`; four probes drive it. **What the work taught:** a document's id
+  is read at the *top* of it (reading the whole text gave two fixture documents the same id,
+  because each mentions the other's), unused documents are pruned by `reachable`, a capture that
+  cannot see the caret keeps the one it had, a block's offset is not the scroller's (118px of
+  desk and page margin above the prose — `contentTop()`), and the view restore waits two frames
+  because placing a caret scrolls. The caret comes back exactly; the view comes back to the
+  right block, within about a hundred pixels on a document with headings above, because the
+  estimate of an unmeasured block is a line of body text whatever the block is.
 - **The editor is a page of A4.** Landed as
   `docs/superpowers/plans/2026-09-27-the-editor-becomes-a-page.md`, on the user's ask: make
   editing feel like a printed page. The column was 962 px — 254 mm, **151 characters a
