@@ -27,6 +27,7 @@ methodology; this file is the index and the conventions.
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
+| `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
@@ -36,6 +37,7 @@ methodology; this file is the index and the conventions.
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
 | `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
+| `check-workspace-folders.mjs` | Where a new note may go (`services/workspace_folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
@@ -44,12 +46,17 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and five of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and fifteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
 moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
-the page it happened on in place), blocks and spacing (`block-gaps`, `spacing`,
+the page it happened on in place), making a note (`new-markdown` — the card the menu item's
+command opens: the generated id in the name field, the workspace's folders, the file written
+where it was asked for with its frontmatter on screen and its title selected, and the tree's own
+*New file* through the same command; `new-note-template` — a template written through the app's
+config, the settings tab that shows it, and the note that comes out), blocks and spacing
+(`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
 (`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
@@ -100,6 +107,21 @@ live index; the newest probes carry a header naming what they cover:
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it
   the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
   (the editor window must be visible, so `probe:all` skips it).
+- A probe whose subject is written *through the webview* — a new note is written with the file
+  plugin — needs a workspace under `$HOME`, because that is all the plugin is scoped to
+  (`src-tauri/capabilities/default.json`: a folder under `/private/tmp` can be listed, moved and
+  deleted by the app's own Rust commands, but reading or writing it from the page is refused).
+  `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
+  `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
+- A **native** surface — the system's save sheet, a window menu, the prompt's own dialog — cannot
+  be driven, and cannot be stood in for from the page either: the dialog plugin's `save` does not
+  travel over the webview's `fetch` (measured; a `fetch` stand-in that works for an app command
+  and for the opener never sees `plugin:dialog|save`, and the real sheet then blocks the harness
+  for its whole budget). So the app gives every question two hands and a probe drives the card:
+  which hand is in the room is `src/ui/under_test.ts`, one rule for the prompt, the new-note card
+  and whatever comes next. A rule that only the native hand reaches belongs in a pure module with
+  a check beside it — `check-workspace-folders.mjs` holds the one the new-note sheet's answer is
+  read by.
 - A probe is one expression returning `{ checks, failed }`; a probe that only
   measures returns its numbers. The harness reads that verdict: a probe with a
   non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did

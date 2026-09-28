@@ -14,7 +14,7 @@ import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
-import type { DocumentView } from '../services/document_session';
+import type { DocumentView, SeenView } from '../services/document_session';
 import { documentSession } from '../services/session';
 import { DOCUMENT_OPENED } from './workspace/tree';
 
@@ -77,7 +77,7 @@ export class MarkdownEditor extends BaseComponent {
   }
 
   /** Where the reader is in the document on screen, for the session to keep. */
-  captureView(): DocumentView {
+  captureView(): SeenView {
     return this.innerEditor.captureView();
   }
 

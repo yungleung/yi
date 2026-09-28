@@ -34,6 +34,7 @@ export type CommandId =
   | 'edit:insertRule'
   | 'file:save'
   | 'file:saveAs'
+  | 'file:newMarkdown'
   | 'session:toggleStack'
   | 'session:openStack'
   | 'session:restore'

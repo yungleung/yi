@@ -64,6 +64,11 @@ window.__t = (() => {
       config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
     };
     await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+    // The app's own manager holds the config in memory, and what reads it — the wikilink
+    // resolver, the new-note card's folder list — must see the folder the probe just pointed
+    // the app at. Writing the file alone would leave them on the workspace the app started on.
+    const { configManager } = await app('/src/services/config_manager.ts');
+    await configManager.load();
     await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
       event: 'workspace_changed',
       payload: path
@@ -83,6 +88,8 @@ window.__t = (() => {
         config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
       }
     });
+    const { configManager } = await app('/src/services/config_manager.ts');
+    await configManager.load();
     await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
       event: 'workspace_changed',
       payload: previous.workspace ?? ''

@@ -56,6 +56,34 @@ offset is not the scroller's (a page puts 118px of desk and margin above the pro
 the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
 screen is dropped (`reachable`) — nothing could bring it back.
 
+A **new note** is one command, `file:newMarkdown`. `services/new_document.ts` is the rule: the
+id's fourteen digits (`YYYYMMDDHHMMSS`, local — an author's own stamp), the four keys every note
+carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list holding `untagged`), the
+template the reader may write (the app config's `new_file_frontmatter`, a string or null for the
+app's own, shown by settings → *New note*) and the range the title's value sits in, so the editor
+can select it. A required key whose value is written *under* it — the keyword list — is the
+reader's and is left alone; one with nothing under it gets the app's. `services/workspace_folders.ts`
+walks the workspace for the places a note can go, and holds the two path rules the answers are
+read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/new_document_flow.ts`
+does the four observable things in order — create the file, write the note into it, tell the tree
+that folder changed, open it in the session — and reaches its question through a chooser it takes
+as a port.
+
+That question has **two hands**, the same two `ui/prompt.ts` has and switched by the same one rule
+(`ui/under_test.ts`): a reader is asked by the system's own sheet (`save`, the one native surface
+that means "where, and what is it called" in one breath, opened on the folder they are working in
+with the id as the name to type over), and a probe is asked on a card in the page — the workspace's
+own folders, indented like the tree, with the one the reader is in already chosen. A native sheet
+cannot be driven by a probe, so only the card is probed (`test/probes/new-markdown.js`) and the
+rule the sheet's answer is read by is checked in Node (`test/checks/check-workspace-folders.mjs`).
+The tree's own *New file* runs the same command with the row's folder as its payload, so a note
+made in the tree and one made from the menu cannot drift apart; it no longer starts an inline
+rename, because the file is already named by its id and the *title* is what the reader is asked to
+type. Two things bite here: the file plugin is scoped to `$HOME`
+(`src-tauri/capabilities/default.json`), so a workspace outside it can be listed, moved and
+deleted but not read or written by the webview; and making a note from a document that is not in
+the stack asks the session's question first, the same one opening a file asks.
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:
@@ -129,7 +157,8 @@ under *AI agents*.
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
-2. `npm run check` → `20/20 checks passed` (or more, if you added one).
+2. `npm run check` → every check passes (`n/n checks passed`, where `n` grows as checks are
+   added — one per pure rule).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report. A probe that "timed out" is usually its own
    length: the bridge gives a script **5 s**, and the harness recovers anything longer
