@@ -3,10 +3,11 @@
  *
  * A document is a path (or nothing, for a document that has never been a file), its own text
  * as it stands — edits included — the text it was last read from or written to disk, and where
- * the reader was in it. The stack holds documents themselves, so a *stacked* document is never
- * a stale copy of the one on screen: pushing keeps it, and switching away captures its text and
- * its view. That is what lets a stacked document be replaced on screen without a question —
- * nothing is lost — while an unstacked one has to be asked about.
+ * the reader was in it: a caret, or the two ends of a selection, which is how a new note opens
+ * with its title ready to be typed over. The stack holds documents themselves, so a *stacked*
+ * document is never a stale copy of the one on screen: pushing keeps it, and switching away
+ * captures its text and its view. That is what lets a stacked document be replaced on screen
+ * without a question — nothing is lost — while an unstacked one has to be asked about.
  *
  * Everything here is a rule over a plain object, with no DOM and no backend, so the whole of
  * the behaviour above is asserted in Node (`test/checks/check-document-session.mjs`). The
@@ -30,8 +31,23 @@ export interface DocumentView {
    * holding it has been unmounted since — in which case the last offset that *was* known stands.
    */
   caret: number | null;
+  /**
+   * The far end of a selection the reader left, or null when they left a plain caret. It is
+   * what a document opened with its title selected keeps between restarts, and it is read
+   * with `caret`: a capture that cannot see the caret keeps the pair it already had.
+   */
+  to: number | null;
   /** The top of the viewport: the block there, and how far into it the view is scrolled. */
   scroll: { offset: number; within: number } | null;
+}
+
+/** What the editor can see of where the reader is, for `capture`. */
+export interface SeenView {
+  /** Null when the caret is in a block the window has since dropped. */
+  caret: number | null;
+  /** The far end of the selection, or null when it is a plain caret or cannot be seen. */
+  to: number | null;
+  scroll: DocumentView['scroll'];
 }
 
 export interface SessionDocument {
@@ -55,10 +71,22 @@ export interface SessionState {
   documents: SessionDocument[];
 }
 
+/** A range of a document, for a view that starts on one. */
+export interface DocumentRange {
+  start: number;
+  end: number;
+}
+
 /** What a click in the tree brings: the file it read, and where it came from. */
 export interface IncomingDocument {
   path: string | null;
   content: string;
+  /**
+   * Where the reader should land when this document is opened, or nothing for its beginning.
+   * A new note opens on its title — the reader is about to write one — and everything else
+   * opens where a document has always opened: at its start.
+   */
+  select?: DocumentRange | null;
 }
 
 /** The id a document is opened under, or a key it can be keyed by when nothing names it. */
@@ -75,7 +103,9 @@ export function openDocument(incoming: IncomingDocument, id: string): SessionDoc
     content: incoming.content,
     saved: incoming.content,
     stacked: false,
-    view: { caret: 0, scroll: null }
+    view: incoming.select
+      ? { caret: incoming.select.start, to: incoming.select.end, scroll: null }
+      : { caret: 0, to: null, scroll: null }
   };
 }
 
@@ -189,7 +219,7 @@ export function dropFromStack(state: SessionState, id: string): SessionState {
 export function capture(
   state: SessionState,
   content: string,
-  view: DocumentView
+  view: SeenView
 ): SessionState {
   return {
     ...state,
@@ -199,18 +229,26 @@ export function capture(
             ...document,
             content,
             title: documentTitle(content, document.path),
-            // What the editor could not see keeps what the document already had: a reader who
-            // scrolled their caret's block out of the window before leaving the document is
-            // still in the paragraph they were in, and a capture taken then must not read that
-            // as "the beginning".
-            view: {
-              caret: view.caret ?? document.view.caret,
-              scroll: view.scroll ?? document.view.scroll
-            }
+            view: mergeView(document.view, view)
           }
         : document
     )
   };
+}
+
+/**
+ * What a capture leaves behind.
+ *
+ * What the editor could not see keeps what the document already had: a reader who scrolled
+ * their caret's block out of the window before leaving the document is still in the paragraph
+ * they were in, and a capture taken then must not read that as "the beginning". The caret and
+ * the far end go together — a range with one end from here and the other from there names no
+ * selection at all — so an unseen caret keeps both, and a seen one brings both.
+ */
+export function mergeView(had: DocumentView, seen: SeenView): DocumentView {
+  return seen.caret === null
+    ? { caret: had.caret, to: had.to, scroll: seen.scroll ?? had.scroll }
+    : { caret: seen.caret, to: seen.to, scroll: seen.scroll ?? had.scroll };
 }
 
 /** Marks the document on screen as written to disk, with the text that was written. */
@@ -277,7 +315,7 @@ export function parseSession(text: string | null): SessionState {
     if (parsed.version !== SESSION_VERSION || !Array.isArray(parsed.documents)) {
       return emptySession();
     }
-    const documents = parsed.documents.filter(isDocument);
+    const documents = parsed.documents.filter(isDocument).map(readView);
     const current =
       typeof parsed.current === 'string' &&
       documents.some((document) => document.id === parsed.current)
@@ -301,6 +339,21 @@ function isDocument(value: unknown): value is SessionDocument {
     typeof document.stacked === 'boolean' &&
     typeof document.view === 'object' &&
     document.view !== null &&
-    typeof document.view.caret === 'number'
+    typeof document.view.caret === 'number' &&
+    (document.view.to === undefined ||
+      document.view.to === null ||
+      typeof document.view.to === 'number')
   );
+}
+
+/**
+ * A document's view as this build reads it: a session written before a view had a far end is
+ * a plain caret there, which is what it was. (A value of the wrong *kind* is not repaired —
+ * `isDocument` refuses that document whole, the way it refuses any shape it cannot read.)
+ */
+function readView(document: SessionDocument): SessionDocument {
+  if (typeof document.view.to === 'number') {
+    return document;
+  }
+  return { ...document, view: { ...document.view, to: null } };
 }

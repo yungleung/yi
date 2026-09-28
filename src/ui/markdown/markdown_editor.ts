@@ -27,10 +27,13 @@ import { setSourceEntryHandler, sourceEntryOffset } from './source_mode';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
+  editorSelection,
   keepScroll,
   proseRoot,
+  rangeOffsets,
   restoreCaret,
   restoreMark,
+  restoreSelection,
   showSourceAt,
   type EditorContext
 } from './editing/context';
@@ -58,7 +61,7 @@ import { MENU_COMMANDS } from './commands/menu';
 import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView } from '../../services/document_session';
+import type { DocumentView, SeenView } from '../../services/document_session';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;
@@ -270,13 +273,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   /**
-   * Where the reader is: the caret's offset, and the top of the view of the document.
+   * Where the reader is: the selection's two ends, and the top of the view of the document.
    *
    * The session keeps this beside a document's text, so that leaving one and coming back puts
-   * the reader where they were (`services/document_session.ts`). The caret is exact; the view
-   * is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
+   * the reader where they were (`services/document_session.ts`). The selection is exact; the
+   * view is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
    */
-  captureView(): DocumentView {
+  captureView(): SeenView {
     return {
       // The remembered offset first: a caret whose block the window has since dropped has a
       // range the browser has *relocated* rather than lost (`docs/architecture.md`, the four
@@ -284,20 +287,43 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // neither can say, so the session keeps the offset it already had for this document. The
       // renderer's own caret hook reads it in the same order, for the same reason.
       caret: this.pendingCaretOffset ?? caretOffset(this.context),
+      to: this.selectionEnd(),
       scroll: this.renderer.scrollAnchor()
     };
   }
 
   /**
+   * The document offset a selection ends at, or null when the reader left a plain caret — or
+   * when the editor cannot see one of its ends.
+   *
+   * Read through the same mapping the commands edit by (`rangeOffsets`), so what the session
+   * remembers and what an edit would replace cannot disagree.
+   */
+  private selectionEnd(): number | null {
+    const range = editorSelection(this.context, true);
+    if (!range || range.collapsed) {
+      return null;
+    }
+    const offsets = rangeOffsets(this.context, range);
+    return offsets && offsets.to > offsets.from ? offsets.to : null;
+  }
+
+  /**
    * Puts the reader back where `captureView` found them.
    *
-   * The caret goes first and the view after it, because placing a caret can make the browser
+   * The selection goes first and the view after it, because placing it can make the browser
    * scroll it into view; the view is then asserted once more on the next frame, since that
-   * scroll arrives after this one.
+   * scroll arrives after this one. A view whose far end cannot be drawn falls back to the
+   * caret at the end it can reach.
    */
   restoreView(view: DocumentView): void {
     if (view.caret !== null) {
-      this.pendingCaretOffset = restoreCaret(this.context, view.caret) ? null : view.caret;
+      const placed =
+        view.to !== null && view.to !== view.caret
+          ? restoreSelection(this.context, view.caret, view.to) ||
+            restoreCaret(this.context, view.caret)
+          : restoreCaret(this.context, view.caret);
+      this.pendingCaretOffset = placed ? null : view.caret;
     }
     this.renderer.scrollToAnchor(view.scroll);
     const anchor = this.contentView.scrollTop;

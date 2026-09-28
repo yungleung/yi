@@ -43,6 +43,7 @@ import {
   stackedDocuments,
   type DocumentView,
   type IncomingDocument,
+  type SeenView,
   type SessionDocument,
   type SessionState
 } from './document_session';
@@ -58,7 +59,7 @@ export interface SessionEditor {
   getContent(): string;
   setContent(content: string): void;
   /** Where the reader is, with null for what the editor cannot currently see (a dropped block). */
-  captureView(): { caret: number | null; scroll: DocumentView['scroll'] };
+  captureView(): SeenView;
   restoreView(view: DocumentView): void;
 }
 

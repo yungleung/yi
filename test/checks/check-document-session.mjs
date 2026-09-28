@@ -155,7 +155,7 @@ check(
 
 // --- capturing, saving, dropping ----------------------------------------------------------
 
-const view = { caret: 12, scroll: { offset: 40, within: 3 } };
+const view = { caret: 12, to: null, scroll: { offset: 40, within: 3 } };
 const captured = capture(state, `${NOTE}More.\n`, view);
 check('capturing writes the text and the view into the current document', {
   content: currentDocument(captured)?.content.endsWith('More.\n'),
@@ -166,8 +166,28 @@ check('the title follows the text', currentDocument(captured)?.title, 'A note ab
 // A capture that cannot see the caret — the block holding it has been unmounted — keeps the one
 // the document already had, or a reader who scrolled away from their caret would be put back at
 // the beginning of the document.
-check('a capture that cannot see the caret keeps the one there was', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: null, scroll: view.scroll }))?.view.caret, 12);
-check('and one that cannot see the view keeps that too', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: 4, scroll: null }))?.view.scroll, view.scroll);
+check('a capture that cannot see the caret keeps the one there was', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: null, to: null, scroll: view.scroll }))?.view.caret, 12);
+check('and one that cannot see the view keeps that too', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: 4, to: null, scroll: null }))?.view.scroll, view.scroll);
+// A selection is a range, and the session keeps both of its ends so a note can reopen with its
+// title already selected (`services/new_document.ts: titleRange`).
+const range = { caret: 20, to: 28, scroll: view.scroll };
+const selected = capture(state, `${NOTE}More.\n`, range);
+check('a selection is kept as its two ends', currentDocument(selected)?.view, range);
+check(
+  'and a capture that sees a plain caret replaces the range with it',
+  currentDocument(capture(selected, `${NOTE}More.\n`, { caret: 4, to: null, scroll: null }))?.view,
+  { caret: 4, to: null, scroll: view.scroll }
+);
+check(
+  'a capture that cannot see the caret keeps both ends of the range',
+  currentDocument(capture(selected, `${NOTE}More.\n`, { caret: null, to: null, scroll: null }))?.view,
+  range
+);
+check(
+  'a range survives the session file',
+  parseSession(serializeSession(selected)).documents.find((document) => document.id === noteId)?.view,
+  range
+);
 check(
   'a written document is saved again',
   isSaved(currentDocument(markSaved(captured, noteId, currentDocument(captured).content))),
@@ -214,6 +234,32 @@ check(
   'and a current that names nothing leaves nothing current',
   parseSession(JSON.stringify({ version: SESSION_VERSION, current: 'gone', documents: [] })).current,
   null
+);
+// A session written before a view had a far end is a plain caret there, which is what it was;
+// a far end of the wrong *kind* is a shape this build cannot read, and takes the document with it.
+check(
+  'a view written before the far end existed reads as a plain caret',
+  parseSession(
+    JSON.stringify({
+      version: SESSION_VERSION,
+      current: 'a',
+      documents: [{ id: 'a', path: null, title: 'A', content: '', saved: '', stacked: false, view: { caret: 3, scroll: null } }]
+    })
+  ).documents[0].view,
+  // The key order is the one `readView` leaves it in: the fields it read, then the far end it
+  // filled in.
+  { caret: 3, scroll: null, to: null }
+);
+check(
+  'a far end that is not a number is not repaired',
+  parseSession(
+    JSON.stringify({
+      version: SESSION_VERSION,
+      current: 'a',
+      documents: [{ id: 'a', path: null, title: 'A', content: '', saved: '', stacked: false, view: { caret: 3, to: 'lots', scroll: null } }]
+    })
+  ).documents.length,
+  0
 );
 // A document that is neither in the stack nor on screen cannot be reached — nothing names it —
 // so it is not kept: an older session file with one is tidied as it is read.
