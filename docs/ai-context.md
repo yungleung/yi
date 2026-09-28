@@ -37,6 +37,25 @@ so the webview cannot be navigated to a dropped path either. A probe that works 
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
 
+Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
+for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
+window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a
+call, where `eventManager` carries news); the session takes it as a port (`attachPrompter`), and
+the workspace tree's delete asks the exported `prompt` directly.
+
+Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
+Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
+file it is written to. It keeps the document on screen, the stack behind it, and where the reader
+was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,
+`scrollAnchor`/`scrollToAnchor` on the renderer), and the workspace tree hands a clicked file to
+the session rather than to the editor, because whether the document on screen has to be asked
+about is the session's decision. Three things bite: a document's id is read at the *top* of it
+(`document_identity.ts` — a note that links to another by id must not become it), a block's
+offset is not the scroller's (a page puts 118px of desk and margin above the prose;
+`virtual_block_renderer.ts: contentTop`), and placing a caret scrolls, so a view restore asserts
+the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
+screen is dropped (`reachable`) — nothing could bring it back.
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:
