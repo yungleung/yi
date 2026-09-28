@@ -90,7 +90,13 @@
   ];
 
   for (const shape of cases) {
-    await t.load(window.__probeDoc ?? '');
+    // The document is the one the harness loaded (the demo document, under `probe:all`). It is
+    // *not* loaded again when there is none: `--with-doc`/`--fixture` are what name one, and a
+    // by-name run without them would otherwise load nothing — over the document the reader had
+    // open, which is a change of its own.
+    if (typeof window.__probeDoc === 'string' && window.__probeDoc !== '') {
+      await t.load(window.__probeDoc);
+    }
     const rule = await bringRuleToTheFold();
     check(`${shape.name}: the demo document has the rule to put below the fold`, rule !== null, rule !== null);
     if (!rule) {
