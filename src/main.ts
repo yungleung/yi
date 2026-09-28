@@ -71,11 +71,11 @@ function createAppShell(): MarkdownEditor {
   titleBar.addComponent(listToolbar, 'center');
   titleBar.addComponent(footnoteToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');
-  titleBar.addComponent(layoutToolbar, 'right');
 
   sidebar.attachToTitleBar(titleBar.element);
 
   statusBar.addComponent(wordsCount, 'right');
+  statusBar.addComponent(layoutToolbar, 'right');
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).

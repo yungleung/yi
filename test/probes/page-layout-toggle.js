@@ -1,13 +1,14 @@
 /**
  * The layout button: a page of A4, or the column at the width of the pane.
  *
- * The button sits at the right of the titlebar and draws the layout the editor is in — a
- * sheet while it is a page, a frame while the words take the whole width — and pressing it
- * runs `view:togglePage`. This drives the real button and measures both layouts: what the
- * page is (210 mm of sheet, a 25 mm margin, a desk under it), what the column is (as wide as
- * the pane, no sheet and no desk, and the 16px type at 24px a line it always had), that the
- * button's icon, name and `aria-pressed` say which is on, and that a click still types where
- * it landed after the switch.
+ * The button sits at the right of the *status* bar (the bar under the document, with the word
+ * count) and draws the layout the editor is in — a sheet while it is a page, a frame while the
+ * words take the whole width — and pressing it runs `view:togglePage`. This drives the real
+ * button and measures both layouts: what the page is (210 mm of sheet, a 25 mm margin, a desk
+ * under it), what the column is (as wide as the pane, no sheet and no desk, and the 16px type
+ * at 24px a line it always had), that the button's icon, name and `aria-pressed` say which is
+ * on, that the bar it sits in is not much taller than it was for it, and that a click still
+ * types where it landed after the switch.
  *
  * `a4-page.js` holds the page's own geometry and the way it scales to a narrow pane; this
  * holds the switch between the two layouts.
@@ -67,6 +68,7 @@
     const style = getComputedStyle(element);
     const desk = getComputedStyle(scroller());
     const button = layoutButton();
+    const svg = button?.querySelector('svg');
     return {
       layout: scroller().dataset.layout,
       width: Math.round(element.getBoundingClientRect().width),
@@ -79,7 +81,12 @@
       scale: getComputedStyle(scroller()).getPropertyValue('--page-scale'),
       label: button?.getAttribute('aria-label') ?? null,
       pressed: button?.getAttribute('aria-pressed') ?? null,
-      icon: button?.querySelector('svg path[fill="currentColor"]')?.getAttribute('d') ?? null
+      icon: svg?.querySelector('path[fill="currentColor"]')?.getAttribute('d') ?? null,
+      viewBox: svg?.getAttribute('viewBox') ?? null,
+      inTitleBar: button?.closest('.titlebar') !== null,
+      barHeight: button
+        ? Math.round(button.parentElement.parentElement.getBoundingClientRect().height)
+        : null
     };
   };
   const press = async () => {
@@ -90,12 +97,18 @@
   await setPane(1000);
   const page = look();
   check(
-    'the button at the right of the titlebar draws the page while the editor is one',
+    'the button sits in the status bar, not the titlebar',
+    page.inTitleBar === false && page.barHeight !== null && page.barHeight <= 24,
+    { inTitleBar: page.inTitleBar, barHeight: page.barHeight }
+  );
+  check(
+    'and at the right of it it draws the page while the editor is one',
     page.icon !== null &&
-      page.icon.startsWith('M3 1v18h14V1z') &&
+      page.icon.startsWith('M24.75 2A3.25') &&
+      page.viewBox === '0 0 32 32' &&
       page.label === 'Full width' &&
       page.pressed === 'true',
-    { icon: page.icon?.slice(0, 24) ?? null, label: page.label, pressed: page.pressed }
+    { icon: page.icon?.slice(0, 24) ?? null, viewBox: page.viewBox, label: page.label, pressed: page.pressed }
   );
   check(
     'and the editor is a page of A4',
@@ -131,10 +144,11 @@
   check(
     'and the button draws the full-width icon and names the page',
     auto.icon !== null &&
-      auto.icon.startsWith('M4 4a2 2 0 0 0-2 2v8') &&
+      auto.icon.startsWith('M18.25 4A3.75') &&
+      auto.viewBox === '0 0 24 24' &&
       auto.label === 'A4 page' &&
       auto.pressed === 'false',
-    { icon: auto.icon?.slice(0, 24) ?? null, label: auto.label, pressed: auto.pressed }
+    { icon: auto.icon?.slice(0, 24) ?? null, viewBox: auto.viewBox, label: auto.label, pressed: auto.pressed }
   );
 
   // The layout is a view of the document, not a change to it: a click still lands and types.
