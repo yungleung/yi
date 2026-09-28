@@ -13,6 +13,7 @@
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
+import type { EditorLayout } from './markdown/markdown_editor';
 import { DOCUMENT_OPENED } from './workspace/tree';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
@@ -35,6 +36,15 @@ export class MarkdownEditor extends BaseComponent {
   setContent(content: string): void {
     this.innerEditor.setContent(content);
     void eventManager.emit(MARKDOWN_CONTENT_CHANGED, this.getContent());
+  }
+
+  /** Draws the editor as a page of A4 or as a column the width of the pane. */
+  setLayout(layout: EditorLayout): void {
+    this.innerEditor.setLayout(layout);
+  }
+
+  getLayout(): EditorLayout {
+    return this.innerEditor.getLayout();
   }
 
   getContent(): string {

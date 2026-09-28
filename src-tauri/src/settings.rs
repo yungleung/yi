@@ -14,6 +14,11 @@ pub struct AppConfig {
   /// CSL style name (one of the styles bundled with citation-js, e.g. `apa`).
   #[serde(default = "default_csl_style")]
   pub csl_style: String,
+  /// How the editor is laid out: a page of A4 (`"page"`, the default) or the column at
+  /// the width of the pane (`"auto"`). The titlebar button switches it, and it is
+  /// remembered here so a reader who prefers one keeps it.
+  #[serde(default = "default_editor_layout")]
+  pub editor_layout: String,
   pub config_version: u32,
 }
 
@@ -27,12 +32,17 @@ fn default_csl_style() -> String {
   "apa".to_string()
 }
 
+fn default_editor_layout() -> String {
+  "page".to_string()
+}
+
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
       workspace: None,
       bibliography_file: default_bibliography_file(),
       csl_style: default_csl_style(),
+      editor_layout: default_editor_layout(),
       config_version: CURRENT_CONFIG_VERSION,
     }
   }

@@ -13,6 +13,8 @@ import { LinkToolbar } from './ui/toolbar/link_toolbar';
 import { ListToolbar } from './ui/toolbar/list_toolbar';
 import { FootnoteToolbar } from './ui/toolbar/footnote_toolbar';
 import { TableToolbar } from './ui/toolbar/table_toolbar';
+import { LayoutToolbar } from './ui/toolbar/layout_toolbar';
+import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { Toast } from './ui/toast';
 import { workspaceManager, TOAST_EVENT, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
@@ -21,7 +23,7 @@ import { openSettingsWindow } from './ui/settings/settings_window';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 
-function createAppShell() {
+function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
   const root = existingRoot ?? document.createElement('div');
 
@@ -48,6 +50,7 @@ function createAppShell() {
   const listToolbar = new ListToolbar();
   const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
+  const layoutToolbar = new LayoutToolbar();
   const toast = new Toast();
 
   titleBar.mount(root);
@@ -72,6 +75,7 @@ function createAppShell() {
   sidebar.attachToTitleBar(titleBar.element);
 
   statusBar.addComponent(wordsCount, 'right');
+  statusBar.addComponent(layoutToolbar, 'right');
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).
@@ -93,6 +97,8 @@ function createAppShell() {
       void eventManager.emit(TOAST_EVENT, `Failed to save the document: ${message}`);
     }
   });
+
+  return editor;
 }
 
 async function initializeEventListeners() {
@@ -107,13 +113,24 @@ async function initializeEventListeners() {
   });
 }
 
-async function initializeConfig(): Promise<void> {
+async function initializeConfig(editor: MarkdownEditor): Promise<void> {
   try {
     const cfg = await configManager.load();
 
     if (cfg.workspace) {
       void eventManager.emit(WORKSPACE_CHANGED, cfg.workspace);
     }
+
+    // The layout the reader left is the one they get, and the button that switches it is
+    // remembered through the same config file as the bibliography (see `settings.rs`).
+    // Applying it happens before the listener, so opening the app is not a change to save.
+    editor.setLayout(cfg.editor_layout === 'auto' ? 'auto' : 'page');
+    void eventManager.on(EDITOR_LAYOUT_CHANGED, (event: any) => {
+      const chosen = (event?.payload ?? event) as EditorLayout;
+      if (chosen === 'page' || chosen === 'auto') {
+        void configManager.update({ editor_layout: chosen });
+      }
+    });
   } catch (error) {
     console.error('Failed to load the app config:', error);
   }
@@ -125,7 +142,7 @@ async function initializeConfig(): Promise<void> {
 
 window.addEventListener('DOMContentLoaded', async () => {
   await initializeEventListeners();
-  createAppShell();
-  await initializeConfig();
+  const editor = createAppShell();
+  await initializeConfig(editor);
   console.log('DOM fully loaded and parsed');
 });

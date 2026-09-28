@@ -62,6 +62,12 @@ import { VirtualBlockRenderer } from './virtual_block_renderer';
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;
 
+/** The event that says which layout the editor is drawn in, for the button that switches it. */
+export const EDITOR_LAYOUT_CHANGED = 'editor_layout_changed';
+
+/** A page of A4, or the column at the width of the pane. */
+export type EditorLayout = 'page' | 'auto';
+
 /**
  * The WYSIWYG markdown editor.
  *
@@ -90,6 +96,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly pageFitter: ResizeObserver;
   /** The scale the page is drawn at: A4 until the pane cannot hold it (`fitPage`). */
   private pageScale = 1;
+  /** A4 (`page`) or the column at the pane's width (`auto`); see `styles.css`. */
+  private layout: EditorLayout = 'page';
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
 
@@ -98,6 +106,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
     this.contentView = document.createElement('div');
     this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto';
+    this.contentView.dataset.layout = this.layout;
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
@@ -196,13 +205,39 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     const desk = parseFloat(getComputedStyle(this.contentView).paddingLeft) || 0;
     const available = Math.max(0, this.contentView.clientWidth - 2 * desk);
     // Rounded, so a resize that lands a third of a pixel elsewhere is not a new scale.
-    const scale = Math.round(Math.min(1, available / A4_WIDTH_PX) * 1000) / 1000;
+    // The full-width column is not a page: its measurements are the ones the document was
+    // written in, at 1, whatever the pane is.
+    const scale =
+      this.layout === 'page' ? Math.round(Math.min(1, available / A4_WIDTH_PX) * 1000) / 1000 : 1;
     if (scale === this.pageScale) {
       return;
     }
     this.pageScale = scale;
     this.contentView.style.setProperty('--page-scale', String(scale));
     this.renderer.setPageScale(scale);
+  }
+
+  /**
+   * Draws the editor as a page of A4 or as a column the width of the pane.
+   *
+   * The two are one attribute on the scroller: `styles.css` scopes the sheet, the desk and
+   * the page's scale to `[data-layout='page']`, and `auto` is what the editor was before the
+   * page — the column at the pane's width, everything measured at 1. The button that
+   * switches it hears which way it went.
+   */
+  setLayout(layout: EditorLayout): void {
+    if (this.contentView.dataset.layout === layout) {
+      return;
+    }
+    this.layout = layout;
+    this.contentView.dataset.layout = layout;
+    this.fitPage();
+    void eventManager.emit(EDITOR_LAYOUT_CHANGED, layout);
+  }
+
+  /** The layout the editor is drawn in. */
+  getLayout(): EditorLayout {
+    return this.layout;
   }
 
   setContent(content: string): void {
@@ -240,7 +275,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       context: this.context,
       openFind: (replace) => this.find.open(replace),
       closeFind: () => this.find.close(),
-      applyHistory: (direction) => this.applyHistory(direction)
+      applyHistory: (direction) => this.applyHistory(direction),
+      toggleLayout: () => this.setLayout(this.layout === 'page' ? 'auto' : 'page')
     });
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.

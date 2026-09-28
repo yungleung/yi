@@ -22,7 +22,8 @@ export interface ToolbarButtonSpec {
 export const TOOL_ICON_SIZE = 'text-[1.25em]';
 
 /**
- * Base class for the titlebar's tool groups.
+ * Base class for the bars' tool groups: the titlebar's editing tools, and the one button the
+ * status bar holds.
  *
  * Every group needs the same things from its buttons, and the same three rules:
  * a button is ghost-styled, it must not start a window drag, and it must not

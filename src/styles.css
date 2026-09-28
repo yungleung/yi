@@ -136,17 +136,29 @@
  * the old `w-full max-w-full` on the root was what lifted that cap.
  */
 .markdown-scroller {
-  padding: 1.5rem;
-  background-color: var(--color-base-200);
+  /* The column at the width of the pane — the shape the editor had before the page, and
+     what the layout button switches away from A4 to. */
+  padding: 1rem;
   /* How big the page is drawn: 1 when the pane can hold an A4 sheet, less when it cannot,
-     set by `markdown_editor.ts: fitPage`. */
+     set by `markdown_editor.ts: fitPage`, and 1 in the full-width column. */
   --page-scale: 1;
 }
 
 .markdown-page {
   box-sizing: border-box;
-  width: calc(210mm * var(--page-scale));
+  /* As wide as its container, whichever layout it is in: the typography plugin caps
+     `.prose` at `65ch`, and the `w-full max-w-full` this replaced was what lifted that. */
   max-width: none;
+}
+
+/* The page of A4: the sheet, the desk under it, and the margin it keeps. */
+.markdown-scroller[data-layout='page'] {
+  padding: 1.5rem;
+  background-color: var(--color-base-200);
+}
+
+.markdown-scroller[data-layout='page'] .markdown-page {
+  width: calc(210mm * var(--page-scale));
   min-height: calc(297mm * var(--page-scale));
   margin-inline: auto;
   padding: calc(25mm * var(--page-scale));
@@ -159,7 +171,8 @@
 
 /* The words take the page's own measure, so the sheet's scale is theirs too — and the
    `.prose` in the selector is doing work: the typography plugin sets `font-size: 1rem` on
-   `.prose` itself, which is what the rest of its `em` sizes resolve against. */
+   `.prose` itself, which is what the rest of its `em` sizes resolve against. At scale 1 this
+   is the 16px type and 24px line the column has always had. */
 .prose.markdown-page {
   font-size: calc(1rem * var(--page-scale));
   line-height: var(--md-line);

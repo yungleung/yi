@@ -267,6 +267,17 @@ elements) unless it says otherwise.
   document's total height moved as blocks were measured, and an undo clamped a reader at the
   bottom up a page (5464 px of estimate against 4728 px of truth). The estimate takes the
   scale now, and a new scale forgets heights measured in the old pixels.
+  **And the two layouts switch.** Landed as
+  `docs/superpowers/plans/2026-09-28-the-layout-button.md`, on the user's ask: a button at the
+  right of the status bar (`src/ui/toolbar/layout_toolbar.ts`, with the two icons they sent)
+  runs `view:togglePage`, and the editor's `data-layout` moves between the page of A4 and the
+  full-width column it had before — `styles.css` scopes the sheet, the desk and the scale to
+  `[data-layout='page']`, and `fitPage` holds the scale at 1 in `auto`. The button draws the
+  layout in hand, names the one a press reaches, and carries `aria-pressed`; the choice is
+  remembered in the app config (`editor_layout`, defaulting to `page`). Measured by
+  `test/probes/page-layout-toggle.js`, which presses the real button: 1000 px of pane gives a
+  794 px sheet with 94 px of margin, and one press gives a 968 px column with no sheet, no
+  desk and 16 px type over 24 px lines again.
 - **A click in the frontmatter went to the block edge.** A frontmatter block was rendered
   *as* the block in `create_block.ts` rather than as a node, so `routePointerClick` found no
   `.markdown-node` under the pointer and handed the click to `placeCaretFromPointer`, which
