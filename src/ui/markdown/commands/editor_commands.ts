@@ -28,6 +28,7 @@ import { applyFormatting } from '../editing/formatting';
 import { insertFootnote } from '../editing/footnotes';
 import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
+import { insertImage } from '../../image/image_flow';
 import { registerCommand } from './registry';
 
 /** What a command needs from the editor that registers it. */
@@ -52,6 +53,7 @@ export function registerEditorCommands(host: CommandHost): void {
   registerCommand({ id: 'edit:selectAll', run: () => selectAll(context) });
   registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(context) });
   registerCommand({ id: 'edit:insertLink', run: () => void insertLink(context) });
+  registerCommand({ id: 'edit:insertImage', run: () => void insertImage(context) });
   registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(context) });
   registerCommand({ id: 'view:togglePage', run: () => host.toggleLayout() });
   registerCommand({ id: 'find:open', run: () => host.openFind(false) });

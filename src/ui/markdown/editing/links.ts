@@ -20,7 +20,7 @@
  */
 
 import { readClipboardText } from '../../../api/clipboard';
-import { clipboardDestination, linkInsertion } from '../syntax/link_edits';
+import { clipboardDestination, linkInsertion, selectionTitle } from '../syntax/link_edits';
 import { applyEdit, editorSelection, rangeOffsets, type EditorContext } from './context';
 
 /**
@@ -39,17 +39,12 @@ export async function insertLink(context: EditorContext): Promise<boolean> {
     return false;
   }
   const text = context.state.getText();
-  let from = offsets.from;
-  let to = offsets.to;
   // Whitespace on either side of a selection is not part of the title — the same
   // courtesy the formatting commands pay a natural drag.
-  while (from < to && /\s/.test(text[from])) {
-    from += 1;
-  }
-  while (to > from && /\s/.test(text[to - 1])) {
-    to -= 1;
-  }
-  const insertion = linkInsertion(text.slice(from, to), url);
+  const title = selectionTitle(text.slice(offsets.from, offsets.to));
+  const from = offsets.from + title.from;
+  const to = offsets.from + title.to;
+  const insertion = linkInsertion(title.text, url);
   applyEdit(context, from, to, insertion.markdown, from + insertion.caret);
   return true;
 }
