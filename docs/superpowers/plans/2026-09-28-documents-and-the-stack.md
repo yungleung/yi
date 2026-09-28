@@ -35,8 +35,10 @@ One new home, and the editor stays a view of it.
 
 | Piece | Home | What it is |
 | --- | --- | --- |
-| A document | `src/services/document_session.ts` | `{ id, path \| null, title, content, stacked, view: { caret, scroll } }` — the file it came from, the text as it stands (edits included), and where the reader was |
+| A document | `src/services/document_session.ts` | `{ id, path \| null, title, content, saved, stacked, view: { caret, scroll } }` — the file it came from, the text as it stands (edits included), the text as it was last read or written (`saved`, which is what "editing" means), and where the reader was |
 | The session | the same module | `{ version, current: id, documents: [...] }`, with the events `DOCUMENT_SESSION_CHANGED`; the *current* document may or may not be in the stack |
+| The document's id | `src/services/document_manager.ts` | the frontmatter `id` (`readFrontmatterId`, already there for *Copy id*), else the first fourteen digits anywhere in the document — the id is a `YYYYMMDDHHMMSS` stamp — else the path, else a key the session makes for a document that has none. A later change will generate the id for a new file; this one only reads it |
+| The title | the same module | the frontmatter `title`, else the first heading, else the file name, else `Untitled` — read from the document's own content, so a document that has never been on disk still has a name |
 | The view state | `editor_panel.ts` → `markdown_editor.ts` | `captureView()` / `restoreView(state)` — the only way the session can learn or set the caret and the scroll, because only the editor owns the DOM |
 | Reading a file | `tree.ts` (unchanged) | it reads the file and emits `DOCUMENT_OPENED` with `{ path, content }`; the session decides what that means |
 | Persistence | `src-tauri/src/session.rs` behind `src/api/session.ts` | `load_session` / `save_session`, a JSON file in the app data dir |
@@ -47,42 +49,82 @@ own file and its own `version` field so a future change can migrate or discard i
 
 ## The behaviour
 
-1. **Push** (titlebar button, `session:push`): the current document joins the stack
-   (`stacked = true`) and stays on screen. The status component turns from "not stacked" to
-   "stacked".
-2. **Open a file**: if the current document is stacked, it is replaced in the foreground — it
-   is safe in the stack. If it is not, the app asks (`ask`, the native dialog the tree already
-   uses for delete): *push it and open* — or *open anyway*, which is today's behaviour, the
-   current document gone.
-3. **Do not nag about nothing.** The ask is skipped when the current document is the one the
-   app opened with and it has neither a path nor an edit — hmm, that rule needs a "has been
-   edited" fact, which is `content !== the content it was loaded with`. That comparison is one
-   line and it is also what "unsaved" means, so the document carries `loaded: string` for it.
-4. **Open a file that is already in the stack** brings *that* document forward, with its edits
+1. **Push** (the titlebar toggle, `session:toggleStack`): the current document joins the stack
+   (`stacked = true`) and stays on screen; a second press takes it out again. The status
+   component turns from "not stacked" to "in the stack".
+2. **Open a file**: if the current document is stacked, it is replaced in the foreground
+   without a word — its latest version is in the stack, which is the point of pushing it. If it
+   is not stacked, the app asks (`ask`, the native dialog the tree already uses for delete):
+   *push it and open* — or *open anyway*, which is today's behaviour, the current document
+   gone. Two cases never ask: a document that is already stacked, and the document the app
+   started on when it has neither a path nor an edit (nothing would be lost).
+3. **Open a file that is already in the stack** brings *that* document forward, with its edits
    and its view, rather than reading the file again — the stack's whole point is that the
    in-memory copy is the newer one.
-5. **Restore** (the stack popover): `current = id`, and the editor is given the document's
+4. **Restore** (the stack popover): `current = id`, and the editor is given the document's
    content, caret and scroll.
-6. **Drop** a document from the stack: the popover gives each entry a small × (the user's
-   brief does not ask for it, but without it a document can never leave the stack).
-7. **Restart**: the session file is read; the current document is restored with its caret and
+5. **Drop** a document from the stack: the popover's × at the rightmost edge of a row, which
+   asks about saving first when the document is not the current one and is not saved.
+6. **Restart**: the session file is read; the current document is restored with its caret and
    scroll, and the stack is intact. Nothing is re-read from disk on the way (see decision 1).
+7. **Saved or editing.** Because the session's copy is the truth, the document can differ from
+   its file, so the status bar says which it is: **`Saved`** when the text is what was last
+   read from or written to disk, **`Editing`** when it is not. "Editing" has to be a state the
+   author can leave, and today there is no way to: `⌘S` emits `save` and nothing listens, so
+   only *Save As* writes anything. **This plan therefore adds a real Save** (`file:save`:
+   write the document's text to its own path, or fall back to the Save As dialog when it has
+   none) — the indicator is meaningless without it.
 
 ## The interface
 
-- **Two titlebar buttons**, in the titlebar's right group: *push* (`session:push`) and *open the
-  stack* (`session:openStack`). Both follow `docs/adding-a-command.md` — one id, one home, one
-  way in — as `view:togglePage` did. **Icons:** the user has sent theirs for the other buttons;
-  until they send two for these, I will draw a tray-with-an-arrow for push and a stack of
-  sheets for the popover, and they are one line each to swap.
+- **Two titlebar buttons**, in the titlebar's right group, with the user's glyphs:
+  - **The stack toggle** (`session:toggleStack`) draws `stack-push` while the current document
+    is *not* stacked and `stack-pop` while it is, exactly as the layout button draws the layout
+    in hand: one press pushes the document into the stack, a second takes it out. It carries
+    `aria-pressed` and a tooltip naming what the press does.
+  - **Open the stack** (`session:openStack`) draws the layered `stack` glyph.
+  Both follow `docs/adding-a-command.md` — one id, one home, one way in — as `view:togglePage`
+  did.
 - **The stack popover** takes the shape of `table_picker.ts` (absolute, `top-full`, `z-50`,
-  closes on Escape, on a click outside, and after a pick): one row per stacked document, its
-  file name (or `Untitled`), the row's click restores it, its × drops it, and the current
-  document's row is marked.
-- **The status component** in the status bar (`status_bar.ts`, beside the word count and the
-  layout button): `In the stack` / `Not stacked` for the current document, and the size of the
-  stack (`2 stacked`) — the first is what the brief asks for, the second is what makes the
-  popover's contents legible at a glance.
+  closes on Escape, on a click outside, and after a pick): one row per stacked document showing
+  its **title** (`src/services/document_manager.ts`), with the row's click restoring it. The
+  row is justified — the title on the left, a small **×** at the rightmost edge — and the × on
+  a document that is **not the current one and not saved** asks first whether to save it (its
+  path if it has one, Save As if it has not); the current document's row is marked.
+- **The status components**, in the status bar (`status_bar.ts`) beside the word count and the
+  layout button: the **saved state** of the current document (`Saved` / `Editing`, the
+  user's own words) and the **stack state** (`In the stack` / `Not stacked`, with the size of
+  the stack shown as `3 stacked`).
+- **The `⋯` button goes.** `main.ts` builds a `titleActions` button that nothing listens to —
+  the user asked for it to be removed, and the two new buttons take its place in the group.
+
+### The glyphs the user sent
+
+```html
+<!-- stack-push: the toggle while the document is not stacked -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+  <path d="M0 0h16v16H0z" fill="none" />
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="m3.25 7.25-1.5.75 6.25 3.25 6.25-3.25-1.5-.75m-11 3.75 6.25 3.25 6.25-3.25" />
+    <path d="m8 8.25v-6.5m-2.25 4.5 2.25 2 2.25-2" />
+  </g>
+</svg>
+
+<!-- stack-pop: and while it is stacked -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+  <path d="M0 0h16v16H0z" fill="none" />
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+    <path d="m4.25 6.75-2.5 1.25 6.25 3.25 6.25-3.25-2.5-1.25m-10 4.25 6.25 3.25 6.25-3.25" />
+    <path d="m8 8.25v-6.5m-2.25 2 2.25-2 2.25 2" />
+  </g>
+</svg>
+
+<!-- stack: the button that opens the stack -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 56 56">
+  <path d="M0 0h56v56H0z" fill="none" />
+  <path fill="currentColor" d="M28.012 31.68c.937 0 1.851-.305 2.976-.961l18.352-10.64c1.875-1.102 2.625-1.97 2.625-3.259c0-1.265-.75-2.133-2.625-3.234L30.988 2.946c-1.125-.657-2.039-.962-2.976-.962c-.961 0-1.852.305-2.977.961L6.684 13.585c-1.875 1.102-2.625 1.97-2.625 3.235c0 1.29.75 2.157 2.625 3.258l18.351 10.64c1.125.657 2.016.962 2.977.962m0-4.078c-.329 0-.657-.118-1.032-.329L9.121 17.055c-.094-.047-.164-.117-.164-.235c0-.093.07-.164.164-.21l17.86-10.22c.374-.21.702-.327 1.03-.327s.657.117 1.032.328l17.836 10.218c.117.047.188.118.188.211c0 .117-.071.188-.188.235L29.043 27.273c-.375.211-.703.329-1.031.329m0 15.632c.843 0 1.57-.398 2.554-.984L50.7 30.367c.89-.539 1.266-1.312 1.266-2.039c0-.96-.703-1.758-1.336-2.062L28.902 38.805c-.328.187-.633.328-.89.328c-.258 0-.563-.14-.891-.328L5.394 26.265c-.656.305-1.359 1.102-1.359 2.063c0 .727.422 1.524 1.29 2.04L25.456 42.25c.984.586 1.687.984 2.555.984m0 10.782c.843 0 1.57-.399 2.554-.985L50.7 41.148c.867-.492 1.266-1.312 1.266-2.039c0-.96-.703-1.734-1.336-2.062L28.902 49.609c-.328.188-.633.328-.89.328c-.258 0-.563-.14-.891-.328L5.394 37.047c-.656.328-1.359 1.101-1.359 2.062c0 .727.422 1.547 1.29 2.04L25.456 53.03c.984.586 1.687.985 2.555.985" />
+</svg>
+```
 
 ## Restoring the view under the virtualised renderer
 
@@ -113,17 +155,18 @@ a small bound rather than pretending it is zero; the caret is an offset and is e
    and no Cancel, which is exactly the two outcomes the brief describes.
 3. **Pushing does not clear the screen**: the document stays where it is and is simply also in
    the stack. That is what the status component reports.
-4. **A document is one per path** (plus one pathless document at a time), so the stack cannot
-   hold the same file twice.
-5. **`⌘S` still does nothing.** Giving a document a real *Save* (writing to its own path) is a
-   gap next door to this work — the session will make it obvious, since a restored document
-   with edits no longer has anything on disk to write to. It is **not** in this plan unless the
-   user says so; the first task is a refactor, and saving is a behaviour of its own.
+4. **The id, not the path, is a document's identity** (the user's rule): a document is keyed by
+   the frontmatter id, else the first fourteen digits in its text, and only falls back to the
+   path when it has neither — so the stack cannot hold the same document twice, and two files
+   that share an id are the same document to it, which is what those ids are for.
+5. **Popping a document out of the stack keeps it on screen** — the toggle takes it out of the
+   stack; it does not close it. Closing the current document is not something the brief asks
+   for, and today there is no way back to a closed one.
 
 ## Tasks
 
 - [ ] Task 1: the model, in Node — `src/services/document_session.ts` (pure: push, open with
-      the ask rule, restore, drop, one-per-path) and `test/checks/check-document-session.mjs`,
+      the ask rule, restore, drop, the id rule) and `test/checks/check-document-session.mjs`,
       including the JSON round-trip and a version this build does not know (discard, do not
       throw).
 - [ ] Task 2: the file, on the Rust side — `session.rs` (`load_session`, `save_session`),
@@ -133,14 +176,20 @@ a small bound rather than pretending it is zero; the caret is an offset and is e
       `scrollAnchor`/`scrollToAnchor` on the renderer (Task 4's probe measures the drift).
 - [ ] Task 4: the wiring — the tree emits `{ path, content }`; the session owns the open path;
       `main.ts` loads the session on start and saves it (debounced) on change.
-- [ ] Task 5: the interface — `src/ui/toolbar/session_toolbar.ts` (push, open the stack), the
-      popover (`src/ui/session/stack_popover.ts`), the status component
-      (`src/ui/stack_status.ts`), mounted in the titlebar and the status bar.
-- [ ] Task 6: the probes — `document-stack.js` (push → open a file → the stack button restores
+- [ ] Task 5: **Save** — `file:save` (write to the document's own path, else the Save As
+      dialog), the `save` menu event wired to it at last, and the `saved` text the indicator
+      and the × prompt both read.
+- [ ] Task 6: the interface — `src/ui/toolbar/session_toolbar.ts` (the stack toggle with the
+      user's `stack-push`/`stack-pop` and *open the stack*), the popover
+      (`src/ui/session/stack_popover.ts`), the two status components
+      (`src/ui/document_status.ts`), mounted in the titlebar and the status bar; and the `⋯`
+      button removed.
+- [ ] Task 7: the probes — `document-stack.js` (push → open a file → the stack button restores
       it with its caret and scroll; the ask rule with the dialog stubbed, the way
-      `footnote-preview.js` stands in for the opener) and `document-session-restart.js` (the
-      session file written, the page reloaded, the document, caret and scroll back).
-- [ ] Task 7: acceptance and docs — `npx tsc --noEmit`, `npm run check`, `cargo test`, a fresh
+      `footnote-preview.js` stands in for the opener; the × prompt on an unsaved document) and
+      `document-session-restart.js` (the session file written, the page reloaded, the document,
+      caret and scroll back).
+- [ ] Task 8: acceptance and docs — `npx tsc --noEmit`, `npm run check`, `cargo test`, a fresh
       `npm run tauri dev`, `npm run probe:all`; `docs/architecture.md`, `docs/ai-context.md`,
       `docs/roadmap.md`, `test/README.md`, and this plan's handoff.
 
