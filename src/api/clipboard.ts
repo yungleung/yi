@@ -1,4 +1,11 @@
-import { readText } from "@tauri-apps/plugin-clipboard-manager";
+import { readImage, readText } from "@tauri-apps/plugin-clipboard-manager";
+
+/** An image off the clipboard: how big it is, and its pixels, RGBA, row-major from the top. */
+export interface ClipboardImage {
+  width: number;
+  height: number;
+  rgba: Uint8Array;
+}
 
 /**
  * The system clipboard's text, or null when the read found none.
@@ -18,5 +25,33 @@ export async function readClipboardText(): Promise<string | null> {
     return await readText();
   } catch {
     return null;
+  }
+}
+
+/**
+ * The system clipboard's image, or null when the read found none.
+ *
+ * The same plugin, and the same answer for everything it cannot offer: a clipboard holding no
+ * image, one holding something this platform will not hand over, and a build without the
+ * permission to ask are one fact to a caller — there is no image to insert. The plugin's image is
+ * a *resource* on the Rust side, so its pixels are read here and the resource given back before
+ * this answers; nothing above this file has to know that an image was ever a handle.
+ */
+export async function readClipboardImage(): Promise<ClipboardImage | null> {
+  let image: Awaited<ReturnType<typeof readImage>> | null = null;
+  try {
+    image = await readImage();
+    const size = await image.size();
+    const rgba = await image.rgba();
+    return { width: size.width, height: size.height, rgba };
+  } catch {
+    return null;
+  } finally {
+    try {
+      await image?.close();
+    } catch {
+      // A resource that is already gone is not a failure worth reporting: the pixels, or the
+      // absence of them, are what this answers.
+    }
   }
 }
