@@ -124,4 +124,44 @@ places it with the `setSelectionRange` it already imports, and the model's check
 
 ## Handoff
 
-*(written when the work lands)*
+Landed on `codex/new-markdown`. Everything in the plan's *Tasks* is done, with three
+decisions taken on the way and one finding worth carrying forward.
+
+**Where each rule lives.** `src/services/new_document.ts` is the whole of a new note as pure
+functions: `newDocumentId`/`newDocumentDate` (local time), `newDocumentText` (the template with
+the four required keys guaranteed), `titleRange` (the title's value, quotes excluded) and
+`DEFAULT_TEMPLATE`. `src/services/workspace_folders.ts` is the one walk of the workspace that
+the card's list of places needs (and `parentFolder`, which the tree's own operations now share
+rather than keeping a second copy). `src/ui/new_document/new_document_dialog.ts` is the card;
+`src/ui/new_document/new_document_flow.ts` is the command `file:newMarkdown` and the four things
+it does in order. The tree's *New file* is a *trigger*: `tree_ops.ts: runTreeAction` runs the
+command with the row's folder as its payload, the way the table menu runs a table command, so
+the two ways of making a note cannot drift apart.
+
+**What was decided beyond the plan.** (1) A template's `id:` and `date:` values are *stamped
+over* — a note is made once, and the app is the one that knows when — while `title`, `keywords`,
+extra keys and comments are the reader's exactly as written; the required keys a template leaves
+out are appended in the ask's order. (2) A note whose generated name is already taken (two notes
+inside one second) is retried at the *next second*, so its file name and its frontmatter id stay
+the same fourteen digits, and a name the reader typed is never changed under them. (3) The tree's
+inline rename for a new file is gone; the file is named by its id and the *title* is what the
+editor selects, which is the half of the ask an inline rename could not serve.
+
+**The finding.** The webview's file plugin is scoped to `$HOME/**`
+(`src-tauri/capabilities/default.json`), while the app's own Rust file commands carry no scope, so
+a workspace outside the home directory can be listed and rearranged but not *read* or *written*
+from the page. Measured: `plugin:fs|read_text_file` on `/private/tmp/…` answers *forbidden path*.
+The new-note write goes through that plugin (as the session's *Save* already did), which is why
+both probes make their workspace in the home directory — and why this is now the first item under
+*Open* in `docs/roadmap.md`.
+
+**What proves it.** `test/checks/check-new-document.mjs` (the rule, in Node), and two probes in
+the running app: `test/probes/new-markdown.js` (the event the native menu sends — not the command
+run directly — opens the card, the card's
+defaults, the file written where it was asked for, the note on screen with its title selected and
+a keystroke replacing it, and the tree's own trigger) and `test/probes/new-note-template.js` (a
+template written through the app's config, the settings tab that reads it, and the note that comes
+out). `test/probes/tree-create.js` was rewritten: the tree's new file is id-named, carries the
+frontmatter, and is *not* left in an inline rename. `DocumentView.to` is checked in
+`check-document-session.mjs`, and `test/probes/lib.js`'s `openWorkspace` now reloads the app's own
+config manager, so a probe that points the app at a folder sees it the way the app does.

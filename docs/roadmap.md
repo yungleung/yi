@@ -314,16 +314,48 @@ elements) unless it says otherwise.
   `test/probes/source-highlight-caret.js` holds it and fails without the change: a click on
   the first key, a click on a later line, and the same click in a fenced code block, which
   always worked.
+- **New Markdown** (the menu item that had done nothing since it was built). Landed as
+  `docs/superpowers/plans/2026-09-29-new-markdown.md`: one command, `file:newMarkdown`, makes a
+  note — the file is named after a generated `YYYYMMDDHHMMSS` id and opens with the four keys a
+  note must carry (`title: Untitle`, `date`, `id`, `keywords: untagged`), the reader's own
+  template (`new_file_frontmatter` in the config, and a *New note* tab in the settings window) is
+  kept around them, and the note is opened with its title selected, so the default is typed over
+  rather than deleted a character at a time. The menu asks *where* on a card of the app's own —
+  the workspace's folders, with the one the reader is working in already chosen — because a
+  system file picker cannot mean "a folder in this workspace and a name", and the tree's *New
+  file* runs the same command with the row's folder, so the two cannot drift apart. What that
+  changed: the tree no longer starts an inline rename for a new file (the file is named by its
+  id; the *title* is what the reader types — `tree-create.js` holds it), a document opened with a
+  range keeps both of its ends (`DocumentView.to`, so a title can still be selected after a
+  restart), and a note made in the same second as another gets the next second's id rather than a
+  refusal. `npm run check` is **29/29**; the suite is below.
 
 ## Open, in the order to take them
 
-- **Two cost probes outlive the bridge in a narrow window.** `edit-cost.js` and
-  `block-rebuild-cost.js` type into the 323 KB note and are the suite's two longest probes.
-  In a pane narrower than the one `npm run tauri dev` opens with, that note wraps into more
-  lines and the probes no longer finish inside the harness's 5 s budget — measured at a 709 px
-  window: 5020 ms and 5037 ms, and the same on the layout without the A4 page, so it is the
-  window and not the page. The project's own answer to a probe that needs longer is to split it
-  (`docs/ai-context.md`); these two are the ones it now applies to.
+- **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
+  new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes —
+  and that plugin's scope is `$HOME/**` (`src-tauri/capabilities/default.json`). Measured while
+  writing the probe: reading a file under `/private/tmp` from the page is refused
+  (*"forbidden path: /private/tmp/yi-fs-scope/note.md, maybe it is not allowed on the scope for
+  `allow-read-text-file`"*), while the app's own Rust commands (`list_folder_files`,
+  `create_entry`, `move_entry`, …) reach anywhere, because they carry no scope of their own. So a
+  folder outside the home directory can be listed, rearranged and deleted, but a click in the
+  tree cannot open a file in it and *Save* cannot write one — not a limitation the app means to
+  have. The fix is scope the reader grants when they open a folder (the dialog plugin's folder
+  picker already returns the path), or a pair of commands of the app's own for the two calls the
+  webview makes; the probe is `new-markdown.js`, which makes its workspace in the home directory
+  for exactly this reason.
+- **A few probes sit on the bridge's 5 s budget, and a narrow window tips them over.**
+  `edit-cost.js` and `block-rebuild-cost.js` type into the 323 KB note and are the suite's two
+  longest probes. In a pane narrower than the one `npm run tauri dev` opens with, that note
+  wraps into more lines and the probes no longer finish inside the harness's 5 s budget —
+  measured at a 709 px window: 5020 ms and 5037 ms, and the same on the layout without the A4
+  page, so it is the window and not the page. The project's own answer to a probe that needs
+  longer is to split it (`docs/ai-context.md`); these are the ones it now applies to. The same
+  budget is what makes the suite's tail noisy: on the run that landed New Markdown the suite was
+  **97/101 (14 skipped)**, and its four failures were `insert-rule.js` (below), `edit-cost.js`,
+  `edit-stability.js` and `display-math-source.js` — the last two both pass when run alone, and
+  `display-math-source.js` measures 5006 ms with only 3000 ms of that in its own sleeps.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older
@@ -333,8 +365,7 @@ elements) unless it says otherwise.
   `nearestTextOffset`, with the probe as its test. It is the last check the strict harness
   reports: the harness never judged a probe's own verdict until the link branch fixed that
   (`test/tauri-probe.mjs: failedChecks`), which is why it and the formatting bug had both
-  been invisible. The suite says **91/92 (15 skipped)** now that the two highlighted-source
-  probes have joined it.
+  been invisible.
 
 Everything else the phase handoffs left is either closed above or waiting in "measure
 before deciding"; what is left is the "measure before deciding" column below.
