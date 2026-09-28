@@ -1,6 +1,7 @@
 mod menu;
 mod files;
 mod greeting;
+mod session;
 mod stats;
 mod settings;
 
@@ -33,6 +34,8 @@ pub fn run() {
             stats::get_word_count, 
             files::list_folder_files, 
             greeting::greet,
+            session::load_session,
+            session::save_session,
             settings::get_config,
             settings::set_config,
             settings::get_current_config_version,
