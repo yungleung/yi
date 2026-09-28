@@ -9,6 +9,9 @@ export type AppConfig = {
   /** The frontmatter a new note opens with as the reader wrote it, or null for the app's own
    * (`src/services/new_document.ts`). Its four required keys are the app's either way. */
   new_file_frontmatter: string | null;
+  /** Where an image the reader saves goes; empty means beside the note (see
+   * `src/services/settings_paths.ts`). */
+  image_folder: string;
   config_version: number;
 };
 
