@@ -32,6 +32,7 @@ export type CommandId =
   | 'edit:insertFootnote'
   | 'edit:insertLink'
   | 'edit:insertRule'
+  | 'view:togglePage'
   | 'find:open'
   | 'find:replace'
   | 'find:close'

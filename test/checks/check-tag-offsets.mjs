@@ -39,7 +39,8 @@ const exempt = {
   virtualSpacer: '`top` or `bottom`, a name',
   findBar: 'find-bar UI state, not a document offset',
   findStatus: 'find-bar UI state, not a document offset',
-  findReplaceActions: 'find-bar UI state, not a document offset'
+  findReplaceActions: 'find-bar UI state, not a document offset',
+  layout: 'which layout the editor is drawn in (`page` or `auto`), not a document offset'
 };
 
 const files = [];

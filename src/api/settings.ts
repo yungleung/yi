@@ -4,6 +4,8 @@ export type AppConfig = {
   workspace: string | null;
   bibliography_file: string;
   csl_style: string;
+  /** How the editor is laid out: a page of A4, or the column at the pane's width. */
+  editor_layout?: 'page' | 'auto';
   config_version: number;
 };
 

@@ -51,6 +51,9 @@
     ''
   ].join('\n');
   await t.load(document_);
+  // The layout is remembered in the app config, so ask for the page rather than inherit
+  // whichever one the reader left behind.
+  await t.useLayout('page');
 
   const root = document.documentElement;
   const sheet = () => t.prose();

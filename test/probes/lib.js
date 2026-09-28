@@ -179,6 +179,26 @@ window.__t = (() => {
     return await import(fetched.length > 0 ? fetched[fetched.length - 1] : path);
   };
 
+  /** The layout the editor is drawn in: `page` or `auto` (see `styles.css`). */
+  const layout = () => document.querySelector('.markdown-scroller')?.dataset.layout ?? null;
+
+  /**
+   * Presses the titlebar's layout button until the editor is in `layout`, and reports what
+   * it is then. The layout is remembered in the app config, so a probe that measures one of
+   * them asks for it instead of inheriting whichever the reader left behind.
+   */
+  const useLayout = async (wanted) => {
+    const button = () =>
+      [...document.querySelectorAll('button')].find((element) =>
+        ['A4 page', 'Full width'].includes(element.getAttribute('aria-label') ?? '')
+      );
+    for (let attempt = 0; attempt < 4 && layout() !== wanted; attempt += 1) {
+      button()?.click();
+      await sleep(250);
+    }
+    return layout();
+  };
+
   return {
     prose,
     scroller,
@@ -197,7 +217,9 @@ window.__t = (() => {
     emptyLines,
     report,
     app,
-    sleep
+    sleep,
+    layout,
+    useLayout
   };
 })();
 'helpers installed';

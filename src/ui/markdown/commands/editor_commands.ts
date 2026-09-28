@@ -39,6 +39,8 @@ export interface CommandHost {
   closeFind(): void;
   /** Undo or redo, keeping the caret at its document offset. */
   applyHistory(direction: 'undo' | 'redo'): void;
+  /** Switches the editor between its page of A4 and a column the width of the pane. */
+  toggleLayout(): void;
 }
 
 /** Registers every command the editor owns against the registry. */
@@ -51,6 +53,7 @@ export function registerEditorCommands(host: CommandHost): void {
   registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(context) });
   registerCommand({ id: 'edit:insertLink', run: () => void insertLink(context) });
   registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(context) });
+  registerCommand({ id: 'view:togglePage', run: () => host.toggleLayout() });
   registerCommand({ id: 'find:open', run: () => host.openFind(false) });
   registerCommand({ id: 'find:replace', run: () => host.openFind(true) });
   registerCommand({ id: 'find:close', run: () => host.closeFind() });
