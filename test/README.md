@@ -113,6 +113,15 @@ live index; the newest probes carry a header naming what they cover:
   deleted by the app's own Rust commands, but reading or writing it from the page is refused).
   `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
   `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
+- A file read over the raw bridge (`plugin:fs|read_text_file`) comes back as an **`ArrayBuffer`**,
+  and `Uint8Array.from(buffer)` on one is an *empty* array rather than its bytes — take it as it
+  is: `bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)`, which is what the plugin's
+  own wrapper does. Two probes were written the other way round and both read `''`; the one that
+  then *saved* what it had read wrote nothing into
+  `test/fixtures/workspace/default-document.md` and the demo document had to be restored with
+  `git restore`. Anything that stands in for a *person* — a save, an answer — can write the
+  fixtures, so a probe that would do either in the fixture workspace should work in a folder of
+  its own under `$HOME` instead.
 - A **native** surface — the system's save sheet, a window menu, the prompt's own dialog — cannot
   be driven, and cannot be stood in for from the page either: the dialog plugin's `save` does not
   travel over the webview's `fetch` (measured; a `fetch` stand-in that works for an app command
