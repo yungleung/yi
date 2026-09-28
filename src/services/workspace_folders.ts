@@ -207,6 +207,17 @@ export function imagePathCandidates(
   return candidates;
 }
 
+/**
+ * A path with a leading `~` spelled out — `~/pics` beside `/Users/me` is `/Users/me/pics` — or
+ * the path itself when it does not start at a home folder, or when there is no home to put there.
+ */
+export function expandHome(path: string, home: string | null): string {
+  if (home === null || (path !== '~' && !path.startsWith('~/') && !path.startsWith('~\\'))) {
+    return path;
+  }
+  return joinPath(home, path.slice(1)) ?? path;
+}
+
 /** A path cut into its root and its pieces, for comparing two of them. */
 function segments(path: string): { root: string | null; parts: string[] } {
   const pieces = path.split(/[\\/]/).filter((piece) => piece !== '');

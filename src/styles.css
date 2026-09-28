@@ -298,6 +298,17 @@ body {
   min-width: 0.5em;
 }
 
+/* An image the note shows. It takes the width its own file has, sits in the middle of the
+   column, and carries a corner rounded the way the page's own blocks are — the corner is the
+   cue that says where the picture ends, since its edges can be any colour at all. The radius
+   is written in the page's scale, like every other measurement on the sheet, so a page drawn
+   smaller has a smaller corner. */
+.prose img.markdown-node {
+  display: block;
+  margin-inline: auto;
+  border-radius: calc(0.375rem * var(--md-page-scale));
+}
+
 /* An empty table cell has no text of its own: this span gives the cell a line
    box, so a click can land a caret in it and the row keeps its height. */
 .markdown-table-placeholder {

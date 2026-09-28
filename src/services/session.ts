@@ -25,6 +25,7 @@ import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { eventManager } from './event_manager';
 import { TOAST_EVENT } from './workspace';
+import { parentFolder } from './workspace_folders';
 import {
   capture as captureInto,
   currentDocument,
@@ -54,10 +55,19 @@ export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
 /** How long after the last edit the session is written. */
 const SAVE_DELAY_MS = 800;
 
-/** What the session needs from the editor: its text, and where the reader is in it. */
+/**
+ * What the session needs from the editor: its text, which document it is showing, and where the
+ * reader is in it.
+ */
 export interface SessionEditor {
   getContent(): string;
   setContent(content: string): void;
+  /**
+   * The folder of the document about to be shown. A relative image destination is read from it
+   * (`ui/markdown/image_sources.ts`), and it has to arrive *before* the content does, or the
+   * first paint would resolve against the note the reader was in before this one.
+   */
+  setDocumentFolder(folder: string | null): void;
   /** Where the reader is, with null for what the editor cannot currently see (a dropped block). */
   captureView(): SeenView;
   restoreView(view: DocumentView): void;
@@ -286,6 +296,11 @@ class DocumentSession {
     if (!this.editor) {
       return;
     }
+    // Which folder the document lives in, before its text: a relative image destination is read
+    // from there, and a paint that arrived first would be resolved against the document before it.
+    this.editor.setDocumentFolder(
+      document.path === null ? null : parentFolder(document.path)
+    );
     this.editor.setContent(document.content);
     this.editor.restoreView(document.view);
   }
