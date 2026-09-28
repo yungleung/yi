@@ -65,7 +65,7 @@ check(
 
 const STAMP = { id: '20260929080503', date: '2026-09-29' };
 const DEFAULT_TEXT =
-  '---\ntitle: Untitle\ndate: 2026-09-29\nid: 20260929080503\nkeywords: untagged\n---\n\n';
+  '---\ntitle: Untitle\ndate: 2026-09-29\nid: 20260929080503\nkeywords:\n  - untagged\n---\n\n';
 
 check(
   'a new note opens with the four keys, in the order the ask names them',
@@ -75,7 +75,7 @@ check(
 check(
   'which is the built-in template',
   DEFAULT_TEMPLATE,
-  'title: Untitle\ndate:\nid:\nkeywords: untagged'
+  'title: Untitle\ndate:\nid:\nkeywords:\n  - untagged'
 );
 check(
   'and it ends with a blank line, so the body does not join the frontmatter',
@@ -91,6 +91,16 @@ check(
   stampedAll
 );
 check(
+  'a keyword list of the reader\'s own is kept, however long it is',
+  newDocumentText({ ...STAMP, template: 'keywords:\n  - physics\n  - history\n' }),
+  '---\nkeywords:\n  - physics\n  - history\ntitle: Untitle\ndate: 2026-09-29\nid: 20260929080503\n---\n\n'
+);
+check(
+  'and a value written under its key is not taken for a missing one',
+  newDocumentText({ ...STAMP, template: 'title:\n  A title on the next line\n' }),
+  '---\ntitle:\n  A title on the next line\ndate: 2026-09-29\nid: 20260929080503\nkeywords:\n  - untagged\n---\n\n'
+);
+check(
   'a template written without its fences is read the same way',
   newDocumentText({ ...STAMP, template: withAll.slice(4, -5) }),
   stampedAll
@@ -101,7 +111,7 @@ check(
     ...STAMP,
     template: '# what this note is\nauthor: Ursula\ntitle: A note\ncssclass: wide\ndate:\nkeywords:'
   }),
-  '---\n# what this note is\nauthor: Ursula\ntitle: A note\ncssclass: wide\ndate: 2026-09-29\nkeywords: untagged\nid: 20260929080503\n---\n\n'
+  '---\n# what this note is\nauthor: Ursula\ntitle: A note\ncssclass: wide\ndate: 2026-09-29\nkeywords:\n  - untagged\nid: 20260929080503\n---\n\n'
 );
 
 const valueFor = { title: 'A note', date: '', id: '', keywords: 'physics' };
@@ -119,7 +129,10 @@ for (const missing of REQUIRED_KEYS) {
   check(`and has the ${missing} it was missing added`, keys.includes(missing), true);
   check(
     `the ${missing} it gains is the one it should be`,
-    new RegExp(`^(title: Untitle|date: 2026-09-29|id: 20260929080503|keywords: untagged)$`, 'm').test(text),
+    new RegExp(
+      `^(title: Untitle|date: 2026-09-29|id: 20260929080503|keywords:\\n  - untagged)$`,
+      'm'
+    ).test(text),
     true
   );
 }
@@ -132,7 +145,7 @@ check(
 check(
   'and so is a keywords left empty',
   newDocumentText({ ...STAMP, template: 'keywords:   \n' }),
-  '---\nkeywords: untagged\ntitle: Untitle\ndate: 2026-09-29\nid: 20260929080503\n---\n\n'
+  '---\nkeywords:\n  - untagged\ntitle: Untitle\ndate: 2026-09-29\nid: 20260929080503\n---\n\n'
 );
 check(
   "a template naming a key twice is the author's own: the app adds nothing and takes nothing",

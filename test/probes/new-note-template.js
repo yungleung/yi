@@ -26,7 +26,7 @@
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const workspace = `${home}/yi-probe-new-note-template`;
   const stamp = /^\d{14}\.md$/;
-  const template = 'title: Untitle\nauthor: me\ndate:\nid:\nkeywords: untagged';
+  const template = 'title: Untitle\nauthor: me\ndate:\nid:\nkeywords:\n  - untagged';
   const entry = (path, basename, isFile) => ({ path, basename, isFile });
   const namesIn = async (folder) =>
     (await files.listFolderFiles(folder)).map((item) => item.basename).sort();
@@ -77,7 +77,7 @@
     check(
       "and its frontmatter is the reader's template, with the app's stamp written into it",
       made.length > 0 ? await read(`${workspace}/${made[0]}`) : null,
-      `---\ntitle: Untitle\nauthor: me\ndate: ${today}\nid: ${id}\nkeywords: untagged\n---\n\n`
+      `---\ntitle: Untitle\nauthor: me\ndate: ${today}\nid: ${id}\nkeywords:\n  - untagged\n---\n\n`
     );
   } finally {
     await t.restoreWorkspace(previous);

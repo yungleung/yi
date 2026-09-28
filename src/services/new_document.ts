@@ -40,8 +40,10 @@ export const DEFAULT_KEYWORDS = 'untagged';
  * It is written as the plainest statement of the shape — the four keys in the ask's own
  * order — rather than as a document already filled in: the empty `date` and `id` are the
  * places the stamp goes, and the settings window shows the reader this very text to edit.
+ * `keywords` is the one required key whose value is a *list*, so its default is written the way
+ * a list is: the key, then the words under it.
  */
-export const DEFAULT_TEMPLATE = 'title: Untitle\ndate:\nid:\nkeywords: untagged';
+export const DEFAULT_TEMPLATE = 'title: Untitle\ndate:\nid:\nkeywords:\n  - untagged';
 
 /** What a new note is made with: the two the app generates, and the reader's template. */
 export interface NewDocumentFields {
@@ -66,24 +68,52 @@ export function newDocumentText(fields: NewDocumentFields): string {
     keywords: DEFAULT_KEYWORDS
   };
   const written = frontmatterLines(template);
-  const body = written.map((line) => {
+  const body: string[] = [];
+  written.forEach((line, index) => {
     const key = keyOf(line);
     if (key === null || !isRequired(key)) {
       // An extra key, a comment, a blank line: the reader's, exactly as written.
-      return line;
+      body.push(line);
+      return;
     }
     if (key === 'id' || key === 'date') {
-      return `${key}: ${stamp[key]}`;
+      body.push(`${key}: ${stamp[key]}`);
+      return;
     }
-    // A key the reader may fill: their words when they wrote any, the default when not.
-    return valueOf(line) === '' ? `${key}: ${stamp[key]}` : line;
+    // A key the reader may fill: their words when they wrote any — on the line, or in the lines
+    // under it — and the default when there are none.
+    body.push(...(isEmptyKey(written, index) ? defaultLines(key, stamp[key]) : [line]));
   });
   for (const key of REQUIRED_KEYS) {
     if (!written.some((line) => keyOf(line) === key)) {
-      body.push(`${key}: ${stamp[key]}`);
+      body.push(...defaultLines(key, stamp[key]));
     }
   }
   return `---\n${body.join('\n')}\n---\n\n`;
+}
+
+/**
+ * How a required key is written when the template gives no value for it.
+ *
+ * `keywords` is a list, and a list is a key with its words under it: writing `keywords: untagged`
+ * would make the file's own YAML say something else than the reader asked for.
+ */
+function defaultLines(key: RequiredKey, value: string): string[] {
+  return key === 'keywords' ? ['keywords:', `  - ${value}`] : [`${key}: ${value}`];
+}
+
+/**
+ * Whether the key a line names has no value: nothing after its colon, and nothing under it that
+ * could be its value. A value written on the next line — a long title, a list of keywords — is
+ * the author's, and must not be replaced by the default.
+ */
+function isEmptyKey(lines: string[], index: number): boolean {
+  return valueOf(lines[index]) === '' && !continues(lines[index + 1]);
+}
+
+/** Whether a line is more indented than a key's own line, which makes it that key's value. */
+function continues(line: string | undefined): boolean {
+  return line !== undefined && /^\s+\S/.test(line);
 }
 
 /**

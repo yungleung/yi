@@ -30,7 +30,7 @@
   const notes = `${workspace}/Notes`;
   const stamp = /^\d{14}\.md$/;
   const frontmatter =
-    /^---\ntitle: Untitle\ndate: \d{4}-\d{2}-\d{2}\nid: (\d{14})\nkeywords: untagged\n---\n\n$/;
+    /^---\ntitle: Untitle\ndate: \d{4}-\d{2}-\d{2}\nid: (\d{14})\nkeywords:\n  - untagged\n---\n\n$/;
   const entry = (path, basename, isFile) => ({ path, basename, isFile });
   const namesIn = async (folder) =>
     (await files.listFolderFiles(folder)).map((item) => item.basename).sort();

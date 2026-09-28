@@ -67,7 +67,9 @@
     const firstText = first.length > 0 ? await read(`${sub}/${first[0]}`) : '';
     check(
       'holding the frontmatter of a new note',
-      /^---\ntitle: Untitle\ndate: \d{4}-\d{2}-\d{2}\nid: \d{14}\nkeywords: untagged\n---\n\n$/.test(firstText),
+      /^---\ntitle: Untitle\ndate: \d{4}-\d{2}-\d{2}\nid: \d{14}\nkeywords:\n  - untagged\n---\n\n$/.test(
+        firstText
+      ),
       firstText
     );
     check(
