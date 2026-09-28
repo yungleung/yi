@@ -17,7 +17,7 @@ import { LayoutToolbar } from './ui/toolbar/layout_toolbar';
 import { SessionToolbar } from './ui/toolbar/session_toolbar';
 import { SavedStatus, StackStatus } from './ui/document_status';
 import { registerSessionCommands } from './ui/session/session_commands';
-import { SessionPrompt } from './ui/session/session_prompt';
+import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { Toast } from './ui/toast';
 import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
@@ -57,7 +57,6 @@ function createAppShell(): MarkdownEditor {
   const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
-  const sessionPrompt = new SessionPrompt();
   const toast = new Toast();
 
   titleBar.mount(root);
@@ -68,7 +67,6 @@ function createAppShell(): MarkdownEditor {
   contentShell.mount(root);
   statusBar.mount(root);
   toast.mount(document.body);
-  sessionPrompt.mount(document.body);
 
   titleBar.addComponent(formattingToolbar, 'center');
   titleBar.addComponent(linkToolbar, 'center');
@@ -86,7 +84,7 @@ function createAppShell(): MarkdownEditor {
 
   // The session holds the documents; the editor panel is the view it drives.
   documentSession.attach(editor);
-  documentSession.attachPrompter(sessionPrompt);
+  documentSession.attachPrompter(prompt);
   // Its commands — Save, Save As, and the stack — registered where the session's behaviour is.
   registerSessionCommands();
 

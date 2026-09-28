@@ -4,10 +4,11 @@
  *
  * The menu is native and nothing but a person can choose an item of it
  * (`docs/testing.md`), so the *contents* are held by `check-tree-menu.mjs` and the actions
- * are driven here through `tree_ops.ts`, the module the menu's items run. The native
- * dialog that asks about the delete, and the opener that reveals a file, are stood in for
- * through the page's `fetch`, the way `footnote-preview.js` stands in for the opener, so a
- * probe never opens a dialog or a file manager.
+ * are driven here through `tree_ops.ts`, the module the menu's items run. The opener that
+ * reveals a file is stood in for through the page's `fetch`, the way `footnote-preview.js`
+ * stands in for the opener, so a probe never opens a file manager. The delete's own question
+ * needs no standing in for: the app's prompt (`ui/prompt.ts`) answers a probe on a card in the
+ * page, so a probe that drives `deleteWithQuestion` presses it.
  *
  * The probe makes its own workspace under `/private/tmp` with the app's own commands and
  * removes it again; the note it copies an id from is one of the fixtures, read but never
@@ -30,21 +31,14 @@
   /** The workspace the app was opened on: the fixtures, where the id-carrying note is. */
   const started = await window.__TAURI_INTERNALS__.invoke('get_config');
   const withId = `${started?.workspace ?? ''}/notes/Essays/Language and Thought.md`;
-  /** What the probe answers for the backend, and what the backend was asked for. */
-  const answer = { dialog: true, calls: [] };
+  /** What the backend was asked for, so the probe can read the calls back. */
+  const answer = { calls: [] };
   const realFetch = window.fetch;
   window.fetch = async (input, init) => {
     const url = decodeURIComponent(
       typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
     );
     const body = String(init?.body ?? '');
-    if (url.includes('plugin:dialog|ask')) {
-      answer.calls.push({ url, body });
-      return new Response(String(answer.dialog), {
-        status: 200,
-        headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
-      });
-    }
     if (url.includes('plugin:opener|reveal_item_in_dir')) {
       answer.calls.push({ url, body });
       return new Response('null', {
@@ -99,6 +93,33 @@
     await ops.runTreeAction('copy-id', entry(inner, 'inner.md', true));
     await t.sleep(120);
     check('and a note with no id copies nothing', copied, []);
+
+    // 5. Deleting asks through the app's prompt, which a probe answers on the card: the same
+    // question a reader gets in the system dialog, pressable here.
+    const listed = async () => (await files.listFolderFiles(workspace)).map((item) => item.basename);
+    const doomed = await files.createEntry(workspace, 'doomed.md', true);
+    const refusing = ops.deleteWithQuestion(entry(doomed, 'doomed.md', true));
+    await t.sleep(250);
+    const asked = document.querySelector('[data-prompt]')?.classList.contains('hidden') === false;
+    document.querySelector('[data-prompt-no]')?.click();
+    await refusing;
+    await t.sleep(200);
+    check(
+      'the delete asks on the prompt`s card, and "no" keeps the entry',
+      asked && (await listed()).includes('doomed.md'),
+      { asked, listed: await listed() }
+    );
+
+    const agreeing = ops.deleteWithQuestion(entry(doomed, 'doomed.md', true));
+    await t.sleep(250);
+    document.querySelector('[data-prompt-yes]')?.click();
+    await agreeing;
+    await t.sleep(200);
+    check(
+      'and "yes" deletes it',
+      !(await listed()).includes('doomed.md'),
+      { listed: await listed() }
+    );
 
   } finally {
     window.fetch = realFetch;

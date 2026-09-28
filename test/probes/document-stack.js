@@ -38,7 +38,7 @@
   const state = () => session.documentSession.get();
   const page = () => t.prose().textContent ?? '';
   const prompting = () =>
-    document.querySelector('[data-session-prompt]')?.classList.contains('hidden') === false;
+    document.querySelector('[data-prompt]')?.classList.contains('hidden') === false;
 
   /** A click on a row, and the answer to the question it may raise. */
   const openRow = async (name, wanted) => {
@@ -47,7 +47,7 @@
     const asked = prompting();
     if (asked) {
       document
-        .querySelector(wanted === 'yes' ? '[data-session-prompt-yes]' : '[data-session-prompt-no]')
+        .querySelector(wanted === 'yes' ? '[data-prompt-yes]' : '[data-prompt-no]')
         ?.click();
     }
     await t.sleep(350);
@@ -63,7 +63,7 @@
       const pending = session.documentSession.drop(held.id);
       await t.sleep(80);
       if (prompting()) {
-        document.querySelector('[data-session-prompt-no]')?.click();
+        document.querySelector('[data-prompt-no]')?.click();
       }
       await pending;
     }
@@ -76,7 +76,7 @@
     if (prompting()) {
       document
         .querySelector(
-          wanted === 'yes' ? '[data-session-prompt-yes]' : '[data-session-prompt-no]'
+          wanted === 'yes' ? '[data-prompt-yes]' : '[data-prompt-no]'
         )
         ?.click();
     }

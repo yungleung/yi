@@ -18,11 +18,11 @@
  */
 
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { ask } from '@tauri-apps/plugin-dialog';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
 import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
 import { TOAST_EVENT } from '../../services/workspace';
+import { prompt } from '../prompt';
 import type { TreeMenuAction } from './tree_menu_model';
 import { nameWithoutExtension, type TreeEntry } from './tree_rules';
 
@@ -136,9 +136,10 @@ function parentOf(path: string): string {
 /**
  * A delete is asked about first: it takes a folder's contents with it.
  *
- * The question is a native dialog, and nothing but a person can answer one — the same
- * limit a native menu has (`docs/testing.md`) — so a probe drives `deleteNow`, which is
- * what a yes leaves to do, and the question itself is a person's check.
+ * The question comes from the app's prompt (`ui/prompt.ts`), so a reader is asked by the system
+ * dialog and a probe by a card in the page it can press — the question itself is testable, which
+ * it was not while it was a native dialog reached for here. A probe that wants the delete
+ * without the question drives `deleteNow`, which is what a yes leaves to do.
  */
 export async function deleteWithQuestion(
   entry: TreeEntry,
@@ -148,9 +149,11 @@ export async function deleteWithQuestion(
     return;
   }
   const what = entry.isFile ? `“${entry.basename}”` : `the folder “${entry.basename}” and everything in it`;
-  const answer = await ask(`Delete ${what}? This cannot be undone.`, {
+  const answer = await prompt.ask({
     title: 'Delete',
-    kind: 'warning'
+    message: `Delete ${what}? This cannot be undone.`,
+    yes: 'Delete',
+    no: 'Keep it'
   });
   if (!answer) {
     return;

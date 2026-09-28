@@ -21,14 +21,14 @@
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 
   const prompting = () =>
-    document.querySelector('[data-session-prompt]')?.classList.contains('hidden') === false;
+    document.querySelector('[data-prompt]')?.classList.contains('hidden') === false;
 
   /** Opens a document through the session, answering the question it may raise. */
   const open = async (path, content) => {
     const pending = session.documentSession.openFile({ path, content });
     await t.sleep(120);
     if (prompting()) {
-      document.querySelector('[data-session-prompt-no]')?.click();
+      document.querySelector('[data-prompt-no]')?.click();
     }
     await pending;
     await t.sleep(200);

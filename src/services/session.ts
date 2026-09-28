@@ -22,6 +22,7 @@
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { loadSessionText, saveSessionText } from '../api/session';
+import type { Prompter, Question } from '../ui/prompt';
 import { eventManager } from './event_manager';
 import { TOAST_EVENT } from './workspace';
 import {
@@ -61,25 +62,10 @@ export interface SessionEditor {
   restoreView(view: DocumentView): void;
 }
 
-/** What the session asks when a document could be lost, and who answers it. */
-export interface SessionQuestion {
-  /** The question's name, which the system dialog needs and the card shows as its heading. */
-  title: string;
-  message: string;
-  /** What the answer that keeps the document says. */
-  yes: string;
-  /** …and the answer that lets it go. */
-  no: string;
-}
-
-export interface SessionPrompter {
-  ask(question: SessionQuestion): Promise<boolean>;
-}
-
 class DocumentSession {
   private state: SessionState = emptySession();
   private editor: SessionEditor | null = null;
-  private prompter: SessionPrompter | null = null;
+  private prompter: Prompter | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private madeKeys = 0;
   /**
@@ -95,8 +81,8 @@ class DocumentSession {
     this.editor = editor;
   }
 
-  /** Gives the session the card it asks on. Without one it never asks — it keeps. */
-  attachPrompter(prompter: SessionPrompter): void {
+  /** Gives the session the app's prompt. Without one it never asks — it keeps. */
+  attachPrompter(prompter: Prompter): void {
     this.prompter = prompter;
   }
 
@@ -316,7 +302,7 @@ class DocumentSession {
   }
 
   /** The reader's answer, or — with no card to ask on — the answer that keeps the document. */
-  private async ask(question: SessionQuestion): Promise<boolean> {
+  private async ask(question: Question): Promise<boolean> {
     if (!this.prompter) {
       return true;
     }

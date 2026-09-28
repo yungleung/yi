@@ -21,10 +21,10 @@
   const state = () => session.documentSession.get();
   const page = () => t.prose().textContent ?? '';
   const prompting = () =>
-    document.querySelector('[data-session-prompt]')?.classList.contains('hidden') === false;
+    document.querySelector('[data-prompt]')?.classList.contains('hidden') === false;
   const answer = (yes) => {
     document
-      .querySelector(yes ? '[data-session-prompt-yes]' : '[data-session-prompt-no]')
+      .querySelector(yes ? '[data-prompt-yes]' : '[data-prompt-no]')
       ?.click();
   };
 
