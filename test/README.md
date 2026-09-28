@@ -46,7 +46,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and fifteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and sixteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -66,7 +66,10 @@ the preview card, the label's own edits, and the shapes a definition is written 
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`),
-what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`, `typed-text`,
+and the page staying where the reader put it while the window turns over
+(`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
+reader left behind), what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`,
+`typed-text`,
 `plain-edit-parse`, `plain-edit-markers`, `block-offset-cost`, `load-cost`,
 `typing-cost-by-kind`, `code-local-write`, `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
 paste (`paste-blocks`), source mode

@@ -503,13 +503,13 @@ export function keepScroll(context: EditorContext, anchor: number): void {
  * blocks (the blank lines that separate them) snap to the nearest text, since
  * a separator has nothing to draw a caret on.
  */
-export function restoreCaret(context: EditorContext, offset: number): boolean {
+export function restoreCaret(context: EditorContext, offset: number, scroll = true): boolean {
   const clamped = context.state.nearestTextOffset(offset);
   // The caret is going here, so the source it lands in is the one that is
   // shown — decided before the placement, so the caret lands on that text
   // exactly instead of being mapped into a rendering that cannot hold it.
   showSourceAt(context, clamped);
-  return placeCaret(context, clamped);
+  return placeCaret(context, clamped, scroll);
 }
 
 /**
@@ -518,11 +518,11 @@ export function restoreCaret(context: EditorContext, offset: number): boolean {
  * than having to be selected a second time. A selection whose far end is not on screen
  * cannot be drawn, and then the caret at the end it can reach is the honest fallback.
  */
-export function restoreMark(context: EditorContext, mark: EditMark): boolean {
+export function restoreMark(context: EditorContext, mark: EditMark, scroll = true): boolean {
   if (mark.from === mark.to) {
-    return restoreCaret(context, mark.from);
+    return restoreCaret(context, mark.from, scroll);
   }
-  return restoreSelection(context, mark.from, mark.to) || restoreCaret(context, mark.to);
+  return restoreSelection(context, mark.from, mark.to, scroll) || restoreCaret(context, mark.to, scroll);
 }
 
 /**
@@ -535,7 +535,12 @@ export function restoreMark(context: EditorContext, mark: EditMark): boolean {
  * `caret.ts: scheduleNativeSelection`). This is what a formatting command does to the
  * text it just formatted, and what an undo does to the text it just put back.
  */
-export function restoreSelection(context: EditorContext, from: number, to: number): boolean {
+export function restoreSelection(
+  context: EditorContext,
+  from: number,
+  to: number,
+  scroll = true
+): boolean {
   const root = proseRoot(context);
   if (!root) {
     return false;
@@ -552,7 +557,7 @@ export function restoreSelection(context: EditorContext, from: number, to: numbe
   caret.setStart(end.node, end.offset);
   caret.collapse(true);
   setSelectionRange(range);
-  scheduleCaret(caret);
+  scheduleCaret(caret, scroll);
   scheduleNativeSelection(range);
   return true;
 }
@@ -562,7 +567,7 @@ export function restoreSelection(context: EditorContext, from: number, to: numbe
  * deciding what source that offset belongs to. Returns false when the offset
  * lives in a block that is not mounted.
  */
-export function placeCaret(context: EditorContext, offset: number): boolean {
+export function placeCaret(context: EditorContext, offset: number, scroll = true): boolean {
   const root = proseRoot(context);
   if (!root) {
     setSelectionRange(null);
@@ -582,6 +587,6 @@ export function placeCaret(context: EditorContext, offset: number): boolean {
   setSelectionRange(null);
   window.getSelection()?.removeAllRanges();
   root.focus({ preventScroll: true });
-  scheduleCaret(caret);
+  scheduleCaret(caret, scroll);
   return true;
 }

@@ -98,8 +98,8 @@ export function normalizeCaretDom(): void {
 }
 
 /** Positions the (reused) caret span for the active range. */
-function renderCaret(): void {
-  renderCaretNow();
+function renderCaret(scroll: boolean): void {
+  renderCaretNow(scroll);
 }
 
 /**
@@ -110,7 +110,7 @@ function renderCaret(): void {
  * still renders when animation frames are throttled (occluded/backgrounded
  * windows), since a missing caret is worse than a slightly later one.
  */
-function renderCaretDeferred(): void {
+function renderCaretDeferred(scroll: boolean): void {
   if (caretFrame !== null) {
     return;
   }
@@ -129,7 +129,11 @@ function renderCaretDeferred(): void {
     renderCaretNow(false);
     requestAnimationFrame(() => {
       positionCaret();
-      if (caretElement) {
+      // `scroll` is the difference between a caret that *moved* and one that was put back
+      // where it already was: a move brings the caret into view, a window change must not
+      // move the page (measured: scrolling up from the end of the demo document, the view
+      // jumped 1097px to a caret that had not moved at all).
+      if (caretElement && scroll) {
         scrollCaretIntoView(caretElement);
       }
     });
@@ -140,7 +144,7 @@ function renderCaretDeferred(): void {
       caretFrame = null;
     }
     caretTimeout = null;
-    renderCaretNow();
+    renderCaretNow(scroll);
   }, 120);
 }
 
@@ -337,14 +341,14 @@ export function caretRangeAtPoint(clientX: number, clientY: number): Range | nul
 }
 
 /** Shows the caret at a collapsed range, rendered locally in the DOM. */
-export function showCaret(range: Range | null): void {
+export function showCaret(range: Range | null, scroll = true): void {
   if (!range) {
     clearPendingNativeSelection();
   }
   activeRange = range;
   notifyCaretRangeChanged(range);
   if (range) {
-    renderCaret();
+    renderCaret(scroll);
   } else {
     clearPendingCaretRender();
     removeCaretElement();
@@ -358,14 +362,14 @@ export function showCaret(range: Range | null): void {
  * postponed. Used after a block re-render, where the caret's container was
  * just replaced and reading its rect forces a layout.
  */
-export function scheduleCaret(range: Range | null): void {
+export function scheduleCaret(range: Range | null, scroll = true): void {
   if (!range) {
     clearPendingNativeSelection();
   }
   activeRange = range;
   notifyCaretRangeChanged(range);
   if (range) {
-    renderCaretDeferred();
+    renderCaretDeferred(scroll);
   } else {
     clearPendingCaretRender();
     removeCaretElement();

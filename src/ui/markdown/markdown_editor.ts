@@ -318,11 +318,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    */
   restoreView(view: DocumentView): void {
     if (view.caret !== null) {
+      // The view below is what names the place, and it is asserted two frames later; the caret
+      // is being put where the document says it was, not moved by the reader, so it does not
+      // scroll a page the view is about to place.
       const placed =
         view.to !== null && view.to !== view.caret
-          ? restoreSelection(this.context, view.caret, view.to) ||
-            restoreCaret(this.context, view.caret)
-          : restoreCaret(this.context, view.caret);
+          ? restoreSelection(this.context, view.caret, view.to, false) ||
+            restoreCaret(this.context, view.caret, false)
+          : restoreCaret(this.context, view.caret, false);
       this.pendingCaretOffset = placed ? null : view.caret;
     }
     this.renderer.scrollToAnchor(view.scroll);
@@ -537,7 +540,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (offset === null) {
       return;
     }
-    this.pendingCaretOffset = restoreCaret(this.context, offset) ? null : offset;
+    // Put back, not moved: the caret is where it already was, and the reader scrolled the page
+    // themselves — so this placement must not scroll. It is the whole of a bug that showed while
+    // scrolling up: the caret's block left the window and came back, the caret was placed again
+    // a deferred frame later, and `scrollCaretIntoView` took the view to it — measured, one 24px
+    // step up from the end of the demo document jumped the page **1097px**.
+    this.pendingCaretOffset = restoreCaret(this.context, offset, false) ? null : offset;
   }
 
   /** Undo/redo keeps the caret at the same document offset when it can. */

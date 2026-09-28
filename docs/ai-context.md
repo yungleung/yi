@@ -104,6 +104,16 @@ document's total height under the reader), and a document opens at the top of it
 over from the note before it. A probe that measures one layout should ask for it
 (`t.useLayout('page')`) rather than inherit whichever one the reader left behind.
 
+One rule keeps the page still while the window turns over: **a caret that did not move must not
+move the page.** The renderer drops the blocks outside the window and mounts them again as the
+reader scrolls back, and a caret whose block was dropped is placed again once it is there — but
+that is a *putting back*, not a move, so it must not scroll (`caret.ts: showCaret`/`scheduleCaret`
+take a `scroll` flag; `markdown_editor.ts: reanchorCaret` and `restoreView` pass false). Measured
+the other way round, one 24px step up from the end of the demo document moved the page **1097px**
+to a caret the reader had left in the first paragraph (`test/probes/scroll-caret-anchor.js` holds
+it). It is the same rule a click that opens a source already follows: a rebuild under the reader
+is not a request to move the page.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 

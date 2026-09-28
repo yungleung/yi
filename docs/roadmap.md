@@ -355,6 +355,24 @@ elements) unless it says otherwise.
   - **The settings window's sidebar is a strip of tabs**: 144 px instead of 224, each tab the
     sidebar's own width, square and flush against the next, with the active one in the theme's
     active colour.
+- **Scrolling up from the end of a document jumped the page to the caret.** The renderer drops the
+  blocks outside the window and mounts them again as the reader scrolls back, and a caret whose
+  block was dropped is placed again once it is there — through the ordinary caret placement, whose
+  deferred frame ends in `scrollCaretIntoView` whichever reason had asked for it. So a *window
+  change* scrolled the page to a caret that had not moved: measured on the demo document, walking
+  up from the end in 24px steps, the step at which the caret's block came back into the window
+  moved the page **1097px** instead — the caret sitting 8px inside the pane afterwards, which is
+  `scrollCaretIntoView`'s own margin. The two reasons a caret is placed are now told apart: a caret
+  that *moved* brings itself into view, and a caret that is *put back* where it already was does
+  not (`caret.ts: showCaret`/`scheduleCaret` take a `scroll` flag; `markdown_editor.ts:
+  reanchorCaret` and `restoreView` pass false). That is the rule a click that opens a source
+  already follows — a rebuild under the reader is not a request to move the page.
+  `test/probes/scroll-caret-anchor.js` is the test: it puts a caret in the first paragraph,
+  scrolls to the end and walks back up, and reports a **1107px** jump without the change. Two
+  things about measuring it: the caret has to be *rendered*, so the reader clicks into the
+  document first (with the caret hidden the same walk is clean), and the window has to be in
+  front — a backgrounded webview runs no animation frames, so the renderer never re-syncs and
+  neither does the bug.
 
 ## Open, in the order to take them
 
