@@ -63,6 +63,8 @@ export interface SessionEditor {
 
 /** What the session asks when a document could be lost, and who answers it. */
 export interface SessionQuestion {
+  /** The question's name, which the system dialog needs and the card shows as its heading. */
+  title: string;
   message: string;
   /** What the answer that keeps the document says. */
   yes: string;
@@ -144,6 +146,7 @@ class DocumentSession {
     if (action === 'ask') {
       const title = this.current()?.title ?? 'This document';
       keep = await this.ask({
+        title: 'Open another document',
         message: `“${title}” is not in the stack. Push it there, so it is kept, or open the new document without it?`,
         yes: 'Push and open',
         no: 'Open without it'
@@ -199,6 +202,7 @@ class DocumentSession {
     }
     if (document.id !== this.state.current && !isSaved(document)) {
       const saveIt = await this.ask({
+        title: 'Drop from the stack',
         message: `“${document.title}” has changes that are not in its file. Save it before dropping it?`,
         yes: 'Save and drop',
         no: 'Drop without saving'

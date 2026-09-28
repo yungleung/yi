@@ -1,22 +1,31 @@
 /**
- * The question the session asks before a document can be lost.
+ * The question the session asks before a document can be lost, answered by one of two hands —
+ * and this class is where that choice lives, so nothing else in the app has to know which.
  *
- * A small card in the page rather than a native dialog, and the reason is not decoration. The
- * question is asked *inside* an open of a document, so it has to be answerable by everything
- * that opens one — including a probe, which cannot press a native dialog: the harness reaches
- * the app through the webview, and a native modal blocks the webview until a person answers it
- * (measured: two probes hung for the harness's whole budget on one, and the app had to be
- * restarted). A card in the page is a button like any other button: a probe presses the answer
- * it wants, the way it presses the stack's own buttons.
+ * - A **probe** drives the app through the webview, so it is answered on a card in the page. A
+ *   native dialog blocks the webview until a person answers it, and the harness reaches the app
+ *   *through* the webview: measured, two probes hung for their whole five-second budget on one
+ *   and the app had to be restarted. A card is a button like any other, so a probe presses the
+ *   answer it wants.
+ * - A **reader** is answered by the system dialog the app's other question — the workspace tree's
+ *   delete — already uses: modal to the app, and unmissable.
  *
- * May import: the component base. Upholds: one question at a time — a second ask while one is
- * open is refused, so two documents can never both be waiting on the same card.
+ * Which is in the room is read from the page rather than configured: the probe harness installs
+ * `window.__t` on it (`test/probes/lib.js`), and only the harness does. No build flag, no manual
+ * edit, and no second copy of the question: both hands show the same words.
+ *
+ * May import: the prompt port (`services/session.ts`), the dialog plugin and the component base.
+ * Upholds: one question at a time — a second ask while the card is up is refused — and neither
+ * hand takes the focus, because the question is asked *inside* an open, a moment before the
+ * reader's caret is captured with it: a focused button moves the caret first (measured).
  */
 
+import { ask as askNative } from '@tauri-apps/plugin-dialog';
 import type { SessionPrompter, SessionQuestion } from '../../services/session';
 import { BaseComponent } from '../component';
 
 export class SessionPrompt extends BaseComponent implements SessionPrompter {
+  private readonly heading: HTMLParagraphElement;
   private readonly message: HTMLParagraphElement;
   private readonly yes: HTMLButtonElement;
   private readonly no: HTMLButtonElement;
@@ -37,6 +46,9 @@ export class SessionPrompt extends BaseComponent implements SessionPrompter {
 
     const card = document.createElement('div');
     card.className = 'w-[26rem] rounded-lg border border-base-300 bg-base-200 p-4 shadow-lg';
+    this.heading = document.createElement('p');
+    this.heading.className = 'mb-1 text-sm font-semibold';
+    this.heading.dataset.sessionPromptTitle = 'true';
     this.message = document.createElement('p');
     this.message.className = 'text-sm';
     this.message.dataset.sessionPromptMessage = 'true';
@@ -46,11 +58,12 @@ export class SessionPrompt extends BaseComponent implements SessionPrompter {
     this.no = this.makeButton('session-prompt-no', 'btn btn-ghost btn-sm', () => this.settle(false));
     this.yes = this.makeButton('session-prompt-yes', 'btn btn-primary btn-sm', () => this.settle(true));
     actions.append(this.no, this.yes);
-    card.append(this.message, actions);
+    card.append(this.heading, this.message, actions);
     this.element.appendChild(card);
 
-    // Escape is the cautious answer, whichever that is: the caller decides by naming its
-    // buttons, so the button that is not "yes" is the one it means.
+    // Escape is the answer that is not "yes": the caller names its own two answers, so the one
+    // that is not the first is the cautious one. The listener is on the document because the
+    // card deliberately never takes focus.
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && this.answer !== null) {
         this.settle(false);
@@ -58,18 +71,24 @@ export class SessionPrompt extends BaseComponent implements SessionPrompter {
     });
   }
 
-  ask(question: SessionQuestion): Promise<boolean> {
+  /** Asks, on the card when a probe is driving the page and in the system dialog otherwise. */
+  async ask(question: SessionQuestion): Promise<boolean> {
+    if (!drivenByTools()) {
+      return await askNative(question.message, { title: question.title, kind: 'warning' });
+    }
+    return await this.askOnTheCard(question);
+  }
+
+  /** The card, for the harness: a question a button can answer. */
+  private askOnTheCard(question: SessionQuestion): Promise<boolean> {
     if (this.answer !== null) {
       return Promise.resolve(false);
     }
+    this.heading.textContent = question.title;
     this.message.textContent = question.message;
     this.yes.textContent = question.yes;
     this.no.textContent = question.no;
     this.element.classList.remove('hidden');
-    // No `focus()`: the caret and the selection belong to the document, and this card appears
-    // *while* a document is being left — focusing a button here would move the reader's caret
-    // out of the text that is about to be captured with it. Escape answers "no" from a listener
-    // on the document, which needs no focus.
     return new Promise((resolve) => {
       this.answer = resolve;
     });
@@ -96,4 +115,12 @@ export class SessionPrompt extends BaseComponent implements SessionPrompter {
     button.addEventListener('click', onPress);
     return button;
   }
+}
+
+/**
+ * Whether a probe is driving this page. `test/probes/lib.js` is the only thing that puts `__t`
+ * on the window, so this is the whole of the "under test" test.
+ */
+function drivenByTools(): boolean {
+  return typeof (window as { __t?: unknown }).__t === 'object';
 }
