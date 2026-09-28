@@ -37,6 +37,7 @@ methodology; this file is the index and the conventions.
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
 | `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
+| `check-workspace-folders.mjs` | Where a new note may go (`services/workspace_folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
@@ -112,6 +113,15 @@ live index; the newest probes carry a header naming what they cover:
   deleted by the app's own Rust commands, but reading or writing it from the page is refused).
   `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
   `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
+- A **native** surface — the system's save sheet, a window menu, the prompt's own dialog — cannot
+  be driven, and cannot be stood in for from the page either: the dialog plugin's `save` does not
+  travel over the webview's `fetch` (measured; a `fetch` stand-in that works for an app command
+  and for the opener never sees `plugin:dialog|save`, and the real sheet then blocks the harness
+  for its whole budget). So the app gives every question two hands and a probe drives the card:
+  which hand is in the room is `src/ui/under_test.ts`, one rule for the prompt, the new-note card
+  and whatever comes next. A rule that only the native hand reaches belongs in a pure module with
+  a check beside it — `check-workspace-folders.mjs` holds the one the new-note sheet's answer is
+  read by.
 - A probe is one expression returning `{ checks, failed }`; a probe that only
   measures returns its numbers. The harness reads that verdict: a probe with a
   non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did

@@ -165,3 +165,33 @@ out). `test/probes/tree-create.js` was rewritten: the tree's new file is id-name
 frontmatter, and is *not* left in an inline rename. `DocumentView.to` is checked in
 `check-document-session.mjs`, and `test/probes/lib.js`'s `openWorkspace` now reloads the app's own
 config manager, so a probe that points the app at a folder sees it the way the app does.
+
+## Reviewed, and changed
+
+Three things the review asked for, all on the same branch:
+
+1. **The question has two hands, as the prompt's does.** A reader is asked by the system's own
+   sheet (`save` — one native surface that means "where, and what is it called"), a probe by the
+   card. The switch is one module, `src/ui/under_test.ts`, which `ui/prompt.ts` now reads too
+   instead of keeping its own copy of the test. The sheet's answer is a single path, and the rule
+   that reads a folder and a name out of it is pure — `services/workspace_folders.ts:
+   placementOfPath`, checked in `test/checks/check-workspace-folders.mjs` — **because a native
+   sheet cannot be probed *or* stood in for**: measured three ways (a `fetch` stand-in that works
+   for an app command and for the opener never sees `plugin:dialog|save`; the real sheet then
+   blocks the harness for its whole budget), so the card is the only hand a probe can drive, and
+   the promise this plan made about driving "the real UI" holds for the card alone. The failed
+   attempts opened real sheets on the maintainer's screen; that is written down in
+   `test/README.md` so nobody repeats it.
+2. **`keywords` is a list.** The built-in frontmatter writes `keywords:` with `  - untagged` under
+   it; the rule learned the one thing it needed — a value written on the lines *below* a key is
+   that key's value, so the reader's own list is left alone while a key with nothing under it is
+   still filled in.
+3. **The stored template may be absent.** `new_file_frontmatter` is a string or nothing, and
+   nothing means the app's own. Before this the app wrote its default into every config that saved
+   anything else — which is how the old `keywords: untagged` had frozen itself into the running
+   app's config — so a config that still holds the built-in the app shipped before the change
+   reads as no template (`src-tauri/src/settings.rs: as_read`, with a Rust test).
+
+And one more the review asked for, in the settings window: its sidebar is now a strip of tabs —
+144 px instead of 224, each the sidebar's own width, square and flush against the next, with the
+active one in the theme's active colour.
