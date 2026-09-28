@@ -36,6 +36,10 @@ interface SettingsTab {
 /**
  * The settings window: a sidebar holding a stack of tabs, with the selected
  * tab's content rendered in the main area.
+ *
+ * The sidebar is a strip of tabs: each one spans the sidebar's own width, they sit flush against
+ * each other with nothing between them, and the tab in hand carries the theme's active colour —
+ * so the list reads as one control rather than as a menu of separate buttons.
  */
 export class SettingsWindow extends BaseComponent {
   private readonly contentArea: HTMLElement;
@@ -53,9 +57,9 @@ export class SettingsWindow extends BaseComponent {
     ]);
 
     const sidebar = document.createElement('aside');
-    sidebar.className = 'w-56 shrink-0 bg-base-200 border-r border-base-300 p-3 overflow-y-auto';
+    sidebar.className = 'w-36 shrink-0 bg-base-200 border-r border-base-300 overflow-y-auto';
     this.menu = document.createElement('ul');
-    this.menu.className = 'menu gap-1';
+    this.menu.className = 'menu w-full gap-0 p-0';
     sidebar.appendChild(this.menu);
 
     this.contentArea = document.createElement('main');
@@ -82,6 +86,8 @@ export class SettingsWindow extends BaseComponent {
     const button = document.createElement('a');
     button.href = '#';
     button.textContent = tab.label;
+    // Full width and square: a tab, not a rounded menu row with air around it.
+    button.className = 'w-full rounded-none';
     button.addEventListener('click', (event) => {
       event.preventDefault();
       this.selectTab(tab.id);

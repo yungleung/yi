@@ -19,11 +19,16 @@ pub struct AppConfig {
   /// remembered here so a reader who prefers one keeps it.
   #[serde(default = "default_editor_layout")]
   pub editor_layout: String,
-  /// The frontmatter a new note opens with. `title`, `date`, `id` and `keywords` are the four
-  /// keys the app guarantees: it stamps the date and the id, and fills the other two in when
-  /// the template leaves them out, while every other line is kept exactly as written.
-  #[serde(default = "default_new_file_frontmatter")]
-  pub new_file_frontmatter: String,
+  /// The frontmatter a new note opens with, as the reader wrote it — or `None` for the app's own
+  /// (`src/services/new_document.ts` holds that one). `title`, `date`, `id` and `keywords` are
+  /// the four keys the app guarantees: it stamps the date and the id, and fills the other two in
+  /// when the template leaves them out, while every other line is kept exactly as written.
+  ///
+  /// It is `None` rather than a copy of the app's template so that a reader who never wrote one
+  /// follows the app when the built-in changes. A build that stores its own default freezes that
+  /// default into every config that saves anything else — which is what this field used to do.
+  #[serde(default)]
+  pub new_file_frontmatter: Option<String>,
   pub config_version: u32,
 }
 
@@ -41,10 +46,6 @@ fn default_editor_layout() -> String {
   "page".to_string()
 }
 
-fn default_new_file_frontmatter() -> String {
-  "title: Untitle\ndate:\nid:\nkeywords: untagged".to_string()
-}
-
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
@@ -52,10 +53,26 @@ impl Default for AppConfig {
       bibliography_file: default_bibliography_file(),
       csl_style: default_csl_style(),
       editor_layout: default_editor_layout(),
-      new_file_frontmatter: default_new_file_frontmatter(),
+      new_file_frontmatter: None,
       config_version: CURRENT_CONFIG_VERSION,
     }
   }
+}
+
+/// The frontmatter a new note opened with before `keywords` became a list.
+const OLD_NEW_FILE_FRONTMATTER: &str = "title: Untitle\ndate:\nid:\nkeywords: untagged";
+
+/// What a config read from disk means.
+///
+/// The one repair a config gets: a template that is word for word the built-in this build shipped
+/// *before* the shape changed is read as no template at all. Nobody typed it — it is a default
+/// this app used to write into every config that saved anything else — so a reader who never
+/// chose a template follows the app's, instead of keeping a shape it no longer has.
+fn as_read(mut cfg: AppConfig) -> AppConfig {
+  if cfg.new_file_frontmatter.as_deref() == Some(OLD_NEW_FILE_FRONTMATTER) {
+    cfg.new_file_frontmatter = None;
+  }
+  cfg
 }
 
 fn config_path(app_handle: &tauri::AppHandle) -> PathBuf {
@@ -68,7 +85,7 @@ fn load_from_disk(app_handle: &tauri::AppHandle) -> anyhow::Result<AppConfig> {
   let path = config_path(app_handle);
 
   match fs::read_to_string(&path) {
-    Ok(s) => Ok(serde_json::from_str(&s)?),
+    Ok(s) => Ok(as_read(serde_json::from_str(&s)?)),
     Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(AppConfig::default()),
     Err(err) => Err(err.into()),
   }
@@ -141,5 +158,31 @@ fn expand_tilde(path: &str, app: &tauri::AppHandle) -> PathBuf {
       .map(|home| home.join(rest))
       .unwrap_or_else(|_| PathBuf::from(path)),
     None => PathBuf::from(path),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn a_config_that_still_holds_the_old_builtin_reads_as_no_template() {
+    let cfg = AppConfig {
+      new_file_frontmatter: Some(OLD_NEW_FILE_FRONTMATTER.to_string()),
+      ..AppConfig::default()
+    };
+
+    assert_eq!(as_read(cfg).new_file_frontmatter, None);
+  }
+
+  #[test]
+  fn and_a_template_the_reader_wrote_is_kept() {
+    let mine = "title: Untitle\nauthor: me\nkeywords:\n  - untagged";
+    let cfg = AppConfig {
+      new_file_frontmatter: Some(mine.to_string()),
+      ..AppConfig::default()
+    };
+
+    assert_eq!(as_read(cfg).new_file_frontmatter.as_deref(), Some(mine));
   }
 }

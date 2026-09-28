@@ -46,7 +46,9 @@ export class NewDocumentSettings extends BaseComponent {
     this.field.setAttribute('data-new-file-frontmatter', 'true');
     const hint = document.createElement('p');
     hint.className = 'text-xs opacity-60';
-    hint.textContent = 'Written without the --- fences: the app puts them around it.';
+    hint.textContent =
+      'Written without the --- fences: the app puts them around it. Cleared, the app\'s own ' +
+      'template is used again.';
     group.append(label, this.field, hint);
 
     const actions = document.createElement('div');
@@ -77,7 +79,9 @@ export class NewDocumentSettings extends BaseComponent {
   private async load(): Promise<void> {
     try {
       const config = await configManager.load();
-      this.field.value = config.new_file_frontmatter || DEFAULT_TEMPLATE;
+      // The app's own template is shown when the reader has none: an empty field *is* "no
+      // template of mine", which is what keeps a reader who never chose one following the app.
+      this.field.value = config.new_file_frontmatter ?? DEFAULT_TEMPLATE;
     } catch (error) {
       console.error('Failed to load the new-note settings:', error);
       this.field.value = DEFAULT_TEMPLATE;
@@ -87,7 +91,8 @@ export class NewDocumentSettings extends BaseComponent {
 
   private async save(): Promise<void> {
     try {
-      await configManager.update({ new_file_frontmatter: this.field.value });
+      const typed = this.field.value.trim();
+      await configManager.update({ new_file_frontmatter: typed === '' ? null : this.field.value });
       this.status.textContent = 'Saved';
       window.setTimeout(() => {
         this.status.textContent = '';
