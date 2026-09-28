@@ -75,7 +75,8 @@ export async function newDocument(
     // document is not in this workspace (or there is none), the root is where a note goes.
     const onScreen = documentSession.current()?.path;
     const answer = await chooser.choose({
-      folders: await workspaceFolders(root),
+      // The walk is the card's to ask for: a reader's own sheet brings its own way of choosing.
+      folders: () => workspaceFolders(root),
       folder: (onScreen && parentFolder(onScreen)) || root,
       name: id
     });
@@ -97,7 +98,8 @@ async function create(folder: string, name: string, id: string): Promise<void> {
   const content = newDocumentText({
     id: made.id,
     date: newDocumentDate(),
-    template: configManager.get()?.new_file_frontmatter
+    // No template of the reader's means the app's own (`services/new_document.ts`).
+    template: configManager.get()?.new_file_frontmatter ?? undefined
   });
   try {
     await writeTextFile(made.path, content);

@@ -23,7 +23,7 @@ import { listFolderFiles, type FileInfo } from '../api/files';
  * ancestor — would otherwise walk forever, and a dialog that never opens is worse than a list
  * that stops. No notes workspace has come close.
  */
-const LIMIT = 1000;
+export const FOLDER_LIMIT = 1000;
 
 /** One folder a new note may be made in. */
 export interface FolderOption {
@@ -45,7 +45,7 @@ export async function workspaceFolders(
 ): Promise<FolderOption[]> {
   const folders: FolderOption[] = [];
   const walk = async (path: string, name: string, depth: number): Promise<void> => {
-    if (folders.length >= LIMIT) {
+    if (folders.length >= FOLDER_LIMIT) {
       return;
     }
     folders.push({ path, name, depth });
@@ -63,12 +63,12 @@ export async function workspaceFolders(
       }
     }
   };
-  await walk(root, basename(root), 0);
+  await walk(root, fileName(root), 0);
   return folders;
 }
 
-/** The last piece of a path, whichever separator the platform writes. */
-function basename(path: string): string {
+/** The last piece of a path — a file's name or a folder's, with its extension — or the path. */
+export function fileName(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
@@ -80,4 +80,17 @@ function basename(path: string): string {
 export function parentFolder(path: string): string | null {
   const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
   return cut > 0 ? path.slice(0, cut) : null;
+}
+
+/**
+ * The folder and the file name a path names — `null` for a path with no folder above it.
+ *
+ * This is what an answer from the system's own sheet means (`ui/new_document/`): the sheet
+ * answers with one path, and a new note needs a place and a name, which are the two halves of it.
+ * A rule rather than a line in the dialog, so it is checked in Node with the rest of this module
+ * — a native sheet is the one surface a probe cannot drive.
+ */
+export function placementOfPath(path: string): { folder: string; name: string } | null {
+  const folder = parentFolder(path);
+  return folder === null ? null : { folder, name: fileName(path) };
 }

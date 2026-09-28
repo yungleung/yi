@@ -13,9 +13,9 @@
  *   budget on one and the app had to be restarted — while a card is a button like any other, so a
  *   probe presses the answer it wants.
  *
- * Which hand is in the room is read from the page rather than configured: `test/probes/lib.js`
- * installs `window.__t`, and only the harness does. Both hands are given the same words, so the
- * question a test answers is the question a reader answers.
+ * Which hand is in the room is read from the page rather than configured (`under_test.ts`):
+ * `test/probes/lib.js` installs `window.__t`, and only the harness does. Both hands are given
+ * the same words, so the question a test answers is the question a reader answers.
  *
  * May import: the dialog plugin and the component base. Upholds: one question at a time — a
  * second ask while the card is up is refused rather than queued — and neither hand takes the
@@ -25,6 +25,7 @@
 
 import { ask as askNative } from '@tauri-apps/plugin-dialog';
 import { BaseComponent } from './component';
+import { drivenByTools } from './under_test';
 
 /** A question: its name, its words, and what each of its two answers says. */
 export interface Question {
@@ -148,11 +149,3 @@ export class Prompt extends BaseComponent implements Prompter {
  * tree's delete, and whatever comes next.
  */
 export const prompt = new Prompt();
-
-/**
- * Whether a probe is driving this page. `test/probes/lib.js` is the only thing that puts `__t`
- * on the window, so this is the whole of the "under test" test.
- */
-function drivenByTools(): boolean {
-  return typeof (window as { __t?: unknown }).__t === 'object';
-}

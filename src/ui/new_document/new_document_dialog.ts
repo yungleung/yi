@@ -1,29 +1,42 @@
 /**
- * The card that asks where a new note goes and what it is to be called.
+ * Asking where a new note goes and what it is to be called — one question, two hands.
  *
- * A new note is two answers at once — a folder inside the workspace, and a name — and it is
- * not a question a system dialog can ask: a file picker knows nothing about the workspace's
- * folders, and it cannot offer a place and a name in one breath. So the asking is the app's
- * own card, the way `ui/prompt.ts` is for a yes or a no: one card, for a reader and for a
- * probe alike, driven by real buttons and a real field (`data-new-document-*`).
+ * The question is two answers at once: a folder, and a name. It has the same two hands as the
+ * app's prompt (`ui/prompt.ts`), chosen the same way (`under_test.ts`):
+ *
+ * - the **reader** gets the system's own sheet — `save`, the one native surface that asks
+ *   "where, and what is it called" in a single breath, opened on the folder the reader is
+ *   working in with the generated id as the name to type over;
+ * - a **probe** gets a **card in the page**, because a native sheet blocks the webview the
+ *   harness reaches the app through (the same finding `prompt.ts` records). The card lists the
+ *   workspace's own folders, indented the way the tree indents them, with the one the reader is
+ *   in already chosen — which the system's sheet cannot offer — and it is driven by real buttons
+ *   and a real field (`data-new-document-*`).
  *
  * Where `Prompt` must *not* take the focus — it is asked in the middle of an editing gesture
- * whose caret has to survive it — this card *is* the gesture, and the name field carries the
- * caret when it opens with the generated id selected, because that default is a name meant to
+ * whose caret has to survive it — the card *is* the gesture, and the name field carries the
+ * caret when it opens, with the generated id selected, because that default is a name meant to
  * be typed over rather than kept.
  *
- * May import: the component base, and the folder list's shape as a type. Upholds: one card at
- * a time — a second ask while it is up is refused rather than queued — and an answer that
- * always names a folder: a cancel is the only way out without one.
+ * May import: the dialog plugin, the component base, the shared "under test" rule, and the path
+ * rules the two hands share. Upholds: one answer to the question — a folder and a name, or a
+ * cancel that writes nothing — and a folder that is the chosen path's own, whichever hand was in
+ * the room.
  */
 
+import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { BaseComponent } from '../component';
-import type { FolderOption } from '../../services/workspace_folders';
+import { drivenByTools } from '../under_test';
+import { placementOfPath, type FolderOption } from '../../services/workspace_folders';
 
 /** What the card needs to ask: the places, the one to start on, and the name to start with. */
 export interface NewDocumentRequest {
-  /** The workspace's folders, as `services/workspace_folders.ts` lists them. */
-  folders: FolderOption[];
+  /**
+   * The workspace's folders, as `services/workspace_folders.ts` lists them. A function, because
+   * the system's sheet brings its own way of choosing a folder: only the card needs this walk,
+   * and a reader should not wait for it before their sheet opens.
+   */
+  folders(): Promise<FolderOption[]>;
   /** The folder to have chosen when the card opens. */
   folder: string;
   /** The name to start with, without its extension (the app writes `.md`). */
@@ -105,12 +118,46 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
     });
   }
 
-  /** Asks. Null is the reader saying no: nothing is created and nothing is written. */
-  choose(request: NewDocumentRequest): Promise<NewDocumentPlacement | null> {
-    if (this.answer !== null) {
-      return Promise.resolve(null);
+  /** Asks, on the system's sheet when a reader is there and on the card when a probe is. */
+  async choose(request: NewDocumentRequest): Promise<NewDocumentPlacement | null> {
+    if (!drivenByTools()) {
+      return await this.askOnTheSystemSheet(request);
     }
-    this.fill(request);
+    return await this.askOnTheCard(request);
+  }
+
+  /**
+   * The reader's hand: the system's own sheet, here as `ui/prompt.ts` uses the system's own
+   * question. It opens where the reader is working — the folder they would have chosen on the
+   * card — with the generated id as the name, and answers with the path it was given.
+   *
+   * The path is the whole answer: the folder is everything above it and the name is its last
+   * piece, so a reader who navigates somewhere else than the folder they were offered gets the
+   * place they actually named, which is the one thing this hand can do that the card cannot.
+   */
+  private async askOnTheSystemSheet(
+    request: NewDocumentRequest
+  ): Promise<NewDocumentPlacement | null> {
+    const chosen = await saveChosen({
+      defaultPath: `${request.folder}/${request.name}.md`,
+      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
+    });
+    if (typeof chosen !== 'string') {
+      return null;
+    }
+    return placementOfPath(chosen);
+  }
+
+  /** The card, which is what a probe answers. */
+  private async askOnTheCard(request: NewDocumentRequest): Promise<NewDocumentPlacement | null> {
+    if (this.answer !== null) {
+      return null;
+    }
+    const folders = await request.folders();
+    if (this.answer !== null) {
+      return null;
+    }
+    this.fill(folders, request);
     this.mountOnFirstAsk();
     this.element.classList.remove('hidden');
     this.nameField.focus();
@@ -121,14 +168,14 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
   }
 
   /** The folder rows and the starting name, for one question. */
-  private fill(request: NewDocumentRequest): void {
-    this.folder = request.folders.some((option) => option.path === request.folder)
+  private fill(folders: FolderOption[], request: NewDocumentRequest): void {
+    this.folder = folders.some((option) => option.path === request.folder)
       ? request.folder
-      : (request.folders[0]?.path ?? '');
+      : (folders[0]?.path ?? '');
     this.fallbackName = request.name;
     this.nameField.value = request.name;
     this.list.replaceChildren();
-    for (const option of request.folders) {
+    for (const option of folders) {
       this.list.appendChild(this.folderRow(option));
     }
     this.markChosen();
