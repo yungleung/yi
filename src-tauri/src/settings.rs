@@ -19,6 +19,11 @@ pub struct AppConfig {
   /// remembered here so a reader who prefers one keeps it.
   #[serde(default = "default_editor_layout")]
   pub editor_layout: String,
+  /// The frontmatter a new note opens with. `title`, `date`, `id` and `keywords` are the four
+  /// keys the app guarantees: it stamps the date and the id, and fills the other two in when
+  /// the template leaves them out, while every other line is kept exactly as written.
+  #[serde(default = "default_new_file_frontmatter")]
+  pub new_file_frontmatter: String,
   pub config_version: u32,
 }
 
@@ -36,6 +41,10 @@ fn default_editor_layout() -> String {
   "page".to_string()
 }
 
+fn default_new_file_frontmatter() -> String {
+  "title: Untitle\ndate:\nid:\nkeywords: untagged".to_string()
+}
+
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
@@ -43,6 +52,7 @@ impl Default for AppConfig {
       bibliography_file: default_bibliography_file(),
       csl_style: default_csl_style(),
       editor_layout: default_editor_layout(),
+      new_file_frontmatter: default_new_file_frontmatter(),
       config_version: CURRENT_CONFIG_VERSION,
     }
   }

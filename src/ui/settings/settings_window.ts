@@ -1,6 +1,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BaseComponent } from '../component';
 import { CitationSettings } from './citation_settings';
+import { NewDocumentSettings } from './new_document_settings';
 
 /**
  * Opens the settings window, focusing it when it is already open.
@@ -67,6 +68,11 @@ export class SettingsWindow extends BaseComponent {
       id: 'citation',
       label: 'Citation',
       content: new CitationSettings()
+    });
+    this.addTab({
+      id: 'new-note',
+      label: 'New note',
+      content: new NewDocumentSettings()
     });
     this.selectTab(this.tabs[0].id);
   }

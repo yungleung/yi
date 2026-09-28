@@ -17,6 +17,7 @@ import { LayoutToolbar } from './ui/toolbar/layout_toolbar';
 import { SessionToolbar } from './ui/toolbar/session_toolbar';
 import { SavedStatus, StackStatus } from './ui/document_status';
 import { registerSessionCommands } from './ui/session/session_commands';
+import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { Toast } from './ui/toast';
@@ -87,6 +88,8 @@ function createAppShell(): MarkdownEditor {
   documentSession.attachPrompter(prompt);
   // Its commands — Save, Save As, and the stack — registered where the session's behaviour is.
   registerSessionCommands();
+  // And the one that makes a note: the menu item and the tree's own *New file* name it.
+  registerNewDocumentCommand();
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).

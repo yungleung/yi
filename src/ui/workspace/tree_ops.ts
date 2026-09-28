@@ -22,6 +22,8 @@ import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/file
 import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
 import { TOAST_EVENT } from '../../services/workspace';
+import { parentFolder } from '../../services/workspace_folders';
+import { runCommand } from '../markdown/commands/registry';
 import { prompt } from '../prompt';
 import type { TreeMenuAction } from './tree_menu_model';
 import { nameWithoutExtension, type TreeEntry } from './tree_rules';
@@ -50,6 +52,18 @@ export function setTreeHost(next: TreeHost): void {
   host = next;
 }
 
+/**
+ * Re-reads these folders of the tree on screen, and nothing else.
+ *
+ * A change made by another module — a new note, whose file the app wrote itself — leaves the
+ * tree showing what the disk held a moment ago, and this is how it is told. The host owns the
+ * rule of *which* rows are touched (`tree.ts: refreshFolders`), so the caller names only the
+ * folders it changed.
+ */
+export async function refreshTreeFolders(paths: string[]): Promise<void> {
+  await host?.refreshFolders(paths);
+}
+
 /** Runs one menu action for `entry`, or a drop of `entry` into `targetDir`. */
 export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): Promise<void> {
   const tree = host;
@@ -64,10 +78,13 @@ export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): P
       await deleteWithQuestion(entry, tree);
       return;
     case 'new-file':
-      await createAndRename(tree, entry.path, 'Untitled', true);
+      // A new note is the app's own command, not the tree's private business: the row's folder
+      // is the place it goes, and everything else about it — the id it is named after, the
+      // frontmatter it opens with, the title it selects — is `file:newMarkdown`'s.
+      runCommand('file:newMarkdown', { folder: entry.path });
       return;
     case 'new-folder':
-      await createAndRename(tree, entry.path, 'New folder', false);
+      await createAndRename(tree, entry.path, 'New folder');
       return;
     case 'reveal':
       await reveal(entry);
@@ -97,7 +114,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
     notify(error);
     return false;
   }
-  await tree.refreshFolders([parentOf(entry.path), targetDir]);
+  await tree.refreshFolders([folderOf(entry.path), targetDir]);
   // The folder that took the entry is opened on it, so the reader sees where it went —
   // dropping onto a folded folder would otherwise look like the entry vanished.
   await tree.reveal(moved);
@@ -120,17 +137,11 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
     notify(error);
     return false;
   }
-  await tree.refreshFolders([parentOf(renamed)]);
+  await tree.refreshFolders([folderOf(renamed)]);
   if (wasOpen) {
     await tree.reveal(renamed);
   }
   return true;
-}
-
-/** The folder an entry lives in, whichever separator the platform writes paths with. */
-function parentOf(path: string): string {
-  const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-  return cut > 0 ? path.slice(0, cut) : path;
 }
 
 /**
@@ -172,20 +183,27 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
     notify(error);
     return;
   }
-  await tree.refreshFolders([parentOf(entry.path)]);
+  await tree.refreshFolders([folderOf(entry.path)]);
 }
 
-/** Creates inside `folder`, trying `base`, `base 2`, … until the backend accepts one. */
-async function createAndRename(
-  tree: TreeHost,
-  folder: string,
-  base: string,
-  isFile: boolean
-): Promise<void> {
+/** The folder whose rows a change to `path` was written under. */
+function folderOf(path: string): string {
+  return parentFolder(path) ?? path;
+}
+
+/**
+ * Makes a folder inside `folder` and leaves its name ready to be edited, trying `base`,
+ * `base 2`, … until the backend accepts one.
+ *
+ * A file is not made this way: a new *note* is the app's own command (see `new-file` above),
+ * which names it after its id and writes its frontmatter, so there is nothing left for the tree
+ * to name.
+ */
+async function createAndRename(tree: TreeHost, folder: string, base: string): Promise<void> {
   for (let ordinal = 1; ordinal <= 20; ordinal += 1) {
     const name = ordinal === 1 ? base : `${base} ${ordinal}`;
     try {
-      const path = await createEntry(folder, name, isFile);
+      const path = await createEntry(folder, name, false);
       await tree.refreshFolders([folder]);
       await tree.renameAt(path);
       return;

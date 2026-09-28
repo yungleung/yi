@@ -6,6 +6,9 @@ export type AppConfig = {
   csl_style: string;
   /** How the editor is laid out: a page of A4, or the column at the pane's width. */
   editor_layout?: 'page' | 'auto';
+  /** The frontmatter a new note opens with; its four required keys are the app's (see
+   * `src/services/new_document.ts`). */
+  new_file_frontmatter: string;
   config_version: number;
 };
 
