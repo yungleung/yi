@@ -162,15 +162,17 @@ a small bound rather than pretending it is zero; the caret is an offset and is e
 1. **The session's copy of a document is the truth, and a restart never re-reads the file.**
    Edits are not written anywhere today, so re-reading disk would throw away the author's work
    — the opposite of what this is for.
-2. **The ask is one class with two hands, chosen from the page.** It began as the native `ask`
-   the tree's delete uses, and a probe cannot press one: the harness reaches the app through the
-   webview, and a native modal blocks the webview until a person answers (measured: two probes
-   hung for their whole budget on one, and the app had to be restarted). The first fix was a card
-   in the page; the user then asked for the two to be one abstraction rather than a switch, and
-   they are: `ui/session/session_prompt.ts` shows a reader the system dialog and a probe the
-   card, deciding by what is in the page — the harness installs `window.__t`, and only the
-   harness does — with the same words either way. Neither hand takes focus, because the question
-   is asked *inside* an open, a moment before the reader's caret is captured with it.
+2. **The ask is `ui/prompt.ts`: one utility, two hands, chosen from the page.** It began as the
+   native `ask` the tree's delete uses, and a probe cannot press one: the harness reaches the app
+   through the webview, and a native modal blocks the webview until a person answers (measured:
+   two probes hung for their whole budget on one, and the app had to be restarted). The first fix
+   was a card in the page; the user then asked for the two to be one abstraction — and a *general*
+   one, since asking is not a session's business — so `Prompt` shows a reader the system dialog
+   and a probe the card, deciding by what is in the page (the harness installs `window.__t`, and
+   only the harness does), with the same words either way. The session takes it as a port; the
+   workspace tree's delete asks it directly, so that question is testable for the first time —
+   `tree-file-actions.js` drives both answers. Neither hand takes focus, because a caller may be
+   asking in the middle of an editing gesture whose caret has to survive it.
 3. **Pushing does not clear the screen**: the document stays where it is and is simply also in
    the stack. That is what the status component reports.
 4. **The id, not the path, is a document's identity** (the user's rule): a document is keyed by
@@ -229,9 +231,11 @@ content top a page needs. `session_commands.ts` registers `file:save`, `file:sav
 stack's commands; `ui/toolbar/session_toolbar.ts` draws the user's `stack-push`/`stack-pop`
 toggle and their layered `stack` glyph; `ui/session/stack_popover.ts` is the list; `ui/
 document_status.ts` is the two status pieces; and `ui/session/session_prompt.ts` is the card.
-The dead `⋯` button is gone. The question is asked by `ui/session/session_prompt.ts`: the system
-dialog for a reader, a card in the page for a probe, chosen by whether the harness's `__t` is
-on the window (`test/probes/lib.js` is the only thing that puts it there).
+The dead `⋯` button is gone. The question is asked by `ui/prompt.ts` — the app's own utility, not
+the session's: the system dialog for a reader, a card in the page for a probe, chosen by whether
+the harness's `__t` is on the window (`test/probes/lib.js` is the only thing that puts it there),
+with the same words either way. The session takes it as a port (`attachPrompter`); the workspace
+tree's delete asks the singleton directly, which is what made that question testable.
 
 **Six things the work taught, and where they are written down.** (1) **A document's id is read
 at the top of it.** The user's rule — frontmatter `id`, else the first fourteen digits — read

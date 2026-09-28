@@ -37,6 +37,12 @@ so the webview cannot be navigated to a dropped path either. A probe that works 
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
 
+Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
+for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
+window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a
+call, where `eventManager` carries news); the session takes it as a port (`attachPrompter`), and
+the workspace tree's delete asks the exported `prompt` directly.
+
 Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
 Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
 file it is written to. It keeps the document on screen, the stack behind it, and where the reader

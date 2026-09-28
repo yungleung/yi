@@ -247,10 +247,12 @@ elements) unless it says otherwise.
   because placing a caret scrolls. The caret comes back exactly; the view comes back to the
   right block, within about a hundred pixels on a document with headings above, because the
   estimate of an unmeasured block is a line of body text whatever the block is.
-  **And the question it asks is one class with two hands** (`ui/session/session_prompt.ts`): a
-  reader gets the system dialog the tree's delete uses, a probe gets a card in the page it can
-  press, and the choice is read from the page (`window.__t`, which only the harness installs)
-  rather than configured — the same words either way.
+  **And asking is a utility of the app's own** (`ui/prompt.ts`), since asking is not a document's
+  business: one `Prompt` with two hands — a reader gets the system dialog, a probe a card in the
+  page it can press — chosen from the page (`window.__t`, which only the harness installs) rather
+  than configured, with the same words either way. The session takes it as a port; the workspace
+  tree's delete asks it directly, which made that question testable for the first time
+  (`tree-file-actions.js` drives both answers).
 - **The editor is a page of A4.** Landed as
   `docs/superpowers/plans/2026-09-27-the-editor-becomes-a-page.md`, on the user's ask: make
   editing feel like a printed page. The column was 962 px — 254 mm, **151 characters a
