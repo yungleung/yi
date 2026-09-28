@@ -43,7 +43,7 @@ named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_ed
 fitPage` — the sheet, its margin and its type take one `--page-scale`, capped at 1, so a
 narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
 layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
-as it was before the page, switched by the titlebar's layout button (`view:togglePage`) and
+as it was before the page, switched by the status bar's layout button (`view:togglePage`) and
 remembered in the app config (`editor_layout`). Four consequences worth knowing before you
 touch it:
 the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
