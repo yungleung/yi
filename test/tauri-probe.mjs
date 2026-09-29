@@ -235,10 +235,14 @@ await waitForEditor();
 async function ensureEnglish() {
   const reply = await call(
     `(async () => {
-       const config = await window.__TAURI_INTERNALS__.invoke('get_config');
-       if ((config.language ?? '') === 'en') {
+       // What matters is the language the window is *in*, not what the config spells: an empty
+       // setting means the reader's system locale, and on a machine already in English there is
+       // nothing to change — and changing it would reload the page, which costs the *next* probe
+       // the better part of its five seconds.
+       if (document.documentElement.lang === 'en') {
          return null;
        }
+       const config = await window.__TAURI_INTERNALS__.invoke('get_config');
        const previous = config.language ?? '';
        await window.__TAURI_INTERNALS__.invoke('set_config', {
          cfg: {
@@ -284,6 +288,13 @@ async function restoreLanguage(previous) {
      })()`,
     15000
   );
+  // The reload has to settle before the next probe starts: a page that is still building its shell
+  // answers slowly, and a probe measures in the five-second budget it is given.
+  await sleep(2500);
+  await waitForEditor();
+  if (!(await helpersReady())) {
+    await installHelpers();
+  }
 }
 
 /** Runs the probe, installing the helpers again if the page lost them. */
