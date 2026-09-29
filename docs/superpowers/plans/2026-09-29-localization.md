@@ -74,4 +74,30 @@ accelerators are *not* translated — an id is what `commands/menu.ts` maps to a
 
 ## Handoff
 
-*(written when the work lands)*
+Landed on `codex/localization`. Every task in the plan is done.
+
+**What is where.** The catalogues are `locales/<language>.json` — 129 keys each, one file per
+language, the eight the user named. The menu's reader is `src-tauri/src/i18n.rs` (the files brought
+in with `include_str!`, parsed once, plus the system-locale rule and the fallback to English) and
+the webview's is `src/services/i18n.ts` (the same files imported into the bundle, the same rule
+expressed once more). `src-tauri/src/menu.rs` builds the whole menu from the catalogue — the
+predefined items as well, since Tauri titles them in English otherwise — and
+`settings.rs` rebuilds it when the language changes. `src/services/language.ts` is where a window
+learns which language it is in, `src/ui/settings/general_settings.ts` offers the eight by their own
+names, and `src/main.ts`/`src/settings.ts` reload a window whose language moved.
+
+**What proves it.** `test/checks/check-locales.mjs` (8 languages, 129 keys each, nothing blank,
+nothing unused, one reading of a system locale, and both readers still able to read it) and
+`cargo test`'s six i18n tests over the same ground from Rust. `test/probes/localization.js` builds
+the app's own components under other languages and reads what they say. And the acceptance run:
+with the setting moved to Japanese the window came back in Japanese by itself, and the native menu
+— read through System Events, since no page can see it — was `ファイル, 編集, 表示, ウインドウ,
+ヘルプ` with `新規 Markdown`, `開く…`, `保存`, `別名で保存…`, `書き出す`, `ウインドウを閉じる` under
+File.
+
+**What it cost elsewhere.** The probe harness now puts the app in English for the length of a probe
+and puts the reader's choice back afterwards (`test/tauri-probe.mjs`), because a probe asserts
+behaviour and its expectations are English: without it, a machine whose locale is Chinese or
+Japanese would fail the whole suite for a reason that has nothing to do with the code. The
+backend's own error sentences are still English — recorded in the roadmap as the next thing this
+feature owes.
