@@ -55,6 +55,24 @@ const HYPHEN = 45;
 /** Characters allowed inside a narrative citation key (pandoc's set). */
 const KEY_PUNCTUATION = new Set([58, 46, 35, 36, 37, 38, 45, 43, 63, 60, 62, 126, 47]);
 
+/**
+ * Whether `code` may be part of a citation key: a letter, a digit, `_`, or one of pandoc's
+ * punctuation characters. Exported because the completion popup has to ask the same question —
+ * where a citation key starts and what may be typed inside one (`syntax/completions.ts`) — and two
+ * answers to it would be a popup that offers what the syntax will not read.
+ */
+export function citationKeyCharacter(code: number): boolean {
+  return asciiAlphanumeric(code) || code === UNDERSCORE || KEY_PUNCTUATION.has(code);
+}
+
+/**
+ * Whether an `@` may start a citation after the character `before` (`NaN` at the top of the text):
+ * not after a letter or a digit — that is an email — and not after a backslash, which escapes it.
+ */
+export function citationPrecedesAt(before: number): boolean {
+  return Number.isNaN(before) || (!asciiAlphanumeric(before) && before !== BACKSLASH);
+}
+
 export function citationSyntax(): Extension {
   return {
     text: {
