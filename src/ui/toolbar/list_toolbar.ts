@@ -9,7 +9,11 @@ interface ListButtonSpec extends ToolbarButtonSpec {
 
 const ICON_PREFIX = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">';
 
-const LIST_BUTTONS: ListButtonSpec[] = [
+/**
+ * The buttons, built when a toolbar is built rather than when this module loads — see
+ * `formatting_toolbar.ts` for why a constant here costs the toolbar its language.
+ */
+const listButtons = (): ListButtonSpec[] => [
   {
     command: 'ordered',
     label: t('toolbar.orderedList'),
@@ -58,7 +62,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
 export class ListToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButtons(LIST_BUTTONS, (spec) => {
+    this.addButtons(listButtons(), (spec) => {
       runCommand(`list:${spec.command}`);
     });
   }

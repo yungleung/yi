@@ -7,7 +7,13 @@ interface FormattingButtonSpec extends ToolbarButtonSpec {
   command: FormattingStyle;
 }
 
-const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
+/**
+ * The buttons, built when a toolbar is built rather than when this module loads: a label is read
+ * in the language in hand, and at module load there is no language yet — every window imports its
+ * modules before it knows which one it is reading (`services/i18n.ts`). A constant here is a
+ * toolbar that stays in the language the app was *first* built in.
+ */
+const formattingButtons = (): FormattingButtonSpec[] => [
   {
     command: 'bold',
     label: t('toolbar.bold'),
@@ -51,7 +57,7 @@ const FORMATTING_BUTTONS: FormattingButtonSpec[] = [
 export class FormattingToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButtons(FORMATTING_BUTTONS, (spec) => {
+    this.addButtons(formattingButtons(), (spec) => {
       runCommand(`format:${spec.command}`);
     });
   }

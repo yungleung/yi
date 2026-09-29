@@ -15,6 +15,8 @@
   const i18n = await t.app('/src/services/i18n.ts');
   const { LinkToolbar } = await t.app('/src/ui/toolbar/link_toolbar.ts');
   const { ImageToolbar } = await t.app('/src/ui/toolbar/image_toolbar.ts');
+  const { FormattingToolbar } = await t.app('/src/ui/toolbar/formatting_toolbar.ts');
+  const { ListToolbar } = await t.app('/src/ui/toolbar/list_toolbar.ts');
   const { DocumentStatus } = await t.app('/src/ui/document_status.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -26,6 +28,13 @@
     i18n.setLanguage(code);
     const element = build().element.querySelector('button') ?? build().element;
     return element.getAttribute('aria-label') ?? element.textContent;
+  };
+  /** Every tool label a toolbar shows, under `code`. */
+  const labelsUnder = (code, build) => {
+    i18n.setLanguage(code);
+    return [...build().element.querySelectorAll('button')].map(
+      (button) => button.getAttribute('aria-label')
+    );
   };
 
   try {
@@ -43,6 +52,18 @@
       'an image button built under German says so',
       labelUnder('de', () => new ImageToolbar()),
       'Bild'
+    );
+    // Three toolbars whose specs are written as constants of their own module: a label read once,
+    // when the module loads, is a label that never changes language.
+    same(
+      'the formatting tools are built under the language in hand',
+      labelsUnder('ja', () => new FormattingToolbar()),
+      ['太字', '斜体', '取り消し線', 'インラインコード']
+    );
+    same(
+      'and so are the list tools',
+      labelsUnder('zh-Hant', () => new ListToolbar()),
+      ['有序清單', '項目符號清單', '待辦清單', '增加清單縮排']
     );
     same(
       'and a status label under Simplified Chinese says so',
