@@ -108,6 +108,25 @@ export class BibliographyManager {
   }
 
   /** Formats a citation node's raw source (`@key` or `[@key, p. 45]`). */
+  /**
+   * Every entry the bibliography holds, as the key a citation writes and the title it shows —
+   * which is what the completion list offers (`ui/markdown/syntax/completions.ts` filters it).
+   * It is the same parsed data the formatting above reads, so a key the list offers is a key a
+   * citation can be made of, and a title it shows is the title that citation will show.
+   */
+  entries(): { key: string; title: string }[] {
+    if (!bibliography) {
+      return [];
+    }
+    const data = bibliography.data as { id?: unknown; title?: unknown }[];
+    return data
+      .map((item) => ({
+        key: String(item.id ?? ''),
+        title: String(item.title ?? item.id ?? '')
+      }))
+      .filter((entry) => entry.key !== '');
+  }
+
   format(value: string): string {
     const cached = formatCache.get(value);
     if (cached !== undefined) {

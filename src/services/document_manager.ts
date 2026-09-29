@@ -25,13 +25,61 @@ let titleCache = new Map<string, string | null>();
 let buildPromise: Promise<Map<string, string>> | null = null;
 
 export class DocumentManager {
+  /** Every document of the workspace, cached until the workspace changes. */
+  private catalogue: { id: string; title: string }[] | null = null;
+  private catalogueWork: Promise<{ id: string; title: string }[]> | null = null;
+
   constructor() {
     // Rebuild the document index whenever the workspace changes.
     void eventManager.on(WORKSPACE_CHANGED, () => {
       idIndex = null;
       buildPromise = null;
       titleCache.clear();
+      this.catalogue = null;
+      this.catalogueWork = null;
     });
+  }
+
+  /**
+   * Every markdown file the workspace holds, as what a wikilink writes and what it shows: the
+   * document's own `id` — the frontmatter's, which is what a wikilink by id resolves — and its
+   * title, falling back to the file's own name when it has none (which is what the resolver falls
+   * back to as well, so an `id`-less document is written under the name that reaches it).
+   *
+   * Reading a vault is many files, so this answers once and keeps the answer: the completion list
+   * can be asked on every keystroke, and only a workspace change makes the files be read again.
+   */
+  async documents(): Promise<{ id: string; title: string }[]> {
+    if (this.catalogue) {
+      return this.catalogue;
+    }
+    this.catalogueWork ??= this.readCatalogue();
+    const catalogue = await this.catalogueWork;
+    this.catalogueWork = null;
+    this.catalogue = catalogue;
+    return catalogue;
+  }
+
+  private async readCatalogue(): Promise<{ id: string; title: string }[]> {
+    const workspace = configManager.get()?.workspace;
+    if (!workspace) {
+      return [];
+    }
+    const names = await this.buildNameIndex();
+    const documents: { id: string; title: string }[] = [];
+    for (const [name, path] of names) {
+      let content = '';
+      try {
+        content = await readTextFile(path);
+      } catch {
+        continue;
+      }
+      documents.push({
+        id: readFrontmatterId(content) ?? name,
+        title: readFrontmatterTitle(content) ?? firstHeading(content) ?? name
+      });
+    }
+    return documents;
   }
 
   /** Resolves a wikilink target (markdown basename or frontmatter id) to a file path. */
