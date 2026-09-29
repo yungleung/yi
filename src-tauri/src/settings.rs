@@ -34,6 +34,11 @@ pub struct AppConfig {
   /// whatever the app does rather than freezing a folder into every config that was ever saved.
   #[serde(default)]
   pub image_folder: String,
+  /// The language the app speaks, as one of `i18n::LANGUAGES`. Empty — the default, and what a
+  /// config written before this field existed reads as — means *the reader's system locale*, so a
+  /// first launch is in the language the rest of the machine is in.
+  #[serde(default)]
+  pub language: String,
   pub config_version: u32,
 }
 
@@ -60,6 +65,7 @@ impl Default for AppConfig {
       editor_layout: default_editor_layout(),
       new_file_frontmatter: None,
       image_folder: String::new(),
+      language: String::new(),
       config_version: CURRENT_CONFIG_VERSION,
     }
   }
@@ -97,6 +103,12 @@ fn load_from_disk(app_handle: &tauri::AppHandle) -> anyhow::Result<AppConfig> {
   }
 }
 
+/// The config as it stands on disk, or the defaults when it cannot be read: a caller that only
+/// wants to know which language to speak should not have to answer for a broken file.
+pub fn load_config(app_handle: &tauri::AppHandle) -> AppConfig {
+  load_from_disk(app_handle).unwrap_or_default()
+}
+
 fn save_to_disk(app_handle: &tauri::AppHandle, cfg: &AppConfig) -> anyhow::Result<()> {
   let path = config_path(app_handle);
 
@@ -129,6 +141,13 @@ pub fn set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
       // a rendered image is resolved against, the layout is how the page is drawn — so a change to
       // any of it is announced, and whoever reads a field it cares about reads it again.
       let _ = app.emit("config_changed", ());
+      // The menu is a tree of labels, so a new language is a new menu: it is built again here,
+      // where the change is known, rather than by every window that notices the config moved.
+      if previous.language != cfg.language {
+        if let Err(error) = crate::menu::set_menu_for_language(&app) {
+          eprintln!("Failed to rebuild the menu: {error}");
+        }
+      }
       // Let other windows (e.g. the editor) refresh their citation formatting
       // when the bibliography file or CSL style changes.
       if previous.bibliography_file != cfg.bibliography_file
