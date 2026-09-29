@@ -172,6 +172,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     );
     this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
     this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
+    // A click is not typing. A list belongs to the query the author is typing, so any click in the
+    // document puts it away — the card's own rule (`completion_card.ts`), and the one gesture that
+    // ends a list without a keystroke. It is captured because a click that lands on a node is
+    // answered by that node and stops there, before it bubbles (see `click_routing.ts: pointer.ts`).
+    this.contentView.addEventListener('click', () => this.completions.close(), true);
     // Resting the pointer on a footnote marker shows the note it names, in a card the
     // pointer cannot interact with (see `footnote_preview.ts`).
     installFootnotePreview(this.context);

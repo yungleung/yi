@@ -49,14 +49,52 @@ check(
   { from: 1, to: 1, insert: '[]', caret: 2 }
 );
 check(
-  'a second bracket inside the first writes only itself: that is how [[ becomes [[]]',
+  'a second bracket in front of the first one\u2019s ] writes its own pair',
   pairingFor('[]', 1, '[', false),
-  { from: 1, to: 1, insert: '[', caret: 2 }
+  { from: 1, to: 1, insert: '[]', caret: 2 }
 );
+check(
+  'while a key that closes itself writes only itself there',
+  pairingFor('""', 1, '"', false),
+  { from: 1, to: 1, insert: '"', caret: 2 }
+);
+
 check('steps over the ] it already wrote', pairingFor('[]', 1, ']', false), null);
 check('and over the ) of a pair it wrote', skipClosingFor('()', 1, ')', false), true);
 check('while a ) that was the author’s own is stepped over too', skipClosingFor('a)', 1, ')', false), true);
 check('but a letter is not', skipClosingFor('ab', 1, 'b', false), false);
+
+// --- what a keystroke leaves behind --------------------------------------------------------------
+
+/**
+ * Types `key` at `caret` the way the editor does: the two rules in the order the key path asks
+ * them (`editing/text_commands.ts: insertText`), so the pair is judged on the text it leaves
+ * behind and not only on the edit it returns.
+ */
+const typed = (text, caret, key, literal = false) => {
+  if (skipClosingFor(text, caret, key, literal)) {
+    return { text, caret: caret + 1 };
+  }
+  const edit = pairingFor(text, caret, key, literal);
+  const at = edit?.from ?? caret;
+  const stop = edit?.to ?? caret;
+  const insert = edit?.insert ?? key;
+  return {
+    text: text.slice(0, at) + insert + text.slice(stop),
+    caret: edit?.caret ?? caret + key.length
+  };
+};
+
+const firstBracket = typed('', 0, '[');
+check(
+  'typing [[ is two pairs with the caret between them, not one and a half',
+  typed(firstBracket.text, firstBracket.caret, '['),
+  { text: '[[]]', caret: 2 }
+);
+check('and the ] the author types next steps over the first closer', typed('[[]]', 2, ']'), {
+  text: '[[]]',
+  caret: 3
+});
 
 // --- where nothing is written ------------------------------------------------------------------
 

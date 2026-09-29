@@ -9,9 +9,11 @@
  * author who has selected words and types `[` is starting a link or a citation over them, and a
  * `]` after the selection would be put where nothing expects it.
  *
- * The rule is also what makes `[[` a wikilink: the second `[` sees the `]` the first one's pair
- * put after the caret and writes only the `[` — so the pair is `[]` around nothing, and the two
- * brackets that result are `[[` and `]]`.
+ * The rule is also what makes `[[` a wikilink. The second `[` finds the `]` the first one's pair
+ * put after the caret — the *app's* closer, waiting for a closer of its own — and writes its pair
+ * in front of it, so the two brackets that result are `[[` and `]]` with the caret between them.
+ * A key that closes itself (a quote, a backtick) already reads as its own pair there, so it writes
+ * only itself.
  *
  * May import: nothing — the text and the caret are passed in. Upholds: one answer to "what does
  * typing a bracket write", so the editor's key path and the check beside this file cannot drift.
@@ -54,10 +56,13 @@ export function pairingFor(
   if (closing === undefined || literal) {
     return null;
   }
-  // A `]` the app already wrote is not written again, and the caret passes between the two: this
-  // is the half that makes `[[` two brackets and not three.
+  // The character at the caret is this pair's closer, put there with its opener by a pair the app
+  // wrote earlier. A second opener means a pair *in front of* that closer — which is what makes
+  // `[[` two pairs, `[[]]`, and not one and a half. A key that closes itself is already that
+  // pair, and writing it again would leave three of them.
   if (text[caret] === closing) {
-    return { from: caret, to: caret, insert: key, caret: caret + 1 };
+    const insert = key === closing ? key : `${key}${closing}`;
+    return { from: caret, to: caret, insert, caret: caret + 1 };
   }
   return { from: caret, to: caret, insert: `${key}${closing}`, caret: caret + 1 };
 }

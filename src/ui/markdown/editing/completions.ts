@@ -65,7 +65,8 @@ export class Completions {
 
   /**
    * Opens, refreshes or closes the list for where the caret is now. Called after every keystroke
-   * the text path handled, and after a click that moved the caret.
+   * the text path handled; a click that moved the caret closes the list instead (`close`, from
+   * the editor's own click path), because a click is not the author typing.
    */
   refresh(): void {
     const caret = caretOffset(this.context);
