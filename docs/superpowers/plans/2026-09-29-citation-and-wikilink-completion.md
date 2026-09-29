@@ -40,7 +40,7 @@ The branch is `codex/completion`; the user reviews this plan before it is merged
 | `citationQuery(text, caret)` | the `@` the caret is typing inside — `{ from, query }` — or null. The key's characters come from the citation plugin's own set, so a popup can only offer where a citation can exist |
 | `wikilinkQuery(text, caret)` | the `[[` the caret is inside, or null |
 | `matchingChoices(choices, query, limit)` | the entries to offer, filtered on the value **or** the title, prefix matches first, capped at fifty (`CHOICE_LIMIT`). Written as one rule rather than the two this plan first named (`citationChoices`, `documentChoices`): a citation key and a document are the same shape, `{ value, title }`, and the two lists differ only in where the values come from |
-| — (no `insertionFor`) | what Enter writes is the choice's own `value`: the source decides it (`bibliographyManager.entries()` gives the key, `documentManager.documents()` the document's **id**, or its name when it has none — the resolver's own fallback, so what is written is what resolves) |
+| — (no `insertionFor`) | what Enter writes is the choice's own `value`: the source decides it (`bibliographyManager.entries()` gives the key, `documentManager.documents()` the document's **target** — its **id**, or its **file name** when it has none, which is the resolver's own first fallback and *not* the title the row shows) |
 
 ### 2. The living part (`ui/markdown/editing/completions.ts`)
 
@@ -54,16 +54,20 @@ the caret lands after what was written.
 ### 3. The card (`ui/markdown/completion_card.ts`)
 
 A daisyUI list beside the caret (fixed position, clamped to the window, as the footnote preview
-does): one row per choice — the key (or the id) in monospace, the title dimmed beside it — and the
-selected row highlighted, with its title shown in full. It takes the pointer for clicking, and
-closes on a click elsewhere, on losing the query, and on Escape.
+does): one row per choice — what Enter would write (a citation's key, or a wikilink's target) in
+monospace, the title dimmed beside it — and the selected row highlighted, with its title shown in
+full. It takes the pointer for clicking, and closes on a click elsewhere, on losing the query, and
+on Escape.
 
 ### 4. Where the choices come from
 
 `bibliographyManager.entries()` — `{ key, title }` for each CSL item, read from the same parsed
 data the citation formatting uses, so the list cannot disagree with what a citation shows.
-`documentManager.documents()` — `{ id, title }` for each markdown file in the workspace, read in
-the background (a vault is many files) and cached until the workspace changes.
+`documentManager.documents()` — `{ target, title }` for each markdown file in the workspace, read
+in the background (a vault is many files) and cached until the workspace changes. The target is
+what `documentManager.resolve` takes: the frontmatter `id`, or the file's own name when it has
+none — a note with no id is reached by its file name, so that is what a wikilink must carry, while
+the row's title is only what a resolved wikilink *draws*.
 
 ## Tasks
 
@@ -76,7 +80,7 @@ the background (a vault is many files) and cached until the workspace changes.
 - [x] Task 5: the citation popup (`@`), and the wikilink popup (`[[`).
 - [x] Task 6: the probes — `[` pairing (a pair, the `[[` case, a literal block, a selection),
       Backspace on a pair, the `@` list (filter by key, by title, arrows, Enter), the `[[` list
-      (id and title, Enter writing the id, an id-less document writing its name), Escape.
+      (id and title, Enter writing the id, an id-less document writing its file name), Escape.
 - [x] Task 7: acceptance and docs.
 
 ## Decisions I have made, and what I would change
@@ -89,8 +93,9 @@ the background (a vault is many files) and cached until the workspace changes.
    with a pair it wrote itself; say if you want the plain behaviour.
 3. **The `@` opens the list only where a citation can start**, which is the citation plugin's own
    rule — so `contact@example.com` is left alone, and the popup and the syntax can never disagree.
-4. **Enter writes the citation key**, and for a wikilink the document's **id**, or its name when it
-   has no id — so what is written is always something the resolver resolves.
+4. **Enter writes the citation key**, and for a wikilink the document's **id**, or its **file name**
+   when it has no id — never the title the row shows, which a wikilink only draws once it resolves
+   — so what is written is always something the resolver reads back.
 5. **The list is filtered on both fields** (key or title for citations, id or title for documents),
    prefix matches first, capped at fifty rows; the workspace list is read in the background so a
    big vault cannot stall a keystroke.
@@ -130,8 +135,9 @@ written the expectation for the head of the block.
 5007 ms, recovered from the stash) once it carried both lists and the pairs. It is now `brackets.js`
 (the pairing: the pair, the `[[`, the step over, Backspace, the selection, the literal block),
 `completion.js` (the citation list, and the click that closes it) and `completion-wikilink.js` (the
-workspace's documents — the id Enter writes between the brackets, and the name a document with no id
-is written by). `test/checks/check-brackets.mjs` already named `test/probes/brackets.js` as the
+workspace's documents — the id Enter writes between the brackets, and the **file name** a document
+with no id is written by, which the check tells apart from the title the row shows beside it).
+`test/checks/check-brackets.mjs` already named `test/probes/brackets.js` as the
 probe that proves the key path, and now there is one.
 
 The docs and the checks that follow this work are updated: `docs/architecture.md` (the "one

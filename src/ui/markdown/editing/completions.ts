@@ -92,12 +92,13 @@ export class Completions {
       return;
     }
     // A workspace is many files and the answer is a promise: the list opens with what the last
-    // look found, and the entries arrive under the query they were asked for.
+    // look found, and the entries arrive under the query they were asked for. A document's target
+    // is what a wikilink writes — its frontmatter id, or its file name when it has none.
     const generation = ++this.generation;
     this.offer(
       wikilink.from,
       matchingChoices(
-        this.documents().map((document) => ({ value: document.id, title: document.title })),
+        this.documents().map((document) => ({ value: document.target, title: document.title })),
         wikilink.query
       )
     );
@@ -110,7 +111,7 @@ export class Completions {
       this.offer(
         wikilink.from,
         matchingChoices(
-          documents.map((document) => ({ value: document.id, title: document.title })),
+          documents.map((document) => ({ value: document.target, title: document.title })),
           wikilink.query
         )
       );
@@ -118,9 +119,9 @@ export class Completions {
   }
 
   /** What the last look found; the list is drawn again when the answer arrives. */
-  private documentsFound: { id: string; title: string }[] = [];
+  private documentsFound: { target: string; title: string }[] = [];
 
-  private documents(): { id: string; title: string }[] {
+  private documents(): { target: string; title: string }[] {
     return this.documentsFound;
   }
 

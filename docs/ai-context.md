@@ -159,12 +159,15 @@ match what has been typed. `editing/completions.ts` is the list in hand and `com
 draws it beside the caret, clamped to the window the way the footnote preview is; the editor asks
 it *before* its own text path, so while a list is open the arrows, Enter, Tab and Escape are the
 list's, every other key types and redraws it, and a click in the document closes it — a click is
-not typing. Enter writes the citation's key, and a document's **id**, or its name when it has none,
-so what is written is what the resolver resolves; the names come from `bibliographyManager.entries()`
-and `documentManager.documents()`. Two things bite. The second `[` must write its own pair *in
-front of* the `]` the first one's pair left after the caret — that is what makes `[[` two pairs,
-`[[]]`, with the caret inside them — and writing only the `[` leaves the wikilink one bracket short,
-which is exactly what Enter then writes into (measured: `[[<id>]`, against `test/probes/brackets.js`).
+not typing. Enter writes the citation's key, and a document's **id** — or its **file name** when it
+has none, *not* the title the row shows beside it — so what is written is what the resolver reads
+back (`documentManager.resolve` falls back by name first). The entries come from
+`bibliographyManager.entries()` and `documentManager.documents()` — a document's `target` is the
+id or the file name, which is exactly what `resolve` takes. Two things bite. The second `[` must
+write its own pair *in front of* the `]` the first one's pair left after the caret — that is what
+makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves the
+wikilink one bracket short, which is exactly what Enter then writes into (measured: `[[<id>]`,
+against `test/probes/brackets.js`).
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
 node itself and stops there, so a listener that waits for it to bubble never sees it.
 

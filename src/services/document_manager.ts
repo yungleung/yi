@@ -26,8 +26,8 @@ let buildPromise: Promise<Map<string, string>> | null = null;
 
 export class DocumentManager {
   /** Every document of the workspace, cached until the workspace changes. */
-  private catalogue: { id: string; title: string }[] | null = null;
-  private catalogueWork: Promise<{ id: string; title: string }[]> | null = null;
+  private catalogue: { target: string; title: string }[] | null = null;
+  private catalogueWork: Promise<{ target: string; title: string }[]> | null = null;
 
   constructor() {
     // Rebuild the document index whenever the workspace changes.
@@ -42,14 +42,18 @@ export class DocumentManager {
 
   /**
    * Every markdown file the workspace holds, as what a wikilink writes and what it shows: the
-   * document's own `id` — the frontmatter's, which is what a wikilink by id resolves — and its
-   * title, falling back to the file's own name when it has none (which is what the resolver falls
-   * back to as well, so an `id`-less document is written under the name that reaches it).
+   * **target** `documentManager.resolve` takes — the frontmatter `id` when the file has one, and
+   * the file's own name when it has none, which is the resolver's own first fallback — and the
+   * title, the frontmatter's or the heading 1's, which is what a resolved wikilink draws.
+   *
+   * The target is not always an id, and that is the point: a wikilink written by the list has to
+   * be one the resolver reads back, and a note with no id is reached by its file name rather than
+   * by the title it happens to show.
    *
    * Reading a vault is many files, so this answers once and keeps the answer: the completion list
    * can be asked on every keystroke, and only a workspace change makes the files be read again.
    */
-  async documents(): Promise<{ id: string; title: string }[]> {
+  async documents(): Promise<{ target: string; title: string }[]> {
     if (this.catalogue) {
       return this.catalogue;
     }
@@ -60,13 +64,13 @@ export class DocumentManager {
     return catalogue;
   }
 
-  private async readCatalogue(): Promise<{ id: string; title: string }[]> {
+  private async readCatalogue(): Promise<{ target: string; title: string }[]> {
     const workspace = configManager.get()?.workspace;
     if (!workspace) {
       return [];
     }
     const names = await this.buildNameIndex();
-    const documents: { id: string; title: string }[] = [];
+    const documents: { target: string; title: string }[] = [];
     for (const [name, path] of names) {
       let content = '';
       try {
@@ -75,7 +79,7 @@ export class DocumentManager {
         continue;
       }
       documents.push({
-        id: readFrontmatterId(content) ?? name,
+        target: readFrontmatterId(content) ?? name,
         title: readFrontmatterTitle(content) ?? firstHeading(content) ?? name
       });
     }

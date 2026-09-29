@@ -427,8 +427,9 @@ elements) unless it says otherwise.
   itself is `editing/completions.ts` over `completion_card.ts`, and the editor asks it *before* its
   own text path, so an open list owns the arrows, Enter, Tab and Escape while every other key types
   and redraws it; a click in the document closes it, because a click is not typing. Enter writes the
-  citation's key, and a document's **id** — its name when it has none, which is what the resolver
-  falls back to, so what is written is always what resolves. Two things had to be measured rather
+  citation's key, and a document's **id** — its **file name** when it has none, and not the title
+  the row shows beside it, because a name is the first thing the resolver falls back to, so what is
+  written is always what resolves. Two things had to be measured rather
   than reasoned about. The second `[` must write its own pair *in front of* the `]` the first one's
   pair left after the caret — that is what makes `[[` two pairs, `[[]]`, with the caret between
   them; writing only the `[` leaves the wikilink one bracket short, and that is what Enter then

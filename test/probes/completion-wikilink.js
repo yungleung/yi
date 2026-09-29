@@ -1,12 +1,15 @@
 /**
  * The wikilink list: `[[` opens the workspace's documents, the arrows move through them, and
- * Enter writes the document's id between the brackets — its name when it has no id, which is
- * what the resolver falls back to.
+ * Enter writes the document's id between the brackets — its **file name** when it has no id, and
+ * not the title the row shows beside it, because the file name is the first thing the resolver
+ * falls back to (`documentManager.resolve`: by name, then by frontmatter id).
  *
  * The list is the workspace the app has open (`documentManager.documents()`), so the probe reads
- * it rather than assuming what is in it: it looks for a row whose value is a fourteen-digit id
- * and for one that is a name, and accepts each of them, so what is proved is the rule and not one
- * note's name. The fixture workspace has both kinds.
+ * it rather than assuming what is in it: it looks for a row whose value is a fourteen-digit id,
+ * and for one whose value is a file name *different from the title beside it*, and accepts each of
+ * them, so what is proved is the rule and not one note's name. The fixture workspace has both
+ * kinds (the id-less note whose title is its heading, and a `README` whose title is
+ * "The fixture workspace").
  *
  * The bracket pair and the citation list are `completion.js`; the two share nothing but the
  * helpers every probe defines for itself.
@@ -29,10 +32,16 @@
     [...document.querySelectorAll('[data-completion-row]')].map((row) =>
       row.getAttribute('data-completion-row')
     );
-  const highlighted = () =>
-    document.querySelector('[data-completion-row][aria-selected="true"]')?.getAttribute(
-      'data-completion-row'
-    ) ?? null;
+  /** The row in hand: what accepting it writes, and the title drawn beside it. */
+  const rowInHand = () => {
+    const row = document.querySelector('[data-completion-row][aria-selected="true"]');
+    return row
+      ? {
+          value: row.getAttribute('data-completion-row'),
+          title: row.querySelector('span:last-child')?.textContent ?? null
+        }
+      : null;
+  };
   const caret = () => {
     const range = caretModule.getCaretRange();
     return range ? { text: range.startContainer.textContent, offset: range.startOffset } : null;
@@ -60,12 +69,12 @@
     await type('[');
     return rows();
   };
-  /** Walks the list with the arrows until the row in hand says `matches`, or runs out. */
+  /** Walks the list with the arrows until the row in hand matches, or runs out. */
   const seek = async (matches, limit) => {
     for (let step = 0; step < limit; step += 1) {
-      const value = highlighted();
-      if (value !== null && matches(value)) {
-        return value;
+      const row = rowInHand();
+      if (row !== null && matches(row)) {
+        return row;
       }
       await type('ArrowDown');
     }
@@ -93,25 +102,31 @@
     ['See [[]]\n', { text: 'See [[]]', offset: 6 }]
   );
 
-  const id = await seek((value) => /^\d{14}$/.test(value), Math.min(50, wikiRows.length));
+  const id = await seek((row) => /^\d{14}$/.test(row.value ?? ''), Math.min(50, wikiRows.length));
   check('a document with an id is offered by that id', id !== null, {
     id,
     rows: wikiRows.slice(0, 8)
   });
   await type('Enter');
   same('and Enter writes the id between the brackets', [await t.raw(), cardOpen()], [
-    `See [[${id}]]\n`,
+    `See [[${id?.value}]]\n`,
     false
   ]);
 
-  // A document with no frontmatter id is offered and written by its name — the resolver's own
-  // fallback, so what is written is what resolves.
+  // A document with no frontmatter id is offered and written by its *file name* — the resolver's
+  // own first fallback — and the row shows the title the document has as well, which is a
+  // different string: if accepting wrote the title, this is where it would show.
   await open();
-  const named = await seek((value) => !/^\d{14}$/.test(value), Math.min(50, rows().length));
-  check('a document with no id is offered by its name', named !== null, { named });
+  const named = await seek(
+    (row) => !/^\d{14}$/.test(row.value ?? '') && row.title !== row.value,
+    Math.min(50, rows().length)
+  );
+  check('a document with no id is offered by its file name, with its title beside it', named !== null, {
+    named
+  });
   await type('Enter');
-  same('and Enter writes that name between the brackets', [await t.raw(), cardOpen()], [
-    `See [[${named}]]\n`,
+  same('and Enter writes the file name, not the title the row showed', [await t.raw(), cardOpen()], [
+    `See [[${named?.value}]]\n`,
     false
   ]);
 
