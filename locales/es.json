@@ -81,6 +81,7 @@
   "tree.delete.yes": "Eliminar",
   "tree.delete.no": "Conservar",
   "toast.close": "Cerrar la notificación",
+  "completion.empty": "No hay nada que ofrecer.",
   "newNote.title": "Markdown nuevo",
   "newNote.folder": "Carpeta",
   "newNote.name": "Nombre del archivo",

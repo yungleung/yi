@@ -81,6 +81,7 @@
   "tree.delete.yes": "删除",
   "tree.delete.no": "保留",
   "toast.close": "关闭提示",
+  "completion.empty": "这里没有可选项。",
   "newNote.title": "新建 Markdown",
   "newNote.folder": "文件夹",
   "newNote.name": "文件名",

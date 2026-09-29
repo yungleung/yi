@@ -43,6 +43,7 @@ import { deleteText, insertNewline, insertText } from './editing/text_commands';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { applyCodeIndent } from './editing/code';
+import { Completions } from './editing/completions';
 import { installFootnotePreview } from './footnote_preview';
 import { continueTableDown, moveTableCell } from './editing/table';
 import {
@@ -107,6 +108,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private layout: EditorLayout = 'page';
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
+  /** The citation and wikilink lists, which own the arrows and Enter while one is open. */
+  private completions!: Completions;
 
   constructor() {
     super('div', ['relative', 'flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
@@ -197,6 +200,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     });
 
     this.registerCommandEvents();
+    this.completions = new Completions(this.context);
     this.renderer.render();
     // The bibliography manager announces when its data is ready or refreshed;
     // citations render from it, so the mounted blocks are rebuilt.
@@ -370,6 +374,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (event.isComposing) {
       return;
     }
+    // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and
+    // what it wrote is what the list is drawn from again.
+    if (this.completions.handleKey(event)) {
+      event.preventDefault();
+      return;
+    }
+    this.handleTextKey(event);
+    this.completions.refresh();
+  }
+
+  /** The text path: the chords, and the keys that write and move. */
+  private handleTextKey(event: KeyboardEvent): void {
     if (this.handleShortcut(event)) {
       return;
     }

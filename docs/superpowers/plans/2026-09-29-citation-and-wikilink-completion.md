@@ -100,4 +100,32 @@ the background (a vault is many files) and cached until the workspace changes.
 
 ## Handoff
 
-*(written when the work lands)*
+**State: the list half works, the bracket half is not finished.** Landed so far (and green on its
+own terms: `npx tsc --noEmit` silent, `npm run check` **34/34**):
+
+- the rules and their checks (`syntax/brackets.ts`, `syntax/completions.ts`), with the citation
+  plugin's own key characters exported so the popup and the syntax share one answer;
+- the two sources of names (`bibliographyManager.entries()`, `documentManager.documents()`);
+- the card (`completion_card.ts`) and the living module (`editing/completions.ts`), wired into the
+  editor's key path: a list in hand owns the arrows, Enter and Escape, and the list is redrawn
+  after every key the text path handled;
+- the pairing wired into the text path (`editing/text_commands.ts: insertText`, and Backspace).
+
+`test/probes/completion.js` is the account of the whole thing, and it reports four checks failing:
+
+1. `a second one makes two pairs with the caret between them`,
+2. `typing the bracket already there steps over it`,
+3. `no pair is written inside a fenced code block`,
+4. `and Enter writes the id between the brackets` — the text came out `[[<id>]`, one `]` short,
+   which says the caret was one further right than the rule expects when the list accepted.
+
+What passes in the same run is worth having: a first `[` writes its pair with the caret inside, the
+`@` list opens with the bibliography's keys and titles, narrows as the author types, and Enter
+writes the key; the `[[` list opens with the workspace's documents (id or name, each with its
+title) and the arrows move through it.
+
+The first three failures are the same fact three times — a bracket typed *after* the first one is
+not taking the rule's path (the caret in 4 is where that shows). The next step is to measure the
+caret after each key rather than reason about it: `test/probes/completion.js` already prints the
+text and the caret for each step, and the two candidates are the pairing edit's caret target and
+the card opening between the keystroke and the next one.
