@@ -109,7 +109,7 @@
         box?.getAttribute('d') === 'M0 0h16v16H0z' &&
         glyphs.length === 2 &&
         (glyphs[0].getAttribute('d') ?? '').startsWith('M6.002 5.5') &&
-        (glyphs[1].getAttribute('d') ?? '').startsWith('M2.002 1')
+        (glyphs[1].getAttribute('d') ?? '').startsWith('M1.5 2')
       );
     })(),
     imageButton()?.querySelector('svg')?.outerHTML?.slice(0, 120) ?? null
