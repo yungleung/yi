@@ -419,7 +419,7 @@ elements) unless it says otherwise.
   same on the layout without the A4 page, so it is the window and not the page. The project's
   own answer to a probe that needs longer is to split it (`docs/ai-context.md`); these are the
   ones it now applies to. The same budget is what makes the suite's tail noisy: the last full run
-  was **99/102 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
+  was **101/104 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
   red, where the run before it (**97/101**) also failed `display-math-source.js` — which passes
   when run alone, measuring 5006 ms with only 3000 ms of that in its own sleeps. A *click* is the
   other thing the pane decides, and a wider one is not always kinder: at a 1200 px window
