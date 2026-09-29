@@ -114,6 +114,24 @@ to a caret the reader had left in the first paragraph (`test/probes/scroll-caret
 it). It is the same rule a click that opens a source already follows: a rebuild under the reader
 is not a request to move the page.
 
+An **image** is written by the button beside the link button, one command `edit:insertImage`, and
+the clipboard decides what that means (`ui/image/image_flow.ts`): a destination it is offering — a
+web URL, a `file://` URL, a path to an image — is written as `![alt](destination)` where the caret
+is, exactly as a link is; an image on the clipboard opens the app's card
+(`ui/image/image_dialog.ts`, which has **no native twin** because a system surface cannot draw the
+picture) with the pixels drawn in it and a name to type over; a clipboard with neither leaves an
+empty `![]()` for the author. A saved image is drawn on a canvas and written through the file
+plugin — into the folder the settings' **General** tab names, or beside the note when it names none
+— and the text carries a path *relative* to the folder it is read from
+(`services/workspace_folders.ts: destinationForFile`). Reading it back is
+`ui/markdown/image_sources.ts`: a relative destination is resolved against the note's folder first
+and the image folder after it, and a *file* becomes a URL the page may load through Tauri's asset
+protocol (`convertFileSrc`, enabled in `tauri.conf.json` with the `$HOME/**` scope the file plugin
+already has — so a workspace outside the home directory paints no local images, the same limitation
+the roadmap's *Open* item records). The pixels come from the clipboard plugin
+(`clipboard-manager:allow-read-image`), never from `navigator.clipboard` — the same reason the link
+button's read is the app's own.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 

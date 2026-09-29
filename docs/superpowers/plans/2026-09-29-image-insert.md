@@ -112,4 +112,40 @@ written the way the bibliography field is.
 
 ## Handoff
 
-*(written when the work lands)*
+Landed on `codex/image-insert`. Every task in the plan is done, and the design changed in one place
+the user decided: **destinations are always relative.**
+
+**What was measured before it was built.** With a PNG on the system clipboard the app's text read
+answers `null` and the image read answers *"clipboard-manager.read_image not allowed"* — so
+`clipboard-manager:allow-read-image` is what the feature needs (added), and "a destination in the
+text wins" and "an image wins" are the same rule on that case. With the grant in, a 128×128 PNG on
+the clipboard reads back as 128×128 and 65536 bytes of RGBA (128×128×4), which is the shape the
+canvas encode is written against.
+
+**Where each piece is.** `ui/markdown/syntax/image_edits.ts` is the rule: the `![alt](destination)`
+insertion (the link's own escaping, asked for rather than copied), which clipboard text is a
+destination, the file name a saved image gets, and the kind it is encoded as — with
+`test/checks/check-image-edits.mjs` beside it. The paths are `services/workspace_folders.ts`
+(`relativePathFrom`, `joinPath`, `destinationForFile`, `imagePathCandidates`, `expandHome`, all
+checked in `check-workspace-folders.mjs`), the reading of a setting's folder is
+`services/settings_paths.ts`, the command and the card are `ui/image/`, and the rendering half is
+`ui/markdown/image_sources.ts` with `nodes/image.ts`.
+
+**The one thing the app's own surface gained**: a *page* cannot load a file, so a local image needs
+Tauri's asset protocol. `tauri.conf.json` enables it, scoped `$HOME/**` like the file plugin (the
+cargo feature came with it), and that scope is now written into the roadmap's existing *Open* item
+about the file plugin, because it is the same limitation one surface larger.
+
+**What proves it.** `test/probes/insert-image.js` (the button and its icon, a URL, a `file://` URL,
+a path, a path with a space refused, a clipboard the app cannot use, and a selection becoming the
+alt text), `test/probes/insert-image-blob.js` (a picture on the clipboard → the card with the
+picture drawn in it at its real size, the name it starts from with the stem selected, the file
+saved where the settings name it and read back as a PNG by its magic bytes, the text that points at
+it, and — the check that matters most — **the image painted**, `naturalWidth` 2 from an
+`asset://localhost/…` source), `npm run check` **31/31**, and `cargo test` **14/14**. Both probes
+make their own folder under the home directory and remove it, and neither touches the fixtures.
+
+**Two traps this work paid for**, both now in `test/README.md`: a file read over the bridge comes
+back as an `ArrayBuffer` (`Uint8Array.from` on one is empty), and a *card* left open by a cut-off
+probe eats every click a later probe dispatches — which is what made two probes look like they
+could not place a caret at all.
