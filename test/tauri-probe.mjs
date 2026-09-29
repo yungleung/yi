@@ -221,6 +221,71 @@ if (!(await helpersReady())) {
 }
 await waitForEditor();
 
+/**
+ * Puts the app in English before a probe runs.
+ *
+ * A probe asserts *behaviour*, and it asserts it in English: a button it looks for by
+ * `aria-label` is `Image`, a status it reads is `Saved`. The app itself follows the reader's
+ * system locale when the config names no language (`src/services/language.ts`), so on a machine
+ * whose locale is not English every one of those assertions would fail for a reason that has
+ * nothing to do with the code under test. This is the harness's business, like the document it
+ * loads and the workspace it points at; `test/probes/localization.js` is where the language
+ * itself is tested, and it sets and restores what it needs.
+ */
+async function ensureEnglish() {
+  const reply = await call(
+    `(async () => {
+       const config = await window.__TAURI_INTERNALS__.invoke('get_config');
+       if ((config.language ?? '') === 'en') {
+         return null;
+       }
+       const previous = config.language ?? '';
+       await window.__TAURI_INTERNALS__.invoke('set_config', {
+         cfg: {
+           ...config,
+           language: 'en',
+           config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
+         }
+       });
+       location.reload();
+       return previous;
+     })()`,
+    15000
+  );
+  if (reply.success && typeof reply.data === 'string') {
+    await sleep(2500);
+    await waitForEditor();
+    if (!(await helpersReady())) {
+      await installHelpers();
+    }
+    return reply.data;
+  }
+  return null;
+}
+const languageBeforeProbing = await ensureEnglish();
+
+/** Puts the language back where it was found, the way the workspace is put back. */
+async function restoreLanguage(previous) {
+  if (previous === null) {
+    return;
+  }
+  await call(
+    `(async () => {
+       const config = await window.__TAURI_INTERNALS__.invoke('get_config');
+       await window.__TAURI_INTERNALS__.invoke('set_config', {
+         cfg: {
+           ...config,
+           language: ${JSON.stringify(previous)},
+           config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
+         }
+       });
+       location.reload();
+       return 'restored';
+     })()`,
+    15000
+  );
+}
+
 /** Runs the probe, installing the helpers again if the page lost them. */
 async function runProbe() {
   // Clear any earlier probe's stash first, so a timed-out run can never be
@@ -312,6 +377,7 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
   reply = await runProbe();
 }
 await restoreConfig(previousConfig);
+await restoreLanguage(languageBeforeProbing);
 if (reply.success) {
   reportResult(reply.data);
 }
