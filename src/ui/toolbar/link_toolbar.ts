@@ -1,4 +1,5 @@
 import { runCommand } from '../markdown/commands/registry';
+import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 const LINK_ICON =
@@ -23,7 +24,7 @@ const LINK_ICON =
 export class LinkToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButton({ label: 'Link', icon: LINK_ICON, className: TOOL_ICON_SIZE }, () => {
+    this.addButton({ label: t('toolbar.link'), icon: LINK_ICON, className: TOOL_ICON_SIZE }, () => {
       runCommand('edit:insertLink');
     });
   }

@@ -1,3 +1,4 @@
+import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
 
 /** The size the author picked, in rows (header included) and columns. */
@@ -97,7 +98,7 @@ export class TablePicker extends BaseComponent {
     square.className = `flex h-5 items-center justify-center text-base ${INACTIVE}`;
     square.dataset.row = String(row);
     square.dataset.column = String(column);
-    square.setAttribute('aria-label', `${column} columns by ${row} rows`);
+    square.setAttribute('aria-label', t('toolbar.tableSize', { columns: column, rows: row }));
     square.innerHTML = SQUARE_ICON;
     square.addEventListener('mousedown', (event) => {
       event.preventDefault();

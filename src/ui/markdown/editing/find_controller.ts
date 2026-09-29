@@ -12,6 +12,7 @@
 
 import { domPositionAtOffset } from '../caret/dom_position';
 import { proseRoot, restoreCaret, type EditorContext } from './context';
+import { t } from '../../../services/i18n';
 import type { FindBar } from './find_bar';
 
 interface FindMatch {
@@ -149,7 +150,9 @@ export class FindController {
 
   private updateStatus(): void {
     this.bar.setStatus(
-      this.matches.length === 0 ? '' : `${this.activeIndex + 1} of ${this.matches.length}`
+      this.matches.length === 0
+        ? ''
+        : t('find.matches', { active: this.activeIndex + 1, total: this.matches.length })
     );
   }
 }

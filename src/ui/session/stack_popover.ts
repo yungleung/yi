@@ -18,6 +18,7 @@
 
 import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
+import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
 import { registerCommand, runCommand } from '../markdown/commands/registry';
 
@@ -99,7 +100,7 @@ export class StackPopover extends BaseComponent {
       const empty = document.createElement('p');
       empty.className = 'px-2 py-1 text-xs opacity-70';
       empty.dataset.stackEmpty = 'true';
-      empty.textContent = 'Nothing in the stack yet.';
+      empty.textContent = t('session.stack.empty');
       this.list.appendChild(empty);
       return;
     }
@@ -152,7 +153,7 @@ export class StackPopover extends BaseComponent {
     drop.type = 'button';
     drop.className = 'btn btn-ghost btn-xs px-1 shrink-0';
     drop.dataset.stackDrop = id;
-    drop.title = `Drop ${title} from the stack`;
+    drop.title = t('session.stack.drop', { title });
     drop.setAttribute('aria-label', drop.title);
     drop.textContent = '×';
     drop.addEventListener('mousedown', (event) => {

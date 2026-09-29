@@ -13,6 +13,7 @@
  */
 
 import { configManager } from '../../services/config_manager';
+import { t } from '../../services/i18n';
 import { DEFAULT_TEMPLATE } from '../../services/new_document';
 import { BaseComponent } from '../component';
 
@@ -26,35 +27,30 @@ export class NewDocumentSettings extends BaseComponent {
     const heading = document.createElement('div');
     const title = document.createElement('h2');
     title.className = 'text-lg font-semibold';
-    title.textContent = 'New note';
+    title.textContent = t('settings.newNote');
     const description = document.createElement('p');
     description.className = 'text-sm opacity-70';
-    description.textContent =
-      'The frontmatter a new note starts from. title, date, id and keywords are required: ' +
-      'the app stamps the date and the id and fills the other two in when they are missing, ' +
-      'and keeps every other line as you write it.';
+    description.textContent = t('settings.newNote.description');
     heading.append(title, description);
 
     const group = document.createElement('div');
     group.className = 'form-control gap-1';
     const label = document.createElement('span');
     label.className = 'label-text';
-    label.textContent = 'Default frontmatter';
+    label.textContent = t('settings.newNote.template');
     this.field = document.createElement('textarea');
     this.field.className = 'textarea textarea-bordered h-48 w-full font-mono text-sm';
     this.field.setAttribute('spellcheck', 'false');
     this.field.setAttribute('data-new-file-frontmatter', 'true');
     const hint = document.createElement('p');
     hint.className = 'text-xs opacity-60';
-    hint.textContent =
-      'Written without the --- fences: the app puts them around it. Cleared, the app\'s own ' +
-      'template is used again.';
+    hint.textContent = t('settings.newNote.templateHint');
     group.append(label, this.field, hint);
 
     const actions = document.createElement('div');
     actions.className = 'flex items-center gap-3';
-    const saveButton = this.button('Save', () => void this.save(), 'btn-primary');
-    const resetButton = this.button('Reset', () => {
+    const saveButton = this.button(t('settings.save'), () => void this.save(), 'btn-primary');
+    const resetButton = this.button(t('settings.reset'), () => {
       this.field.value = DEFAULT_TEMPLATE;
     });
     this.status = document.createElement('span');
@@ -85,7 +81,7 @@ export class NewDocumentSettings extends BaseComponent {
     } catch (error) {
       console.error('Failed to load the new-note settings:', error);
       this.field.value = DEFAULT_TEMPLATE;
-      this.status.textContent = 'Failed to load settings';
+      this.status.textContent = t('settings.failedToLoad');
     }
   }
 
@@ -93,13 +89,14 @@ export class NewDocumentSettings extends BaseComponent {
     try {
       const typed = this.field.value.trim();
       await configManager.update({ new_file_frontmatter: typed === '' ? null : this.field.value });
-      this.status.textContent = 'Saved';
+      this.status.textContent = t('settings.saved');
       window.setTimeout(() => {
         this.status.textContent = '';
       }, 2000);
     } catch (error) {
       console.error('Failed to save the new-note settings:', error);
-      this.status.textContent = `Failed to save: ${error instanceof Error ? error.message : String(error)}`;
+      const message = error instanceof Error ? error.message : String(error);
+      this.status.textContent = t('settings.failedToSave', { message });
     }
   }
 }

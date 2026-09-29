@@ -15,6 +15,7 @@
  * time, and no answer but a name the rule accepts, or a cancel.
  */
 
+import { t } from '../../services/i18n';
 import { imageFileName } from '../markdown/syntax/image_edits';
 import { BaseComponent } from '../component';
 
@@ -63,7 +64,7 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
 
     const heading = document.createElement('p');
     heading.className = 'mb-3 text-sm font-semibold';
-    heading.textContent = 'Insert image';
+    heading.textContent = t('image.title');
 
     this.preview = document.createElement('img');
     this.preview.className = 'mx-auto mb-1 block max-h-48 w-auto rounded-md';
@@ -88,7 +89,7 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     this.complaint.className = 'mt-1 min-h-4 text-xs opacity-70';
     this.complaint.setAttribute('data-image-complaint', 'true');
     form.append(
-      this.field('Name', this.nameField),
+      this.field(t('image.name'), this.nameField),
       this.complaint,
       this.actions()
     );
@@ -113,7 +114,7 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     const defaultName = imageFileName('', request.stamp) ?? `${request.stamp}.png`;
     this.nameField.value = defaultName;
     this.complaint.textContent = '';
-    this.where.textContent = `Saved in ${request.folder}`;
+    this.where.textContent = t('image.where', { folder: request.folder });
     this.mountOnFirstAsk();
     this.element.classList.remove('hidden');
     this.nameField.focus();
@@ -128,8 +129,8 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     if (name === null) {
       // The rule refuses a path or a hidden name; the reader is told which, and the card stays up.
       this.complaint.textContent = this.nameField.value.trim().startsWith('.')
-        ? 'A name cannot start with a dot.'
-        : 'A name cannot contain a folder: the image folder decides where it goes.';
+        ? t('image.badNameDot')
+        : t('image.badNameFolder');
       return;
     }
     this.settle(name);
@@ -163,8 +164,8 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     const actions = document.createElement('div');
     actions.className = 'mt-3 flex justify-end gap-2';
     actions.append(
-      this.button('image-cancel', 'Cancel', 'btn btn-ghost btn-sm', () => this.settle(null)),
-      this.button('image-save', 'Save', 'btn btn-primary btn-sm', null, 'submit')
+      this.button('image-cancel', t('image.cancel'), 'btn btn-ghost btn-sm', () => this.settle(null)),
+      this.button('image-save', t('image.save'), 'btn btn-primary btn-sm', null, 'submit')
     );
     return actions;
   }

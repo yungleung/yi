@@ -25,6 +25,7 @@
  */
 
 import { save as saveChosen } from '@tauri-apps/plugin-dialog';
+import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
 import { drivenByTools } from '../under_test';
 import { placementOfPath, type FolderOption } from '../../services/workspace_folders';
@@ -82,7 +83,7 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
 
     const heading = document.createElement('p');
     heading.className = 'mb-3 text-sm font-semibold';
-    heading.textContent = 'New Markdown';
+    heading.textContent = t('newNote.title');
 
     const form = document.createElement('form');
     form.addEventListener('submit', (event) => {
@@ -102,8 +103,8 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
     this.nameField.setAttribute('spellcheck', 'false');
 
     form.append(
-      this.field('Folder', this.list),
-      this.field('File name', this.nameField),
+      this.field(t('newNote.folder'), this.list),
+      this.field(t('newNote.name'), this.nameField),
       this.actions()
     );
     card.append(heading, form);
@@ -224,10 +225,10 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
     const actions = document.createElement('div');
     actions.className = 'flex justify-end gap-2';
     actions.append(
-      this.button('new-document-cancel', 'Cancel', 'btn btn-ghost btn-sm', () => this.settle(null)),
+      this.button('new-document-cancel', t('newNote.cancel'), 'btn btn-ghost btn-sm', () => this.settle(null)),
       // The create button submits: Enter in the name field is the same answer as pressing it,
       // and a press reaches the form's own handler rather than a second one beside it.
-      this.button('new-document-create', 'Create', 'btn btn-primary btn-sm', null, 'submit')
+      this.button('new-document-create', t('newNote.create'), 'btn btn-primary btn-sm', null, 'submit')
     );
     return actions;
   }

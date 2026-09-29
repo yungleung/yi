@@ -29,6 +29,7 @@ import {
   titleRange
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
+import { t } from '../../services/i18n';
 import { notify } from '../../services/notify';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
 import { registerCommand } from '../markdown/commands/registry';
@@ -67,7 +68,7 @@ export async function newDocument(
   if (place === null) {
     const root = configManager.get()?.workspace;
     if (!root) {
-      notify('Making a new note', new Error('Open a folder before making a note.'));
+      notify('Making a new note', new Error(t('newNote.noWorkspace')));
       return;
     }
     // The reader is most likely working in the folder of the document on screen; when that

@@ -24,6 +24,7 @@
 import { mkdir, writeFile } from '@tauri-apps/plugin-fs';
 import { readClipboardImage, readClipboardText, type ClipboardImage } from '../../api/clipboard';
 import { newDocumentId } from '../../services/new_document';
+import { t } from '../../services/i18n';
 import { notify } from '../../services/notify';
 import { documentSession } from '../../services/session';
 import { imageFolderPath } from '../../services/settings_paths';
@@ -89,7 +90,7 @@ async function saveAndWrite(
     // Nowhere to put it: the note has never been saved and the settings name no folder.
     notify(
       'Inserting an image',
-      new Error('Save this note first, or name an image folder in the settings, so the image has a folder to go in.')
+      new Error(t('image.noFolder'))
     );
     return false;
   }
@@ -108,7 +109,7 @@ async function saveAndWrite(
   }
   const file = joinPath(base, name);
   if (file === null) {
-    notify('Inserting an image', new Error(`${base} is not a folder an image can be saved in.`));
+    notify('Inserting an image', new Error(t('image.badFolder', { folder: base })));
     return false;
   }
   try {
@@ -174,7 +175,7 @@ async function encode(image: ClipboardImage, kind: string): Promise<ArrayBuffer>
   canvas.height = image.height;
   const context = canvas.getContext('2d');
   if (context === null) {
-    throw new Error('This window cannot draw an image.');
+    throw new Error(t('image.cannotDraw'));
   }
   context.putImageData(
     new ImageData(new Uint8ClampedArray(image.rgba), image.width, image.height),
@@ -183,7 +184,7 @@ async function encode(image: ClipboardImage, kind: string): Promise<ArrayBuffer>
   );
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, kind));
   if (blob === null) {
-    throw new Error(`This window cannot write ${kind} files.`);
+    throw new Error(t('image.cannotWrite', { kind }));
   }
   return await blob.arrayBuffer();
 }

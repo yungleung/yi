@@ -25,6 +25,7 @@ import { notify } from '../../services/notify';
 import { TOAST_EVENT } from '../../services/workspace';
 import { parentFolder } from '../../services/workspace_folders';
 import { runCommand } from '../markdown/commands/registry';
+import { t } from '../../services/i18n';
 import { prompt } from '../prompt';
 import type { TreeMenuAction } from './tree_menu_model';
 import { nameWithoutExtension, type TreeEntry } from './tree_rules';
@@ -160,12 +161,13 @@ export async function deleteWithQuestion(
   if (!tree) {
     return;
   }
-  const what = entry.isFile ? `“${entry.basename}”` : `the folder “${entry.basename}” and everything in it`;
   const answer = await prompt.ask({
-    title: 'Delete',
-    message: `Delete ${what}? This cannot be undone.`,
-    yes: 'Delete',
-    no: 'Keep it'
+    title: t('tree.delete.title'),
+    message: entry.isFile
+      ? t('tree.delete.file', { name: entry.basename })
+      : t('tree.delete.folder', { name: entry.basename }),
+    yes: t('tree.delete.yes'),
+    no: t('tree.delete.no')
   });
   if (!answer) {
     return;
@@ -243,7 +245,7 @@ async function copy(text: string, message: string): Promise<void> {
 async function copyId(entry: TreeEntry): Promise<void> {
   const id = await readDocumentId(entry.path);
   if (!id) {
-    void eventManager.emit(TOAST_EVENT, `“${entry.basename}” has no id in its frontmatter.`);
+    void eventManager.emit(TOAST_EVENT, t('tree.noId', { name: entry.basename }));
     return;
   }
   await copy(id, 'Id copied.');

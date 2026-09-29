@@ -22,6 +22,7 @@ import { listFolderFiles, type FileInfo } from '../../api/files';
 import { documentSession } from '../../services/session';
 import { eventManager } from '../../services/event_manager';
 import { TOAST_EVENT, WORKSPACE_CHANGED } from '../../services/workspace';
+import { t } from '../../services/i18n';
 import { SidebarSection } from '../sidebar_section';
 import { makeDragSource, makeDropTarget } from './tree_drag';
 import { showTreeMenu } from './tree_menu';
@@ -257,7 +258,7 @@ class TreeNode {
       this.childrenContainer.replaceChildren();
       const fallback = document.createElement('li');
       fallback.className = 'text-xs opacity-70 px-2';
-      fallback.textContent = 'Unable to load folder contents.';
+      fallback.textContent = t('tree.unableToLoad');
       this.childrenContainer.appendChild(fallback);
     }
   }
@@ -295,7 +296,7 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
   private rootNode: TreeNode | null = null;
 
   constructor() {
-    super('Workspace');
+    super(t('sidebar.workspace'));
     this.content.dataset.workspaceTree = 'true';
     this.renderEmptyState();
     setTreeHost(this);
@@ -364,7 +365,7 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
   private renderEmptyState(): void {
     const empty = document.createElement('div');
     empty.className = 'text-sm text-base-content/70';
-    empty.textContent = 'Open a folder to view the workspace structure.';
+    empty.textContent = t('tree.empty');
     this.content.appendChild(empty);
   }
 

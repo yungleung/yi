@@ -1,5 +1,6 @@
 import { runCommand } from '../markdown/commands/registry';
 import { TablePicker, type TableSize } from './table_picker';
+import { t } from '../../services/i18n';
 import { Toolbar } from './toolbar';
 
 /** The grid icon, sized like the formatting icons it sits beside. */
@@ -31,7 +32,7 @@ export class TableToolbar extends Toolbar {
       runCommand('table:insert', size);
     });
     this.addButton(
-      { label: 'Insert table', icon: TABLE_ICON, className: 'text-[1.1em]' },
+      { label: t('toolbar.table'), icon: TABLE_ICON, className: 'text-[1.1em]' },
       () => this.togglePicker()
     );
     this.appendChild(this.picker.element);

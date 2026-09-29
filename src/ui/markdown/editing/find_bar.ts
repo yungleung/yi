@@ -4,10 +4,12 @@
  * State changes (query, replacement, navigation) are reported through the
  * handlers so the search logic stays in `find_controller.ts`.
  *
- * May import: the DOM and `BaseComponent`. Upholds: the bar knows nothing about
- * the document — it reports what the author asked for and the controller does
- * the searching, which is what keeps the search testable without a window.
+ * May import: the DOM and the app's words (`services/i18n`). Upholds: the bar knows nothing about
+ * the document — it reports what the author asked for and the controller does the searching, which
+ * is what keeps the search testable without a window.
  */
+
+import { t } from '../../../services/i18n';
 
 export interface FindBarHandlers {
   /** The query changed; the controller should recompute the matches. */
@@ -38,7 +40,7 @@ export class FindBar {
 
     const findInput = document.createElement('input');
     findInput.className = 'input input-sm input-bordered w-48';
-    findInput.placeholder = 'Find in Markdown';
+    findInput.placeholder = t('find.query');
     findInput.addEventListener('input', () => handlers.onQueryChanged());
     findInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -54,7 +56,7 @@ export class FindBar {
     replaceRow.className = 'hidden';
     const replaceInput = document.createElement('input');
     replaceInput.className = 'input input-sm input-bordered w-48';
-    replaceInput.placeholder = 'Replace with';
+    replaceInput.placeholder = t('find.replace');
     replaceInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -142,8 +144,8 @@ function closeButton(action: () => void): HTMLButtonElement {
   const element = document.createElement('button');
   element.className = 'btn btn-ghost btn-xs';
   element.type = 'button';
-  element.title = 'Close';
-  element.setAttribute('aria-label', 'Close find bar');
+  element.title = t('find.close');
+  element.setAttribute('aria-label', t('find.closeBar'));
   element.textContent = '✕';
   element.addEventListener('click', action);
   return element;
