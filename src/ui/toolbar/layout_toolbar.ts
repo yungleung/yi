@@ -1,6 +1,7 @@
 import { eventManager } from '../../services/event_manager';
 import { runCommand } from '../markdown/commands/registry';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from '../markdown/markdown_editor';
+import { t } from '../../services/i18n';
 import { Toolbar } from './toolbar';
 
 /** The button's icon while the editor is a page of A4: a sheet with its lines. */
@@ -37,7 +38,7 @@ export class LayoutToolbar extends Toolbar {
   constructor() {
     super();
     this.button = this.addButton(
-      { label: 'A4 page', icon: PAGE_ICON, className: STATUS_BUTTON },
+      { label: t('toolbar.page'), icon: PAGE_ICON, className: STATUS_BUTTON },
       () => {
         runCommand('view:togglePage');
       }
@@ -55,7 +56,7 @@ export class LayoutToolbar extends Toolbar {
   private showLayout(layout: EditorLayout): void {
     const page = layout === 'page';
     this.button.innerHTML = page ? PAGE_ICON : AUTO_ICON;
-    this.button.title = page ? 'Full width' : 'A4 page';
+    this.button.title = page ? t('toolbar.fullWidth') : t('toolbar.page');
     this.button.setAttribute('aria-label', this.button.title);
     this.button.setAttribute('aria-pressed', String(page));
   }

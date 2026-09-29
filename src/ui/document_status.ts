@@ -13,6 +13,7 @@
 
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../services/session';
 import { eventManager } from '../services/event_manager';
+import { t } from '../services/i18n';
 import { BaseComponent } from './component';
 
 /** `Saved` while the file holds what is on screen, `Editing` while it does not. */
@@ -30,7 +31,7 @@ export class SavedStatus extends BaseComponent {
   private update(): void {
     const document = documentSession.current();
     const saved = document === null || document.content === document.saved;
-    this.label.textContent = saved ? 'Saved' : 'Editing';
+    this.label.textContent = saved ? t('status.saved') : t('status.editing');
     this.element.dataset.saved = String(saved);
   }
 }
@@ -51,7 +52,7 @@ export class StackStatus extends BaseComponent {
     const document = documentSession.current();
     const stacked = document?.stacked === true;
     const size = documentSession.stack().length;
-    this.label.textContent = stacked ? `In the stack · ${size}` : 'Not stacked';
+    this.label.textContent = stacked ? t('status.stacked', { size }) : t('status.notStacked');
     this.element.dataset.stacked = String(stacked);
   }
 }

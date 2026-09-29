@@ -1,3 +1,4 @@
+import { t } from '../services/i18n';
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { TOAST_EVENT } from '../services/workspace';
@@ -28,7 +29,7 @@ export class Toast extends BaseComponent {
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'btn btn-sm btn-ghost btn-circle shrink-0';
-    close.setAttribute('aria-label', 'Close notification');
+    close.setAttribute('aria-label', t('toast.close'));
     close.textContent = '✕';
     close.addEventListener('click', () => alert.remove());
 

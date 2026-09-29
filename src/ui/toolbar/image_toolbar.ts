@@ -1,4 +1,5 @@
 import { runCommand } from '../markdown/commands/registry';
+import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 const IMAGE_ICON =
@@ -21,7 +22,7 @@ const IMAGE_ICON =
 export class ImageToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButton({ label: 'Image', icon: IMAGE_ICON, className: TOOL_ICON_SIZE }, () => {
+    this.addButton({ label: t('toolbar.image'), icon: IMAGE_ICON, className: TOOL_ICON_SIZE }, () => {
       runCommand('edit:insertImage');
     });
   }

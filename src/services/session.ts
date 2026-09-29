@@ -24,6 +24,7 @@ import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { eventManager } from './event_manager';
+import { t } from './i18n';
 import { TOAST_EVENT } from './workspace';
 import { parentFolder } from './workspace_folders';
 import {
@@ -143,10 +144,10 @@ class DocumentSession {
     if (action === 'ask') {
       const title = this.current()?.title ?? 'This document';
       keep = await this.ask({
-        title: 'Open another document',
-        message: `“${title}” is not in the stack. Push it there, so it is kept, or open the new document without it?`,
-        yes: 'Push and open',
-        no: 'Open without it'
+        title: t('session.askOpen.title'),
+        message: t('session.askOpen.message', { title }),
+        yes: t('session.askOpen.yes'),
+        no: t('session.askOpen.no')
       });
     }
     // The document being left is captured before it goes: a pushed one keeps its latest text
@@ -199,10 +200,10 @@ class DocumentSession {
     }
     if (document.id !== this.state.current && !isSaved(document)) {
       const saveIt = await this.ask({
-        title: 'Drop from the stack',
-        message: `“${document.title}” has changes that are not in its file. Save it before dropping it?`,
-        yes: 'Save and drop',
-        no: 'Drop without saving'
+        title: t('session.askDrop.title'),
+        message: t('session.askDrop.message', { title: document.title }),
+        yes: t('session.askDrop.yes'),
+        no: t('session.askDrop.no')
       });
       if (saveIt && !(await this.writeDocument(document))) {
         return;
@@ -274,7 +275,7 @@ class DocumentSession {
       await writeTextFile(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      void eventManager.emit(TOAST_EVENT, `Failed to save ${document.title}: ${message}`);
+      void eventManager.emit(TOAST_EVENT, t('session.saveFailed', { title: document.title, message }));
       return false;
     }
     this.state = markSaved(this.state, document.id, document.content);

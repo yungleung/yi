@@ -3,6 +3,7 @@ import {
 } from '../api/settings';
 import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
+import { t } from './i18n';
 
 const VERSION_MISMATCH_PATTERN = /config\s+version\s+mismatch/i;
 
@@ -61,7 +62,7 @@ export class WorkspaceManager {
   private notifySaveFailure(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Failed to save the workspace config:', error);
-    void eventManager.emit(TOAST_EVENT, `Failed to save the workspace: ${message}`);
+    void eventManager.emit(TOAST_EVENT, t('workspace.failedToSave', { message }));
   }
 }
 

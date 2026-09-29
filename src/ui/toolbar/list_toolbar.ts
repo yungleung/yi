@@ -1,5 +1,6 @@
 import type { ListCommand } from '../markdown/editing/lists';
 import { runCommand } from '../markdown/commands/registry';
+import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './toolbar';
 
 interface ListButtonSpec extends ToolbarButtonSpec {
@@ -8,10 +9,14 @@ interface ListButtonSpec extends ToolbarButtonSpec {
 
 const ICON_PREFIX = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">';
 
-const LIST_BUTTONS: ListButtonSpec[] = [
+/**
+ * The buttons, built when a toolbar is built rather than when this module loads — see
+ * `formatting_toolbar.ts` for why a constant here costs the toolbar its language.
+ */
+const listButtons = (): ListButtonSpec[] => [
   {
     command: 'ordered',
-    label: 'Ordered list',
+    label: t('toolbar.orderedList'),
     className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" /><g fill="currentColor">` +
@@ -21,7 +26,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   },
   {
     command: 'bullet',
-    label: 'Bullet list',
+    label: t('toolbar.bulletList'),
     className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" />` +
@@ -29,7 +34,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   },
   {
     command: 'task',
-    label: 'Task list',
+    label: t('toolbar.taskList'),
     className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" /><g fill="currentColor">` +
@@ -40,7 +45,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
   },
   {
     command: 'indent',
-    label: 'Indent list item',
+    label: t('toolbar.indentItem'),
     className: TOOL_ICON_SIZE,
     icon:
       `${ICON_PREFIX}<path d="M0 0h16v16H0z" fill="none" />` +
@@ -57,7 +62,7 @@ const LIST_BUTTONS: ListButtonSpec[] = [
 export class ListToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButtons(LIST_BUTTONS, (spec) => {
+    this.addButtons(listButtons(), (spec) => {
       runCommand(`list:${spec.command}`);
     });
   }

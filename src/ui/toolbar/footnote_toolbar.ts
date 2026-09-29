@@ -1,4 +1,5 @@
 import { runCommand } from '../markdown/commands/registry';
+import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 const FOOTNOTE_ICON =
@@ -16,7 +17,7 @@ const FOOTNOTE_ICON =
 export class FootnoteToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButton({ label: 'Footnote', icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () => {
+    this.addButton({ label: t('toolbar.footnote'), icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () => {
       runCommand('edit:insertFootnote');
     });
   }

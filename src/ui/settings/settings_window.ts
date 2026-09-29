@@ -1,4 +1,5 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
 import { CitationSettings } from './citation_settings';
 import { GeneralSettings } from './general_settings';
@@ -16,7 +17,7 @@ export async function openSettingsWindow(): Promise<void> {
 
   const settingsWindow = new WebviewWindow('settings', {
     url: 'settings.html',
-    title: 'Settings',
+    title: t('settings.title'),
     width: 760,
     height: 560,
     minWidth: 560,
@@ -71,17 +72,17 @@ export class SettingsWindow extends BaseComponent {
 
     this.addTab({
       id: 'general',
-      label: 'General',
+      label: t('settings.general'),
       content: new GeneralSettings()
     });
     this.addTab({
       id: 'citation',
-      label: 'Citation',
+      label: t('settings.citation'),
       content: new CitationSettings()
     });
     this.addTab({
       id: 'new-note',
-      label: 'New note',
+      label: t('settings.newNote'),
       content: new NewDocumentSettings()
     });
     this.selectTab(this.tabs[0].id);

@@ -2,6 +2,7 @@ import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { runCommand } from '../markdown/commands/registry';
 import { StackPopover } from '../session/stack_popover';
+import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
 /** The glyph the user sent for taking a document out of the stack. */
@@ -49,13 +50,13 @@ export class SessionToolbar extends Toolbar {
     super(['relative', 'flex', 'items-center', 'gap-1']);
     this.popover = new StackPopover();
     this.stackButton = this.addButton(
-      { label: 'Push to the stack', icon: STACK_PUSH, className: TOOL_ICON_SIZE },
+      { label: t('session.push'), icon: STACK_PUSH, className: TOOL_ICON_SIZE },
       () => {
         runCommand('session:toggleStack');
       }
     );
     this.addButton(
-      { label: 'Open the stack', icon: STACK_OPEN, className: TOOL_ICON_SIZE },
+      { label: t('session.open'), icon: STACK_OPEN, className: TOOL_ICON_SIZE },
       () => {
         runCommand('session:openStack');
       }
@@ -70,7 +71,7 @@ export class SessionToolbar extends Toolbar {
   /** The icon says whether the document is in the stack; the tooltip says what a press does. */
   private showStack(stacked: boolean): void {
     this.stackButton.innerHTML = stacked ? STACK_POP : STACK_PUSH;
-    this.stackButton.title = stacked ? 'Take out of the stack' : 'Push to the stack';
+    this.stackButton.title = stacked ? t('session.pop') : t('session.push');
     this.stackButton.setAttribute('aria-label', this.stackButton.title);
     this.stackButton.setAttribute('aria-pressed', String(stacked));
   }

@@ -29,6 +29,8 @@ import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
 import { imageFolderPath } from './services/settings_paths';
 import { setImageFolder } from './ui/markdown/image_sources';
+import { applyLanguage, languageFor } from './services/language';
+import { language } from './services/i18n';
 
 function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
@@ -145,7 +147,14 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
     setImageFolder(await imageFolderPath());
     void eventManager.on('config_changed', () => {
       void (async () => {
-        await configManager.load();
+        const cfg = await configManager.load();
+        // A language is not a label to redraw but a catalogue to read again, and every component
+        // built its strings in its constructor: the window is reloaded instead, and the session
+        // brings the document, the caret and the view back (`docs/ai-context.md`).
+        if ((await languageFor(cfg)) !== language()) {
+          location.reload();
+          return;
+        }
         setImageFolder(await imageFolderPath());
         editor.refresh();
       })();
@@ -165,6 +174,9 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
 
 window.addEventListener('DOMContentLoaded', async () => {
   await initializeEventListeners();
+  // The language has to be known before the shell is built: every label is read once, in the
+  // constructor of the component that shows it.
+  await applyLanguage();
   const editor = createAppShell();
   await initializeConfig(editor);
   console.log('DOM fully loaded and parsed');

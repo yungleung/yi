@@ -12,6 +12,9 @@ export type AppConfig = {
   /** Where an image the reader saves goes; empty means beside the note (see
    * `src/services/settings_paths.ts`). */
   image_folder: string;
+  /** The language the app speaks (`src/services/i18n.ts: LANGUAGES`); empty means the reader's
+   * own system locale. */
+  language: string;
   config_version: number;
 };
 

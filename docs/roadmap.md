@@ -392,6 +392,29 @@ elements) unless it says otherwise.
   (`styles.css`), and a *local* image paints only because the app now enables Tauri's asset
   protocol (`tauri.conf.json`), scoped `$HOME/**` like the file plugin — which is the next item
   again, one surface larger. `npm run check` is **31/31**; the suite is below.
+- **The app speaks eight languages**, as the user asked: English, Japanese, Simplified and
+  Traditional Chinese, German, French, Spanish and Portuguese. Landed as
+  `docs/superpowers/plans/2026-09-29-localization.md`, and the design question that came with the
+  ask — the menu is Rust and the windows are HTML — was answered by **one set of catalogue files
+  with a reader on each side** (`locales/*.json`; `src/services/i18n.ts` for the webview,
+  `src-tauri/src/i18n.rs` for the menu) rather than by moving the menu into TypeScript or taking an
+  i18n crate as the shared API. Both alternatives are argued in the plan; the short of it is that
+  the menu has to exist before a page does and must survive one that never loads, and a crate gives
+  Rust a `t!` while leaving the webview to fetch its catalogue over IPC. Two things had to be found
+  out rather than assumed: Tauri's predefined menu items are titled by `muda`'s **English** table
+  when they are given no text (`"Quit {app}"`, from its own source), so every label is passed from
+  the catalogue through the `*_with_text` forms; and an **empty language setting means the reader's
+  system locale**, so a first launch is in the language the rest of the machine is in — with the
+  8-language map read by both sides and held to one set of expectations. Measured in the running
+  app, after switching the setting to Japanese: the window came back by itself in Japanese
+  (`lang="ja"`, the toolbar's `画像`/`リンク`, the status bar's `保存済み`/`スタック外`, the word count's
+  `語数`), and the *native menu* read through System Events was `ファイル, 編集, 表示, ウインドウ,
+  ヘルプ` with `新規 Markdown`, `開く…`, `保存`, `別名で保存…`, `書き出す`, `ウインドウを閉じる` under
+  File — the last of those having been muda's English "Close Window" before. `npm run check` is
+  **32/32** and `cargo test` **20/20** (the catalogues are asserted from Rust as well: same keys,
+  nothing blank, and the locale rule). A probe asserts behaviour in English, so the harness now
+  puts the app in English for the length of a probe and puts the reader's choice back
+  (`test/tauri-probe.mjs`).
 
 ## Open, in the order to take them
 
@@ -411,6 +434,12 @@ elements) unless it says otherwise.
   picker already returns the path), or a pair of commands of the app's own for the two calls the
   webview makes; the probe is `new-markdown.js`, which makes its workspace in the home directory
   for exactly this reason.
+- **The backend still answers in English.** A failed write, a name the file system refuses, a
+  folder it cannot read: those sentences are written where they happen (`src-tauri/src/files.rs`,
+  and inside Tauri's own plugins), and they reach the reader in a toast beside translated chrome.
+  The catalogues are already in the binary and `i18n::t` already reads them, so this is a pass over
+  the Rust messages and a decision about the plugin ones — worth doing before a reader meets a
+  mixed-language window.
 - **The window decides what these probes measure.** A few of them sit on the bridge's 5 s
   budget, and a narrow one tips them over. `edit-cost.js` and `block-rebuild-cost.js` type into
   the 323 KB note and are the suite's two longest probes: in a pane narrower than the one

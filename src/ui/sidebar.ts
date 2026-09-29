@@ -1,3 +1,4 @@
+import { t } from '../services/i18n';
 import { BaseComponent } from './component';
 import { SidebarSection } from './sidebar_section';
 
@@ -23,7 +24,7 @@ export class Sidebar extends BaseComponent {
     this.toggleButton.style.marginRight = '0';
     this.toggleButton.style.flexShrink = '0';
     this.toggleButton.innerHTML = this.isOpen ? this.toggleButtonOpenIcon : this.toggleButtonCloseIcon;
-    this.toggleButton.title = 'Toggle workspace sidebar';
+    this.toggleButton.title = t('sidebar.toggle');
     this.toggleButton.addEventListener('click', () => this.toggle());
 
     this.element.append(this.toggleButton, this.content);

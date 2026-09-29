@@ -132,6 +132,23 @@ the roadmap's *Open* item records). The pixels come from the clipboard plugin
 (`clipboard-manager:allow-read-image`), never from `navigator.clipboard` — the same reason the link
 button's read is the app's own.
 
+The app's **words** live in one place: `locales/<language>.json`, flat dotted keys with `{name}`
+parameters, one file per language (`en`, `ja`, `zh-Hans`, `zh-Hant`, `de`, `fr`, `es`, `pt`; English
+is the language every key is written in and every fallback lands on). Two readers read those files
+and nothing else reads a string: `src/services/i18n.ts` imports them into the bundle — no IPC, no
+flash of untranslated chrome — for every window, and `src-tauri/src/i18n.rs` brings the same files
+into the binary with `include_str!` for the **menu**, which is built before any page exists and has
+to survive one that never loads (that is why the menu is Rust's, and stays Rust's). Tauri's
+predefined items are English unless they are given text, so every label is passed from the
+catalogue through the `*_with_text` forms; ids and accelerators are *not* translated, because an id
+is what `commands/menu.ts` maps to a command. The language is a config field whose empty default
+means *the reader's system locale* (`src/services/language.ts`, `i18n::language_for`), offered by
+its own name in the General tab; changing it rebuilds the menu in Rust and **reloads** the windows,
+because a label is read where it is drawn and the session brings the document, the caret and the
+view back. `check-locales.mjs` holds the two readers to one set of keys, and the probe harness puts
+the app in English before a probe — a probe asserts behaviour, and its expectations are English —
+then puts the reader's choice back.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 
