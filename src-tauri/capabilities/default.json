@@ -33,6 +33,7 @@
     "os:default",
     "dialog:default",
     "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-read-image",
     "core:webview:allow-create-webview-window",
     "core:window:allow-set-focus",
     "core:window:allow-start-dragging",

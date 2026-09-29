@@ -25,6 +25,7 @@ methodology; this file is the index and the conventions.
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
+| `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
@@ -46,7 +47,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and sixteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and eighteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -78,7 +79,11 @@ paste (`paste-blocks`), source mode
 page where it was), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
-`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source), the
+`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source) and images
+(`insert-image` — the button, a URL, a path and a `file://` URL from the clipboard, a
+selection becoming the alt text, and the empty image a clipboard the app cannot use leaves behind;
+`insert-image-blob` — a picture on the clipboard, the card with it drawn in it, the name it starts
+from, the file saved where the settings say, and the image *painted* once the note names it), the
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the

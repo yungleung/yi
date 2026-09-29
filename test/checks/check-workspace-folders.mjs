@@ -24,10 +24,17 @@ async function bundleModule(input, name) {
   return import(file);
 }
 
-const { FOLDER_LIMIT, fileName, parentFolder, placementOfPath, workspaceFolders } = await bundleModule(
-  'src/services/workspace_folders.ts',
-  'workspace_folders'
-);
+const {
+  FOLDER_LIMIT,
+  destinationForFile,
+  fileName,
+  imagePathCandidates,
+  joinPath,
+  parentFolder,
+  placementOfPath,
+  relativePathFrom,
+  workspaceFolders
+} = await bundleModule('src/services/workspace_folders.ts', 'workspace_folders');
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -108,6 +115,67 @@ check('on the other separator too', placementOfPath('C:\\vault\\A note.md'), {
   name: 'A note.md'
 });
 check('and a path with no folder means nothing at all', placementOfPath('/'), null);
+
+// --- what a destination says about a file, and how it is read back -------------------------
+
+check('a file inside a folder is its path from there', relativePathFrom('/vault', '/vault/a/b.png'), 'a/b.png');
+check('a file above it is reached with ..', relativePathFrom('/vault/notes', '/vault/a.png'), '../a.png');
+check('a file beside it is its own name', relativePathFrom('/vault/notes', '/vault/notes/a.png'), 'a.png');
+check('and a folder is not its own relative path', relativePathFrom('/vault', '/vault'), null);
+check(
+  'and one under another top-level folder is reached by climbing',
+  relativePathFrom('/Users/x', '/Volumes/y/a.png'),
+  '../../Volumes/y/a.png'
+);
+check('and neither has one that is not absolute', relativePathFrom('/Users/x', 'a.png'), null);
+check('a Windows drive reads the same way', relativePathFrom('C:\\vault', 'C:\\vault\\a.png'), 'a.png');
+check('and another drive has none', relativePathFrom('C:\\vault', 'D:\\a.png'), null);
+
+check('a relative path joins the folder it is read from', joinPath('/vault', 'a/b.png'), '/vault/a/b.png');
+check('and .. takes a piece off it', joinPath('/vault/notes', '../a.png'), '/vault/a.png');
+check('with . left out', joinPath('/vault', './a.png'), '/vault/a.png');
+check('a folder that is not absolute joins nothing', joinPath('relative', 'a.png'), null);
+
+check(
+  'a saved image is named from the folder the settings gave',
+  destinationForFile('/pics/2026.png', '/pics', '/vault/notes'),
+  '2026.png'
+);
+check(
+  'and with no such folder, from the document it was inserted into',
+  destinationForFile('/vault/notes/2026.png', null, '/vault/notes'),
+  '2026.png'
+);
+check(
+  'a file under neither keeps its own path',
+  destinationForFile('/Volumes/other/a.png', '/pics', '/vault/notes'),
+  '/Volumes/other/a.png'
+);
+
+// --- which file an image destination names ---------------------------------------------------
+
+check(
+  'a relative destination is read from the document first, and from the image folder after it',
+  imagePathCandidates('a.png', '/pics', '/vault/notes'),
+  ['/vault/notes/a.png', '/pics/a.png']
+);
+check(
+  'a relative destination climbs out of the folder it is read from',
+  imagePathCandidates('../a.png', '/pics/yi', '/vault/notes'),
+  ['/vault/a.png', '/pics/a.png']
+);
+check('an absolute destination is itself', imagePathCandidates('/pics/a.png', '/pics', '/vault/notes'), ['/pics/a.png']);
+check(
+  'a destination with a scheme is left to the webview',
+  [imagePathCandidates('https://x.example/a.png', '/pics', '/vault'), imagePathCandidates('data:image/png;base64,AAA', null, '/vault')],
+  [[], []]
+);
+check('an empty destination names nothing', imagePathCandidates('', '/pics', '/vault'), []);
+check(
+  'and with neither folder named, there is nothing to read it from',
+  imagePathCandidates('a.png', null, null),
+  []
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

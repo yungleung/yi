@@ -10,6 +10,7 @@ import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/toolbar/formatting_toolbar';
 import { LinkToolbar } from './ui/toolbar/link_toolbar';
+import { ImageToolbar } from './ui/toolbar/image_toolbar';
 import { ListToolbar } from './ui/toolbar/list_toolbar';
 import { FootnoteToolbar } from './ui/toolbar/footnote_toolbar';
 import { TableToolbar } from './ui/toolbar/table_toolbar';
@@ -26,6 +27,8 @@ import { configManager } from './services/config_manager';
 import { documentSession } from './services/session';
 import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
+import { imageFolderPath } from './services/settings_paths';
+import { setImageFolder } from './ui/markdown/image_sources';
 
 function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
@@ -51,6 +54,7 @@ function createAppShell(): MarkdownEditor {
   }, 180, 420, sidebar.getWidth());
   const formattingToolbar = new FormattingToolbar();
   const linkToolbar = new LinkToolbar();
+  const imageToolbar = new ImageToolbar();
   const listToolbar = new ListToolbar();
   const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
@@ -71,6 +75,7 @@ function createAppShell(): MarkdownEditor {
 
   titleBar.addComponent(formattingToolbar, 'center');
   titleBar.addComponent(linkToolbar, 'center');
+  titleBar.addComponent(imageToolbar, 'center');
   titleBar.addComponent(listToolbar, 'center');
   titleBar.addComponent(footnoteToolbar, 'center');
   titleBar.addComponent(tableToolbar, 'center');
@@ -132,6 +137,18 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
       if (chosen === 'page' || chosen === 'auto') {
         void configManager.update({ editor_layout: chosen });
       }
+    });
+
+    // The folder an image is saved in is also the folder a relative image destination may be read
+    // from, so the renderer is told it here — and told again whenever a setting is saved, which is
+    // the only way it can change while the app is open (`settings.rs` announces every change).
+    setImageFolder(await imageFolderPath());
+    void eventManager.on('config_changed', () => {
+      void (async () => {
+        await configManager.load();
+        setImageFolder(await imageFolderPath());
+        editor.refresh();
+      })();
     });
 
     // The documents the reader had open, and where they were in them. After the workspace, so

@@ -94,3 +94,140 @@ export function placementOfPath(path: string): { folder: string; name: string } 
   const folder = parentFolder(path);
   return folder === null ? null : { folder, name: fileName(path) };
 }
+
+/**
+ * The path of `path` seen from `folder` — `notes/a.png` from `/vault`, `../b/c.png` from
+ * `/vault/notes` — or null when no relative path can say it: one of the two is not an absolute
+ * path, they start on different roots (another volume, another drive letter), or `path` names the
+ * folder itself.
+ *
+ * It is what lets the text a note carries name an image the way the reader would: the app writes
+ * the file somewhere and the document says where, without the machine's own layout in it.
+ */
+export function relativePathFrom(folder: string, path: string): string | null {
+  const from = segments(folder);
+  const to = segments(path);
+  if (from.root === null || to.root === null || from.root !== to.root) {
+    return null;
+  }
+  let shared = 0;
+  while (shared < from.parts.length && shared < to.parts.length && from.parts[shared] === to.parts[shared]) {
+    shared += 1;
+  }
+  const up = from.parts.length - shared;
+  const down = to.parts.slice(shared);
+  if (up === 0 && down.length === 0) {
+    return null;
+  }
+  return [...Array<string>(up).fill('..'), ...down].join('/') || '.';
+}
+
+/**
+ * A relative path resolved against a folder, with `.` and `..` taken out — `/vault` + `../b/c.png`
+ * is `/b/c.png` — or null when the folder is not absolute.
+ */
+export function joinPath(folder: string, path: string): string | null {
+  const base = segments(folder);
+  if (base.root === null) {
+    return null;
+  }
+  const parts = [...base.parts];
+  for (const piece of path.split(/[\\/]/)) {
+    if (piece === '' || piece === '.') {
+      continue;
+    }
+    if (piece === '..') {
+      parts.pop();
+      continue;
+    }
+    parts.push(piece);
+  }
+  return base.root + parts.join('/');
+}
+
+/**
+ * What the text should say about a file: where it sits seen from `base` (the folder the settings
+ * name for images) when it is *inside* it, else seen from the document's own folder when it is
+ * inside that, else the path exactly as it came.
+ *
+ * Inside, and not merely reachable: `/pics` and a file under `/Volumes` share the root of this
+ * platform, so `../Volumes/other/a.png` is a true relative path — and a useless one, because the
+ * same string read from the document's folder names a different file. A destination the app
+ * writes has to mean the same thing wherever it is read from, and an absolute path does.
+ */
+export function destinationForFile(
+  file: string,
+  base: string | null,
+  documentFolder: string | null
+): string {
+  return inside(base, file) ?? inside(documentFolder, file) ?? file;
+}
+
+/** A file's path seen from a folder it is inside, or null when it is not inside it. */
+function inside(folder: string | null, file: string): string | null {
+  if (folder === null) {
+    return null;
+  }
+  const relative = relativePathFrom(folder, file);
+  return relative !== null && !relative.startsWith('..') ? relative : null;
+}
+
+/**
+ * The files a destination in the text may name, in the order they are tried.
+ *
+ * A destination the app wrote is relative to *one* of two folders — the one the settings name for
+ * images, or the document's own — and a destination an author typed by hand may be relative to
+ * either, because that is how notes in the wild are written. So a relative destination is read
+ * from the document's folder first and from the image folder after it, and an absolute one is
+ * itself. Anything with a scheme of its own (a web URL, a `data:` URL) names no file at all and
+ * answers nothing, so the caller leaves it to the webview.
+ */
+export function imagePathCandidates(
+  destination: string,
+  base: string | null,
+  documentFolder: string | null
+): string[] {
+  const path = destination.trim();
+  if (path === '' || /^[a-z][a-z0-9+.-]*:/i.test(path)) {
+    return [];
+  }
+  if (path.startsWith('/') || path.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(path)) {
+    return [path];
+  }
+  const candidates: string[] = [];
+  for (const folder of [documentFolder, base]) {
+    if (folder === null) {
+      continue;
+    }
+    const joined = joinPath(folder, path);
+    if (joined !== null && !candidates.includes(joined)) {
+      candidates.push(joined);
+    }
+  }
+  return candidates;
+}
+
+/**
+ * A path with a leading `~` spelled out — `~/pics` beside `/Users/me` is `/Users/me/pics` — or
+ * the path itself when it does not start at a home folder, or when there is no home to put there.
+ */
+export function expandHome(path: string, home: string | null): string {
+  if (home === null || (path !== '~' && !path.startsWith('~/') && !path.startsWith('~\\'))) {
+    return path;
+  }
+  return joinPath(home, path.slice(1)) ?? path;
+}
+
+/** A path cut into its root and its pieces, for comparing two of them. */
+function segments(path: string): { root: string | null; parts: string[] } {
+  const pieces = path.split(/[\\/]/).filter((piece) => piece !== '');
+  const rooted = path.startsWith('/') || path.startsWith('\\');
+  if (rooted) {
+    return { root: '/', parts: pieces };
+  }
+  const drive = /^[A-Za-z]:$/.exec(pieces[0] ?? '');
+  if (drive) {
+    return { root: `${drive[0]}/`, parts: pieces.slice(1) };
+  }
+  return { root: null, parts: pieces };
+}

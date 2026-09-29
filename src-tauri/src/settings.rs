@@ -29,6 +29,11 @@ pub struct AppConfig {
   /// default into every config that saves anything else — which is what this field used to do.
   #[serde(default)]
   pub new_file_frontmatter: Option<String>,
+  /// Where an image the reader saves goes. Empty — the default, and what a config written before
+  /// this field existed reads as — means *beside the note*, so an untouched setting follows
+  /// whatever the app does rather than freezing a folder into every config that was ever saved.
+  #[serde(default)]
+  pub image_folder: String,
   pub config_version: u32,
 }
 
@@ -54,6 +59,7 @@ impl Default for AppConfig {
       csl_style: default_csl_style(),
       editor_layout: default_editor_layout(),
       new_file_frontmatter: None,
+      image_folder: String::new(),
       config_version: CURRENT_CONFIG_VERSION,
     }
   }
@@ -119,6 +125,10 @@ pub fn set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
   let previous = load_from_disk(&app).unwrap_or_default();
   save_to_disk(&app, &cfg).map_err(|e| e.to_string())
     .map(|_| {
+      // Anything in the config may be read by the window that is open — the image folder is what
+      // a rendered image is resolved against, the layout is how the page is drawn — so a change to
+      // any of it is announced, and whoever reads a field it cares about reads it again.
+      let _ = app.emit("config_changed", ());
       // Let other windows (e.g. the editor) refresh their citation formatting
       // when the bibliography file or CSL style changes.
       if previous.bibliography_file != cfg.bibliography_file

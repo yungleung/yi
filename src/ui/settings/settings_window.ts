@@ -1,6 +1,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BaseComponent } from '../component';
 import { CitationSettings } from './citation_settings';
+import { GeneralSettings } from './general_settings';
 import { NewDocumentSettings } from './new_document_settings';
 
 /**
@@ -68,6 +69,11 @@ export class SettingsWindow extends BaseComponent {
     this.appendChild(sidebar);
     this.appendChild(this.contentArea);
 
+    this.addTab({
+      id: 'general',
+      label: 'General',
+      content: new GeneralSettings()
+    });
     this.addTab({
       id: 'citation',
       label: 'Citation',

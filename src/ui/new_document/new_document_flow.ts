@@ -29,8 +29,7 @@ import {
   titleRange
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
-import { eventManager } from '../../services/event_manager';
-import { TOAST_EVENT } from '../../services/workspace';
+import { notify } from '../../services/notify';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
 import { registerCommand } from '../markdown/commands/registry';
 import { refreshTreeFolders } from '../workspace/tree_ops';
@@ -68,7 +67,7 @@ export async function newDocument(
   if (place === null) {
     const root = configManager.get()?.workspace;
     if (!root) {
-      notify(new Error('Open a folder before making a note.'));
+      notify('Making a new note', new Error('Open a folder before making a note.'));
       return;
     }
     // The reader is most likely working in the folder of the document on screen; when that
@@ -107,7 +106,7 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     // The file is there and empty. The note still opens holding what it was to hold — the
     // session's copy is the truth until it is saved — and the toast says the write failed, so
     // nothing goes missing without the reader being told.
-    notify(error);
+    notify('Making a new note', error);
   }
   await refreshTreeFolders([folder]);
   await documentSession.openFile({ path: made.path, content, select: titleRange(content) });
@@ -137,17 +136,10 @@ async function createFile(
       return { path: await createEntry(folder, candidate, true), id: made };
     } catch (error) {
       if (attempt + 1 === attempts || !String(error).includes('already exists')) {
-        notify(error);
+        notify('Making a new note', error);
         return null;
       }
     }
   }
   return null;
-}
-
-/** One sentence about a failure, in the toast the app already has. */
-function notify(error: unknown): void {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error('Making a new note failed:', error);
-  void eventManager.emit(TOAST_EVENT, message);
 }

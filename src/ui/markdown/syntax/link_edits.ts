@@ -56,6 +56,17 @@ export function isOpenableUrl(href: string): boolean {
   return /^https?:/i.test(href.trim());
 }
 
+/**
+ * What a selection contributes to a title: its own words, without the whitespace a drag picks up
+ * at either end. A link's title and an image's alt text are both written this way, because both
+ * are held to the text the author meant to keep.
+ */
+export function selectionTitle(selected: string): { from: number; to: number; text: string } {
+  const text = selected.replace(/^\s+|\s+$/g, '');
+  const from = selected.length - selected.replace(/^\s+/, '').length;
+  return { from, to: from + text.length, text };
+}
+
 /** The title part of a link, with the characters that would end it escaped. */
 function escapeTitle(title: string): string {
   return title.replace(/[\\[\]]/g, (character) => `\\${character}`);

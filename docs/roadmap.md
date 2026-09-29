@@ -373,12 +373,34 @@ elements) unless it says otherwise.
   document first (with the caret hidden the same walk is clean), and the window has to be in
   front — a backgrounded webview runs no animation frames, so the renderer never re-syncs and
   neither does the bug.
+- **Inserting an image**, as the user asked: a button beside the link button, and the clipboard
+  deciding what it means. Landed as `docs/superpowers/plans/2026-09-29-image-insert.md`. A
+  *destination* the clipboard is offering — a web URL, a `file://` URL, a path ending in an image
+  kind — is written at the caret exactly as a link is, with the caret left in the alt text. An
+  *image* on the clipboard opens the app's own card — no native twin, because no system surface can
+  draw the picture — with the pixels drawn in it, a name defaulting to the app's own stamp as a
+  PNG, and a line saying which folder the file will land in; saving encodes the RGBA on a canvas as
+  the kind the name asks for and writes it through the file plugin, into the settings' new
+  **General** tab's image folder or beside the note when that is empty. The text carries the path
+  **relative** to the folder it is read from, and the renderer resolves it against the note's
+  folder first and the image folder after it — so a destination the app wrote and one an author
+  typed by hand both paint. Two things had to be measured rather than assumed: the clipboard's
+  text read answers `null` for a copied PNG (so "a destination in the text wins" and "an image
+  wins" are the same rule on that case), and `clipboard-manager:allow-read-image` is what the image
+  read needs — with it, a 128×128 PNG on the clipboard reads back as 128×128 and 65536 bytes of
+  RGBA. Rendered images are centred with a corner rounded in the page's own scale
+  (`styles.css`), and a *local* image paints only because the app now enables Tauri's asset
+  protocol (`tauri.conf.json`), scoped `$HOME/**` like the file plugin — which is the next item
+  again, one surface larger. `npm run check` is **31/31**; the suite is below.
 
 ## Open, in the order to take them
 
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
-  new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes —
-  and that plugin's scope is `$HOME/**` (`src-tauri/capabilities/default.json`). Measured while
+  new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
+  the one an inserted image is written with — and the asset protocol that *serves* a rendered image
+  is scoped the same way (`tauri.conf.json`), so outside the home directory a note's images neither
+  save nor paint. That plugin's scope is `$HOME/**` (`src-tauri/capabilities/default.json`).
+  Measured while
   writing the probe: reading a file under `/private/tmp` from the page is refused
   (*"forbidden path: /private/tmp/yi-fs-scope/note.md, maybe it is not allowed on the scope for
   `allow-read-text-file`"*), while the app's own Rust commands (`list_folder_files`,
@@ -397,7 +419,7 @@ elements) unless it says otherwise.
   same on the layout without the A4 page, so it is the window and not the page. The project's
   own answer to a probe that needs longer is to split it (`docs/ai-context.md`); these are the
   ones it now applies to. The same budget is what makes the suite's tail noisy: the last full run
-  was **99/102 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
+  was **101/104 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
   red, where the run before it (**97/101**) also failed `display-math-source.js` — which passes
   when run alone, measuring 5006 ms with only 3000 ms of that in its own sleeps. A *click* is the
   other thing the pane decides, and a wider one is not always kinder: at a 1200 px window

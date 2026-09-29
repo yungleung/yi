@@ -32,6 +32,7 @@ export type CommandId =
   | 'edit:insertFootnote'
   | 'edit:insertLink'
   | 'edit:insertRule'
+  | 'edit:insertImage'
   | 'file:save'
   | 'file:saveAs'
   | 'file:newMarkdown'

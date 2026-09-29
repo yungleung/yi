@@ -21,6 +21,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
 import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
+import { notify } from '../../services/notify';
 import { TOAST_EVENT } from '../../services/workspace';
 import { parentFolder } from '../../services/workspace_folders';
 import { runCommand } from '../markdown/commands/registry';
@@ -111,7 +112,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
   try {
     moved = await moveEntry(entry.path, targetDir);
   } catch (error) {
-    notify(error);
+    notify('The workspace tree', error);
     return false;
   }
   await tree.refreshFolders([folderOf(entry.path), targetDir]);
@@ -134,7 +135,7 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
   try {
     renamed = await renameEntry(entry.path, name);
   } catch (error) {
-    notify(error);
+    notify('The workspace tree', error);
     return false;
   }
   await tree.refreshFolders([folderOf(renamed)]);
@@ -180,7 +181,7 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
   try {
     await deleteEntry(entry.path);
   } catch (error) {
-    notify(error);
+    notify('The workspace tree', error);
     return;
   }
   await tree.refreshFolders([folderOf(entry.path)]);
@@ -211,12 +212,12 @@ async function createAndRename(tree: TreeHost, folder: string, base: string): Pr
       // A name that is taken is the one reason to try the next; anything else is the
       // backend saying no, and the reader should hear it.
       if (!String(error).includes('already exists')) {
-        notify(error);
+        notify('The workspace tree', error);
         return;
       }
     }
   }
-  notify(new Error(`Could not find a free name for ${base}.`));
+  notify('The workspace tree', new Error(`Could not find a free name for ${base}.`));
 }
 
 /** Opens the system file manager on the entry. */
@@ -224,7 +225,7 @@ async function reveal(entry: TreeEntry): Promise<void> {
   try {
     await revealItemInDir(entry.path);
   } catch (error) {
-    notify(error);
+    notify('The workspace tree', error);
   }
 }
 
@@ -234,7 +235,7 @@ async function copy(text: string, message: string): Promise<void> {
     await navigator.clipboard.writeText(text);
     void eventManager.emit(TOAST_EVENT, message);
   } catch (error) {
-    notify(error);
+    notify('The workspace tree', error);
   }
 }
 
@@ -246,11 +247,4 @@ async function copyId(entry: TreeEntry): Promise<void> {
     return;
   }
   await copy(id, 'Id copied.');
-}
-
-/** One sentence about a failure, in the toast the app already has. */
-function notify(error: unknown): void {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error('Workspace action failed:', error);
-  void eventManager.emit(TOAST_EVENT, message);
 }
