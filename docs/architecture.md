@@ -197,6 +197,16 @@ height remembered against it.
 4. Rendering rebuilds only the blocks whose content key or shape key changed; the
    rest keep their DOM, which is what keeps typing cheap in a long document.
 
+Before step 1, the key is offered to the **completion list** — a citation's keys after an `@`,
+the workspace's documents between `[[` and `]]`. While one is open the arrows, Enter, Tab and
+Escape are the list's, and every other key is the text path's, which redraws the list afterwards
+(`markdown_editor.ts: handleKeydown`, `editing/completions.ts`); a click in the document closes
+it, because a click is not typing. Two pure rules decide everything the list shows: whether the
+caret is inside a query at all, and which entries match it (`syntax/completions.ts`), and what a
+bracket writes where the author is (`syntax/brackets.ts` — a pair in prose, nothing in a literal
+region or over a selection, a step over the `]` the app itself wrote, and a pair taken away whole
+by Backspace).
+
 Most typing never gets that far. A keystroke that cannot change how its block
 parses is written into the rendered text node and nothing is rendered at all:
 `applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters, digits,
@@ -257,6 +267,7 @@ rather than through this path.
 | How one markdown construct looks | `nodes/<type>.ts` |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
 | A new keystroke or command | `docs/adding-a-command.md` — the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger |
+| What typing a bracket writes, and the list that opens as the author types `@` or `[[` | `syntax/brackets.ts` (the pair, the literal regions and the selection, stepping over, Backspace) and `syntax/completions.ts` (what the caret is inside, which entries match, what accepting writes) are the rules, each with its check in `test/checks/`; `editing/completions.ts` is the list in hand (the arrows, Enter, Escape, and the closing click), `completion_card.ts` draws it, and the two ends that reach them are the editor's key path (`markdown_editor.ts: handleKeydown`) and the text path's `insertText` (`editing/text_commands.ts`). The names come from `bibliographyManager.entries()` and `documentManager.documents()` |
 | Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`) |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `block_sizes.ts`, `styles.css` — the page's rhythm is written in the page's own scale (`.prose`'s `--md-page-scale`), and the estimator of an unmeasured block's height reads the same line height and paragraph skip, so a page drawn smaller estimates smaller |

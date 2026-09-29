@@ -415,6 +415,28 @@ elements) unless it says otherwise.
   nothing blank, and the locale rule). A probe asserts behaviour in English, so the harness now
   puts the app in English for the length of a probe and puts the reader's choice back
   (`test/tauri-probe.mjs`).
+- **Citation and wikilink completion**, as the user asked: `[` is completed with `]` and the caret
+  stays inside, `@` offers the bibliography's keys, and `[[` offers the workspace's documents —
+  chosen with the arrows, an entry showing its title, and written with Enter. Landed as
+  `docs/superpowers/plans/2026-09-29-citation-and-wikilink-completion.md`. Two pure modules hold the
+  rules, each with its check beside it: `syntax/brackets.ts` (a pair where prose is being written —
+  nothing in a fenced code block, a display formula or an inline code span, nothing around a
+  selection — the `]` already written being stepped over, and Backspace taking an empty pair away
+  whole) and `syntax/completions.ts` (the query the caret is inside, the entries matching it on
+  *either* field with prefix matches first and fifty at most, and what accepting writes). The list
+  itself is `editing/completions.ts` over `completion_card.ts`, and the editor asks it *before* its
+  own text path, so an open list owns the arrows, Enter, Tab and Escape while every other key types
+  and redraws it; a click in the document closes it, because a click is not typing. Enter writes the
+  citation's key, and a document's **id** — its name when it has none, which is what the resolver
+  falls back to, so what is written is always what resolves. Two things had to be measured rather
+  than reasoned about. The second `[` must write its own pair *in front of* the `]` the first one's
+  pair left after the caret — that is what makes `[[` two pairs, `[[]]`, with the caret between
+  them; writing only the `[` leaves the wikilink one bracket short, and that is what Enter then
+  writes into (measured: `[[<id>]`). And the click that closes the list has to be *captured*: a
+  click that lands on a markdown node is answered by that node and stops there, so a listener that
+  waits for it to bubble never sees it. `npm run check` is **34/34**; the probes are `brackets.js`,
+  `completion.js` and `completion-wikilink.js` — the one file the first pass left was over the
+  bridge's 5 s budget, so it is three, none of them recovered.
 
 ## Open, in the order to take them
 

@@ -29,9 +29,9 @@ The branch is `codex/completion`; the user reviews this plan before it is merged
 
 | Rule | What it says |
 | --- | --- |
-| `pairingFor(text, caret, key, literal)` | what typing a bracket inserts: `[]` with the caret inside, `[` alone when the next character is already `]` (which is what makes `[[` become `[[]]` rather than `[[]]` + one more), nothing at all in a *literal* region, and nothing around a selection the author has made |
-| `skipClosing(text, caret, key)` | whether typing `]` should step over the `]` the app itself put there instead of writing a second one |
-| `unpairOnBackspace(text, caret)` | whether deleting the `[` of an empty `[]` deletes both characters, so a mistyped bracket does not leave a stray `]` behind |
+| `pairingFor(text, caret, key, literal)` | what typing a bracket inserts: `[]` with the caret inside, and a second `[` in front of the `]` the first one's pair left after the caret writes its own pair *there* — which is what makes `[[` two pairs, `[[]]`, with the caret between them — nothing at all in a *literal* region, and nothing around a selection the author has made |
+| `skipClosingFor(text, caret, key, literal)` | whether typing `]` should step over the `]` the app itself put there instead of writing a second one |
+| `pairAround(text, caret)` | the two characters of an empty `[]` a Backspace is about to take away whole, so a mistyped bracket does not leave a stray `]` behind |
 
 `ui/markdown/syntax/completions.ts`:
 
@@ -39,9 +39,8 @@ The branch is `codex/completion`; the user reviews this plan before it is merged
 | --- | --- |
 | `citationQuery(text, caret)` | the `@` the caret is typing inside — `{ from, query }` — or null. The key's characters come from the citation plugin's own set, so a popup can only offer where a citation can exist |
 | `wikilinkQuery(text, caret)` | the `[[` the caret is inside, or null |
-| `citationChoices(entries, query, limit)` | the entries to offer, filtered on the key **or** the title, prefix matches first, capped |
-| `documentChoices(documents, query, limit)` | the same for the workspace, filtered on the id **or** the title |
-| `insertionFor(choice)` | what Enter writes: the citation's key, and for a document its **id** when it has one and its name otherwise (the resolver's own fallback, so what is written is what resolves) |
+| `matchingChoices(choices, query, limit)` | the entries to offer, filtered on the value **or** the title, prefix matches first, capped at fifty (`CHOICE_LIMIT`). Written as one rule rather than the two this plan first named (`citationChoices`, `documentChoices`): a citation key and a document are the same shape, `{ value, title }`, and the two lists differ only in where the values come from |
+| — (no `insertionFor`) | what Enter writes is the choice's own `value`: the source decides it (`bibliographyManager.entries()` gives the key, `documentManager.documents()` the document's **id**, or its name when it has none — the resolver's own fallback, so what is written is what resolves) |
 
 ### 2. The living part (`ui/markdown/editing/completions.ts`)
 
@@ -68,17 +67,17 @@ the background (a vault is many files) and cached until the workspace changes.
 
 ## Tasks
 
-- [ ] Task 1: the rules and their check — `syntax/brackets.ts`, `syntax/completions.ts`, and
+- [x] Task 1: the rules and their check — `syntax/brackets.ts`, `syntax/completions.ts`, and
       `test/checks/check-brackets.mjs` / `check-completions.mjs`.
-- [ ] Task 2: the choices — `bibliographyManager.entries()`, `documentManager.documents()`, and
+- [x] Task 2: the choices — `bibliographyManager.entries()`, `documentManager.documents()`, and
       cases for the filtering rule.
-- [ ] Task 3: the card.
-- [ ] Task 4: the bracket pairing in the editor's key path, and the "handler the editor asks" seam.
-- [ ] Task 5: the citation popup (`@`), and the wikilink popup (`[[`).
-- [ ] Task 6: the probes — `[` pairing (a pair, the `[[` case, a literal block, a selection),
+- [x] Task 3: the card.
+- [x] Task 4: the bracket pairing in the editor's key path, and the "handler the editor asks" seam.
+- [x] Task 5: the citation popup (`@`), and the wikilink popup (`[[`).
+- [x] Task 6: the probes — `[` pairing (a pair, the `[[` case, a literal block, a selection),
       Backspace on a pair, the `@` list (filter by key, by title, arrows, Enter), the `[[` list
       (id and title, Enter writing the id, an id-less document writing its name), Escape.
-- [ ] Task 7: acceptance and docs.
+- [x] Task 7: acceptance and docs.
 
 ## Decisions I have made, and what I would change
 
@@ -100,32 +99,41 @@ the background (a vault is many files) and cached until the workspace changes.
 
 ## Handoff
 
-**State: the list half works, the bracket half is not finished.** Landed so far (and green on its
-own terms: `npx tsc --noEmit` silent, `npm run check` **34/34**):
+**State: done, on the branch, unmerged — the user reviews it first.** `npx tsc --noEmit` is silent
+and `npm run check` is **34/34**. The probes are `brackets.js`, `completion.js` and
+`completion-wikilink.js`, all green, each inside the bridge's 5 s budget (measured over two runs:
+3.9–4.1 s apiece, no recovery). What landed:
 
 - the rules and their checks (`syntax/brackets.ts`, `syntax/completions.ts`), with the citation
   plugin's own key characters exported so the popup and the syntax share one answer;
 - the two sources of names (`bibliographyManager.entries()`, `documentManager.documents()`);
 - the card (`completion_card.ts`) and the living module (`editing/completions.ts`), wired into the
-  editor's key path: a list in hand owns the arrows, Enter and Escape, and the list is redrawn
+  editor's key path: a list in hand owns the arrows, Enter, Tab and Escape, and the list is redrawn
   after every key the text path handled;
-- the pairing wired into the text path (`editing/text_commands.ts: insertText`, and Backspace).
+- the pairing wired into the text path (`editing/text_commands.ts: insertText`, and Backspace);
+- the card's own "closes on a click elsewhere", which was documented and not wired: the editor
+  closes the list from a **captured** click (`markdown_editor.ts`), because a click that lands on a
+  markdown node is answered by the node and stops there before it bubbles.
 
-`test/probes/completion.js` is the account of the whole thing, and it reports four checks failing:
+**The four failures, and what they were.** The first three were one fact, and it was the *rule* and
+not the caret: a second `[` in front of the `]` the first one's pair had written inserted `[`
+alone, so `[[` came out `[[]` rather than `[[]]` and the caret sat one character short of the rule
+the probe was written against. `pairingFor` now writes its own pair in front of a closer that is
+already there (a key that closes itself still writes only itself, or a `"` in front of a `"` would
+leave three); the fourth failure was that same fact seen from the end — Enter replacing the range
+`[[<id>]`, one `]` short — and went with it. The literal-region check was not a rule failure at all:
+the probe clicks a pixel past a character boundary, so the caret lands *inside* the word `code` and
+only the author's own `[` is written, which is what the check now says (`c[ode`); the first pass had
+written the expectation for the head of the block.
 
-1. `a second one makes two pairs with the caret between them`,
-2. `typing the bracket already there steps over it`,
-3. `no pair is written inside a fenced code block`,
-4. `and Enter writes the id between the brackets` — the text came out `[[<id>]`, one `]` short,
-   which says the caret was one further right than the rule expects when the list accepted.
+**One file became three.** `test/probes/completion.js` was over the bridge's 5 s budget (measured:
+5007 ms, recovered from the stash) once it carried both lists and the pairs. It is now `brackets.js`
+(the pairing: the pair, the `[[`, the step over, Backspace, the selection, the literal block),
+`completion.js` (the citation list, and the click that closes it) and `completion-wikilink.js` (the
+workspace's documents — the id Enter writes between the brackets, and the name a document with no id
+is written by). `test/checks/check-brackets.mjs` already named `test/probes/brackets.js` as the
+probe that proves the key path, and now there is one.
 
-What passes in the same run is worth having: a first `[` writes its pair with the caret inside, the
-`@` list opens with the bibliography's keys and titles, narrows as the author types, and Enter
-writes the key; the `[[` list opens with the workspace's documents (id or name, each with its
-title) and the arrows move through it.
-
-The first three failures are the same fact three times — a bracket typed *after* the first one is
-not taking the rule's path (the caret in 4 is where that shows). The next step is to measure the
-caret after each key rather than reason about it: `test/probes/completion.js` already prints the
-text and the caret for each step, and the two candidates are the pairing edit's caret target and
-the card opening between the keystroke and the next one.
+The docs and the checks that follow this work are updated: `docs/architecture.md` (the "one
+keystroke" path, and the "where does this change go?" row), `docs/ai-context.md`, `docs/roadmap.md`,
+`test/README.md` (both checks' rows and the three probes) and this plan. Nothing is merged.
