@@ -17,14 +17,14 @@
  * `test/probes/lib.js` installs `window.__t`, and only the harness does. Both hands are given
  * the same words, so the question a test answers is the question a reader answers.
  *
- * May import: the dialog plugin and the component base. Upholds: one question at a time — a
- * second ask while the card is up is refused rather than queued — and neither hand takes the
- * focus, because a caller may be asking in the middle of an editing gesture whose caret and
- * selection have to survive it.
+ * May import: the dialog plugin and the question card. Upholds: one question at a time — a second
+ * ask while the card is up is refused rather than queued — and neither hand takes the focus,
+ * because a caller may be asking in the middle of an editing gesture whose caret and selection
+ * have to survive it.
  */
 
 import { ask as askNative } from '@tauri-apps/plugin-dialog';
-import { BaseComponent } from './component';
+import { QuestionCard } from './floating/question_card';
 import { drivenByTools } from './under_test';
 
 /** A question: its name, its words, and what each of its two answers says. */
@@ -43,28 +43,17 @@ export interface Prompter {
   ask(question: Question): Promise<boolean>;
 }
 
-export class Prompt extends BaseComponent implements Prompter {
+export class Prompt extends QuestionCard<boolean> implements Prompter {
   private readonly heading: HTMLParagraphElement;
   private readonly message: HTMLParagraphElement;
+  private readonly actions: HTMLDivElement;
   private readonly yes: HTMLButtonElement;
   private readonly no: HTMLButtonElement;
-  private answer: ((value: boolean) => void) | null = null;
 
   constructor() {
-    super('div', [
-      'hidden',
-      'fixed',
-      'inset-0',
-      'z-[60]',
-      'flex',
-      'items-center',
-      'justify-center',
-      'bg-black/30'
-    ]);
+    super('w-[26rem]');
     this.element.dataset.prompt = 'true';
 
-    const card = document.createElement('div');
-    card.className = 'w-[26rem] rounded-lg border border-base-300 bg-base-200 p-4 shadow-lg';
     this.heading = document.createElement('p');
     this.heading.className = 'mb-1 text-sm font-semibold';
     this.heading.dataset.promptTitle = 'true';
@@ -72,22 +61,16 @@ export class Prompt extends BaseComponent implements Prompter {
     this.message.className = 'text-sm';
     this.message.dataset.promptMessage = 'true';
 
-    const actions = document.createElement('div');
-    actions.className = 'mt-3 flex justify-end gap-2';
+    this.actions = document.createElement('div');
+    this.actions.className = 'mt-3 flex justify-end gap-2';
     this.no = this.makeButton('prompt-no', 'btn btn-ghost btn-sm', () => this.settle(false));
     this.yes = this.makeButton('prompt-yes', 'btn btn-primary btn-sm', () => this.settle(true));
-    actions.append(this.no, this.yes);
-    card.append(this.heading, this.message, actions);
-    this.element.appendChild(card);
+    this.actions.append(this.no, this.yes);
+  }
 
-    // Escape is the answer that is not "yes": a caller names its own two answers, so the one
-    // that is not the first is the cautious one. The listener is on the document because the
-    // card deliberately never takes the focus.
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.answer !== null) {
-        this.settle(false);
-      }
-    });
+  /** Escape answers the question the cautious way: no. */
+  protected cautious(): boolean {
+    return false;
   }
 
   /** Asks, on the card when a probe is driving the page and in the system dialog otherwise. */
@@ -100,32 +83,16 @@ export class Prompt extends BaseComponent implements Prompter {
 
   /** The card, which is what a probe answers. */
   private askOnTheCard(question: Question): Promise<boolean> {
-    if (this.answer !== null) {
-      return Promise.resolve(false);
-    }
+    return this.askWith(() => this.fill(question));
+  }
+
+  /** Draws one question into the card the kind owns. */
+  private fill(question: Question): void {
     this.heading.textContent = question.title;
     this.message.textContent = question.message;
     this.yes.textContent = question.yes;
     this.no.textContent = question.no;
-    this.mountOnFirstAsk();
-    this.element.classList.remove('hidden');
-    return new Promise((resolve) => {
-      this.answer = resolve;
-    });
-  }
-
-  /** The card joins the page the first time a question is asked, so importing this is free. */
-  private mountOnFirstAsk(): void {
-    if (this.element.parentElement === null) {
-      document.body.appendChild(this.element);
-    }
-  }
-
-  private settle(value: boolean): void {
-    const answer = this.answer;
-    this.answer = null;
-    this.element.classList.add('hidden');
-    answer?.(value);
+    this.card.append(this.heading, this.message, this.actions);
   }
 
   private makeButton(name: string, className: string, onPress: () => void): HTMLButtonElement {
