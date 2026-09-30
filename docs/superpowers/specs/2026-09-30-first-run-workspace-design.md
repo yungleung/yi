@@ -90,6 +90,16 @@ export async function runWorkspaceSetup(
 before, so a restored document opens into a window that already knows its workspace, which is why
 the session load already sits where it does.
 
+### 5. Nothing behind the question
+
+A first start shows an empty editor: a window opens on a document when something *asks* for one —
+the session restoring what the reader had, a file from the tree, a new note — and the editor started
+every window on the fixture's demo document (`markdown_editor.ts` imported
+`test/fixtures/workspace/default-document.md?raw`), which is a test's markdown in a reader's
+window and is what a fresh install used to open on. The editor now starts empty, and the rule that
+keeps a fixture out of the app is a check: nothing under `src/` may import from `test/`
+(`test/checks/layering.mjs`).
+
 ## Testing
 
 - **A Node check** (`test/checks/check-workspace-setup.mjs`): no workspace and no answer → ask; a
