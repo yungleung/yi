@@ -113,6 +113,8 @@
   "settings.general.description": "アプリがシステムから受け取るものの保存先です。",
   "settings.general.language": "言語",
   "settings.general.languageHint": "言語を変更するとウインドウが再読み込みされます。",
+  "settings.general.pushUnstacked": "表示中の書類をスタックに積む",
+  "settings.general.pushUnstackedHint": "ファイルを開くとき、表示中の書類にファイルへ書き込まれていない変更があれば、確認せずスタックに積みます。保存済みの書類は確認なしで置き換わります。",
   "settings.general.imageFolder": "画像フォルダ",
   "settings.general.imageFolderHint": "挿入した画像の保存先です。空のままなら、ノートと同じフォルダに保存します。",
   "settings.general.imageFolderPlaceholder": "ノートと同じフォルダ",

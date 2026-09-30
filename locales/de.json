@@ -113,6 +113,8 @@
   "settings.general.description": "Wo die App ablegt, was sie vom System übernimmt.",
   "settings.general.language": "Sprache",
   "settings.general.languageHint": "Ein Sprachwechsel lädt das Fenster neu.",
+  "settings.general.pushUnstacked": "Das offene Dokument auf den Stapel legen",
+  "settings.general.pushUnstackedHint": "Wird eine Datei geöffnet und das Dokument auf dem Bildschirm hat Änderungen, die nicht in seiner Datei stehen, wird es ohne Frage auf den Stapel gelegt. Ein gesichertes Dokument wird ohne Frage ersetzt.",
   "settings.general.imageFolder": "Bilderordner",
   "settings.general.imageFolderHint": "Wohin ein eingefügtes Bild gesichert wird. Leer bleibt es neben der Notiz.",
   "settings.general.imageFolderPlaceholder": "Neben der Notiz",

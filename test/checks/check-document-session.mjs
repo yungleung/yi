@@ -114,8 +114,29 @@ check(
   'open'
 );
 
-// The document on screen is not stacked: this is the case the ask is for.
-check('an unstacked document makes the app ask', openDecision(state, { id: 'other' }), 'ask');
+// The document on screen is not stacked, but its text *is* its file's: replacing it loses
+// nothing, so it goes without a question — and the push setting does not push it either, because
+// putting a saved document in the stack is the reader's own choice (the stack button).
+check('a saved document is replaced without a question', openDecision(state, { id: 'other' }), 'open');
+check('and the setting does not push it', openDecision(state, { id: 'other' }, true), 'open');
+
+// An edit its file does not have is what the question is for…
+const editing = capture(state, `${NOTE}More.\n`, { caret: 12, to: null, scroll: null });
+check('an unstacked document with an edit is asked about', openDecision(editing, { id: 'other' }), 'ask');
+// …and what the reader's standing answer replaces: pushed, without a question.
+check(
+  'and the push setting pushes it without asking',
+  openDecision(editing, { id: 'other' }, true),
+  'pushAndOpen'
+);
+
+// A note that has never been written is not in a file at all, whatever its text says.
+const unwritten = openInto(emptySession(), { path: null, content: 'A new note.\n' }, 'made', true);
+check(
+  'a note with no file is asked about even before it is typed in',
+  openDecision(unwritten, { id: 'other' }),
+  'ask'
+);
 
 // …and saying yes keeps it.
 let withBoth = openInto(state, { path: '/notes/b.md', content: '# B\n' }, 'other', true);

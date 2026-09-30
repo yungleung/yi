@@ -113,6 +113,8 @@
   "settings.general.description": "Où l’app range ce qu’elle prend au système.",
   "settings.general.language": "Langue",
   "settings.general.languageHint": "Changer de langue recharge la fenêtre.",
+  "settings.general.pushUnstacked": "Mettre le document ouvert sur la pile",
+  "settings.general.pushUnstackedHint": "Quand un fichier est ouvert et que le document à l’écran a des modifications absentes de son fichier, il est mis sur la pile sans question. Un document enregistré est remplacé sans question.",
   "settings.general.imageFolder": "Dossier d’images",
   "settings.general.imageFolderHint": "Où une image insérée est enregistrée. Vide, elle va à côté de la note.",
   "settings.general.imageFolderPlaceholder": "À côté de la note",

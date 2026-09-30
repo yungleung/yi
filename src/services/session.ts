@@ -9,20 +9,23 @@
  * - the document on screen is **captured** — its text and its view — whenever it is about to be
  *   left, and (debounced) whenever it is typed in, which is what makes a stacked document always
  *   its own latest version;
- * - a file being opened while an *unstacked* document is on screen **asks** first, because
- *   saying no would lose it;
+ * - a file being opened while an *unstacked* document is on screen **asks** first, because saying
+ *   no would lose it — unless the document on screen is one the file already holds, which has
+ *   nothing to lose, or the reader has asked for it to be pushed instead of being asked
+ *   (`push_unstacked_on_open`, `document_session.ts: openDecision`);
  * - the session file is written soon after any change rather than on the way out, since the
  *   webview is not promised a moment on the way out.
  *
- * May import: the session's rules (`document_session.ts`), the app's events and file commands,
- * and the dialog plugin. Upholds: one copy of a document — the one in the session — so nothing
- * here keeps a second text of its own.
+ * May import: the session's rules (`document_session.ts`), the app's config, events and file
+ * commands, and the dialog plugin. Upholds: one copy of a document — the one in the session — so
+ * nothing here keeps a second text of its own.
  */
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
+import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
 import { t } from './i18n';
 import { TOAST_EVENT } from './workspace';
@@ -132,7 +135,11 @@ class DocumentSession {
    */
   async openFile(incoming: IncomingDocument): Promise<void> {
     const id = keyFor(incoming.path, incoming.content, () => `${this.run}-${++this.madeKeys}`);
-    const action = openDecision(this.state, { id });
+    const action = openDecision(
+      this.state,
+      { id },
+      configManager.get()?.push_unstacked_on_open ?? false
+    );
     if (action === 'alreadyOpen') {
       return;
     }
@@ -140,7 +147,10 @@ class DocumentSession {
       this.restore(id);
       return;
     }
-    let keep = true;
+    // Whether the document on screen is kept — pushed into the stack — or let go. Only this
+    // question decides it: a stacked one is kept whatever happens, and the actions that do not
+    // ask are the ones with nothing to lose.
+    let keep = false;
     if (action === 'ask') {
       const title = this.current()?.title ?? 'This document';
       keep = await this.ask({
@@ -149,6 +159,8 @@ class DocumentSession {
         yes: t('session.askOpen.yes'),
         no: t('session.askOpen.no')
       });
+    } else if (action === 'pushAndOpen') {
+      keep = true;
     }
     // The document being left is captured before it goes: a pushed one keeps its latest text
     // and its view, whichever answer the reader gave.

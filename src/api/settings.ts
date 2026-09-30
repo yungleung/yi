@@ -15,6 +15,10 @@ export type AppConfig = {
   /** The language the app speaks (`src/services/i18n.ts: LANGUAGES`); empty means the reader's
    * own system locale. */
   language: string;
+  /** Whether opening a file pushes the document on screen into the stack instead of asking about
+   * it (`src/services/document_session.ts: openDecision`); false — the default — keeps the
+   * question, which is asked only when replacing that document would lose the reader's words. */
+  push_unstacked_on_open: boolean;
   config_version: number;
 };
 

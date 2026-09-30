@@ -113,6 +113,8 @@
   "settings.general.description": "Where the app keeps things it takes from the system.",
   "settings.general.language": "Language",
   "settings.general.languageHint": "Changing the language reloads the window.",
+  "settings.general.pushUnstacked": "Push the open document to the stack",
+  "settings.general.pushUnstackedHint": "When you open a file and the document on screen has changes its file does not, push it to the stack instead of asking. A document already saved is replaced without a question.",
   "settings.general.imageFolder": "Image folder",
   "settings.general.imageFolderHint": "Where an image you insert is saved. Left empty, it is saved beside the note.",
   "settings.general.imageFolderPlaceholder": "Beside the note",

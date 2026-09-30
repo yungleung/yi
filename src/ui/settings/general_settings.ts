@@ -1,10 +1,15 @@
 /**
- * The General tab of the settings window: where an image the reader inserts is saved.
+ * The General tab of the settings window: the language the app speaks, whether opening a file
+ * pushes the document on screen into the stack, and where an image the reader inserts is saved.
  *
  * Empty is the default and it means *beside the note*, so a reader who never chose a folder
  * follows the app rather than a folder frozen into their config the first time anything else was
  * saved (`settings.rs`). The field takes a path the way a reader writes one — `~/Pictures/Yi` is
  * fine — and `services/settings_paths.ts` is what spells the home folder out when it is used.
+ *
+ * Two of the three are saved the moment they are changed — a choice and a switch are complete
+ * answers, and the language is one the window has to answer by reloading itself — while the folder
+ * waits for the tab's Save, because its value is text the reader is still typing.
  *
  * May import: the config manager, the dialog plugin's folder picker, and the component base.
  * Upholds: the app config is the one home of the setting — this window reads it when it opens and
@@ -19,6 +24,7 @@ import { BaseComponent } from '../component';
 
 export class GeneralSettings extends BaseComponent {
   private readonly languageSelect: HTMLSelectElement;
+  private readonly pushToggle: HTMLInputElement;
   private readonly folderInput: HTMLInputElement;
   private readonly status: HTMLElement;
 
@@ -59,6 +65,27 @@ export class GeneralSettings extends BaseComponent {
     this.languageSelect.addEventListener('change', () => void this.chooseLanguage());
     languageGroup.append(languageLabel, languageHint, this.languageSelect);
 
+    // Whether the stack takes the document on screen when a file is opened over it. The switch
+    // carries its own meaning: `document_session.ts: openDecision` is where the rule the words
+    // describe lives, and this only answers it.
+    const stackGroup = document.createElement('div');
+    stackGroup.className = 'form-control gap-1';
+    const stackRow = document.createElement('label');
+    stackRow.className = 'label cursor-pointer justify-start gap-3';
+    this.pushToggle = document.createElement('input');
+    this.pushToggle.type = 'checkbox';
+    this.pushToggle.className = 'toggle';
+    this.pushToggle.setAttribute('data-push-unstacked', 'true');
+    const stackLabel = document.createElement('span');
+    stackLabel.className = 'label-text';
+    stackLabel.textContent = t('settings.general.pushUnstacked');
+    stackRow.append(this.pushToggle, stackLabel);
+    const stackHint = document.createElement('p');
+    stackHint.className = 'text-xs opacity-60';
+    stackHint.textContent = t('settings.general.pushUnstackedHint');
+    stackGroup.append(stackRow, stackHint);
+    this.pushToggle.addEventListener('change', () => void this.choosePush());
+
     const group = document.createElement('div');
     group.className = 'form-control gap-1';
     const label = document.createElement('label');
@@ -95,6 +122,7 @@ export class GeneralSettings extends BaseComponent {
 
     this.appendChild(heading);
     this.appendChild(languageGroup);
+    this.appendChild(stackGroup);
     this.appendChild(group);
     this.appendChild(actions);
     void this.load();
@@ -113,6 +141,7 @@ export class GeneralSettings extends BaseComponent {
     try {
       const config = await configManager.load();
       this.languageSelect.value = await languageFor(config);
+      this.pushToggle.checked = config.push_unstacked_on_open === true;
       this.folderInput.value = config.image_folder ?? '';
     } catch (error) {
       console.error('Failed to load the general settings:', error);
@@ -125,6 +154,17 @@ export class GeneralSettings extends BaseComponent {
       await configManager.update({ language: this.languageSelect.value });
     } catch (error) {
       console.error('Failed to save the language:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.status.textContent = t('settings.failedToSave', { message });
+    }
+  }
+
+  /** Saves the switch the moment it is flipped, the way the language is saved when it is chosen. */
+  private async choosePush(): Promise<void> {
+    try {
+      await configManager.update({ push_unstacked_on_open: this.pushToggle.checked });
+    } catch (error) {
+      console.error('Failed to save the stack setting:', error);
       const message = error instanceof Error ? error.message : String(error);
       this.status.textContent = t('settings.failedToSave', { message });
     }

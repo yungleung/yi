@@ -113,6 +113,8 @@
   "settings.general.description": "Dónde guarda la app lo que toma del sistema.",
   "settings.general.language": "Idioma",
   "settings.general.languageHint": "Cambiar el idioma recarga la ventana.",
+  "settings.general.pushUnstacked": "Poner el documento abierto en la pila",
+  "settings.general.pushUnstackedHint": "Al abrir un archivo, si el documento en pantalla tiene cambios que no están en su archivo, se pone en la pila sin preguntar. Un documento ya guardado se sustituye sin preguntar.",
   "settings.general.imageFolder": "Carpeta de imágenes",
   "settings.general.imageFolderHint": "Dónde se guarda una imagen insertada. Si está vacío, junto a la nota.",
   "settings.general.imageFolderPlaceholder": "Junto a la nota",
