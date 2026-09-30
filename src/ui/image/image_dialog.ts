@@ -11,13 +11,13 @@
  * default is the app's own stamp as a PNG, an extension this app cannot write becomes one it can,
  * and a name that would name another folder — or a hidden file — is refused with a sentence.
  *
- * May import: the component base, the app's stamp and the image rules. Upholds: one card at a
+ * May import: the question card, the app's stamp and the image rules. Upholds: one card at a
  * time, and no answer but a name the rule accepts, or a cancel.
  */
 
 import { t } from '../../services/i18n';
 import { imageFileName } from '../markdown/syntax/image_edits';
-import { BaseComponent } from '../component';
+import { QuestionCard } from '../floating/question_card';
 
 /** What the card needs to ask: the picture, the name it starts from, and where it will go. */
 export interface ImageRequest {
@@ -35,36 +35,22 @@ export interface ImageChooser {
   choose(request: ImageRequest): Promise<string | null>;
 }
 
-export class ImageDialog extends BaseComponent implements ImageChooser {
+export class ImageDialog extends QuestionCard<string | null> implements ImageChooser {
+  private readonly heading: HTMLParagraphElement;
   private readonly preview: HTMLImageElement;
   private readonly where: HTMLParagraphElement;
   private readonly nameField: HTMLInputElement;
   private readonly complaint: HTMLParagraphElement;
+  private readonly form: HTMLFormElement;
   private stamp = '';
-  private answer: ((name: string | null) => void) | null = null;
 
   constructor() {
-    super('div', [
-      'hidden',
-      'fixed',
-      'inset-0',
-      'z-[60]',
-      'flex',
-      'items-center',
-      'justify-center',
-      'bg-black/30'
-    ]);
+    super('w-[26rem]');
     this.element.setAttribute('data-image-dialog', 'true');
 
-    const card = document.createElement('div');
-    card.className = 'w-[26rem] rounded-lg border border-base-300 bg-base-200 p-4 shadow-lg';
-    // A press in the card belongs to the card: the panels behind it must not hear it, and the
-    // titlebar must not begin a window drag under it.
-    card.addEventListener('mousedown', (event) => event.stopPropagation());
-
-    const heading = document.createElement('p');
-    heading.className = 'mb-3 text-sm font-semibold';
-    heading.textContent = t('image.title');
+    this.heading = document.createElement('p');
+    this.heading.className = 'mb-3 text-sm font-semibold';
+    this.heading.textContent = t('image.title');
 
     this.preview = document.createElement('img');
     this.preview.className = 'mx-auto mb-1 block max-h-48 w-auto rounded-md';
@@ -75,8 +61,8 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     this.where.className = 'mb-3 text-center text-xs opacity-60';
     this.where.setAttribute('data-image-where', 'true');
 
-    const form = document.createElement('form');
-    form.addEventListener('submit', (event) => {
+    this.form = document.createElement('form');
+    this.form.addEventListener('submit', (event) => {
       event.preventDefault();
       this.save();
     });
@@ -88,40 +74,32 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
     this.complaint = document.createElement('p');
     this.complaint.className = 'mt-1 min-h-4 text-xs opacity-70';
     this.complaint.setAttribute('data-image-complaint', 'true');
-    form.append(
+    this.form.append(
       this.field(t('image.name'), this.nameField),
       this.complaint,
       this.actions()
     );
+  }
 
-    card.append(heading, this.preview, this.where, form);
-    this.element.appendChild(card);
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.answer !== null) {
-        this.settle(null);
-      }
-    });
+  /** Escape means no image: nothing is written and nothing is inserted. */
+  protected cautious(): string | null {
+    return null;
   }
 
   /** Asks. Null is the reader saying no: nothing is written and nothing is inserted. */
   async choose(request: ImageRequest): Promise<string | null> {
-    if (this.answer !== null) {
-      return null;
-    }
     this.stamp = request.stamp;
     this.preview.src = request.preview;
     const defaultName = imageFileName('', request.stamp) ?? `${request.stamp}.png`;
     this.nameField.value = defaultName;
     this.complaint.textContent = '';
     this.where.textContent = t('image.where', { folder: request.folder });
-    this.mountOnFirstAsk();
-    this.element.classList.remove('hidden');
+    const answered = this.askWith(() =>
+      this.card.append(this.heading, this.preview, this.where, this.form)
+    );
     this.nameField.focus();
     this.nameField.setSelectionRange(0, defaultName.replace(/\.[^.]+$/, '').length);
-    return await new Promise((resolve) => {
-      this.answer = resolve;
-    });
+    return await answered;
   }
 
   private save(): void {
@@ -134,20 +112,6 @@ export class ImageDialog extends BaseComponent implements ImageChooser {
       return;
     }
     this.settle(name);
-  }
-
-  private settle(name: string | null): void {
-    const answer = this.answer;
-    this.answer = null;
-    this.element.classList.add('hidden');
-    answer?.(name);
-  }
-
-  /** The card joins the page the first time it is asked, so importing this is free. */
-  private mountOnFirstAsk(): void {
-    if (this.element.parentElement === null) {
-      document.body.appendChild(this.element);
-    }
   }
 
   private field(label: string, control: HTMLElement): HTMLElement {
