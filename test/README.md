@@ -35,6 +35,7 @@ methodology; this file is the index and the conventions.
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
+| `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
@@ -52,7 +53,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and twenty-four of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and twenty-six of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -104,6 +105,11 @@ things the app says (`messages-and-hints` — a failure raised from the tree wai
 bottom-right corner with its ✕ at the card's right edge, a press elsewhere leaving it, Escape and
 the ✕ closing it, a second message stacking above the first; and a copied path as a hint beside
 its row, with no ✕, gone at the next press), the
+first start (`first-run` — the card the start-up path asks with, saying where a new workspace would
+be made, a folder taken from the path field and becoming the workspace the tree then shows, the
+answer remembered, and "not now" writing nothing; `first-run-create` — the other answer, with the
+documents folder pointed at one the probe made, so the folder appears once and is adopted when it
+is already there), the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
 the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two

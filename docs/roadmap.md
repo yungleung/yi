@@ -486,6 +486,23 @@ elements) unless it says otherwise.
   at the next press. The first version anchored every message to the thing it was about, which put a
   "Path copied." where the reader had to move their eyes to see it and left a failure behind a
   toolbar button; the corner is where both belong.
+- **The first start**, as the user asked: a freshly installed app had no workspace and nothing asked
+  for one — the config's `workspace` was `None`, start-up never emitted `WORKSPACE_CHANGED`, and the
+  only way to a folder was the File menu. Landed as
+  `docs/superpowers/specs/2026-09-30-first-run-workspace-design.md` and its plan. The config gains
+  one fact (`workspace_asked`, false for every config written before it), one pure rule reads it with
+  the workspace itself (`needsWorkspaceQuestion`, checked in Node), a `QuestionCard` asks — and
+  **says where a new workspace would be made**, `/…/Documents/Yi`, because a reader offered "create
+  one" is owed the answer to "where" — and the flow hands the answer to the same call the menu makes
+  (`workspaceManager.openWorkspace`), so the tree, the config and the session follow one path. Saying
+  "not now" writes nothing at all and is asked again next start; a reader who already has a workspace
+  is never asked. "Use an existing folder" is the system picker for a reader and a path field for a
+  probe, and every test points the documents folder at one it made itself, so no test writes into the
+  reader's own Documents. `npm run check` is **37/37** and `cargo test` **22/22**; the tests are
+  `check-workspace-setup.mjs` and the probes `first-run.js` (the card, both answers, the tree and the
+  config) and `first-run-create.js` (the folder made, then adopted). Measured end to end: with
+  `{workspace: null, workspace_asked: false}` and a real page reload, the page that came up asked —
+  "A new workspace will be made in /Users/urshanabi/Documents/Yi." — with all three answers on it.
 
 ## Open, in the order to take them
 

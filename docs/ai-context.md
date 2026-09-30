@@ -37,6 +37,18 @@ so the webview cannot be navigated to a dropped path either. A probe that works 
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
 
+A **first start** has no workspace, and the app now says so rather than waiting to be asked: the
+rule is `services/workspace_setup.ts` (`needsWorkspaceQuestion` over the config's `workspace` and
+its new `workspace_asked`), the card and the flow are `src/ui/workspace_setup/`, and
+`main.ts: initializeConfig` asks **before** the session restores a document — a restored document
+opens into a window that has to know its folder. The card says where a new workspace would be made
+(`Documents/Yi`), because a reader offered "create one" is owed the answer to "where"; "use an
+existing folder" is the system picker for a reader and a path field for a probe. Declining writes
+nothing at all, so the next start asks again, and a reader who already has a workspace is never
+asked. What the answer *does* is the File menu's own path — `workspaceManager.openWorkspace(path)`,
+which announces `WORKSPACE_CHANGED` and persists the config — and only then is `workspace_asked`
+written.
+
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
 window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a
