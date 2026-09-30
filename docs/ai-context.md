@@ -43,6 +43,20 @@ window, not by a flag. Reach for it whenever the answer has to arrive before the
 call, where `eventManager` carries news); the session takes it as a port (`attachPrompter`), and
 the workspace tree's delete asks the exported `prompt` directly.
 
+Everything that floats over the page is one shallow family in `src/ui/floating/`: `FloatingSurface`
+(hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*
+it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/placement.ts` beside
+a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
+`relative` host, under the button) and `QuestionCard` (the veil, the centred card, and one answer
+with Escape giving the cautious one). The footnote preview, the completion list, the stack panel,
+the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
+Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
+parameter it is built with, or a subclass of it. `ui/messages.ts` replaces the old toast: one
+`BesideCard` per message, beside the tree row or the button it is *about* — the place travels as a
+name (`{ path }` or `{ command }`, `services/messages.ts: placeSelector`), never as an element,
+because the event bus is Tauri's and its payload is JSON — or in the corner when it names nothing.
+Two messages at one place stack, nothing disappears on its own, and the ✕ and Escape both close one.
+
 Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
 Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
 file it is written to. It keeps the document on screen, the stack behind it, and where the reader

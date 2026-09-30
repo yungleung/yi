@@ -461,6 +461,24 @@ elements) unless it says otherwise.
   `settings.rs` and its test say. `npm run check` is **34/34** and `cargo test` **21/21**; the flow
   is `test/probes/settings-push-on-open.js`, and the rule has its cases in
   `test/checks/check-document-session.mjs`.
+- **One family for everything that floats, and messages instead of a toast**, as the user asked:
+  landed as `docs/superpowers/specs/2026-09-30-floating-surfaces-design.md` and its plan. Nine
+  surfaces shared no class — only three idioms, each written twice or three times (the same
+  clamping arithmetic in the footnote preview and the completion list, the same veil classes and
+  the same answer protocol in the prompt and the two cards, the same panel listeners in the stack
+  and the table picker) — and the toast was the odd one out: a daisyUI corner container with
+  `alert` boxes, dismissed only by its ✕, and no probe in the suite at all. Now `FloatingSurface`
+  holds what every surface has and `BesideCard`, `AnchoredPanel` and `QuestionCard` say where one
+  sits; the toast is gone, replaced by `ui/messages.ts` — one `BesideCard` per message, beside the
+  tree row or the button it is *about*, or in the corner when it names nothing, with the ✕ and
+  Escape both closing it and nothing auto-hiding. The place travels as a name (`{ path }` or
+  `{ command }`) because the bus is Tauri's and its payload is JSON, and `placeSelector` escapes
+  it, so a quote or a backslash in a file name cannot break the selector (`check-messages.mjs`).
+  The four strings the tree used to write in English — `Path copied.`, `Name copied.`, `Id copied.`
+  and `Failed to open …` — are keys in all eight catalogues now. `npm run check` is **36/36**; the
+  new probe is `test/probes/message-popover.js` (the card under its row, clamped, the ✕ and Escape,
+  a second message stacking, the corner), and every probe that touches a surface still passes
+  untouched because the markers never moved.
 
 ## Open, in the order to take them
 
