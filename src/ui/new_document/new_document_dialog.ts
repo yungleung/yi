@@ -26,7 +26,7 @@
 
 import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
-import { BaseComponent } from '../component';
+import { QuestionCard } from '../floating/question_card';
 import { drivenByTools } from '../under_test';
 import { placementOfPath, type FolderOption } from '../../services/workspace_folders';
 
@@ -55,38 +55,25 @@ export interface NewDocumentChooser {
   choose(request: NewDocumentRequest): Promise<NewDocumentPlacement | null>;
 }
 
-export class NewDocumentDialog extends BaseComponent implements NewDocumentChooser {
+export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
+  implements NewDocumentChooser {
+  private readonly heading: HTMLParagraphElement;
+  private readonly form: HTMLFormElement;
   private readonly list: HTMLDivElement;
   private readonly nameField: HTMLInputElement;
   private folder = '';
   private fallbackName = '';
-  private answer: ((placement: NewDocumentPlacement | null) => void) | null = null;
 
   constructor() {
-    super('div', [
-      'hidden',
-      'fixed',
-      'inset-0',
-      'z-[60]',
-      'flex',
-      'items-center',
-      'justify-center',
-      'bg-black/30'
-    ]);
+    super('w-[26rem]');
     this.element.setAttribute('data-new-document', 'true');
 
-    const card = document.createElement('div');
-    card.className = 'w-[26rem] rounded-lg border border-base-300 bg-base-200 p-4 shadow-lg';
-    // A press in the card belongs to the card: the panels behind it must not hear it, and the
-    // titlebar must not begin a window drag under it.
-    card.addEventListener('mousedown', (event) => event.stopPropagation());
+    this.heading = document.createElement('p');
+    this.heading.className = 'mb-3 text-sm font-semibold';
+    this.heading.textContent = t('newNote.title');
 
-    const heading = document.createElement('p');
-    heading.className = 'mb-3 text-sm font-semibold';
-    heading.textContent = t('newNote.title');
-
-    const form = document.createElement('form');
-    form.addEventListener('submit', (event) => {
+    this.form = document.createElement('form');
+    this.form.addEventListener('submit', (event) => {
       event.preventDefault();
       this.create();
     });
@@ -102,21 +89,16 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
     this.nameField.setAttribute('data-new-document-name', 'true');
     this.nameField.setAttribute('spellcheck', 'false');
 
-    form.append(
+    this.form.append(
       this.field(t('newNote.folder'), this.list),
       this.field(t('newNote.name'), this.nameField),
       this.actions()
     );
-    card.append(heading, form);
-    this.element.appendChild(card);
+  }
 
-    // Escape is the answer that is not an answer. The listener is on the document because the
-    // field may not hold the focus — a click on the backdrop would leave nothing focused.
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.answer !== null) {
-        this.settle(null);
-      }
-    });
+  /** Escape is the answer that is not an answer: nothing is written. */
+  protected cautious(): NewDocumentPlacement | null {
+    return null;
   }
 
   /** Asks, on the system's sheet when a reader is there and on the card when a probe is. */
@@ -151,21 +133,14 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
 
   /** The card, which is what a probe answers. */
   private async askOnTheCard(request: NewDocumentRequest): Promise<NewDocumentPlacement | null> {
-    if (this.answer !== null) {
-      return null;
-    }
     const folders = await request.folders();
-    if (this.answer !== null) {
-      return null;
-    }
-    this.fill(folders, request);
-    this.mountOnFirstAsk();
-    this.element.classList.remove('hidden');
+    const answered = this.askWith(() => {
+      this.fill(folders, request);
+      this.card.append(this.heading, this.form);
+    });
     this.nameField.focus();
     this.nameField.select();
-    return new Promise((resolve) => {
-      this.answer = resolve;
-    });
+    return await answered;
   }
 
   /** The folder rows and the starting name, for one question. */
@@ -241,20 +216,6 @@ export class NewDocumentDialog extends BaseComponent implements NewDocumentChoos
     // An empty field is not a name: the generated id it opened with is the name the ask asks
     // for, and a note has to be called something.
     this.settle({ folder: this.folder, name: this.nameField.value.trim() || this.fallbackName });
-  }
-
-  private settle(placement: NewDocumentPlacement | null): void {
-    const answer = this.answer;
-    this.answer = null;
-    this.element.classList.add('hidden');
-    answer?.(placement);
-  }
-
-  /** The card joins the page the first time it is asked, so importing this is free. */
-  private mountOnFirstAsk(): void {
-    if (this.element.parentElement === null) {
-      document.body.appendChild(this.element);
-    }
   }
 
   private button(
