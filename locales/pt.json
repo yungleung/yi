@@ -143,5 +143,6 @@
   "workspace.setup.path": "Pasta",
   "workspace.setup.use": "Usar esta pasta",
   "workspace.setup.needPath": "Digite a pasta a usar.",
+  "workspace.setup.noDocuments": "O app não encontrou sua pasta de Documentos. Abra uma pasta existente em Arquivo → Abrir pasta…",
   "workspace.setup.later": "Agora não"
 }

@@ -143,5 +143,6 @@
   "workspace.setup.path": "檔案夾",
   "workspace.setup.use": "使用此檔案夾",
   "workspace.setup.needPath": "請輸入要使用的檔案夾。",
+  "workspace.setup.noDocuments": "找不到你的「文件」檔案夾。已有的檔案夾可以用「檔案 → 打開檔案夾…」打開。",
   "workspace.setup.later": "稍後再說"
 }

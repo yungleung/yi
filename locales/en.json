@@ -143,5 +143,6 @@
   "workspace.setup.path": "Folder",
   "workspace.setup.use": "Use this folder",
   "workspace.setup.needPath": "Type the folder to use.",
+  "workspace.setup.noDocuments": "The app could not find your Documents folder. Open a folder you already have with File → Open Folder…",
   "workspace.setup.later": "Not now"
 }

@@ -143,5 +143,6 @@
   "workspace.setup.path": "文件夹",
   "workspace.setup.use": "使用此文件夹",
   "workspace.setup.needPath": "请输入要使用的文件夹。",
+  "workspace.setup.noDocuments": "找不到你的“文稿”文件夹。已有的文件夹可以用“文件 → 打开文件夹…”打开。",
   "workspace.setup.later": "以后再说"
 }

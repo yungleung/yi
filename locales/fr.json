@@ -143,5 +143,6 @@
   "workspace.setup.path": "Dossier",
   "workspace.setup.use": "Utiliser ce dossier",
   "workspace.setup.needPath": "Indiquez le dossier à utiliser.",
+  "workspace.setup.noDocuments": "L’app n’a pas trouvé votre dossier Documents. Ouvrez un dossier existant avec Fichier → Ouvrir un dossier…",
   "workspace.setup.later": "Plus tard"
 }

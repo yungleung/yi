@@ -143,5 +143,6 @@
   "workspace.setup.path": "Carpeta",
   "workspace.setup.use": "Usar esta carpeta",
   "workspace.setup.needPath": "Escribe la carpeta que quieres usar.",
+  "workspace.setup.noDocuments": "La app no encontró tu carpeta de Documentos. Puedes abrir una carpeta existente con Archivo → Abrir carpeta…",
   "workspace.setup.later": "Ahora no"
 }

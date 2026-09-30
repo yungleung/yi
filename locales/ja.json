@@ -143,5 +143,6 @@
   "workspace.setup.path": "フォルダ",
   "workspace.setup.use": "このフォルダを使う",
   "workspace.setup.needPath": "使うフォルダを入力してください。",
+  "workspace.setup.noDocuments": "書類フォルダが見つかりませんでした。既存のフォルダは「ファイル → フォルダを開く…」で開けます。",
   "workspace.setup.later": "後で"
 }
