@@ -23,6 +23,8 @@ import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
 import { installHints } from './ui/hints';
+import { runWorkspaceSetup } from './ui/workspace_setup/workspace_setup_flow';
+import { needsWorkspaceQuestion } from './services/workspace_setup';
 import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
 import { documentSession } from './services/session';
@@ -162,6 +164,17 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
         editor.refresh();
       })();
     });
+
+    // A fresh install has no workspace: ask once, and ask before the session restores a document —
+    // a restored document opens into a window that has to know its folder.
+    if (
+      needsWorkspaceQuestion({
+        workspace: cfg.workspace ?? null,
+        workspace_asked: cfg.workspace_asked === true
+      })
+    ) {
+      await runWorkspaceSetup();
+    }
 
     // The documents the reader had open, and where they were in them. After the workspace, so
     // a restored document opens into a window that already knows its folder.
