@@ -76,9 +76,12 @@ it. The caller turns its own anchor into a box (`{ left, top, width, height }`) 
 through `caret/geometry.ts: caretRect`, a marker or a row through `getBoundingClientRect` — so the
 card never learns what it is pointing at.
 
-The pointer policy is a parameter of the kind: the footnote preview passes the pointer through
-(`pointer-events: none`, so it can never take a hover from the text under it), while the completion
-list and the messages take it (they have rows and a ✕ to press).
+Every card in the family takes the pointer — the footnote preview so a note can be read, selected
+and linked out of, the completion list and the messages because they have rows and a ✕ to press.
+The first pass of this design said the preview passed the pointer through, which its own module
+header claimed and its code (and `footnote-preview.js`) had stopped doing long before: the card that
+has to *not* take a press, if one is ever wanted, says so in its own classes, so the kind carries no
+pointer switch.
 
 Two visible consequences, both small: the completion list's gap goes from 4px to 6px, and its
 placement keeps the caret's *range* as its anchor (the change the last branch made, now shared).

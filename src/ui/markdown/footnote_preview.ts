@@ -110,7 +110,6 @@ export function installFootnotePreview(context: EditorContext): void {
     // itself takes the pointer, so a note can be read, selected, and linked out of.
     const shown = new BesideCard({
       anchor: () => (marker ? boxOf(marker) : null),
-      pointer: 'take',
       // `rounded-md!` because the shared card is `rounded-lg`: a preview and the find bar are the
       // app's two reading surfaces, and the probe holds them to the same corner.
       className: `${PREVIEW_CLASS} inline-block max-w-[34rem] rounded-md! p-2`

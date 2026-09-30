@@ -14,9 +14,6 @@
 import { FloatingSurface } from './surface';
 import { besidePlacement, type Box } from './placement';
 
-/** Whether a press lands on the card, or goes through it. */
-export type PointerPolicy = 'take' | 'pass';
-
 /** The box of an element: what a card points at when it points at a row, a marker or a button. */
 export function boxOf(element: Element): Box {
   const rect = element.getBoundingClientRect();
@@ -26,11 +23,6 @@ export function boxOf(element: Element): Box {
 export interface BesideOptions {
   /** The box it points at, read when it is shown; null for a card that hangs in the corner. */
   anchor: () => Box | null;
-  /**
-   * `take` for a card with something to press (a ✕, a row), `pass` for one that is only read: the
-   * footnote preview must never take a hover from the text under it.
-   */
-  pointer?: PointerPolicy;
   /** Classes for the card beyond the chrome: its width, its padding. */
   className?: string;
   /** Told when the card goes away, whichever way it went: Escape, or a press on its own ✕. */
@@ -44,8 +36,7 @@ export class BesideCard extends FloatingSurface {
       'z-50',
       'select-none',
       FloatingSurface.CHROME,
-      beside.className ?? '',
-      beside.pointer === 'pass' ? 'pointer-events-none' : 'pointer-events-auto'
+      beside.className ?? ''
     ]);
   }
 

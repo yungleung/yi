@@ -34,7 +34,6 @@ export class CompletionCard extends BesideCard {
   constructor() {
     super({
       anchor: () => this.anchorBox,
-      pointer: 'take',
       className: 'flex max-h-64 w-72 flex-col overflow-hidden p-0'
     });
     this.element.setAttribute('data-completion', 'true');
