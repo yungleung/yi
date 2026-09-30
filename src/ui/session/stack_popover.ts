@@ -19,48 +19,19 @@
 import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
-import { BaseComponent } from '../component';
+import { AnchoredPanel } from '../floating/panel';
 import { registerCommand, runCommand } from '../markdown/commands/registry';
 
-export class StackPopover extends BaseComponent {
+export class StackPopover extends AnchoredPanel {
   private readonly list: HTMLDivElement;
 
   constructor() {
-    // `absolute right-0`, inside the `relative` toolbar that hosts it.
-    super('div', [
-      'hidden',
-      'absolute',
-      'top-full',
-      'right-0',
-      'mt-1',
-      'z-50',
-      'w-64',
-      'rounded-lg',
-      'border',
-      'border-base-300',
-      'bg-base-200',
-      'p-1',
-      'shadow-lg',
-      'select-none'
-    ]);
+    // `right-0`, inside the `relative` toolbar that hosts it.
+    super({ className: 'w-64 p-1 right-0' });
     this.list = document.createElement('div');
     this.list.className = 'flex flex-col';
     this.list.dataset.stackList = 'true';
     this.element.appendChild(this.list);
-
-    // The panel lives inside the titlebar, whose mousedown starts a window drag: every row
-    // stops that on its own (`makeRow`). A mousedown anywhere else closes the panel, and so
-    // does Escape.
-    document.addEventListener('mousedown', (event) => {
-      if (this.isOpen() && !this.element.contains(event.target as Node)) {
-        this.close();
-      }
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.isOpen()) {
-        this.close();
-      }
-    });
 
     registerCommand({ id: 'session:openStack', run: () => this.toggle() });
     void eventManager.on(DOCUMENT_SESSION_CHANGED, () => {
@@ -70,26 +41,10 @@ export class StackPopover extends BaseComponent {
     });
   }
 
-  isOpen(): boolean {
-    return !this.element.classList.contains('hidden');
-  }
-
+  /** Shows the stack as it stands — the kind unhides and places it. */
   open(): void {
     this.render();
-    this.element.classList.remove('hidden');
-  }
-
-  close(): void {
-    this.element.classList.add('hidden');
-  }
-
-  /** The button's press: the stack appears, or goes away again. */
-  toggle(): void {
-    if (this.isOpen()) {
-      this.close();
-    } else {
-      this.open();
-    }
+    super.open();
   }
 
   /** One row per stacked document: the title, and the × that drops it. */

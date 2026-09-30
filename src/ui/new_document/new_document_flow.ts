@@ -30,7 +30,7 @@ import {
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
-import { notify } from '../../services/notify';
+import { notify } from '../../services/messages';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
 import { registerCommand } from '../markdown/commands/registry';
 import { refreshTreeFolders } from '../workspace/tree_ops';
@@ -105,7 +105,7 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     await writeTextFile(made.path, content);
   } catch (error) {
     // The file is there and empty. The note still opens holding what it was to hold — the
-    // session's copy is the truth until it is saved — and the toast says the write failed, so
+    // session's copy is the truth until it is saved — and the message says the write failed, so
     // nothing goes missing without the reader being told.
     notify('Making a new note', error);
   }

@@ -25,7 +25,7 @@ import { mkdir, writeFile } from '@tauri-apps/plugin-fs';
 import { readClipboardImage, readClipboardText, type ClipboardImage } from '../../api/clipboard';
 import { newDocumentId } from '../../services/new_document';
 import { t } from '../../services/i18n';
-import { notify } from '../../services/notify';
+import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
 import { imageFolderPath } from '../../services/settings_paths';
 import { destinationForFile, joinPath, parentFolder } from '../../services/workspace_folders';
@@ -88,10 +88,7 @@ async function saveAndWrite(
   const base = (await imageFolderPath()) ?? inTheNote;
   if (base === null) {
     // Nowhere to put it: the note has never been saved and the settings name no folder.
-    notify(
-      'Inserting an image',
-      new Error(t('image.noFolder'))
-    );
+    notify('Inserting an image', new Error(t('image.noFolder')));
     return false;
   }
   const preview = await previewUrl(image);

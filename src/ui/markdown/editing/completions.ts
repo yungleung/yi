@@ -17,7 +17,8 @@ import { bibliographyManager } from '../../../services/bibliography';
 import { documentManager } from '../../../services/document_manager';
 import { getCaretRange } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
-import { CompletionCard, type CompletionAnchor } from '../completion_card';
+import { CompletionCard } from '../completion_card';
+import type { Box } from '../../floating/placement';
 import {
   citationQuery,
   matchingChoices,
@@ -41,7 +42,7 @@ export class Completions {
    * Escape closes it and leaves the text. False means the key was never the list's.
    */
   handleKey(event: KeyboardEvent): boolean {
-    if (!this.card.open || this.from === null) {
+    if (!this.card.isOpen() || this.from === null) {
       return false;
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -130,7 +131,7 @@ export class Completions {
   close(): void {
     this.from = null;
     this.choices = [];
-    this.card.hide();
+    this.card.close();
   }
 
   /** Puts `choices` in front of the author, with the first in hand. */
@@ -141,7 +142,7 @@ export class Completions {
       this.selected = 0;
     }
     if (choices.length === 0) {
-      this.card.hide();
+      this.card.close();
       return;
     }
     this.draw();
@@ -170,8 +171,9 @@ export class Completions {
    * position the caret has already left — measured, one character's width, and the list slid there
    * on the next ArrowDown.
    */
-  private caretAnchor(): CompletionAnchor | null {
+  private caretAnchor(): Box | null {
     const range = getCaretRange();
-    return range ? caretRect(range) : null;
+    const caret = range ? caretRect(range) : null;
+    return caret ? { left: caret.left, top: caret.top, width: 0, height: caret.height } : null;
   }
 }

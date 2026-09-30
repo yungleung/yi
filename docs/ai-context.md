@@ -43,6 +43,24 @@ window, not by a flag. Reach for it whenever the answer has to arrive before the
 call, where `eventManager` carries news); the session takes it as a port (`attachPrompter`), and
 the workspace tree's delete asks the exported `prompt` directly.
 
+Everything that floats over the page is one shallow family in `src/ui/floating/`: `FloatingSurface`
+(hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*
+it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/placement.ts` beside
+a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
+`relative` host, under the button) and `QuestionCard` (the veil, the centred card, and one answer
+with Escape giving the cautious one). The footnote preview, the completion list, the stack panel,
+the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
+Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
+parameter it is built with, or a subclass of it. `ui/messages.ts` replaces the old toast: one
+`BesideCard` per message in the window's bottom-right corner *whatever it is about*, stacked upward,
+with its ✕ at the card's right edge, and nothing disappearing on its own: a **message** is for
+something that needs the reader's attention — a failure — so it waits for the ✕ or Escape, and a
+press elsewhere leaves it. What the reader only has to *notice* is a **hint** instead
+(`services/hints.ts`, `ui/hints.ts`): the tree's three "copied" confirmations, a card beside the row
+they happened on, with no ✕, gone at the next press (or Escape). A hint's place travels as a *name*
+— a workspace path, which is the row it is found by (`hintPlaceSelector`, escaped) — never as an
+element, because the event bus is Tauri's and its payload is JSON.
+
 Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
 Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
 file it is written to. It keeps the document on screen, the stack behind it, and where the reader

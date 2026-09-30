@@ -1,5 +1,5 @@
 import { t } from '../../services/i18n';
-import { BaseComponent } from '../component';
+import { AnchoredPanel } from '../floating/panel';
 
 /** The size the author picked, in rows (header included) and columns. */
 export interface TableSize {
@@ -27,28 +27,12 @@ const INACTIVE = 'text-base-content/25';
  * labels the size, and clicking one picks it. The panel closes on Esc, on a
  * click outside, and after a pick.
  */
-export class TablePicker extends BaseComponent {
+export class TablePicker extends AnchoredPanel {
   private readonly label: HTMLSpanElement;
   private readonly squares: HTMLButtonElement[] = [];
 
   constructor(private readonly onPick: (size: TableSize) => void) {
-    super('div', [
-      'hidden',
-      'absolute',
-      'top-full',
-      'left-1/2',
-      '-translate-x-1/2',
-      'mt-1',
-      'z-50',
-      'w-[248px]',
-      'rounded-lg',
-      'border',
-      'border-base-300',
-      'bg-base-200',
-      'p-2',
-      'shadow-lg',
-      'select-none'
-    ]);
+    super({ className: 'left-1/2 -translate-x-1/2 w-[248px] p-2' });
 
     this.label = document.createElement('span');
     this.label.className = 'mb-1 block text-center text-xs opacity-70';
@@ -64,32 +48,12 @@ export class TablePicker extends BaseComponent {
 
     this.element.append(this.label, grid);
     this.highlight(1, 1);
-    // The panel lives inside the titlebar, whose mousedown starts a window
-    // drag: every square stops that on its own (see `createSquare`). Clicks
-    // anywhere else close the panel.
-    document.addEventListener('mousedown', (event) => {
-      if (this.isOpen() && !this.element.contains(event.target as Node)) {
-        this.close();
-      }
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.isOpen()) {
-        this.close();
-      }
-    });
   }
 
-  isOpen(): boolean {
-    return !this.element.classList.contains('hidden');
-  }
-
+  /** Opens on the first square, so hovering reads as the chooser it is. */
   open(): void {
-    this.element.classList.remove('hidden');
+    super.open();
     this.highlight(1, 1);
-  }
-
-  close(): void {
-    this.element.classList.add('hidden');
   }
 
   private createSquare(row: number, column: number): HTMLButtonElement {
