@@ -19,9 +19,11 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs |
+| `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
+| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
@@ -48,7 +50,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and nineteen of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and twenty-two of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -60,7 +62,14 @@ where it was asked for with its frontmatter on screen and its title selected, an
 config, the settings tab that shows it, and the note that comes out), blocks and spacing
 (`block-gaps`, `spacing`,
 `empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
-(`table-*`), footnotes (`footnote-*` — the button, the marker's two clicks and its source,
+(`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
+pair Backspace takes away whole, the literal block and the selection it writes nothing around;
+`completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
+`completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
+with no id is written by, which its title beside it must not be mistaken for — the citation probe
+also holds the popover's own geometry: a row flush inside the card, and a card that stays put while
+the arrows move), footnotes
+(`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
 `footnote-containers`, `footnote-container-jump`, `footnote-table-cell`,
 `footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,

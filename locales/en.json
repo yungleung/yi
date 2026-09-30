@@ -81,6 +81,7 @@
   "tree.delete.yes": "Delete",
   "tree.delete.no": "Keep it",
   "toast.close": "Close notification",
+  "completion.empty": "Nothing to offer here.",
   "newNote.title": "New Markdown",
   "newNote.folder": "Folder",
   "newNote.name": "File name",

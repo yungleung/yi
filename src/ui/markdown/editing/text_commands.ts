@@ -25,6 +25,7 @@ import {
   applyEdit,
   caretOffset,
   editorSelection,
+  placeCaret,
   rangeOffsets,
   restoreCaret,
   type EditorContext
@@ -32,6 +33,7 @@ import {
 import { isRawRendered } from '../document/blocks';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
+import { pairAround, pairingFor, skipClosingFor } from '../syntax/brackets';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -46,6 +48,22 @@ export function insertText(context: EditorContext, text: string): boolean {
   const block = context.state.getBlockAtOffset(offsets.from);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
+  }
+  // A bracket writes its pair where prose is being written — not inside a code block or a
+  // formula, where the characters are the author's own source (`syntax/brackets.ts`).
+  if (offsets.from === offsets.to) {
+    const literal = block?.kind === 'fencedCode' || block?.kind === 'displayMath';
+    const source = context.state.getText();
+    if (skipClosingFor(source, offsets.from, text, literal)) {
+      // The author typed the bracket they can see: they move past it rather than writing another.
+      placeCaret(context, offsets.from + 1);
+      return true;
+    }
+    const pair = pairingFor(source, offsets.from, text, literal);
+    if (pair) {
+      applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
+      return true;
+    }
   }
   applyEdit(context, offsets.from, offsets.to, text, undefined, 'typing');
   return true;
@@ -63,6 +81,12 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   }
   let { from, to } = offsets;
   if (from === to) {
+    // A pair the app wrote goes whole: a mistyped `[` should not leave its `]` behind.
+    const pair = forward ? null : pairAround(context.state.getText(), from);
+    if (pair) {
+      applyEdit(context, pair.from, pair.to, '', pair.from, 'typing');
+      return true;
+    }
     // A caret in a table cell deletes inside its own cell only: at the cell's
     // edges there is nothing left to delete that belongs to the cell, and
     // eating a pipe or the neighbouring cell is never what the author meant.
