@@ -449,6 +449,18 @@ elements) unless it says otherwise.
   character (14px) to the left and slid across on the first ArrowDown (430px, then 444px). It is
   placed from the caret's range now (`caret/geometry.ts: caretRect`), and both facts are checks in
   `test/probes/completion.js`.
+- **A switch for the stack's own question**, as the user asked: the General tab keeps one — the
+  app config's `push_unstacked_on_open`, off until the reader turns it on — for whether opening a
+  file pushes the document on screen into the stack rather than asking about it. The question
+  itself got narrower in the same pass, at the user's direction: it is asked only when replacing
+  the document on screen would lose the reader's words, so a document whose text its file holds is
+  replaced without a question either way, and a *saved* document is never pushed for the reader —
+  that stays their own choice, made with the stack button. `openDecision` answers `pushAndOpen` for
+  the reader who asked for the push, `ask` for one who did not, and `open` for a document with
+  nothing to lose; a config written before the field existed reads as off, which is what
+  `settings.rs` and its test say. `npm run check` is **34/34** and `cargo test` **21/21**; the flow
+  is `test/probes/settings-push-on-open.js`, and the rule has its cases in
+  `test/checks/check-document-session.mjs`.
 
 ## Open, in the order to take them
 

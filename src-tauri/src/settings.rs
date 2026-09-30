@@ -39,6 +39,13 @@ pub struct AppConfig {
   /// first launch is in the language the rest of the machine is in.
   #[serde(default)]
   pub language: String,
+  /// Whether a file being opened **pushes the document on screen into the stack** rather than
+  /// asking about it. `false` — the default, and what a config written before this field existed
+  /// reads as — keeps the app's own question, which is only asked when replacing the document on
+  /// screen would lose something: a document whose text is what its file holds is replaced
+  /// silently either way (`src/services/document_session.ts: openDecision`).
+  #[serde(default)]
+  pub push_unstacked_on_open: bool,
   pub config_version: u32,
 }
 
@@ -66,6 +73,7 @@ impl Default for AppConfig {
       new_file_frontmatter: None,
       image_folder: String::new(),
       language: String::new(),
+      push_unstacked_on_open: false,
       config_version: CURRENT_CONFIG_VERSION,
     }
   }
@@ -213,5 +221,24 @@ mod tests {
     };
 
     assert_eq!(as_read(cfg).new_file_frontmatter.as_deref(), Some(mine));
+  }
+
+  #[test]
+  fn a_config_written_before_the_push_setting_reads_as_leaving_it_off() {
+    // The shape a config had before the field existed: the reader has not answered, so the app's
+    // own answer stands — it asks, and pushes nothing by itself.
+    let json = r#"{
+      "workspace": null,
+      "bibliography_file": "~/Documents/ZettlrNotes/zotero.json",
+      "csl_style": "apa",
+      "editor_layout": "page",
+      "new_file_frontmatter": null,
+      "image_folder": "",
+      "language": "",
+      "config_version": 1
+    }"#;
+    let cfg: AppConfig = serde_json::from_str(json).unwrap();
+
+    assert!(!cfg.push_unstacked_on_open);
   }
 }

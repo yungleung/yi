@@ -113,6 +113,8 @@
   "settings.general.description": "應用程式從系統取用之內容的存放位置。",
   "settings.general.language": "語言",
   "settings.general.languageHint": "更改語言會重新載入視窗。",
+  "settings.general.pushUnstacked": "將目前的文件放入暫存",
+  "settings.general.pushUnstackedHint": "打開檔案時，如果目前的文件有尚未寫入檔案的更動，就直接放入暫存，不再詢問。已儲存的文件會直接替換。",
   "settings.general.imageFolder": "圖片檔案夾",
   "settings.general.imageFolderHint": "插入的圖片儲存到此檔案夾。留空則儲存在筆記所在的檔案夾。",
   "settings.general.imageFolderPlaceholder": "與筆記同一檔案夾",

@@ -130,14 +130,27 @@ export function isSaved(document: SessionDocument): boolean {
  * - `alreadyOpen` — it *is* the document on screen: nothing to do, and nothing to ask.
  * - `bringForward` — it is in the stack: bring that copy forward rather than reading the file
  *   again, because the copy in the session is the newer one.
- * - `open` — it takes the screen without a question: either nothing is on screen to lose, or
- *   the document there is stacked, so its latest version is safe.
- * - `ask` — the document on screen is not stacked: nothing of it would survive, so the reader
- *   is asked whether to push it first.
+ * - `open` — it takes the screen without a question: either nothing is on screen to lose, or the
+ *   document there is stacked (its latest version is safe), or its text is what its file holds —
+ *   the file is the copy, so replacing it loses nothing. Pushing a *saved* document into the
+ *   stack is the reader's own choice, and the stack button is where they make it.
+ * - `ask` — the document on screen is not stacked and has text no file holds: nothing of it would
+ *   survive, so the reader is asked whether to push it first.
+ * - `pushAndOpen` — the same document, with the reader's standing answer to that question
+ *   (`push_unstacked_on_open`): it goes into the stack without being asked about.
  */
-export type OpenAction = 'alreadyOpen' | 'bringForward' | 'open' | 'ask';
+export type OpenAction = 'alreadyOpen' | 'bringForward' | 'open' | 'ask' | 'pushAndOpen';
 
-export function openDecision(state: SessionState, incoming: { id: string }): OpenAction {
+/**
+ * What opening a file should do, given what is on screen. `pushUnstacked` is the reader's own
+ * answer (`push_unstacked_on_open`): whether a document that would otherwise be asked about is
+ * pushed into the stack instead.
+ */
+export function openDecision(
+  state: SessionState,
+  incoming: { id: string },
+  pushUnstacked = false
+): OpenAction {
   const existing = state.documents.find((document) => document.id === incoming.id);
   if (existing?.id === state.current) {
     return 'alreadyOpen';
@@ -146,7 +159,16 @@ export function openDecision(state: SessionState, incoming: { id: string }): Ope
     return 'bringForward';
   }
   const current = currentDocument(state);
-  return !current || current.stacked ? 'open' : 'ask';
+  if (!current || current.stacked) {
+    return 'open';
+  }
+  // What is on screen is not in the stack, so it is only worth asking about when replacing it
+  // would lose the reader's words: a document whose text is still what its file holds is the
+  // file's copy, while a note with no file at all is not — however little has been typed in it.
+  if (current.path !== null && isSaved(current)) {
+    return 'open';
+  }
+  return pushUnstacked ? 'pushAndOpen' : 'ask';
 }
 
 /**

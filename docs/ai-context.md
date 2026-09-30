@@ -49,7 +49,12 @@ file it is written to. It keeps the document on screen, the stack behind it, and
 was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,
 `scrollAnchor`/`scrollToAnchor` on the renderer), and the workspace tree hands a clicked file to
 the session rather than to the editor, because whether the document on screen has to be asked
-about is the session's decision. Three things bite: a document's id is read at the *top* of it
+about is the session's decision. That question is only asked when replacing the document on screen
+would lose the reader's words — a document whose text its file holds is the file's copy, and is
+replaced silently — and the reader may answer it in advance: the General tab's switch
+(`push_unstacked_on_open`, off by default) pushes such a document into the stack instead of asking.
+Pushing a *saved* document is never done for them; the stack button is where they choose that.
+Three things bite: a document's id is read at the *top* of it
 (`document_identity.ts` — a note that links to another by id must not become it), a block's
 offset is not the scroller's (a page puts 118px of desk and margin above the prose;
 `virtual_block_renderer.ts: contentTop`), and placing a caret scrolls, so a view restore asserts
