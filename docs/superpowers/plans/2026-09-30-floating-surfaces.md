@@ -132,7 +132,7 @@ check(
 );
 check('a card with nothing to point at hangs in the bottom-right corner', besidePlacement(null, card, window), {
   left: 704,
-  top: 626
+  top: 634
 });
 
 if (failures.length > 0) {
@@ -928,15 +928,16 @@ export class CompletionCard extends BesideCard {
     this.open();
   }
 
-  hide(): void {
-    this.close();
-  }
 }
 ```
 
 What goes: `place()`, the `fixed`/`z-50`/`rounded-lg`/`border`/`border-base-300`/`bg-base-200`/
 `shadow-lg`/`select-none`/`hidden` classes, the manual `document.body.appendChild`, and the
-`CompletionAnchor` type.
+`CompletionAnchor` type, the `get open()` getter (its name is the family's method now) and the
+`hide()` method (the family's `close()`).
+
+Its one caller follows: in `src/ui/markdown/editing/completions.ts`, `this.card.open` becomes
+`this.card.isOpen()` (line 44) and `this.card.hide()` becomes `this.card.close()` (lines 133, 144).
 
 - [ ] **Step 2: The editor passes a box**
 
@@ -1219,9 +1220,10 @@ the message and the row of two buttons move from the constructor's locals to fie
   }
 ```
 
-The veil's classes, the `hidden` handling, the Escape listener, the `answer` field, the guard and the
-`settle` that were its own all go; `drivenByTools()` and the native dialog hand are untouched. Every
-marker stays: `data-prompt`, `data-prompt-title`,
+The veil's classes, the `hidden` handling, the Escape listener, the `answer` field, the guard, the
+`settle` that were its own and `mountOnFirstAsk` (the kind mounts the veil on the body the first
+time it is asked) all go; `drivenByTools()` and the native dialog hand are untouched. Every marker
+stays: `data-prompt`, `data-prompt-title`,
 `data-prompt-message`, `data-prompt-yes`, `data-prompt-no`.
 
 - [ ] **Step 3: Verify, then commit**
