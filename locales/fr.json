@@ -134,5 +134,15 @@
   "settings.newNote.description": "Le frontmatter avec lequel une nouvelle note commence. title, date, id et keywords sont obligatoires : l’app écrit date et id, complète les deux autres s’ils manquent, et garde chaque autre ligne telle que vous l’écrivez.",
   "settings.newNote.template": "Frontmatter par défaut",
   "settings.newNote.templateHint": "Écrit sans les lignes --- : l’app les ajoute. Vidé, le modèle de l’app reprend.",
-  "workspace.failedToSave": "Impossible d’enregistrer l’espace de travail : {message}"
+  "workspace.failedToSave": "Impossible d’enregistrer l’espace de travail : {message}",
+  "workspace.setup.title": "Votre espace de travail",
+  "workspace.setup.message": "Yi range vos notes dans un dossier. Créez-en un, ou ouvrez un dossier que vous avez déjà.",
+  "workspace.setup.where": "Un nouvel espace de travail sera créé dans {folder}.",
+  "workspace.setup.create": "Créer un espace de travail",
+  "workspace.setup.useExisting": "Utiliser un dossier existant…",
+  "workspace.setup.path": "Dossier",
+  "workspace.setup.use": "Utiliser ce dossier",
+  "workspace.setup.needPath": "Indiquez le dossier à utiliser.",
+  "workspace.setup.noDocuments": "L’app n’a pas trouvé votre dossier Documents. Ouvrez un dossier existant avec Fichier → Ouvrir un dossier…",
+  "workspace.setup.later": "Plus tard"
 }

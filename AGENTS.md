@@ -19,6 +19,12 @@ brief — read it first; this file is the short version and the non-negotiables.
   says so. Split a probe that needs longer; restarting the app is not the fix.
 - Setting the bridge up from scratch — the MCP server and CLI that drive the app,
   and the skills this project uses — is `README.md` → *AI agents*.
+- **The fixture workspace is a test's, never the reader's.** A dev app holds the maintainer's
+  config (their workspace, their bibliography) and their session (the documents they had open), so a
+  run that points it at the fixtures backs both up first and restores both afterwards —
+  `get_config`/`set_config` for the config (`--with-workspace` does this for you) and
+  `loadSessionText`/`saveSessionText` (`src/api/session.ts`) for the session, which nothing else
+  does — and a probe that writes works in a folder of its own under `$HOME`.
 
 ## Design rules
 

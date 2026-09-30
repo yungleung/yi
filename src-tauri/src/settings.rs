@@ -7,6 +7,12 @@ use tauri::{Emitter, Manager};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
   pub workspace: Option<String>,
+  /// Whether the reader has been asked where their workspace is, and answered. `false` — the
+  /// default, and what a config written before this field existed reads as — means a config with no
+  /// workspace is asked exactly once, on the next start
+  /// (`src/services/workspace_setup.ts: needsWorkspaceQuestion`).
+  #[serde(default)]
+  pub workspace_asked: bool,
   /// Path to the bibliography file (CSL-JSON or BibTeX) used to format
   /// citations. Chosen by the user; a default is provided for development.
   #[serde(default = "default_bibliography_file")]
@@ -67,6 +73,7 @@ impl Default for AppConfig {
   fn default() -> Self {
     Self {
       workspace: None,
+      workspace_asked: false,
       bibliography_file: default_bibliography_file(),
       csl_style: default_csl_style(),
       editor_layout: default_editor_layout(),
@@ -240,5 +247,25 @@ mod tests {
     let cfg: AppConfig = serde_json::from_str(json).unwrap();
 
     assert!(!cfg.push_unstacked_on_open);
+  }
+
+  #[test]
+  fn a_config_written_before_the_workspace_question_reads_as_unasked() {
+    // The shape a config had before the field existed: the reader has not been asked, and a config
+    // with no workspace in it is the one the question is for.
+    let json = r#"{
+      "workspace": null,
+      "bibliography_file": "~/Documents/ZettlrNotes/zotero.json",
+      "csl_style": "apa",
+      "editor_layout": "page",
+      "new_file_frontmatter": null,
+      "image_folder": "",
+      "language": "",
+      "push_unstacked_on_open": false,
+      "config_version": 1
+    }"#;
+    let cfg: AppConfig = serde_json::from_str(json).unwrap();
+
+    assert!(!cfg.workspace_asked);
   }
 }

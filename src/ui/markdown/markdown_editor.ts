@@ -54,9 +54,6 @@ import {
   routePointerClick,
   routeTaskClick
 } from './click_routing';
-// The document the editor starts on. It lives in the fixture workspace so the
-// demo can be edited as markdown rather than as a string array in code.
-import defaultDocument from '../../../test/fixtures/workspace/default-document.md?raw';
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
 import { runCommand } from './commands/registry';
@@ -93,8 +90,14 @@ export type EditorLayout = 'page' | 'auto';
  * only restores the caret around it.
  */
 export class WysiwygMarkdownEditor extends BaseComponent {
-  /** Owns the raw document and maintains its blocks. */
-  private readonly state = new MarkdownEditorState(defaultDocument);
+  /**
+   * Owns the raw document and maintains its blocks. It starts **empty**: a window opens on a
+   * document when something asks for one — the session restoring what the reader had, a file from
+   * the tree, a new note — and never on a document the app happens to carry. The first start is the
+   * proof: a fresh install asked for a workspace with nothing on the page behind it, where it used
+   * to open the fixture's demo document (`test/checks/layering.mjs` holds the rule).
+   */
+  private readonly state = new MarkdownEditorState();
   private readonly contentView: HTMLElement;
   private readonly renderer: VirtualBlockRenderer;
   private readonly context: EditorContext;

@@ -134,5 +134,15 @@
   "settings.newNote.description": "The frontmatter a new note starts from. title, date, id and keywords are required: the app stamps the date and the id, fills the other two in when they are missing, and keeps every other line as you write it.",
   "settings.newNote.template": "Default frontmatter",
   "settings.newNote.templateHint": "Written without the --- fences: the app puts them around it. Cleared, the app's own template is used again.",
-  "workspace.failedToSave": "Failed to save the workspace: {message}"
+  "workspace.failedToSave": "Failed to save the workspace: {message}",
+  "workspace.setup.title": "Your workspace",
+  "workspace.setup.message": "Yi keeps your notes in a folder. Make one, or open a folder you already have.",
+  "workspace.setup.where": "A new workspace will be made in {folder}.",
+  "workspace.setup.create": "Create a new workspace",
+  "workspace.setup.useExisting": "Use an existing folder…",
+  "workspace.setup.path": "Folder",
+  "workspace.setup.use": "Use this folder",
+  "workspace.setup.needPath": "Type the folder to use.",
+  "workspace.setup.noDocuments": "The app could not find your Documents folder. Open a folder you already have with File → Open Folder…",
+  "workspace.setup.later": "Not now"
 }

@@ -97,6 +97,16 @@ skipped by `npm run probe:all`, and are run by name with `--with-workspace`. The
 README in that folder records what each file is for and its licence; `npm run
 fixtures` refreshes the copies from your own notes folder.
 
+**The fixture is a test's, never the reader's.** The app you develop against is the maintainer's
+own: its config names their workspace, their bibliography and their layout, and its session holds
+the documents they had open. So a run that points it at this folder — or at a folder a probe made —
+backs both up before it starts and puts both back when it ends. `--with-workspace` already does the
+config half (`test/tauri-probe.mjs` snapshots `get_config` and writes it back afterwards), and the
+session half is the probe's own: read `loadSessionText` before, put it back with `saveSessionText`
+in the probe's `finally` (`src/api/session.ts`), or the reader's next start restores the tests'
+documents over the ones they had. A fixture is disposable *as a fixture* — `npm run fixtures`
+refreshes it from the maintainer's notes — while the reader's own folder is never a test's.
+
 ## Adding a test
 
 1. Rule-shaped? `test/checks/check-<area>.mjs`: bundle the module, assert, print

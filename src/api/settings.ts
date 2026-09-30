@@ -2,6 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type AppConfig = {
   workspace: string | null;
+  /** Whether the reader has been asked for their workspace, and answered. Written by
+   * `ui/workspace_setup/workspace_setup_flow.ts`; false — the default, and what a config written
+   * before the field existed reads as — means a config with no workspace is asked exactly once. */
+  workspace_asked: boolean;
   bibliography_file: string;
   csl_style: string;
   /** How the editor is laid out: a page of A4, or the column at the pane's width. */
