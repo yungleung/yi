@@ -21,7 +21,8 @@ import { readTextFile } from '@tauri-apps/plugin-fs';
 import { listFolderFiles, type FileInfo } from '../../api/files';
 import { documentSession } from '../../services/session';
 import { eventManager } from '../../services/event_manager';
-import { TOAST_EVENT, WORKSPACE_CHANGED } from '../../services/workspace';
+import { MESSAGE_EVENT } from '../../services/messages';
+import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { t } from '../../services/i18n';
 import { SidebarSection } from '../sidebar_section';
 import { makeDragSource, makeDropTarget } from './tree_drag';
@@ -283,10 +284,14 @@ class TreeNode {
       await documentSession.openFile({ path: this.info.path, content });
     } catch (error) {
       console.error('Failed to read file content:', error);
-      void eventManager.emit(
-        TOAST_EVENT,
-        `Failed to open ${this.info.basename}: ${error instanceof Error ? error.message : String(error)}`
-      );
+      // The row is still there — the click did not open it — so the message hangs off that row.
+      void eventManager.emit(MESSAGE_EVENT, {
+        text: t('tree.openFailed', {
+          name: this.info.basename,
+          message: error instanceof Error ? error.message : String(error)
+        }),
+        at: { path: this.info.path }
+      });
     }
   }
 }

@@ -24,7 +24,7 @@ const crossWindowEvents = [
   'workspace_changed',
   'citation_updated',
   'citation_config_changed',
-  'toast',
+  'message',
   'markdown_content_changed'
 ];
 

@@ -25,7 +25,7 @@ import { mkdir, writeFile } from '@tauri-apps/plugin-fs';
 import { readClipboardImage, readClipboardText, type ClipboardImage } from '../../api/clipboard';
 import { newDocumentId } from '../../services/new_document';
 import { t } from '../../services/i18n';
-import { notify } from '../../services/notify';
+import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
 import { imageFolderPath } from '../../services/settings_paths';
 import { destinationForFile, joinPath, parentFolder } from '../../services/workspace_folders';
@@ -42,6 +42,9 @@ import {
 } from '../markdown/syntax/image_edits';
 import { selectionTitle } from '../markdown/syntax/link_edits';
 import { imageDialog, type ImageChooser } from './image_dialog';
+
+/** The button whose press this flow is the body of: a failure of it belongs beside that button. */
+const IMAGE_COMMAND = { command: 'edit:insertImage' };
 
 /**
  * Writes an image at the caret — or around the selection, whose words become its alt text — or
@@ -88,10 +91,7 @@ async function saveAndWrite(
   const base = (await imageFolderPath()) ?? inTheNote;
   if (base === null) {
     // Nowhere to put it: the note has never been saved and the settings name no folder.
-    notify(
-      'Inserting an image',
-      new Error(t('image.noFolder'))
-    );
+    notify('Inserting an image', new Error(t('image.noFolder')), IMAGE_COMMAND);
     return false;
   }
   const preview = await previewUrl(image);
@@ -99,7 +99,7 @@ async function saveAndWrite(
   try {
     name = await chooser.choose({ preview, stamp: newDocumentId(), folder: base });
   } catch (error) {
-    notify('Inserting an image', error);
+    notify('Inserting an image', error, IMAGE_COMMAND);
     return false;
   } finally {
     URL.revokeObjectURL(preview);
@@ -109,7 +109,7 @@ async function saveAndWrite(
   }
   const file = joinPath(base, name);
   if (file === null) {
-    notify('Inserting an image', new Error(t('image.badFolder', { folder: base })));
+    notify('Inserting an image', new Error(t('image.badFolder', { folder: base })), IMAGE_COMMAND);
     return false;
   }
   try {
@@ -117,7 +117,7 @@ async function saveAndWrite(
     await mkdir(base, { recursive: true });
     await writeFile(file, new Uint8Array(bytes));
   } catch (error) {
-    notify('Saving the image', error);
+    notify('Saving the image', error, IMAGE_COMMAND);
     return false;
   }
   write(context, offsets, alt, destinationForFile(file, await imageFolderPath(), inTheNote));

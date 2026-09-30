@@ -21,7 +21,7 @@ import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
-import { Toast } from './ui/toast';
+import { installMessages } from './ui/messages';
 import { workspaceManager, WORKSPACE_CHANGED } from './services/workspace';
 import { configManager } from './services/config_manager';
 import { documentSession } from './services/session';
@@ -64,7 +64,6 @@ function createAppShell(): MarkdownEditor {
   const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
-  const toast = new Toast();
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
@@ -73,7 +72,8 @@ function createAppShell(): MarkdownEditor {
   editor.mount(contentShell.element);
   contentShell.mount(root);
   statusBar.mount(root);
-  toast.mount(document.body);
+  // What the app tells the reader: the cards listen for `MESSAGE_EVENT` from here on.
+  installMessages();
 
   titleBar.addComponent(formattingToolbar, 'center');
   titleBar.addComponent(linkToolbar, 'center');

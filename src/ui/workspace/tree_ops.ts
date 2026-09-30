@@ -7,12 +7,13 @@
  * actions by importing this module — the probe helper `t.app` hands back the instance the
  * page is running, not a second copy.
  *
- * A write that fails is not an exception the reader sees: the backend's sentence goes to
- * the toast and the tree stays as it was. A write that succeeds reloads the tree, so what
+ * A write that fails is not an exception the reader sees: the backend's sentence becomes a
+ * message beside the entry it is about and the tree stays as it was. A write that succeeds reloads
+ * the tree, so what
  * the reader is looking at is what the disk holds.
  *
  * May import: the backend's file calls (`api/files`), the identifier reader
- * (`services/document_manager`), the toast event (`services/workspace`) and the opener.
+ * (`services/document_manager`), the message service (`services/messages`) and the opener.
  * Upholds: the tree is a view of the folder — every change goes through the app's own
  * commands, and the view is reloaded from them rather than patched by hand.
  */
@@ -21,8 +22,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
 import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
-import { notify } from '../../services/notify';
-import { TOAST_EVENT } from '../../services/workspace';
+import { MESSAGE_EVENT, notify, type MessagePlace } from '../../services/messages';
 import { parentFolder } from '../../services/workspace_folders';
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';
@@ -92,10 +92,12 @@ export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): P
       await reveal(entry);
       return;
     case 'copy-path':
-      await copy(entry.path, 'Path copied.');
+      await copy(entry.path, t('tree.copiedPath'), { path: entry.path });
       return;
     case 'copy-name':
-      await copy(nameWithoutExtension(entry.basename, entry.isFile), 'Name copied.');
+      await copy(nameWithoutExtension(entry.basename, entry.isFile), t('tree.copiedName'), {
+        path: entry.path
+      });
       return;
     case 'copy-id':
       await copyId(entry);
@@ -113,7 +115,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
   try {
     moved = await moveEntry(entry.path, targetDir);
   } catch (error) {
-    notify('The workspace tree', error);
+    notify('The workspace tree', error, { path: entry.path });
     return false;
   }
   await tree.refreshFolders([folderOf(entry.path), targetDir]);
@@ -136,7 +138,7 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
   try {
     renamed = await renameEntry(entry.path, name);
   } catch (error) {
-    notify('The workspace tree', error);
+    notify('The workspace tree', error, { path: entry.path });
     return false;
   }
   await tree.refreshFolders([folderOf(renamed)]);
@@ -183,7 +185,7 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
   try {
     await deleteEntry(entry.path);
   } catch (error) {
-    notify('The workspace tree', error);
+    notify('The workspace tree', error, { path: entry.path });
     return;
   }
   await tree.refreshFolders([folderOf(entry.path)]);
@@ -214,12 +216,14 @@ async function createAndRename(tree: TreeHost, folder: string, base: string): Pr
       // A name that is taken is the one reason to try the next; anything else is the
       // backend saying no, and the reader should hear it.
       if (!String(error).includes('already exists')) {
-        notify('The workspace tree', error);
+        notify('The workspace tree', error, { path: folder });
         return;
       }
     }
   }
-  notify('The workspace tree', new Error(`Could not find a free name for ${base}.`));
+  notify('The workspace tree', new Error(`Could not find a free name for ${base}.`), {
+    path: folder
+  });
 }
 
 /** Opens the system file manager on the entry. */
@@ -227,17 +231,17 @@ async function reveal(entry: TreeEntry): Promise<void> {
   try {
     await revealItemInDir(entry.path);
   } catch (error) {
-    notify('The workspace tree', error);
+    notify('The workspace tree', error, { path: entry.path });
   }
 }
 
 /** Puts `text` on the clipboard, and says so. */
-async function copy(text: string, message: string): Promise<void> {
+async function copy(text: string, message: string, at: MessagePlace): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
-    void eventManager.emit(TOAST_EVENT, message);
+    void eventManager.emit(MESSAGE_EVENT, { text: message, at });
   } catch (error) {
-    notify('The workspace tree', error);
+    notify('The workspace tree', error, at);
   }
 }
 
@@ -245,8 +249,11 @@ async function copy(text: string, message: string): Promise<void> {
 async function copyId(entry: TreeEntry): Promise<void> {
   const id = await readDocumentId(entry.path);
   if (!id) {
-    void eventManager.emit(TOAST_EVENT, t('tree.noId', { name: entry.basename }));
+    void eventManager.emit(MESSAGE_EVENT, {
+      text: t('tree.noId', { name: entry.basename }),
+      at: { path: entry.path }
+    });
     return;
   }
-  await copy(id, 'Id copied.');
+  await copy(id, t('tree.copiedId'), { path: entry.path });
 }

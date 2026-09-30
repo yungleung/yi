@@ -4,14 +4,12 @@ import {
 import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
 import { t } from './i18n';
+import { MESSAGE_EVENT } from './messages';
 
 const VERSION_MISMATCH_PATTERN = /config\s+version\s+mismatch/i;
 
 /** Emitted with the workspace path so the UI (workspace tree) can react. */
 export const WORKSPACE_CHANGED = 'workspace_changed';
-
-/** Emitted with a message so the UI (toast) can surface it to the user. */
-export const TOAST_EVENT = 'toast';
 
 /**
  * Keeps the workspace in sync with the persisted app config:
@@ -62,7 +60,8 @@ export class WorkspaceManager {
   private notifySaveFailure(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Failed to save the workspace config:', error);
-    void eventManager.emit(TOAST_EVENT, t('workspace.failedToSave', { message }));
+    // The workspace file has no row in the tree, so the message names no place: the corner.
+    void eventManager.emit(MESSAGE_EVENT, { text: t('workspace.failedToSave', { message }) });
   }
 }
 

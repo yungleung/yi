@@ -22,8 +22,14 @@ const IMAGE_ICON =
 export class ImageToolbar extends Toolbar {
   constructor() {
     super();
-    this.addButton({ label: t('toolbar.image'), icon: IMAGE_ICON, className: TOOL_ICON_SIZE }, () => {
-      runCommand('edit:insertImage');
-    });
+    const button = this.addButton(
+      { label: t('toolbar.image'), icon: IMAGE_ICON, className: TOOL_ICON_SIZE },
+      () => {
+        runCommand('edit:insertImage');
+      }
+    );
+    // A message carries a place, not an element (`services/messages.ts`), so the button says which
+    // command it ran and the message surface comes looking for it.
+    button.dataset.command = 'edit:insertImage';
   }
 }

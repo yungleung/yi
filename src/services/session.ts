@@ -28,7 +28,7 @@ import type { Prompter, Question } from '../ui/prompt';
 import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
 import { t } from './i18n';
-import { TOAST_EVENT } from './workspace';
+import { MESSAGE_EVENT } from './messages';
 import { parentFolder } from './workspace_folders';
 import {
   capture as captureInto,
@@ -287,7 +287,12 @@ class DocumentSession {
       await writeTextFile(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      void eventManager.emit(TOAST_EVENT, t('session.saveFailed', { title: document.title, message }));
+      // A save that failed belongs beside the note's own row when it has one; a note with no file
+      // yet has no row to sit beside.
+      void eventManager.emit(MESSAGE_EVENT, {
+        text: t('session.saveFailed', { title: document.title, message }),
+        at: document.path ? { path: document.path } : undefined
+      });
       return false;
     }
     this.state = markSaved(this.state, document.id, document.content);
