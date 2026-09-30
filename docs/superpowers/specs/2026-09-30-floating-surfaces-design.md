@@ -17,7 +17,8 @@ container with `alert` boxes, dismissed only by its ✕ — no Escape, no clampi
 suite touches it, so nothing would notice it changing. It carries two kinds of message: a failure
 (`services/notify.ts`) and a confirmation — the tree says `Path copied.`, `Name copied.`, `Id
 copied.` (`ui/workspace/tree_ops.ts:95`, `:98`, `:251`), and those three are written in English in
-the source, where every other word the app says comes from the catalogues.
+the source, where every other word the app says comes from the catalogues. A fourth is on the
+message this work already edits: `Failed to open {name}: {message}` (`ui/workspace/tree.ts:288`).
 
 The user's ask: **replace the use of the toast with a popover** — a message should hang off the thing
 it is about, and fall back to the window's corner when the caller holds no element — and give the
@@ -99,9 +100,9 @@ export function notify(context: string, error: unknown, at?: MessagePlace): void
 
 A message is what the app tells the reader: mostly a failure, through `notify` — which keeps its
 console line, where the diagnosis belongs — and sometimes a confirmation, which emits the event
-directly as it does today. The three confirmations the tree says move into the catalogues with the
-rest of the app's words (`tree.copiedPath`, `tree.copiedName`, `tree.copiedId`), because a string the
-source writes is a string no other language can reach.
+directly as it does today. The four strings the tree writes in its own source move into the
+catalogues with the rest of the app's words (`tree.copiedPath`, `tree.copiedName`, `tree.copiedId`,
+`tree.openFailed`), because a string the source writes is a string no other language can reach.
 
 The anchor travels as *names*, never as an element, because `eventManager.emit` is Tauri's bus
 (`services/event_manager.ts:33`): the payload is JSON, so a DOM node cannot ride it. `{ path }`
