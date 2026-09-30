@@ -134,5 +134,14 @@
   "settings.newNote.description": "O frontmatter com que uma nota nova começa. title, date, id e keywords são obrigatórios: o app escreve date e id, completa os outros dois quando faltam e mantém cada outra linha como você a escreveu.",
   "settings.newNote.template": "Frontmatter padrão",
   "settings.newNote.templateHint": "Escrito sem as linhas ---: o app as coloca. Esvaziado, o modelo do app volta a valer.",
-  "workspace.failedToSave": "Não foi possível salvar a área de trabalho: {message}"
+  "workspace.failedToSave": "Não foi possível salvar a área de trabalho: {message}",
+  "workspace.setup.title": "Sua área de trabalho",
+  "workspace.setup.message": "O Yi guarda suas notas numa pasta. Crie uma, ou abra uma pasta que você já tem.",
+  "workspace.setup.where": "Uma nova área de trabalho será criada em {folder}.",
+  "workspace.setup.create": "Criar uma área de trabalho",
+  "workspace.setup.useExisting": "Usar uma pasta existente…",
+  "workspace.setup.path": "Pasta",
+  "workspace.setup.use": "Usar esta pasta",
+  "workspace.setup.needPath": "Digite a pasta a usar.",
+  "workspace.setup.later": "Agora não"
 }

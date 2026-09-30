@@ -134,5 +134,14 @@
   "settings.newNote.description": "新建笔记所用的 frontmatter。title、date、id 和 keywords 为必需项：date 与 id 由应用写入，另外两项缺失时会自动补全，其余内容保持原样。",
   "settings.newNote.template": "默认 frontmatter",
   "settings.newNote.templateHint": "无需写 --- 分隔线，应用会自动添加。清空后将重新使用应用自带的模板。",
-  "workspace.failedToSave": "保存工作区失败：{message}"
+  "workspace.failedToSave": "保存工作区失败：{message}",
+  "workspace.setup.title": "你的工作区",
+  "workspace.setup.message": "Yi 把笔记放在一个文件夹里。新建一个，或打开已有的文件夹。",
+  "workspace.setup.where": "新的工作区将创建在 {folder}。",
+  "workspace.setup.create": "新建工作区",
+  "workspace.setup.useExisting": "使用已有文件夹…",
+  "workspace.setup.path": "文件夹",
+  "workspace.setup.use": "使用此文件夹",
+  "workspace.setup.needPath": "请输入要使用的文件夹。",
+  "workspace.setup.later": "以后再说"
 }

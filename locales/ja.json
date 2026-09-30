@@ -134,5 +134,14 @@
   "settings.newNote.description": "新しいノートが最初に持つ frontmatter です。title、date、id、keywords は必須で、date と id はアプリが書き込み、残りの 2 つは無ければ補います。それ以外の行は書いたとおりに保たれます。",
   "settings.newNote.template": "既定の frontmatter",
   "settings.newNote.templateHint": "--- の区切りは不要です。アプリが付けます。空にすると、アプリ内蔵のテンプレートに戻ります。",
-  "workspace.failedToSave": "ワークスペースを保存できませんでした: {message}"
+  "workspace.failedToSave": "ワークスペースを保存できませんでした: {message}",
+  "workspace.setup.title": "ワークスペース",
+  "workspace.setup.message": "Yi はノートをひとつのフォルダに置きます。新しく作るか、すでにあるフォルダを開いてください。",
+  "workspace.setup.where": "新しいワークスペースは {folder} に作成します。",
+  "workspace.setup.create": "新しいワークスペースを作成",
+  "workspace.setup.useExisting": "既存のフォルダを使う…",
+  "workspace.setup.path": "フォルダ",
+  "workspace.setup.use": "このフォルダを使う",
+  "workspace.setup.needPath": "使うフォルダを入力してください。",
+  "workspace.setup.later": "後で"
 }

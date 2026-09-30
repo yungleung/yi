@@ -134,5 +134,14 @@
   "settings.newNote.description": "Das Frontmatter, mit dem eine neue Notiz beginnt. title, date, id und keywords sind Pflicht: date und id schreibt die App, die anderen zwei füllt sie, wenn sie fehlen, und jede weitere Zeile bleibt wie geschrieben.",
   "settings.newNote.template": "Standard-Frontmatter",
   "settings.newNote.templateHint": "Ohne die ----Zeilen geschrieben: die App setzt sie darum. Geleert gilt wieder die Vorlage der App.",
-  "workspace.failedToSave": "Der Arbeitsbereich konnte nicht gesichert werden: {message}"
+  "workspace.failedToSave": "Der Arbeitsbereich konnte nicht gesichert werden: {message}",
+  "workspace.setup.title": "Dein Arbeitsbereich",
+  "workspace.setup.message": "Yi legt deine Notizen in einem Ordner ab. Lege einen an oder öffne einen, den du schon hast.",
+  "workspace.setup.where": "Ein neuer Arbeitsbereich wird in {folder} angelegt.",
+  "workspace.setup.create": "Neuen Arbeitsbereich anlegen",
+  "workspace.setup.useExisting": "Vorhandenen Ordner verwenden…",
+  "workspace.setup.path": "Ordner",
+  "workspace.setup.use": "Diesen Ordner verwenden",
+  "workspace.setup.needPath": "Gib den zu verwendenden Ordner ein.",
+  "workspace.setup.later": "Später"
 }

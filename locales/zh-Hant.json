@@ -134,5 +134,14 @@
   "settings.newNote.description": "新增筆記所用的 frontmatter。title、date、id 與 keywords 為必需項：date 與 id 由應用程式寫入，另外兩項缺少時會自動補上，其餘內容保持原樣。",
   "settings.newNote.template": "預設 frontmatter",
   "settings.newNote.templateHint": "無須寫 --- 分隔線，應用程式會自動加上。清空後將重新使用應用程式內建的範本。",
-  "workspace.failedToSave": "儲存工作區失敗：{message}"
+  "workspace.failedToSave": "儲存工作區失敗：{message}",
+  "workspace.setup.title": "你的工作區",
+  "workspace.setup.message": "Yi 把筆記放在一個檔案夾裡。新建一個，或打開已有的檔案夾。",
+  "workspace.setup.where": "新的工作區將建立在 {folder}。",
+  "workspace.setup.create": "新增工作區",
+  "workspace.setup.useExisting": "使用已有檔案夾…",
+  "workspace.setup.path": "檔案夾",
+  "workspace.setup.use": "使用此檔案夾",
+  "workspace.setup.needPath": "請輸入要使用的檔案夾。",
+  "workspace.setup.later": "稍後再說"
 }

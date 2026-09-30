@@ -134,5 +134,14 @@
   "settings.newNote.description": "El frontmatter con el que empieza una nota nueva. title, date, id y keywords son obligatorios: la app escribe date e id, completa los otros dos si faltan y conserva cada línea tal como la escriba.",
   "settings.newNote.template": "Frontmatter predeterminado",
   "settings.newNote.templateHint": "Escrito sin las líneas ---: la app las pone. Si se vacía, vuelve a usarse la plantilla de la app.",
-  "workspace.failedToSave": "No se pudo guardar el espacio de trabajo: {message}"
+  "workspace.failedToSave": "No se pudo guardar el espacio de trabajo: {message}",
+  "workspace.setup.title": "Tu espacio de trabajo",
+  "workspace.setup.message": "Yi guarda tus notas en una carpeta. Crea una, o abre una carpeta que ya tengas.",
+  "workspace.setup.where": "Se creará un espacio de trabajo en {folder}.",
+  "workspace.setup.create": "Crear un espacio de trabajo",
+  "workspace.setup.useExisting": "Usar una carpeta existente…",
+  "workspace.setup.path": "Carpeta",
+  "workspace.setup.use": "Usar esta carpeta",
+  "workspace.setup.needPath": "Escribe la carpeta que quieres usar.",
+  "workspace.setup.later": "Ahora no"
 }
