@@ -10,9 +10,8 @@
  * label it is filed under is the marker the pointer is already on (`nodes/footnote.ts`
  * draws the notes run's label, and only there).
  *
- * The card is deliberately dumb: `pointer-events: none`, so it can never take a click
- * or a hover from the text under it, and it hides on everything that moves — leaving
- * the marker, scrolling, a click, `Escape`.
+ * The card takes the pointer, so a note can be read, selected, and linked out of — and it hides on
+ * everything that moves: leaving the marker, scrolling, a click, `Escape`.
  *
  * May import: the editing context (the state and the scroll container), the footnotes
  * rule, the block factory, the node contract and `source_mode.ts` (the frame a node
@@ -21,6 +20,7 @@
  */
 
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { BesideCard, boxOf } from '../floating/beside';
 import { isOpenableUrl } from './syntax/link_edits';
 import { footnoteOffsets } from './syntax/footnotes';
 import { renderFootnoteBody } from './nodes/footnote';
@@ -65,7 +65,7 @@ function definitionFor(
 
 /** Watches an editor's content view for a pointer resting on a footnote marker. */
 export function installFootnotePreview(context: EditorContext): void {
-  let card: HTMLElement | null = null;
+  let card: BesideCard | null = null;
   let marker: HTMLElement | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let leaving: ReturnType<typeof setTimeout> | null = null;
@@ -88,7 +88,7 @@ export function installFootnotePreview(context: EditorContext): void {
     cancel();
     keep();
     marker = null;
-    card?.remove();
+    card?.destroy();
     card = null;
   };
 
@@ -106,16 +106,16 @@ export function installFootnotePreview(context: EditorContext): void {
     if (!definition || !marker) {
       return;
     }
-    const element = document.createElement('div');
-    // The find bar's own shape: the same surface, shadow and `rounded-md` — they are the app's
-    // only floating surfaces, and they should not disagree about their corners.
-    element.className = `${PREVIEW_CLASS} inline-block rounded-md border border-base-300 bg-base-200 p-2 shadow-lg`;
-    element.style.position = 'fixed';
-    element.style.zIndex = '50';
-    element.style.maxWidth = '34rem';
-    // Unlike the first version, the card takes the pointer: a note is there to be
-    // read, selected, and linked out of.
-    element.style.pointerEvents = 'auto';
+    // The app's beside-card places it under the marker and keeps it inside the window; the card
+    // itself takes the pointer, so a note can be read, selected, and linked out of.
+    const shown = new BesideCard({
+      anchor: () => (marker ? boxOf(marker) : null),
+      pointer: 'take',
+      // `rounded-md!` because the shared card is `rounded-lg`: a preview and the find bar are the
+      // app's two reading surfaces, and the probe holds them to the same corner.
+      className: `${PREVIEW_CLASS} inline-block max-w-[34rem] rounded-md! p-2`
+    });
+    const element = shown.element;
     element.append(
       withRenderFrame(definition.block, () => renderFootnoteBody(definition.node))
     );
@@ -144,11 +144,8 @@ export function installFootnotePreview(context: EditorContext): void {
       },
       true
     );
-    // The card lives on the page rather than inside the scroller: `fixed` inside a
-    // scroll container is only fixed while no ancestor transforms anything.
-    document.body.appendChild(element);
-    place(element, marker);
-    card = element;
+    shown.open();
+    card = shown;
   };
 
   context.contentView.addEventListener('mouseover', (event) => {
@@ -186,7 +183,7 @@ export function installFootnotePreview(context: EditorContext): void {
     }
     // The marker and its card are one region: moving between them is not leaving.
     const to = event.relatedTarget as Node | null;
-    if (to && (marker.contains(to) || card?.contains(to))) {
+    if (to && (marker.contains(to) || card?.element.contains(to))) {
       keep();
       return;
     }
@@ -203,16 +200,4 @@ export function installFootnotePreview(context: EditorContext): void {
       hide();
     }
   });
-}
-
-/** Puts the card under its marker, kept inside the window. */
-function place(card: HTMLElement, marker: HTMLElement): void {
-  const markerBox = marker.getBoundingClientRect();
-  const box = card.getBoundingClientRect();
-  const left = Math.max(8, Math.min(markerBox.left, window.innerWidth - box.width - 8));
-  const below = markerBox.bottom + 6;
-  const top =
-    below + box.height <= window.innerHeight - 8 ? below : Math.max(8, markerBox.top - box.height - 6);
-  card.style.left = `${Math.round(left)}px`;
-  card.style.top = `${Math.round(top)}px`;
 }
