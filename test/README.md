@@ -66,7 +66,9 @@ config, the settings tab that shows it, and the note that comes out), blocks and
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
-with no id is written by, which its title beside it must not be mistaken for), footnotes
+with no id is written by, which its title beside it must not be mistaken for — the citation probe
+also holds the popover's own geometry: a row flush inside the card, and a card that stays put while
+the arrows move), footnotes
 (`footnote-*` — the button, the marker's two clicks and its source,
 the preview card, the label's own edits, and the shapes a definition is written in:
 `footnote-containers`, `footnote-container-jump`, `footnote-table-cell`,

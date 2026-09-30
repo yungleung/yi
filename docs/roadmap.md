@@ -438,6 +438,17 @@ elements) unless it says otherwise.
   waits for it to bubble never sees it. `npm run check` is **34/34**; the probes are `brackets.js`,
   `completion.js` and `completion-wikilink.js` — the one file the first pass left was over the
   bridge's 5 s budget, so it is three, none of them recovered.
+  The review found two things in the popover itself, both measured rather than argued about. Its
+  rows were **417px wide inside a 288px card**: daisyUI's `menu` sizes an item to what it holds, so
+  a long title pushed the row past the card, where it was clipped and gave the card a sideways
+  scroll of its own. A row is the card's own interior width now (clamped item, `min-w-0` fields,
+  the title ellipsized) and the card has no padding, so the highlight is the row, flush to the
+  rounded border that clips it. And the card was placed from the **drawn caret span**, which
+  `caret.ts: scheduleCaret` puts on the next frame while the range moves at once: the redraw a
+  keystroke triggers measured the position the caret had just left, so the popover opened one
+  character (14px) to the left and slid across on the first ArrowDown (430px, then 444px). It is
+  placed from the caret's range now (`caret/geometry.ts: caretRect`), and both facts are checks in
+  `test/probes/completion.js`.
 
 ## Open, in the order to take them
 

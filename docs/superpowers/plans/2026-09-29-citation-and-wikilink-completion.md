@@ -59,6 +59,20 @@ monospace, the title dimmed beside it — and the selected row highlighted, with
 full. It takes the pointer for clicking, and closes on a click elsewhere, on losing the query, and
 on Escape.
 
+Two things about its geometry, both found in review and both measured:
+
+- **A row is the card's own width, with nothing between them but its border.** daisyUI's `menu`
+  sizes an item to what it holds, so a long title made a row 417px wide inside a 288px card: the
+  text was clipped at the border and the card scrolled sideways. The row takes the card's interior
+  width (`w-full min-w-0` on the item, `min-w-0` on both of its fields) and the title ellipsizes.
+  The card itself has no padding — the highlight is the row, flush to the rounded border, which
+  clips it (`overflow-hidden`, with the list scrolling inside).
+- **The card is placed from the caret's *range*, not from the span that draws it.** `caret.ts:
+  scheduleCaret` moves the range at once and draws the span on the next frame, so the redraw a
+  keystroke triggers measured the position the caret had just left: the card opened 14px to the
+  left of the caret and slid across on the first ArrowDown (`caret/geometry.ts: caretRect` now
+  answers the anchor).
+
 ### 4. Where the choices come from
 
 `bibliographyManager.entries()` — `{ key, title }` for each CSL item, read from the same parsed

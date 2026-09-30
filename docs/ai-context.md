@@ -163,13 +163,19 @@ not typing. Enter writes the citation's key, and a document's **id** — or its 
 has none, *not* the title the row shows beside it — so what is written is what the resolver reads
 back (`documentManager.resolve` falls back by name first). The entries come from
 `bibliographyManager.entries()` and `documentManager.documents()` — a document's `target` is the
-id or the file name, which is exactly what `resolve` takes. Two things bite. The second `[` must
+id or the file name, which is exactly what `resolve` takes. Three things bite. The second `[` must
 write its own pair *in front of* the `]` the first one's pair left after the caret — that is what
 makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves the
 wikilink one bracket short, which is exactly what Enter then writes into (measured: `[[<id>]`,
 against `test/probes/brackets.js`).
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
-node itself and stops there, so a listener that waits for it to bubble never sees it.
+node itself and stops there, so a listener that waits for it to bubble never sees it. And the card
+is placed from the caret's *range*, never from the span that draws the caret: `scheduleCaret` draws
+that span a frame later, so the redraw a keystroke triggers would measure where the caret has just
+left, and the popover would open one character off and slide across on the first ArrowDown. A row
+of the card is also the card's own width — daisyUI's `menu` sizes an item to what it holds, so a
+long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
+it is drawn in.
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.

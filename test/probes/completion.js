@@ -33,6 +33,39 @@
       'data-completion-row'
     ) ?? null;
   const body = () => t.textNodesIn(t.blocks()[0])[0];
+  /** The popover's own box, which must not move while the list is walked. */
+  const cardBox = () => {
+    const box = document.querySelector('[data-completion]')?.getBoundingClientRect();
+    return box
+      ? {
+          left: Math.round(box.left),
+          top: Math.round(box.top),
+          width: Math.round(box.width),
+          height: Math.round(box.height)
+        }
+      : null;
+  };
+  /**
+   * The first row against the card it is drawn in: a row is the card's own interior — the border
+   * and nothing else between them — and nothing of it spills past the card.
+   */
+  const rowFit = () => {
+    const card = document.querySelector('[data-completion]');
+    const row = card?.querySelector('[data-completion-row]');
+    if (!card || !row) {
+      return null;
+    }
+    const outer = card.getBoundingClientRect();
+    const inner = row.getBoundingClientRect();
+    return {
+      insetLeft: Math.round(inner.left - outer.left),
+      insetRight: Math.round(outer.right - inner.right),
+      border: getComputedStyle(card).borderLeftWidth,
+      rowWidth: Math.round(inner.width),
+      cardWidth: Math.round(outer.width),
+      spill: card.scrollWidth - card.clientWidth
+    };
+  };
   const place = async (text, offset) => {
     const range = document.createRange();
     range.setStart(text, offset);
@@ -52,6 +85,7 @@
   await place(body(), 4);
   await type('@');
   const citationRows = rows();
+  const fit = rowFit();
   check(
     'an @ opens a list of the bibliography keys, with titles beside them',
     cardOpen() && citationRows.length > 0,
@@ -62,6 +96,18 @@
         (span) => span.textContent
       )
     }
+  );
+  // A row has no margin or padding of its own: what separates it from the popover is the popover's
+  // border, on both sides, and a title longer than the card is ellipsized rather than pushing the
+  // row out past it (measured: 417px of row inside a 288px card before this).
+  check(
+    'and each row is the popover’s own width, flush to its border',
+    fit !== null &&
+      fit.insetLeft === fit.insetRight &&
+      `${fit.insetLeft}px` === fit.border &&
+      fit.spill === 0 &&
+      fit.rowWidth <= fit.cardWidth,
+    fit
   );
   await type('j');
   check(
@@ -93,12 +139,17 @@
   await place(body(), 4);
   await type('@');
   const first = highlighted();
+  const before = cardBox();
   await type('ArrowDown');
   check('the arrows move the entry in hand', cardOpen() && highlighted() !== null, {
     first,
     after: highlighted(),
     rows: rows()
   });
+  // The card is placed from the caret's *range*, not from the span that draws it: the span is a
+  // frame behind, and a card placed from it opens one character to the left and slides across on
+  // the first ArrowDown (measured: 430px, then 444px).
+  check('and they move the entry, not the popover', cardBox(), before);
   await type('Escape');
   same('and Escape closes the list and leaves the text alone', [await t.raw(), cardOpen()], [
     'See @\n',

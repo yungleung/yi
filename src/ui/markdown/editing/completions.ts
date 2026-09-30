@@ -8,14 +8,16 @@
  * so an open list owns the arrows and the Enter; every other key is the text path's, and the list
  * is recomputed after it.
  *
- * May import: the context, the rules, the card, and the app's two sources of names. Upholds: a list
- * is a view of what is being typed — it opens only where the syntax says the construct can exist,
- * and it closes when the caret leaves that query.
+ * May import: the context, the rules, the card, the caret's own geometry, and the app's two sources
+ * of names. Upholds: a list is a view of what is being typed — it opens only where the syntax says
+ * the construct can exist, and it closes when the caret leaves that query.
  */
 
 import { bibliographyManager } from '../../../services/bibliography';
 import { documentManager } from '../../../services/document_manager';
-import { CompletionCard } from '../completion_card';
+import { getCaretRange } from '../caret/caret';
+import { caretRect } from '../caret/geometry';
+import { CompletionCard, type CompletionAnchor } from '../completion_card';
 import {
   citationQuery,
   matchingChoices,
@@ -146,7 +148,7 @@ export class Completions {
   }
 
   private draw(): void {
-    this.card.show(this.choices, this.selected, this.caretBox(), (choice) => this.accept(choice));
+    this.card.show(this.choices, this.selected, this.caretAnchor(), (choice) => this.accept(choice));
   }
 
   /** Writes the choice over the query: one edit, one undo step, the caret after it. */
@@ -161,9 +163,15 @@ export class Completions {
     applyEdit(this.context, from, caret, choice.value, from + choice.value.length);
   }
 
-  /** Where the caret is drawn, for the card to sit beside it. */
-  private caretBox(): DOMRect | null {
-    const caret = this.context.contentView.querySelector('.markdown-caret');
-    return caret?.getBoundingClientRect() ?? null;
+  /**
+   * Where the caret is, for the card to sit beside it, read from the caret's own *range* rather
+   * than from the span that draws it. The span is placed on the next frame (`caret.ts:
+   * scheduleCaret`) while the range moves at once, so a keystroke's own redraw would measure the
+   * position the caret has already left — measured, one character's width, and the list slid there
+   * on the next ArrowDown.
+   */
+  private caretAnchor(): CompletionAnchor | null {
+    const range = getCaretRange();
+    return range ? caretRect(range) : null;
   }
 }
