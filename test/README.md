@@ -50,7 +50,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and twenty-two of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and twenty-three of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -97,7 +97,7 @@ from, the file saved where the settings say, and the image *painted* once the no
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
-documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `document-session-restart` — the session file, and the startup path that reads it), the
+documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it), the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
 the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two
