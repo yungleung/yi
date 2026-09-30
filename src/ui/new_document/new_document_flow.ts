@@ -30,14 +30,11 @@ import {
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
-import { notify, type MessagePlace } from '../../services/messages';
+import { notify } from '../../services/messages';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
 import { registerCommand } from '../markdown/commands/registry';
 import { refreshTreeFolders } from '../workspace/tree_ops';
 import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
-
-/** The command whose press this flow is the body of: a failure belongs beside its menu item. */
-const NEW_NOTE_PLACE: MessagePlace = { command: 'file:newMarkdown' };
 
 /**
  * Registers the command the menu item names and the tree's *New file* runs.
@@ -71,7 +68,7 @@ export async function newDocument(
   if (place === null) {
     const root = configManager.get()?.workspace;
     if (!root) {
-      notify('Making a new note', new Error(t('newNote.noWorkspace')), NEW_NOTE_PLACE);
+      notify('Making a new note', new Error(t('newNote.noWorkspace')));
       return;
     }
     // The reader is most likely working in the folder of the document on screen; when that
@@ -110,7 +107,7 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     // The file is there and empty. The note still opens holding what it was to hold — the
     // session's copy is the truth until it is saved — and the message says the write failed, so
     // nothing goes missing without the reader being told.
-    notify('Making a new note', error, NEW_NOTE_PLACE);
+    notify('Making a new note', error);
   }
   await refreshTreeFolders([folder]);
   await documentSession.openFile({ path: made.path, content, select: titleRange(content) });
@@ -140,7 +137,7 @@ async function createFile(
       return { path: await createEntry(folder, candidate, true), id: made };
     } catch (error) {
       if (attempt + 1 === attempts || !String(error).includes('already exists')) {
-        notify('Making a new note', error, NEW_NOTE_PLACE);
+        notify('Making a new note', error);
         return null;
       }
     }

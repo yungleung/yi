@@ -284,13 +284,11 @@ class TreeNode {
       await documentSession.openFile({ path: this.info.path, content });
     } catch (error) {
       console.error('Failed to read file content:', error);
-      // The row is still there — the click did not open it — so the message hangs off that row.
       void eventManager.emit(MESSAGE_EVENT, {
         text: t('tree.openFailed', {
           name: this.info.basename,
           message: error instanceof Error ? error.message : String(error)
-        }),
-        at: { path: this.info.path }
+        })
       });
     }
   }

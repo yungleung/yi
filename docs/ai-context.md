@@ -52,10 +52,14 @@ with Escape giving the cautious one). The footnote preview, the completion list,
 the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
 Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
 parameter it is built with, or a subclass of it. `ui/messages.ts` replaces the old toast: one
-`BesideCard` per message, beside the tree row or the button it is *about* — the place travels as a
-name (`{ path }` or `{ command }`, `services/messages.ts: placeSelector`), never as an element,
-because the event bus is Tauri's and its payload is JSON — or in the corner when it names nothing.
-Two messages at one place stack, nothing disappears on its own, and the ✕ and Escape both close one.
+`BesideCard` per message in the window's bottom-right corner *whatever it is about*, stacked upward,
+with its ✕ at the card's right edge, and nothing disappearing on its own: a **message** is for
+something that needs the reader's attention — a failure — so it waits for the ✕ or Escape, and a
+press elsewhere leaves it. What the reader only has to *notice* is a **hint** instead
+(`services/hints.ts`, `ui/hints.ts`): the tree's three "copied" confirmations, a card beside the row
+they happened on, with no ✕, gone at the next press (or Escape). A hint's place travels as a *name*
+— a workspace path, which is the row it is found by (`hintPlaceSelector`, escaped) — never as an
+element, because the event bus is Tauri's and its payload is JSON.
 
 Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
 Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the

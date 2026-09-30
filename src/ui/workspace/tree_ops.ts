@@ -22,7 +22,8 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
 import { readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
-import { MESSAGE_EVENT, notify, type MessagePlace } from '../../services/messages';
+import { showHint, type HintPlace } from '../../services/hints';
+import { MESSAGE_EVENT, notify } from '../../services/messages';
 import { parentFolder } from '../../services/workspace_folders';
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';
@@ -115,7 +116,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
   try {
     moved = await moveEntry(entry.path, targetDir);
   } catch (error) {
-    notify('The workspace tree', error, { path: entry.path });
+    notify('The workspace tree', error);
     return false;
   }
   await tree.refreshFolders([folderOf(entry.path), targetDir]);
@@ -138,7 +139,7 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
   try {
     renamed = await renameEntry(entry.path, name);
   } catch (error) {
-    notify('The workspace tree', error, { path: entry.path });
+    notify('The workspace tree', error);
     return false;
   }
   await tree.refreshFolders([folderOf(renamed)]);
@@ -185,7 +186,7 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
   try {
     await deleteEntry(entry.path);
   } catch (error) {
-    notify('The workspace tree', error, { path: entry.path });
+    notify('The workspace tree', error);
     return;
   }
   await tree.refreshFolders([folderOf(entry.path)]);
@@ -216,14 +217,12 @@ async function createAndRename(tree: TreeHost, folder: string, base: string): Pr
       // A name that is taken is the one reason to try the next; anything else is the
       // backend saying no, and the reader should hear it.
       if (!String(error).includes('already exists')) {
-        notify('The workspace tree', error, { path: folder });
+        notify('The workspace tree', error);
         return;
       }
     }
   }
-  notify('The workspace tree', new Error(`Could not find a free name for ${base}.`), {
-    path: folder
-  });
+  notify('The workspace tree', new Error(`Could not find a free name for ${base}.`));
 }
 
 /** Opens the system file manager on the entry. */
@@ -231,17 +230,18 @@ async function reveal(entry: TreeEntry): Promise<void> {
   try {
     await revealItemInDir(entry.path);
   } catch (error) {
-    notify('The workspace tree', error, { path: entry.path });
+    notify('The workspace tree', error);
   }
 }
 
-/** Puts `text` on the clipboard, and says so. */
-async function copy(text: string, message: string, at: MessagePlace): Promise<void> {
+/** Puts `text` on the clipboard, and says so beside the row it came from. */
+async function copy(text: string, message: string, at: HintPlace): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
-    void eventManager.emit(MESSAGE_EVENT, { text: message, at });
+    showHint(message, at);
   } catch (error) {
-    notify('The workspace tree', error, at);
+    // A clipboard the app may not read is the reader's problem to fix: a message, not a hint.
+    notify('The workspace tree', error);
   }
 }
 
@@ -250,8 +250,7 @@ async function copyId(entry: TreeEntry): Promise<void> {
   const id = await readDocumentId(entry.path);
   if (!id) {
     void eventManager.emit(MESSAGE_EVENT, {
-      text: t('tree.noId', { name: entry.basename }),
-      at: { path: entry.path }
+      text: t('tree.noId', { name: entry.basename })
     });
     return;
   }

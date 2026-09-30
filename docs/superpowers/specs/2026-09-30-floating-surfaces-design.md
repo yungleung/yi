@@ -86,62 +86,69 @@ pointer switch.
 Two visible consequences, both small: the completion list's gap goes from 4px to 6px, and its
 placement keeps the caret's *range* as its anchor (the change the last branch made, now shared).
 
-### 3. The messages
+### 3. The messages, and the hints under them
+
+Two surfaces say things to the reader, and the first revision of this design gave both the same one.
+The user split them after living with it, and the split is the point of the whole feature:
+
+**A message needs the reader's attention** — a failure the app can do nothing about. It waits in the
+window's bottom-right corner *whatever it is about*, because a message belongs where the reader is
+looking and not where the thing it names happens to be; it stacks above the last one; its ✕ is at
+the card's right edge, however short the message is; and it waits for the reader — the ✕, or Escape
+— because a failure they have not read yet should not leave on its own. A press elsewhere does not
+take a message away.
 
 `src/services/messages.ts` replaces `services/notify.ts` and takes the event constant that lives in
 `services/workspace.ts:14` today:
 
 ```ts
-/** What a failed action was on: the row of a workspace file, or the button that ran a command. */
-export type MessagePlace = { path: string } | { command: string };
-export interface Message { text: string; at?: MessagePlace }
+export interface Message { text: string }
 export const MESSAGE_EVENT = 'message';
-/** The selector a place is found by, or null for a message that names no place. Pure. */
-export function placeSelector(place: MessagePlace | undefined): string | null;
-export function notify(context: string, error: unknown, at?: MessagePlace): void;
+export function notify(context: string, error: unknown): void;
 ```
 
-A message is what the app tells the reader: mostly a failure, through `notify` — which keeps its
-console line, where the diagnosis belongs — and sometimes a confirmation, which emits the event
-directly as it does today. The four strings the tree writes in its own source move into the
-catalogues with the rest of the app's words (`tree.copiedPath`, `tree.copiedName`, `tree.copiedId`,
-`tree.openFailed`), because a string the source writes is a string no other language can reach.
-
-The anchor travels as *names*, never as an element, because `eventManager.emit` is Tauri's bus
-(`services/event_manager.ts:33`): the payload is JSON, so a DOM node cannot ride it. `{ path }`
-resolves to that file's row (`[data-tree-path="…"]`), `{ command }` to the button that ran it
-(`[data-command="…"]`), and a message that names no place — or names one whose element is not on
-screen — lands in the window's corner, at the bottom right where the toast sits today.
-`placeSelector` escapes the value for the attribute selector — a quote or a backslash in a file name
-must not break it — and is pure, so it is checked in Node.
-
 `src/ui/messages.ts` (the file that was `toast.ts`) listens for the event and owns one `BesideCard`
-per message:
+per message, with no anchor: the corner, always. `main.ts:67` builds it where it built `Toast`.
 
-- the card wears the app's card, like every other surface: the text, and a ✕. The daisyUI `alert`
-  chrome goes, which is the point of the class;
-- the card and its parts carry markers a probe can find: `[data-message]`, `[data-message-text]`
-  and `[data-message-close]`;
-- messages for the *same* place stack in the order they arrived, one under the next; the corner is
-  one place, so it keeps a column, as the toast did;
-- the ✕ stays and Escape joins it. Nothing auto-hides: a failure the reader may need to read should
-  not leave on its own;
-- the card takes the pointer (the ✕), and keeps `role="alert"` so a screen reader still hears it.
+**A hint only has to be noticed** — a path, a name or an id copied. It is the tree's confirmations,
+which used to be toasts and then messages, and neither fits: not a toast because that surface is
+gone, not a message because nothing about it wants the reader's action. `src/services/hints.ts`:
 
-`main.ts:67` builds `Messages` where it builds `Toast` today.
+```ts
+/** Where a hint belongs: the row of a workspace file. */
+export interface HintPlace { path: string }
+export interface Hint { text: string; at: HintPlace }
+export const HINT_EVENT = 'hint';
+/** The selector a place is found by. Pure. */
+export function hintPlaceSelector(place: HintPlace): string;
+export function showHint(text: string, at: HintPlace): void;
+```
+
+The place travels as a *name*, never an element, because `eventManager.emit` is Tauri's bus
+(`services/event_manager.ts:33`): the payload is JSON, so a DOM node cannot ride it. A path resolves
+to that file's row (`[data-tree-path="…"]`), and `hintPlaceSelector` escapes it — a quote, a
+backslash or a newline in a file name must not break the selector — which is what the Node check
+beside it holds.
+
+`src/ui/hints.ts` listens for it and shows one hint — a `BesideCard` beside the row, `role="status"`,
+no ✕ — which the reader never has to dismiss: a press anywhere else takes it away (Escape does too,
+from the family), and a second hint replaces the first, because what the reader just did is the one
+worth reading.
 
 Renaming the event moves one other home with it: `test/checks/commands.mjs` lists the events that
 genuinely cross windows, and `'toast'` in that list becomes `'message'` (the check fails without it).
 
-### 4. Who says where
+### 4. Who says what
 
-| Caller | Place it names |
+| Caller | What the reader gets |
 | --- | --- |
-| `ui/workspace/tree.ts:287` (a file that failed to open) | the file's path |
-| `ui/workspace/tree_ops.ts` (rename, move, delete, reveal, copy id, "no id", and the three "copied" confirmations) | the entry's path |
-| `ui/image/image_flow.ts` (no folder, a bad folder, a write that failed) | `{ command: 'edit:insertImage' }`, with the image button carrying `data-command` — one line at the button that owns the id (`ui/toolbar/image_toolbar.ts`) |
-| `services/session.ts:290` (a save the backend refused) | the document's path when it has one, so it lands beside that row; the corner when it has none |
-| `services/workspace.ts:65` (the workspace file itself) | nothing — the corner |
+| `ui/workspace/tree_ops.ts`, the three "copied" confirmations | a **hint**, beside the entry's row |
+| `ui/workspace/tree_ops.ts`, every write that failed (rename, move, delete, reveal), and "no id" | a **message** in the corner |
+| `ui/workspace/tree.ts:287` (a file that failed to open) | a **message** |
+| `ui/image/image_flow.ts` (no folder, a bad folder, a write that failed) | a **message** |
+| `ui/new_document/new_document_flow.ts` (no workspace, a write that failed) | a **message** |
+| `services/session.ts:290` (a save the backend refused) | a **message** |
+| `services/workspace.ts:65` (the workspace file itself) | a **message** |
 
 ### 5. The question cards
 

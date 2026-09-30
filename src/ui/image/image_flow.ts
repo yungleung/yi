@@ -43,9 +43,6 @@ import {
 import { selectionTitle } from '../markdown/syntax/link_edits';
 import { imageDialog, type ImageChooser } from './image_dialog';
 
-/** The button whose press this flow is the body of: a failure of it belongs beside that button. */
-const IMAGE_COMMAND = { command: 'edit:insertImage' };
-
 /**
  * Writes an image at the caret — or around the selection, whose words become its alt text — or
  * asks, saves and writes one. Returns false when there is no caret to write at.
@@ -91,7 +88,7 @@ async function saveAndWrite(
   const base = (await imageFolderPath()) ?? inTheNote;
   if (base === null) {
     // Nowhere to put it: the note has never been saved and the settings name no folder.
-    notify('Inserting an image', new Error(t('image.noFolder')), IMAGE_COMMAND);
+    notify('Inserting an image', new Error(t('image.noFolder')));
     return false;
   }
   const preview = await previewUrl(image);
@@ -99,7 +96,7 @@ async function saveAndWrite(
   try {
     name = await chooser.choose({ preview, stamp: newDocumentId(), folder: base });
   } catch (error) {
-    notify('Inserting an image', error, IMAGE_COMMAND);
+    notify('Inserting an image', error);
     return false;
   } finally {
     URL.revokeObjectURL(preview);
@@ -109,7 +106,7 @@ async function saveAndWrite(
   }
   const file = joinPath(base, name);
   if (file === null) {
-    notify('Inserting an image', new Error(t('image.badFolder', { folder: base })), IMAGE_COMMAND);
+    notify('Inserting an image', new Error(t('image.badFolder', { folder: base })));
     return false;
   }
   try {
@@ -117,7 +114,7 @@ async function saveAndWrite(
     await mkdir(base, { recursive: true });
     await writeFile(file, new Uint8Array(bytes));
   } catch (error) {
-    notify('Saving the image', error, IMAGE_COMMAND);
+    notify('Saving the image', error);
     return false;
   }
   write(context, offsets, alt, destinationForFile(file, await imageFolderPath(), inTheNote));

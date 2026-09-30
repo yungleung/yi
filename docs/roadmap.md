@@ -476,9 +476,16 @@ elements) unless it says otherwise.
   it, so a quote or a backslash in a file name cannot break the selector (`check-messages.mjs`).
   The four strings the tree used to write in English — `Path copied.`, `Name copied.`, `Id copied.`
   and `Failed to open …` — are keys in all eight catalogues now. `npm run check` is **36/36**; the
-  new probe is `test/probes/message-popover.js` (the card under its row, clamped, the ✕ and Escape,
-  a second message stacking, the corner), and every probe that touches a surface still passes
-  untouched because the markers never moved.
+  new probe is `test/probes/messages-and-hints.js`, and every probe that touches a surface still
+  passes untouched because the markers never moved. The user's review then split the one surface
+  into two, and that split is what the feature was for: a **message** is for something that needs
+  the reader's attention (a failure), so it waits in the window's bottom-right corner whatever it is
+  about — stacked upward, its ✕ at the card's right edge, closed by the ✕ or Escape and by nothing
+  else — while a **hint** (`services/hints.ts`, `ui/hints.ts`) is for what they only have to notice:
+  the tree's three "copied" confirmations, a card beside the row they happened on, with no ✕, gone
+  at the next press. The first version anchored every message to the thing it was about, which put a
+  "Path copied." where the reader had to move their eyes to see it and left a failure behind a
+  toolbar button; the corner is where both belong.
 
 ## Open, in the order to take them
 

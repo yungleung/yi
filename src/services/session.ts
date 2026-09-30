@@ -287,11 +287,8 @@ class DocumentSession {
       await writeTextFile(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      // A save that failed belongs beside the note's own row when it has one; a note with no file
-      // yet has no row to sit beside.
       void eventManager.emit(MESSAGE_EVENT, {
-        text: t('session.saveFailed', { title: document.title, message }),
-        at: document.path ? { path: document.path } : undefined
+        text: t('session.saveFailed', { title: document.title, message })
       });
       return false;
     }
