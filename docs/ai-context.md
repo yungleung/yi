@@ -119,6 +119,35 @@ type. Two things bite here: the file plugin is scoped to `$HOME`
 deleted but not read or written by the webview; and making a note from a document that is not in
 the stack asks the session's question first, the same one opening a file asks.
 
+A **version** of a workspace is kept with git, and only ever because the reader asked for one:
+*File → Save a Version* is the command `version:save` (`src/ui/versioning/save_version.ts`), and it
+is the only action in the app that runs git — no timer, no quit hook, no on-save commit. The facts
+are Rust (`src-tauri/src/versioning.rs`: which git may be run — never by trusting `PATH`, and
+`/usr/bin/git` only when `xcode-select -p` answers; whether the folder is in a repository of its
+own or one above it; whether a cloud drive could reach it; and where the app would keep a git
+directory outside the folder), the decision is pure (`services/versioning.ts: versioningPlan`, over
+`consentFrom` and the config's `versioning`/`versioning_workspace` — an answer given for another
+folder is *no answer*), and the doing asks the plan's own question first (`versioning_dialog.ts`,
+the two hands `ui/prompt.ts` has), refuses a note with no file in one sentence, captures the
+editor's text and writes it atomically (`files.rs: write_atomically` — temp file plus rename, the
+shape the session's own write uses too, so a cloud or git client reading mid-save never sees half a
+note), and commits **only** the file it wrote: `git add -- <path>` then `git commit -m <message> --
+<path>`. A repository the reader already has is used as it stands and never nested into; a folder a
+cloud drive could reach — or one we cannot read enough to be sure about, which is treated the same
+way — gets `git init --separate-git-dir=<app data>/repos/<name>`, so the drive never sees a `.git`
+at all while the reader's own git keeps working through the one-line pointer file. Every git call
+goes through one helper, and what the app may never ask git to do is a list held by a probe that
+points it at a git which only records its arguments (`test/probes/versioning-fake-git.js`; a probe
+cannot set an executable bit, so the recorder is committed next to it). The git may also be *named*
+for a test: `YI_GIT` for a process started with one, and `versioning_use_git` — a debug-only command
+— for a probe, which cannot change the environment of the app it is driving; the harness puts that
+seam back before every probe, the way it puts the language back. Three things bite: the webview's
+file plugin refuses a hidden path (measured: `forbidden path` for `.git/HEAD` *and* for `exists`),
+so a repository is observed through the app's own commands and never read directly; the app's own
+listing hides dot-named entries, which is what makes a clone safe to open; and a commit's *message*
+is the note's own name and the minute it was asked for, because `git log` is the only browser a
+reader has of it for now (`docs/roadmap.md`).
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:

@@ -503,6 +503,42 @@ elements) unless it says otherwise.
   config) and `first-run-create.js` (the folder made, then adopted). Measured end to end: with
   `{workspace: null, workspace_asked: false}` and a real page reload, the page that came up asked —
   "A new workspace will be made in /Users/urshanabi/Documents/Yi." — with all three answers on it.
+- **Versions of a workspace, kept by Git**, as the reader argued it out: local version control for
+  the notes, Git only, if the machine has it, with no account and no remote required, and never any
+  of it without their own answer. Landed as
+  `docs/superpowers/specs/2026-10-01-workspace-versioning-design.md` and its plan. Five rules, which
+  are one table and one check: **no git at all** without consent for *this* workspace (the default,
+  and what every config written before the field reads as); a repository the reader already has is
+  theirs and is used as it stands — their identity, their remote, their branch — with only the files
+  this app wrote ever committed; a folder *inside* a repository is never nested into; a folder a
+  cloud drive could reach (or one the classifier cannot read enough to be sure about, treated the
+  same way because the separate git directory costs nothing in the local case — the reader's own git
+  keeps working through the one-line `.git` pointer file) gets
+  `git init --separate-git-dir=<app data>/repos/<name>`, after the risk is shown; and anything else
+  is a plain `git init`. A version exists **only when the reader asks**: `version:save`, the File
+  menu's *Save a Version*, which captures the editor's text, refuses a note with no file, writes the
+  file atomically, and commits it by pathspec (`git add -- <path>` then
+  `git commit -m <message> -- <path>`) so the reader's staged work is never swept up. Nothing else
+  runs git — no timer, no quit hook, no on-save commit — and the never-dos (no `fetch`, `pull`,
+  `gc`, `clean`, `reset`, `checkout`, `amend`, no force, no hooks, no credentials in the repository)
+  are held by a probe that points the app at a git which only records its arguments.
+  `npm run check` is **38/38** and `cargo test` **33/33**. The facts are gathered in Rust because
+  the webview cannot see them: `PATH` is never trusted for finding git (an app launched from Finder
+  inherits no shell's), `/usr/bin/git` is used only when `xcode-select -p` answers — measured to
+  answer without raising the Command Line Tools installer, where `/usr/bin/git` itself would — and
+  the cloud answer is read from the path shapes, the dataless attribute, the mount table, the
+  `~/Library/CloudStorage` listing the app *can* read, and, under `~/Library`, from a `readdir`
+  refusal itself. Three measured facts shaped the tests. The webview's file plugin **refuses a
+  hidden path** (`forbidden path` for `.git/HEAD`, and for `exists`), so a repository is observed
+  only through the app's own commands — a probe cannot run `git`, and cannot read the index either.
+  The app's own listing hides dot-named entries, which is what makes a clone safe to open: after the
+  app opened a real clone, `git status --porcelain` was empty. And the session's write was already
+  atomic (27 ms for 853 bytes); that shape moved into `files.rs: write_atomically` and now serves
+  document saves too, so a cloud or git client reading mid-save never sees half a note. The probes
+  are `versioning-facts`, `versioning-fake-git`, `versioning-save`, `versioning-staged`,
+  `versioning-consent`, `versioning-repository` and `versioning-no-git`; the first save probe held
+  both halves of its subject and measured **4.9 s** against the bridge's 5 s, so it was split rather
+  than gambled on.
 
 ## Open, in the order to take them
 

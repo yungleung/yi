@@ -39,7 +39,7 @@ the authority; read it with this plan.
 
 **Interfaces:** produces `VersioningFacts`, `Consent`, `VersioningPlan`, `versioningPlan(facts, consent)`.
 
-- [ ] **Step 1: The failing check** — `test/checks/check-versioning.mjs` bundles
+- [x] **Step 1: The failing check** — `test/checks/check-versioning.mjs` bundles
   `src/services/versioning.ts` (the rolldown pattern every check uses) and walks the spec's table:
 
 ```js
@@ -59,9 +59,9 @@ check('a local folder is initialised as normal', versioningPlan(facts(), 'yes'),
 check('without git there is nothing to do', versioningPlan(facts({ git: null }), 'yes'), { use: 'none', separateGitDir: false, ask: null, blocked: 'no-git' });
 ```
 
-- [ ] **Step 2: Run it, expect failure** (`Cannot find module`).
+- [x] **Step 2: Run it, expect failure** (`Cannot find module`).
 
-- [ ] **Step 3: The rule** — `src/services/versioning.ts`: the types above and
+- [x] **Step 3: The rule** — `src/services/versioning.ts`: the types above and
 
 ```ts
 export function versioningPlan(facts: VersioningFacts, consent: Consent): VersioningPlan {
@@ -77,11 +77,11 @@ export function versioningPlan(facts: VersioningFacts, consent: Consent): Versio
 }
 ```
 
-- [ ] **Step 4: The config** — `versioning: bool` and `versioning_workspace: Option<String>` on
+- [x] **Step 4: The config** — `versioning: bool` and `versioning_workspace: Option<String>` on
   `AppConfig` (`#[serde(default)]`, so every config written before them reads as *not asked*), the
   same two fields on the TypeScript `AppConfig`, and a Rust test that an older config reads as
   `versioning: false` and `versioning_workspace: None`.
-- [ ] **Step 5: Verify and commit** — the check passes, `tsc` silent, `npm run check`, `cargo test`;
+- [x] **Step 5: Verify and commit** — the check passes, `tsc` silent, `npm run check`, `cargo test`;
   commit `feat(versioning): consent, and the rule that turns it into a plan`.
 
 ## Task 2: the facts, gathered in Rust
@@ -91,21 +91,21 @@ export function versioningPlan(facts: VersioningFacts, consent: Consent): Versio
 
 **Interfaces:** produces the `versioning_facts(workspace)` command and its TypeScript wrapper.
 
-- [ ] **Step 1: The gatherer** — `versioning.rs`, with one function per fact and a test for each
+- [x] **Step 1: The gatherer** — `versioning.rs`, with one function per fact and a test for each
   that can run without a network or a real cloud folder: `find_git()` (the known places, `/usr/bin/git`
   only when `xcode-select -p` succeeds, then `PATH`, and `YI_GIT` first for tests), `repository_shape(path)`
   (`.git` a directory, a file, or nothing — and `toplevel` from git when it is available), `cloud_kind(path)`
   (the path shapes, the Windows variables and attributes, Linux's mountinfo, `UF_DATALESS`, the
   `~/Library/CloudStorage` listing, and `unknown` when a stat below `~/Library` is refused),
   `identity(git, workspace)` (`user.name`/`user.email`, read with `git -C <workspace> config --get`).
-- [ ] **Step 2: The command** — `#[tauri::command] pub fn versioning_facts(workspace: String) -> Result<VersioningFacts, String>`
+- [x] **Step 2: The command** — `#[tauri::command] pub fn versioning_facts(workspace: String) -> Result<VersioningFacts, String>`
   registered beside `list_folder_files`, and `src/api/versioning.ts` wrapping it in `invoke`.
-- [ ] **Step 3: The probe** — `test/probes/versioning-facts.js` asks the app what it sees for three
+- [x] **Step 3: The probe** — `test/probes/versioning-facts.js` asks the app what it sees for three
   folders: a plain one it makes itself (no repository, cloud `none`), one with a `.git` *directory*,
   and one whose `.git` is a *file* (`gitdir: …`, the worktree shape) — and reports what the machine
   says about `~/Library/CloudStorage` without asserting a vendor-specific answer, so it holds on
   machines with and without a Drive mount.
-- [ ] **Step 4: Verify and commit** — `cargo test`, `npm run check`, the probe; commit
+- [x] **Step 4: Verify and commit** — `cargo test`, `npm run check`, the probe; commit
   `feat(versioning): what is true of the machine and the folder`.
 
 ## Task 3: the git seam, and an atomic write for documents
@@ -115,17 +115,17 @@ export function versioningPlan(facts: VersioningFacts, consent: Consent): Versio
 **Interfaces:** produces `init_workspace_repository(workspace, separate)`, `commit_paths(workspace, paths, message, identity)`,
 and `write_text_atomically(path, contents)`.
 
-- [ ] **Step 1: The seam** — every git call goes through one helper that takes the git path and the
+- [x] **Step 1: The seam** — every git call goes through one helper that takes the git path and the
   arguments and returns stdout/stderr/status; `init` uses `--separate-git-dir=<app data dir>/repos/<name>`
   when asked; `commit_paths` runs `git add -- <paths>` and `git commit -- <paths> -m <message>`, with
   `-c user.name`/`-c user.email` only when the caller supplies an identity (the repository we made).
-- [ ] **Step 2: The atomic write** — move `files.rs`'s write to temp-file + `rename` (the shape
+- [x] **Step 2: The atomic write** — move `files.rs`'s write to temp-file + `rename` (the shape
   `session.rs` already uses, with its own test), and route the session's document save and the new
   note's write through it.
-- [ ] **Step 3: The fake-git proof** — a probe writes a shell script that appends its arguments to a
+- [x] **Step 3: The fake-git proof** — a probe writes a shell script that appends its arguments to a
   log and exits 0, points `YI_GIT` at it, and asserts the app ran `init`/`add`/`commit` and **nothing**
   from the never-list (no `fetch`, `pull`, `gc`, `clean`, `reset`, `checkout`, `--amend`, `--force`).
-- [ ] **Step 4: Verify and commit** — `cargo test`, the probe; commit
+- [x] **Step 4: Verify and commit** — `cargo test`, the probe; commit
   `feat(versioning): the git calls, and one atomic write for documents`.
 
 ## Task 4: the consent card, and Save a version
@@ -136,52 +136,52 @@ and `write_text_atomically(path, contents)`.
 **Interfaces:** produces `versioningDialog` (`QuestionChooser`-shaped), `saveVersion()`, the command
 `version:save`, and the File menu item that names it.
 
-- [ ] **Step 1: The card** — a `QuestionCard` asking *"Version this workspace with Git?"*, with the
+- [x] **Step 1: The card** — a `QuestionCard` asking *"Version this workspace with Git?"*, with the
   cloud-risk line and the git directory path when the plan asks for them, `data-versioning-*` markers,
   and Escape meaning no. What is asked is the plan's own words (`ask`), never a second decision.
-- [ ] **Step 2: The flow** — `saveVersion()`: gather facts → `versioningPlan(facts, consent)` →
+- [x] **Step 2: The flow** — `saveVersion()`: gather facts → `versioningPlan(facts, consent)` →
   answer `'ask'` by showing the card and remembering the answer with the workspace path → refuse a
   document with no file, in one sentence → capture → atomic write → `commit_paths([path], message, identity)`
   → a message on failure (no identity in *their* repo, a lock file, anything else).
-- [ ] **Step 3: The words** — the command id, the menu label, the card's keys, the failure lines, and
+- [x] **Step 3: The words** — the command id, the menu label, the card's keys, the failure lines, and
   the refusal for a note with no file, in all eight catalogues.
-- [ ] **Step 4: Verify and commit** — `cargo test`, `npm run check`, and the probes of Task 6's first
+- [x] **Step 4: Verify and commit** — `cargo test`, `npm run check`, and the probes of Task 6's first
   half (`versioning-save.js`) once written; commit `feat(versioning): Save a version, and the question it asks first`.
 
 ## Task 5: the switch in the settings window
 
 **Files:** `src/ui/settings/general_settings.ts`, `locales/*.json`
 
-- [ ] **Step 1: The section** — a General-tab switch showing this workspace's answer, the git
+- [x] **Step 1: The section** — a General-tab switch showing this workspace's answer, the git
   directory when it is a separate one, and a sentence saying versions only happen when asked.
   Turning it on asks the same card; turning it off stops future versions and touches nothing that
   exists.
-- [ ] **Step 2: Verify and commit** — `npm run check` (the catalogues), the settings probe pattern of
+- [x] **Step 2: Verify and commit** — `npm run check` (the catalogues), the settings probe pattern of
   `settings-push-on-open.js`; commit `feat(versioning): the switch, and where the versions live`.
 
 ## Task 6: the probes that prove the behaviour
 
 **Files:** `test/probes/versioning-save.js`, `test/probes/versioning-no-git.js`
 
-- [ ] **Step 1: `versioning-save.js`** — a workspace of its own under `$HOME` with a real git: consent
+- [x] **Step 1: `versioning-save.js`** — a workspace of its own under `$HOME` with a real git: consent
   asked and remembered; a version commits *only* the note that was saved, while a file the reader
   staged stays staged (`git status --porcelain` names it); a note with no file is refused; a second
   workspace that is already a repository is used, not re-initialised; a folder inside an outer
   repository is not nested into.
-- [ ] **Step 2: `versioning-no-git.js`** — with `YI_GIT` pointing at a script that fails, the action
+- [x] **Step 2: `versioning-no-git.js`** — with `YI_GIT` pointing at a script that fails, the action
   says git is unavailable and writes nothing (the plan's `blocked: 'no-git'`).
-- [ ] **Step 3: Verify and commit** — both probes inside the bridge's budget; commit
+- [x] **Step 3: Verify and commit** — both probes inside the bridge's budget; commit
   `test(versioning): a version asked for, and the cases around it`.
 
 ## Task 7: the guides
 
 **Files:** `docs/ai-context.md`, `docs/architecture.md`, `docs/roadmap.md`, `test/README.md`
 
-- [ ] **Step 1: Write them** — ai-context: the rule that a version is only ever asked for, the plan,
+- [x] **Step 1: Write them** — ai-context: the rule that a version is only ever asked for, the plan,
   and the separate-git-directory strategy with the cloud reasoning; architecture: the row for
   "a version in a workspace"; roadmap: the Closed entry with the measured facts (the `.git` a clone
   is, the CloudStorage refusal, the session's atomic write); test/README: the new check and probes.
-- [ ] **Step 2: Verify and commit** — `npm run check`; commit `docs: versions kept by git, and when we do not`.
+- [x] **Step 2: Verify and commit** — `npm run check`; commit `docs: versions kept by git, and when we do not`.
 
 ## Self-review
 
@@ -191,3 +191,39 @@ and `write_text_atomically(path, contents)`.
 - Every task names the check or probe that proves it; the fixture rule is in the global constraints;
   the one interface the plan does not write in full (`RepositoryShape`, `CloudKind`) is fixed by
   Task 2's struct, which Task 1's rule reads.
+
+## Handoff
+
+**State.** All seven tasks are done, on `codex/versioning` on top of `main` at `4ce5ae2`, and the
+branch is **not merged** — the reader reviews first. `npm run check` is **38/38**, `cargo test` is
+**33/33**, `npx tsc --noEmit` is silent, and the seven probes of Task 6 pass
+(`versioning-facts`, `versioning-fake-git`, `versioning-save`, `versioning-staged`,
+`versioning-consent`, `versioning-repository`, `versioning-no-git`), each inside the bridge's five
+seconds on its own.
+
+**Three deviations from the plan, all measured, all deliberate.**
+
+1. **The recording git is committed, and the seam is a command.** Task 3 asked for a probe that
+   *writes* a shell script and points `YI_GIT` at it; a probe can do neither. The app makes markdown
+   files and folders and nothing else, the file plugin cannot set an executable bit, and the
+   environment of a running app is not reachable from the webview. So the recorder is committed
+   (`test/probes/fake-git.sh`) and the seam gained the one door a probe can knock on:
+   `versioning_use_git`, debug builds only, which sets what an environment would. A name that is
+   not there now means *no git* rather than a fallback — which is also how `versioning-no-git.js`
+   asks for a machine without one. The harness clears that seam before every probe, the way it puts
+   the language back, so a run the bridge cuts off costs the next probe nothing.
+2. **`versioning-save.js` is two probes.** Held as one it measured **4.9 s** against the 5 s
+   budget. `versioning-save.js` keeps the question, the remembered answer and the commit;
+   `versioning-staged.js` keeps what the commit *holds* (the note, and not the reader's staged
+   work). Three smaller probes joined them: `versioning-consent.js` (the answer that is *no*, and
+   the settings switch — Task 5's verification), `versioning-repository.js` (their repository, and
+   a folder inside one) and `versioning-no-git.js`.
+3. **The probes put the reader's session back.** Task 6 does not say so, `docs/ai-context.md` does:
+   a probe that opens documents reads the session file first, writes it back in its `finally`, and
+   makes the live session read it again — so the documents the reader had open are the documents
+   that are open, which the demo-document shuffle the older probes do only approximated.
+
+**For the reader.** What is *not* here is what the spec put out of scope: browsing versions,
+restoring one, pushing, a diff view, LFS and submodules. Two facts worth knowing while reviewing: a
+commit's message is the note's title and the minute it was asked for, and a repository the app made
+carries Yi's own identity (`Yi <yi@localhost>`) while the reader's own repository carries theirs.
