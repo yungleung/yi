@@ -135,7 +135,10 @@ export function versionLocation(facts: VersioningFacts, plan: VersioningPlan): s
     return facts.repository.toplevel;
   }
   if (plan.use === 'init') {
-    return facts.separate_git_dir;
+    // A repository made in the workspace itself is the ordinary thing — there is no surprising
+    // path to name — and one whose git directory lives elsewhere is exactly what a reader wants to
+    // see written out.
+    return plan.separateGitDir ? facts.separate_git_dir : null;
   }
   return null;
 }

@@ -104,6 +104,7 @@ check(
   versionLocation(facts({ cloud: 'cloud-storage' }), plan({ cloud: 'cloud-storage' }, 'yes')),
   '/app-data/repos/notes'
 );
+check('a repository made in the workspace itself has no path to name', versionLocation(facts(), plan({}, 'yes')), null);
 check('nothing to name for a plan that touches nothing', versionLocation(facts(), plan({}, 'no')), null);
 
 if (failures.length > 0) {
