@@ -13,6 +13,15 @@ pub struct AppConfig {
   /// (`src/services/workspace_setup.ts: needsWorkspaceQuestion`).
   #[serde(default)]
   pub workspace_asked: bool,
+  /// Whether the reader has asked the app to keep versions of this workspace with git: a version
+  /// exists only when they ask for one, so nothing but their own answer turns this on. `false` — the
+  /// default, and what a config written before the field reads as — means no git is ever run.
+  #[serde(default)]
+  pub versioning: bool,
+  /// The workspace that answer was given for: a different folder is asked again, because consent
+  /// belongs to a folder and not to the app.
+  #[serde(default)]
+  pub versioning_workspace: Option<String>,
   /// Path to the bibliography file (CSL-JSON or BibTeX) used to format
   /// citations. Chosen by the user; a default is provided for development.
   #[serde(default = "default_bibliography_file")]
@@ -74,6 +83,8 @@ impl Default for AppConfig {
     Self {
       workspace: None,
       workspace_asked: false,
+      versioning: false,
+      versioning_workspace: None,
       bibliography_file: default_bibliography_file(),
       csl_style: default_csl_style(),
       editor_layout: default_editor_layout(),
@@ -267,5 +278,27 @@ mod tests {
     let cfg: AppConfig = serde_json::from_str(json).unwrap();
 
     assert!(!cfg.workspace_asked);
+  }
+
+  #[test]
+  fn a_config_written_before_versioning_reads_as_no_versions_and_no_workspace_for_them() {
+    // The shape a config had before these fields existed: the reader has not asked for versions, so
+    // nothing may run git until they do — and there is no workspace the answer belongs to.
+    let json = r#"{
+      "workspace": "/notes",
+      "bibliography_file": "~/Documents/ZettlrNotes/zotero.json",
+      "csl_style": "apa",
+      "editor_layout": "page",
+      "new_file_frontmatter": null,
+      "image_folder": "",
+      "language": "",
+      "push_unstacked_on_open": false,
+      "workspace_asked": true,
+      "config_version": 1
+    }"#;
+    let cfg: AppConfig = serde_json::from_str(json).unwrap();
+
+    assert!(!cfg.versioning);
+    assert_eq!(cfg.versioning_workspace, None);
   }
 }

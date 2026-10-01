@@ -6,6 +6,11 @@ export type AppConfig = {
    * `ui/workspace_setup/workspace_setup_flow.ts`; false — the default, and what a config written
    * before the field existed reads as — means a config with no workspace is asked exactly once. */
   workspace_asked: boolean;
+  /** Whether the reader has asked for versions of this workspace, kept with git. A version happens
+   * only when they ask for one, so nothing else turns this on (`src/services/versioning.ts`). */
+  versioning: boolean;
+  /** The workspace that answer belongs to: a different folder is asked again. */
+  versioning_workspace: string | null;
   bibliography_file: string;
   csl_style: string;
   /** How the editor is laid out: a page of A4, or the column at the pane's width. */
