@@ -216,8 +216,11 @@ seconds on its own.
    budget. `versioning-save.js` keeps the question, the remembered answer and the commit;
    `versioning-staged.js` keeps what the commit *holds* (the note, and not the reader's staged
    work). Three smaller probes joined them: `versioning-consent.js` (the answer that is *no*, and
-   the settings switch — Task 5's verification), `versioning-repository.js` (their repository, and
-   a folder inside one) and `versioning-no-git.js`.
+   the settings switch — Task 5's verification), `versioning-repository.js` and
+   `versioning-outer.js` (their repository, and a folder inside one — split too, at 5.0 s) and
+   `versioning-no-git.js`. A probe's time depends on the window: an occluded one is throttled, and
+   the same probe measured 2257 ms in front of it and 5008 ms behind the terminal
+   (`test/README.md`, `docs/roadmap.md`).
 3. **The probes put the reader's session back.** Task 6 does not say so, `docs/ai-context.md` does:
    a probe that opens documents reads the session file first, writes it back in its `finally`, and
    makes the live session read it again — so the documents the reader had open are the documents

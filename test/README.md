@@ -54,7 +54,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and thirty-three of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and thirty-four of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -118,8 +118,9 @@ records (`probes/fake-git.sh`, committed because a probe cannot set an executabl
 with its path, and the note committed; `versioning-staged` — a file the reader had staged is still
 there to commit after a version of another note; `versioning-consent` — the answer that is *no*,
 nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
-— a repository the reader already has, used as it stands and never nested into, and a folder inside
-one; `versioning-no-git` — the machine with no git, which is told and writes nothing), the
+— a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
+never nested into; `versioning-no-git` — the machine with no git, which is told and writes nothing),
+the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
 the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two
@@ -164,6 +165,13 @@ live index; the newest probes carry a header naming what they cover:
   repository is observed through the app's own commands — which is what `versioning-*.js` do — and
   anything that must *be* a command is committed, not written (`probes/fake-git.sh`, which the app
   is pointed at by name through its own seam).
+- **The app's window has to be in front.** An occluded window is throttled by the system, and every
+  sleep a probe takes then costs a second of wall clock or more: the same probe measured **2257 ms**
+  with the window in front and **5008 ms** behind the terminal, where one `git init` through the
+  app's own command took 6.7 s. Bring the app forward before reading a probe's time
+  (`osascript -e 'tell application "System Events" to set frontmost of (first process whose name is
+  "yi") to true'` is what this project's sessions use), and read a probe that only sometimes
+  finishes as too long whatever the window was doing.
 - A file read over the raw bridge (`plugin:fs|read_text_file`) comes back as an **`ArrayBuffer`**,
   and `Uint8Array.from(buffer)` on one is an *empty* array rather than its bytes — take it as it
   is: `bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)`, which is what the plugin's

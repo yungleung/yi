@@ -536,9 +536,9 @@ elements) unless it says otherwise.
   atomic (27 ms for 853 bytes); that shape moved into `files.rs: write_atomically` and now serves
   document saves too, so a cloud or git client reading mid-save never sees half a note. The probes
   are `versioning-facts`, `versioning-fake-git`, `versioning-save`, `versioning-staged`,
-  `versioning-consent`, `versioning-repository` and `versioning-no-git`; the first save probe held
-  both halves of its subject and measured **4.9 s** against the bridge's 5 s, so it was split rather
-  than gambled on.
+  `versioning-consent`, `versioning-repository`, `versioning-outer` and `versioning-no-git`; the
+  first save probe held both halves of its subject and measured **4.9 s** against the bridge's 5 s,
+  so it was split rather than gambled on, and the repository probe was split the same way at 5.0 s.
 
 ## Open, in the order to take them
 
@@ -580,6 +580,13 @@ elements) unless it says otherwise.
   layout in two runs and typed in the right place in the full-width one — and passed the next run
   in the A4 layout — so that check is measuring the page's scale and the frame it lands on as much
   as the caret's mapping.
+  An **occluded** window is the other half of this, and the larger one: the system throttles a
+  background window's timers, so every `t.sleep(...)` a probe takes can cost a second of wall clock.
+  Measured while the versioning probes were written — the same probe, in the same state, took
+  **2257 ms** with the app's window in front and **5008 ms** behind the terminal, where one `git
+  init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
+  and a probe that only sometimes finishes is read as too long whatever the window was doing;
+  `test/README.md` says so where probes are written.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older
