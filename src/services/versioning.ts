@@ -38,6 +38,18 @@ export interface VersioningFacts {
   cloud: CloudKind;
 }
 
+/** The facts, plus what a person may want to see about them (what the backend reports). */
+export interface VersioningReport extends VersioningFacts {
+  // The two multi-word fields keep the backend's own names, as every wire struct in this app does
+  // (`src/api/files.ts: is_file`, `src/api/settings.ts: config_version`): one spelling, one home.
+  /** Where git was found — "env" is the test seam, "clt" the system one behind xcode-select. */
+  git_source: string;
+  /** The path shape, refusal or attribute the cloud answer was read from. */
+  cloud_evidence: string;
+  /** What the repository has configured, for a commit that must use the reader's own name. */
+  identity: { name: string | null; email: string | null };
+}
+
 /** The reader's answer for this workspace. */
 export type Consent = 'unasked' | 'yes' | 'no';
 

@@ -5,6 +5,7 @@ mod greeting;
 mod session;
 mod stats;
 mod settings;
+mod versioning;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -40,7 +41,8 @@ pub fn run() {
             settings::get_config,
             settings::set_config,
             settings::get_current_config_version,
-            settings::read_bibliography,])
+            settings::read_bibliography,
+            versioning::versioning_facts,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
