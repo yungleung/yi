@@ -7,7 +7,10 @@
  *
  * A probe cannot run a command, so the staging is done with the app's own vocabulary, the way a
  * reader's staging ends up in the index: `git add` runs, and the commit that follows is refused for
- * having no message — which leaves `other.md` staged and nothing else changed.
+ * having no message — which leaves `other.md` staged and nothing else changed. The repository is
+ * made the same way, by the app's own `init`, and the version that follows has something to commit
+ * (the note has never been in it), so the commit really happens: a commit that swept up everything
+ * staged would leave `other.md` in it and nothing for the reader's own commit to carry.
  *
  * The repo is observed only through what git *does* next, because a probe cannot read inside a
  * dot-named directory (measured: "forbidden path" for `.git/HEAD`). The staged file is committed
@@ -76,18 +79,18 @@
     await files.createEntry(workspace, 'note.md', true);
     await files.createEntry(workspace, 'other.md', true);
     await t.openWorkspace(workspace);
-    await open(note, 'A note to version.\n');
     // Consent already given for this workspace: the question is `versioning-save.js`'s subject,
     // and this probe is about what the commit holds.
     await configManager.update({ versioning: true, versioning_workspace: workspace });
-    await saveVersion();
-    await t.sleep(150);
+    // The repository a version would make, made here so the reader's staged work can come first.
+    await versioning.initWorkspaceRepository(workspace, false);
 
     const staged = await versioning
       .commitPaths(workspace, [other], '', APP_IDENTITY)
       .then(() => 'committed', () => 'staged');
     check('the probe stages its own file, the way a reader stages one', staged === 'staged', staged);
 
+    await open(note, 'A note to version.\n');
     await saveVersion();
     await t.sleep(150);
     const theirs = await versioning
