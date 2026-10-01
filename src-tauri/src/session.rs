@@ -5,10 +5,10 @@
 //! it wants kept and discards a file it cannot read. So there is no shape to parse here, and
 //! nothing to migrate: one reader of the format, in one place.
 //!
-//! The write is atomic — a temporary file and a rename — because a session is the reader's
+//! The write is atomic — `files.rs` holds the one shape for it — because a session is the reader's
 //! work in progress, and a half-written one is worth nothing to anybody.
 
-use std::{fs, io::Write, path::Path, path::PathBuf};
+use std::{fs, path::Path, path::PathBuf};
 use tauri::Manager;
 
 /// The session file inside the app's data directory.
@@ -34,13 +34,7 @@ fn write(path: &Path, text: &str) -> anyhow::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let temporary = path.with_extension("json.tmp");
-    {
-        let mut file = fs::File::create(&temporary)?;
-        file.write_all(text.as_bytes())?;
-        file.sync_all()?;
-    }
-    fs::rename(&temporary, path)?;
+    crate::files::write_atomically(path, text)?;
     Ok(())
 }
 

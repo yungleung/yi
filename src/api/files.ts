@@ -34,6 +34,16 @@ export async function deleteEntry(path: string): Promise<void> {
   await invoke<void>("delete_entry", { path });
 }
 
+/**
+ * Writes a document's whole text in one step — a temporary file beside it, renamed over it —
+ * so a cloud client or a git client reading while the app saves never sees half a note
+ * (`src-tauri/src/files.rs: write_atomically`). The session and the new-note flow write through
+ * this rather than the file plugin's truncate-and-write.
+ */
+export async function writeTextAtomically(path: string, contents: string): Promise<void> {
+  await invoke<void>("write_text_atomically", { path, contents });
+}
+
 /** Moves an entry into another folder, keeping its name. */
 export async function moveEntry(path: string, targetDir: string): Promise<string> {
   return await invoke<string>("move_entry", { path, targetDir });

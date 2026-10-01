@@ -47,7 +47,13 @@ export interface VersioningReport extends VersioningFacts {
   /** The path shape, refusal or attribute the cloud answer was read from. */
   cloud_evidence: string;
   /** What the repository has configured, for a commit that must use the reader's own name. */
-  identity: { name: string | null; email: string | null };
+  identity: GitIdentity;
+}
+
+/** The name and address a commit carries. */
+export interface GitIdentity {
+  name: string | null;
+  email: string | null;
 }
 
 /** The reader's answer for this workspace. */

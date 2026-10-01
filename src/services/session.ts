@@ -22,7 +22,7 @@
  */
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { writeTextAtomically } from '../api/files';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { configManager } from './config_manager';
@@ -284,7 +284,7 @@ class DocumentSession {
       return false;
     }
     try {
-      await writeTextFile(document.path, document.content);
+      await writeTextAtomically(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       void eventManager.emit(MESSAGE_EVENT, {

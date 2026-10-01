@@ -19,11 +19,20 @@
 //!   frontend treats that exactly like *synced*.
 //! - **the identity** a repository has configured, so a commit into the reader's own repository can
 //!   use their name and never invent one.
+//!
+//! Every git call the app makes goes through [`run_git`], so what the app can ask git to do is one
+//! list in one place — the list the probe beside this file and the tests below both hold to.
+//!
+//! The git may also be *named*: `YI_GIT` for a process started with one, and
+//! [`versioning_use_git`] for a probe, which cannot change the environment of the app it drives.
+//! A name that is not there means *no git*, never a different one.
 
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Mutex;
+use tauri::Manager;
 
 /// The repository a folder is in, if any.
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -34,9 +43,11 @@ pub struct RepositoryShape {
 }
 
 /// What a repository has configured for the reader.
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, serde::Deserialize, Clone, Default)]
 pub struct Identity {
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
     pub email: Option<String>,
 }
 
@@ -54,7 +65,15 @@ pub struct VersioningFacts {
 /// The git the app may run, and where it was found. `from_env` is `YI_GIT`, the test seam.
 fn find_git_from(from_env: Option<String>, clt_ok: bool, known: &[PathBuf], path: Option<String>) -> (Option<PathBuf>, String) {
     if let Some(value) = from_env.filter(|value| !value.trim().is_empty()) {
-        return (Some(PathBuf::from(value)), "env".to_string());
+        let named = PathBuf::from(value);
+        // A name that is not there is an answer, not a fallback: a git named and quietly not run
+        // would not be the git that was named. It is also how a probe asks the app for the machine
+        // that has no git at all (`test/probes/versioning-no-git.js`).
+        return if named.exists() {
+            (Some(named), "env".to_string())
+        } else {
+            (None, "env-missing".to_string())
+        };
     }
     if clt_ok {
         let system = PathBuf::from("/usr/bin/git");
@@ -88,6 +107,14 @@ fn known_git_locations() -> Vec<PathBuf> {
     ]
 }
 
+/// The git a probe has pointed the app at, if it has. `YI_GIT` is the same seam; this is the one a
+/// caller can reach while the process is already running.
+static GIT_FOR_TESTS: Mutex<Option<String>> = Mutex::new(None);
+
+fn git_for_tests() -> Option<String> {
+    GIT_FOR_TESTS.lock().ok().and_then(|named| named.clone())
+}
+
 #[cfg(target_os = "macos")]
 fn command_line_tools_are_installed() -> bool {
     // Answers without prompting; `/usr/bin/git` itself raises the installer when they are not.
@@ -105,11 +132,28 @@ fn command_line_tools_are_installed() -> bool {
 
 pub fn find_git() -> (Option<PathBuf>, String) {
     find_git_from(
-        std::env::var("YI_GIT").ok(),
+        git_for_tests().or_else(|| std::env::var("YI_GIT").ok()),
         command_line_tools_are_installed(),
         &known_git_locations(),
         std::env::var("PATH").ok(),
     )
+}
+
+/// Points the app at another git — `YI_GIT`, as a call, for a probe, which cannot change the
+/// environment of the process it is driving. `None` puts the app back to looking for one.
+///
+/// Only a debug build is listenable: choosing the binary this app runs is a test's business, never
+/// a shipped app's, so a release build answers with a refusal.
+#[tauri::command]
+pub fn versioning_use_git(git: Option<String>) -> Result<(), String> {
+    if !cfg!(debug_assertions) {
+        return Err("Only a debug build can be pointed at another git.".to_string());
+    }
+    let mut named = GIT_FOR_TESTS
+        .lock()
+        .map_err(|_| "The git seam is unusable.".to_string())?;
+    *named = git.filter(|value| !value.trim().is_empty());
+    Ok(())
 }
 
 /// Whether a `.git` sits in this folder — as a directory, or as the one-line file a worktree and a
@@ -255,20 +299,49 @@ fn content_is_offloaded(_path: &Path) -> bool {
     false
 }
 
+/// Runs one git command in `workspace`, and answers its trimmed output.
+///
+/// This is the only place the app runs git: everything it may ask git to do is written here and in
+/// the two functions below, so "what does the app run" is one list to read — and one list to hold
+/// it to (`test/probes/versioning-fake-git.js` watches every argument the app passes).
+fn run_git<S: AsRef<std::ffi::OsStr>>(git: &Path, workspace: &Path, arguments: &[S]) -> Result<String, String> {
+    let output = Command::new(git)
+        .arg("-C")
+        .arg(workspace)
+        .args(arguments)
+        .output()
+        .map_err(|error| format!("Could not run {}: {error}", git.display()))?;
+    if !output.status.success() {
+        let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        // git's own sentence is the useful one ("Author identity unknown", "index.lock exists");
+        // only when it says nothing is the command itself worth naming.
+        return Err(if complaint.is_empty() {
+            format!(
+                "git {} failed",
+                arguments
+                    .first()
+                    .map(|argument| argument.as_ref().to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            )
+        } else {
+            complaint
+        });
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// The git to run, or the one thing worth saying when the machine has none.
+fn git_to_run() -> Result<PathBuf, String> {
+    find_git()
+        .0
+        .ok_or_else(|| "This machine has no git to run.".to_string())
+}
+
 /// What the repository has configured for the reader, when there is a repository and a git to ask.
 fn identity_of(git: Option<&Path>, workspace: &Path) -> Identity {
     let read = |key: &str| {
         let git = git?;
-        let output = Command::new(git)
-            .arg("-C")
-            .arg(workspace)
-            .args(["config", "--get", key])
-            .output()
-            .ok()?;
-        if !output.status.success() {
-            return None;
-        }
-        let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let value = run_git(git, workspace, &["config", "--get", key]).ok()?;
         if value.is_empty() {
             None
         } else {
@@ -279,6 +352,95 @@ fn identity_of(git: Option<&Path>, workspace: &Path) -> Identity {
         name: read("user.name"),
         email: read("user.email"),
     }
+}
+
+/// Where a repository's own directory lives when it is kept **outside** the workspace: the app's
+/// data folder, under the workspace's name. That is the whole point of the arrangement — a cloud
+/// client watching the workspace never sees `.git` at all.
+fn separate_git_dir(app: &tauri::AppHandle, workspace: &Path) -> Result<PathBuf, String> {
+    let name = workspace
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .ok_or_else(|| format!("{} has no name to keep a repository under.", workspace.display()))?;
+    let data = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?;
+    Ok(data.join("repos").join(name))
+}
+
+/// Makes a repository for the workspace. `separate` keeps its git directory outside the folder —
+/// the choice for a folder a cloud drive could reach, where the frontend's plan asks for it.
+#[tauri::command]
+pub fn init_workspace_repository(
+    app: tauri::AppHandle,
+    workspace: String,
+    separate: bool,
+) -> Result<String, String> {
+    let git = git_to_run()?;
+    let folder = PathBuf::from(&workspace);
+    let git_dir = if separate {
+        separate_git_dir(&app, &folder)?
+    } else {
+        folder.join(".git")
+    };
+    init_repository_at(&git, &folder, separate.then_some(git_dir.as_path()))?;
+    Ok(git_dir.to_string_lossy().into_owned())
+}
+
+/// `git init`, with the git directory named when it is one that lives elsewhere.
+fn init_repository_at(git: &Path, workspace: &Path, separate_git_dir: Option<&Path>) -> Result<(), String> {
+    let mut arguments = vec!["init".to_string()];
+    if let Some(directory) = separate_git_dir {
+        arguments.push(format!("--separate-git-dir={}", directory.display()));
+    }
+    run_git(git, workspace, &arguments).map(|_| ())
+}
+
+/// Commits exactly `paths` — the files this app wrote — under `message`.
+///
+/// The pathspec on both commands is the point: a commit of ours holds the note we just saved and
+/// never the reader's own staged work or their unrelated edits. `identity` is supplied only for a
+/// repository the app made itself; in the reader's own repository git uses whatever they have
+/// configured, and a missing identity is their git's sentence to say.
+#[tauri::command]
+pub fn commit_paths(
+    workspace: String,
+    paths: Vec<String>,
+    message: String,
+    identity: Option<Identity>,
+) -> Result<(), String> {
+    let git = git_to_run()?;
+    commit_at(&git, Path::new(&workspace), &paths, &message, identity)
+}
+
+fn commit_at(
+    git: &Path,
+    workspace: &Path,
+    paths: &[String],
+    message: &str,
+    identity: Option<Identity>,
+) -> Result<(), String> {
+    let mut identity_arguments: Vec<String> = Vec::new();
+    if let Some(identity) = identity {
+        for (key, value) in [("user.name", identity.name), ("user.email", identity.email)] {
+            if let Some(value) = value.filter(|value| !value.trim().is_empty()) {
+                identity_arguments.push("-c".to_string());
+                identity_arguments.push(format!("{key}={value}"));
+            }
+        }
+    }
+    let mut add = identity_arguments.clone();
+    add.extend(["add", "--"].map(String::from));
+    add.extend(paths.iter().cloned());
+    run_git(git, workspace, &add)?;
+    let mut commit = identity_arguments;
+    commit.push("commit".to_string());
+    commit.push("-m".to_string());
+    commit.push(message.to_string());
+    commit.push("--".to_string());
+    commit.extend(paths.iter().cloned());
+    run_git(git, workspace, &commit).map(|_| ())
 }
 
 /// Everything the versioning decision needs about this folder.
@@ -320,14 +482,33 @@ mod tests {
 
     #[test]
     fn git_from_the_environment_wins_over_every_other_place() {
+        let directory = std::env::temp_dir().join("yi-versioning-named-git");
+        let _ = fs::remove_dir_all(&directory);
+        fs::create_dir_all(&directory).unwrap();
+        let named = directory.join("git");
+        fs::write(&named, "").unwrap();
+
         let (found, source) = find_git_from(
-            Some("/tmp/fake-git".to_string()),
+            Some(named.to_string_lossy().into_owned()),
             true,
             &[PathBuf::from("/opt/homebrew/bin/git")],
             Some("/usr/bin".to_string()),
         );
-        assert_eq!(found, Some(PathBuf::from("/tmp/fake-git")));
+        assert_eq!(found, Some(named));
         assert_eq!(source, "env");
+        let _ = fs::remove_dir_all(&directory);
+    }
+
+    #[test]
+    fn a_named_git_that_is_not_there_is_no_git_at_all() {
+        let (found, source) = find_git_from(
+            Some("/nowhere/yi-git".to_string()),
+            true,
+            &[PathBuf::from("/opt/homebrew/bin/git")],
+            Some("/usr/bin".to_string()),
+        );
+        assert_eq!(found, None);
+        assert_eq!(source, "env-missing");
     }
 
     #[test]
@@ -405,5 +586,82 @@ mod tests {
         let (kind, evidence) = cloud_kind(&plain, Path::new("/Users/someone"), &[]);
         assert_eq!(kind, "none", "{evidence}");
         let _ = fs::remove_dir_all(&plain);
+    }
+
+    /// What the app may ask git to do, held to by a git that only records.
+    ///
+    /// A probe cannot write an executable (`test/probes/versioning-fake-git.js` says why it points
+    /// the app at the committed one instead), so the vocabulary is proven here, where the app's own
+    /// hand is: every argument the app writes is read back and checked against the never-list.
+    #[cfg(unix)]
+    mod vocabulary {
+        use super::*;
+        use std::os::unix::fs::PermissionsExt;
+
+        /// A git that records one line per call — every argument, in order — and does nothing else.
+        fn recording_git(directory: &Path) -> PathBuf {
+            let script = directory.join("fake-git");
+            fs::write(
+                &script,
+                format!(
+                    "#!/bin/sh\nprintf 'git %s\\n' \"$*\" >> {}\nexit 0\n",
+                    directory.join("argv.log").display()
+                ),
+            )
+            .unwrap();
+            let mut permissions = fs::metadata(&script).unwrap().permissions();
+            permissions.set_mode(0o755);
+            fs::set_permissions(&script, permissions).unwrap();
+            script
+        }
+
+        #[test]
+        fn the_app_asks_git_for_these_commands_and_no_others() {
+            let directory = std::env::temp_dir().join("yi-versioning-vocabulary");
+            let _ = fs::remove_dir_all(&directory);
+            fs::create_dir_all(&directory).unwrap();
+            let git = recording_git(&directory);
+            let workspace = directory.join("notes");
+            fs::create_dir_all(&workspace).unwrap();
+            let note = workspace.join("note.md");
+            fs::write(&note, "hello\n").unwrap();
+            let note = note.to_string_lossy().into_owned();
+
+            init_repository_at(&git, &workspace, None).unwrap();
+            init_repository_at(&git, &workspace, Some(&directory.join("repos/notes"))).unwrap();
+            let ours = Identity {
+                name: Some("Yi".to_string()),
+                email: Some("yi@localhost".to_string()),
+            };
+            commit_at(&git, &workspace, &[note.clone()], "a version", Some(ours)).unwrap();
+            // Their repository: no identity of ours, so git commits under their own name.
+            commit_at(&git, &workspace, &[note], "another version", None).unwrap();
+
+            let recorded: Vec<String> = fs::read_to_string(directory.join("argv.log"))
+                .unwrap()
+                .lines()
+                .map(str::to_string)
+                .collect();
+            assert_eq!(recorded.len(), 6, "{recorded:?}");
+            assert!(recorded[0].ends_with(" init"), "{}", recorded[0]);
+            assert!(recorded[1].contains("--separate-git-dir="), "{}", recorded[1]);
+            assert!(recorded[2].contains(" add -- "), "{}", recorded[2]);
+            assert!(recorded[3].contains(" commit -m a version -- "), "{}", recorded[3]);
+            assert!(!recorded[4].contains(" -c "), "{}", recorded[4]);
+            assert!(!recorded[5].contains(" -c "), "{}", recorded[5]);
+
+            // The never-list: no argument the app writes is ever one of these, anywhere.
+            let never = [
+                "fetch", "pull", "gc", "clean", "reset", "checkout", "switch", "amend", "force",
+                "--hard",
+            ];
+            for line in &recorded {
+                for argument in line.split_whitespace() {
+                    let word = argument.trim_start_matches('-');
+                    assert!(!never.contains(&word), "{line}");
+                }
+            }
+            let _ = fs::remove_dir_all(&directory);
+        }
     }
 }

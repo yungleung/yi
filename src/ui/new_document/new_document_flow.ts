@@ -19,8 +19,7 @@
  * for it, and nothing here is written by hand twice.
  */
 
-import { writeTextFile } from '@tauri-apps/plugin-fs';
-import { createEntry } from '../../api/files';
+import { createEntry, writeTextAtomically } from '../../api/files';
 import { configManager } from '../../services/config_manager';
 import {
   newDocumentDate,
@@ -102,7 +101,7 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     template: configManager.get()?.new_file_frontmatter ?? undefined
   });
   try {
-    await writeTextFile(made.path, content);
+    await writeTextAtomically(made.path, content);
   } catch (error) {
     // The file is there and empty. The note still opens holding what it was to hold — the
     // session's copy is the truth until it is saved — and the message says the write failed, so
