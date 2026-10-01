@@ -63,13 +63,24 @@
     await pending;
     await t.sleep(140);
   };
-  const demoDocument = async () => {
-    const folder = String((await config()).workspace ?? '');
-    const path = `${folder}/default-document.md`;
-    return { path, content: await read(path) };
+  /**
+   * The reader's session is theirs: the file goes back exactly as it was, and the live session
+   * reads it again (`docs/ai-context.md`: the fixture is a test's, never the reader's).
+   */
+  const putSessionBack = async (text) => {
+    if (text !== null) {
+      await invoke('save_session', { session: text });
+    }
+    await session.documentSession.load();
+    await t.sleep(120);
+    const prompt = document.querySelector('[data-prompt]');
+    if (prompt !== null && !prompt.classList.contains('hidden')) {
+      prompt.querySelector('[data-prompt-no]')?.click();
+    }
   };
 
   const before = await config();
+  const sessionText = await invoke('load_session');
   try {
     try {
       await files.deleteEntry(workspace);
@@ -145,20 +156,7 @@
   } finally {
     closeMessages();
     await t.restoreWorkspace(before);
-    for (const held of session.documentSession.stack()) {
-      const pending = session.documentSession.drop(held.id);
-      await t.sleep(80);
-      const prompt = document.querySelector('[data-prompt]');
-      if (prompt !== null && !prompt.classList.contains('hidden')) {
-        prompt.querySelector('[data-prompt-no]')?.click();
-      }
-      await pending;
-    }
-    try {
-      await open(await demoDocument());
-    } catch {
-      // No demo document in this workspace: nothing to open it on.
-    }
+    await putSessionBack(sessionText);
     try {
       await files.deleteEntry(workspace);
     } catch {

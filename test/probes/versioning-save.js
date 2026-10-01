@@ -67,22 +67,30 @@
     await pending;
     await t.sleep(150);
   };
-  const demoDocument = async () => {
-    const folder = String((await config()).workspace ?? '');
-    const path = `${folder}/default-document.md`;
-    const bytes = await invoke('plugin:fs|read_text_file', { path });
-    return {
-      path,
-      content: new TextDecoder().decode(bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes))
-    };
-  };
   /** Whether git has nothing left to commit at `path` — which is what being committed means. */
   const alreadyCommitted = (path, label) =>
     versioning
       .commitPaths(workspace, [path], label, APP_IDENTITY)
       .then(() => false, () => true);
+  /**
+   * The reader's session is theirs: the file goes back exactly as it was, and the live session
+   * reads it again, so the documents that were open are the documents that are open
+   * (`docs/ai-context.md`: the fixture is a test's, never the reader's).
+   */
+  const putSessionBack = async (text) => {
+    if (text !== null) {
+      await invoke('save_session', { session: text });
+    }
+    await session.documentSession.load();
+    await t.sleep(120);
+    const prompt = document.querySelector('[data-prompt]');
+    if (prompt !== null && !prompt.classList.contains('hidden')) {
+      prompt.querySelector('[data-prompt-no]')?.click();
+    }
+  };
 
   const before = await config();
+  const sessionText = await invoke('load_session');
   try {
     try {
       await files.deleteEntry(workspace);
@@ -118,22 +126,7 @@
   } finally {
     await clear();
     await t.restoreWorkspace(before);
-    // Leave the session as tidy as the probe found it: nothing it pushed, and a document that is
-    // not a note this probe is about to delete.
-    for (const held of session.documentSession.stack()) {
-      const pending = session.documentSession.drop(held.id);
-      await t.sleep(80);
-      const prompt = document.querySelector('[data-prompt]');
-      if (prompt !== null && !prompt.classList.contains('hidden')) {
-        prompt.querySelector('[data-prompt-no]')?.click();
-      }
-      await pending;
-    }
-    try {
-      await open(await demoDocument());
-    } catch {
-      // No demo document in this workspace: nothing to open it on.
-    }
+    await putSessionBack(sessionText);
     try {
       await files.deleteEntry(workspace);
     } catch {
