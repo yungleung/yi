@@ -19,6 +19,7 @@ import { SessionToolbar } from './ui/toolbar/session_toolbar';
 import { SavedStatus, StackStatus } from './ui/document_status';
 import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
+import { registerVersionCommand } from './ui/versioning/save_version';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
@@ -102,6 +103,8 @@ function createAppShell(): MarkdownEditor {
   registerSessionCommands();
   // And the one that makes a note: the menu item and the tree's own *New file* name it.
   registerNewDocumentCommand();
+  // And the one that keeps a version: the File menu's item names it, and nothing else ever runs git.
+  registerVersionCommand();
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).

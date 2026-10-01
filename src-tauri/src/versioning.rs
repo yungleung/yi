@@ -59,6 +59,9 @@ pub struct VersioningFacts {
     pub repository: RepositoryShape,
     pub cloud: String,
     pub cloud_evidence: String,
+    /// Where a repository of ours would keep its git directory — the app's data folder, named after
+    /// the workspace — for the words that name it and for `init_workspace_repository`.
+    pub separate_git_dir: Option<String>,
     pub identity: Identity,
 }
 
@@ -445,7 +448,7 @@ fn commit_at(
 
 /// Everything the versioning decision needs about this folder.
 #[tauri::command]
-pub fn versioning_facts(workspace: String) -> Result<VersioningFacts, String> {
+pub fn versioning_facts(app: tauri::AppHandle, workspace: String) -> Result<VersioningFacts, String> {
     let folder = PathBuf::from(&workspace);
     let (git, git_source) = find_git();
     let home = dirs_home();
@@ -454,6 +457,11 @@ pub fn versioning_facts(workspace: String) -> Result<VersioningFacts, String> {
         Some(home) => cloud_kind(&folder, home, &environment),
         None => ("unknown".to_string(), "no home folder to compare against".to_string()),
     };
+    // A workspace with no name of its own cannot have a repository of ours; the words then simply
+    // have no path to show, and the plan never asks for one.
+    let separate = separate_git_dir(&app, &folder)
+        .ok()
+        .map(|dir| dir.to_string_lossy().into_owned());
     Ok(VersioningFacts {
         repository: repository_shape(&folder),
         identity: identity_of(git.as_deref(), &folder),
@@ -461,6 +469,7 @@ pub fn versioning_facts(workspace: String) -> Result<VersioningFacts, String> {
         git_source,
         cloud,
         cloud_evidence,
+        separate_git_dir: separate,
     })
 }
 

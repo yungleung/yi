@@ -36,6 +36,7 @@ export type CommandId =
   | 'file:save'
   | 'file:saveAs'
   | 'file:newMarkdown'
+  | 'version:save'
   | 'session:toggleStack'
   | 'session:openStack'
   | 'session:restore'

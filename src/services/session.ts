@@ -232,13 +232,28 @@ class DocumentSession {
     if (!document || !this.editor) {
       return;
     }
-    this.capture();
-    const latest = this.current() ?? document;
-    if (latest.path) {
-      await this.writeDocument(latest);
+    if (document.path) {
+      await this.writeCurrent();
       return;
     }
     await this.saveAs();
+  }
+
+  /**
+   * Writes the document on screen to its file, capturing what the editor holds first.
+   *
+   * The capture is the point: this copy can be up to `SAVE_DELAY_MS` behind a keystroke, so
+   * anything that needs the file to hold what the reader *sees* — a version, above all — asks
+   * here rather than writing the copy. Answers false when there is no document or no file to write
+   * to; a write that failed has already said so.
+   */
+  async writeCurrent(): Promise<boolean> {
+    const document = this.current();
+    if (!document || !this.editor || !document.path) {
+      return false;
+    }
+    this.capture();
+    return await this.writeDocument(this.current() ?? document);
   }
 
   /** Writes the document on screen to a file of its own, and follows it from then on. */

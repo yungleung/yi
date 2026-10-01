@@ -15,7 +15,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'versioning.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { versioningPlan } = await import(file);
+const { consentFrom, versionMessage, versionLocation, versioningPlan } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -28,6 +28,7 @@ const facts = (over = {}) => ({
   git: '/usr/bin/git',
   repository: { here: false, above: false, toplevel: null },
   cloud: 'none',
+  separate_git_dir: '/app-data/repos/notes',
   ...over
 });
 const plan = (over, consent) => versioningPlan(facts(over), consent);
@@ -86,6 +87,24 @@ check(
   plan({ repository: { here: true, above: true, toplevel: '/notes' }, cloud: 'cloud-storage' }, 'yes'),
   { use: 'theirs', separateGitDir: false, ask: 'cloud-risk', blocked: null }
 );
+check('an answer belongs to the workspace it was given for', consentFrom({ versioning: true, versioning_workspace: '/notes' }, '/somewhere-else'), 'unasked');
+check('a workspace the reader said yes to reads as yes', consentFrom({ versioning: true, versioning_workspace: '/notes' }, '/notes'), 'yes');
+check('and one they said no to reads as no', consentFrom({ versioning: false, versioning_workspace: '/notes' }, '/notes'), 'no');
+check('a version is named by the note and the minute it was asked for', versionMessage('A note', new Date(2026, 9, 1, 9, 5)), 'A note · 2026-10-01 09:05');
+check(
+  'their repository is the path the words about a synced folder name',
+  versionLocation(
+    facts({ repository: { here: true, above: true, toplevel: '/notes' }, cloud: 'cloud-storage' }),
+    plan({ repository: { here: true, above: true, toplevel: '/notes' }, cloud: 'cloud-storage' }, 'yes')
+  ),
+  '/notes'
+);
+check(
+  'and the git directory outside the folder is the path ours names',
+  versionLocation(facts({ cloud: 'cloud-storage' }), plan({ cloud: 'cloud-storage' }, 'yes')),
+  '/app-data/repos/notes'
+);
+check('nothing to name for a plan that touches nothing', versionLocation(facts(), plan({}, 'no')), null);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

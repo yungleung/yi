@@ -36,6 +36,12 @@ export interface VersioningFacts {
   git: string | null;
   repository: RepositoryShape;
   cloud: CloudKind;
+  /**
+   * Where a repository of ours keeps its git directory — the app's own data folder, named after the
+   * workspace — or null when there is no folder to put one in. This is the path the words about a
+   * synced folder name, and the one `init_workspace_repository` is given.
+   */
+  separate_git_dir: string | null;
 }
 
 /** The facts, plus what a person may want to see about them (what the backend reports). */
@@ -55,6 +61,9 @@ export interface GitIdentity {
   name: string | null;
   email: string | null;
 }
+
+/** The name and address a commit carries in a repository the app made itself. */
+export const APP_IDENTITY: GitIdentity = { name: 'Yi', email: 'yi@localhost' };
 
 /** The reader's answer for this workspace. */
 export type Consent = 'unasked' | 'yes' | 'no';
@@ -97,4 +106,46 @@ export function versioningPlan(facts: VersioningFacts, consent: Consent): Versio
     return { use: 'theirs', separateGitDir: false, ask: synced ? 'cloud-risk' : null, blocked: null };
   }
   return { use: 'init', separateGitDir: synced, ask: synced ? 'cloud-risk' : null, blocked: null };
+}
+
+/**
+ * The reader's answer as the config holds it. An answer given for another folder is no answer:
+ * consent belongs to a workspace, and a reader who keeps versions of their notes has not agreed to
+ * keep them of a folder they open next.
+ */
+export function consentFrom(stored: StoredConsent, workspace: string): Consent {
+  if (stored.versioning_workspace !== workspace) {
+    return 'unasked';
+  }
+  return stored.versioning ? 'yes' : 'no';
+}
+
+/** What the config remembers of the reader's answer: the answer, and the workspace it was for. */
+export interface StoredConsent {
+  versioning: boolean;
+  versioning_workspace: string | null;
+}
+
+/**
+ * Where the versions live, for the words that name it: the repository they already have, or the
+ * git directory we would keep outside a folder a cloud drive could reach.
+ */
+export function versionLocation(facts: VersioningFacts, plan: VersioningPlan): string | null {
+  if (plan.use === 'theirs') {
+    return facts.repository.toplevel;
+  }
+  if (plan.use === 'init') {
+    return facts.separate_git_dir;
+  }
+  return null;
+}
+
+/**
+ * The message a version carries: the note's own name, and the minute it was asked for — so
+ * `git log` reads like the reader's own list of notes rather than a machine's.
+ */
+export function versionMessage(name: string, at: Date): string {
+  const two = (value: number) => String(value).padStart(2, '0');
+  const date = `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`;
+  return `${name} · ${date} ${two(at.getHours())}:${two(at.getMinutes())}`;
 }
