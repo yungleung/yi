@@ -113,6 +113,17 @@
         overThePanel: overThePanel?.getAttributeNames?.() ?? null
       }
     );
+    // The list is capped by the room above the button, so a shorter window cannot push the panel's
+    // top past the window's edge (`tauri.conf.json` sets no minimum height).
+    const list = document.querySelector('[data-version-list]');
+    const cap = Number.parseInt(list?.style.maxHeight ?? '', 10);
+    check(
+      'and its height is the room above it, not the list’s own cap',
+      Number.isFinite(cap) &&
+        cap + 8 <= Math.round((hostRect?.bottom ?? 0) + 1) &&
+        (hostRect?.top ?? -1) >= 0,
+      { cap, hostBottom: hostRect ? Math.round(hostRect.bottom) : null }
+    );
     check(
       'the panel lists the note’s versions, the newest first',
       rows.length === 2 &&

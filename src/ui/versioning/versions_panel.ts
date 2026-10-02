@@ -39,8 +39,13 @@ export class VersionsPanel extends AnchoredPanel {
   /** Shows the versions as they stand, and reads once for the freshest answer. */
   open(): void {
     this.render();
-    void versionsOfDocument.reread().then(() => this.render());
     super.open();
+    // It hangs above a button at the bottom of the window, so it may not be taller than the room
+    // there is above it: with no minimum window height (`tauri.conf.json`), the 320px cap of its list
+    // would otherwise push its own top past the window's edge.
+    const room = Math.round(this.element.getBoundingClientRect().bottom - 8);
+    this.list.style.maxHeight = `${Math.max(80, room)}px`;
+    void versionsOfDocument.reread().then(() => this.render());
   }
 
   private render(): void {

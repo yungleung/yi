@@ -201,9 +201,9 @@ export class VersionDiffView {
       row.setAttribute('data-version-diff-line', 'true');
       row.setAttribute('data-version-diff-kind', line.kind);
       if (line.kind === 'removed') {
-        row.classList.add('text-error');
+        row.classList.add('markdown-diff-removed');
       } else if (line.kind === 'added') {
-        row.classList.add('text-success');
+        row.classList.add('markdown-diff-added');
       } else {
         row.classList.add('opacity-70');
       }

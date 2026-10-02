@@ -75,6 +75,36 @@
       kind: row.getAttribute('data-version-diff-kind'),
       text: row.textContent
     }));
+    // The ink of a changed line: the palette's own mixes, not the theme's surface colours — which
+    // are the colours a *surface* is painted with and measure under 3:1 as text in the light theme.
+    // The arithmetic is `source-theme.js`'s, written again here because a probe stands alone.
+    // A changed line wears the palette's own mixes (`--md-source-deleted`/`-inserted`), never the
+    // theme's `error`/`success`: those are *surface* colours and measure under 3:1 as text in the
+    // light theme (`docs/architecture.md`; `source-theme.js` holds the deletion mix to 3:1 where it
+    // is used on a `pre`). The ratios are not measured here — the colours compute to `oklab(…)`,
+    // which this probe cannot decode — so what is asserted is that the surface colours are gone.
+    const colourWith = (className) => {
+      const sample = document.createElement('span');
+      sample.className = className;
+      document.querySelector('[data-version-diff]')?.appendChild(sample);
+      const colour = getComputedStyle(sample).color;
+      sample.remove();
+      return colour;
+    };
+    const rowsInk = (kind) =>
+      getComputedStyle(document.querySelector(`[data-version-diff-kind="${kind}"]`)).color;
+    check(
+      'and a change is painted with the palette’s ink, not the theme’s surface colours',
+      rowsInk('removed') !== colourWith('text-error') &&
+        rowsInk('added') !== colourWith('text-success') &&
+        rowsInk('removed') !== rowsInk('added'),
+      {
+        removed: rowsInk('removed'),
+        error: colourWith('text-error'),
+        added: rowsInk('added'),
+        success: colourWith('text-success')
+      }
+    );
     check(
       'the whole note is there: what stayed, and the line that changed on both sides',
       lines.length === 4 &&
