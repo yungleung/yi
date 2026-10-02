@@ -50,7 +50,7 @@ the authority; read it with this plan.
 **Interfaces:** `Version` gains `path: string` (repo-relative, the name at that commit);
 `versioningVersionText(workspace, revision, path): Promise<string>`.
 
-- [ ] **Step 1: The failing Rust test** (the parse, and the guards):
+- [x] **Step 1: The failing Rust test** (the parse, and the guards):
 
 ```rust
     #[test]
@@ -76,10 +76,10 @@ the authority; read it with this plan.
     }
 ```
 
-- [ ] **Step 2: Run it, expect failure** — `cd src-tauri && cargo test versioning` fails to compile
+- [x] **Step 2: Run it, expect failure** — `cd src-tauri && cargo test versioning` fails to compile
   (`no field path`, `cannot find function version_text_arguments`).
 
-- [ ] **Step 3: The rows carry their path** — in `versioning.rs`: `Version` gains
+- [x] **Step 3: The rows carry their path** — in `versioning.rs`: `Version` gains
   `pub path: String`; the format becomes `const VERSION_FORMAT: &str = "%x1e%H%x00%at%x00%s%x00%b";`
   (the separator leads, so the path git prints *after* the format belongs to the same record), the
   call gains `--name-only`, and the parser reads four NUL-separated fields and then the path from
@@ -114,7 +114,7 @@ fn versions_from(output: &str) -> Vec<Version> {
 }
 ```
 
-- [ ] **Step 4: The version's text** — the guard and the call, beside `read_versions`:
+- [x] **Step 4: The version's text** — the guard and the call, beside `read_versions`:
 
 ```rust
 /// `git show <revision>:<path>`, with both halves checked first: this is the one place a caller's
@@ -162,7 +162,7 @@ pub fn versioning_version_text(
   restore must not corrupt a file — and it says so in the comment. Register the command in
   `lib.rs`.)
 
-- [ ] **Step 5: The vocabulary test learns it** — in the `vocabulary` module, after the read:
+- [x] **Step 5: The vocabulary test learns it** — in the `vocabulary` module, after the read:
 
 ```rust
             read_version_text(&git, &workspace, "abc123", "note.md").unwrap();
@@ -170,12 +170,12 @@ pub fn versioning_version_text(
 
   with `--version-text` asserted on the tenth line (`show abc123:note.md`, and no never-list word).
 
-- [ ] **Step 6: The seam** — `src/api/versioning.ts` gains
+- [x] **Step 6: The seam** — `src/api/versioning.ts` gains
   `versioningVersionText(workspace, revision, path): Promise<string>` (`invoke('versioning_version_text', …)`),
   and `src/services/versioning.ts`'s `Version` gains `path: string` (repo-relative, the name at that
   commit).
 
-- [ ] **Step 7: The recorder sees both** — in `test/probes/versioning-fake-git.js`, after the
+- [x] **Step 7: The recorder sees both** — in `test/probes/versioning-fake-git.js`, after the
   existing history read, assert the log line now carries `--name-only` (update the exact string it
   compares), then ask for a version's text and assert the line
   `git -C <folder> show abc123:note.md`:
@@ -192,7 +192,7 @@ pub fn versioning_version_text(
 
   (the recorder answers nothing, so the text is empty and the *arguments* are the evidence).
 
-- [ ] **Step 8: Verify and commit** — `cargo test`, `npx tsc --noEmit`, `npm run check`, the probe,
+- [x] **Step 8: Verify and commit** — `cargo test`, `npx tsc --noEmit`, `npm run check`, the probe,
   then `git commit -m "feat(versioning): a version's text, from the name it had then"`.
 
 ### Task 2: the diff rule
@@ -202,15 +202,15 @@ pub fn versioning_version_text(
 **Interfaces:** `textDiff(before: string, after: string, cap: number): DiffLine[]` with
 `type DiffLine = { kind: 'same' | 'removed' | 'added'; text: string }`.
 
-- [ ] **Step 1: The failing check** — `check-text-diff.mjs` bundles the module (the rolldown
+- [x] **Step 1: The failing check** — `check-text-diff.mjs` bundles the module (the rolldown
   pattern) and walks: equal texts (all `same`), an insertion, a deletion, a rewrite in the middle,
   an empty `before` (all `added`), an empty `after` (all `removed`), a text with no trailing
   newline, and a middle longer than the cap answering one `removed`/`added` pair whose text says
   `N lines replaced`. Each case prints `expected`/`actual` like the other checks.
 
-- [ ] **Step 2: Run it, expect failure** (`Cannot find module`).
+- [x] **Step 2: Run it, expect failure** (`Cannot find module`).
 
-- [ ] **Step 3: The rule** — `src/services/text_diff.ts`:
+- [x] **Step 3: The rule** — `src/services/text_diff.ts`:
 
 ```ts
 /**
@@ -269,9 +269,9 @@ export function textDiff(before: string, after: string, cap: number): DiffLine[]
   walk answering `same`/`removed`/`added`), and `must not exceed` the cap's meaning written in a
   comment.
 
-- [ ] **Step 4: Run it, expect success** — `npm run check` green at **39/39**.
+- [x] **Step 4: Run it, expect success** — `npm run check` green at **39/39**.
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(versioning): two texts, as one line stream"`.
+- [x] **Step 5: Commit** — `git commit -m "feat(versioning): two texts, as one line stream"`.
 
 ### Task 3: the sheet
 
@@ -281,7 +281,7 @@ export function textDiff(before: string, after: string, cap: number): DiffLine[]
 **Interfaces:** consumes `textDiff` (Task 2) and `versioningVersionText` (Task 1); produces
 `versionDiffView.show({ revision, path, stamp })`.
 
-- [ ] **Step 1: The sheet** — `version_diff_view.ts`, in this shape (the header comment is written
+- [x] **Step 1: The sheet** — `version_diff_view.ts`, in this shape (the header comment is written
   out because it carries the one decision that keeps this out of the floating family):
 
 ```ts
@@ -335,15 +335,15 @@ export const versionDiffView = new VersionDiffView();
   `t('version.diff.none')` and no restore; Escape and ✕ close it and put the keyboard back to the
   editor's scroller. `document.querySelector`-reachable on every part.
 
-- [ ] **Step 2: Rows open it** — in `versions_panel.ts`, a row's press calls
+- [x] **Step 2: Rows open it** — in `versions_panel.ts`, a row's press calls
   `versionDiffView.show({ revision: version.hash, path: version.path, stamp: version.stamp })` and
   closes the panel; give the row `data-version-open` so a probe presses it the way a reader does.
 
-- [ ] **Step 3: Mounted and worded** — `main.ts` passes the content shell to the sheet (or the sheet
+- [x] **Step 3: Mounted and worded** — `main.ts` passes the content shell to the sheet (or the sheet
   appends itself to the shell on first show, as the messages do); the seven `version.diff.*` keys go
   into all eight catalogues.
 
-- [ ] **Step 4: The probe** — create `test/probes/versioning-diff.js`: a folder of its own with a
+- [x] **Step 4: The probe** — create `test/probes/versioning-diff.js`: a folder of its own with a
   repository, two versions of a note (the second changing a line in the middle), consent, the note
   opened and the panel opened; then: press the first row, assert the sheet is up, that
   `[data-version-diff-line]` holds **every line of the note** (both texts' line count, unchanged
@@ -351,7 +351,7 @@ export const versionDiffView = new VersionDiffView();
   open does not change the document's text, and that Escape closes it and leaves the document as it
   was.
 
-- [ ] **Step 5: Verify and commit** — as usual, then
+- [x] **Step 5: Verify and commit** — as usual, then
   `git commit -m "feat(versioning): a version, whole, with what changed marked"`.
 
 ### Task 4: going back to it
@@ -361,7 +361,7 @@ create `test/probes/versioning-restore.js`
 
 **Interfaces:** `documentSession.openVersion(path: string, content: string): Promise<void>`.
 
-- [ ] **Step 1: The session's own way in** — in `session.ts`, beside `openFile` (the names below are
+- [x] **Step 1: The session's own way in** — in `session.ts`, beside `openFile` (the names below are
   the ones already in that file: `ask`, `capture`, `openInto`, `keyFor`, `show`, `announce`,
   `persist`, `eventManager`, `MESSAGE_EVENT`, `t`, `writeTextAtomically`):
 
@@ -409,10 +409,10 @@ create `test/probes/versioning-restore.js`
   and the session's own `openDecision` is deliberately not consulted a second time — the reader was
   asked once, here, and `openInto` is given that answer as `keep`.
 
-- [ ] **Step 2: The button** — the sheet's *Restore This Version* calls
+- [x] **Step 2: The button** — the sheet's *Restore This Version* calls
   `documentSession.openVersion(document.path, versionText)`, then closes the sheet.
 
-- [ ] **Step 3: The probe** — create `test/probes/versioning-restore.js`: the same setup as
+- [x] **Step 3: The probe** — create `test/probes/versioning-restore.js`: the same setup as
   `versioning-diff.js`, then: with the text on screen *edited*, restore an older version and answer
   the session's question ("push and open") → the file holds the version's text, the document on
   screen is that text, its id is the stack's head, and the app says *Saved*; and with the recorder
@@ -420,23 +420,23 @@ create `test/probes/versioning-restore.js`
   `commit`, no `checkout`** — a restore is a file write and nothing else. Put the seam back in the
   `finally`, as `versioning-no-git.js` does.
 
-- [ ] **Step 4: Verify and commit** — `cargo test`, `npm run check`, `npx tsc --noEmit`, both
+- [x] **Step 4: Verify and commit** — `cargo test`, `npm run check`, `npx tsc --noEmit`, both
   probes, then `git commit -m "feat(versioning): restore a version, and nothing but the file"`.
 
 ### Task 5: the guides
 
 **Files:** `docs/ai-context.md`, `docs/architecture.md`, `docs/roadmap.md`, `test/README.md`
 
-- [ ] **Step 1:** ai-context: the sheet (a mode that takes the keyboard, why it is not a floating
+- [x] **Step 1:** ai-context: the sheet (a mode that takes the keyboard, why it is not a floating
   surface), the whole-text rule, and the restore's shape (the file, never the repository).
-- [ ] **Step 2:** architecture: a row for "seeing a version and going back to it" (the read, the
+- [x] **Step 2:** architecture: a row for "seeing a version and going back to it" (the read, the
   rule, the sheet, the session's `openVersion`).
-- [ ] **Step 3:** roadmap: the Closed entry with the measured facts — `--follow --name-only` giving
+- [x] **Step 3:** roadmap: the Closed entry with the measured facts — `--follow --name-only` giving
   the name per commit, `git show` failing with the wrong name, the whole-text decision — and the
   check/probe counts.
-- [ ] **Step 4:** test/README: the new check row (39 checks now), the two probes, and the count
+- [x] **Step 4:** test/README: the new check row (39 checks now), the two probes, and the count
   (137 → 139).
-- [ ] **Step 5: Verify and commit** — `npm run check`, then
+- [x] **Step 5: Verify and commit** — `npm run check`, then
   `git commit -m "docs: seeing a version, and going back to it"`.
 
 ## Self-review
@@ -447,3 +447,30 @@ create `test/probes/versioning-restore.js`
   (Task 1) and the two probes (Tasks 3 and 4).
 - One type carried through every task: `Version` (with `path`), `DiffLine`, and
   `textDiff(before, after, cap)`.
+
+## Handoff
+
+**State.** All five tasks are done, on `codex/versioning`, and the branch is **not merged** — the
+reader reviews. `npm run check` 39/39, `cargo test` 35/35, `npx tsc --noEmit` silent, and the
+thirteen versioning probes green (0.1–3.9 s each, window in front).
+
+**What the writing found.** A document with a file is keyed by its **path**
+(`document_identity.ts: documentId` → `readFrontmatterId ?? firstIdDigits ?? path`), so a restore is
+*not* "open another document": `openInto` sees the same id and brings the existing document forward,
+leaving the old text on screen (measured: the file held the version's text while the document still
+held `the now`). `openVersion` therefore replaces that document's text — content, `saved`, title,
+view. And the first cut asked the *session's* question on restore ("push it to the stack, or open
+without it"), which the reader corrected: that question is about opening another document, and
+neither answer means *"I did not mean to press that"*. It asks one thing now — *restore this
+version?*, through the app's own prompt, so Escape and Cancel change **nothing at all** — and
+nothing is kept for the reader.
+
+**The full suite at hand-off:** 116/124 (15 skipped). Seven red are this machine's long-standing
+tail, none version-related: `completion-wikilink` and the three `document-stack` probes (green with
+the app pointed at the fixtures), `edit-cost` and `edit-stability` (the window and bridge-budget
+pair) and `insert-rule`'s `atEnd` (the caret bug the roadmap records as older than the phases). The
+one versioning red in that run, `versioning-no-git.js`, passes alone and beside its neighbours; its
+`open` helper now waits for the session's card instead of sleeping at it.
+
+**Out of scope, deliberately:** comparing two arbitrary versions, editing inside the diff, a
+whole-workspace restore, binary versions, and pushing.

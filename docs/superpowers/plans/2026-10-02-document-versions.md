@@ -78,7 +78,7 @@ authority; read it with this plan.
 **Interfaces:**
 - Produces: `versionStamp(at: number): string`, `versionMessage(name: string, at: Date, comment: string): { subject: string; body: string | null }`, and `commitPaths(workspace, paths, message, identity, body: string | null)`.
 
-- [ ] **Step 1: The failing check** — in `test/checks/check-versioning.mjs`, replace the message case
+- [x] **Step 1: The failing check** — in `test/checks/check-versioning.mjs`, replace the message case
   with the stamp's and the three that follow it:
 
 ```js
@@ -110,10 +110,10 @@ process.env.TZ = 'UTC';
 
   and import `versionMessage` and `versionStamp` from the bundle beside `consentFrom`.
 
-- [ ] **Step 2: Run it, expect failure** — `npm run check` must fail: `versionStamp is not defined`
+- [x] **Step 2: Run it, expect failure** — `npm run check` must fail: `versionStamp is not defined`
   (the bundler leaves the missing export undefined).
 
-- [ ] **Step 3: The rule** — in `src/services/versioning.ts` replace `versionMessage` with:
+- [x] **Step 3: The rule** — in `src/services/versioning.ts` replace `versionMessage` with:
 
 ```ts
 /** When a version was made, as `YYYY-MM-DD HH:MM` in the reader's own time. */
@@ -142,7 +142,7 @@ export function versionMessage(
 }
 ```
 
-- [ ] **Step 4: The commit's body** — in `src-tauri/src/versioning.rs`, give `commit_at` a body and
+- [x] **Step 4: The commit's body** — in `src-tauri/src/versioning.rs`, give `commit_at` a body and
   send it as a second `-m` (the identity arguments above it are unchanged):
 
 ```rust
@@ -181,7 +181,7 @@ pub fn commit_paths(
 }
 ```
 
-- [ ] **Step 5: The vocabulary test learns the body** — in the `vocabulary` test module, after the
+- [x] **Step 5: The vocabulary test learns the body** — in the `vocabulary` test module, after the
   two commits it already makes, add
 
 ```rust
@@ -195,7 +195,7 @@ pub fn commit_paths(
             assert!(recorded[7].contains(" commit -m a named version -m why I rewrote it -- "), "{}", recorded[7]);
 ```
 
-- [ ] **Step 6: The seam and the flow** — `src/api/versioning.ts`:
+- [x] **Step 6: The seam and the flow** — `src/api/versioning.ts`:
 
 ```ts
 export async function commitPaths(
@@ -225,7 +225,7 @@ export async function commitPaths(
   The probes that call `commitPaths` directly (`versioning-save.js`, `versioning-staged.js`,
   `versioning-repository.js`, `versioning-outer.js`) keep working: `body` has a default.
 
-- [ ] **Step 7: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green,
+- [x] **Step 7: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green,
   `cd src-tauri && cargo test` green, then
   `git commit -m "feat(versioning): a version can carry a comment"`.
 
@@ -242,7 +242,7 @@ export async function commitPaths(
   when the reader cancelled (Escape and the cancel button both answer `null`); and the second
   parameter of `saveVersion(chooser?, commentDialog?)`.
 
-- [ ] **Step 1: The card** — create `src/ui/versioning/version_comment_dialog.ts`:
+- [x] **Step 1: The card** — create `src/ui/versioning/version_comment_dialog.ts`:
 
 ```ts
 /**
@@ -348,7 +348,7 @@ export class VersionCommentDialog extends QuestionCard<string | null> {
 export const versionCommentDialog = new VersionCommentDialog();
 ```
 
-- [ ] **Step 2: The flow asks it** — in `save_version.ts`, add the import, the port and the step. The
+- [x] **Step 2: The flow asks it** — in `save_version.ts`, add the import, the port and the step. The
   signature becomes
 
 ```ts
@@ -370,7 +370,7 @@ export async function saveVersion(
   with the commit at the end passing both halves:
   `const message = versionMessage(saved.title, new Date(), comment);` … `message.body`.
 
-- [ ] **Step 3: The words, in eight catalogues** — add to every `locales/*.json` (English written
+- [x] **Step 3: The words, in eight catalogues** — add to every `locales/*.json` (English written
   here; the other seven translate the same sentences in the voice of the `version.*` keys beside
   them, and `check-locales.mjs` fails until all eight carry them):
 
@@ -381,7 +381,7 @@ export async function saveVersion(
   "version.comment.cancel": "Cancel",
 ```
 
-- [ ] **Step 4: Every probe that saves answers the card** — in `test/probes/versioning-save.js`,
+- [x] **Step 4: Every probe that saves answers the card** — in `test/probes/versioning-save.js`,
   `versioning-staged.js`, `versioning-repository.js` and `versioning-outer.js` (the four that drive
   a save; the fake-git probe's own phase is step 5), add beside the version helper — the card's
   *field* is in the page from the moment the module loads, so only the veil's own class says a
@@ -422,7 +422,7 @@ export async function saveVersion(
 
   In `versioning-staged.js`, the one `saveVersion()` gets `await answerComment('')` after it.
 
-- [ ] **Step 5: The recorder sees the body** — extend `test/probes/versioning-fake-git.js`: after it
+- [x] **Step 5: The recorder sees the body** — extend `test/probes/versioning-fake-git.js`: after it
   has read the three lines its own commands produced, drive a *save* with the recorder still pointed
   at it — open the note through the session, give the workspace consent, answer the comment card with
   `why this version`, and read the log again — then assert the *last five* lines are what that save
@@ -471,7 +471,7 @@ export async function saveVersion(
   `configManager`, `saveVersion` and the session imported, and — because it now changes the app's
   config and session — the `before`/`sessionText` capture and the `finally` that puts both back.)
 
-- [ ] **Step 6: Verify and commit** — `npm run check` green, `npx tsc --noEmit` silent, and with the
+- [x] **Step 6: Verify and commit** — `npm run check` green, `npx tsc --noEmit` silent, and with the
   app running and in front: `npm run probe -- test/probes/versioning-save.js`,
   `… test/probes/versioning-staged.js`, `… test/probes/versioning-fake-git.js` — all green — then
   `git commit -m "feat(versioning): a card that asks what to call a version"`.
@@ -488,7 +488,7 @@ export async function saveVersion(
   `versioning_history(workspace, path, limit)`, and the frontend's
   `versioningHistory(workspace: string, path: string, limit: number): Promise<Version[]>`.
 
-- [ ] **Step 1: The failing test** — in `versioning.rs`'s `mod tests`, add (the fields are parsed
+- [x] **Step 1: The failing test** — in `versioning.rs`'s `mod tests`, add (the fields are parsed
   from git's own output, so the test is about the parsing):
 
 ```rust
@@ -507,10 +507,10 @@ export async function saveVersion(
     }
 ```
 
-- [ ] **Step 2: Run it, expect failure** — `cd src-tauri && cargo test versioning` fails to compile:
+- [x] **Step 2: Run it, expect failure** — `cd src-tauri && cargo test versioning` fails to compile:
   `cannot find function versions_from`.
 
-- [ ] **Step 3: The rows** — in `versioning.rs`, beside the other structs:
+- [x] **Step 3: The rows** — in `versioning.rs`, beside the other structs:
 
 ```rust
 /// One version of a file: a commit that touched it, whoever wrote the commit.
@@ -550,7 +550,7 @@ fn versions_from(output: &str) -> Vec<Version> {
 }
 ```
 
-- [ ] **Step 4: The call, and the command** — also in `versioning.rs` (it goes through `run_git`, the
+- [x] **Step 4: The call, and the command** — also in `versioning.rs` (it goes through `run_git`, the
   one helper, like every other call; the absolute path the session hands over works with `--follow`,
   measured):
 
@@ -585,7 +585,7 @@ pub fn versioning_history(workspace: String, path: String, limit: usize) -> Resu
   and register it in `src-tauri/src/lib.rs` beside the other versioning commands:
   `versioning::versioning_history,`.
 
-- [ ] **Step 5: The vocabulary test learns the read** — in the `vocabulary` module, after the commit
+- [x] **Step 5: The vocabulary test learns the read** — in the `vocabulary` module, after the commit
   with a body, add
 
 ```rust
@@ -603,7 +603,7 @@ pub fn versioning_history(workspace: String, path: String, limit: usize) -> Resu
   (the recorder answers nothing, so this also holds that an empty answer is an empty list, not an
   error).
 
-- [ ] **Step 6: The seam** — `src/api/versioning.ts`:
+- [x] **Step 6: The seam** — `src/api/versioning.ts`:
 
 ```ts
 /**
@@ -622,7 +622,7 @@ export async function versioningHistory(
   with `Version` imported from `../services/versioning` (Task 4 defines it; if Task 4 is done second,
   the type comes from there either way — the two tasks must agree on the name).
 
-- [ ] **Step 7: The recorder sees the read** — in `test/probes/versioning-fake-git.js`, after its
+- [x] **Step 7: The recorder sees the read** — in `test/probes/versioning-fake-git.js`, after its
   first three lines are read, ask for the history directly and hold the fourth call:
 
 ```js
@@ -638,7 +638,7 @@ export async function versioningHistory(
 
   (adjust the `lines` the later assertions slice from, since the log has grown by one).
 
-- [ ] **Step 8: Verify and commit** — `cd src-tauri && cargo test` green, `npx tsc --noEmit` silent,
+- [x] **Step 8: Verify and commit** — `cd src-tauri && cargo test` green, `npx tsc --noEmit` silent,
   `npm run check` green, `npm run probe -- test/probes/versioning-fake-git.js` green with the app in
   front, then `git commit -m "feat(versioning): the versions of one file, read once"`.
 
@@ -654,7 +654,7 @@ export async function versioningHistory(
   `versionsState({ path, repository, versions }): VersionsState` — the rules Task 5's service and
   Task 6's panel both read.
 
-- [ ] **Step 1: The failing check** — in `test/checks/check-versioning.mjs`, add (with the two new
+- [x] **Step 1: The failing check** — in `test/checks/check-versioning.mjs`, add (with the two new
   names imported from the bundle, and one row to reuse):
 
 ```js
@@ -686,9 +686,9 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run it, expect failure** — `npm run check` fails: `versionsVisible is not defined`.
+- [x] **Step 2: Run it, expect failure** — `npm run check` fails: `versionsVisible is not defined`.
 
-- [ ] **Step 3: The rules** — in `src/services/versioning.ts`, beside the plan:
+- [x] **Step 3: The rules** — in `src/services/versioning.ts`, beside the plan:
 
 ```ts
 /** One version of a file: a commit that touched it, as the backend reports it. */
@@ -734,10 +734,10 @@ export function versionsState(input: {
 }
 ```
 
-- [ ] **Step 4: Run it, expect success** — `npm run check` green at 38/38 (the cases are added inside
+- [x] **Step 4: Run it, expect success** — `npm run check` green at 38/38 (the cases are added inside
   `check-versioning.mjs`, so the *count of checks* does not move).
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(versioning): whether to show the versions, and what they are"`.
+- [x] **Step 5: Commit** — `git commit -m "feat(versioning): whether to show the versions, and what they are"`.
 
 ### Task 5: the button, and the list behind it
 
@@ -754,7 +754,7 @@ export function versionsState(input: {
   `versionsOfDocument.latest(): Version | null`, `versionsOfDocument.reread(): Promise<void>`, and
   the `VersionStatus` component (Task 6's panel hangs off it).
 
-- [ ] **Step 1: The living list** — create `src/services/versions.ts`:
+- [x] **Step 1: The living list** — create `src/services/versions.ts`:
 
 ```ts
 /**
@@ -878,7 +878,7 @@ class VersionsOfDocument {
 export const versionsOfDocument = new VersionsOfDocument();
 ```
 
-- [ ] **Step 2: One status-button size, in one place** — in `src/ui/toolbar/toolbar.ts` add, above
+- [x] **Step 2: One status-button size, in one place** — in `src/ui/toolbar/toolbar.ts` add, above
   `Toolbar`, the constant that `layout_toolbar.ts` keeps today (and delete it there, importing this
   one instead):
 
@@ -891,7 +891,7 @@ export const versionsOfDocument = new VersionsOfDocument();
 export const STATUS_BUTTON = 'text-[1em] h-5 min-h-5 px-1';
 ```
 
-- [ ] **Step 3: The button** — create `src/ui/versioning/version_status.ts`:
+- [x] **Step 3: The button** — create `src/ui/versioning/version_status.ts`:
 
 ```ts
 /**
@@ -982,18 +982,18 @@ export class VersionStatus extends Toolbar {
   its panel field, its `click` handler and the `this.element.append(this.button, this.panel.element)`
   that mounts it — and the `this.panel.close()` its own `render` does when the answer turns to no.)
 
-- [ ] **Step 4: The words** — add to all eight catalogues:
+- [x] **Step 4: The words** — add to all eight catalogues:
 
 ```json
   "version.button": "Versions of this note",
   "version.none": "No versions yet",
 ```
 
-- [ ] **Step 5: Mount it** — in `src/main.ts`'s `createAppShell`, beside the other status
+- [x] **Step 5: Mount it** — in `src/main.ts`'s `createAppShell`, beside the other status
   components: `const versionStatus = new VersionStatus();` and, with the others,
   `statusBar.addComponent(versionStatus, 'left');` (the left group exists and is empty today).
 
-- [ ] **Step 6: The probe** — create `test/probes/versioning-status.js`:
+- [x] **Step 6: The probe** — create `test/probes/versioning-status.js`:
 
 ```js
 /**
@@ -1119,7 +1119,7 @@ export class VersionStatus extends Toolbar {
   (`files.writeTextAtomically` is the atomic write Task 3's older sibling added; the note must differ
   from the empty file `createEntry` made for the commit to have something to carry.)
 
-- [ ] **Step 7: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green, and with the
+- [x] **Step 7: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green, and with the
   app in front `npm run probe -- test/probes/versioning-status.js` green — then
   `git commit -m "feat(versioning): the versions button, at the left of the status bar"`.
 
@@ -1135,7 +1135,7 @@ export class VersionStatus extends Toolbar {
   (Task 1).
 - Produces: the `VersionsPanel` class (toggled by the button).
 
-- [ ] **Step 1: The panel** — create `src/ui/versioning/versions_panel.ts`:
+- [x] **Step 1: The panel** — create `src/ui/versioning/versions_panel.ts`:
 
 ```ts
 /**
@@ -1254,7 +1254,7 @@ export class VersionsPanel extends AnchoredPanel {
 
   and in `version_status.ts` replace Task 5's stub with the import and `this.panel = new VersionsPanel();`.
 
-- [ ] **Step 2: The empty words** — add to all eight catalogues:
+- [x] **Step 2: The empty words** — add to all eight catalogues:
 
 ```json
   "version.noRepository": "No versions yet in this workspace",
@@ -1262,7 +1262,7 @@ export class VersionsPanel extends AnchoredPanel {
   "version.unreadable": "The versions of this note could not be read.",
 ```
 
-- [ ] **Step 3: The rows' probe** — create `test/probes/versioning-list.js`: its own folder under
+- [x] **Step 3: The rows' probe** — create `test/probes/versioning-list.js`: its own folder under
   `$HOME` (`~/yi-probe-version-list`), its own `open(path, content)` helper (the one
   `versioning-status.js` writes), and the same `finally` (the seam put back, the config and the
   session restored, the folder removed). Its setup, in this order:
@@ -1309,7 +1309,7 @@ export class VersionsPanel extends AnchoredPanel {
   (the setup and the `finally` follow `versioning-status.js` — its own folder, the config and the
   session put back, the folder removed).
 
-- [ ] **Step 4: The sentences' probe** — create `test/probes/versioning-list-empty.js`, which walks
+- [x] **Step 4: The sentences' probe** — create `test/probes/versioning-list-empty.js`, which walks
   the four states and, after each, presses the button and reads `[data-version-empty]`'s words and
   its `data-version-state`. Its own folder is `~/yi-probe-version-list-empty`, and it needs the same
   `open` helper, the same `before`/`sessionText` capture and the same `finally` as
@@ -1341,7 +1341,7 @@ export class VersionsPanel extends AnchoredPanel {
      `{ state: 'unreadable', words: words('version.unreadable') }`, with the seam put back in the
      `finally` (the harness puts it back too).
 
-- [ ] **Step 5: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green, and with the
+- [x] **Step 5: Verify and commit** — `npx tsc --noEmit` silent, `npm run check` green, and with the
   app in front `npm run probe -- test/probes/versioning-list.js` and
   `… test/probes/versioning-list-empty.js` green — then
   `git commit -m "feat(versioning): the list of a note's versions, under the button"`.
@@ -1351,7 +1351,7 @@ export class VersionsPanel extends AnchoredPanel {
 **Files:**
 - Modify: `docs/ai-context.md`, `docs/architecture.md`, `docs/roadmap.md`, `test/README.md`
 
-- [ ] **Step 1: `docs/ai-context.md`** — in the versioning paragraph, after “Every git call goes
+- [x] **Step 1: `docs/ai-context.md`** — in the versioning paragraph, after “Every git call goes
   through one helper…”:
 
 ```markdown
@@ -1368,14 +1368,14 @@ system surface answers with a line of text) — and the subject stays exactly wh
 (`Title · 2026-10-01 20:15`) while the comment becomes the commit's body.
 ```
 
-- [ ] **Step 2: `docs/architecture.md`** — extend the “A version of a workspace, kept by Git” row of
+- [x] **Step 2: `docs/architecture.md`** — extend the “A version of a workspace, kept by Git” row of
   the “Where does this change go?” table with a sentence, and add a row under it:
 
 ```markdown
 | The versions of the note on screen | `services/versions.ts` is the living list (it reads through `src/api/versioning.ts`, only when `versionsVisible` — consent for *this* workspace, from the config — and only when the document's path changes, so a keystroke costs nothing), `src/ui/versioning/version_status.ts` is the button at the left of the status bar, and `versions_panel.ts` is the panel under it. The read itself is `versioning.rs: versioning_history` — one `git log --follow --max-count=… --format=… -- <path>` through the same `run_git` every other call goes through, so the app's vocabulary is three writes and this one read. Rows are read-only: restoring is out of scope |
 ```
 
-- [ ] **Step 3: `docs/roadmap.md`** — a Closed entry after the versioning one, with the numbers:
+- [x] **Step 3: `docs/roadmap.md`** — a Closed entry after the versioning one, with the numbers:
 
 ```markdown
 - **The versions of the note on screen**, as the reader asked: a button at the left of the status
@@ -1401,12 +1401,12 @@ system surface answers with a line of text) — and the subject stays exactly wh
   (The counts are what the tasks in this plan leave behind; if they move while you work, write the
   numbers the run reported rather than these.)
 
-- [ ] **Step 4: `test/README.md`** — extend the `check-versioning.mjs` row's description with the
+- [x] **Step 4: `test/README.md`** — extend the `check-versioning.mjs` row's description with the
   stamp, the message-with-comment rule, `versionsVisible` and `versionsState`; add the three probes
   to the versioning group in the prose; and change “A hundred and thirty-four of them” to
   **“A hundred and thirty-seven”**.
 
-- [ ] **Step 5: Verify and commit** — `npm run check` green (the catalogue check is the one that
+- [x] **Step 5: Verify and commit** — `npm run check` green (the catalogue check is the one that
   reads the docs' claim about keys), then
   `git commit -m "docs: a note's own versions, and how they are read"`.
 
@@ -1424,3 +1424,25 @@ system surface answers with a line of text) — and the subject stays exactly wh
 - Every step that changes behaviour names the check or probe that proves it, and every probe is
   inside the bridge's five seconds on its own (measured: the versioning suite's probes run 2.0–3.2 s
   with the app's window in front).
+
+## Handoff
+
+**State.** All seven tasks are done, on `codex/versioning`, and the branch is **not merged** — the
+reader reviews. `npm run check` was 38/38 at the time (39/39 from the next plan's check), `cargo test`
+34/34, `npx tsc --noEmit` silent, and the eleven versioning probes green, 2.0–3.5 s each with the
+app's window in front.
+
+**What the writing found that the plan did not say.** A `QuestionCard` subclass must re-append what
+it is made of inside its `ask` callback — `question_card.ts: askWith` clears the card first, and the
+comment card came up **empty, with no buttons** until it did (the shape `ui/prompt.ts` and
+`new_document_dialog.ts` already use). A probe cannot tell a card is up from its field being in the
+page: the field is there from the moment the module loads, so two helpers filled and clicked a
+*closed* card and left their saves waiting on a question nobody had answered. The button must hide
+**itself**, because `[data-version-status]` is what a probe (and the reader) finds, and the plan had
+it hiding the group around it. And the living list legitimately reads the facts for the document
+before a save does, so the recorder's assertions had to become "the *last* five lines" rather than
+"five lines".
+
+**What it deliberately did not do**, all of it the versioning spec's own out-of-scope list: browsing
+versions (done, this plan), restoring one (the next plan), pushing from the app, a diff view (the
+next plan), LFS and submodules.
