@@ -39,10 +39,21 @@
   };
   const open = async (path, content) => {
     const pending = session.documentSession.openFile({ path, content });
-    await t.sleep(140);
-    const prompt = document.querySelector('[data-prompt]');
-    if (prompt !== null && !prompt.classList.contains('hidden')) {
-      prompt.querySelector('[data-prompt-no]')?.click();
+    // The question a replaced document raises is waited for, not slept at: in a long suite the
+    // session is heavy, and a fixed sleep can miss the card and leave this open hanging.
+    const shown = () => {
+      const card = document.querySelector('[data-prompt]');
+      return card !== null && !card.classList.contains('hidden') ? card : null;
+    };
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      if (shown() !== null) {
+        shown()?.querySelector('[data-prompt-no]')?.click();
+        break;
+      }
+      if (session.documentSession.current()?.path === path) {
+        break;
+      }
+      await t.sleep(50);
     }
     await pending;
     await t.sleep(140);
