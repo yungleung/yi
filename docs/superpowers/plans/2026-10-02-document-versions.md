@@ -188,11 +188,11 @@ pub fn commit_paths(
             commit_at(&git, &workspace, &[note.clone()], "with a body", Some("why"), None).unwrap();
 ```
 
-  and move the assertions on: seven lines, the last one
+  and move the assertions on: eight lines — a commit is two calls, `add` and `commit` — the last one
 
 ```rust
-            assert_eq!(recorded.len(), 7, "{recorded:?}");
-            assert!(recorded[6].contains(" commit -m with a body -m why -- "), "{}", recorded[6]);
+            assert_eq!(recorded.len(), 8, "{recorded:?}");
+            assert!(recorded[7].contains(" commit -m a named version -m why I rewrote it -- "), "{}", recorded[7]);
 ```
 
 - [ ] **Step 6: The seam and the flow** — `src/api/versioning.ts`:

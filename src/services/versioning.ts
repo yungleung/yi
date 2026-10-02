@@ -143,12 +143,27 @@ export function versionLocation(facts: VersioningFacts, plan: VersioningPlan): s
   return null;
 }
 
-/**
- * The message a version carries: the note's own name, and the minute it was asked for — so
- * `git log` reads like the reader's own list of notes rather than a machine's.
- */
-export function versionMessage(name: string, at: Date): string {
+/** When a version was made, as `YYYY-MM-DD HH:MM` in the reader's own time. */
+export function versionStamp(at: number): string {
+  const when = new Date(at * 1000);
   const two = (value: number) => String(value).padStart(2, '0');
-  const date = `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`;
-  return `${name} · ${date} ${two(at.getHours())}:${two(at.getMinutes())}`;
+  const date = `${when.getFullYear()}-${two(when.getMonth() + 1)}-${two(when.getDate())}`;
+  return `${date} ${two(when.getHours())}:${two(when.getMinutes())}`;
+}
+
+/**
+ * The message a version carries: the note's own name and the minute it was asked for as the
+ * subject — so `git log --oneline` reads like the reader's own list of notes, and the app's own
+ * list reads the same — and the reader's comment as the body when they gave one.
+ */
+export function versionMessage(
+  name: string,
+  at: Date,
+  comment: string
+): { subject: string; body: string | null } {
+  const said = comment.trim();
+  return {
+    subject: `${name} · ${versionStamp(Math.floor(at.getTime() / 1000))}`,
+    body: said === '' ? null : said
+  };
 }

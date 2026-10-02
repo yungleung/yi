@@ -9,13 +9,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
+// The stamp is the reader's local time, so the check pins the zone it runs in.
+process.env.TZ = 'UTC';
+
 const directory = mkdtempSync(join(tmpdir(), 'yi-versioning-'));
 const bundle = await rolldown({ input: 'src/services/versioning.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'versioning.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { consentFrom, versionMessage, versionLocation, versioningPlan } = await import(file);
+const { consentFrom, versionMessage, versionLocation, versionStamp, versioningPlan } =
+  await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -90,7 +94,22 @@ check(
 check('an answer belongs to the workspace it was given for', consentFrom({ versioning: true, versioning_workspace: '/notes' }, '/somewhere-else'), 'unasked');
 check('a workspace the reader said yes to reads as yes', consentFrom({ versioning: true, versioning_workspace: '/notes' }, '/notes'), 'yes');
 check('and one they said no to reads as no', consentFrom({ versioning: false, versioning_workspace: '/notes' }, '/notes'), 'no');
-check('a version is named by the note and the minute it was asked for', versionMessage('A note', new Date(2026, 9, 1, 9, 5)), 'A note · 2026-10-01 09:05');
+check('a version is stamped in the reader’s own time', versionStamp(Date.UTC(2026, 9, 1, 20, 5) / 1000), '2026-10-01 20:05');
+check(
+  'a version without a comment is the message it always was',
+  versionMessage('A note', new Date(2026, 9, 1, 9, 5), ''),
+  { subject: 'A note · 2026-10-01 09:05', body: null }
+);
+check(
+  'and a comment is the body, trimmed, the subject untouched',
+  versionMessage('A note', new Date(2026, 9, 1, 9, 5), '  why I rewrote it  '),
+  { subject: 'A note · 2026-10-01 09:05', body: 'why I rewrote it' }
+);
+check(
+  'a comment of nothing but spaces is no comment',
+  versionMessage('A note', new Date(2026, 9, 1, 9, 5), '   '),
+  { subject: 'A note · 2026-10-01 09:05', body: null }
+);
 check(
   'their repository is the path the words about a synced folder name',
   versionLocation(

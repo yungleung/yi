@@ -39,9 +39,10 @@ export async function commitPaths(
   workspace: string,
   paths: string[],
   message: string,
-  identity: GitIdentity | null
+  identity: GitIdentity | null,
+  body: string | null = null
 ): Promise<void> {
-  await invoke('commit_paths', { workspace, paths, message, identity });
+  await invoke('commit_paths', { workspace, paths, message, identity, body });
 }
 
 /**

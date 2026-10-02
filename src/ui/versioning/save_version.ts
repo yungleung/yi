@@ -108,13 +108,15 @@ export async function saveVersion(chooser: VersioningChooser = versioningDialog)
     if (plan.use === 'init') {
       await initWorkspaceRepository(workspace, plan.separateGitDir);
     }
+    const message = versionMessage(saved.title, new Date(), '');
     await commitPaths(
       workspace,
       [saved.path],
-      versionMessage(saved.title, new Date()),
+      message.subject,
       // Ours carries our name; theirs carries theirs, and a repository with no name configured
       // says so in git's own words (`src-tauri/src/versioning.rs: commit_paths`).
-      plan.use === 'theirs' ? null : APP_IDENTITY
+      plan.use === 'theirs' ? null : APP_IDENTITY,
+      message.body
     );
   } catch (error) {
     notify('Saving a version', error);

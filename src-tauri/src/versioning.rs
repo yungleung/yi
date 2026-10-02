@@ -411,10 +411,18 @@ pub fn commit_paths(
     workspace: String,
     paths: Vec<String>,
     message: String,
+    body: Option<String>,
     identity: Option<Identity>,
 ) -> Result<(), String> {
     let git = git_to_run()?;
-    commit_at(&git, Path::new(&workspace), &paths, &message, identity)
+    commit_at(
+        &git,
+        Path::new(&workspace),
+        &paths,
+        &message,
+        body.as_deref(),
+        identity,
+    )
 }
 
 fn commit_at(
@@ -422,6 +430,7 @@ fn commit_at(
     workspace: &Path,
     paths: &[String],
     message: &str,
+    body: Option<&str>,
     identity: Option<Identity>,
 ) -> Result<(), String> {
     let mut identity_arguments: Vec<String> = Vec::new();
@@ -441,6 +450,12 @@ fn commit_at(
     commit.push("commit".to_string());
     commit.push("-m".to_string());
     commit.push(message.to_string());
+    // The comment the reader gave is the message's own second half — git's shape for a subject and
+    // a body — and nothing is sent when they gave none.
+    if let Some(body) = body.filter(|body| !body.trim().is_empty()) {
+        commit.push("-m".to_string());
+        commit.push(body.to_string());
+    }
     commit.push("--".to_string());
     commit.extend(paths.iter().cloned());
     run_git(git, workspace, &commit).map(|_| ())
@@ -642,22 +657,37 @@ mod tests {
                 name: Some("Yi".to_string()),
                 email: Some("yi@localhost".to_string()),
             };
-            commit_at(&git, &workspace, &[note.clone()], "a version", Some(ours)).unwrap();
+            commit_at(&git, &workspace, &[note.clone()], "a version", None, Some(ours)).unwrap();
             // Their repository: no identity of ours, so git commits under their own name.
-            commit_at(&git, &workspace, &[note], "another version", None).unwrap();
+            commit_at(&git, &workspace, &[note.clone()], "another version", None, None).unwrap();
+            // A version the reader named: the subject stays, and their words are the body.
+            commit_at(
+                &git,
+                &workspace,
+                &[note],
+                "a named version",
+                Some("why I rewrote it"),
+                None,
+            )
+            .unwrap();
 
             let recorded: Vec<String> = fs::read_to_string(directory.join("argv.log"))
                 .unwrap()
                 .lines()
                 .map(str::to_string)
                 .collect();
-            assert_eq!(recorded.len(), 6, "{recorded:?}");
+            assert_eq!(recorded.len(), 8, "{recorded:?}");
             assert!(recorded[0].ends_with(" init"), "{}", recorded[0]);
             assert!(recorded[1].contains("--separate-git-dir="), "{}", recorded[1]);
             assert!(recorded[2].contains(" add -- "), "{}", recorded[2]);
             assert!(recorded[3].contains(" commit -m a version -- "), "{}", recorded[3]);
             assert!(!recorded[4].contains(" -c "), "{}", recorded[4]);
             assert!(!recorded[5].contains(" -c "), "{}", recorded[5]);
+            assert!(
+                recorded[7].contains(" commit -m a named version -m why I rewrote it -- "),
+                "{}",
+                recorded[7]
+            );
 
             // The never-list: no argument the app writes is ever one of these, anywhere.
             let never = [
