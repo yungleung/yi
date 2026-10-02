@@ -23,6 +23,7 @@ const {
   versionMessage,
   versionLocation,
   versionStamp,
+  versionedNow,
   versionsState,
   versionsVisible,
   versioningPlan
@@ -131,19 +132,22 @@ check(
 );
 check(
   'a note with no file has no versions to show',
-  versionsState({ path: null, repository: true, versions: [] }),
+  versionsState({ path: null, repository: true, versions: [], newestText: null }),
   { kind: 'no-file' }
 );
 check(
   'a workspace nothing has made a repository in says so',
-  versionsState({ path: '/notes/a.md', repository: false, versions: [] }),
+  versionsState({ path: '/notes/a.md', repository: false, versions: [], newestText: null }),
   { kind: 'no-repository' }
 );
 check(
   'and otherwise the list is the versions that were read, for that path',
-  versionsState({ path: '/notes/a.md', repository: true, versions: [row] }),
-  { kind: 'ready', path: '/notes/a.md', versions: [row] }
+  versionsState({ path: '/notes/a.md', repository: true, versions: [row], newestText: 'a\n' }),
+  { kind: 'ready', path: '/notes/a.md', versions: [row], newestText: 'a\n' }
 );
+check('what is on screen is in a version when the two texts are the same', versionedNow('a\n', 'a\n'), true);
+check('and it is not when they differ', versionedNow('a\n', 'b\n'), false);
+check('and a note with no versions behind it is not in one either', versionedNow(null, 'b\n'), false);
 check(
   'their repository is the path the words about a synced folder name',
   versionLocation(

@@ -810,3 +810,21 @@ nothing today.
 (one render, ~5–20 ms, on the deferred check's timer). The colours would be **absent** for the
 length of a burst, not merely stale, which is a bigger change than P26 measured; everything
 cheaper than that is measured out, so this is the decision, and it is the user's.
+
+  Three enhancements the reader picked, landed on the same branch. **The diff's ink** was wrong when
+  it was first built: the sheet painted a changed line with `text-error`/`text-success`, which are the
+  theme's *surface* colours and measure under 3:1 as text in the light theme (this file's own
+  architecture note says so, and that is why the source palette exists). It wears the palette's mixes
+  now — `--md-source-deleted`, and its twin `--md-source-inserted` over `success` — and
+  `versioning-diff.js` holds that the surface colours are gone; the *ratios* are not measured there
+  (the colours compute to `oklab(…)`, which that probe cannot decode), so the deletion mix's 3:1 floor
+  still lives in `source-theme.js` and the insertion is its twin construction, which is an inference
+  rather than a measurement. **The button now says what is on screen**: the newest version's stamp
+  when the editor holds exactly that version, and "Not in a version" when it does not — the newest
+  version's own text is read once with the history and compared on every session change, so a
+  keystroke changes the word — and the restore's question adds a sentence when the text about to be
+  replaced is in no version at all, which is the one thing here that exists nowhere else.
+  **The panel is capped by the room above it** rather than by its own 320px list cap, so a short
+  window (there is no `minHeight` in `tauri.conf.json`) cannot push its top past the edge.
+  `versioning-list.js` and `versioning-status.js` hold the last two; `check-versioning.mjs` holds
+  `versionedNow`.

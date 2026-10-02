@@ -94,6 +94,8 @@
   "version.restore.message": "表示中のノートとそのファイルが {stamp} のバージョンになります。コミットは行いません。次のバージョンはあなたが求めたときだけです。",
   "version.restore.yes": "復元",
   "version.restore.no": "キャンセル",
+  "version.unversioned": "バージョン未保存",
+  "version.restore.unversioned": "今の内容はまだどのバージョンにも入っていません。",
   "status.saved": "保存済み",
   "status.editing": "編集中",
   "status.stacked": "スタック内 · {size}",

@@ -156,6 +156,10 @@ never runs git — and hidden otherwise, showing the newest version's stamp
 (`services/versioning.ts: versionStamp`). Pressing it opens the panel **above** it — the status bar
 is the bottom strip of the window, so a panel hanging below it is off-screen, which is a parameter
 of the kind (`panel.ts: side`) rather than a mode —
+and the button's own word is the *state*: the newest version's stamp when what is on screen is that
+version, and `version.unversioned` ("Not in a version") when it is not (`versionedNow`: the newest
+version's text, read once with the history, against what the editor holds — so a keystroke changes
+it), or "No versions yet" when there is nothing to compare with at all.
 (`versions_panel.ts`): one row per version, newest first — the stamp, the message, and the comment
 under it — and *nothing in it acts*, because restoring a version is out of this slice's scope
 (`docs/roadmap.md`). Both draw from `services/versions.ts`, the living list: it reads through

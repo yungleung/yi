@@ -94,6 +94,8 @@
   "version.restore.message": "The note on screen and its file will hold the version of {stamp}. Nothing is committed: your next version is still yours to ask for.",
   "version.restore.yes": "Restore",
   "version.restore.no": "Cancel",
+  "version.unversioned": "Not in a version",
+  "version.restore.unversioned": "What is on screen is not in a version yet.",
   "status.saved": "Saved",
   "status.editing": "Editing",
   "status.stacked": "In the stack · {size}",

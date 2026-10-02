@@ -118,6 +118,15 @@
       row !== undefined && label() === versionStamp(row.at),
       { label: label(), stamp: row === undefined ? null : versionStamp(row.at) }
     );
+    // A keystroke makes the text on screen differ from every version, and the button says so instead
+    // of showing a stamp that no longer describes what is there.
+    t.key('X');
+    await t.sleep(250);
+    check(
+      'and a text that is not in a version says so, rather than showing the stamp',
+      label() === words('version.unversioned'),
+      { label: label(), content: session.documentSession.current()?.content.slice(0, 8) ?? null }
+    );
   } finally {
     await pointAtGit(null);
     await t.restoreWorkspace(before);

@@ -79,7 +79,10 @@ change** rather than at the top. Its title names the version it is showing (`Ver
    and offers no restore.
 4. *Restore* → **one question, with a cancel that changes nothing**: *restore this version?*, asked
    through the app's own prompt (`ui/prompt.ts`, so Escape is the cautious answer), naming the
-   version and saying that the note and its file will hold it and that nothing is committed. Cancel
+   version and saying that the note and its file will hold it and that nothing is committed. When the
+   text on screen is not in *any* version — the newest version's own text differs from it, or there is
+   no version at all — the question says that too (`version.restore.unversioned`), because that text
+   is the one thing here that exists nowhere else. Cancel
    leaves the sheet, the file and the text exactly as they were. Then
    `documentSession.openVersion(path, content)`: the file is written with the app's atomic write and
    the document on screen becomes that text, at its top, with its file believed to hold it. The text

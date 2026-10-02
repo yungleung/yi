@@ -94,6 +94,8 @@
   "version.restore.message": "La nota en pantalla y su archivo pasarán a ser la versión de {stamp}. No se confirma nada: la próxima versión la pides tú.",
   "version.restore.yes": "Restaurar",
   "version.restore.no": "Cancelar",
+  "version.unversioned": "No está en una versión",
+  "version.restore.unversioned": "Lo que hay en pantalla aún no está en ninguna versión.",
   "status.saved": "Guardado",
   "status.editing": "Editando",
   "status.stacked": "En la pila · {size}",

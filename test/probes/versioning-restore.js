@@ -17,6 +17,7 @@
   const { initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
   const { versionsOfDocument } = await t.app('/src/services/versions.ts');
+  const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -89,6 +90,13 @@
       asked: asked() !== null,
       title: document.querySelector('[data-prompt-title]')?.textContent ?? null
     });
+    check(
+      'and the question says the text on screen is not in a version yet',
+      document
+        .querySelector('[data-prompt-message]')
+        ?.textContent?.includes(words('version.restore.unversioned')) === true,
+      document.querySelector('[data-prompt-message]')?.textContent ?? null
+    );
     asked()?.querySelector('[data-prompt-no]')?.click();
     await t.sleep(200);
     const sheetStillUp = document.querySelector('[data-version-diff]')?.classList.contains('hidden') === false;

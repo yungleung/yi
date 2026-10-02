@@ -21,7 +21,9 @@ import { versioningVersionText } from '../../api/versioning';
 import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { documentSession } from '../../services/session';
+import { versionsOfDocument } from '../../services/versions';
 import { textDiff, type DiffLine } from '../../services/text_diff';
+import { versionedNow } from '../../services/versioning';
 import { prompt } from '../prompt';
 
 /** How many differing lines the rule will look at before it names the change instead. */
@@ -144,9 +146,16 @@ export class VersionDiffView {
     if (version === null || text === null || path === null) {
       return;
     }
+    // Whether what is on screen is in a version at all: if it is not, the reader is told that the
+    // text they are about to replace has never been kept anywhere (`version.restore.unversioned`).
+    const reading = versionsOfDocument.current();
+    const newestText = reading.kind === 'ready' ? reading.newestText : null;
+    const words = t('version.restore.message', { stamp: version.stamp });
     const go = await prompt.ask({
       title: t('version.restore.title'),
-      message: t('version.restore.message', { stamp: version.stamp }),
+      message: versionedNow(newestText, documentSession.current()?.content ?? '')
+        ? words
+        : `${words} ${t('version.restore.unversioned')}`,
       yes: t('version.restore.yes'),
       no: t('version.restore.no')
     });

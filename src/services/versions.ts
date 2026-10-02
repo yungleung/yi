@@ -14,7 +14,7 @@
  * was overtaken by a newer one is dropped.
  */
 
-import { versioningFacts, versioningHistory } from '../api/versioning';
+import { versioningFacts, versioningHistory, versioningVersionText } from '../api/versioning';
 import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from './session';
@@ -88,8 +88,15 @@ class VersionsOfDocument {
         return;
       }
       const versions = await versioningHistory(workspace, path, VERSIONS);
+      // The newest version's own text, so the button can say whether what is on screen is in a
+      // version at all — one more read of the same file, at the same moment.
+      const newest = versions[0] ?? null;
+      const newestText =
+        newest === null
+          ? null
+          : await versioningVersionText(workspace, newest.hash, newest.path).catch(() => null);
       if (mine === this.run) {
-        this.remember(versionsState({ path, repository, versions }), path);
+        this.remember(versionsState({ path, repository, versions, newestText }), path);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

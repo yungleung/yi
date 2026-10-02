@@ -94,6 +94,8 @@
   "version.restore.message": "La note à l’écran et son fichier contiendront la version du {stamp}. Rien n’est validé : la prochaine version reste à votre demande.",
   "version.restore.yes": "Restaurer",
   "version.restore.no": "Annuler",
+  "version.unversioned": "Pas dans une version",
+  "version.restore.unversioned": "Ce qui est à l’écran n’est encore dans aucune version.",
   "status.saved": "Enregistré",
   "status.editing": "Modifié",
   "status.stacked": "Sur la pile · {size}",

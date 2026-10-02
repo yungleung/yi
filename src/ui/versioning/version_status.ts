@@ -15,7 +15,8 @@ import { eventManager } from '../../services/event_manager';
 import { t } from '../../services/i18n';
 import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versions';
 import { WORKSPACE_CHANGED } from '../../services/workspace';
-import { versionStamp, versionsVisible } from '../../services/versioning';
+import { versionedNow, versionStamp, versionsVisible } from '../../services/versioning';
+import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { STATUS_BUTTON, Toolbar } from '../toolbar/toolbar';
 import { VersionsPanel } from './versions_panel';
 
@@ -56,6 +57,8 @@ export class VersionStatus extends Toolbar {
     this.element.append(this.button, this.panel.element);
 
     void eventManager.on(VERSIONS_CHANGED, () => this.render());
+    // What is *on screen* is what the label is about, so a keystroke can change it.
+    void eventManager.on(DOCUMENT_SESSION_CHANGED, () => this.render());
     void eventManager.on(WORKSPACE_CHANGED, () => this.render());
     void eventManager.on('config_changed', () => this.render());
     this.render();
@@ -76,7 +79,15 @@ export class VersionStatus extends Toolbar {
     this.button.title = t('version.button');
     this.button.setAttribute('aria-label', this.button.title);
     const latest = versionsOfDocument.latest();
-    this.label.textContent = latest === null ? t('version.none') : versionStamp(latest.at);
+    const reading = versionsOfDocument.current();
+    const newestText = reading.kind === 'ready' ? reading.newestText : null;
+    const content = documentSession.current()?.content ?? '';
+    this.label.textContent =
+      latest === null
+        ? t('version.none')
+        : versionedNow(newestText, content)
+          ? versionStamp(latest.at)
+          : t('version.unversioned');
     this.button.setAttribute('data-version-state', versionsOfDocument.current().kind);
   }
 }

@@ -183,7 +183,16 @@ export function versionMessage(
 export type VersionsState =
   | { kind: 'no-file' }
   | { kind: 'no-repository' }
-  | { kind: 'ready'; path: string; versions: Version[] };
+  | { kind: 'ready'; path: string; versions: Version[]; newestText: string | null };
+
+/**
+ * Whether the text on screen is what the newest version holds — the one thing that says the reader's
+ * work is in a version rather than only in the file. `null` is *no version at all*, which is not a
+ * version either.
+ */
+export function versionedNow(newestText: string | null, content: string): boolean {
+  return newestText !== null && newestText === content;
+}
 
 /**
  * Whether the versions button belongs in the status bar at all: the reader's answer for *this*
@@ -203,6 +212,7 @@ export function versionsState(input: {
   path: string | null;
   repository: boolean;
   versions: Version[];
+  newestText: string | null;
 }): VersionsState {
   if (input.path === null) {
     return { kind: 'no-file' };
@@ -210,5 +220,10 @@ export function versionsState(input: {
   if (!input.repository) {
     return { kind: 'no-repository' };
   }
-  return { kind: 'ready', path: input.path, versions: input.versions };
+  return {
+    kind: 'ready',
+    path: input.path,
+    versions: input.versions,
+    newestText: input.newestText
+  };
 }

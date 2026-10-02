@@ -94,6 +94,8 @@
   "version.restore.message": "当前笔记和它的文件将变成 {stamp} 的版本。不会提交任何内容：下一个版本仍由你决定。",
   "version.restore.yes": "恢复",
   "version.restore.no": "取消",
+  "version.unversioned": "尚未存入版本",
+  "version.restore.unversioned": "当前文字还没有存入任何版本。",
   "status.saved": "已保存",
   "status.editing": "编辑中",
   "status.stacked": "在暂存中 · {size}",

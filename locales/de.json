@@ -94,6 +94,8 @@
   "version.restore.message": "Die Notiz auf dem Bildschirm und ihre Datei halten dann die Version vom {stamp}. Nichts wird committet: die nächste Version verlangst weiterhin du.",
   "version.restore.yes": "Wiederherstellen",
   "version.restore.no": "Abbrechen",
+  "version.unversioned": "Nicht in einer Version",
+  "version.restore.unversioned": "Was jetzt da ist, steht noch in keiner Version.",
   "status.saved": "Gesichert",
   "status.editing": "Wird bearbeitet",
   "status.stacked": "Auf dem Stapel · {size}",
