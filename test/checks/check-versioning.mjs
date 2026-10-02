@@ -18,8 +18,15 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'versioning.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { consentFrom, versionMessage, versionLocation, versionStamp, versioningPlan } =
-  await import(file);
+const {
+  consentFrom,
+  versionMessage,
+  versionLocation,
+  versionStamp,
+  versionsState,
+  versionsVisible,
+  versioningPlan
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -109,6 +116,33 @@ check(
   'a comment of nothing but spaces is no comment',
   versionMessage('A note', new Date(2026, 9, 1, 9, 5), '   '),
   { subject: 'A note · 2026-10-01 09:05', body: null }
+);
+/** One version row, for the cases about what a list is. */
+const row = { hash: 'abc', at: 1790855254, subject: 'A note · 2026-10-01 20:15', body: '' };
+check(
+  'the versions button belongs in the status bar where the reader agreed to versions',
+  versionsVisible({ versioning: true, versioning_workspace: '/notes' }, '/notes'),
+  true
+);
+check(
+  'and nowhere else — not even a folder they once agreed about',
+  versionsVisible({ versioning: true, versioning_workspace: '/notes' }, '/other'),
+  false
+);
+check(
+  'a note with no file has no versions to show',
+  versionsState({ path: null, repository: true, versions: [] }),
+  { kind: 'no-file' }
+);
+check(
+  'a workspace nothing has made a repository in says so',
+  versionsState({ path: '/notes/a.md', repository: false, versions: [] }),
+  { kind: 'no-repository' }
+);
+check(
+  'and otherwise the list is the versions that were read, for that path',
+  versionsState({ path: '/notes/a.md', repository: true, versions: [row] }),
+  { kind: 'ready', path: '/notes/a.md', versions: [row] }
 );
 check(
   'their repository is the path the words about a synced folder name',

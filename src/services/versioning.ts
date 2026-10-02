@@ -176,3 +176,37 @@ export function versionMessage(
     body: said === '' ? null : said
   };
 }
+
+/** What the status bar's versions button and its panel have to say: nothing, and why. */
+export type VersionsState =
+  | { kind: 'no-file' }
+  | { kind: 'no-repository' }
+  | { kind: 'ready'; path: string; versions: Version[] };
+
+/**
+ * Whether the versions button belongs in the status bar at all: the reader's answer for *this*
+ * folder, and nothing else — read from the config, so a workspace they said no to never runs git.
+ */
+export function versionsVisible(stored: StoredConsent, workspace: string): boolean {
+  return consentFrom(stored, workspace) === 'yes';
+}
+
+/**
+ * What the list is, from the three things that decide it: whether the document on screen has a file,
+ * whether anything has made a repository to read, and the versions themselves (which may be none).
+ * The fourth state — a read that failed — is not derived from anything; only a failed read can say
+ * it, and `services/versions.ts` is where that happens.
+ */
+export function versionsState(input: {
+  path: string | null;
+  repository: boolean;
+  versions: Version[];
+}): VersionsState {
+  if (input.path === null) {
+    return { kind: 'no-file' };
+  }
+  if (!input.repository) {
+    return { kind: 'no-repository' };
+  }
+  return { kind: 'ready', path: input.path, versions: input.versions };
+}
