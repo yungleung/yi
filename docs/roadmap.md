@@ -588,7 +588,7 @@ elements) unless it says otherwise.
   (`document_identity.ts: documentId`), so a restore is not "open another document": the first
   attempt wrote the file and left the old text on screen, because `openInto` saw the same id and
   brought the existing document forward — `openVersion` replaces *that* document's text instead, and
-  what was on screen becomes a document of its own with no file when the reader answers "keep it".
+  and nothing is kept for the reader: they were asked, they answered restore, and the text that was on screen is gone — the first cut asked the session's question, which the reader corrected (it is about opening another document, and neither answer means "I did not mean that").
   And the sheet takes the keyboard while it is open (a keystroke must not reach a document nobody can
   see), which is why it is a **mode** and not a `FloatingSurface`, and why the scroller now carries
   `tabindex="-1"`: measured, WebKit only makes a scroll container focusable when it has something to

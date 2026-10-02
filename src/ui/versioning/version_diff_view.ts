@@ -22,6 +22,7 @@ import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { documentSession } from '../../services/session';
 import { textDiff, type DiffLine } from '../../services/text_diff';
+import { prompt } from '../prompt';
 
 /** How many differing lines the rule will look at before it names the change instead. */
 const DIFF_CAP = 2000;
@@ -131,14 +132,25 @@ export class VersionDiffView {
   }
 
   /**
-   * Puts the version's text back: the file first, through the session's own way in (which asks the
-   * question a replacement owes), and then the sheet is out of the way.
+   * Puts the version's text back, after one question: restore it, or cancel and nothing happens at
+   * all. The question is the app's own prompt (`ui/prompt.ts`), so Escape is the answer that does
+   * not act — which is the whole point of asking: a reader who pressed the button by mistake has a
+   * way out that changes nothing.
    */
   private async putBack(): Promise<void> {
     const version = this.showing;
     const text = this.versionText;
     const path = documentSession.current()?.path ?? null;
     if (version === null || text === null || path === null) {
+      return;
+    }
+    const go = await prompt.ask({
+      title: t('version.restore.title'),
+      message: t('version.restore.message', { stamp: version.stamp }),
+      yes: t('version.restore.yes'),
+      no: t('version.restore.no')
+    });
+    if (!go) {
       return;
     }
     await documentSession.openVersion(path, text);

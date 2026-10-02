@@ -71,22 +71,47 @@
     document.querySelector('[data-version-status]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
-    await t.sleep(300);
+    await t.sleep(200);
     const row = document.querySelector('[data-version-row]');
     row?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await t.sleep(400);
+    await t.sleep(250);
     document.querySelector('[data-version-diff-restore]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
-    await t.sleep(300);
-    // The session's own question, answered the way a reader answers it when they want it kept.
-    const prompt = document.querySelector('[data-prompt]');
-    const asked = prompt !== null && !prompt.classList.contains('hidden');
-    prompt?.querySelector('[data-prompt-yes]')?.click();
-    await t.sleep(400);
+    await t.sleep(200);
+    // One question, and its cancel does nothing at all — the reader who pressed the button by
+    // mistake is back where they were, sheet and all.
+    const asked = () => {
+      const card = document.querySelector('[data-prompt]');
+      return card !== null && !card.classList.contains('hidden') ? card : null;
+    };
+    check('restoring asks one question first', asked() !== null, {
+      asked: asked() !== null,
+      title: document.querySelector('[data-prompt-title]')?.textContent ?? null
+    });
+    asked()?.querySelector('[data-prompt-no]')?.click();
+    await t.sleep(200);
+    const sheetStillUp = document.querySelector('[data-version-diff]')?.classList.contains('hidden') === false;
+    check(
+      'and cancelling it changes nothing: the file, the text and the sheet are as they were',
+      sheetStillUp &&
+        (await read(note)) === 'one\nTWO\nthree\n' &&
+        session.documentSession.current()?.content.startsWith('X') === true,
+      {
+        sheetStillUp,
+        file: await read(note),
+        content: session.documentSession.current()?.content.slice(0, 12) ?? null
+      }
+    );
+
+    document.querySelector('[data-version-diff-restore]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await t.sleep(200);
+    asked()?.querySelector('[data-prompt-yes]')?.click();
+    await t.sleep(250);
 
     const current = session.documentSession.current();
-    check('restoring asks the session’s own question first', asked, { asked });
     check(
       'and the file holds the version’s text again',
       (await read(note)) === 'one\ntwo\nthree\n',
@@ -98,8 +123,8 @@
       { content: current?.content ?? null, saved: current?.saved ?? null }
     );
     check(
-      'and what was on screen is in the stack, because the reader said to keep it',
-      session.documentSession.stack().some((held) => held.content.startsWith('X')),
+      'and nothing was pushed for them: the restore replaced what was on screen, as they said',
+      session.documentSession.stack().every((held) => !held.content.startsWith('X')),
       session.documentSession.stack().map((held) => held.content.slice(0, 12))
     );
     check(

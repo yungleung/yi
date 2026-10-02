@@ -179,12 +179,14 @@ open, because `FloatingSurface`'s rule — never take the focus — is right for
 mid-gesture and wrong for this, where a keystroke reaching a document nobody can see is worse than a
 modal; closing it hands the keyboard back (`markdown_editor.ts: focusText`, and the scroller carries
 `tabindex="-1"` because WebKit only makes a scroll container focusable when it has something to
-scroll). Its one action is *Restore This Version*: the session's own question first when the text on
-screen is not what its file holds, then `documentSession.openVersion(path, content)` — the file is
-written with the app's atomic write and the document adopts that text, at its top. Two facts about
-it: a document with a file is keyed by its **path**, so a restore replaces *that* document's text
-rather than opening another, and the text that was on screen becomes a document of its own with no
-file when the reader answers "keep it"; and **no git write happens at all** — the reader's staged
+scroll). Its one action is *Restore This Version*: **one question with a cancel that changes
+nothing** (*restore this version?*, through the app's own `ui/prompt.ts`, so Escape is the cautious
+answer, naming the version and saying nothing is committed), then
+`documentSession.openVersion(path, content)` — the file is written with the app's atomic write and
+the document adopts that text, at its top. Three facts about it: a document with a file is keyed by
+its **path**, so a restore replaces *that* document's text rather than opening another; **nothing is
+kept for the reader** (they answered restore, so no copy of what was on screen is pushed into the
+stack on their behalf); and **no git write happens at all** — the reader's staged
 work stays staged, `git status` shows the modification, and a version is still only made when they
 ask (held by the recorder: a whole restore is one `show` and none of the write verbs).
 

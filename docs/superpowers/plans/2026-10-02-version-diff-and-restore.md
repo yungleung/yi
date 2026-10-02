@@ -25,8 +25,8 @@ the authority; read it with this plan.
   and additions in place, each marked. The equal ends are trimmed only to *compute* the change.
 - **A restore writes the file and nothing else**: no `checkout`, no index, no `add`, no `commit`, no
   `reset`. The reader's staged work stays staged; a version is still only made when they ask.
-- **The restore asks the session's own question** when the text on screen would be lost — push it to
-  the stack, or let it go.
+- **The restore asks one question, with a cancel that changes nothing** — *restore this version?*,
+  through the app's own prompt, so Escape is the cautious answer; nothing is kept for the reader.
 - **The sheet takes the keyboard** while it is open (typing must not reach a document nobody can
   see) and is deliberately *not* a `FloatingSurface`; closing it leaves the caret, the selection and
   the scroll exactly as they were.

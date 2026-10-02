@@ -177,25 +177,15 @@ class DocumentSession {
   }
 
   /**
-   * A version's text, adopted: the reader asked for it, so the file is written with it and the
-   * document on screen becomes it — after the same question every replacement asks, because what is
-   * on screen is about to be lost (`document_session.ts: openDecision`). The old text goes to the
-   * stack or is let go by the reader's own answer, and nothing else in the session moves: this is a
-   * file write and a document swap, never a git write.
+   * A version's text, adopted: the file is written with it and the document on screen becomes it.
+   *
+   * The reader has already been asked — the sheet puts one question in front of this, with a cancel
+   * that does nothing at all — so there is no second question here, and no keeping of what was on
+   * screen: they said yes to replacing it. It is a file write and a document swap, never a git
+   * write.
    */
   async openVersion(path: string, content: string): Promise<void> {
     const onScreen = this.current();
-    let keep = false;
-    if (onScreen && onScreen.content !== onScreen.saved) {
-      keep = await this.ask({
-        title: t('session.askOpen.title'),
-        message: t('session.askOpen.message', { title: onScreen.title }),
-        yes: t('session.askOpen.yes'),
-        no: t('session.askOpen.no')
-      });
-      // The document being left keeps its latest text either way; `keep` is whether it is stacked.
-      this.capture();
-    }
     try {
       await writeTextAtomically(path, content);
     } catch (error) {
@@ -207,19 +197,8 @@ class DocumentSession {
     }
     const id = keyFor(path, content, () => `${this.run}-${++this.madeKeys}`);
     // A document with a file is keyed by its path (`document_identity.ts: documentId`), so a restore
-    // is not "open another document": it is *this* document holding other text now. And what was on
-    // screen, when the reader asked to keep it, becomes a document of its own with no file — the
-    // file it was written to is about to hold the version instead, so it cannot be its file anymore.
+    // is not "open another document": it is *this* document holding other text now.
     const documents = [...this.state.documents];
-    if (keep && onScreen) {
-      const copy = openDocument(
-        { path: null, content: onScreen.content },
-        `${this.run}-${++this.madeKeys}`
-      );
-      copy.title = onScreen.title;
-      copy.stacked = true;
-      documents.push(copy);
-    }
     const held = documents.some((document) => document.id === id);
     this.state = held
       ? {

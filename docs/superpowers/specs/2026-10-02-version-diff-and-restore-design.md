@@ -77,7 +77,10 @@ change** rather than at the top. Its title names the version it is showing (`Ver
    the text on screen *at that moment* (a snapshot, taken on opening).
 3. Nothing changed → the sheet says so (`version.diff.none`, "This version is what you have now")
    and offers no restore.
-4. *Restore* → the session's own question when the text on screen would be lost, then
+4. *Restore* → **one question, with a cancel that changes nothing**: *restore this version?*, asked
+   through the app's own prompt (`ui/prompt.ts`, so Escape is the cautious answer), naming the
+   version and saying that the note and its file will hold it and that nothing is committed. Cancel
+   leaves the sheet, the file and the text exactly as they were. Then
    `documentSession.openVersion(path, content)`: the file is written with the app's atomic write and
    the document on screen becomes that text, at its top, with its file believed to hold it. The text
    is the *version's*, but the file it is written to is the one the document has **now**: a note
@@ -87,9 +90,11 @@ change** rather than at the top. Its title names the version it is showing (`Ver
    **path** (`document_identity.ts: documentId`), so a restore is not "open another document" —
    `openInto` would see the same id and bring the existing one forward, leaving the old text on
    screen — which is why `openVersion` replaces *that* document's text (its content, its `saved`, its
-   title, its view). And when the reader answers "keep it", what was on screen goes into the stack as
-   a document **of its own, with no file**: the file it was written to holds the version now, so it
-   can no longer be its file — the reader may save that text wherever they like.
+   title, its view). And **nothing is kept for the reader**: they were asked, they answered restore,
+   and the text that was on screen is gone — no copy pushed into the stack on their behalf. (The
+   first cut of this asked the *session's* question, "push it to the stack, or open without it",
+   which was wrong twice: that question is about opening another document, and neither of its
+   answers is "I did not mean to press that". The reader said so.)
 5. The sheet closes. The versions list is unchanged — the newest *version* is still the newest
    commit — the app says *Saved* (the file holds what is on screen), and the reader's own
    `git status` shows the modification. Their next version, if they ask for one, records it.
