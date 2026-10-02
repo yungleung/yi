@@ -563,6 +563,16 @@ elements) unless it says otherwise.
   subclass must re-append what it is made of in its `ask` callback (`question_card.ts: askWith`
   clears the card first), and a probe cannot tell a card is up from its field being in the page — the
   field is there from the moment the module loads, so waiting on it clicks a card nobody opened.
+  The reader then found a third, on the running app and not in the checks: **clicking the button
+  showed nothing**. It had been built to hang below its host, the way the titlebar's two panels do,
+  and the status bar is the bottom strip of the window — measured, the panel sat at y 804–856 in an
+  800 px window, four pixels past the edge and invisible, while every check passed because a probe
+  asked only whether an ancestor carried `hidden`. The kind now hangs by its own `side`
+  (`panel.ts`: `above` or `below`), the versions panel hangs above, and `versioning-list.js` holds
+  the panel *inside the window, above the button and under the pointer* — geometry, because visible
+  is not the same as on screen. The same report caught the button's stamp at the bar's own size and
+  weight (`text-xs font-normal`, not the 16 px and weight 600 `btn-ghost` had given it), which
+  `versioning-status.js` now holds next to the status bar's other words.
 
 ## Open, in the order to take them
 

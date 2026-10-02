@@ -21,8 +21,9 @@ export class VersionsPanel extends AnchoredPanel {
 
   constructor() {
     // `left-0`, inside the `relative` toolbar that hosts it — the button it hangs under is the
-    // leftmost thing in the status bar.
-    super({ className: 'w-80 p-1 left-0' });
+    // leftmost thing in the status bar — and `above`, because the status bar is the bottom strip of
+    // the window: a panel below it would be off-screen.
+    super({ className: 'w-80 p-1 left-0', side: 'above' });
     this.list = document.createElement('div');
     this.list.className = 'flex flex-col max-h-80 overflow-auto';
     this.list.setAttribute('data-version-list', 'true');

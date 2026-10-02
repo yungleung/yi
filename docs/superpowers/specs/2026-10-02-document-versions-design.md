@@ -95,10 +95,13 @@ are one key, `version.button` ("Versions of this note"). A probe finds it by `[d
 
 ### 4. The panel (`src/ui/versioning/versions_panel.ts`)
 
-An `AnchoredPanel` under the button, `left-0`, `max-h-80 overflow-auto`, newest first: one row per
-version — the stamp, the subject, and the comment under it in muted text. Rows are read-only; a
-press on one does nothing (Escape and a press outside close the panel, as the kind does). Empty, it
-says which reason it is:
+An `AnchoredPanel` **above** the button — the status bar is the bottom strip of the window, so a
+panel hanging below it sits off-screen (measured: four pixels past the window's edge, invisible) —
+`left-0`, `max-h-80 overflow-auto`, newest first: one row per version — the stamp, the subject, and
+the comment under it in muted text. Rows are read-only; a press on one does nothing (Escape and a
+press outside close the panel, as the kind does). Its stamp is the status bar's own size and weight
+(`text-xs`, not the 600 a `btn` brings), so it sits in that row rather than shouting over it. Empty,
+it says which reason it is:
 
 | State | The words |
 | --- | --- |

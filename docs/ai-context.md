@@ -59,7 +59,8 @@ Everything that floats over the page is one shallow family in `src/ui/floating/`
 (hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*
 it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/placement.ts` beside
 a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
-`relative` host, under the button) and `QuestionCard` (the veil, the centred card, and one answer
+`relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
+card, and one answer
 with Escape giving the cautious one). The footnote preview, the completion list, the stack panel,
 the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
 Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
@@ -152,7 +153,9 @@ own comment under it — is what the app's own list of versions shows.
 a button (`ui/versioning/version_status.ts`) that is there exactly when the reader agreed to
 versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
 never runs git — and hidden otherwise, showing the newest version's stamp
-(`services/versioning.ts: versionStamp`). Pressing it opens the panel under it
+(`services/versioning.ts: versionStamp`). Pressing it opens the panel **above** it — the status bar
+is the bottom strip of the window, so a panel hanging below it is off-screen, which is a parameter
+of the kind (`panel.ts: side`) rather than a mode —
 (`versions_panel.ts`): one row per version, newest first — the stamp, the message, and the comment
 under it — and *nothing in it acts*, because restoring a version is out of this slice's scope
 (`docs/roadmap.md`). Both draw from `services/versions.ts`, the living list: it reads through

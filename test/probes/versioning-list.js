@@ -82,6 +82,37 @@
     const rows = [...document.querySelectorAll('[data-version-row]')];
     const subjectOf = (row) => row.querySelector('[data-version-subject]')?.textContent ?? null;
     const commentOf = (row) => row.querySelector('[data-version-comment-text]')?.textContent ?? null;
+    // Where it is, not just whether it is unhidden: the status bar is the bottom strip of the
+    // window, so a panel hung below it would be off-screen with every class saying otherwise.
+    const host = document.querySelector('[data-version-list]')?.closest('.absolute');
+    const hostRect = host?.getBoundingClientRect();
+    const buttonRect = document.querySelector('[data-version-status]')?.getBoundingClientRect();
+    const middle =
+      hostRect === undefined || hostRect === null
+        ? null
+        : {
+            x: Math.round(hostRect.left + hostRect.width / 2),
+            y: Math.round(hostRect.top + hostRect.height / 2)
+          };
+    const overThePanel = middle === null ? null : document.elementFromPoint(middle.x, middle.y);
+    check(
+      'and it opens above the button, inside the window, with nothing over it',
+      hostRect !== undefined &&
+        hostRect !== null &&
+        buttonRect !== undefined &&
+        buttonRect !== null &&
+        hostRect.top >= 0 &&
+        hostRect.bottom <= window.innerHeight &&
+        hostRect.bottom <= buttonRect.top + 1 &&
+        overThePanel !== null &&
+        host?.contains(overThePanel) === true,
+      {
+        host: hostRect ? { top: Math.round(hostRect.top), bottom: Math.round(hostRect.bottom) } : null,
+        button: buttonRect ? { top: Math.round(buttonRect.top) } : null,
+        window: { height: window.innerHeight },
+        overThePanel: overThePanel?.getAttributeNames?.() ?? null
+      }
+    );
     check(
       'the panel lists the note’s versions, the newest first',
       rows.length === 2 &&

@@ -938,7 +938,9 @@ export class VersionStatus extends Toolbar {
     this.button.setAttribute('data-version-status', 'true');
     this.button.innerHTML = VERSION_ICON;
     this.label = document.createElement('span');
-    this.label.className = 'ml-1 whitespace-nowrap';
+    // The stamp sits in the same row as the app's other status words, so it is the same size and
+    // weight they are: `btn` brings its own 600, which is the one thing a status bar never wants.
+    this.label.className = 'ml-1 whitespace-nowrap text-xs font-normal opacity-70';
     this.label.setAttribute('data-version-status-label', 'true');
     this.button.appendChild(this.label);
     // A status button never takes the focus or starts a window drag.
@@ -1139,9 +1141,11 @@ export class VersionStatus extends Toolbar {
 /**
  * The versions of the note on screen, as a list to read.
  *
- * It takes the shape of the stack popover: a panel that hangs under the button that opened it and
- * closes on Escape and on a press outside. No row acts — restoring a version is out of this slice's
- * scope — so the only thing the panel does is open, read once for the freshest answer, and draw.
+ * It takes the shape of the stack popover — a panel that hangs from the button that opened it and
+ * closes on Escape and on a press outside — with the one difference the status bar forces: it hangs
+ * **above** it, because the status bar is the bottom strip of the window and a panel below it is
+ * off-screen (measured: four pixels past the edge, invisible). No row acts — restoring a version is
+ * out of this slice's scope — so the only thing the panel does is open, read once, and draw.
  *
  * May import: the versions service, the events, the catalogue and the panel base. Upholds: the list
  * is a view of the service, built from `versionsOfDocument.current()` whenever it opens or changes
@@ -1158,8 +1162,9 @@ export class VersionsPanel extends AnchoredPanel {
   private readonly list: HTMLDivElement;
 
   constructor() {
-    // `left-0`, inside the `relative` toolbar that hosts it.
-    super({ className: 'w-80 p-1 left-0' });
+    // `left-0`, inside the `relative` toolbar that hosts it — the button it hangs from is the
+    // leftmost thing in the status bar — and `above`, because below the status bar there is nothing.
+    super({ className: 'w-80 p-1 left-0', side: 'above' });
     this.list = document.createElement('div');
     this.list.className = 'flex flex-col max-h-80 overflow-auto';
     this.list.setAttribute('data-version-list', 'true');

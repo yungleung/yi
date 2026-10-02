@@ -42,7 +42,9 @@ export class VersionStatus extends Toolbar {
     this.button.setAttribute('data-version-status', 'true');
     this.button.innerHTML = VERSION_ICON;
     this.label = document.createElement('span');
-    this.label.className = 'ml-1 whitespace-nowrap';
+    // The stamp sits in the same row as the app's other status words, so it is the same size and
+    // weight they are: `btn` brings its own 600, which is the one thing a status bar never wants.
+    this.label.className = 'ml-1 whitespace-nowrap text-xs font-normal opacity-70';
     this.label.setAttribute('data-version-status-label', 'true');
     this.button.appendChild(this.label);
     // A status button never takes the focus or starts a window drag.

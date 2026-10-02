@@ -91,6 +91,20 @@
       !hidden() && label() === words('version.none'),
       { hidden: hidden(), label: label() }
     );
+    // The stamp sits in the status bar's own row of words, so it is their size and their weight —
+    // a `btn`'s 16px/semibold shouted over everything else in the bar (measured, on the reader's
+    // report).
+    const stampStyle = getComputedStyle(document.querySelector('[data-version-status-label]'));
+    const neighbourStyle = getComputedStyle(document.querySelector('[data-document-saved]'));
+    check(
+      'and its stamp is drawn the size and weight of the status bar’s other words',
+      stampStyle.fontSize === neighbourStyle.fontSize &&
+        stampStyle.fontWeight === neighbourStyle.fontWeight,
+      {
+        stamp: { size: stampStyle.fontSize, weight: stampStyle.fontWeight },
+        neighbour: { size: neighbourStyle.fontSize, weight: neighbourStyle.fontWeight }
+      }
+    );
 
     // 3. A version made through the app's own commands is what the button says.
     await initWorkspaceRepository(folder, false);
