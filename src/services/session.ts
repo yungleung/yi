@@ -22,7 +22,7 @@
  */
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { writeTextAtomically } from '../api/files';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { configManager } from './config_manager';
@@ -30,6 +30,7 @@ import { eventManager } from './event_manager';
 import { t } from './i18n';
 import { MESSAGE_EVENT } from './messages';
 import { parentFolder } from './workspace_folders';
+import { documentTitle } from './document_identity';
 import {
   capture as captureInto,
   currentDocument,
@@ -38,6 +39,7 @@ import {
   isSaved,
   keyFor,
   markSaved,
+  openDocument,
   openDecision,
   openInto,
   parseSession,
@@ -174,6 +176,59 @@ class DocumentSession {
     await this.persist();
   }
 
+  /**
+   * A version's text, adopted: the file is written with it and the document on screen becomes it.
+   *
+   * The reader has already been asked — the sheet puts one question in front of this, with a cancel
+   * that does nothing at all — so there is no second question here, and no keeping of what was on
+   * screen: they said yes to replacing it. It is a file write and a document swap, never a git
+   * write.
+   */
+  async openVersion(path: string, content: string): Promise<void> {
+    const onScreen = this.current();
+    try {
+      await writeTextAtomically(path, content);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void eventManager.emit(MESSAGE_EVENT, {
+        text: t('session.saveFailed', { title: onScreen?.title ?? path, message })
+      });
+      return;
+    }
+    const id = keyFor(path, content, () => `${this.run}-${++this.madeKeys}`);
+    // A document with a file is keyed by its path (`document_identity.ts: documentId`), so a restore
+    // is not "open another document": it is *this* document holding other text now.
+    const documents = [...this.state.documents];
+    const held = documents.some((document) => document.id === id);
+    this.state = held
+      ? {
+          ...this.state,
+          current: id,
+          documents: documents.map((document) =>
+            document.id === id
+              ? {
+                  ...document,
+                  content,
+                  saved: content,
+                  title: documentTitle(content, document.path),
+                  view: { caret: 0, to: null, scroll: null }
+                }
+              : document
+          )
+        }
+      : {
+          ...this.state,
+          current: id,
+          documents: [...documents, openDocument({ path, content }, id)]
+        };
+    const opened = this.current();
+    if (opened) {
+      this.show(opened);
+    }
+    this.announce();
+    await this.persist();
+  }
+
   /** Pushes the document on screen into the stack, or takes it out again. */
   toggleStack(): void {
     const document = this.current();
@@ -232,13 +287,28 @@ class DocumentSession {
     if (!document || !this.editor) {
       return;
     }
-    this.capture();
-    const latest = this.current() ?? document;
-    if (latest.path) {
-      await this.writeDocument(latest);
+    if (document.path) {
+      await this.writeCurrent();
       return;
     }
     await this.saveAs();
+  }
+
+  /**
+   * Writes the document on screen to its file, capturing what the editor holds first.
+   *
+   * The capture is the point: this copy can be up to `SAVE_DELAY_MS` behind a keystroke, so
+   * anything that needs the file to hold what the reader *sees* — a version, above all — asks
+   * here rather than writing the copy. Answers false when there is no document or no file to write
+   * to; a write that failed has already said so.
+   */
+  async writeCurrent(): Promise<boolean> {
+    const document = this.current();
+    if (!document || !this.editor || !document.path) {
+      return false;
+    }
+    this.capture();
+    return await this.writeDocument(this.current() ?? document);
   }
 
   /** Writes the document on screen to a file of its own, and follows it from then on. */
@@ -284,7 +354,7 @@ class DocumentSession {
       return false;
     }
     try {
-      await writeTextFile(document.path, document.content);
+      await writeTextAtomically(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       void eventManager.emit(MESSAGE_EVENT, {

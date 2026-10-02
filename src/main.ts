@@ -19,6 +19,9 @@ import { SessionToolbar } from './ui/toolbar/session_toolbar';
 import { SavedStatus, StackStatus } from './ui/document_status';
 import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
+import { registerVersionCommand } from './ui/versioning/save_version';
+import { VersionStatus } from './ui/versioning/version_status';
+import { versionDiffView } from './ui/versioning/version_diff_view';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
@@ -67,6 +70,7 @@ function createAppShell(): MarkdownEditor {
   const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
+  const versionStatus = new VersionStatus();
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
@@ -74,6 +78,9 @@ function createAppShell(): MarkdownEditor {
   resizeHandle.mount(contentShell.element);
   editor.mount(contentShell.element);
   contentShell.mount(root);
+  // The versions sheet is a mode over the editor's area, and the keyboard goes back to the text
+  // when it closes — the one thing it needs from the editor, given by name.
+  versionDiffView.mount(contentShell.element, () => editor.focusText());
   statusBar.mount(root);
   // What the app tells the reader: the cards listen for `MESSAGE_EVENT` from here on.
   installMessages();
@@ -94,6 +101,8 @@ function createAppShell(): MarkdownEditor {
   statusBar.addComponent(layoutToolbar, 'right');
   statusBar.addComponent(stackStatus, 'right');
   statusBar.addComponent(savedStatus, 'right');
+  // The versions of the note on screen: the left group is the status bar's own, and it was empty.
+  statusBar.addComponent(versionStatus, 'left');
 
   // The session holds the documents; the editor panel is the view it drives.
   documentSession.attach(editor);
@@ -102,6 +111,8 @@ function createAppShell(): MarkdownEditor {
   registerSessionCommands();
   // And the one that makes a note: the menu item and the tree's own *New file* name it.
   registerNewDocumentCommand();
+  // And the one that keeps a version: the File menu's item names it, and nothing else ever runs git.
+  registerVersionCommand();
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).

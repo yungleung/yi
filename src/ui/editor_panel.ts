@@ -85,6 +85,14 @@ export class MarkdownEditor extends BaseComponent {
     return this.innerEditor.getContent();
   }
 
+  /**
+   * Puts the keyboard back in the text — the way back from a mode laid over the editor (the
+   * versions sheet). The caret is the session's and does not move for it.
+   */
+  focusText(): void {
+    this.innerEditor.focusText();
+  }
+
   /** Where the reader is in the document on screen, for the session to keep. */
   captureView(): SeenView {
     return this.innerEditor.captureView();

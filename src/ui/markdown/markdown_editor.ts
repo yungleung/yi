@@ -119,6 +119,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
     this.contentView = document.createElement('div');
     this.contentView.className = 'markdown-scroller flex-1 min-h-0 overflow-auto';
+    // The text is where the keyboard belongs — a click puts it here, and a mode laid over the
+    // editor hands it back (`focusText`). WebKit makes a scroll container focusable on its own only
+    // when it has something to scroll, so this says it outright.
+    this.contentView.setAttribute('tabindex', '-1');
     this.contentView.dataset.layout = this.layout;
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
@@ -282,6 +286,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** The raw markdown source. */
   getContent(): string {
     return this.state.getText();
+  }
+
+  /**
+   * Puts the keyboard back in the text.
+   *
+   * A mode laid over the editor — the versions sheet — keeps the keyboard while it is open, and
+   * this is the one way back; the caret itself is the session's and does not move for it.
+   */
+  focusText(): void {
+    this.contentView.focus();
   }
 
   /**

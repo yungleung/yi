@@ -1,15 +1,19 @@
 /**
  * The General tab of the settings window: the language the app speaks, whether opening a file
- * pushes the document on screen into the stack, and where an image the reader inserts is saved.
+ * pushes the document on screen into the stack, whether this workspace keeps versions with git,
+ * and where an image the reader inserts is saved.
  *
  * Empty is the default and it means *beside the note*, so a reader who never chose a folder
  * follows the app rather than a folder frozen into their config the first time anything else was
  * saved (`settings.rs`). The field takes a path the way a reader writes one — `~/Pictures/Yi` is
  * fine — and `services/settings_paths.ts` is what spells the home folder out when it is used.
  *
- * Two of the three are saved the moment they are changed — a choice and a switch are complete
+ * All but the last are saved the moment they are changed — a choice and a switch are complete
  * answers, and the language is one the window has to answer by reloading itself — while the folder
- * waits for the tab's Save, because its value is text the reader is still typing.
+ * waits for the tab's Save, because its value is text the reader is still typing. The versioning
+ * switch is a switch like the stack's, with one thing asked before it may be turned on: the same
+ * question the action asks (`versioning_dialog.ts`), because consent belongs to a folder and this
+ * window is the reader's other way to give it.
  *
  * May import: the config manager, the dialog plugin's folder picker, and the component base.
  * Upholds: the app config is the one home of the setting — this window reads it when it opens and
@@ -17,14 +21,19 @@
  */
 
 import { open } from '@tauri-apps/plugin-dialog';
+import { versioningFacts } from '../../api/versioning';
 import { configManager } from '../../services/config_manager';
 import { LANGUAGES, t } from '../../services/i18n';
 import { languageFor } from '../../services/language';
+import { consentFrom, versionLocation, versioningPlan } from '../../services/versioning';
 import { BaseComponent } from '../component';
+import { versioningDialog } from '../versioning/versioning_dialog';
 
 export class GeneralSettings extends BaseComponent {
   private readonly languageSelect: HTMLSelectElement;
   private readonly pushToggle: HTMLInputElement;
+  private readonly versionToggle: HTMLInputElement;
+  private readonly versionWhere: HTMLParagraphElement;
   private readonly folderInput: HTMLInputElement;
   private readonly status: HTMLElement;
 
@@ -86,6 +95,31 @@ export class GeneralSettings extends BaseComponent {
     stackGroup.append(stackRow, stackHint);
     this.pushToggle.addEventListener('change', () => void this.choosePush());
 
+    // Whether this workspace keeps versions with git. The switch carries the reader's standing
+    // answer for *this* folder (`services/versioning.ts: consentFrom`); the version itself is only
+    // ever made when they ask for one, which the hint says, and the line below says where it would
+    // live — the one path worth knowing before the reader says yes.
+    const versionGroup = document.createElement('div');
+    versionGroup.className = 'form-control gap-1';
+    const versionRow = document.createElement('label');
+    versionRow.className = 'label cursor-pointer justify-start gap-3';
+    this.versionToggle = document.createElement('input');
+    this.versionToggle.type = 'checkbox';
+    this.versionToggle.className = 'toggle';
+    this.versionToggle.setAttribute('data-versioning-switch', 'true');
+    const versionLabel = document.createElement('span');
+    versionLabel.className = 'label-text';
+    versionLabel.textContent = t('settings.general.versioning');
+    versionRow.append(this.versionToggle, versionLabel);
+    const versionHint = document.createElement('p');
+    versionHint.className = 'text-xs opacity-60';
+    versionHint.textContent = t('settings.general.versioningHint');
+    this.versionWhere = document.createElement('p');
+    this.versionWhere.className = 'break-all rounded bg-base-100 px-2 py-1 font-mono text-xs';
+    this.versionWhere.setAttribute('data-versioning-where', 'true');
+    versionGroup.append(versionRow, versionHint, this.versionWhere);
+    this.versionToggle.addEventListener('change', () => void this.chooseVersioning());
+
     const group = document.createElement('div');
     group.className = 'form-control gap-1';
     const label = document.createElement('label');
@@ -123,6 +157,7 @@ export class GeneralSettings extends BaseComponent {
     this.appendChild(heading);
     this.appendChild(languageGroup);
     this.appendChild(stackGroup);
+    this.appendChild(versionGroup);
     this.appendChild(group);
     this.appendChild(actions);
     void this.load();
@@ -142,7 +177,10 @@ export class GeneralSettings extends BaseComponent {
       const config = await configManager.load();
       this.languageSelect.value = await languageFor(config);
       this.pushToggle.checked = config.push_unstacked_on_open === true;
+      const workspace = config.workspace ?? null;
+      this.versionToggle.checked = workspace !== null && consentFrom(config, workspace) === 'yes';
       this.folderInput.value = config.image_folder ?? '';
+      await this.showVersionWhere();
     } catch (error) {
       console.error('Failed to load the general settings:', error);
       this.status.textContent = t('settings.failedToLoad');
@@ -165,6 +203,63 @@ export class GeneralSettings extends BaseComponent {
       await configManager.update({ push_unstacked_on_open: this.pushToggle.checked });
     } catch (error) {
       console.error('Failed to save the stack setting:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.status.textContent = t('settings.failedToSave', { message });
+    }
+  }
+
+  /** Where the versions of this workspace live, or would live; nothing when there is none. */
+  private async showVersionWhere(): Promise<void> {
+    const workspace = configManager.get()?.workspace ?? null;
+    this.versionWhere.textContent = '';
+    if (!workspace) {
+      return;
+    }
+    try {
+      const facts = await versioningFacts(workspace);
+      if (facts.git === null) {
+        this.versionWhere.textContent = t('settings.general.versioningNoGit');
+        return;
+      }
+      this.versionWhere.textContent = versionLocation(facts, versioningPlan(facts, 'yes')) ?? '';
+    } catch (error) {
+      console.error('Failed to read what is true of the workspace:', error);
+    }
+  }
+
+  /**
+   * The versioning switch: off is an answer, and on is an answer that is asked for first — the same
+   * question the action asks, because this is the same consent.
+   */
+  private async chooseVersioning(): Promise<void> {
+    const workspace = configManager.get()?.workspace ?? null;
+    if (!workspace) {
+      this.versionToggle.checked = false;
+      this.status.textContent = t('version.noWorkspace');
+      return;
+    }
+    try {
+      if (!this.versionToggle.checked) {
+        // Off stops future versions and touches nothing that exists: a repository already there is
+        // the reader's own, and this only stops the app asking for versions of it.
+        await configManager.update({ versioning: false, versioning_workspace: workspace });
+        return;
+      }
+      const facts = await versioningFacts(workspace);
+      if (facts.git === null) {
+        this.versionToggle.checked = false;
+        await this.showVersionWhere();
+        return;
+      }
+      const agreed = await versioningDialog.ask({ ask: 'consent', location: null, separated: false });
+      if (!agreed) {
+        this.versionToggle.checked = false;
+        return;
+      }
+      await configManager.update({ versioning: true, versioning_workspace: workspace });
+      await this.showVersionWhere();
+    } catch (error) {
+      console.error('Failed to save the versioning setting:', error);
       const message = error instanceof Error ? error.message : String(error);
       this.status.textContent = t('settings.failedToSave', { message });
     }

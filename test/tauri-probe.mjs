@@ -20,6 +20,9 @@
  * run (wikilinks and citations then resolve) and puts the previous config back
  * afterwards, so running a probe never changes the maintainer's own workspace.
  *
+ * A probe that needs a file in this checkout — `versioning-fake-git.js` points the
+ * app at `test/probes/fake-git.sh` — finds the checkout in `window.__probePaths`.
+ *
  * The probe is a plain script evaluated in the webview; it may return a value
  * (or a promise) which is printed as JSON. Helpers are installed separately
  * (`--install`), so every probe is sent verbatim.
@@ -56,6 +59,8 @@ const withDoc = flags.has('--with-doc');
 const withFixture = flags.has('--fixture');
 const withWorkspace = flags.has('--with-workspace');
 const fixturesRoot = fileURLToPath(new URL('./fixtures/workspace', import.meta.url));
+/** Where this checkout is, for a probe that has to name one of its files. */
+const probePaths = { checkout: fileURLToPath(new URL('..', import.meta.url)) };
 const documentArgument = withDoc || withFixture ? positional[0] : null;
 const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
@@ -82,6 +87,7 @@ const wrappedProbe = probe
   ? `(async () => {
   window.__probeResult = undefined;
   window.__probeSteps = undefined;
+  window.__probePaths = ${JSON.stringify(probePaths)};
   window.__probeDoc = ${JSON.stringify(documentText)};
   ${documentText === null ? '' : 'await window.__t.load(window.__probeDoc);'}
   window.__probeResult = await (
@@ -299,9 +305,22 @@ async function restoreLanguage(previous) {
 
 /** Runs the probe, installing the helpers again if the page lost them. */
 async function runProbe() {
-  // Clear any earlier probe's stash first, so a timed-out run can never be
-  // mistaken for the previous one's result.
-  await call('window.__probeResult = undefined; window.__probeSteps = undefined; null');
+  // Clear any earlier probe's stash, and put back the one seam a probe can leave set on the app
+  // itself: `versioning_use_git` — a global in the Rust process, which a page reload does not
+  // clear. A run cut off by the bridge then costs the next probe nothing, and the stash it left is
+  // never mistaken for the previous one's result.
+  await call(
+    `(async () => {
+       window.__probeResult = undefined;
+       window.__probeSteps = undefined;
+       try {
+         await window.__TAURI_INTERNALS__.invoke('versioning_use_git', { git: null });
+       } catch (error) {
+         // A build without the versioning seam has nothing to put back.
+       }
+       return null;
+     })()`
+  );
   return await call(wrappedProbe, 20000, 'probe');
 }
 

@@ -21,6 +21,7 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
   new_markdown: 'file:newMarkdown',
   save: 'file:save',
   save_as: 'file:saveAs',
+  version_save: 'version:save',
   find: 'find:open',
   replace: 'find:replace'
 };

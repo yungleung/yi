@@ -503,6 +503,102 @@ elements) unless it says otherwise.
   config) and `first-run-create.js` (the folder made, then adopted). Measured end to end: with
   `{workspace: null, workspace_asked: false}` and a real page reload, the page that came up asked —
   "A new workspace will be made in /Users/urshanabi/Documents/Yi." — with all three answers on it.
+- **Versions of a workspace, kept by Git**, as the reader argued it out: local version control for
+  the notes, Git only, if the machine has it, with no account and no remote required, and never any
+  of it without their own answer. Landed as
+  `docs/superpowers/specs/2026-10-01-workspace-versioning-design.md` and its plan. Five rules, which
+  are one table and one check: **no git at all** without consent for *this* workspace (the default,
+  and what every config written before the field reads as); a repository the reader already has is
+  theirs and is used as it stands — their identity, their remote, their branch — with only the files
+  this app wrote ever committed; a folder *inside* a repository is never nested into; a folder a
+  cloud drive could reach (or one the classifier cannot read enough to be sure about, treated the
+  same way because the separate git directory costs nothing in the local case — the reader's own git
+  keeps working through the one-line `.git` pointer file) gets
+  `git init --separate-git-dir=<app data>/repos/<name>`, after the risk is shown; and anything else
+  is a plain `git init`. A version exists **only when the reader asks**: `version:save`, the File
+  menu's *Save a Version*, which captures the editor's text, refuses a note with no file, writes the
+  file atomically, and commits it by pathspec (`git add -- <path>` then
+  `git commit -m <message> -- <path>`) so the reader's staged work is never swept up. Nothing else
+  runs git — no timer, no quit hook, no on-save commit — and the never-dos (no `fetch`, `pull`,
+  `gc`, `clean`, `reset`, `checkout`, `amend`, no force, no hooks, no credentials in the repository)
+  are held by a probe that points the app at a git which only records its arguments.
+  `npm run check` is **38/38** and `cargo test` **33/33**. The facts are gathered in Rust because
+  the webview cannot see them: `PATH` is never trusted for finding git (an app launched from Finder
+  inherits no shell's), `/usr/bin/git` is used only when `xcode-select -p` answers — measured to
+  answer without raising the Command Line Tools installer, where `/usr/bin/git` itself would — and
+  the cloud answer is read from the path shapes, the dataless attribute, the mount table, the
+  `~/Library/CloudStorage` listing the app *can* read, and, under `~/Library`, from a `readdir`
+  refusal itself. Three measured facts shaped the tests. The webview's file plugin **refuses a
+  hidden path** (`forbidden path` for `.git/HEAD`, and for `exists`), so a repository is observed
+  only through the app's own commands — a probe cannot run `git`, and cannot read the index either.
+  The app's own listing hides dot-named entries, which is what makes a clone safe to open: after the
+  app opened a real clone, `git status --porcelain` was empty. And the session's write was already
+  atomic (27 ms for 853 bytes); that shape moved into `files.rs: write_atomically` and now serves
+  document saves too, so a cloud or git client reading mid-save never sees half a note. The probes
+  are `versioning-facts`, `versioning-fake-git`, `versioning-save`, `versioning-staged`,
+  `versioning-consent`, `versioning-repository`, `versioning-outer` and `versioning-no-git`; the
+  first save probe held both halves of its subject and measured **4.9 s** against the bridge's 5 s,
+  so it was split rather than gambled on, and the repository probe was split the same way at 5.0 s.
+- **The versions of the note on screen**, as the reader asked: a button at the left of the status
+  bar showing the newest version of the document in hand, and — one press away — the list of them,
+  newest first, each row the stamp, the message and the comment under it. Landed as
+  `docs/superpowers/specs/2026-10-02-document-versions-design.md`, built by
+  `docs/superpowers/plans/2026-10-02-document-versions.md`. A version is **a commit that touched the
+  file**, whoever wrote it, so the panel and the reader's own `git log` agree word for word; the
+  read is `git log --follow --max-count=50 --format=…` through the one helper every git call goes
+  through — measured at **14 ms** for fifty rows (45 ms with `--follow` over a long history), and a
+  path git has never seen answers **nothing and exits 0**, so an empty list is a list and not an
+  error; `--follow` is what keeps a renamed note's versions (with it `renamed|The note · …|first`,
+  without it only `renamed`). It is the vocabulary's **fourth call and its first read**; the
+  never-dos are unchanged. The button is there exactly when the reader agreed to versions in this
+  workspace and hidden otherwise, read from the config alone — a workspace they said no to runs no
+  git at all, which `versioning-status.js` holds with the recorder's log staying empty. The list
+  says which of four things is true when there is nothing to show (no file yet, no repository here,
+  no versions of this note, or a read that failed), and nothing in the panel acts: restoring a
+  version stays out of scope. Saving a version now asks what to call it — an optional comment on a
+  card with no native twin, the subject unchanged (`Title · 2026-10-01 20:15`) and the comment as
+  the commit's body. `npm run check` is **38/38** and `cargo test` **34/34**; the probes are
+  `versioning-status`, `versioning-list` and `versioning-list-empty`, beside the eight the versioning
+  slice left. Two bugs the probes caught while this was built are worth remembering: a `QuestionCard`
+  subclass must re-append what it is made of in its `ask` callback (`question_card.ts: askWith`
+  clears the card first), and a probe cannot tell a card is up from its field being in the page — the
+  field is there from the moment the module loads, so waiting on it clicks a card nobody opened.
+  The reader then found a third, on the running app and not in the checks: **clicking the button
+  showed nothing**. It had been built to hang below its host, the way the titlebar's two panels do,
+  and the status bar is the bottom strip of the window — measured, the panel sat at y 804–856 in an
+  800 px window, four pixels past the edge and invisible, while every check passed because a probe
+  asked only whether an ancestor carried `hidden`. The kind now hangs by its own `side`
+  (`panel.ts`: `above` or `below`), the versions panel hangs above, and `versioning-list.js` holds
+  the panel *inside the window, above the button and under the pointer* — geometry, because visible
+  is not the same as on screen. The same report caught the button's stamp at the bar's own size and
+  weight (`text-xs font-normal`, not the 16 px and weight 600 `btn-ghost` had given it), which
+  `versioning-status.js` now holds next to the status bar's other words.
+- **Seeing a version, and going back to it**, as the reader asked: the versions panel's rows are
+  pressable now, and one opens a sheet over the editor showing the **whole note** — one row per
+  line, unchanged lines once, removals and additions marked, opening at the first change — with a
+  *Restore This Version* button. Landed as
+  `docs/superpowers/specs/2026-10-02-version-diff-and-restore-design.md` and
+  `docs/superpowers/plans/2026-10-02-version-diff-and-restore.md`. Four measured facts shaped it.
+  `git show <old commit>:<new name>` fails (*"path 'renamed.md' exists on disk, but not in
+  `<commit>`"*), so every history row now carries the name the file had **at its commit**
+  (`--follow --name-only`, its own path per record) and each older version of a renamed note can
+  still be read. The read is a fifth git call and its first that answers **bytes** — `run_git` would
+  lossily decode a file a restore is about to write, so it goes through `Command` and refuses a
+  version that is not text. A document with a file is keyed by its **path**
+  (`document_identity.ts: documentId`), so a restore is not "open another document": the first
+  attempt wrote the file and left the old text on screen, because `openInto` saw the same id and
+  brought the existing document forward — `openVersion` replaces *that* document's text instead, and
+  and nothing is kept for the reader: they were asked, they answered restore, and the text that was on screen is gone — the first cut asked the session's question, which the reader corrected (it is about opening another document, and neither answer means "I did not mean that").
+  And the sheet takes the keyboard while it is open (a keystroke must not reach a document nobody can
+  see), which is why it is a **mode** and not a `FloatingSurface`, and why the scroller now carries
+  `tabindex="-1"`: measured, WebKit only makes a scroll container focusable when it has something to
+  scroll, so handing the keyboard back was a no-op for a short note. **No git write happens at all**
+  for a restore — the recorder holds that a whole restore is one `show` and none of the write verbs,
+  so the reader's staged work stays staged and a version is still only made when they ask.
+  `npm run check` is **39/39** (the new `check-text-diff.mjs`; the diff is ours, since the project
+  has no diff library) and `cargo test` **35/35**; the probes are `versioning-diff` (the whole note,
+  the marks, the first change in view, the keyboard with the sheet) and `versioning-restore` (the
+  file, the document, the stack, *Saved*), beside the thirteen the versioning slices left.
 
 ## Open, in the order to take them
 
@@ -544,6 +640,13 @@ elements) unless it says otherwise.
   layout in two runs and typed in the right place in the full-width one — and passed the next run
   in the A4 layout — so that check is measuring the page's scale and the frame it lands on as much
   as the caret's mapping.
+  An **occluded** window is the other half of this, and the larger one: the system throttles a
+  background window's timers, so every `t.sleep(...)` a probe takes can cost a second of wall clock.
+  Measured while the versioning probes were written — the same probe, in the same state, took
+  **2257 ms** with the app's window in front and **5008 ms** behind the terminal, where one `git
+  init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
+  and a probe that only sometimes finishes is read as too long whatever the window was doing;
+  `test/README.md` says so where probes are written.
 - **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
   writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
   document (`y 49`) instead of on the line under the rule — measured on the app, and older
@@ -707,3 +810,21 @@ nothing today.
 (one render, ~5–20 ms, on the deferred check's timer). The colours would be **absent** for the
 length of a burst, not merely stale, which is a bigger change than P26 measured; everything
 cheaper than that is measured out, so this is the decision, and it is the user's.
+
+  Three enhancements the reader picked, landed on the same branch. **The diff's ink** was wrong when
+  it was first built: the sheet painted a changed line with `text-error`/`text-success`, which are the
+  theme's *surface* colours and measure under 3:1 as text in the light theme (this file's own
+  architecture note says so, and that is why the source palette exists). It wears the palette's mixes
+  now — `--md-source-deleted`, and its twin `--md-source-inserted` over `success` — and
+  `versioning-diff.js` holds that the surface colours are gone; the *ratios* are not measured there
+  (the colours compute to `oklab(…)`, which that probe cannot decode), so the deletion mix's 3:1 floor
+  still lives in `source-theme.js` and the insertion is its twin construction, which is an inference
+  rather than a measurement. **The button now says what is on screen**: the newest version's stamp
+  when the editor holds exactly that version, and "Not in a version" when it does not — the newest
+  version's own text is read once with the history and compared on every session change, so a
+  keystroke changes the word — and the restore's question adds a sentence when the text about to be
+  replaced is in no version at all, which is the one thing here that exists nowhere else.
+  **The panel is capped by the room above it** rather than by its own 320px list cap, so a short
+  window (there is no `minHeight` in `tauri.conf.json`) cannot push its top past the edge.
+  `versioning-list.js` and `versioning-status.js` hold the last two; `check-versioning.mjs` holds
+  `versionedNow`.

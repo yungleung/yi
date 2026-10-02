@@ -441,6 +441,18 @@ body {
   --md-source-string: color-mix(in oklab, var(--color-secondary) 65%, var(--color-base-content));
   --md-source-number: color-mix(in oklab, var(--color-accent) 65%, var(--color-base-content));
   --md-source-deleted: color-mix(in oklab, var(--color-error) 65%, var(--color-base-content));
+  --md-source-inserted: color-mix(in oklab, var(--color-success) 65%, var(--color-base-content));
+}
+
+/* What a version sheet's changed lines are painted with: the same mixes a source's deletion
+   marker uses, because the theme's `error` and `success` are *surface* colours and measure under
+   3:1 as text in the light theme (measured: `test/probes/source-theme.js`). */
+.markdown-diff-removed {
+  color: var(--md-source-deleted);
+}
+
+.markdown-diff-added {
+  color: var(--md-source-inserted);
 }
 
 /* The surface under it all: the prose gives every `pre` its box — radius, padding,

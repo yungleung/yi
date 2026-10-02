@@ -5,6 +5,7 @@ mod greeting;
 mod session;
 mod stats;
 mod settings;
+mod versioning;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -32,6 +33,7 @@ pub fn run() {
             files::delete_entry,
             files::move_entry,
             files::rename_entry,
+            files::write_text_atomically,
             stats::get_word_count, 
             files::list_folder_files, 
             greeting::greet,
@@ -40,7 +42,13 @@ pub fn run() {
             settings::get_config,
             settings::set_config,
             settings::get_current_config_version,
-            settings::read_bibliography,])
+            settings::read_bibliography,
+            versioning::versioning_facts,
+            versioning::versioning_use_git,
+            versioning::versioning_history,
+            versioning::versioning_version_text,
+            versioning::init_workspace_repository,
+            versioning::commit_paths,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

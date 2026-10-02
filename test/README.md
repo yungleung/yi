@@ -36,6 +36,8 @@ methodology; this file is the index and the conventions.
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
+| `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
+| `check-text-diff.mjs` | Two texts as the whole document in one line stream (`services/text_diff.ts`): equal texts, an insertion, a deletion, a rewrite, an empty side, a trailing newline, the equal ends carried, and a change past the cap answered as a `replaced` count rather than guessed at |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
@@ -53,7 +55,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and twenty-six of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and thirty-nine of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -109,7 +111,28 @@ first start (`first-run` — the card the start-up path asks with, saying where 
 be made, a folder taken from the path field and becoming the workspace the tree then shows, the
 answer remembered, and "not now" writing nothing; `first-run-create` — the other answer, with the
 documents folder pointed at one the probe made, so the folder appears once and is adopted when it
-is already there), the
+is already there), the versions a workspace keeps (`versioning-facts` — what the backend says of a
+folder it made itself, and what it says about `~/Library/CloudStorage` without asserting a vendor's
+answer; `versioning-fake-git` — every argument the app hands git, watched by a git that only
+records (`probes/fake-git.sh`, committed because a probe cannot set an executable bit);
+`versioning-save` — the question a workspace nobody has answered for is asked, the answer remembered
+with its path, and the note committed; `versioning-staged` — a file the reader had staged is still
+there to commit after a version of another note; `versioning-consent` — the answer that is *no*,
+nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
+— a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
+never nested into; `versioning-no-git` — the machine with no git, which is told and writes nothing),
+the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
+hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
+stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
+the comment under its own row and no other; `versioning-list-empty` — the four things it says
+instead of a list, the last by pointing the git seam at a git that is not there),
+seeing a version and going back to it (`versioning-diff` — a row press opens the sheet: the whole
+note as lines, the changed one marked on both sides, the first change in view, the keyboard with the
+sheet rather than the text behind it, and Escape closing it with nothing changed;
+`versioning-restore` — *Restore This Version* asking the session's own question, the file holding
+the version's text, the document on screen being it and *Saved*, and what was there kept in the
+stack as a document of its own),
+the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
 the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two
@@ -149,6 +172,18 @@ live index; the newest probes carry a header naming what they cover:
   deleted by the app's own Rust commands, but reading or writing it from the page is refused).
   `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
   `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
+- A probe **cannot run a command**, and it cannot read inside a dot-named one either: the file
+  plugin answers `forbidden path` for `.git/HEAD` and for `exists` on `.git` (measured), so a
+  repository is observed through the app's own commands — which is what `versioning-*.js` do — and
+  anything that must *be* a command is committed, not written (`probes/fake-git.sh`, which the app
+  is pointed at by name through its own seam).
+- **The app's window has to be in front.** An occluded window is throttled by the system, and every
+  sleep a probe takes then costs a second of wall clock or more: the same probe measured **2257 ms**
+  with the window in front and **5008 ms** behind the terminal, where one `git init` through the
+  app's own command took 6.7 s. Bring the app forward before reading a probe's time
+  (`osascript -e 'tell application "System Events" to set frontmost of (first process whose name is
+  "yi") to true'` is what this project's sessions use), and read a probe that only sometimes
+  finishes as too long whatever the window was doing.
 - A file read over the raw bridge (`plugin:fs|read_text_file`) comes back as an **`ArrayBuffer`**,
   and `Uint8Array.from(buffer)` on one is an *empty* array rather than its bytes — take it as it
   is: `bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)`, which is what the plugin's

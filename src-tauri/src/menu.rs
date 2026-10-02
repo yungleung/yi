@@ -69,6 +69,7 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
                 .id("save_as")
                 .build(app)?,
         )
+        .text("version_save", t(language, "menu.file.saveVersion", &[]))
         .separator()
         .text("export", t(language, "menu.file.export", &[]))
         .separator()
@@ -185,6 +186,9 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
             }
             "save_as" => {
                 app_handle.emit("save_as", ()).unwrap();
+            }
+            "version_save" => {
+                app_handle.emit("version_save", ()).unwrap();
             }
             "undo" => {
                 app_handle.emit("undo", ()).unwrap();

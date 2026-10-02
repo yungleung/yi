@@ -219,6 +219,35 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
     Ok(as_path(&target))
 }
 
+/// Writes a file's text in one step: the text goes to a temporary file beside it, and that
+/// temporary file is renamed over the target.
+///
+/// A reader of the file — a cloud client syncing it, a git client committing it, the app opening
+/// it — never sees half a document, and a crash mid-write leaves the file that was already there.
+/// The temporary is a *sibling* on purpose: a rename across volumes copies rather than moves, which
+/// is the very half-written window this closes.
+pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
+    use std::io::Write;
+
+    let mut temporary = path.as_os_str().to_os_string();
+    temporary.push(".tmp");
+    let temporary = PathBuf::from(temporary);
+    {
+        let mut file = fs::File::create(&temporary)?;
+        file.write_all(contents.as_bytes())?;
+        file.sync_all()?;
+    }
+    fs::rename(&temporary, path)
+}
+
+/// Saves a document's text. The session and the new-note flow write through this rather than the
+/// file plugin's truncate-and-write, so a save is never half a file for anything else to read.
+#[tauri::command]
+pub fn write_text_atomically(path: String, contents: String) -> Result<(), String> {
+    write_atomically(Path::new(&path), &contents)
+        .map_err(|error| format!("Failed to write {path}: {error}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -310,6 +339,22 @@ mod tests {
         assert!(dir.join("Notes").is_dir());
         assert_eq!(folder, as_path(&dir.join("Notes")));
         assert!(create_entry(as_path(&dir), "My note".into(), true).is_err());
+    }
+
+    #[test]
+    fn a_write_replaces_the_text_and_leaves_no_temporary_behind() {
+        let dir = create_temp_dir();
+        let note = dir.join("note.md");
+        fs::write(&note, "the first text").unwrap();
+
+        write_text_atomically(as_path(&note), "the second text".into()).unwrap();
+
+        assert_eq!(fs::read_to_string(&note).unwrap(), "the second text");
+        assert!(!dir.join("note.md.tmp").exists(), "the temporary is gone");
+        // Nothing there to replace yet: the same write makes the file.
+        let fresh = dir.join("fresh.md");
+        write_text_atomically(as_path(&fresh), "new".into()).unwrap();
+        assert_eq!(fs::read_to_string(&fresh).unwrap(), "new");
     }
 
     #[test]

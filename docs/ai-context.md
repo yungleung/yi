@@ -59,7 +59,8 @@ Everything that floats over the page is one shallow family in `src/ui/floating/`
 (hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*
 it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/placement.ts` beside
 a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
-`relative` host, under the button) and `QuestionCard` (the veil, the centred card, and one answer
+`relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
+card, and one answer
 with Escape giving the cautious one). The footnote preview, the completion list, the stack panel,
 the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
 Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
@@ -118,6 +119,80 @@ type. Two things bite here: the file plugin is scoped to `$HOME`
 (`src-tauri/capabilities/default.json`), so a workspace outside it can be listed, moved and
 deleted but not read or written by the webview; and making a note from a document that is not in
 the stack asks the session's question first, the same one opening a file asks.
+
+A **version** of a workspace is kept with git, and only ever because the reader asked for one:
+*File → Save a Version* is the command `version:save` (`src/ui/versioning/save_version.ts`), and it
+is the only action in the app that runs git — no timer, no quit hook, no on-save commit. The facts
+are Rust (`src-tauri/src/versioning.rs`: which git may be run — never by trusting `PATH`, and
+`/usr/bin/git` only when `xcode-select -p` answers; whether the folder is in a repository of its
+own or one above it; whether a cloud drive could reach it; and where the app would keep a git
+directory outside the folder), the decision is pure (`services/versioning.ts: versioningPlan`, over
+`consentFrom` and the config's `versioning`/`versioning_workspace` — an answer given for another
+folder is *no answer*), and the doing asks the plan's own question first (`versioning_dialog.ts`,
+the two hands `ui/prompt.ts` has), refuses a note with no file in one sentence, captures the
+editor's text and writes it atomically (`files.rs: write_atomically` — temp file plus rename, the
+shape the session's own write uses too, so a cloud or git client reading mid-save never sees half a
+note), and commits **only** the file it wrote: `git add -- <path>` then `git commit -m <message> --
+<path>`. A repository the reader already has is used as it stands and never nested into; a folder a
+cloud drive could reach — or one we cannot read enough to be sure about, which is treated the same
+way — gets `git init --separate-git-dir=<app data>/repos/<name>`, so the drive never sees a `.git`
+at all while the reader's own git keeps working through the one-line pointer file. Every git call
+goes through one helper, and what the app may never ask git to do is a list held by a probe that
+points it at a git which only records its arguments (`test/probes/versioning-fake-git.js`; a probe
+cannot set an executable bit, so the recorder is committed next to it). The git may also be *named*
+for a test: `YI_GIT` for a process started with one, and `versioning_use_git` — a debug-only command
+— for a probe, which cannot change the environment of the app it is driving; the harness puts that
+seam back before every probe, the way it puts the language back. Three things bite: the webview's
+file plugin refuses a hidden path (measured: `forbidden path` for `.git/HEAD` *and* for `exists`),
+so a repository is observed through the app's own commands and never read directly; the app's own
+listing hides dot-named entries, which is what makes a clone safe to open; and a commit's *message*
+is the note's own name and the minute it was asked for, because that message — with the reader's
+own comment under it — is what the app's own list of versions shows.
+
+**The versions of the note on screen** are shown, not just kept. The status bar's left group holds
+a button (`ui/versioning/version_status.ts`) that is there exactly when the reader agreed to
+versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
+never runs git — and hidden otherwise, showing the newest version's stamp
+(`services/versioning.ts: versionStamp`). Pressing it opens the panel **above** it — the status bar
+is the bottom strip of the window, so a panel hanging below it is off-screen, which is a parameter
+of the kind (`panel.ts: side`) rather than a mode —
+and the button's own word is the *state*: the newest version's stamp when what is on screen is that
+version, and `version.unversioned` ("Not in a version") when it is not (`versionedNow`: the newest
+version's text, read once with the history, against what the editor holds — so a keystroke changes
+it), or "No versions yet" when there is nothing to compare with at all.
+(`versions_panel.ts`): one row per version, newest first — the stamp, the message, and the comment
+under it — and *nothing in it acts*, because restoring a version is out of this slice's scope
+(`docs/roadmap.md`). Both draw from `services/versions.ts`, the living list: it reads through
+`src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
+workspace or the answer changes, and when a panel opens or a version is saved; it can say
+`no-file`, `no-repository`, `ready` or `unreadable`, and the panel turns those into the four
+sentences a reader gets instead of a list. The read is the git vocabulary's **fourth call and its
+first read** — `git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`,
+through the same `run_git` — and the never-list is unchanged. Saving a version asks what to call it
+first (`version_comment_dialog.ts`, a card with **no native twin**: no system surface answers with
+a line of text), and the subject stays exactly what it was while the comment becomes the commit's
+body.
+
+**A version can be seen and gone back to.** A press on a row of the versions panel opens the
+sheet (`ui/versioning/version_diff_view.ts`): the whole note as one row per line, drawn from
+`services/text_diff.ts` (the equal ends trimmed only to compute the change; the middle walked for
+its longest common subsequence, removals before additions; past a cap the change is *named* — the
+rule answers a count and the catalogue says the sentence), opening at the first change. The sheet is
+a **mode**, not a floating surface: it covers the editor's area and keeps the keyboard while it is
+open, because `FloatingSurface`'s rule — never take the focus — is right for a question asked
+mid-gesture and wrong for this, where a keystroke reaching a document nobody can see is worse than a
+modal; closing it hands the keyboard back (`markdown_editor.ts: focusText`, and the scroller carries
+`tabindex="-1"` because WebKit only makes a scroll container focusable when it has something to
+scroll). Its one action is *Restore This Version*: **one question with a cancel that changes
+nothing** (*restore this version?*, through the app's own `ui/prompt.ts`, so Escape is the cautious
+answer, naming the version and saying nothing is committed), then
+`documentSession.openVersion(path, content)` — the file is written with the app's atomic write and
+the document adopts that text, at its top. Three facts about it: a document with a file is keyed by
+its **path**, so a restore replaces *that* document's text rather than opening another; **nothing is
+kept for the reader** (they answered restore, so no copy of what was on screen is pushed into the
+stack on their behalf); and **no git write happens at all** — the reader's staged
+work stays staged, `git status` shows the modification, and a version is still only made when they
+ask (held by the recorder: a whole restore is one `show` and none of the write verbs).
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
