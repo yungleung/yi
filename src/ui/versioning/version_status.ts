@@ -17,6 +17,7 @@ import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versions';
 import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { versionStamp, versionsVisible } from '../../services/versioning';
 import { STATUS_BUTTON, Toolbar } from '../toolbar/toolbar';
+import { VersionsPanel } from './versions_panel';
 
 /** The reader's own glyph: a note's version. */
 const VERSION_ICON =
@@ -28,10 +29,12 @@ const VERSION_ICON =
 export class VersionStatus extends Toolbar {
   private readonly button: HTMLButtonElement;
   private readonly label: HTMLSpanElement;
+  private readonly panel: VersionsPanel;
 
   constructor() {
     // `relative`, so the panel hangs under the button rather than somewhere in the page.
     super(['relative', 'flex', 'items-center', 'gap-1']);
+    this.panel = new VersionsPanel();
 
     this.button = document.createElement('button');
     this.button.type = 'button';
@@ -47,7 +50,8 @@ export class VersionStatus extends Toolbar {
       event.preventDefault();
       event.stopPropagation();
     });
-    this.element.appendChild(this.button);
+    this.button.addEventListener('click', () => this.panel.toggle());
+    this.element.append(this.button, this.panel.element);
 
     void eventManager.on(VERSIONS_CHANGED, () => this.render());
     void eventManager.on(WORKSPACE_CHANGED, () => this.render());
@@ -64,6 +68,7 @@ export class VersionStatus extends Toolbar {
     // `[data-version-status]` has to be the thing that says whether the reader agreed.
     this.button.classList.toggle('hidden', !shown);
     if (!shown) {
+      this.panel.close();
       return;
     }
     this.button.title = t('version.button');
