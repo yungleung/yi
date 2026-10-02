@@ -15,6 +15,7 @@ import { t } from '../../services/i18n';
 import { VERSIONS_CHANGED, versionsOfDocument, type VersionsReading } from '../../services/versions';
 import { versionStamp, type Version } from '../../services/versioning';
 import { AnchoredPanel } from '../floating/panel';
+import { versionDiffView } from './version_diff_view';
 
 export class VersionsPanel extends AnchoredPanel {
   private readonly list: HTMLDivElement;
@@ -81,12 +82,28 @@ export class VersionsPanel extends AnchoredPanel {
 
   /** One row: the stamp, the message, and the comment under it. Nothing here acts. */
   private row(version: Version, isLatest: boolean): HTMLElement {
-    const row = document.createElement('div');
-    row.className = 'rounded px-1 py-1';
+    // A row is a button: pressing it shows that version against what is on screen now, and the
+    // panel gets out of the way.
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'rounded px-1 py-1 text-left';
+    row.setAttribute('data-version-open', version.hash);
     row.setAttribute('data-version-row', version.hash);
     if (isLatest) {
       row.setAttribute('data-version-latest', 'true');
     }
+    row.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    row.addEventListener('click', () => {
+      this.close();
+      void versionDiffView.show({
+        revision: version.hash,
+        path: version.path,
+        stamp: versionStamp(version.at)
+      });
+    });
     const stamp = document.createElement('span');
     stamp.className = 'mr-2 text-xs opacity-70';
     stamp.setAttribute('data-version-stamp', 'true');

@@ -20,6 +20,11 @@ export type DiffKind = 'same' | 'removed' | 'added';
 export interface DiffLine {
   kind: DiffKind;
   text: string;
+  /**
+   * How many lines a change past the cap stood for, instead of the text: the *words* for that
+   * belong to the catalogue, not to a pure rule that may import nothing.
+   */
+  replaced?: number;
 }
 
 /** A text's lines. A trailing newline does not make an empty last line; no text makes no lines. */
@@ -95,8 +100,8 @@ export function textDiff(before: string, after: string, cap: number): DiffLine[]
   const newMiddle = newLines.slice(head, newLines.length - tail);
   const stream: DiffLine[] = oldLines.slice(0, head).map((text) => ({ kind: 'same', text }));
   if (oldMiddle.length + newMiddle.length > cap) {
-    stream.push({ kind: 'removed', text: `${oldMiddle.length} lines replaced` });
-    stream.push({ kind: 'added', text: `${newMiddle.length} lines replaced` });
+    stream.push({ kind: 'removed', text: '', replaced: oldMiddle.length });
+    stream.push({ kind: 'added', text: '', replaced: newMiddle.length });
   } else {
     stream.push(...middleDiff(oldMiddle, newMiddle));
   }

@@ -46,8 +46,17 @@ check(
 );
 check(
   'a change past the cap is named rather than diffed',
-  diff('a\n1\n2\n3\nz\n', 'a\n4\n5\n6\nz\n', 4),
-  ' a\n-3 lines replaced\n+3 lines replaced\n z'
+  textDiff('a\n1\n2\n3\nz\n', 'a\n4\n5\n6\nz\n', 4).map((line) => ({
+    kind: line.kind,
+    text: line.text,
+    replaced: line.replaced ?? null
+  })),
+  [
+    { kind: 'same', text: 'a', replaced: null },
+    { kind: 'removed', text: '', replaced: 3 },
+    { kind: 'added', text: '', replaced: 3 },
+    { kind: 'same', text: 'z', replaced: null }
+  ]
 );
 check(
   'the unchanged ends are carried, not cut, however long',
