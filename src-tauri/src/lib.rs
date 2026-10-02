@@ -46,6 +46,7 @@ pub fn run() {
             versioning::versioning_facts,
             versioning::versioning_use_git,
             versioning::versioning_history,
+            versioning::versioning_version_text,
             versioning::init_workspace_repository,
             versioning::commit_paths,])
         .run(tauri::generate_context!())

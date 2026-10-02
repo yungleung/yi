@@ -66,3 +66,16 @@ export async function versioningHistory(
 ): Promise<Version[]> {
   return await invoke<Version[]>('versioning_history', { workspace, path, limit });
 }
+
+/**
+ * One version's own text, by the revision and the name the file had *at that commit*
+ * (`git show <revision>:<path>`) — so a note renamed since then can still be read. Refuses a
+ * version whose bytes are not text.
+ */
+export async function versioningVersionText(
+  workspace: string,
+  revision: string,
+  path: string
+): Promise<string> {
+  return await invoke<string>('versioning_version_text', { workspace, revision, path });
+}

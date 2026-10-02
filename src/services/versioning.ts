@@ -72,6 +72,8 @@ export interface Version {
   at: number;
   subject: string;
   body: string;
+  /** The name the file had *at this commit*, repo-relative — what reading this version needs. */
+  path: string;
 }
 
 /** The reader's answer for this workspace. */

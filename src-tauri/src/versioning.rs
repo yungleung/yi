@@ -60,12 +60,16 @@ pub struct Version {
     pub at: i64,
     pub subject: String,
     pub body: String,
+    /// The name the file had **at this commit**, repo-relative — what `git show <revision>:<path>`
+    /// needs, and the reason a renamed note's older versions can still be read.
+    pub path: String,
 }
 
 /// What git is asked for: hash, author time, subject and body, NUL between fields and a record
 /// separator between commits — a message may hold every *other* character, newlines included, and a
-/// body is exactly that.
-const VERSION_FORMAT: &str = "%H%x00%at%x00%s%x00%b%x1e";
+/// body is exactly that. The separator *leads*, because `--name-only` prints the path after the
+/// format: a record runs from one separator to the next, its name last.
+const VERSION_FORMAT: &str = "%x1e%H%x00%at%x00%s%x00%b";
 /// The most rows one read may be asked for; the frontend asks for fifty.
 const VERSION_LIMIT: usize = 200;
 
@@ -75,14 +79,22 @@ fn versions_from(output: &str) -> Vec<Version> {
         .split('\u{1e}')
         .filter(|record| !record.trim().is_empty())
         .filter_map(|record| {
-            let mut fields = record.trim_start_matches('\n').split('\u{0}');
+            let mut fields = record.split('\u{0}');
             let hash = fields.next()?;
             let at = fields.next()?.trim().parse().ok()?;
+            let subject = fields.next()?;
+            // What is left is the body, the blank line `--name-only` leaves, and the name itself.
+            let rest = fields.next().unwrap_or("");
+            let (body, path) = match rest.trim_end().rsplit_once('\n') {
+                Some((body, name)) => (body.trim_end(), name.trim()),
+                None => ("", rest.trim()),
+            };
             Some(Version {
                 hash: hash.to_string(),
                 at,
-                subject: fields.next()?.to_string(),
-                body: fields.next().unwrap_or("").trim().to_string(),
+                subject: subject.to_string(),
+                body: body.to_string(),
+                path: path.to_string(),
             })
         })
         .collect()
@@ -514,6 +526,8 @@ fn read_versions(
         &[
             "log".to_string(),
             "--follow".to_string(),
+            // The name the file had at each commit, so an older version can be read by it.
+            "--name-only".to_string(),
             format!("--max-count={limit}"),
             format!("--format={VERSION_FORMAT}"),
             "--".to_string(),
@@ -521,6 +535,62 @@ fn read_versions(
         ],
     )?;
     Ok(versions_from(&output))
+}
+
+/// The revision expression for one version's text, from a caller's two strings — checked first,
+/// because this is the one place a caller's string becomes part of a git *revision expression*: an
+/// argument that could be read as an option, or a path that is not inside the repository, is
+/// refused rather than passed along.
+fn version_text_arguments(revision: &str, path: &str) -> Result<String, String> {
+    let hash = revision.trim();
+    if hash.len() < 4 || hash.len() > 40 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("That is not a version this app can read.".to_string());
+    }
+    let name = path.trim();
+    if name.is_empty() || name.starts_with('/') || name.starts_with('-') || name.contains("..") {
+        return Err("That is not a file this app can read from a version.".to_string());
+    }
+    Ok(format!("{hash}:{name}"))
+}
+
+/// One version's own bytes, as text.
+///
+/// This is the one git call that does not go through `run_git`, because its answer is **bytes** and
+/// `run_git` answers a `String`: a restore writes what a version held, so a lossy read would corrupt
+/// the file. Bytes that are not text are refused with a sentence rather than rewritten.
+fn read_version_text(
+    git: &Path,
+    workspace: &Path,
+    revision: &str,
+    path: &str,
+) -> Result<String, String> {
+    let expression = version_text_arguments(revision, path)?;
+    let output = Command::new(git)
+        .arg("-C")
+        .arg(workspace)
+        .args(["show", &expression])
+        .output()
+        .map_err(|error| format!("Could not run {}: {error}", git.display()))?;
+    if !output.status.success() {
+        let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if complaint.is_empty() {
+            "That version could not be read.".to_string()
+        } else {
+            complaint
+        });
+    }
+    String::from_utf8(output.stdout).map_err(|_| "This version is not text.".to_string())
+}
+
+/// One version of one file, as text.
+#[tauri::command]
+pub fn versioning_version_text(
+    workspace: String,
+    revision: String,
+    path: String,
+) -> Result<String, String> {
+    let git = git_to_run()?;
+    read_version_text(&git, Path::new(&workspace), &revision, &path)
 }
 
 /// The versions of one file, newest first.
@@ -610,22 +680,36 @@ mod tests {
 
     #[test]
     fn the_rows_are_read_from_gits_own_separators() {
-        let output = "abc\u{0}1790855254\u{0}The note · 2026-10-01 20:15\u{0}why I rewrote it\u{1e}\n\
-                      def\u{0}1790855300\u{0}Another\u{0}\u{1e}\n";
+        let output = "\u{1e}abc\u{0}1790855254\u{0}The note · 2026-10-01 20:15\u{0}why I rewrote it\n\nrenamed.md\n\
+                      \u{1e}def\u{0}1790855300\u{0}Another\u{0}\n\nnote.md\n";
         let rows = versions_from(output);
         assert_eq!(rows.len(), 2, "{rows:?}");
         assert_eq!(rows[0].hash, "abc");
         assert_eq!(rows[0].at, 1790855254);
         assert_eq!(rows[0].subject, "The note · 2026-10-01 20:15");
         assert_eq!(rows[0].body, "why I rewrote it");
+        assert_eq!(rows[0].path, "renamed.md");
         assert_eq!(rows[1].subject, "Another");
         assert_eq!(
             rows[1].body, "",
             "a commit with no body has an empty one, not a missing field"
         );
+        assert_eq!(rows[1].path, "note.md");
         assert!(
             versions_from("").is_empty(),
             "a path git has never seen answers nothing at all"
+        );
+    }
+
+    #[test]
+    fn a_revision_or_path_that_could_be_an_option_is_refused() {
+        assert!(version_text_arguments("--upload-pack=x", "note.md").is_err());
+        assert!(version_text_arguments("abc123", "/etc/passwd").is_err());
+        assert!(version_text_arguments("abc123", "../note.md").is_err());
+        assert!(version_text_arguments("ab", "note.md").is_err(), "too short to be a hash");
+        assert_eq!(
+            version_text_arguments("abc123", "notes/note.md").unwrap(),
+            "abc123:notes/note.md"
         );
     }
 
@@ -793,7 +877,9 @@ mod tests {
                 .collect();
             assert_eq!(recorded.len(), 9, "{recorded:?}");
             assert!(
-                recorded[8].contains(" log --follow --max-count=50 --format="),
+                recorded[8].contains(
+                    " log --follow --name-only --max-count=50 --format=%x1e%H%x00%at%x00%s%x00%b -- "
+                ),
                 "{}",
                 recorded[8]
             );
@@ -802,6 +888,16 @@ mod tests {
                 "{}",
                 recorded[8]
             );
+
+            // One version's own text, by the name it had at that commit.
+            read_version_text(&git, &workspace, "abc123", "note.md").unwrap();
+            let recorded: Vec<String> = fs::read_to_string(directory.join("argv.log"))
+                .unwrap()
+                .lines()
+                .map(str::to_string)
+                .collect();
+            assert_eq!(recorded.len(), 10, "{recorded:?}");
+            assert!(recorded[9].ends_with(" show abc123:note.md"), "{}", recorded[9]);
 
             // The never-list: no argument the app writes is ever one of these, anywhere.
             let never = [

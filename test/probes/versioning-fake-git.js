@@ -22,9 +22,8 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const { pointAtGit, initWorkspaceRepository, commitPaths, versioningHistory } = await t.app(
-    '/src/api/versioning.ts'
-  );
+  const { pointAtGit, initWorkspaceRepository, commitPaths, versioningHistory, versioningVersionText } =
+    await t.app('/src/api/versioning.ts');
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
@@ -97,8 +96,16 @@
       'and the app reads one file’s history through the same helper',
       rows.length === 0 &&
         withRead[3] ===
-          `git -C ${folder} log --follow --max-count=50 --format=%H%x00%at%x00%s%x00%b%x1e -- ${note}`,
+          `git -C ${folder} log --follow --name-only --max-count=50 --format=%x1e%H%x00%at%x00%s%x00%b -- ${note}`,
       { rows, line: withRead[3] ?? null }
+    );
+    // One version's own text, by the name it had at that commit.
+    const text = await versioningVersionText(folder, 'abc123', 'note.md');
+    const withText = (await read(`${folder}/argv.log`)).trim().split('\n');
+    check(
+      'and a version’s text is read from that revision and name',
+      text === '' && withText[4] === `git -C ${folder} show abc123:note.md`,
+      { text, line: withText[4] ?? null }
     );
 
     // The flow a reader drives: *Save a Version*, with the comment they typed. Its calls are the
@@ -124,7 +131,7 @@
     }
     await pending;
     await t.sleep(150);
-    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withRead.length);
+    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withText.length);
     check(
       'and a version saved with a comment is committed with the comment as its body',
       // The save's own five calls are the last five: the status bar's own list may have read the
