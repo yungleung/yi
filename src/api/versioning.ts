@@ -7,7 +7,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import type { GitIdentity, VersioningReport } from '../services/versioning';
+import type { GitIdentity, Version, VersioningReport } from '../services/versioning';
 
 /** What is true of the machine and `workspace` right now. */
 export async function versioningFacts(workspace: string): Promise<VersioningReport> {
@@ -53,4 +53,16 @@ export async function commitPaths(
  */
 export async function pointAtGit(git: string | null): Promise<void> {
   await invoke('versioning_use_git', { git });
+}
+
+/**
+ * The versions of one file, newest first — one read of the repository (`git log --follow`), or an
+ * empty list when git has never seen the path.
+ */
+export async function versioningHistory(
+  workspace: string,
+  path: string,
+  limit: number
+): Promise<Version[]> {
+  return await invoke<Version[]>('versioning_history', { workspace, path, limit });
 }

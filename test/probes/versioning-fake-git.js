@@ -22,7 +22,9 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const { pointAtGit, initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
+  const { pointAtGit, initWorkspaceRepository, commitPaths, versioningHistory } = await t.app(
+    '/src/api/versioning.ts'
+  );
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
@@ -87,6 +89,18 @@
       gitDir
     );
 
+    // The read — the vocabulary's fourth call, and the only one that takes nothing away. With the
+    // recorder answering nothing at all, it is an empty list rather than an error.
+    const rows = await versioningHistory(folder, note, 50);
+    const withRead = (await read(`${folder}/argv.log`)).trim().split('\n');
+    check(
+      'and the app reads one file’s history through the same helper',
+      rows.length === 0 &&
+        withRead[3] ===
+          `git -C ${folder} log --follow --max-count=50 --format=%H%x00%at%x00%s%x00%b%x1e -- ${note}`,
+      { rows, line: withRead[3] ?? null }
+    );
+
     // The flow a reader drives: *Save a Version*, with the comment they typed. Its calls are the
     // two reads of the repository's own identity, the init (nothing has made one, under the
     // recorder), the add and the commit — and the commit carries both messages.
@@ -110,7 +124,7 @@
     }
     await pending;
     await t.sleep(150);
-    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(lines.length);
+    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withRead.length);
     check(
       'and a version saved with a comment is committed with the comment as its body',
       saved.length === 5 &&

@@ -625,7 +625,7 @@ export async function versioningHistory(
   first three lines are read, ask for the history directly and hold the fourth call:
 
 ```js
-    const rows = await versioning.versioningHistory(folder, note, 50);
+    const rows = await versioningHistory(folder, note, 50);
     const withRead = (await read(`${folder}/argv.log`)).trim().split('\n');
     check(
       'and the app reads the history of one file through the same helper',

@@ -65,6 +65,15 @@ export interface GitIdentity {
 /** The name and address a commit carries in a repository the app made itself. */
 export const APP_IDENTITY: GitIdentity = { name: 'Yi', email: 'yi@localhost' };
 
+/** One version of a file: a commit that touched it, as the backend reports it. */
+export interface Version {
+  hash: string;
+  /** Unix seconds, the author's date. */
+  at: number;
+  subject: string;
+  body: string;
+}
+
 /** The reader's answer for this workspace. */
 export type Consent = 'unasked' | 'yes' | 'no';
 

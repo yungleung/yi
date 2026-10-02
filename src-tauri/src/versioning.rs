@@ -51,6 +51,43 @@ pub struct Identity {
     pub email: Option<String>,
 }
 
+/// One version of a file: a commit that touched it, whoever wrote the commit.
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub struct Version {
+    pub hash: String,
+    /// Unix seconds, the author's date — the one `git log` prints first, so the app's list and the
+    /// reader's own `git log` agree about when a version was made.
+    pub at: i64,
+    pub subject: String,
+    pub body: String,
+}
+
+/// What git is asked for: hash, author time, subject and body, NUL between fields and a record
+/// separator between commits — a message may hold every *other* character, newlines included, and a
+/// body is exactly that.
+const VERSION_FORMAT: &str = "%H%x00%at%x00%s%x00%b%x1e";
+/// The most rows one read may be asked for; the frontend asks for fifty.
+const VERSION_LIMIT: usize = 200;
+
+/// The rows git's own output holds, in the order it printed them (newest first).
+fn versions_from(output: &str) -> Vec<Version> {
+    output
+        .split('\u{1e}')
+        .filter(|record| !record.trim().is_empty())
+        .filter_map(|record| {
+            let mut fields = record.trim_start_matches('\n').split('\u{0}');
+            let hash = fields.next()?;
+            let at = fields.next()?.trim().parse().ok()?;
+            Some(Version {
+                hash: hash.to_string(),
+                at,
+                subject: fields.next()?.to_string(),
+                body: fields.next().unwrap_or("").trim().to_string(),
+            })
+        })
+        .collect()
+}
+
 /// Everything the decision needs.
 #[derive(Debug, Serialize, Clone)]
 pub struct VersioningFacts {
@@ -461,6 +498,42 @@ fn commit_at(
     run_git(git, workspace, &commit).map(|_| ())
 }
 
+/// The versions of one file, newest first: the commits that touched it, who ever wrote them.
+fn read_versions(
+    git: &Path,
+    workspace: &Path,
+    path: &str,
+    limit: usize,
+) -> Result<Vec<Version>, String> {
+    // A caller's number is clamped rather than trusted: a bigger one would only walk more history
+    // for rows nobody reads.
+    let limit = limit.clamp(1, VERSION_LIMIT);
+    let output = run_git(
+        git,
+        workspace,
+        &[
+            "log".to_string(),
+            "--follow".to_string(),
+            format!("--max-count={limit}"),
+            format!("--format={VERSION_FORMAT}"),
+            "--".to_string(),
+            path.to_string(),
+        ],
+    )?;
+    Ok(versions_from(&output))
+}
+
+/// The versions of one file, newest first.
+#[tauri::command]
+pub fn versioning_history(
+    workspace: String,
+    path: String,
+    limit: usize,
+) -> Result<Vec<Version>, String> {
+    let git = git_to_run()?;
+    read_versions(&git, Path::new(&workspace), &path, limit)
+}
+
 /// Everything the versioning decision needs about this folder.
 #[tauri::command]
 pub fn versioning_facts(app: tauri::AppHandle, workspace: String) -> Result<VersioningFacts, String> {
@@ -533,6 +606,27 @@ mod tests {
         );
         assert_eq!(found, None);
         assert_eq!(source, "env-missing");
+    }
+
+    #[test]
+    fn the_rows_are_read_from_gits_own_separators() {
+        let output = "abc\u{0}1790855254\u{0}The note · 2026-10-01 20:15\u{0}why I rewrote it\u{1e}\n\
+                      def\u{0}1790855300\u{0}Another\u{0}\u{1e}\n";
+        let rows = versions_from(output);
+        assert_eq!(rows.len(), 2, "{rows:?}");
+        assert_eq!(rows[0].hash, "abc");
+        assert_eq!(rows[0].at, 1790855254);
+        assert_eq!(rows[0].subject, "The note · 2026-10-01 20:15");
+        assert_eq!(rows[0].body, "why I rewrote it");
+        assert_eq!(rows[1].subject, "Another");
+        assert_eq!(
+            rows[1].body, "",
+            "a commit with no body has an empty one, not a missing field"
+        );
+        assert!(
+            versions_from("").is_empty(),
+            "a path git has never seen answers nothing at all"
+        );
     }
 
     #[test]
@@ -664,7 +758,7 @@ mod tests {
             commit_at(
                 &git,
                 &workspace,
-                &[note],
+                &[note.clone()],
                 "a named version",
                 Some("why I rewrote it"),
                 None,
@@ -687,6 +781,26 @@ mod tests {
                 recorded[7].contains(" commit -m a named version -m why I rewrote it -- "),
                 "{}",
                 recorded[7]
+            );
+
+            // The read is the fourth call, and the only one that takes none of the repository
+            // away: one file's history, through the same helper.
+            read_versions(&git, &workspace, &note, 50).unwrap();
+            let recorded: Vec<String> = fs::read_to_string(directory.join("argv.log"))
+                .unwrap()
+                .lines()
+                .map(str::to_string)
+                .collect();
+            assert_eq!(recorded.len(), 9, "{recorded:?}");
+            assert!(
+                recorded[8].contains(" log --follow --max-count=50 --format="),
+                "{}",
+                recorded[8]
+            );
+            assert!(
+                recorded[8].ends_with(&format!(" -- {note}")),
+                "{}",
+                recorded[8]
             );
 
             // The never-list: no argument the app writes is ever one of these, anywhere.
