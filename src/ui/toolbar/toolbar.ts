@@ -22,6 +22,13 @@ export interface ToolbarButtonSpec {
 export const TOOL_ICON_SIZE = 'text-[1.25em]';
 
 /**
+ * The status bar's own button sizing: the bar is 17px tall on its own (a 12px word count and a
+ * hairline), so its buttons are 20px rather than the 24px `btn-xs` would be — the bar grows by four
+ * pixels, and the glyphs get a 16px box to be drawn in.
+ */
+export const STATUS_BUTTON = 'text-[1em] h-5 min-h-5 px-1';
+
+/**
  * Base class for the bars' tool groups: the titlebar's editing tools, and the one button the
  * status bar holds.
  *

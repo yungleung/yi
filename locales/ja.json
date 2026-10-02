@@ -79,6 +79,8 @@
   "version.comment.label": "このバージョンについてのメモ（任意）",
   "version.comment.save": "このバージョンを保存",
   "version.comment.cancel": "キャンセル",
+  "version.button": "このノートのバージョン",
+  "version.none": "まだバージョンはありません",
   "status.saved": "保存済み",
   "status.editing": "編集中",
   "status.stacked": "スタック内 · {size}",

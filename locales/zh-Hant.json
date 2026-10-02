@@ -79,6 +79,8 @@
   "version.comment.label": "關於這個版本的說明（可選）",
   "version.comment.save": "儲存此版本",
   "version.comment.cancel": "取消",
+  "version.button": "這篇筆記的版本",
+  "version.none": "還沒有版本",
   "status.saved": "已儲存",
   "status.editing": "編輯中",
   "status.stacked": "在暫存中 · {size}",

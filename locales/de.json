@@ -79,6 +79,8 @@
   "version.comment.label": "Eine Notiz zu dieser Version (optional)",
   "version.comment.save": "Diese Version speichern",
   "version.comment.cancel": "Abbrechen",
+  "version.button": "Versionen dieser Notiz",
+  "version.none": "Noch keine Versionen",
   "status.saved": "Gesichert",
   "status.editing": "Wird bearbeitet",
   "status.stacked": "Auf dem Stapel · {size}",

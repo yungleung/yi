@@ -425,11 +425,12 @@ export async function saveVersion(
 - [ ] **Step 5: The recorder sees the body** — extend `test/probes/versioning-fake-git.js`: after it
   has read the three lines its own commands produced, drive a *save* with the recorder still pointed
   at it — open the note through the session, give the workspace consent, answer the comment card with
-  `why this version`, and read the log again — then assert the new lines are exactly what that save
-  makes. There are **five**: the two reads of the repository's identity that the *facts* make (the
-  save gathers them first), the init (nothing has made a repository, under the recorder), the add,
-  and the commit — whose subject is the document's title and the stamp, and whose body is the
-  comment:
+  `why this version`, and read the log again — then assert the *last five* lines are what that save
+  makes: the two reads of the repository's identity the *facts* make (the save gathers them first),
+  the init (nothing has made a repository, under the recorder), the add, and the commit — whose
+  subject is the document's title and the stamp, and whose body is the comment. The last five,
+  because the status bar's own list may have read the facts for the document before the save did,
+  which is its business and not this probe's:
 
 ```js
     await t.openWorkspace(folder);
@@ -453,15 +454,15 @@ export async function saveVersion(
     const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(lines.length);
     check(
       'and a version saved with a comment is committed with the comment as its body',
-      saved.length === 5 &&
-        saved[0].includes(' config --get user.name') &&
-        saved[1].includes(' config --get user.email') &&
-        saved[2].endsWith(' init') &&
-        saved[3].includes(` add -- ${note}`) &&
+      saved.length >= 5 &&
+        saved[saved.length - 5].includes(' config --get user.name') &&
+        saved[saved.length - 4].includes(' config --get user.email') &&
+        saved[saved.length - 3].endsWith(' init') &&
+        saved[saved.length - 2].includes(` add -- ${note}`) &&
         // The subject is the document's own title — the file's name, for a note with no
         // frontmatter — and the stamp; the comment is the second message.
-        saved[4].includes(` commit -m note · `) &&
-        saved[4].includes(' -m why this version -- '),
+        saved[saved.length - 1].includes(` commit -m note · `) &&
+        saved[saved.length - 1].includes(' -m why this version -- '),
       saved
     );
 ```
@@ -959,7 +960,9 @@ export class VersionStatus extends Toolbar {
     const config = configManager.get();
     const workspace = config?.workspace ?? null;
     const shown = config !== null && workspace !== null && versionsVisible(config, workspace);
-    this.element.classList.toggle('hidden', !shown);
+    // The *button* wears the answer, not the group around it: what a probe finds by
+    // `[data-version-status]` has to be the thing that says whether the reader agreed.
+    this.button.classList.toggle('hidden', !shown);
     if (!shown) {
       this.panel.close();
       return;
@@ -973,9 +976,9 @@ export class VersionStatus extends Toolbar {
 }
 ```
 
-  (`VersionsPanel` arrives in Task 6; until then, declare `private readonly panel = { element: document.createElement('div'), toggle() {}, close() {} };`
-  in the button rather than importing it, and Task 6 replaces that line with the import and
-  `new VersionsPanel()`.)
+  (The button has no press behaviour yet: `VersionsPanel` arrives in Task 6, which gives the button
+  its panel field, its `click` handler and the `this.element.append(this.button, this.panel.element)`
+  that mounts it — and the `this.panel.close()` its own `render` does when the answer turns to no.)
 
 - [ ] **Step 4: The words** — add to all eight catalogues:
 

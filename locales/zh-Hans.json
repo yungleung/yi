@@ -79,6 +79,8 @@
   "version.comment.label": "关于这个版本的说明（可选）",
   "version.comment.save": "保存此版本",
   "version.comment.cancel": "取消",
+  "version.button": "这篇笔记的版本",
+  "version.none": "还没有版本",
   "status.saved": "已保存",
   "status.editing": "编辑中",
   "status.stacked": "在暂存中 · {size}",

@@ -127,15 +127,17 @@
     const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withRead.length);
     check(
       'and a version saved with a comment is committed with the comment as its body',
-      saved.length === 5 &&
-        saved[0].includes(' config --get user.name') &&
-        saved[1].includes(' config --get user.email') &&
-        saved[2].endsWith(' init') &&
-        saved[3].includes(` add -- ${note}`) &&
+      // The save's own five calls are the last five: the status bar's own list may have read the
+      // facts for the document before them, which is its business and not this probe's.
+      saved.length >= 5 &&
+        saved[saved.length - 5].includes(' config --get user.name') &&
+        saved[saved.length - 4].includes(' config --get user.email') &&
+        saved[saved.length - 3].endsWith(' init') &&
+        saved[saved.length - 2].includes(` add -- ${note}`) &&
         // The subject is the document's own title — the file's name, for a note with no frontmatter
         // — and the stamp, exactly as it always was; the comment is the second message.
-        saved[4].includes(` commit -m note · `) &&
-        saved[4].includes(' -m why this version -- '),
+        saved[saved.length - 1].includes(` commit -m note · `) &&
+        saved[saved.length - 1].includes(' -m why this version -- '),
       saved
     );
   } finally {

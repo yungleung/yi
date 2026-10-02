@@ -79,6 +79,8 @@
   "version.comment.label": "Una nota sobre esta versión (opcional)",
   "version.comment.save": "Guardar esta versión",
   "version.comment.cancel": "Cancelar",
+  "version.button": "Versiones de esta nota",
+  "version.none": "Aún no hay versiones",
   "status.saved": "Guardado",
   "status.editing": "Editando",
   "status.stacked": "En la pila · {size}",
