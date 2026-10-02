@@ -49,6 +49,26 @@
     await pending;
     await t.sleep(140);
   };
+  /** Saves a version, answering the comment card the save raises with `comment`. */
+  const saveWith = async (comment = '') => {
+    const pending = saveVersion();
+    // The card's field is in the page from the moment the module loads, so only the veil's own
+    // class says a question is being asked.
+    const up = () => {
+      const shown = document.querySelector('[data-version-comment]');
+      return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+    };
+    for (let attempt = 0; attempt < 60 && up() === null; attempt += 1) {
+      await t.sleep(40);
+    }
+    const field = document.querySelector('[data-version-comment-field]');
+    if (up() !== null && field !== null) {
+      field.value = comment;
+      document.querySelector('[data-version-comment-save]')?.click();
+    }
+    await pending;
+    await t.sleep(150);
+  };
   /** Whether git has nothing left to commit at `path` — which is what being committed means. */
   const alreadyCommitted = (repository, path) =>
     versioning
@@ -89,8 +109,7 @@
     await t.openWorkspace(workspace);
     await configManager.update({ versioning: true, versioning_workspace: workspace });
     await open(note, 'A note in the reader’s own repository.\n');
-    await saveVersion();
-    await t.sleep(150);
+    await saveWith();
     const own = await versioning.versioningFacts(workspace);
     check(
       'a workspace that is already a repository is used as it stands',

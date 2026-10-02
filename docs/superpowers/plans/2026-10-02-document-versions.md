@@ -254,6 +254,10 @@ export async function commitPaths(
  * or the button saving with what is typed, and Escape answering the cautious way — *no version at
  * all*, since a reader who cancels here has asked for nothing else.
  *
+ * The card is cleared before every question (`question_card.ts: askWith`), so `ask` re-appends what
+ * this kind is made of — the same shape `new_document_dialog.ts` and `ui/prompt.ts` use — and only
+ * then takes the caret, once the card is unhidden.
+ *
  * May import: the question card and the catalogue. Upholds: one question, one answer — the comment
  * as typed, or null — so the flow cannot write a version nobody answered for.
  */
@@ -265,6 +269,7 @@ export class VersionCommentDialog extends QuestionCard<string | null> {
   private readonly heading: HTMLParagraphElement;
   private readonly label: HTMLLabelElement;
   private readonly field: HTMLInputElement;
+  private readonly form: HTMLFormElement;
   private readonly save: HTMLButtonElement;
   private readonly cancel: HTMLButtonElement;
 
@@ -284,8 +289,8 @@ export class VersionCommentDialog extends QuestionCard<string | null> {
     this.field.setAttribute('data-version-comment-field', 'true');
     this.field.setAttribute('spellcheck', 'false');
 
-    const form = document.createElement('form');
-    form.addEventListener('submit', (event) => {
+    this.form = document.createElement('form');
+    this.form.addEventListener('submit', (event) => {
       event.preventDefault();
       this.settle(this.field.value);
     });
@@ -296,8 +301,7 @@ export class VersionCommentDialog extends QuestionCard<string | null> {
     );
     this.save = this.button('version-comment-save', 'btn btn-primary btn-sm', 'submit', () => {});
     actions.append(this.cancel, this.save);
-    form.append(this.label, this.field, actions);
-    this.card.append(this.heading, form);
+    this.form.append(this.label, this.field, actions);
   }
 
   /** Escape is the answer that does not act: no version. */
@@ -307,15 +311,17 @@ export class VersionCommentDialog extends QuestionCard<string | null> {
 
   /** Asks, with the caret in the field so the comment is typed straight away. */
   async ask(): Promise<string | null> {
-    const answer = await this.askWith(() => {
+    const answered = this.askWith(() => {
       this.heading.textContent = t('version.comment.title');
       this.label.textContent = t('version.comment.label');
       this.save.textContent = t('version.comment.save');
       this.cancel.textContent = t('version.comment.cancel');
       this.field.value = '';
+      this.card.append(this.heading, this.form);
     });
     this.field.focus();
-    return answer;
+    this.field.select();
+    return await answered;
   }
 
   private button(
@@ -375,17 +381,26 @@ export async function saveVersion(
   "version.comment.cancel": "Cancel",
 ```
 
-- [ ] **Step 4: The two save probes answer the card** — in `test/probes/versioning-save.js` and
-  `test/probes/versioning-staged.js`, add beside the `version()` helper:
+- [ ] **Step 4: Every probe that saves answers the card** — in `test/probes/versioning-save.js`,
+  `versioning-staged.js`, `versioning-repository.js` and `versioning-outer.js` (the four that drive
+  a save; the fake-git probe's own phase is step 5), add beside the version helper — the card's
+  *field* is in the page from the moment the module loads, so only the veil's own class says a
+  question is being asked:
 
 ```js
   /** Answers the comment card a save raises, with the comment given. */
   const answerComment = async (comment) => {
-    for (let attempt = 0; attempt < 60 && document.querySelector('[data-version-comment-field]') === null; attempt += 1) {
+    // The card's field is in the page from the moment the module loads, so only the veil's own
+    // class says a question is being asked — waiting on the field clicks a card that is not up.
+    const up = () => {
+      const shown = document.querySelector('[data-version-comment]');
+      return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+    };
+    for (let attempt = 0; attempt < 60 && up() === null; attempt += 1) {
       await t.sleep(40);
     }
     const field = document.querySelector('[data-version-comment-field]');
-    if (field === null) {
+    if (up() === null || field === null) {
       return false;
     }
     field.value = comment;
@@ -410,35 +425,50 @@ export async function saveVersion(
 - [ ] **Step 5: The recorder sees the body** — extend `test/probes/versioning-fake-git.js`: after it
   has read the three lines its own commands produced, drive a *save* with the recorder still pointed
   at it — open the note through the session, give the workspace consent, answer the comment card with
-  `why this version`, and read the log again — then assert the new lines are exactly the app's three
-  calls for that save, with the body as the second message:
+  `why this version`, and read the log again — then assert the new lines are exactly what that save
+  makes. There are **five**: the two reads of the repository's identity that the *facts* make (the
+  save gathers them first), the init (nothing has made a repository, under the recorder), the add,
+  and the commit — whose subject is the document's title and the stamp, and whose body is the
+  comment:
 
 ```js
     await t.openWorkspace(folder);
     await configManager.update({ versioning: true, versioning_workspace: folder });
-    await openNote(note, 'A note to version.\n');
+    await open(note, 'A note to version.\n');
     const pending = saveVersion();
-    for (let attempt = 0; attempt < 60 && !document.querySelector('[data-version-comment-field]'); attempt += 1) {
+    const commentUp = () => {
+      const shown = document.querySelector('[data-version-comment]');
+      return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+    };
+    for (let attempt = 0; attempt < 60 && commentUp() === null; attempt += 1) {
       await t.sleep(40);
     }
-    document.querySelector('[data-version-comment-field]').value = 'why this version';
-    document.querySelector('[data-version-comment-save]')?.click();
+    const field = document.querySelector('[data-version-comment-field]');
+    if (commentUp() !== null && field !== null) {
+      field.value = 'why this version';
+      document.querySelector('[data-version-comment-save]')?.click();
+    }
     await pending;
-    const after = (await read(`${folder}/argv.log`)).trim().split('\n');
-    const asked = after.slice(lines.length);
+    await t.sleep(150);
+    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(lines.length);
     check(
       'and a version saved with a comment is committed with the comment as its body',
-      asked.length === 3 &&
-        asked[0].endsWith(' init') &&
-        asked[1].includes(` add -- ${note}`) &&
-        asked[2].includes(` commit -m A note to version. · `) &&
-        asked[2].includes(' -m why this version -- '),
-      asked
+      saved.length === 5 &&
+        saved[0].includes(' config --get user.name') &&
+        saved[1].includes(' config --get user.email') &&
+        saved[2].endsWith(' init') &&
+        saved[3].includes(` add -- ${note}`) &&
+        // The subject is the document's own title — the file's name, for a note with no
+        // frontmatter — and the stamp; the comment is the second message.
+        saved[4].includes(` commit -m note · `) &&
+        saved[4].includes(' -m why this version -- '),
+      saved
     );
 ```
 
-  (`openNote` is the small session helper the other probes already use; the probe needs
-  `t.openWorkspace`, `configManager` and `saveVersion` imported.)
+  (`open` is the small session helper the other probes already use; the probe needs `t.openWorkspace`,
+  `configManager`, `saveVersion` and the session imported, and — because it now changes the app's
+  config and session — the `before`/`sessionText` capture and the `finally` that puts both back.)
 
 - [ ] **Step 6: Verify and commit** — `npm run check` green, `npx tsc --noEmit` silent, and with the
   app running and in front: `npm run probe -- test/probes/versioning-save.js`,

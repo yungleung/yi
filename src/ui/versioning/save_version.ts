@@ -37,6 +37,7 @@ import {
   versioningPlan
 } from '../../services/versioning';
 import { registerCommand } from '../markdown/commands/registry';
+import { versionCommentDialog, type VersionCommentDialog } from './version_comment_dialog';
 import { versioningDialog, type VersioningChooser } from './versioning_dialog';
 
 /** Registers the command the File menu's *Save a Version* item names. */
@@ -45,7 +46,10 @@ export function registerVersionCommand(chooser: VersioningChooser = versioningDi
 }
 
 /** Asks what the facts and the reader's answer call for, and does exactly that. */
-export async function saveVersion(chooser: VersioningChooser = versioningDialog): Promise<void> {
+export async function saveVersion(
+  chooser: VersioningChooser = versioningDialog,
+  comments: VersionCommentDialog = versionCommentDialog
+): Promise<void> {
   const config = configManager.get() ?? (await configManager.load());
   const workspace = config.workspace ?? null;
   if (!workspace) {
@@ -96,6 +100,12 @@ export async function saveVersion(chooser: VersioningChooser = versioningDialog)
     notify('Saving a version', new Error(t('version.noFile')));
     return;
   }
+  // What to call it, asked last of all the questions and only once the version can be written: a
+  // comment typed for a version that could not be made would be worse than no card at all.
+  const comment = await comments.ask();
+  if (comment === null) {
+    return;
+  }
   if (!(await documentSession.writeCurrent())) {
     // The write itself says what went wrong (`services/session.ts`).
     return;
@@ -108,7 +118,7 @@ export async function saveVersion(chooser: VersioningChooser = versioningDialog)
     if (plan.use === 'init') {
       await initWorkspaceRepository(workspace, plan.separateGitDir);
     }
-    const message = versionMessage(saved.title, new Date(), '');
+    const message = versionMessage(saved.title, new Date(), comment);
     await commitPaths(
       workspace,
       [saved.path],

@@ -51,6 +51,26 @@
     await pending;
     await t.sleep(140);
   };
+  /** Saves a version, answering the comment card the save raises with `comment`. */
+  const saveWith = async (comment = '') => {
+    const pending = saveVersion();
+    // The card's field is in the page from the moment the module loads, so only the veil's own
+    // class says a question is being asked.
+    const up = () => {
+      const shown = document.querySelector('[data-version-comment]');
+      return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+    };
+    for (let attempt = 0; attempt < 60 && up() === null; attempt += 1) {
+      await t.sleep(40);
+    }
+    const field = document.querySelector('[data-version-comment-field]');
+    if (up() !== null && field !== null) {
+      field.value = comment;
+      document.querySelector('[data-version-comment-save]')?.click();
+    }
+    await pending;
+    await t.sleep(150);
+  };
   /**
    * The reader's session is theirs: the file goes back exactly as it was, and the live session
    * reads it again (`docs/ai-context.md`: the fixture is a test's, never the reader's).
@@ -91,8 +111,7 @@
     check('the probe stages its own file, the way a reader stages one', staged === 'staged', staged);
 
     await open(note, 'A note to version.\n');
-    await saveVersion();
-    await t.sleep(150);
+    await saveWith();
     const theirs = await versioning
       .commitPaths(workspace, [other], 'the reader commits their own work', APP_IDENTITY)
       .then(() => 'committed', (error) => String(error));

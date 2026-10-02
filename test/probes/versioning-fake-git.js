@@ -13,12 +13,19 @@
  * next probe nothing. The watcher is also why no `-C` or `-c` can hide: the recorder is handed the
  * whole argv, and the log is read back whole.
  *
+ * The second half drives the flow a reader drives — *Save a Version* with a comment — and reads the
+ * calls *that* makes, which is the only place the comment's own commit is observed: a probe cannot
+ * read a repository (a dot-named path is refused), and the recorder is not a repository at all.
+ *
  * @covers src-tauri/src/versioning.rs (run_git, init_repository_at, commit_at), src/api/versioning.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const { pointAtGit, initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
+  const session = await t.app('/src/services/session.ts');
+  const { configManager } = await t.app('/src/services/config_manager.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -29,6 +36,19 @@
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const folder = `${home}/yi-probe-fake-git`;
   const note = `${folder}/note.md`;
+  /** Opens a note through the session, declining the question a replaced document may raise. */
+  const open = async (path, content) => {
+    const pending = session.documentSession.openFile({ path, content });
+    await t.sleep(140);
+    const prompt = document.querySelector('[data-prompt]');
+    if (prompt !== null && !prompt.classList.contains('hidden')) {
+      prompt.querySelector('[data-prompt-no]')?.click();
+    }
+    await pending;
+    await t.sleep(140);
+  };
+  const before = await invoke('get_config');
+  const sessionText = await invoke('load_session');
   try {
     try {
       await files.deleteEntry(folder);
@@ -66,8 +86,52 @@
       gitDir === `${folder}/.git`,
       gitDir
     );
+
+    // The flow a reader drives: *Save a Version*, with the comment they typed. Its calls are the
+    // two reads of the repository's own identity, the init (nothing has made one, under the
+    // recorder), the add and the commit — and the commit carries both messages.
+    await t.openWorkspace(folder);
+    await configManager.update({ versioning: true, versioning_workspace: folder });
+    await open(note, 'A note to version.\n');
+    const pending = saveVersion();
+    // The card's field is in the page from the moment the module loads, so only the veil's own
+    // class says a question is being asked.
+    const commentCard = () => {
+      const shown = document.querySelector('[data-version-comment]');
+      return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+    };
+    for (let attempt = 0; attempt < 60 && commentCard() === null; attempt += 1) {
+      await t.sleep(40);
+    }
+    const field = document.querySelector('[data-version-comment-field]');
+    if (commentCard() !== null && field !== null) {
+      field.value = 'why this version';
+      document.querySelector('[data-version-comment-save]')?.click();
+    }
+    await pending;
+    await t.sleep(150);
+    const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(lines.length);
+    check(
+      'and a version saved with a comment is committed with the comment as its body',
+      saved.length === 5 &&
+        saved[0].includes(' config --get user.name') &&
+        saved[1].includes(' config --get user.email') &&
+        saved[2].endsWith(' init') &&
+        saved[3].includes(` add -- ${note}`) &&
+        // The subject is the document's own title — the file's name, for a note with no frontmatter
+        // — and the stamp, exactly as it always was; the comment is the second message.
+        saved[4].includes(` commit -m note · `) &&
+        saved[4].includes(' -m why this version -- '),
+      saved
+    );
   } finally {
     await pointAtGit(null);
+    await t.restoreWorkspace(before);
+    if (sessionText !== null) {
+      await invoke('save_session', { session: sessionText });
+    }
+    await session.documentSession.load();
+    await t.sleep(120);
     try {
       await files.deleteEntry(folder);
     } catch {

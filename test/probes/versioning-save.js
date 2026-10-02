@@ -37,6 +37,14 @@
     const shown = document.querySelector('[data-versioning]');
     return shown !== null && !shown.classList.contains('hidden') ? shown : null;
   };
+  /**
+   * The comment card, when it is *up*: its field is in the page from the moment the module loads,
+   * so only the veil's own class says whether a question is being asked.
+   */
+  const commentCard = () => {
+    const shown = document.querySelector('[data-version-comment]');
+    return shown !== null && !shown.classList.contains('hidden') ? shown : null;
+  };
   const messages = () => [...document.querySelectorAll('[data-message-text]')];
   const clear = async () => {
     for (const close of [...document.querySelectorAll('[data-message-close]')]) {
@@ -44,17 +52,38 @@
     }
     await t.sleep(120);
   };
-  /** The action, driven the way the menu drives it: fire, answer the card it raises, wait. */
-  const version = async (yes) => {
+  /** Answers the comment card a save raises, with the comment given. */
+  const answerComment = async (comment) => {
+    for (let attempt = 0; attempt < 60 && commentCard() === null; attempt += 1) {
+      await t.sleep(40);
+    }
+    if (commentCard() === null) {
+      return false;
+    }
+    const field = document.querySelector('[data-version-comment-field]');
+    if (field !== null) {
+      field.value = comment;
+    }
+    document.querySelector('[data-version-comment-save]')?.click();
+    await t.sleep(150);
+    return true;
+  };
+  /**
+   * The action, driven the way the menu drives it: fire, answer the plan's card when it asks, then
+   * answer the card that asks what to call the version, and wait. Both answers come back, because
+   * the probe holds each of them somewhere.
+   */
+  const version = async (yes, comment = '') => {
     const pending = saveVersion();
     for (let attempt = 0; attempt < 60 && card() === null; attempt += 1) {
       await t.sleep(40);
     }
     const asked = card() !== null;
     card()?.querySelector(yes ? '[data-versioning-yes]' : '[data-versioning-no]')?.click();
+    const commentAsked = await answerComment(comment);
     await pending;
     await t.sleep(150);
-    return asked;
+    return { asked, commentAsked };
   };
   /** Opens a note through the session, declining the question a replaced document may raise. */
   const open = async (path, content) => {
@@ -104,7 +133,7 @@
     await configManager.update({ versioning: false, versioning_workspace: null });
 
     await open(note, 'A note about to get a version.\n');
-    const asked = await version(true);
+    const { asked, commentAsked } = await version(true);
     const answered = await config();
     check('asking for a version of a workspace nobody has answered for asks first', asked, {
       versioning: answered.versioning,
@@ -115,6 +144,9 @@
       answered.versioning === true && answered.versioning_workspace === workspace,
       { versioning: answered.versioning, versioning_workspace: answered.versioning_workspace }
     );
+    check('asking for a version asks what to call it, and an empty answer is allowed', commentAsked, {
+      asked: commentAsked
+    });
     check(
       'the note on screen is in the repository: committing it again has nothing to do',
       await alreadyCommitted(note, 'a second time'),
