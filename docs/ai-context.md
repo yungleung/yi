@@ -169,6 +169,25 @@ first (`version_comment_dialog.ts`, a card with **no native twin**: no system su
 a line of text), and the subject stays exactly what it was while the comment becomes the commit's
 body.
 
+**A version can be seen and gone back to.** A press on a row of the versions panel opens the
+sheet (`ui/versioning/version_diff_view.ts`): the whole note as one row per line, drawn from
+`services/text_diff.ts` (the equal ends trimmed only to compute the change; the middle walked for
+its longest common subsequence, removals before additions; past a cap the change is *named* — the
+rule answers a count and the catalogue says the sentence), opening at the first change. The sheet is
+a **mode**, not a floating surface: it covers the editor's area and keeps the keyboard while it is
+open, because `FloatingSurface`'s rule — never take the focus — is right for a question asked
+mid-gesture and wrong for this, where a keystroke reaching a document nobody can see is worse than a
+modal; closing it hands the keyboard back (`markdown_editor.ts: focusText`, and the scroller carries
+`tabindex="-1"` because WebKit only makes a scroll container focusable when it has something to
+scroll). Its one action is *Restore This Version*: the session's own question first when the text on
+screen is not what its file holds, then `documentSession.openVersion(path, content)` — the file is
+written with the app's atomic write and the document adopts that text, at its top. Two facts about
+it: a document with a file is keyed by its **path**, so a restore replaces *that* document's text
+rather than opening another, and the text that was on screen becomes a document of its own with no
+file when the reader answers "keep it"; and **no git write happens at all** — the reader's staged
+work stays staged, `git status` shows the modification, and a version is still only made when they
+ask (held by the recorder: a whole restore is one `show` and none of the write verbs).
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:

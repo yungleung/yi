@@ -82,6 +82,14 @@ change** rather than at the top. Its title names the version it is showing (`Ver
    the document on screen becomes that text, at its top, with its file believed to hold it. The text
    is the *version's*, but the file it is written to is the one the document has **now**: a note
    renamed since then keeps its present name, and its history stays its history.
+
+   Two details the writing of it settled, both measured. A document with a file is keyed by its
+   **path** (`document_identity.ts: documentId`), so a restore is not "open another document" —
+   `openInto` would see the same id and bring the existing one forward, leaving the old text on
+   screen — which is why `openVersion` replaces *that* document's text (its content, its `saved`, its
+   title, its view). And when the reader answers "keep it", what was on screen goes into the stack as
+   a document **of its own, with no file**: the file it was written to holds the version now, so it
+   can no longer be its file — the reader may save that text wherever they like.
 5. The sheet closes. The versions list is unchanged — the newest *version* is still the newest
    commit — the app says *Saved* (the file holds what is on screen), and the reader's own
    `git status` shows the modification. Their next version, if they ask for one, records it.

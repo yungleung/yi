@@ -573,6 +573,32 @@ elements) unless it says otherwise.
   is not the same as on screen. The same report caught the button's stamp at the bar's own size and
   weight (`text-xs font-normal`, not the 16 px and weight 600 `btn-ghost` had given it), which
   `versioning-status.js` now holds next to the status bar's other words.
+- **Seeing a version, and going back to it**, as the reader asked: the versions panel's rows are
+  pressable now, and one opens a sheet over the editor showing the **whole note** — one row per
+  line, unchanged lines once, removals and additions marked, opening at the first change — with a
+  *Restore This Version* button. Landed as
+  `docs/superpowers/specs/2026-10-02-version-diff-and-restore-design.md` and
+  `docs/superpowers/plans/2026-10-02-version-diff-and-restore.md`. Four measured facts shaped it.
+  `git show <old commit>:<new name>` fails (*"path 'renamed.md' exists on disk, but not in
+  `<commit>`"*), so every history row now carries the name the file had **at its commit**
+  (`--follow --name-only`, its own path per record) and each older version of a renamed note can
+  still be read. The read is a fifth git call and its first that answers **bytes** — `run_git` would
+  lossily decode a file a restore is about to write, so it goes through `Command` and refuses a
+  version that is not text. A document with a file is keyed by its **path**
+  (`document_identity.ts: documentId`), so a restore is not "open another document": the first
+  attempt wrote the file and left the old text on screen, because `openInto` saw the same id and
+  brought the existing document forward — `openVersion` replaces *that* document's text instead, and
+  what was on screen becomes a document of its own with no file when the reader answers "keep it".
+  And the sheet takes the keyboard while it is open (a keystroke must not reach a document nobody can
+  see), which is why it is a **mode** and not a `FloatingSurface`, and why the scroller now carries
+  `tabindex="-1"`: measured, WebKit only makes a scroll container focusable when it has something to
+  scroll, so handing the keyboard back was a no-op for a short note. **No git write happens at all**
+  for a restore — the recorder holds that a whole restore is one `show` and none of the write verbs,
+  so the reader's staged work stays staged and a version is still only made when they ask.
+  `npm run check` is **39/39** (the new `check-text-diff.mjs`; the diff is ours, since the project
+  has no diff library) and `cargo test` **35/35**; the probes are `versioning-diff` (the whole note,
+  the marks, the first change in view, the keyboard with the sheet) and `versioning-restore` (the
+  file, the document, the stack, *Saved*), beside the thirteen the versioning slices left.
 
 ## Open, in the order to take them
 
