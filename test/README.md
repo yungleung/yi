@@ -36,7 +36,7 @@ methodology; this file is the index and the conventions.
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
-| `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries, and the path its words name |
+| `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
@@ -54,7 +54,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and thirty-four of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+A hundred and thirty-seven of them, grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
@@ -120,6 +120,11 @@ there to commit after a version of another note; `versioning-consent` — the an
 nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
 — a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
 never nested into; `versioning-no-git` — the machine with no git, which is told and writes nothing),
+the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
+hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
+stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
+the comment under its own row and no other; `versioning-list-empty` — the four things it says
+instead of a list, the last by pointing the git seam at a git that is not there),
 the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and

@@ -539,6 +539,30 @@ elements) unless it says otherwise.
   `versioning-consent`, `versioning-repository`, `versioning-outer` and `versioning-no-git`; the
   first save probe held both halves of its subject and measured **4.9 s** against the bridge's 5 s,
   so it was split rather than gambled on, and the repository probe was split the same way at 5.0 s.
+- **The versions of the note on screen**, as the reader asked: a button at the left of the status
+  bar showing the newest version of the document in hand, and — one press away — the list of them,
+  newest first, each row the stamp, the message and the comment under it. Landed as
+  `docs/superpowers/specs/2026-10-02-document-versions-design.md`, built by
+  `docs/superpowers/plans/2026-10-02-document-versions.md`. A version is **a commit that touched the
+  file**, whoever wrote it, so the panel and the reader's own `git log` agree word for word; the
+  read is `git log --follow --max-count=50 --format=…` through the one helper every git call goes
+  through — measured at **14 ms** for fifty rows (45 ms with `--follow` over a long history), and a
+  path git has never seen answers **nothing and exits 0**, so an empty list is a list and not an
+  error; `--follow` is what keeps a renamed note's versions (with it `renamed|The note · …|first`,
+  without it only `renamed`). It is the vocabulary's **fourth call and its first read**; the
+  never-dos are unchanged. The button is there exactly when the reader agreed to versions in this
+  workspace and hidden otherwise, read from the config alone — a workspace they said no to runs no
+  git at all, which `versioning-status.js` holds with the recorder's log staying empty. The list
+  says which of four things is true when there is nothing to show (no file yet, no repository here,
+  no versions of this note, or a read that failed), and nothing in the panel acts: restoring a
+  version stays out of scope. Saving a version now asks what to call it — an optional comment on a
+  card with no native twin, the subject unchanged (`Title · 2026-10-01 20:15`) and the comment as
+  the commit's body. `npm run check` is **38/38** and `cargo test` **34/34**; the probes are
+  `versioning-status`, `versioning-list` and `versioning-list-empty`, beside the eight the versioning
+  slice left. Two bugs the probes caught while this was built are worth remembering: a `QuestionCard`
+  subclass must re-append what it is made of in its `ask` callback (`question_card.ts: askWith`
+  clears the card first), and a probe cannot tell a card is up from its field being in the page — the
+  field is there from the moment the module loads, so waiting on it clicks a card nobody opened.
 
 ## Open, in the order to take them
 

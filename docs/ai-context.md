@@ -145,8 +145,26 @@ seam back before every probe, the way it puts the language back. Three things bi
 file plugin refuses a hidden path (measured: `forbidden path` for `.git/HEAD` *and* for `exists`),
 so a repository is observed through the app's own commands and never read directly; the app's own
 listing hides dot-named entries, which is what makes a clone safe to open; and a commit's *message*
-is the note's own name and the minute it was asked for, because `git log` is the only browser a
-reader has of it for now (`docs/roadmap.md`).
+is the note's own name and the minute it was asked for, because that message — with the reader's
+own comment under it — is what the app's own list of versions shows.
+
+**The versions of the note on screen** are shown, not just kept. The status bar's left group holds
+a button (`ui/versioning/version_status.ts`) that is there exactly when the reader agreed to
+versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
+never runs git — and hidden otherwise, showing the newest version's stamp
+(`services/versioning.ts: versionStamp`). Pressing it opens the panel under it
+(`versions_panel.ts`): one row per version, newest first — the stamp, the message, and the comment
+under it — and *nothing in it acts*, because restoring a version is out of this slice's scope
+(`docs/roadmap.md`). Both draw from `services/versions.ts`, the living list: it reads through
+`src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
+workspace or the answer changes, and when a panel opens or a version is saved; it can say
+`no-file`, `no-repository`, `ready` or `unreadable`, and the panel turns those into the four
+sentences a reader gets instead of a list. The read is the git vocabulary's **fourth call and its
+first read** — `git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`,
+through the same `run_git` — and the never-list is unchanged. Saving a version asks what to call it
+first (`version_comment_dialog.ts`, a card with **no native twin**: no system surface answers with
+a line of text), and the subject stays exactly what it was while the comment becomes the commit's
+body.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
