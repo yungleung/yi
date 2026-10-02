@@ -89,6 +89,7 @@
   "version.diff.none": "這個版本和現在的內容一樣。",
   "version.diff.notText": "這個版本不是文字。",
   "version.diff.replaced": "{count} 行被替換",
+  "version.diff.restore": "還原此版本",
   "status.saved": "已儲存",
   "status.editing": "編輯中",
   "status.stacked": "在暫存中 · {size}",

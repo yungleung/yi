@@ -38,6 +38,7 @@ export class VersionDiffView {
   private readonly title: HTMLSpanElement;
   private readonly body: HTMLDivElement;
   private readonly said: HTMLParagraphElement;
+  private readonly restore: HTMLButtonElement;
   private onClose: (() => void) | null = null;
   private showing: VersionToSee | null = null;
   private versionText: string | null = null;
@@ -53,6 +54,12 @@ export class VersionDiffView {
     this.title = document.createElement('span');
     this.title.className = 'flex-1 text-sm font-semibold';
     this.title.setAttribute('data-version-diff-title', 'true');
+    this.restore = document.createElement('button');
+    this.restore.type = 'button';
+    this.restore.className = 'btn btn-primary btn-xs';
+    this.restore.setAttribute('data-version-diff-restore', 'true');
+    this.restore.hidden = true;
+    this.restore.addEventListener('click', () => void this.putBack());
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'btn btn-ghost btn-xs';
@@ -60,7 +67,7 @@ export class VersionDiffView {
     close.setAttribute('aria-label', t('version.diff.close'));
     close.textContent = '✕';
     close.addEventListener('click', () => this.close());
-    header.append(this.title, close);
+    header.append(this.title, this.restore, close);
 
     this.body = document.createElement('div');
     this.body.className = 'flex-1 overflow-auto px-3 py-2';
@@ -123,6 +130,21 @@ export class VersionDiffView {
     return this.versionText;
   }
 
+  /**
+   * Puts the version's text back: the file first, through the session's own way in (which asks the
+   * question a replacement owes), and then the sheet is out of the way.
+   */
+  private async putBack(): Promise<void> {
+    const version = this.showing;
+    const text = this.versionText;
+    const path = documentSession.current()?.path ?? null;
+    if (version === null || text === null || path === null) {
+      return;
+    }
+    await documentSession.openVersion(path, text);
+    this.close();
+  }
+
   /** Puts the sheet away and hands the keyboard back to the text. */
   close(): void {
     if (!this.isOpen()) {
@@ -142,6 +164,8 @@ export class VersionDiffView {
     this.body.replaceChildren();
     this.said.hidden = true;
     this.said.textContent = '';
+    this.restore.hidden = true;
+    this.restore.textContent = t('version.diff.restore');
   }
 
   /** One sentence instead of a stream: nothing changed, or nothing could be read. */
@@ -157,6 +181,7 @@ export class VersionDiffView {
       this.say(t('version.diff.none'));
       return;
     }
+    this.restore.hidden = false;
     const rows = document.createDocumentFragment();
     for (const line of stream) {
       const row = document.createElement('div');

@@ -89,6 +89,7 @@
   "version.diff.none": "Esta versión es lo que tienes ahora.",
   "version.diff.notText": "Esta versión no es texto.",
   "version.diff.replaced": "{count} líneas reemplazadas",
+  "version.diff.restore": "Restaurar esta versión",
   "status.saved": "Guardado",
   "status.editing": "Editando",
   "status.stacked": "En la pila · {size}",

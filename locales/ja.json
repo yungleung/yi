@@ -89,6 +89,7 @@
   "version.diff.none": "このバージョンは今の内容と同じです。",
   "version.diff.notText": "このバージョンはテキストではありません。",
   "version.diff.replaced": "{count} 行を置き換え",
+  "version.diff.restore": "このバージョンを復元",
   "status.saved": "保存済み",
   "status.editing": "編集中",
   "status.stacked": "スタック内 · {size}",
