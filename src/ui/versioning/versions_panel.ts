@@ -86,7 +86,10 @@ export class VersionsPanel extends AnchoredPanel {
     // panel gets out of the way.
     const row = document.createElement('button');
     row.type = 'button';
-    row.className = 'rounded px-1 py-1 text-left';
+    // A clickable row says so: the pointer, and a step darker than the panel's own `base-200` when
+    // the mouse is on it — the same two things the stack popover's rows and the new-note card's
+    // folders do.
+    row.className = 'rounded px-1 py-1 text-left hover:bg-base-300 cursor-pointer';
     row.setAttribute('data-version-open', version.hash);
     row.setAttribute('data-version-row', version.hash);
     if (isLatest) {

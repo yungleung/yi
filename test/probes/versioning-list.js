@@ -139,6 +139,17 @@
       ),
       rows.map((row) => row.querySelector('[data-version-stamp]')?.textContent ?? null)
     );
+    // A row is pressable, and says so: the cursor is a computed fact, and the hover tint is a class
+    // (a probe cannot put a pointer on anything, so the class is what can be held).
+    check(
+      'and the rows say they can be pressed: a pointer, and a tint for the mouse',
+      rows.every(
+        (row) =>
+          getComputedStyle(row).cursor === 'pointer' &&
+          row.classList.contains('hover:bg-base-300')
+      ),
+      rows.map((row) => ({ cursor: getComputedStyle(row).cursor, className: row.className }))
+    );
   } finally {
     await config(); // no-op, so the finally always has something to await first
     await t.restoreWorkspace(before);
