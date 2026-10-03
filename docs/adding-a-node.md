@@ -92,6 +92,13 @@ function contentRange(source: string): { start: number; end: number } {
 A click on the rendering then enters the source at the end of that content, and the
 next click lands on the character clicked.
 
+A node that wraps other content — a bold, an italic, a strikethrough — takes its
+content range from what its children cover (`revealable_node.ts: wrappedContent`)
+rather than from the characters: one spelling stands for more than one shape, and
+`***x***` is a strong around an emphasis or the reverse. That is also what
+`nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts` and `nodes/inline_code.ts`
+do, and `test/probes/format-reveal.js` is their proof.
+
 If what you show is only *part* of the node — a footnote definition's node covers the
 whole note, and only the `[^label]` at its head is the label — then `sourceViewFor`
 cannot ask the question for you, because `isShownSource` compares the node's whole range.

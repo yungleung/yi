@@ -302,7 +302,11 @@ body {
 .markdown-wikilink-source,
 .markdown-math-source,
 .markdown-break-source,
-.markdown-thematic-break-source {
+.markdown-thematic-break-source,
+.markdown-strong-source,
+.markdown-emphasis-source,
+.markdown-delete-source,
+.markdown-inline-code-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
   border-radius: 0.25rem;
@@ -319,7 +323,11 @@ body {
 .markdown-wikilink-source,
 .markdown-math-source,
 .markdown-break-source,
-.markdown-thematic-break-source {
+.markdown-thematic-break-source,
+.markdown-strong-source,
+.markdown-emphasis-source,
+.markdown-delete-source,
+.markdown-inline-code-source {
   white-space: pre-wrap;
 }
 
