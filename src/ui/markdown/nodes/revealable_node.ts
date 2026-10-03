@@ -27,6 +27,37 @@ export function nodeSource(node: AstNode): string {
   return serializeMarkdown([node as RootContent]).trimEnd();
 }
 
+/**
+ * Where a wrapped node's content sits inside its own source: what its children
+ * cover, between the delimiters that wrap them.
+ *
+ * Read off the parse rather than derived from the characters, because one
+ * spelling stands for more than one shape — `***x***` is a strong around an
+ * emphasis or an emphasis around a strong, and only the tree says which
+ * delimiters belong to the node. A node whose text is not in children
+ * (inline code) has no answer here and gives its own.
+ *
+ * A node whose children carry no positions falls back to the whole source,
+ * which is what a click then enters.
+ */
+export function wrappedContent(node: AstNode, source: string): { start: number; end: number } {
+  const shape = node as {
+    position?: { start?: { offset?: number } };
+    children?: readonly {
+      position?: { start?: { offset?: number }; end?: { offset?: number } };
+    }[];
+  };
+  const children = shape.children;
+  const start = shape.position?.start?.offset;
+  const first = children?.[0]?.position?.start?.offset;
+  const last = children?.[children.length - 1]?.position?.end?.offset;
+  if (start === undefined || first === undefined || last === undefined || last < first) {
+    return { start: 0, end: source.length };
+  }
+  const from = Math.max(0, Math.min(first - start, source.length));
+  return { start: from, end: Math.max(from, Math.min(last - start, source.length)) };
+}
+
 /** The text a source view shows, and the text a caret inside it maps through. */
 function sourceTextFor(node: AstNode): string {
   return shownSourceText() ?? nodeSource(node);

@@ -263,6 +263,23 @@ the caret on screen (`test/probes/reveal-click-scroll.js`). A move the reader *a
 still scrolls: the footnote jump goes to `virtual_block_renderer.ts: revealOffset`
 rather than through this path.
 
+An **inline run** — a bold, an italic, a strikethrough, an inline code span — is the
+same machinery for a different reason. These *can* hold a caret, and their markers
+were skipped by the offsets mapping; but a marker skipped is a marker the author
+cannot aim at, so typing at a run's edge and typing one character in behaved
+differently. Built as their own source while the caret is inside them
+(`nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts`, `nodes/inline_code.ts`,
+over `nodes/revealable_node.ts`), the markers are ordinary characters: the caret sits
+between them, both edges behave the same, and a click enters at the content end like
+every other revealed source (`test/probes/format-reveal.js`). The content between the
+markers is read off the parse — what the children cover — because one spelling stands
+for more than one shape: `***x***` is a strong around an emphasis or the reverse, and
+only the tree says which delimiters belong to the node
+(`nodes/revealable_node.ts: wrappedContent`); inline code holds its text directly and
+counts the backticks that wrap it. The reveal is decided by the caret, not by a click
+(see `source_mode.ts`), so the run a formatting command just wrote stays revealed —
+its caret is inside it — until the caret leaves (`test/probes/format-buttons.js`).
+
 ## Where does this change go?
 
 | Change | Where |
@@ -277,6 +294,7 @@ rather than through this path.
 | Something the app has to tell the reader, or wants them to notice | two surfaces, and the difference is whether the reader has to *act*: a **message** (`services/messages.ts`: `Message`, `MESSAGE_EVENT`, `notify`) is a failure and needs their attention, so `ui/messages.ts` (`installMessages()`) shows one `BesideCard` per message in the window's bottom-right corner — whatever it is about — stacked upward, with its ✕ at the card's right edge, closed by the ✕ or Escape and by nothing else; a **hint** (`services/hints.ts`: `Hint`, `HintPlace`, `HINT_EVENT`, `hintPlaceSelector`, `showHint`) is a confirmation the reader only has to notice, so `ui/hints.ts` (`installHints()`) shows one card beside the row it happened on, with no ✕, gone at the next press or Escape, replaced by the next hint. A hint's place travels as a *name* — a workspace path, which is the row its selector finds — never as an element, because the bus is Tauri's and its payload is JSON, and `hintPlaceSelector` escapes it |
 | Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`) |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
+| An inline run while the caret is inside it — bold, italic, strikethrough, inline code | `nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts`, `nodes/inline_code.ts` over `nodes/revealable_node.ts`; the source classes are in `caret/offsets.ts: SOURCE_SELECTOR` and the styling in `styles.css` |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `block_sizes.ts`, `styles.css` — the page's rhythm is written in the page's own scale (`.prose`'s `--md-page-scale`), and the estimator of an unmeasured block's height reads the same line height and paragraph skip, so a page drawn smaller estimates smaller |
 | How big a page the editor is, and the desk under it | `styles.css` (`.markdown-page`, `.markdown-scroller`) — the root's class list in `virtual_block_renderer.ts` names the page, and `markdown_editor.ts: fitPage` sets `--page-scale` from the width of the pane (capped at 1, watched by a `ResizeObserver`) so the sheet, its margin and its type shrink together rather than the pane scrolling sideways; a document opens at its own top (`setContent`), because a 297 mm sheet is taller than the pane and nothing clamps an old scroll away. Which of the two layouts is on is one attribute the editor owns (`data-layout` — `page` or the full-width `auto`), set by `setLayout`, switched by the `view:togglePage` command and drawn by `layout_toolbar.ts` in the status bar; the choice is remembered in the app config |
 | A colour — a syntax token, a surface, the ink on it | `styles.css`, and only in daisyUI's own tokens: a fixed palette is what made highlighted source illegible in the light theme |

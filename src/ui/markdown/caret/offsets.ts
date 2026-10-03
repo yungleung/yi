@@ -47,7 +47,11 @@ export const SOURCE_SELECTOR = [
   '.markdown-math-source',
   '.markdown-break-source',
   '.markdown-thematic-break-source',
-  '.markdown-footnote-source'
+  '.markdown-footnote-source',
+  '.markdown-strong-source',
+  '.markdown-emphasis-source',
+  '.markdown-delete-source',
+  '.markdown-inline-code-source'
 ].join(', ');
 
 /** The caret's location in the document, or null when it cannot be mapped. */
