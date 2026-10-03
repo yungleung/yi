@@ -45,19 +45,22 @@
   await t.load('**a** *b* ~~c~~ `d` tail\n\nend\n');
   for (const style of styles) {
     await t.click(shownAs(style.tag), 0.99);
-    await t.sleep(200);
+    await t.sleep(150);
     check(`${style.tag} shows its markdown`, shownAs(style.cls)?.textContent ?? null, style.shown);
     check(`${style.tag} stops rendering while shown`, tagOf(style.tag), null);
     t.key('X');
-    await t.sleep(250);
+    await t.sleep(200);
     check(`${style.tag} types between its markers`, await t.raw(), style.typed);
     await t.click(away(), 0.5);
-    await t.sleep(250);
+    await t.sleep(200);
     check(
       `${style.tag} renders again when the caret leaves`,
       shownAs(style.cls) === null && tagOf(style.tag) === style.tag.toUpperCase(),
       true
     );
+    // The bridge gives a script 5 s; this one is close enough to report as it
+    // goes, so a cut-off run is still readable.
+    t.report({ checks });
   }
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()
