@@ -351,6 +351,10 @@ under *AI agents*.
 
 ## If you are an AI agent
 
+**Work on a branch, never on `main`.** Every change is made on a branch of its own —
+`codex/<slug>` unless told otherwise — and lands on `main` by a merge, so the whole of a feature
+or a fix is reviewable as one thing and `main` only ever moves by a merge.
+
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
