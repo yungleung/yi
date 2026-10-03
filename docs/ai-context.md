@@ -287,6 +287,20 @@ of the card is also the card's own width — daisyUI's `menu` sizes an item to w
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.
 
+Typing is not only keystrokes: an input method, dictation and the emoji panel go through
+`editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
+system has something to compose into and puts its candidate window at the caret — and what it
+commits is inserted by `text_commands.ts: insertCommitted` as one step of its own. Nothing of a
+composition is drawn: the seam is invisible because its *ink and background* are transparent, never
+with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what the
+system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with a
+probe that holds that shape. Three facts follow from the seam: a *document* selection is one inside
+the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
+report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
+command that focuses the page and a command that selects it are then asking for the same thing; and
+a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
+composition events rather than pretending to type.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 

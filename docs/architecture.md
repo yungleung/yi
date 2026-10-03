@@ -188,7 +188,11 @@ height remembered against it.
 
 ## One keystroke
 
-1. `markdown_editor.ts` sees the key and calls a command (`editing/*`).
+1. `markdown_editor.ts` sees the key and calls a command (`editing/*`). The keyboard is held by
+   an invisible textarea (`editing/composition_input.ts`), so a key can also arrive as a
+   composition: what an input method, dictation or the emoji panel commits is inserted through
+   the same text path as typing, as one edit of its own
+   (`text_commands.ts: insertCommitted`).
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).

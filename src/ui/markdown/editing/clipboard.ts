@@ -100,7 +100,11 @@ export function selectAll(context: EditorContext): void {
   }
   const range = document.createRange();
   range.selectNodeContents(root);
+  // The keyboard first, then the selection: the editor's own seam holds it
+  // (`context.ts: EditorContext.focusText`), and moving the keyboard to it *after*
+  // making the selection is what would drop the selection — a control that had the
+  // keyboard (the find bar's field) loses it to the seam, which is a focus change.
+  context.focusText();
   selection.removeAllRanges();
   selection.addRange(range);
-  root.focus({ preventScroll: true });
 }

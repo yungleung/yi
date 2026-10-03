@@ -48,6 +48,15 @@ export interface EditorContext {
    * that wants it reads it then.
    */
   readonly onChanged?: () => void;
+  /**
+   * Puts the keyboard where the text is.
+   *
+   * The editor's own seam holds it (`composition_input.ts`), so a command that wants the
+   * keyboard asks for *this* rather than focusing the prose root: the seam would take the
+   * focus from the root a moment later anyway, and that second change is what drops a
+   * selection the command has just made (`clipboard.ts: selectAll`).
+   */
+  readonly focusText: () => void;
 }
 
 /**
@@ -88,10 +97,7 @@ export function editorSelection(context: EditorContext, allowCollapsed: boolean)
   const selection = window.getSelection();
   if (selection && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
-    if (
-      context.contentView.contains(range.commonAncestorContainer) &&
-      (allowCollapsed || !range.collapsed)
-    ) {
+    if (isDocumentRange(context, range) && (allowCollapsed || !range.collapsed)) {
       return range;
     }
   }
@@ -102,6 +108,18 @@ export function editorSelection(context: EditorContext, allowCollapsed: boolean)
     }
   }
   return null;
+}
+
+/**
+ * Whether a range is the reader's place *in the document*: a selection inside the rendered
+ * prose. Anything else is not one, however it got there — the editor's own chrome, and the
+ * system's input seam that lives beside the prose (`composition_input.ts`), which a focused
+ * textarea makes the browser report a selection for. Reading that as the caret is what would
+ * put the next keystroke at an offset nobody chose.
+ */
+export function isDocumentRange(context: EditorContext, range: Range): boolean {
+  const root = proseRoot(context);
+  return root !== null && root.contains(range.commonAncestorContainer);
 }
 
 /**
@@ -582,7 +600,7 @@ export function placeCaret(context: EditorContext, offset: number, scroll = true
   caret.collapse(true);
   setSelectionRange(null);
   window.getSelection()?.removeAllRanges();
-  root.focus({ preventScroll: true });
+  context.focusText();
   scheduleCaret(caret, scroll);
   return true;
 }

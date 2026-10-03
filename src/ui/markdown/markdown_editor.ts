@@ -28,6 +28,7 @@ import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
   editorSelection,
+  isDocumentRange,
   keepScroll,
   proseRoot,
   rangeOffsets,
@@ -39,7 +40,8 @@ import {
 } from './editing/context';
 import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
-import { deleteText, insertNewline, insertText } from './editing/text_commands';
+import { deleteText, insertCommitted, insertNewline, insertText } from './editing/text_commands';
+import { installCompositionInput, type CompositionInput } from './editing/composition_input';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { applyCodeIndent } from './editing/code';
@@ -103,6 +105,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly context: EditorContext;
   private readonly findBar: FindBar;
   private readonly find: FindController;
+  /** The system's text input seam; it holds the keyboard while the caret is here. */
+  private readonly composition: CompositionInput;
   /** Keeps the page's scale in step with the width of the pane it is held in. */
   private readonly pageFitter: ResizeObserver;
   /** The scale the page is drawn at: A4 until the pane cannot hold it (`fitPage`). */
@@ -137,9 +141,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       state: this.state,
       renderer: this.renderer,
       contentView: this.contentView,
+      focusText: () => this.focusText(),
       // Every edit funnels through `applyEdit`, and this is how the session behind the editor
       // hears about one: the event carries nothing, since the text is the state's.
-      onChanged: () => void eventManager.emit(EDITOR_EDITED)
+      onChanged: () => {
+        void eventManager.emit(EDITOR_EDITED);
+        // An edit costs the seam its input context — a word committed, an Enter, a keystroke —
+        // so the keyboard goes back to it once the turn is over (`composition_input.ts`).
+        this.composition.regainKeyboard();
+      }
     };
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
@@ -196,6 +206,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     });
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
     this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
+    // The system's way in: an input method's word, dictation and the emoji panel get
+    // something to compose and arrive in, and what they commit is one edit of its own
+    // (see `editing/composition_input.ts` and `editing/text_commands.ts: insertCommitted`).
+    this.composition = installCompositionInput(this.contentView, (text) => {
+      insertCommitted(this.context, text);
+    });
 
     // Keep the editor's selection state in sync with the native DOM selection
     // (the rendered text is selectable by dragging).
@@ -207,7 +223,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       }
       const range = selection.getRangeAt(0);
       setSelectionRange(
-        !range.collapsed && this.contentView.contains(range.commonAncestorContainer) ? range : null
+        !range.collapsed && isDocumentRange(this.context, range) ? range : null
       );
     });
 
@@ -295,7 +311,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * this is the one way back; the caret itself is the session's and does not move for it.
    */
   focusText(): void {
-    this.contentView.focus();
+    // Already there: focusing again is a no-op to the letter of the spec, but it is a native
+    // event, and one raised in the middle of an input method's own key handling is what makes
+    // it give up on the field — the second Chinese word would never compose.
+    if (document.activeElement !== this.composition.element) {
+      this.composition.element.focus({ preventScroll: true });
+    }
   }
 
   /**
@@ -393,7 +414,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Keyboard shortcuts and plain text input. */
   private handleKeydown(event: KeyboardEvent): void {
-    if (event.isComposing) {
+    // A key the input method is handling is not the editor's. The keys *during* a composition
+    // say so with `isComposing`; the last one — the key that picks the candidate, a space in
+    // every method tried — arrives with the composition already over and only `keyCode` 229 to
+    // mark it. Typing that one writes the method's own key into the document (a space after
+    // every Chinese word), and as an edit in the middle of the method's key handling it is also
+    // what made the next word refuse to compose (measured; see
+    // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
+    if (event.isComposing || (event.keyCode === 229 && this.composition.justComposed())) {
       return;
     }
     // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and

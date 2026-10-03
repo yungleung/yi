@@ -38,6 +38,25 @@ import { mathTypedWrite, mathNewlineWrite } from '../syntax/math_edits';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
+  return insertAt(context, text, true);
+}
+
+/**
+ * Inserts a word the system committed — an input method, dictation, the emoji panel.
+ *
+ * The block's own rules are the ones typing follows: an empty paragraph materializes
+ * its line, a display formula's content gets a line of its own. What it does not do is
+ * pair a bracket: the characters are the author's own text, and a `]` the app added
+ * around them would be a second editor's opinion. And its edit is not `typing`, which
+ * is what makes one undo take the whole word (`history.ts`: a multi-character
+ * insertion is a step of its own).
+ */
+export function insertCommitted(context: EditorContext, text: string): boolean {
+  return insertAt(context, text, false);
+}
+
+/** The one text path: the block's rules first, then a bracket's pair or the text. */
+function insertAt(context: EditorContext, text: string, brackets: boolean): boolean {
   const range = editorSelection(context, true);
   if (!range) {
     return false;
@@ -62,14 +81,14 @@ export function insertText(context: EditorContext, text: string): boolean {
         block.charStart + write.to,
         write.replacement,
         block.charStart + write.caret,
-        'typing'
+        brackets ? 'typing' : 'other'
       );
       return true;
     }
   }
   // A bracket writes its pair where prose is being written — not inside a code block or a
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
-  if (offsets.from === offsets.to) {
+  if (brackets && offsets.from === offsets.to) {
     const literal = block?.kind === 'fencedCode' || block?.kind === 'displayMath';
     const source = context.state.getText();
     if (skipClosingFor(source, offsets.from, text, literal)) {
@@ -83,7 +102,7 @@ export function insertText(context: EditorContext, text: string): boolean {
       return true;
     }
   }
-  applyEdit(context, offsets.from, offsets.to, text, undefined, 'typing');
+  applyEdit(context, offsets.from, offsets.to, text, undefined, brackets ? 'typing' : 'other');
   return true;
 }
 

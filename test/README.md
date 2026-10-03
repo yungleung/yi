@@ -85,14 +85,14 @@ the preview card, the label's own edits, and the shapes a definition is written 
 `footnote-label-rebuild`, `footnote-label-edge`), description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
-`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`),
+`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
 reader left behind), what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`,
 `typed-text`,
 `plain-edit-parse`, `plain-edit-markers`, `block-offset-cost`, `load-cost`,
 `typing-cost-by-kind`, `code-local-write`, `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
-localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), paste (`paste-blocks`), source mode
+localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is; `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
 page where it was), links (`insert-link` — the button, the clipboard destination and the

@@ -90,8 +90,13 @@ export class VirtualBlockRenderer {
     this.mounted.clear();
     this.range = null;
     const root = this.createRoot();
+    // The renderer owns the root it drew, not the scroller's whole contents: the scroller is
+    // the editor's, and holds things of its own — the system's input seam
+    // (`editing/composition_input.ts`) sits in it and must survive a document opening or a
+    // layout change. A replaced root takes its own blocks with it.
+    this.root?.remove();
     this.root = root;
-    this.scroller.replaceChildren(root);
+    this.scroller.appendChild(root);
     this.syncWindow(true);
   }
 
@@ -144,6 +149,13 @@ export class VirtualBlockRenderer {
     }
     const before = this.sizes.heightOf(block);
     this.rememberHeight(block, element);
+    // The element now holds what the block holds, and its record has to say so: this wrote
+    // characters the block did not have when the element was built, so an edit that later
+    // returns to that text — one undo — would compare equal and look like "nothing to
+    // re-render", leaving the page showing a character the document no longer has. The same
+    // reason `notePatchedBlock` exists for formatting (`test/probes/input-method-undo.js`
+    // watches it from the reader's side: ⌘Z after a committed word).
+    this.builtFrom.set(element, this.renderKey(block));
     this.refreshBlockTags();
     if (Math.abs(this.sizes.heightOf(block) - before) >= 1) {
       this.updateSpacers();

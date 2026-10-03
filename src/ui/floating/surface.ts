@@ -53,7 +53,10 @@ export abstract class FloatingSurface extends BaseComponent {
 
   /**
    * Escape puts every surface away. Wired on the first open, once, because the listener lives as
-   * long as the window: a surface that has never been shown has nothing to put away.
+   * long as the window: a surface that has never been shown has nothing to put away. A key that
+   * arrives while an input method is composing is not this one's: it cancels the word the reader
+   * is choosing, and the surface is not what they asked to put away
+   * (`markdown/editing/composition_input.ts`).
    */
   private watchEscape(): void {
     if (this.watchingEscape) {
@@ -61,6 +64,9 @@ export abstract class FloatingSurface extends BaseComponent {
     }
     this.watchingEscape = true;
     document.addEventListener('keydown', (event) => {
+      if (event.isComposing) {
+        return;
+      }
       if (event.key === 'Escape' && this.isOpen()) {
         this.close();
       }

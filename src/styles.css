@@ -261,6 +261,36 @@ body {
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
+/* The seam the system's text input goes through (see `composition_input.ts`).
+
+   macOS will not open a composition in a field it cannot see, and the tests for "cannot
+   see" are unforgiving: `opacity: 0` gets nothing, and so does a field a hair wide even
+   with ordinary ink. Measured with the system's own keystrokes, what composes is an
+   opaque field — `opacity: 1`, a box a few characters wide — whose *ink* and *background*
+   are transparent, so nothing of it is drawn over the page. The module moves it to the
+   caret, which is also where the system puts its candidate window.
+
+   One trap: do not declare `caret-color: transparent`. Left alone it computes to
+   transparent anyway (the ink is), but a declared one makes WebKit refuse the composition
+   as well. What the reader sees is the editor's own caret, which never moves.
+
+   `pointer-events: none` keeps a click from ever landing in it. */
+.markdown-composition-input {
+  position: fixed;
+  width: 6em;
+  /* Tall enough to compose in: 18px — one line of the page's own type — got no
+     composition at all, while 26px did. */
+  min-height: 2em;
+  padding: 0;
+  border: 0;
+  color: transparent;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Inline source view shown when a rendered image or link is clicked. It sits on the
    same surface the boxed sources do — the theme's own `base-200` (see the highlighted
    source palette below) — so a revealed source reads as one wherever it appears.
