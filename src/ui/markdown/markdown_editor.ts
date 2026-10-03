@@ -414,14 +414,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Keyboard shortcuts and plain text input. */
   private handleKeydown(event: KeyboardEvent): void {
-    // A key the input method is handling is not the editor's. The keys *during* a composition
-    // say so with `isComposing`; the last one — the key that picks the candidate, a space in
-    // every method tried — arrives with the composition already over and only `keyCode` 229 to
-    // mark it. Typing that one writes the method's own key into the document (a space after
-    // every Chinese word), and as an edit in the middle of the method's key handling it is also
-    // what made the next word refuse to compose (measured; see
+    // A character the input method is handling is not the editor's. The keys *during* a
+    // composition say so with `isComposing`; a key the method routes does so with
+    // `keyCode` 229 — the key that picks a candidate, and (with Caps Lock on, so the method
+    // composes nothing) every letter it passes straight through. Typing those writes the
+    // author's character twice: the method leaves the same letter in the seam, and the seam
+    // commits it. A 229 key that is *not* a character — `Enter` while a method is merely
+    // active, an arrow, `Backspace`, `Tab` — is still the editor's, which is why the guard
+    // is about the character and not about 229 alone (see
     // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
-    if (event.isComposing || (event.keyCode === 229 && this.composition.justComposed())) {
+    if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
       return;
     }
     // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and

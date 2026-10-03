@@ -25,12 +25,6 @@ export interface CompositionInput {
   /** The element that holds the keyboard. The editor focuses it, and nothing else may. */
   readonly element: HTMLTextAreaElement;
   /**
-   * Whether a composition ended a moment ago, which is how the key that *picked* the
-   * candidate is told from an ordinary one: it arrives with the composition over, marked
-   * only by `keyCode` 229, and typing it writes the method's own key into the document.
-   */
-  justComposed(): boolean;
-  /**
    * Hands the field the keyboard again after an edit. Committing and typing are edits, and
    * an edit costs the field its input context — the next word would never compose — so the
    * seam takes it back once the turn is over. A selection the edit left showing is kept:
@@ -63,7 +57,7 @@ export function installCompositionInput(
   host.appendChild(element);
 
   let composing = false;
-  /** When the last composition committed, so the key that chose it is not typed again. */
+  /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
 
   /** Takes the value the system left and hands it over; an empty one commits nothing. */
@@ -158,7 +152,6 @@ export function installCompositionInput(
 
   return {
     element,
-    justComposed: () => performance.now() - committedAt < 100,
     regainKeyboard: () => {
       if (showingSelection() || document.activeElement !== element) {
         return;

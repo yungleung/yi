@@ -224,10 +224,32 @@ an edit too, and after it the next word never composed. So the seam takes the ke
 every edit the editor reports (`markdown_editor.ts: onChanged` → `regainKeyboard`), and leaves it be
 when the edit left a *selection* showing, because a focus change would drop that.
 
-The `keyCode` 229 guard narrowed at the same time. Left as "229, always", it would also swallow an
-`Enter` pressed while a method is merely *active* and not composing — a new line the reader asked
-for and did not get. It now covers only a 229 key arriving right after a composition ended, which is
-the one that picked the candidate: a 100ms window, `composition_input.ts: justComposed`.
+The `keyCode` 229 guard is about the character, not about 229 alone. Left as "229, always", it
+would also swallow an `Enter` pressed while a method is merely *active* and not composing — a new
+line the reader asked for and did not get. (It was first narrowed further, to a 229 key arriving
+within 100 ms of a commit, `composition_input.ts: justComposed`; that turned out to be too narrow
+— see below — and the window is gone.)
+
+### A letter written twice (Caps Lock on)
+
+Found by a reader: with a Chinese input method and **Caps Lock on**, typing a Latin letter duplicates
+it. Caps Lock is what makes it visible: the method composes nothing there, it hands the letter on —
+so one keystroke is carried by two paths at once. The method routes the key (a `keydown` marked only
+by `keyCode` 229, with no composition behind it) *and* leaves the same letter in the seam, whose
+`input` commits it. The 100 ms window did not cover this — no composition had ended — so the editor
+typed the routed key and the seam wrote the letter again.
+
+Measured on the reader's own machine (Simplified Pinyin, Caps Lock on, `key`/`keyCode`/`prevented`/seam
+recorded per event): three letters typed left **four** characters in the document — `helloabc` came
+out `helloAbcC` — with the letters arriving alternately through the key path and the seam, and the
+last one through both.
+
+The guard is now: a `keyCode` 229 key that **carries a character** (`event.key.length === 1`) belongs
+to the input method, whatever happened before it; a 229 key that carries none — `Enter`, an arrow,
+`Backspace`, `Tab` — is still the editor's. Which path each letter of a run travels by is the
+method's business, and it varies letter by letter; what is now true is that each is written once.
+`test/probes/input-method-passthrough.js` holds both halves — the letter carried by both paths lands
+once, and a 229 `Enter` still starts a line — and it fails without the change (`hellobb`).
 
 ### The ghost after ⌘Z
 

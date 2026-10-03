@@ -301,6 +301,12 @@ command that focuses the page and a command that selects it are then asking for 
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
 composition events rather than pretending to type.
 
+A key the input method routes is the method's, whether a composition is behind it or not: a
+`keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes
+that character — typing it as well writes it twice (measured with Caps Lock on, where the method
+composes nothing and passes every letter through; `test/probes/input-method-passthrough.js`). A 229
+key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's.
+
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 
