@@ -32,6 +32,7 @@ methodology; this file is the index and the conventions.
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
+| `check-math-edits.mjs` | Where a write inside a display formula lands: a character typed at either edge of the content goes *in* the content, a formula with none gets a line of its own for it, and `Enter` leaves a blank content line rather than a caret between the `$$` |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |

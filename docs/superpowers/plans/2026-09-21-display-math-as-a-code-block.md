@@ -70,8 +70,13 @@ click through.
   must be rebuilt from the document (its parse is current, since the block is
   re-rendered on every edit like code).
 - **Empty formula** (`$$\n$$`) and a formula that is the whole document.
-- **A caret on a fence line** must be legal, as it is in code — typing there is
-  the author's business, with the same consequence code has.
+- **A caret on a fence line** must be legal, as it is in code. Typing there is
+  not: a `$$` line only delimits the formula while it is the fence and nothing
+  else, so a character written at either edge of the content is put *in* the
+  content instead — on its first or last line, and on a line of its own when the
+  formula has none yet (`syntax/math_edits.ts`). Code keeps the author's
+  business because a fence broken there is a block that visibly no longer
+  closes; here it would silently change what the formula says.
 
 ## Acceptance tests
 

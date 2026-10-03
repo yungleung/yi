@@ -34,6 +34,7 @@ import { isRawRendered } from '../document/blocks';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 import { pairAround, pairingFor, skipClosingFor } from '../syntax/brackets';
+import { mathTypedWrite, mathNewlineWrite } from '../syntax/math_edits';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -48,6 +49,23 @@ export function insertText(context: EditorContext, text: string): boolean {
   const block = context.state.getBlockAtOffset(offsets.from);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
+  }
+  // A character typed at either edge of a display formula's content belongs *in*
+  // the content: written where the caret is, it would land on a `$$` line, which
+  // the parser reads as a different formula altogether (see `syntax/math_edits.ts`).
+  if (block?.kind === 'displayMath' && offsets.from === offsets.to) {
+    const write = mathTypedWrite(block.text, offsets.from - block.charStart, text);
+    if (write) {
+      applyEdit(
+        context,
+        block.charStart + write.from,
+        block.charStart + write.to,
+        write.replacement,
+        block.charStart + write.caret,
+        'typing'
+      );
+      return true;
+    }
   }
   // A bracket writes its pair where prose is being written — not inside a code block or a
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
@@ -135,6 +153,22 @@ export function insertNewline(context: EditorContext): boolean {
   }
   // Code, math and other raw-rendered blocks keep their own line structure.
   if (isRawRendered(block.kind) || block.kind === 'displayMath') {
+    // `Enter` in a display formula with no content yet makes the content's first
+    // line, so neither fence line takes the next character (see `syntax/math_edits.ts`).
+    const write =
+      block.kind === 'displayMath'
+        ? mathNewlineWrite(block.text, offsets.from - block.charStart)
+        : null;
+    if (write) {
+      applyEdit(
+        context,
+        block.charStart + write.from,
+        block.charStart + write.to,
+        write.replacement,
+        block.charStart + write.caret
+      );
+      return true;
+    }
     applyEdit(context, offsets.from, offsets.to, '\n');
     return true;
   }
