@@ -66,7 +66,10 @@ where it was asked for with its frontmatter on screen and its title selected, an
 *New file* through the same command; `new-note-template` — a template written through the app's
 config, the settings tab that shows it, and the note that comes out), blocks and spacing
 (`block-gaps`, `spacing`,
-`empty-*`, `insert-rule`), code and lists (`code-tab`, `code-shift-tab`, `list-*`), tables
+`empty-*`, `enter-new-paragraph` — a letter typed after `Enter` at the end of a block is a
+paragraph of its own, whether a block follows it or the block is the file's last, and the
+same for a new note's blank body line — `insert-rule`), code and lists (`code-tab`,
+`code-shift-tab`, `list-*`), tables
 (`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;

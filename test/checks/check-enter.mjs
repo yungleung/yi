@@ -68,9 +68,26 @@ const cases = [
     paragraphSplit('a\n\nb', 3).insert,
     ''
   ],
-  ['typing between blocks takes a newline with it', emptyLineInsertion('a\n\n\nb', 3, 'x'), 'x\n'],
-  ['typing at the end of the file does not', emptyLineInsertion('a\n\n', 2, 'x'), 'x'],
-  ['typing on a leading empty line takes a newline', emptyLineInsertion('\na', 0, 'x'), 'x\n']
+  [
+    'typing between blocks takes a newline with it',
+    emptyLineInsertion('a\n\n\nb', 3, 'x').replacement,
+    'x\n'
+  ],
+  [
+    'typing on the last empty line of a file takes one before it, so the block above is not joined',
+    emptyLineInsertion('a\n\n', 2, 'x').replacement,
+    '\nx'
+  ],
+  [
+    'typing on an empty line a blank line already separates does not',
+    emptyLineInsertion('a\n\n\n', 3, 'x').replacement,
+    'x'
+  ],
+  [
+    'typing on a leading empty line takes a newline',
+    emptyLineInsertion('\na', 0, 'x').replacement,
+    'x\n'
+  ]
 ];
 
 let failures = 0;
@@ -97,7 +114,7 @@ check(
 );
 check(
   'typing on the new empty line keeps the next paragraph apart',
-  insert(paragraphEnd, 12, emptyLineInsertion(paragraphEnd, 12, 'x')),
+  insert(paragraphEnd, 12, emptyLineInsertion(paragraphEnd, 12, 'x').replacement),
   'first line\n\nx\n\nsecond line\n'
 );
 

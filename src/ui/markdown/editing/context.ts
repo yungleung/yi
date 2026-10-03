@@ -34,7 +34,7 @@ import { plainRun, writeRun } from './typed_text';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
 import type { MarkdownBlock } from '../document/blocks';
-import type { MarkdownEditorState } from '../document/state';
+import type { EditCaret, MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
 /** What every editing command needs to read and change the document. */
@@ -332,9 +332,6 @@ function sourceRangeIn(
   return null;
 }
 
-/** Where the caret goes after an edit: an offset, or one the new text decides. */
-export type CaretTarget = number | ((state: MarkdownEditorState) => number);
-
 /**
  * Remembers the shape the block's element was built from, and schedules the check
  * that a plain keystroke did not quietly change it.
@@ -402,7 +399,7 @@ export function applyEdit(
   from: number,
   to: number,
   replacement: string,
-  caret: CaretTarget = from + replacement.length,
+  caret: EditCaret = from + replacement.length,
   kind: EditKind = 'other'
 ): void {
   const anchor = context.contentView.scrollTop;
@@ -411,7 +408,6 @@ export function applyEdit(
   // author back there rather than wherever they are when the undo is asked for: a
   // selection comes back selected, ready to be typed over.
   const before = authorMark(context) ?? { from, to: from };
-  const target = typeof caret === 'function' ? caret(context.state) : caret;
   // The fast path: a keystroke that cannot change how its block parses is written
   // into the text node the caret is in, and nothing is rendered or parsed — which
   // is what keeps the page's layout (and the 26 ms it costs to invalidate) out of a
@@ -427,10 +423,10 @@ export function applyEdit(
   if (written) {
     scheduleVerify(context, written);
   }
-  context.state.replaceRange(from, to, replacement, {
-    marks: { before, after: { from: target, to: target } },
-    kind
-  });
+  // The caret is resolved against the *edited* text (`state.ts: EditCaret`): asking a
+  // rule like `Enter`'s what it names before the edit names the block the key was
+  // pressed in, not the empty paragraph the edit made.
+  const target = context.state.replaceRange(from, to, replacement, { before, caret, kind });
   if (run) {
     writeRun(run, replacement);
     const block = context.state.getBlockAtOffset(from + replacement.length);

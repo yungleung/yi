@@ -253,7 +253,8 @@ check('a new document has no history', [document_.historyEdits().length, documen
 // typed over again rather than selected a second time.
 document_.loadText('hello world\n');
 document_.replaceRange(6, 11, 'there', {
-  marks: { before: { from: 6, to: 11 }, after: { from: 11, to: 11 } }
+  before: { from: 6, to: 11 },
+  caret: 11
 });
 check('a replacement records the selection it replaced', document_.historyEdits(), [
   {

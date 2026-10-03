@@ -4,8 +4,10 @@
  * `Enter` at the end of a block only adds the newline the author asked for:
  * one, which makes the blank run after the block long enough to hold an empty
  * paragraph. Typing on an empty line needs one newline on the side where the
- * next block begins, because markdown keeps two paragraphs apart only when a
- * blank line sits on both sides.
+ * nearer block is, because markdown keeps two paragraphs apart only when a
+ * blank line sits on both sides — after the text when a block follows it, and
+ * before it when the empty line is the last one of the file, with a block
+ * directly above and no separator of its own.
  *
  * May import: the block model, the pure line rules (`syntax/`) and the editing
  * context. Upholds: the document text is the only source of truth — every rule
@@ -152,11 +154,43 @@ export function continueListItem(
   return true;
 }
 
-/** The insert that turns the empty line at `offset` into a paragraph. */
-export function emptyLineInsertion(text: string, offset: number, inserted: string): string {
+/**
+ * What typing on the empty paragraph at `offset` turns the line into, and where the
+ * caret lands: the text, with the blank line markdown needs on the side where the
+ * empty line has a block.
+ *
+ * A block follows the empty line → the newline goes after the text, so the next
+ * block is not swallowed (`a ␣ ␣ b` + `x` → `a ␣ x ␣ b`). A block sits directly
+ * above it, with no blank line in between — the last empty line of a file, which
+ * needs no separator of its own — → the newline goes before it, so the text becomes
+ * the paragraph the author meant instead of joining the one above it
+ * (`a ␣` + `x` → `a ␣ ␣ x`). At the top of a file, and on an empty line whose own
+ * blank line already separates it, the text alone is the line.
+ */
+export function emptyLineInsertion(
+  text: string,
+  offset: number,
+  inserted: string
+): { replacement: string; caret: number } {
   const lineEnd = text.indexOf('\n', offset);
   const followedByBlock = text.slice(lineEnd < 0 ? text.length : lineEnd + 1).trim() !== '';
-  return followedByBlock ? `${inserted}\n` : inserted;
+  if (followedByBlock) {
+    return { replacement: `${inserted}\n`, caret: offset + inserted.length };
+  }
+  if (blockAbove(text, offset)) {
+    return { replacement: `\n${inserted}`, caret: offset + 1 + inserted.length };
+  }
+  return { replacement: inserted, caret: offset + inserted.length };
+}
+
+/** Whether the line directly above the empty line at `offset` holds part of a block. */
+function blockAbove(text: string, offset: number): boolean {
+  if (offset === 0) {
+    return false;
+  }
+  // The line above ends at the newline just before the empty line's start.
+  const above = lineSpanAt(text, offset - 1);
+  return !isEmptyParagraphLine(text.slice(above.start, above.end));
 }
 
 /**
@@ -196,8 +230,12 @@ export function startEmptyParagraph(
   block: MarkdownBlock,
   offsets: { from: number; to: number }
 ): boolean {
+  // The block's end is read before the edit: the newline goes in at the block's own
+  // last line, so the re-split re-decides that block and the old object leaves the
+  // index with it (`block_index.ts: place`) — asking it afterwards has no answer.
+  const blockEnd = block.charEnd;
   applyEdit(context, offsets.from, offsets.to, '\n', (state) => {
-    return state.firstEmptyParagraphAfter(block.charEnd) ?? block.charEnd;
+    return state.firstEmptyParagraphAfter(blockEnd) ?? blockEnd;
   });
   return true;
 }
@@ -256,8 +294,8 @@ export function materializeInsertion(
   offsets: { from: number; to: number },
   inserted: string
 ): boolean {
-  const replacement = emptyLineInsertion(context.state.getText(), offsets.from, inserted);
-  applyEdit(context, offsets.from, offsets.to, replacement, offsets.from + inserted.length);
+  const { replacement, caret } = emptyLineInsertion(context.state.getText(), offsets.from, inserted);
+  applyEdit(context, offsets.from, offsets.to, replacement, caret);
   return true;
 }
 

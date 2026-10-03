@@ -35,6 +35,15 @@ import { TextStore } from './text_store';
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
 
+/**
+ * Where an edit leaves the caret, as its caller can state it: an offset, or a rule
+ * that reads the *new* text for one. A rule is what `Enter` at the end of a block
+ * needs — the empty paragraph it adds is a line only the edited document can point
+ * at (`firstEmptyParagraphAfter`), and an offset read against the old text names the
+ * block the key was pressed in rather than the line it made.
+ */
+export type EditCaret = number | ((state: MarkdownEditorState) => number);
+
 export class MarkdownEditorState {
   /** The document's text, as the pieces every edit is applied to. */
   private readonly text: TextStore;
@@ -190,24 +199,41 @@ export class MarkdownEditorState {
     return this.labels;
   }
 
-  /** Replaces a raw document range with `replacement`. */
+  /**
+   * Replaces a raw document range with `replacement`, and hands back where the caret
+   * lands: the `caret` option, resolved against the text just written — the end of the
+   * replacement when the caller names none.
+   */
   replaceRange(
     from: number,
     to: number,
     replacement: string,
-    options: { marks?: { before: EditMark; after: EditMark }; kind?: EditKind } = {}
-  ): void {
+    options: { before?: EditMark; caret?: EditCaret; kind?: EditKind } = {}
+  ): number {
     const length = this.text.length;
     const start = Math.max(0, Math.min(from, length));
     const end = Math.max(start, Math.min(to, length));
     const removed = this.text.slice(start, end);
     const edit: DocumentEdit = { from: start, to: end, removed, inserted: replacement };
-    if (options.marks) {
-      edit.before = options.marks.before;
-      edit.after = options.marks.after;
+    if (options.before) {
+      edit.before = options.before;
     }
     this.updateText(edit, () => this.text.replace(start, end, replacement));
+    // The caret is read with the new text in place: a rule — the empty paragraph
+    // `Enter` has just made — can only answer now. The history keeps it as the mark
+    // this edit comes back to (`history.ts: invert`), and the caller gets the same
+    // offset back to place the caret.
+    const caret =
+      options.caret === undefined
+        ? start + replacement.length
+        : typeof options.caret === 'function'
+          ? options.caret(this)
+          : options.caret;
+    if (options.caret !== undefined) {
+      edit.after = { from: caret, to: caret };
+    }
     this.history.record(edit, options.kind);
+    return caret;
   }
 
   /**

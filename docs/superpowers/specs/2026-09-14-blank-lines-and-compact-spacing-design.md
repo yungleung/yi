@@ -87,11 +87,17 @@ newline inside the block.
 
 ### 2.2 Typing on an empty paragraph
 
-Insert the text at the line's start. When a block follows the empty paragraph,
-the same edit also inserts the `\n` that keeps the next block separate
-(`a` `␣` `␣` `b` + `x` → `a` `␣` `x` `␣` `b`), because markdown needs a blank
-line on both sides of a paragraph. One keystroke stays one undo step, and the
-layout does not shift: the line already occupied a line's height.
+Insert the text at the line's start, plus the `\n` that keeps the line's own
+paragraph apart from the block on whichever side it has one — markdown needs a
+blank line on both sides of a paragraph. When a block follows the empty
+paragraph, the newline goes after the text
+(`a` `␣` `␣` `b` + `x` → `a` `␣` `x` `␣` `b`). When none follows but a block sits
+directly above with no blank line in between — the last empty line of a file,
+which needs no separator of its own — it goes before the text
+(`a` `␣` + `x` → `a` `␣` `␣` `x`), because without it the line the author typed on
+would join the paragraph above instead of being one of its own. One keystroke
+stays one undo step, and the layout does not shift: the line already occupied a
+line's height.
 
 The inverse holds too: deleting the last character of a line that
 materialisation created also removes the newline it added, so typing on an
