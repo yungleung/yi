@@ -534,6 +534,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     const root = proseRoot(this.context);
     if (root) {
       moveCaret(root, direction);
+      // The caret just moved, and the keyboard has to move with it in the input method's eyes:
+      // after arrow keys the next keystroke arrived as a Latin letter (`keyCode` 78, measured with
+      // the real Chinese method) instead of opening a composition, exactly as it did after a click
+      // and after an undo. The caret is where all three meet, so the hand-back belongs here as
+      // much as there (`composition_input.ts: regainKeyboard`).
+      this.composition.regainKeyboard();
     }
   }
 

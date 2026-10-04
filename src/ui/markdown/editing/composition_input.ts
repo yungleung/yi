@@ -15,7 +15,9 @@
  * What the method has marked so far is *written into the line* — the pinyin, the kana, the
  * syllable — where the reader is typing it, so the words after it move along the way they
  * do in a system text field (`composition_view.ts`). The field itself stays invisible,
- * because the system composes only into a field it can see.
+ * because the system composes only into a field it can see: its ink and the caret that takes
+ * its colour are transparent, and what the system paints in it besides those — the selection
+ * over a marked word — is clipped to the editor's own box (`styles.css`).
  *
  * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`) and that view. Upholds:
  * the document text is the only source of truth — nothing is written while a word is
@@ -63,7 +65,9 @@ const MOMENT_MS = 50;
  *
  * The element is parked off to the side until there is a caret to sit on, and follows
  * the caret from then on — a caret change and a scroll both move it, because the
- * system's candidate window opens where the element is.
+ * system's candidate window opens where the element is. `onCommit` writes a committed word
+ * into the document, and `onLayoutChanged` measures the block the composing text was written
+ * into again — a longer word can wrap the line (see `composition_view.ts`).
  */
 export function installCompositionInput(
   host: HTMLElement,
@@ -77,7 +81,17 @@ export function installCompositionInput(
   element.setAttribute('autocapitalize', 'off');
   element.setAttribute('autocorrect', 'off');
   element.setAttribute('spellcheck', 'false');
-  host.appendChild(element);
+  // The field is drawn inside a box the size of the editor (`styles.css`): what the *system*
+  // paints in it — the blue of a selected marked word, its caret — is not transparent, and a field
+  // taller than the reader's last line would paint it past the editor's bottom edge, over the
+  // status bar. WebKit does not honour `::selection` for a textarea's own selection, so clipping
+  // the paint is what keeps it unseen. The field itself keeps its size and its place at the caret,
+  // which is what the system composes into and where its caret has to be.
+  const clip = document.createElement('div');
+  clip.className = 'markdown-composition-clip';
+  clip.setAttribute('aria-hidden', 'true');
+  host.appendChild(clip);
+  clip.appendChild(element);
 
   let composing = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
@@ -107,9 +121,50 @@ export function installCompositionInput(
   /** The word the method is holding: being composed now, or let go a moment ago. */
   const markedText = (): boolean => composing || performance.now() - committedAt < MOMENT_MS;
 
+  /** Whether the system is using the field: a composition open, or marked text left in it. */
+  const fieldInUse = (): boolean => composing || element.value !== '';
+
+  /** The editor's own box: the frame the field is drawn inside, in viewport coordinates. */
+  let frame = { left: 0, top: 0 };
+
+  /**
+   * Reads the editor's box — a frame after the seam is made, when the window is resized, and while
+   * the system is using the field. Never on the caret path of a plain keystroke: that path must
+   * read no layout at all (`test/probes/typed-text.js` counts those), and an earlier version that
+   * read here on every caret move is what broke it.
+   */
+  const measureFrame = (): void => {
+    const rect = host.getBoundingClientRect();
+    frame = { left: rect.left, top: rect.top };
+    clip.style.left = `${rect.left}px`;
+    clip.style.top = `${rect.top}px`;
+    clip.style.width = `${rect.width}px`;
+    clip.style.height = `${rect.height}px`;
+  };
+  requestAnimationFrame(measureFrame);
+  window.addEventListener('resize', measureFrame);
+
+  /** Where the system should open its candidate window: the caret's own box, inside the clip. */
+  const followCaret = () => {
+    const box = caretBox();
+    if (!box) {
+      element.style.left = '-1000px';
+      element.style.top = '-1000px';
+      return;
+    }
+    if (fieldInUse()) {
+      measureFrame();
+    }
+    element.style.left = `${box.left - frame.left}px`;
+    element.style.top = `${box.top - frame.top}px`;
+  };
+
   /** Draws what the method has marked so far, at the caret it is being written at. */
   const drawMarked = (): void => {
     view.show(element.value, getCaretRange());
+    // The field has to be where the system will draw that word, and it is only placed again on a
+    // caret move otherwise.
+    followCaret();
   };
 
   element.addEventListener('compositionstart', () => {
@@ -156,18 +211,17 @@ export function installCompositionInput(
   /**
    * Puts the keyboard back where the caret is — a turn later, never in the same one.
    *
-   * Two moments need it, and they are one fact. An *edit* costs the field its input
-   * context, so the next word would never compose. A *click that places the caret* leaves
-   * the keyboard on the page — the browser focuses the focusable prose root on mousedown,
-   * and the hand-over above stands back for the reader's gesture — so the first letter
-   * typed after that click is delivered to the page's own key path and goes into the
-   * document as a Latin character, with the composition only beginning with the second
-   * one (measured: `nihao` came out `ni` and 好, so the word could not be written).
+   * Anything that moves the caret needs it: an edit costs the field its input context, a click
+   * leaves the keyboard on the page (the browser focuses the focusable prose root on mousedown,
+   * and the hand-over above stands back for the reader's gesture), and an undo and an arrow key
+   * each leave it where it was without the input method knowing. Every one of them was measured
+   * the same way: the first letter of the next word arrived as a Latin keystroke, typed by the
+   * editor, instead of opening a composition (`nihao` came out `ni` and 好).
    *
-   * A control of the app's keeps its own keyboard, and a selection the reader is showing is
-   * kept — a focus change would drop it. A field that has just lost the keyboard does not
-   * compose again if it takes it back inside the same turn, which is why the focus is
-   * raised on the next frame.
+   * A control of the app's keeps its own keyboard, and a selection the reader is showing is kept
+   * — a focus change would drop it. A field that has just lost the keyboard does not compose
+   * again if it takes it back inside the same turn, which is why the focus is raised on the next
+   * frame.
    */
   const regainKeyboard = (): void => {
     const active = document.activeElement;
@@ -218,19 +272,6 @@ export function installCompositionInput(
     element.focus({ preventScroll: true });
   });
 
-  /** Where the system should open its candidate window: the caret's own box. */
-  const followCaret = () => {
-    const box = caretBox();
-    if (!box) {
-      element.style.left = '-1000px';
-      element.style.top = '-1000px';
-      return;
-    }
-    // The seat, not the size: the box's height is the stylesheet's, because the system
-    // refuses to compose in one as short as a line of the page's type (see `styles.css`).
-    element.style.left = `${box.left}px`;
-    element.style.top = `${box.top}px`;
-  };
   onCaretRangeChanged(followCaret);
   host.addEventListener('scroll', followCaret);
   followCaret();

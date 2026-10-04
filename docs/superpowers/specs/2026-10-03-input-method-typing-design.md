@@ -324,6 +324,52 @@ after the hand-back reads `229` with `composing` true and opens a composition. `
 back the way an edit does. `test/probes/input-method-undo.js` holds the half a probe can see — the seat
 blurs and takes the keyboard again — and fails without the change.
 
+### The field that could be seen
+
+Found twice, and the second report is what settled it.
+
+First: with the typing line right above the status bar, the hidden field was observable. The seam
+is a real box — the system will not compose in one as short as a line, so it is taller than one —
+and it sits at the caret, so on the reader's last visible line its bottom edge reached past the
+editor's: measured, **21px below** the scroller's bottom, over the status bar. Everything the field
+*draws* is transparent by measurement, but what the *system* paints in it is not — its own caret,
+the selection over the marked word — and that is what was on show.
+
+The first answer moved the field up until it fitted, and the reader found the second: **two
+vertical lines** at the caret. Moving the field moves the problem, because the system's caret is
+drawn *in* the field: 21px above the reader's line is a field whose caret is drawn 21px above the
+text — a mark of its own, beside the one the editor hides while a word is composed.
+
+So the field stays exactly where the caret is — which keeps the system's caret on the reader's own
+line — and is drawn inside a box the size of the editor (`.markdown-composition-clip`). That box is
+what is clipped, so whatever the system paints in the field, the blue of a selected marked word
+included, cannot be seen past the editor's edge. Making it transparent instead does not work:
+WebKit does not honour `::selection` for a textarea's own selection, which the next attempt found by
+failing. Keeping the field *there* also keeps it out of the layout's way: an earlier version that
+read the editor's box on every caret move broke `typed-text.js`, which counts the layout a plain
+letter reads, and the answer has to be none — so the frame is read a frame after the seam is made,
+on a window resize, and while the system is using the field.
+
+`test/probes/input-method-seam-box.js` walks the caret down to that line and composes there,
+holding what is checkable: the field is on the caret's own line and column, it is drawn inside the
+editor's own box, and that box is the editor's. Measured with the real method, the word still
+composes there — the marked text lands in the line.
+
+### The arrow keys that left it behind
+
+Found while the field's paint was being checked with the method finally composing (Caps Lock off):
+walk the caret down with the arrow keys, type pinyin, and *the first letter goes in as Latin* — the
+reader's first report, on the one path that never got the hand-back. An arrow key is neither an
+edit nor a click: it moves the caret, and the field kept the keyboard with a stale input context.
+The key log says it in the same words (`keydown 'n' keyCode 78 isComposing false`, typed by the
+editor; after the hand-back, `229` with `composing` true). `handleArrowKey` now hands it back, as
+the click and the undo do, and `test/probes/input-method-arrow.js` holds the half a probe can see —
+the seat blurs and takes the keyboard again — failing without the change.
+
+Three paths of one fact, then: a click, an undo, and the arrow keys each had to give the field its
+keyboard back. What they share is the caret, so a fourth will want this at the caret itself rather
+than at each thing that moves it.
+
 ### A word composed on a new line
 
 Found by the reader: Enter at the end of the document, then type pinyin — the line, and the word, vanish.

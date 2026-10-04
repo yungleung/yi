@@ -294,7 +294,10 @@ commits is inserted by `text_commands.ts: insertCommitted` as one step of its ow
 composition is drawn in the seam: it is invisible because its *ink and background* are transparent,
 never with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what
 the system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with
-a probe that holds that shape. What the method has *marked* is drawn instead where the reader is
+a probe that holds that shape. What the *system* paints in the field besides its ink is not
+transparent — the selection over a marked word is a blue box — and WebKit does not honour
+`::selection` for a textarea's own selection, so the field is drawn inside a box the size of the
+editor and *that* is what is clipped (`styles.css: .markdown-composition-clip`). What the method has *marked* is drawn instead where the reader is
 writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
 type at the caret and underlined, *in* the line so the words after the caret move along. That span
 is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
