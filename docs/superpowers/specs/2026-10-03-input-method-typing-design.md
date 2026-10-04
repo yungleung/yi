@@ -296,6 +296,23 @@ pause — the first key is still delivered to the page, and this machine reprodu
 intermittently behind an `osascript` activation. Every path a reader's hand actually takes (a click
 on text, a click on empty space) goes through the gesture above.
 
+### The Backspace that emptied the word
+
+Found by the reader: with `你好` in the document and `zhongguo` being composed, pressing Backspace
+until the last letter takes 好 out of the document with it — and the same inside an English word,
+which is the same event with a different word around it. A key that edits the marked word is the
+input method's: while the word is marked it takes a letter off *it*, and the key that takes the
+**last** one arrives with the composition already over and nothing on it to say so (`isComposing`
+false, `keyCode` 8, no `229`). Read as the editor's, it deletes the character before the caret in
+the document.
+
+So the seam answers the question the event cannot: `composition_input.ts: markedText` is true while
+a word is marked and for a moment after one is let go — the same 50 ms (`MOMENT_MS`) the space that
+chose a candidate already needed, both being a composition's own key delivered once more when it is
+over — and `handleKeydown` leaves a Backspace to the method while it is true. Nothing else moved: a
+Backspace of the reader's own, with no word in flight, still deletes. `test/probes/input-method-backspace.js`
+holds all three, and fails without the change (`你好` came back as `你`, then as nothing).
+
 ### The ghost after ⌘Z
 
 One more, found by the same reader from the other side: type a word in the middle of a word, press

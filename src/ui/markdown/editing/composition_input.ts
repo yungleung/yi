@@ -31,6 +31,13 @@ export interface CompositionInput {
   /** The element that holds the keyboard. The editor focuses it, and nothing else may. */
   readonly element: HTMLTextAreaElement;
   /**
+   * Whether the input method is holding a word — composing one now, or having let one go a
+   * moment ago. A key that edits *that word* (Backspace) belongs to the method rather than to
+   * the editor, and the event cannot be asked: the key that emptied the word arrives with the
+   * composition already over and nothing on it to say so (see `markdown_editor.ts`).
+   */
+  markedText(): boolean;
+  /**
    * Hands the field the keyboard again — after an edit, and after a click that placed the
    * caret. Both cost the field its input context: the next word would never compose, and
    * after a click the *first letter* of it is delivered as a Latin keystroke instead
@@ -43,6 +50,13 @@ export interface CompositionInput {
 
 /** The controls whose focus is their own: a field of the app's, never the page's. */
 const CONTROLS = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
+
+/**
+ * How long a composition's own key is still the method's once it has ended: the space that
+ * chose a candidate, the Backspace that emptied the word. Both are delivered once more with
+ * the composition already over, and neither says whose it is.
+ */
+const MOMENT_MS = 50;
 
 /**
  * Puts the seam in `host` (the scroller) and reports what committed.
@@ -90,6 +104,9 @@ export function installCompositionInput(
     return range ? caretRect(range) : null;
   };
 
+  /** The word the method is holding: being composed now, or let go a moment ago. */
+  const markedText = (): boolean => composing || performance.now() - committedAt < MOMENT_MS;
+
   /** Draws what the method has marked so far, at the caret it is being written at. */
   const drawMarked = (): void => {
     view.show(element.value, getCaretRange());
@@ -121,7 +138,9 @@ export function installCompositionInput(
       drawMarked();
       return;
     }
-    if (element.value === ' ' && performance.now() - committedAt < 50) {
+    // The space that chose the candidate, delivered once more as ordinary text: it is the
+    // method's key, and typing it would leave a space after every Chinese word.
+    if (element.value === ' ' && performance.now() - committedAt < MOMENT_MS) {
       element.value = '';
       return;
     }
@@ -218,6 +237,7 @@ export function installCompositionInput(
 
   return {
     element,
+    markedText,
     regainKeyboard
   };
 }

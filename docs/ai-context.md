@@ -299,7 +299,11 @@ writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable
 type at the caret and underlined, *in* the line so the words after the caret move along. That span
 is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
 over it (`caret/offsets.ts`), the block it lands in is measured again because a longer word can wrap
-the line, and it is taken out — the text node joined again — before the word commits. Three facts
+the line, and it is taken out — the text node joined again — before the word commits. A key that
+edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
+marked and for the moment after one is let go, because the key that emptied the word arrives with
+the composition already over (`composition_input.ts: markedText`;
+`test/probes/input-method-backspace.js`). Three facts
 follow from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a

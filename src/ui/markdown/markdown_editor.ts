@@ -432,6 +432,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
       return;
     }
+    // A Backspace that edits the word being composed is the input method's: while the word is
+    // marked, it takes a letter off *it*. The key that takes the last one arrives with the
+    // composition already over and nothing on it to say so, and read as the editor's it
+    // deletes the character before the caret in the *document* — measured by the reader: `你好`
+    // with `zhongguo` being composed lost 好, and the same happens inside an English word,
+    // which is the same event with a different word around it.
+    if (event.key === 'Backspace' && this.composition.markedText()) {
+      return;
+    }
     // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and
     // what it wrote is what the list is drawn from again.
     if (this.completions.handleKey(event)) {
