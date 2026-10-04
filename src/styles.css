@@ -261,10 +261,10 @@ body {
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
-/* The bar steps aside while a word is composed: what stands at the caret then is the
-   underlined marked text (`.markdown-composition-view`), and a blinking bar under it is
-   noise. The caret has not *moved* — only stopped being drawn (`caret.ts`:
-   `setCaretBarVisible`) — so the edit a commit lands still knows where the author was. */
+/* The bar steps aside while a word is composed: the marked text is written into the line then
+   (`editing/composition_view.ts`), and a blinking bar inside it is noise. The caret has not
+   *moved* — it has only stopped being drawn (`caret.ts: setCaretBarVisible`) — so the edit a
+   commit lands still knows where the author was. */
 .markdown-caret.markdown-caret-away {
   visibility: hidden;
 }
@@ -284,17 +284,17 @@ body {
 
    Its own height is the other edge of that: a field the system will compose into is taller
    than a line of the page's type, so on the reader's last visible line its box reaches past
-   the editor's bottom edge, over the status bar. Nothing of it may be drawn there — or
-   anywhere — so the ink is transparent, the caret that follows from it is too, and the
-   selection over a marked word is as well (`.markdown-composition-input::selection`): what
-   the system paints in the field is *not* transparent, and that is what the reader could see
-   hanging over the status bar. The field is left exactly where the caret is; moving it up
-   until it fits only moves the problem, because it then paints its own caret on a line above
-   the reader's.
+   the editor's bottom edge, over the status bar. Nothing of it may be drawn there. The ink is
+   transparent and the caret that follows from it is too, but the *selection* over a marked
+   word is not — and WebKit does not honour `::selection` for a textarea's own selection, so it
+   cannot be made transparent that way. Instead the field is drawn inside a box the size of the
+   editor (`.markdown-composition-clip`, placed by `composition_input.ts`), and *that* is what
+   is clipped. The field itself keeps its size and its place: moving it up until it fits only
+   moves the problem, because the system then draws its caret on a line above the reader's.
 
    `pointer-events: none` keeps a click from ever landing in it. */
 .markdown-composition-input {
-  position: fixed;
+  position: absolute;
   width: 6em;
   /* Tall enough to compose in: 18px — one line of the page's own type — got no
      composition at all, while 26px did. */
@@ -309,13 +309,15 @@ body {
   z-index: 0;
 }
 
-/* The selection over the marked word is the one thing in the field that is not transparent: the
-   ink is, the highlight is not, and it was what the reader could see when the caret's own line sat
-   at the editor's bottom edge. Nothing of the field is to be drawn — the reader's place is the
-   editor's caret and the composing text written into the line (`editing/composition_view.ts`). */
-.markdown-composition-input::selection {
-  background-color: transparent;
-  color: transparent;
+/* The editor's own box, as a box the field is drawn inside. What the system paints in the field —
+   the blue of a selected marked word, its caret — is clipped to this, so a field taller than the
+   reader's last line cannot be seen past the editor's bottom edge, over the status bar. It takes
+   no pointer and is never the focus. */
+.markdown-composition-clip {
+  position: fixed;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* The word being composed, written into the line where the reader is typing: the marked

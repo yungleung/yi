@@ -1,15 +1,18 @@
 /**
- * The seam is invisible because it *paints* nothing, and it stays where the caret is.
+ * The seam is drawn inside the editor, and stays where the caret is.
  *
  * The field is a real box — the system will not compose in one as short as a line, which is what
  * `styles.css` records — so on the reader's last visible line its box reaches past the editor's
- * bottom edge and over the status bar. What was seen there was not the box but what the system
- * *paints* in it: the ink is transparent, the caret that follows from it is transparent, and the
- * selection over a marked word was not. Moving the field up until it fits keeps the box inside and
- * costs a second mark — the field's own caret on a line above the reader's, which is what the
- * reader saw next. So the field is left at the caret and made to paint nothing.
+ * bottom edge, over the status bar. Two things were tried and are both wrong on their own: moving
+ * the field up until it fits keeps the box inside but puts the system's own caret on a line above
+ * the reader's (the reader saw two lines), and making it paint nothing does not cover the
+ * selection over a marked word — WebKit does not honour `::selection` for a textarea's own
+ * selection, which is the blue box the reader saw.
  *
- * @covers src/styles.css: `.markdown-composition-input::selection`
+ * So the field keeps its size and its place — the caret's own line and column — and is drawn inside
+ * a box the size of the editor (`.markdown-composition-clip`), which is what is clipped.
+ *
+ * @covers src/ui/markdown/editing/composition_input.ts: measureFrame, followCaret
  */
 (async () => {
   const t = window.__t;
@@ -41,19 +44,20 @@
   const caret = t.caretRect();
   const view = t.scroller().getBoundingClientRect();
   const box = area.getBoundingClientRect();
+  const clip = document.querySelector('.markdown-composition-clip');
+  const clipped = clip?.getBoundingClientRect() ?? null;
   check('the caret is on the line above the bottom edge', caret !== null && caret.y > view.bottom - 60, true);
-  // Not moved: the caret the system draws in the field is then on the reader's own line, which is
-  // what a second mark was.
+  // Not moved: the caret the system draws in the field is then on the reader's own line.
   check('the field is on the caret’s own line', Math.abs(box.top - (caret?.y ?? 0)) <= 1, true);
   check('and on the caret’s own column', Math.abs(box.left - (caret?.x ?? 0)) <= 4, true);
-  // And nothing of it may be drawn. The ink and the caret that follows from it are readable here;
-  // the selection over the marked word is the third, and WebKit reports the same computed value
-  // for that pseudo-element whether its rule is there or not — so it is held by the rule in
-  // `styles.css` rather than by a check that passes either way.
-  check('with nothing of the field drawn', [getComputedStyle(area).color, getComputedStyle(area).caretColor], [
-    'rgba(0, 0, 0, 0)',
-    'rgba(0, 0, 0, 0)'
-  ]);
+  // And what it paints is clipped to the editor: everything the system draws in the field — its
+  // caret, the blue of a selected marked word — is inside a box the size of the editor's own.
+  check('the field is drawn inside the editor’s own box', clipped !== null && clip.contains(area), true);
+  check(
+    'and that box is the editor’s',
+    clipped === null ? null : [Math.round(clipped.top), Math.round(clipped.bottom)],
+    [Math.round(view.top), Math.round(view.bottom)]
+  );
   check('with the marked word drawn in the line', document.querySelector('[data-composing]')?.textContent ?? null, 'nihao');
 
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
