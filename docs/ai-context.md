@@ -365,6 +365,11 @@ Setting those up — the MCP server and CLI that drive the app, and the skills t
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.
 
+**Restart the app on a new branch.** The dev app holds the modules it loaded, and a branch
+change swaps the files under it: what answers a probe is then some mixture of the two branches,
+and a measurement against that says nothing. Restart `npm run tauri dev` on the new branch
+before measuring anything.
+
 ## If you are an AI agent
 
 **Work on a branch, never on `main`.** Every change is made on a branch of its own —

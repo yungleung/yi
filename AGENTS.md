@@ -9,6 +9,10 @@ brief — read it first; this file is the short version and the non-negotiables.
   terminal, `npm run probe -- test/probes/<name>.js` in another. The harness is
   `test/tauri-probe.mjs`; a probe is a single expression returning
   `{ checks, failed }` and using the helpers in `test/probes/lib.js`.
+- **Restart the app after creating a branch.** The dev app is a running process holding the
+  modules it loaded; a branch change swaps the files under it, and what answers a probe is then
+  some mixture of the two. Restart `npm run tauri dev` on the new branch and only then measure —
+  a probe run against a stale app says nothing about the branch.
 - `npm run check` covers pure rules in Node and must stay green; the probes cover
   what a compiler cannot see (caret placement, typing, scrolling, rendering).
 - Measured, a long-running dev app does not degrade: over a whole suite (~15 minutes,
