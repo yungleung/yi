@@ -4,7 +4,7 @@
  *
  * Every block is parsed from its own slice, with the repairs markdown needs to
  * survive block-by-block parsing applied around the parse (see
- * `empty_items.ts`, `footnotes.ts`), and the plugins the editor added
+ * `bare_markers.ts`, `empty_items.ts`, `footnotes.ts`), and the plugins the editor added
  * (citations, wikilinks, description lists) mounted here once.
  *
  * May import: the parser libraries, the remark plugins that extend them, and the
@@ -22,6 +22,7 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
+import { restoreBareMarkers } from './bare_markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
@@ -79,6 +80,7 @@ export function parseMarkdown(markdown: string): Root {
   const tree = parseProcessor.parse(markdown) as Root;
   const root = parseProcessor.runSync(tree) as Root;
   fixDescriptionPositions(root, markdown);
+  restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);
   return root;
 }

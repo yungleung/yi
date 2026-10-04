@@ -15,9 +15,14 @@
 
 import { listItemMarker } from './markers';
 
-/** Whether a raw line is an empty list item, trailing spaces included. */
+/**
+ * Whether a raw line is an empty list item, trailing spaces included.
+ *
+ * The marker's delimiter space is what makes the item: `- ` and `- [ ] ` are empty items, and a
+ * bare `-` is the character itself (`syntax/bare_markers.ts`).
+ */
 export function isBlankItemLine(line: string): boolean {
-  return listItemMarker.test(line.trimEnd());
+  return listItemMarker.test(line);
 }
 
 /** The bounds of the line an offset sits on. */
