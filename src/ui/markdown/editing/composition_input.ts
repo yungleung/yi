@@ -107,9 +107,34 @@ export function installCompositionInput(
   /** The word the method is holding: being composed now, or let go a moment ago. */
   const markedText = (): boolean => composing || performance.now() - committedAt < MOMENT_MS;
 
+  /**
+   * Where the system should open its candidate window: the caret's own box, never moved.
+   *
+   * The field is taller than a line of the page's type — the system refuses to compose in one as
+   * short as a line, which is what `styles.css` records — so on the reader's last visible line it
+   * reaches past the editor's bottom edge. Moving it up until it fits keeps the *box* inside, and
+   * costs a second mark: what the system paints in the field is not transparent, and a field moved
+   * up paints its own caret on a line of its own, above the reader's (measured, and the reader saw
+   * two of them). The field therefore stays exactly where the caret is, and it is made to paint
+   * nothing at all — a transparent selection over transparent ink (`styles.css`).
+   */
+  const followCaret = () => {
+    const box = caretBox();
+    if (!box) {
+      element.style.left = '-1000px';
+      element.style.top = '-1000px';
+      return;
+    }
+    element.style.left = `${box.left}px`;
+    element.style.top = `${box.top}px`;
+  };
+
   /** Draws what the method has marked so far, at the caret it is being written at. */
   const drawMarked = (): void => {
     view.show(element.value, getCaretRange());
+    // The field has to be where the system will draw that word, and it is only placed again on a
+    // caret move otherwise.
+    followCaret();
   };
 
   element.addEventListener('compositionstart', () => {
@@ -218,19 +243,6 @@ export function installCompositionInput(
     element.focus({ preventScroll: true });
   });
 
-  /** Where the system should open its candidate window: the caret's own box. */
-  const followCaret = () => {
-    const box = caretBox();
-    if (!box) {
-      element.style.left = '-1000px';
-      element.style.top = '-1000px';
-      return;
-    }
-    // The seat, not the size: the box's height is the stylesheet's, because the system
-    // refuses to compose in one as short as a line of the page's type (see `styles.css`).
-    element.style.left = `${box.left}px`;
-    element.style.top = `${box.top}px`;
-  };
   onCaretRangeChanged(followCaret);
   host.addEventListener('scroll', followCaret);
   followCaret();

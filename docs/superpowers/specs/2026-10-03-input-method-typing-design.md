@@ -324,6 +324,35 @@ after the hand-back reads `229` with `composing` true and opens a composition. `
 back the way an edit does. `test/probes/input-method-undo.js` holds the half a probe can see — the seat
 blurs and takes the keyboard again — and fails without the change.
 
+### The field that could be seen
+
+Found twice, and the second report is what settled it.
+
+First: with the typing line right above the status bar, the hidden field was observable. The seam
+is a real box — the system will not compose in one as short as a line, so it is taller than one —
+and it sits at the caret, so on the reader's last visible line its bottom edge reached past the
+editor's: measured, **21px below** the scroller's bottom, over the status bar. Everything the field
+*draws* is transparent by measurement, but what the *system* paints in it is not — its own caret,
+the selection over the marked word — and that is what was on show.
+
+The first answer moved the field up until it fitted, and the reader found the second: **two
+vertical lines** at the caret. Moving the field moves the problem, because the system's caret is
+drawn *in* the field: 21px above the reader's line is a field whose caret is drawn 21px above the
+text — a mark of its own, beside the one the editor hides while a word is composed.
+
+So the field stays exactly where the caret is, and is made to paint nothing at all: transparent ink
+(which is what the caret takes its colour from, and what the earlier measurement found), and a
+transparent selection over the marked word (`.markdown-composition-input::selection`) — the one
+thing in it that was not transparent. Keeping it *there* also keeps it out of the layout's way: an
+earlier version that read the editor's box on every caret move broke `typed-text.js`, which counts
+the layout a plain letter reads, and the answer has to be none.
+
+`test/probes/input-method-seam-box.js` walks the caret down to that line and composes there,
+holding what is readable: the field is on the caret's own line and column, and nothing of it is
+drawn. The selection's own rule is not readable from the computed pseudo-style — WebKit reports the
+same value with and without it — so that half is the rule in `styles.css` rather than a check that
+would pass either way.
+
 ### A word composed on a new line
 
 Found by the reader: Enter at the end of the document, then type pinyin — the line, and the word, vanish.

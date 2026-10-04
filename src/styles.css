@@ -282,6 +282,16 @@ body {
    transparent anyway (the ink is), but a declared one makes WebKit refuse the composition
    as well. What the reader sees is the editor's own caret, which never moves.
 
+   Its own height is the other edge of that: a field the system will compose into is taller
+   than a line of the page's type, so on the reader's last visible line its box reaches past
+   the editor's bottom edge, over the status bar. Nothing of it may be drawn there — or
+   anywhere — so the ink is transparent, the caret that follows from it is too, and the
+   selection over a marked word is as well (`.markdown-composition-input::selection`): what
+   the system paints in the field is *not* transparent, and that is what the reader could see
+   hanging over the status bar. The field is left exactly where the caret is; moving it up
+   until it fits only moves the problem, because it then paints its own caret on a line above
+   the reader's.
+
    `pointer-events: none` keeps a click from ever landing in it. */
 .markdown-composition-input {
   position: fixed;
@@ -297,6 +307,15 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+}
+
+/* The selection over the marked word is the one thing in the field that is not transparent: the
+   ink is, the highlight is not, and it was what the reader could see when the caret's own line sat
+   at the editor's bottom edge. Nothing of the field is to be drawn — the reader's place is the
+   editor's caret and the composing text written into the line (`editing/composition_view.ts`). */
+.markdown-composition-input::selection {
+  background-color: transparent;
+  color: transparent;
 }
 
 /* The word being composed, written into the line where the reader is typing: the marked
