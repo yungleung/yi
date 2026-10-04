@@ -193,8 +193,9 @@ height remembered against it.
    composition: what an input method, dictation or the emoji panel commits is inserted through
    the same text path as typing, as one edit of its own
    (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
-   syllable — is drawn where the reader is writing it (`editing/composition_view.ts`): an overlay
-   at the caret, not part of the page, because none of those characters is in the document yet.
+   syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
+   a span at the caret, marked `data-composing` so the offsets step over it, because none of those
+   characters is in the document yet.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).

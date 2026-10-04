@@ -209,9 +209,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // The system's way in: an input method's word, dictation and the emoji panel get
     // something to compose and arrive in, and what they commit is one edit of its own
     // (see `editing/composition_input.ts` and `editing/text_commands.ts: insertCommitted`).
-    this.composition = installCompositionInput(this.contentView, (text) => {
-      insertCommitted(this.context, text);
-    });
+    this.composition = installCompositionInput(
+      this.contentView,
+      (text) => {
+        insertCommitted(this.context, text);
+      },
+      // The word being composed is written into the line, so the block it lands in can grow
+      // under it: measured again, or the spacers below would be short by the line it gained.
+      (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
+    );
 
     // Keep the editor's selection state in sync with the native DOM selection
     // (the rendered text is selectable by dragging).

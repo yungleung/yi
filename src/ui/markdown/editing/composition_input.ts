@@ -12,9 +12,10 @@
  * hand that word to the caller, which writes it into the document as one edit
  * (`text_commands.ts: insertCommitted`).
  *
- * What the method has marked so far is *drawn* — the pinyin, the kana, the syllable —
- * where the reader is writing it (`composition_view.ts`). The field itself stays
- * invisible, because the system composes only into a field it can see.
+ * What the method has marked so far is *written into the line* — the pinyin, the kana, the
+ * syllable — where the reader is typing it, so the words after it move along the way they
+ * do in a system text field (`composition_view.ts`). The field itself stays invisible,
+ * because the system composes only into a field it can see.
  *
  * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`) and that view. Upholds:
  * the document text is the only source of truth — nothing is written while a word is
@@ -23,7 +24,7 @@
 
 import { getCaretRange, onCaretRangeChanged } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
-import { createCompositionView, type ComposeBox } from './composition_view';
+import { createCompositionView } from './composition_view';
 
 /** What the editor holds while the seam's element is in the DOM. */
 export interface CompositionInput {
@@ -52,7 +53,8 @@ const CONTROLS = 'input, textarea, select, [contenteditable=""], [contenteditabl
  */
 export function installCompositionInput(
   host: HTMLElement,
-  onCommit: (text: string) => void
+  onCommit: (text: string) => void,
+  onLayoutChanged: (block: HTMLElement) => void
 ): CompositionInput {
   const element = document.createElement('textarea');
   element.className = 'markdown-composition-input';
@@ -66,7 +68,9 @@ export function installCompositionInput(
   let composing = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
-  const view = createCompositionView(host);
+  // The composing text is written into the line at the caret, and the block it lands in has
+  // to be measured again — a longer word can wrap the line (see `composition_view.ts`).
+  const view = createCompositionView(onLayoutChanged);
 
   /** Takes the value the system left and hands it over; an empty one commits nothing. */
   const commit = () => {
@@ -80,18 +84,15 @@ export function installCompositionInput(
     onCommit(text);
   };
 
-  /** Where the composing text goes: the caret's own box, which is the seam's too. */
-  const caretBox = (): ComposeBox | null => {
+  /** Where the caret is, which is where the seam sits and the candidate window opens. */
+  const caretBox = () => {
     const range = getCaretRange();
     return range ? caretRect(range) : null;
   };
 
-  /** Draws what the method has marked so far, if there is a caret to draw it at. */
+  /** Draws what the method has marked so far, at the caret it is being written at. */
   const drawMarked = (): void => {
-    const box = caretBox();
-    if (box) {
-      view.show(element.value, box);
-    }
+    view.show(element.value, getCaretRange());
   };
 
   element.addEventListener('compositionstart', () => {
@@ -210,8 +211,6 @@ export function installCompositionInput(
     // refuses to compose in one as short as a line of the page's type (see `styles.css`).
     element.style.left = `${box.left}px`;
     element.style.top = `${box.top}px`;
-    // The composing text stands where the caret does, so it moves with it.
-    view.place(box);
   };
   onCaretRangeChanged(followCaret);
   host.addEventListener('scroll', followCaret);

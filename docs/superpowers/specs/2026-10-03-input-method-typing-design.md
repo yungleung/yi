@@ -33,13 +33,16 @@ own type, with the usual compose underline, at the caret. The first version of t
 nothing and left the whole of it to the system's candidate window; using it settled that, for a
 method whose marked text is the pinyin, the reader is owed the characters they are typing.
 
-It is an overlay, not part of the page: the marked text is not in the document, and a block's
-rendering is a function of its own source, so the composing text is a surface the editing layer
-owns (like the caret) drawn *over* the line. The cost is stated where the choice was made — the
-text after the caret is not pushed aside while a word is being chosen — and the alternative
-(putting the composing text into the line's own layout) is what would give that up: it would stop a
-block's rendering from being a pure function of its source, and move the block's height, and
-everything below it, mid-word.
+The marked text is not in the document, and a block's rendering is a function of its own source, so
+the composing text is a surface the editing layer owns, like the caret — and *where* it is written
+took a second try. Drawn as an overlay at the caret it covers the words after it, which a reader
+writing in the middle of a line sees at once; so it is written **into the line** instead — a span
+at the caret, in the page's own type and scale, with the words after it moving along exactly as
+they do in a system text field. What that costs is stated where it is paid: the span is not the
+document's text, so the offsets mapping steps over it (`data-composing`, `caret/offsets.ts`), the
+block it lands in is measured again because a longer word can wrap the line
+(`virtual_block_renderer.ts: measureEditedBlock`), and the span is taken out — with the text node
+it was cut out of joined again — before anything is written.
 
 ## Design
 
@@ -140,9 +143,9 @@ while composing is not theirs.
 
 ### 5. What this does not do
 
-- **No composing text in the document, and no reflow**: what the method has marked is an overlay
-  (`composition_view.ts`) — the line does not move under it, and the system's candidate window is
-  still where a candidate is chosen.
+- **No composing text in the document**: what the method has marked is written into the line to be
+  seen (`composition_view.ts`), the line moves to make room for it, and the system's candidate
+  window is still where a candidate is chosen.
 - **No per-keystroke document edits**: nothing is written into the file or the undo log until a word
   commits.
 - **Nothing for the app's own fields** — the find bar, the settings, the cards' inputs are real

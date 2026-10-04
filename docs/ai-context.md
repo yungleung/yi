@@ -296,8 +296,11 @@ never with `opacity: 0` — macOS composes only into a field it can see, and `st
 the system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with
 a probe that holds that shape. What the method has *marked* is drawn instead where the reader is
 writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
-type at the caret and underlined, over the line rather than in it, so the page does not reflow while
-a word is being chosen. Three facts follow from the seam: a *document* selection is one inside
+type at the caret and underlined, *in* the line so the words after the caret move along. That span
+is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
+over it (`caret/offsets.ts`), the block it lands in is measured again because a longer word can wrap
+the line, and it is taken out — the text node joined again — before the word commits. Three facts
+follow from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and
