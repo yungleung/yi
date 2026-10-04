@@ -43,6 +43,10 @@ brief — read it first; this file is the short version and the non-negotiables.
 - **Never commit to `main`.** Every change is made on a branch of its own — `codex/<slug>`
   unless told otherwise — and lands on `main` by a merge, so a feature or a fix is
   reviewable as one thing and `main` only ever moves by a merge.
+- **Never merge without being asked.** Committing is part of the work: write the change, prove
+  it, and commit it on the branch. Landing it on `main` is the maintainer's call — a merge waits
+  for them to ask for it, in that turn. What is reported before that is what changed, which test
+  fails without it, and what was measured.
 - Behaviour changes need a test that fails without them; say which one proves it.
 - Commit style: `type(scope): subject`, lower case, imperative.
 - Update `docs/ai-context.md` when a rule, path or command changes — it is the entry

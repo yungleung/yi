@@ -364,6 +364,10 @@ under *AI agents*.
 `codex/<slug>` unless told otherwise — and lands on `main` by a merge, so the whole of a feature
 or a fix is reviewable as one thing and `main` only ever moves by a merge.
 
+**Merge only when asked to.** Committing is part of the work — the change is proved and committed
+on its branch — but landing it on `main` waits for the maintainer to ask, in that turn. What is
+reported before that merge is what changed, which test fails without it and what was measured.
+
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
