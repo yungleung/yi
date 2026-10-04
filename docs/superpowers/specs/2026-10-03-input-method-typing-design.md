@@ -33,13 +33,16 @@ own type, with the usual compose underline, at the caret. The first version of t
 nothing and left the whole of it to the system's candidate window; using it settled that, for a
 method whose marked text is the pinyin, the reader is owed the characters they are typing.
 
-It is an overlay, not part of the page: the marked text is not in the document, and a block's
-rendering is a function of its own source, so the composing text is a surface the editing layer
-owns (like the caret) drawn *over* the line. The cost is stated where the choice was made — the
-text after the caret is not pushed aside while a word is being chosen — and the alternative
-(putting the composing text into the line's own layout) is what would give that up: it would stop a
-block's rendering from being a pure function of its source, and move the block's height, and
-everything below it, mid-word.
+The marked text is not in the document, and a block's rendering is a function of its own source, so
+the composing text is a surface the editing layer owns, like the caret — and *where* it is written
+took a second try. Drawn as an overlay at the caret it covers the words after it, which a reader
+writing in the middle of a line sees at once; so it is written **into the line** instead — a span
+at the caret, in the page's own type and scale, with the words after it moving along exactly as
+they do in a system text field. What that costs is stated where it is paid: the span is not the
+document's text, so the offsets mapping steps over it (`data-composing`, `caret/offsets.ts`), the
+block it lands in is measured again because a longer word can wrap the line
+(`virtual_block_renderer.ts: measureEditedBlock`), and the span is taken out — with the text node
+it was cut out of joined again — before anything is written.
 
 ## Design
 
@@ -140,9 +143,9 @@ while composing is not theirs.
 
 ### 5. What this does not do
 
-- **No composing text in the document, and no reflow**: what the method has marked is an overlay
-  (`composition_view.ts`) — the line does not move under it, and the system's candidate window is
-  still where a candidate is chosen.
+- **No composing text in the document**: what the method has marked is written into the line to be
+  seen (`composition_view.ts`), the line moves to make room for it, and the system's candidate
+  window is still where a candidate is chosen.
 - **No per-keystroke document edits**: nothing is written into the file or the undo log until a word
   commits.
 - **Nothing for the app's own fields** — the find bar, the settings, the cards' inputs are real
@@ -292,6 +295,47 @@ pointer gesture at all** — a dispatched click, or a field that has held the ke
 pause — the first key is still delivered to the page, and this machine reproduces it
 intermittently behind an `osascript` activation. Every path a reader's hand actually takes (a click
 on text, a click on empty space) goes through the gesture above.
+
+### The Backspace that emptied the word
+
+Found by the reader: with `你好` in the document and `zhongguo` being composed, pressing Backspace
+until the last letter takes 好 out of the document with it — and the same inside an English word,
+which is the same event with a different word around it. A key that edits the marked word is the
+input method's: while the word is marked it takes a letter off *it*, and the key that takes the
+**last** one arrives with the composition already over and nothing on it to say so (`isComposing`
+false, `keyCode` 8, no `229`). Read as the editor's, it deletes the character before the caret in
+the document.
+
+So the seam answers the question the event cannot: `composition_input.ts: markedText` is true while
+a word is marked and for a moment after one is let go — the same 50 ms (`MOMENT_MS`) the space that
+chose a candidate already needed, both being a composition's own key delivered once more when it is
+over — and `handleKeydown` leaves a Backspace to the method while it is true. Nothing else moved: a
+Backspace of the reader's own, with no word in flight, still deletes. `test/probes/input-method-backspace.js`
+holds all three, and fails without the change (`你好` came back as `你`, then as nothing).
+
+### The undo that left the keyboard behind
+
+Found by the reader: commit `你好`, press ⌘Z, type pinyin — and the first letter goes in as Latin. An undo
+is a change like any other, but it is not an *edit*: it never goes through `applyEdit`, so it never reached
+`onChanged`, and nothing handed the keyboard back (`markdown_editor.ts: applyHistory` announced the change
+to the session and stopped there). A field that keeps a stale input context is not in the input method: the
+key log reads `keydown 'n' keyCode 78 isComposing false` — typed by the editor — where the same keystroke
+after the hand-back reads `229` with `composing` true and opens a composition. `applyHistory` now hands it
+back the way an edit does. `test/probes/input-method-undo.js` holds the half a probe can see — the seat
+blurs and takes the keyboard again — and fails without the change.
+
+### A word composed on a new line
+
+Found by the reader: Enter at the end of the document, then type pinyin — the line, and the word, vanish.
+The word being composed is written *into* the line, and a blank line is drawn as a placeholder rather than
+characters: inserting at the very start of its text node — which is exactly where that caret is — split the
+node at 0 and left an empty text node behind. Joining the halves again moves a caret anchored in an empty
+node to the *element*, and an element-anchored caret inside a text leaf is a position
+`caret/offsets.ts: documentOffsetAt` cannot read (the commit path's own log: `no offsets`, the caret's
+parent `markdown-empty-line`). So the commit wrote nothing at all. The composing span now goes *beside* a
+text node when the caret is at its edge, and only splits inside one.
+`test/probes/input-method-blank-line.js` holds both edges — a line the reader has just made, and the end of
+a written one — and fails without the change (`hello\n\n你\n` came back `hello\n\n`).
 
 ### The ghost after ⌘Z
 

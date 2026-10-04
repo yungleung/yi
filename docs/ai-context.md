@@ -296,8 +296,17 @@ never with `opacity: 0` — macOS composes only into a field it can see, and `st
 the system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with
 a probe that holds that shape. What the method has *marked* is drawn instead where the reader is
 writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
-type at the caret and underlined, over the line rather than in it, so the page does not reflow while
-a word is being chosen. Three facts follow from the seam: a *document* selection is one inside
+type at the caret and underlined, *in* the line so the words after the caret move along. That span
+is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
+over it (`caret/offsets.ts`), the block it lands in is measured again because a longer word can wrap
+the line, and it is taken out — the text node joined again — before the word commits. A key that
+edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
+marked and for the moment after one is let go, because the key that emptied the word arrives with
+the composition already over (`composition_input.ts: markedText`;
+`test/probes/input-method-backspace.js`). And the keyboard comes back to the seam after every change that
+moves the caret — an edit, a click, and an *undo*, which is a change that never goes through `applyEdit`
+and so had its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Three facts
+follow from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and
@@ -357,6 +366,11 @@ npm run fixtures                        # refresh the fixture workspace
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.
+
+**Restart the app on a new branch.** The dev app holds the modules it loaded, and a branch
+change swaps the files under it: what answers a probe is then some mixture of the two branches,
+and a measurement against that says nothing. Restart `npm run tauri dev` on the new branch
+before measuring anything.
 
 ## If you are an AI agent
 

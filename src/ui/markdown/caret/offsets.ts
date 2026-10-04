@@ -201,10 +201,22 @@ function textOffsetInElement(
     const range = document.createRange();
     range.selectNodeContents(element);
     range.setEnd(container, Math.min(offset, container.childNodes.length));
-    return range.toString().length;
+    let length = range.toString().length;
+    // The word being composed is written into the line to be seen, and none of its
+    // characters is in the document: it is stepped over here so that no offset in the block
+    // is shifted by it (see `editing/composition_view.ts`).
+    for (const composing of element.querySelectorAll('[data-composing]')) {
+      if (range.intersectsNode(composing)) {
+        length -= composing.textContent?.length ?? 0;
+      }
+    }
+    return length;
   }
   let acc = 0;
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) =>
+      isComposing(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
   let node: Node | null;
   while ((node = walker.nextNode())) {
     if (node === container) {
@@ -213,6 +225,12 @@ function textOffsetInElement(
     acc += (node as Text).data.length;
   }
   return null;
+}
+
+/** Whether this text is the word an input method is composing, which the document has not. */
+function isComposing(node: Node): boolean {
+  const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
+  return (parent?.closest('[data-composing]') ?? null) !== null;
 }
 
 /**

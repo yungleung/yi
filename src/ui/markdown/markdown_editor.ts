@@ -209,9 +209,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // The system's way in: an input method's word, dictation and the emoji panel get
     // something to compose and arrive in, and what they commit is one edit of its own
     // (see `editing/composition_input.ts` and `editing/text_commands.ts: insertCommitted`).
-    this.composition = installCompositionInput(this.contentView, (text) => {
-      insertCommitted(this.context, text);
-    });
+    this.composition = installCompositionInput(
+      this.contentView,
+      (text) => {
+        insertCommitted(this.context, text);
+      },
+      // The word being composed is written into the line, so the block it lands in can grow
+      // under it: measured again, or the spacers below would be short by the line it gained.
+      (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
+    );
 
     // Keep the editor's selection state in sync with the native DOM selection
     // (the rendered text is selectable by dragging).
@@ -424,6 +430,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // is about the character and not about 229 alone (see
     // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
     if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
+      return;
+    }
+    // A Backspace that edits the word being composed is the input method's: while the word is
+    // marked, it takes a letter off *it*. The key that takes the last one arrives with the
+    // composition already over and nothing on it to say so, and read as the editor's it
+    // deletes the character before the caret in the *document* — measured by the reader: `你好`
+    // with `zhongguo` being composed lost 好, and the same happens inside an English word,
+    // which is the same event with a different word around it.
+    if (event.key === 'Backspace' && this.composition.markedText()) {
       return;
     }
     // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and
@@ -642,6 +657,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // scrolls a focused element or a synchronised selection into view just the
     // same: keep the reader where they were.
     keepScroll(this.context, anchor);
+    // An undo that leaves a *caret* hands the keyboard back the way an edit does — this path
+    // never went through `onChanged`, so nothing did it before, and a field that keeps a stale
+    // input context is not in the input method: measured by the reader, the first letter typed
+    // after ⌘Z arrived as a Latin keystroke (`keyCode` 78, not `229`) and went into the
+    // document. A *selection* is not a caret and is kept: a focus change would drop it, which
+    // is `regainKeyboard`'s own rule — asked here rather than there because the highlight it
+    // would drop is painted a frame later (`context.ts: restoreSelection`).
+    if (target.from === target.to) {
+      this.composition.regainKeyboard();
+    }
     // An undo is a change like any other: whatever keeps a copy of the document has to hear it.
     void eventManager.emit(EDITOR_EDITED);
   }
