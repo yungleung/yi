@@ -80,6 +80,54 @@ export function isDelimiterLine(line: string): boolean {
   return /^ {0,3}(?:`{3,}|~{3,})/.test(line) || /^ {0,3}\$\$\s*$/.test(line);
 }
 
+/** A block's lines, with the offset each starts at. A trailing newline makes no line of its own. */
+function blockLines(text: string): Array<{ start: number; text: string }> {
+  const lines: Array<{ start: number; text: string }> = [];
+  let cursor = 0;
+  for (;;) {
+    const breakAt = text.indexOf('\n', cursor);
+    const end = breakAt < 0 ? text.length : breakAt;
+    lines.push({ start: cursor, text: text.slice(cursor, end) });
+    if (breakAt < 0 || breakAt + 1 >= text.length) {
+      return lines;
+    }
+    cursor = breakAt + 1;
+  }
+}
+
+/**
+ * The body of a fenced block — the lines between its delimiter lines — as a block-relative range.
+ *
+ * The delimiters are never drawn: the body is what the block shows, and the caret maps through the
+ * body's own characters (`caret/offsets.ts`), so this is the one place that says where it begins
+ * and ends. Its end carries the last content line's newline, which is what gives a caret there —
+ * and the line Enter makes at it — somewhere to be. An unclosed fence's last line is content
+ * rather than a delimiter, so there the body runs to the end of the block.
+ */
+export function fenceBody(text: string): { start: number; end: number } {
+  const lines = blockLines(text);
+  const first = lines[0];
+  if (first === undefined) {
+    return { start: 0, end: 0 };
+  }
+  const start = Math.min(first.start + first.text.length + 1, text.length);
+  const last = lines[lines.length - 1];
+  const closes =
+    lines.length > 1 &&
+    (isDelimiterLine(last.text) || frontmatterDelimiter(last.text) !== null);
+  return { start, end: Math.max(start, closes ? last.start : text.length) };
+}
+
+/** The language a fence names — `` ```js `` → `js` — or the empty string when it names none. */
+export function fenceLanguage(line: string): string {
+  const fence = openingFence(line);
+  if (fence === null) {
+    return '';
+  }
+  const info = line.slice(line.indexOf(fence) + fence.length).trim();
+  return info === '' ? '' : info.split(/\s+/)[0];
+}
+
 /** Line starts that cannot continue the paragraph above them. */
 export const blockStartPattern =
   /^\s*(?:[-+*]|\d+[.)])\s|^\s*:\s|^\s*#{1,6}\s|^\s*(?:```|~~~|\$\$)/;

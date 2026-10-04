@@ -2,10 +2,10 @@
  * Block component factory — the block-level counterpart of `create_node.ts`.
  * The virtual renderer composes these individual block elements.
  *
- * May import: the document's blocks, the node registry, the caret and
- * `source_mode.ts`. Upholds: a block's rendering is a pure function of its own
- * source — the component is built from the block's slice, and the block's line
- * range is tagged on it for everything that maps back.
+ * May import: the document's blocks, the node registry, the caret, `source_mode.ts`, the fenced
+ * block's body and the three highlighters. Upholds: a block's rendering is a pure function of its
+ * own source — the component is built from the block's slice, and the block's line range is tagged
+ * on it for everything that maps back.
  */
 
 import type { BlockNode } from './document/blocks';
@@ -13,8 +13,11 @@ import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
-import { Frontmatter } from './nodes/frontmatter';
-import { SourceText } from './nodes/source_text';
+import { FenceBody } from './nodes/fence_body';
+import { highlightCode } from './nodes/code_highlight';
+import { highlightFrontmatter } from './nodes/frontmatter_highlight';
+import { highlightLatex } from './nodes/latex_highlight';
+import { fenceLanguage } from './syntax/markers';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -45,8 +48,8 @@ class BlockView implements BlockComponent {
     // inside it can tell whether its own source is the one being shown (see
     // `source_mode.ts`).
     this.element = withRenderFrame(node, () =>
-      node.kind === 'frontmatter'
-        ? this.renderFrontmatter(node)
+      node.kind === 'frontmatter' || node.kind === 'fencedCode'
+        ? this.renderFenceBody(node)
         : node.kind === 'blank'
           ? this.renderBlank(node)
           : isSourceBlock(node)
@@ -56,13 +59,19 @@ class BlockView implements BlockComponent {
   }
 
   /**
-   * The block's own text, shown while the caret is inside it: the block is
-   * built in whichever shape `source_mode.ts` names, and this is the one a
-   * rendered view cannot hold a caret in.
+   * The block's own text, shown while the caret is inside it: the block is built in whichever shape
+   * `source_mode.ts` names, and this is the one a rendered view cannot hold a caret in. A display
+   * formula's text is its body, delimiters hidden, like the other two fenced blocks.
    */
   private renderSourceText(node: BlockNode): HTMLElement {
     const element = this.container(node);
-    element.appendChild(new SourceText(node).element);
+    element.appendChild(
+      new FenceBody(node, {
+        className: 'markdown-source-text overflow-x-auto',
+        language: 'latex',
+        highlight: highlightLatex
+      }).element
+    );
     return element;
   }
 
@@ -102,12 +111,29 @@ class BlockView implements BlockComponent {
     return element;
   }
 
-  private renderFrontmatter(node: BlockNode): HTMLElement {
-    // The block is shown as its own source at all times, and it is a node like any other:
-    // a click in it lands on the character clicked and a keystroke writes there (see
-    // `nodes/frontmatter.ts`).
+  /**
+   * A fenced block's body, its delimiters hidden: what a fenced code block and a frontmatter block
+   * show at all times, and what a display formula shows while the caret is inside it.
+   *
+   * The body is the block's own characters — a node like any other, so a click lands on the
+   * character clicked and a keystroke writes there — highlighted in the language the fence named,
+   * or the block's own format, or LaTeX (see `nodes/fence_body.ts`).
+   */
+  private renderFenceBody(node: BlockNode): HTMLElement {
     const element = this.container(node);
-    element.appendChild(new Frontmatter(node).element);
+    const fence = node.kind === 'frontmatter';
+    const language = fence
+      ? (node.format ?? 'yaml')
+      : fenceLanguage(firstLine(node.text));
+    element.appendChild(
+      new FenceBody(node, {
+        className: fence ? 'markdown-frontmatter overflow-x-auto' : 'markdown-fenced-code overflow-x-auto',
+        language,
+        highlight: fence
+          ? (source: string) => highlightFrontmatter(source, node.format ?? 'yaml')
+          : (source: string) => highlightCode(source, language)
+      }).element
+    );
     return element;
   }
 
@@ -121,4 +147,10 @@ class BlockView implements BlockComponent {
     element.dataset.charStart = String(node.charStart);
     return element;
   }
+}
+
+/** A block's first line, where a fence names its language. */
+function firstLine(text: string): string {
+  const breakAt = text.indexOf('\n');
+  return breakAt < 0 ? text : text.slice(0, breakAt);
 }

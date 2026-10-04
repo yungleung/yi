@@ -1,9 +1,10 @@
 /**
  * The same keystroke in both kinds of block: a space at the end of a line.
  *
- * A fenced code block and a display formula being edited are both the raw text
- * of the block, so the two should behave alike: the space reaches the document,
- * shows in what is rendered, and leaves the caret after it.
+ * A fenced code block and a display formula being edited are both the block's own
+ * body — its delimiters hidden, as they are in frontmatter too — so the two should
+ * behave alike: the space reaches the document, shows in what is rendered, and
+ * leaves the caret after it.
  */
 (async () => {
   const t = window.__t;
@@ -30,7 +31,7 @@
   check(
     'the formula shows its own text',
     t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
-    '$$\n\\frac{a}{b}\n$$'
+    '\\frac{a}{b}\n'
   );
   t.key(' ');
   await t.sleep(300);
@@ -42,8 +43,8 @@
   checks.push({
     name: 'and the space shows in the source',
     actual: t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
-    expected: '$$\n\\frac{a}{b} \n$$',
-    pass: (t.prose().querySelector('.markdown-source-text')?.textContent ?? null) === '$$\n\\frac{a}{b} \n$$'
+    expected: '\\frac{a}{b} \n',
+    pass: (t.prose().querySelector('.markdown-source-text')?.textContent ?? null) === '\\frac{a}{b} \n'
   });
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

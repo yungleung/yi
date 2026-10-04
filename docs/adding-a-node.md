@@ -203,8 +203,9 @@ that assigns the kind, and two tables that say what the renderer may do with it:
   instead, and the caret has nothing to sit on.
 
 The invariants above apply here too: a block kind whose text stands in for its view
-is tagged as the block's own text from offset `0` (`nodes/source_text.ts`), which is
-what makes a keystroke inside it exact. And the renderer keys an element by its
+is tagged with the offset of the text it shows (`nodes/fence_body.ts` — the *body* of
+a fenced block, delimiters hidden, for all three of them), which is what makes a
+keystroke inside it exact. And the renderer keys an element by its
 content *and* by the shape it was built in — for a block, the shape comes from
 `source_mode.ts: shownSourceWithinBlock` (`virtual_block_renderer.ts: renderKey`) —
 so a kind that can render two ways has to go through that, or the text and the view
