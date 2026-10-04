@@ -649,6 +649,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * The language the reader chose for a fenced code block: the opening fence's own line, and
    * nothing else, replaced in one edit (`syntax/fence_edits.ts: fenceLanguageEdit`). The body is
    * the author's text and is left exactly as it stands.
+   *
+   * The reader's caret is in that body — they are about to write the code — and the fence's own
+   * line is not a place the rendering holds a caret, since the delimiters are hidden. So the caret
+   * keeps its place below, moved by the length the choice added or took away, rather than landing
+   * where the edit ends and being dropped for good.
    */
   private changeFenceLanguage(lineStart: number, language: string): void {
     const block = this.state.getBlockAtLine(lineStart);
@@ -656,7 +661,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (block === null || edit === null) {
       return;
     }
-    applyEdit(this.context, block.charStart + edit.from, block.charStart + edit.to, edit.replacement);
+    const from = block.charStart + edit.from;
+    const to = block.charStart + edit.to;
+    const caret = caretOffset(this.context);
+    const delta = edit.replacement.length - (edit.to - edit.from);
+    const target =
+      caret === null || (caret >= from && caret < to)
+        ? undefined
+        : caret > to
+          ? caret + delta
+          : caret;
+    applyEdit(this.context, from, to, edit.replacement, target);
   }
 
   /** Undo/redo keeps the caret at the same document offset when it can. */

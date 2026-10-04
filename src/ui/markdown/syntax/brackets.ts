@@ -56,6 +56,12 @@ export function pairingFor(
   if (closing === undefined || literal) {
     return null;
   }
+  // A key that closes itself, typed straight after one of its own kind, is the author writing a run
+  // of the character — a run of backticks is a code fence (`syntax/markers.ts`), and a closer the
+  // app added would make the run one character longer than the keystrokes that wrote it.
+  if (key === closing && text[caret - 1] === key) {
+    return { from: caret, to: caret, insert: key, caret: caret + 1 };
+  }
   // The character at the caret is this pair's closer, put there with its opener by a pair the app
   // wrote earlier. A second opener means a pair *in front of* that closer — which is what makes
   // `[[` two pairs, `[[]]`, and not one and a half. A key that closes itself is already that

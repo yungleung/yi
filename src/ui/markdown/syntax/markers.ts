@@ -24,13 +24,25 @@ export function openingFence(line: string): string | null {
   return match ? match[1] : null;
 }
 
-/** The list marker info when the line starts a list item, or null. */
+/**
+ * The list marker info when the line starts a list item, or null.
+ *
+ * The marker's delimiter space is part of it: `- ` opens an item, and a bare `-` is the character
+ * itself, which is why the space is required here (see `bareMarkerLine` and
+ * `syntax/bare_markers.ts`).
+ */
 export function listMarker(line: string): { indent: number; ordered: boolean } | null {
-  const match = /^( {0,3})([-*+]|\d+[.)])(?:\s+|$)/.exec(line);
+  const match = /^( {0,3})([-*+]|\d+[.)])\s+/.exec(line);
   if (!match) {
     return null;
   }
   return { indent: match[1].length, ordered: /^\d/.test(match[2]) };
+}
+
+/** The fence delimiter a line holds when it is nothing but one: ` ``` `, `~~~`, `$$` or `---`. */
+export function soleDelimiter(line: string): string | null {
+  const match = /^ {0,3}(`{3,}|~{3,}|\$\$|---)$/.exec(line.trimEnd());
+  return match ? match[1] : null;
 }
 
 /**
@@ -69,8 +81,14 @@ export function closingFence(line: string, marker: string): boolean {
   return /^(`{3,}|~{3,})$/.test(trimmed);
 }
 
-/** A bare bullet, ordered or task marker — `[ ]`/`[x]` is part of it. */
-export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])(?:\s+\[[ xX]\])?$/;
+/**
+ * An empty list item's own line: a bullet, ordered or task marker with nothing but the
+ * delimiter space after it — `[ ]`/`[x]` is part of it.
+ */
+export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\])?\s*$/;
+
+/** A line holding a list marker with nothing after it, not even the delimiter's own space. */
+export const bareMarkerLine = /^ {0,3}(?:[-+*]|\d+[.)])$/;
 
 /** The marker a thematic break is written with, on a line of its own. */
 export const thematicBreakMarker = '---';

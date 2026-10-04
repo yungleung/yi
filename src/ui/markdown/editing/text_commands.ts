@@ -33,8 +33,9 @@ import {
 import { isFenced, isRawRendered } from '../document/blocks';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
-import { pairAround, pairingFor, skipClosingFor } from '../syntax/brackets';
+import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
 import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
+import { insertFenceOpen } from './fence_open';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -88,6 +89,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   }
   // A bracket writes its pair where prose is being written — not inside a code block or a
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
+  let pair: BracketEdit | null = null;
   if (brackets && offsets.from === offsets.to) {
     const literal = block?.kind === 'fencedCode' || block?.kind === 'displayMath';
     const source = context.state.getText();
@@ -96,11 +98,22 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
       placeCaret(context, offsets.from + 1);
       return true;
     }
-    const pair = pairingFor(source, offsets.from, text, literal);
-    if (pair) {
-      applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
-      return true;
-    }
+    pair = pairingFor(source, offsets.from, text, literal);
+  }
+  // What a delimiter line becomes when the write completes it: the fenced block it names, both
+  // delimiter lines at once (`editing/fence_open.ts`). The pair a backtick writes counts — ` `` `
+  // plus the pair is a fence's ` ``` ` — so the rule sees what would be written, not the key alone.
+  if (
+    block !== null &&
+    !isRawRendered(block.kind) &&
+    offsets.from === offsets.to &&
+    insertFenceOpen(context, offsets.from, pair ? pair.insert : text)
+  ) {
+    return true;
+  }
+  if (pair) {
+    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
+    return true;
   }
   applyEdit(context, offsets.from, offsets.to, text, undefined, brackets ? 'typing' : 'other');
   return true;

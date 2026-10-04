@@ -80,6 +80,12 @@ export function installLanguagePicker(): LanguagePicker {
     answer(picked);
   });
 
+  // A press on the list is a press on the app's own chrome, like the titlebar's buttons: it must not
+  // read as a click outside the document, which is what takes the caret away (`caret/caret.ts`). The
+  // reader is naming the language of the block they are writing in, so the caret has to still be
+  // there — in the body below the fence — when the choice lands.
+  card.element.addEventListener('click', (event) => event.stopPropagation());
+
   // A press anywhere else is the reader's: the list goes, and nothing is chosen. A press on a
   // *label* is that label's own click, which opens the list again for the block it belongs to.
   document.addEventListener(
