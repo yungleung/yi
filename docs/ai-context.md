@@ -303,7 +303,9 @@ the line, and it is taken out — the text node joined again — before the word
 edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
 marked and for the moment after one is let go, because the key that emptied the word arrives with
 the composition already over (`composition_input.ts: markedText`;
-`test/probes/input-method-backspace.js`). Three facts
+`test/probes/input-method-backspace.js`). And the keyboard comes back to the seam after every change that
+moves the caret — an edit, a click, and an *undo*, which is a change that never goes through `applyEdit`
+and so had its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Three facts
 follow from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a

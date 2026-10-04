@@ -313,6 +313,30 @@ over — and `handleKeydown` leaves a Backspace to the method while it is true. 
 Backspace of the reader's own, with no word in flight, still deletes. `test/probes/input-method-backspace.js`
 holds all three, and fails without the change (`你好` came back as `你`, then as nothing).
 
+### The undo that left the keyboard behind
+
+Found by the reader: commit `你好`, press ⌘Z, type pinyin — and the first letter goes in as Latin. An undo
+is a change like any other, but it is not an *edit*: it never goes through `applyEdit`, so it never reached
+`onChanged`, and nothing handed the keyboard back (`markdown_editor.ts: applyHistory` announced the change
+to the session and stopped there). A field that keeps a stale input context is not in the input method: the
+key log reads `keydown 'n' keyCode 78 isComposing false` — typed by the editor — where the same keystroke
+after the hand-back reads `229` with `composing` true and opens a composition. `applyHistory` now hands it
+back the way an edit does. `test/probes/input-method-undo.js` holds the half a probe can see — the seat
+blurs and takes the keyboard again — and fails without the change.
+
+### A word composed on a new line
+
+Found by the reader: Enter at the end of the document, then type pinyin — the line, and the word, vanish.
+The word being composed is written *into* the line, and a blank line is drawn as a placeholder rather than
+characters: inserting at the very start of its text node — which is exactly where that caret is — split the
+node at 0 and left an empty text node behind. Joining the halves again moves a caret anchored in an empty
+node to the *element*, and an element-anchored caret inside a text leaf is a position
+`caret/offsets.ts: documentOffsetAt` cannot read (the commit path's own log: `no offsets`, the caret's
+parent `markdown-empty-line`). So the commit wrote nothing at all. The composing span now goes *beside* a
+text node when the caret is at its edge, and only splits inside one.
+`test/probes/input-method-blank-line.js` holds both edges — a line the reader has just made, and the end of
+a written one — and fails without the change (`hello\n\n你\n` came back `hello\n\n`).
+
 ### The ghost after ⌘Z
 
 One more, found by the same reader from the other side: type a word in the middle of a word, press
