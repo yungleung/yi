@@ -27,11 +27,19 @@ the system and that commit.
 
 ## The reader's own answer
 
-While an input method is composing, the page shows nothing of it: the system's own candidate window
-carries the word being chosen, and the document reads exactly as its source does until the
-characters commit. (The alternative — drawing the composing text in the page, in the document's
-type and with the usual compose underline — was considered and set aside: it puts a decoration over
-a rendering that is otherwise a pure function of the source, and it moves the layout mid-word.)
+While an input method is composing, the word being chosen is **drawn where the reader is writing
+it**: the marked text — pinyin, romaji on its way to kana, a hangul syllable — in the document's
+own type, with the usual compose underline, at the caret. The first version of this design showed
+nothing and left the whole of it to the system's candidate window; using it settled that, for a
+method whose marked text is the pinyin, the reader is owed the characters they are typing.
+
+It is an overlay, not part of the page: the marked text is not in the document, and a block's
+rendering is a function of its own source, so the composing text is a surface the editing layer
+owns (like the caret) drawn *over* the line. The cost is stated where the choice was made — the
+text after the caret is not pushed aside while a word is being chosen — and the alternative
+(putting the composing text into the line's own layout) is what would give that up: it would stop a
+block's rendering from being a pure function of its source, and move the block's height, and
+everything below it, mid-word.
 
 ## Design
 
@@ -132,8 +140,9 @@ while composing is not theirs.
 
 ### 5. What this does not do
 
-- **No composing text in the page**, per the reader's answer above; the system's candidate window is
-  the whole of it.
+- **No composing text in the document, and no reflow**: what the method has marked is an overlay
+  (`composition_view.ts`) — the line does not move under it, and the system's candidate window is
+  still where a candidate is chosen.
 - **No per-keystroke document edits**: nothing is written into the file or the undo log until a word
   commits.
 - **Nothing for the app's own fields** — the find bar, the settings, the cards' inputs are real
