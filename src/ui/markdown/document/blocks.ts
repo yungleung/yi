@@ -113,6 +113,18 @@ export function hasSourceMode(kind: BlockKind): boolean {
   return kind === 'displayMath';
 }
 
+/**
+ * Whether a block of this kind is *fenced*: a body between two delimiter lines.
+ *
+ * The delimiters are never drawn (`nodes/fence_body.ts`), the body's edges are where a typed
+ * character or a newline belongs rather than on a delimiter's own line (`syntax/fence_edits.ts`),
+ * and the three kinds here are the ones both of those rules are written for. An *indented* code
+ * block is not one: it has no delimiter to keep a line for.
+ */
+export function isFenced(kind: BlockKind): boolean {
+  return kind === 'frontmatter' || kind === 'fencedCode' || kind === 'displayMath';
+}
+
 /** A block as an mdast-like node (the `type` field makes it a tree node). */
 export interface BlockNode extends MarkdownBlock {
   type: 'block';

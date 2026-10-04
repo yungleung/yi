@@ -8,7 +8,7 @@
   await t.load(doc);
   await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
   const source = t.prose().querySelector('.markdown-source-text');
-  check('the block shows its own text', source?.textContent ?? null, '$$\n\\frac{a}{b} + c\n$$');
+  check('the block shows its own text', source?.textContent ?? null, '\\frac{a}{b} + c\n');
   if (!source) {
     return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
   }

@@ -12,7 +12,7 @@
   await t.load(doc);
   await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
   const source = () => t.prose().querySelector('.markdown-source-text');
-  check('the formula shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n$$');
+  check('the formula shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n');
   // The caret belongs at the end of the formula's own line, which is where the
   // click entered it (the rendering cannot name a character).
   const positionAt = (root, offset) => {
@@ -29,7 +29,8 @@
   };
   const lineEnd = (() => {
     const text = source().textContent;
-    const position = positionAt(source(), text.indexOf('\n$$'));
+    // The delimiters are not drawn: the last content line's end is the body's, less its newline.
+    const position = positionAt(source(), text.trimEnd().length);
     if (!position) {
       return null;
     }

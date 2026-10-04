@@ -42,6 +42,12 @@ export class FenceBody extends EditableNodeComponent {
       code.className = `language-${style.language}`;
     }
     code.innerHTML = style.highlight(node.text.slice(start, end));
+    // A body with nothing in it is still a place: the caret has to have a text node to sit in, or
+    // clicking the rendering cannot enter the block at all and the next keystroke goes wherever the
+    // caret already was (measured: an empty formula's fences were replaced by the typed letter).
+    if (code.firstChild === null) {
+      code.appendChild(document.createTextNode(''));
+    }
     this.element.appendChild(code);
   }
 }

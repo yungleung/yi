@@ -110,12 +110,25 @@ export function fenceBody(text: string): { start: number; end: number } {
   if (first === undefined) {
     return { start: 0, end: 0 };
   }
-  const start = Math.min(first.start + first.text.length + 1, text.length);
+  // A display formula may carry content on its own fence lines — `$$x$$` is a formula whose body
+  // is `x` — where a code fence's first line holds its language rather than content.
+  const formula = first.text.trimStart().startsWith('$$');
+  const opening = formula
+    ? first.text.length - first.text.trimStart().length + first.start + 2
+    : first.start + first.text.length + 1;
+  // The newline that ends the opening line belongs to *that* line: a formula whose `$$` has
+  // nothing after it starts on the next line, and one with content there starts at the content.
+  const start = Math.min(formula && text[opening] === '\n' ? opening + 1 : opening, text.length);
   const last = lines[lines.length - 1];
-  const closes =
-    lines.length > 1 &&
-    (isDelimiterLine(last.text) || frontmatterDelimiter(last.text) !== null);
-  return { start, end: Math.max(start, closes ? last.start : text.length) };
+  const closedLine = lines.length > 1 && isDelimiterLine(last.text);
+  const closedFrontmatter = lines.length > 1 && frontmatterDelimiter(last.text) !== null;
+  const closedOnContent = formula && last.text.trimEnd().endsWith('$$') && last.text.length > 2;
+  const end = closedLine || closedFrontmatter
+    ? last.start
+    : closedOnContent
+      ? last.start + last.text.lastIndexOf('$$')
+      : text.length;
+  return { start, end: Math.max(start, end) };
 }
 
 /** The language a fence names — `` ```js `` → `js` — or the empty string when it names none. */

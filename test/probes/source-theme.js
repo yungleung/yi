@@ -202,10 +202,11 @@
   };
 
   const EXPECTED = {
-    frontmatter: FRONTMATTER,
-    codeFence: 'const a = 1;',
+    // What each fenced block shows is its *body*: the delimiters are not drawn.
+    frontmatter: 'id: 20240707122715\ntitle: "A note"\n',
+    codeFence: 'const a = 1;\n',
     inlineMath: INLINE,
-    displayMath: DISPLAY
+    displayMath: '\\frac{a}{b}\n'
   };
 
   const seen = {};

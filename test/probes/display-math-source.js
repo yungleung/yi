@@ -15,7 +15,7 @@
   // 1. The click shows the block's own text with the caret at the end of the
   // last content line: typing lands there and both fences stay put.
   await t.click(formula(), 0.5, 0.5);
-  check('the block shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
+  check('the block shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n+ c\n');
   t.key('X');
   await t.sleep(300);
   check('typing lands on the content line', await raw(), 'text\n\n$$\n\\frac{a}{b}\n+ cX\n$$\n\ntail\n');
@@ -72,7 +72,7 @@
   await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'redo' });
   await t.sleep(400);
   check('redo takes it away again', await raw(), 'text\n\n$$\n\\frac{a}{b}\n+ c\n$$\n\ntail\n');
-  check('and the block still shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
+  check('and the block still shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n+ c\n');
 
   // 4. Clicking away renders the formula again, with the document intact.
   const tail = [...t.prose().querySelectorAll('.markdown-block')].pop();
