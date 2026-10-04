@@ -49,7 +49,24 @@ export function createCompositionView(layoutChanged: LayoutChanged): Composition
     const container = range.startContainer;
     if (container.nodeType === Node.TEXT_NODE) {
       const text = container as Text;
-      const rest = text.splitText(Math.min(Math.max(0, range.startOffset), text.data.length));
+      const at = Math.min(Math.max(0, range.startOffset), text.data.length);
+      const parent = text.parentNode;
+      if (parent === null) {
+        return false;
+      }
+      // At a text node's edge the word goes *beside* it rather than into a split: splitting at
+      // the very start or end leaves an empty text node, and a caret anchored in one is moved
+      // to the element when the halves are joined again — a position the offsets mapping cannot
+      // read, which is how a word composed on a new blank line committed nothing (measured).
+      if (at === 0) {
+        parent.insertBefore(span!, text);
+        return true;
+      }
+      if (at >= text.data.length) {
+        parent.insertBefore(span!, text.nextSibling);
+        return true;
+      }
+      const rest = text.splitText(at);
       rest.parentNode?.insertBefore(span!, rest);
       return true;
     }
