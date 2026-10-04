@@ -287,6 +287,18 @@ of the card is also the card's own width — daisyUI's `menu` sizes an item to w
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.
 
+**A delimiter line typed on its own opens the block it names**, and **a bare list marker is the
+character rather than an item**. `editing/fence_open.ts` writes both delimiter lines at once — with
+the blank lines markdown needs around them — and puts the caret on the blank line between them,
+where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
+(`editing/language_picker.ts`), `$$` needs no such thing, and `---` is frontmatter *only* on the
+note's very first line, where it would otherwise be a thematic break. `syntax/bare_markers.ts` is
+the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
+paragraph line, as a setext underline, so the repair makes it text — the delimiter space is what
+starts an item (`- `) — and the line above is never swallowed. Each rule has its check
+(`check-fence-open.mjs`, `check-bare-markers.mjs`) and its probe (`fence-open-typing.js`,
+`bare-marker-typing.js`).
+
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
 system has something to compose into and puts its candidate window at the caret — and what it
