@@ -261,6 +261,14 @@ body {
   animation: markdown-caret-blink 1s steps(1) infinite;
 }
 
+/* The bar steps aside while a word is composed: what stands at the caret then is the
+   underlined marked text (`.markdown-composition-view`), and a blinking bar under it is
+   noise. The caret has not *moved* — only stopped being drawn (`caret.ts`:
+   `setCaretBarVisible`) — so the edit a commit lands still knows where the author was. */
+.markdown-caret.markdown-caret-away {
+  visibility: hidden;
+}
+
 /* The seam the system's text input goes through (see `composition_input.ts`).
 
    macOS will not open a composition in a field it cannot see, and the tests for "cannot
@@ -289,6 +297,30 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+}
+
+/* The word being composed, drawn where the reader is writing it: the marked text an
+   input method is holding — pinyin, romaji on its way to kana, a hangul syllable — in
+   the page's own type, with the underline a system text field would give it. It is
+   inside the page, so the type and the page's scale are inherited rather than repeated
+   here. One line, fixed: it stands where the caret is and the text after the caret is
+   not pushed while a word is being chosen (`editing/composition_view.ts`), so its
+   surface is the page's own and it sits above whatever it covers. */
+.markdown-composition-view {
+  display: none;
+  position: fixed;
+  white-space: pre;
+  pointer-events: none;
+  z-index: 1;
+  color: var(--color-base-content, currentColor);
+  background-color: var(--color-base-100);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.15em;
+}
+
+.markdown-composition-view.markdown-composing {
+  display: block;
 }
 
 /* Inline source view shown when a rendered image or link is clicked. It sits on the

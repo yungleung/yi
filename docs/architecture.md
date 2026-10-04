@@ -192,7 +192,9 @@ height remembered against it.
    an invisible textarea (`editing/composition_input.ts`), so a key can also arrive as a
    composition: what an input method, dictation or the emoji panel commits is inserted through
    the same text path as typing, as one edit of its own
-   (`text_commands.ts: insertCommitted`).
+   (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
+   syllable — is drawn where the reader is writing it (`editing/composition_view.ts`): an overlay
+   at the caret, not part of the page, because none of those characters is in the document yet.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).
@@ -295,6 +297,7 @@ its caret is inside it — until the caret leaves (`test/probes/format-buttons.j
 | Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`) |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | An inline run while the caret is inside it — bold, italic, strikethrough, inline code | `nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts`, `nodes/inline_code.ts` over `nodes/revealable_node.ts`; the source classes are in `caret/offsets.ts: SOURCE_SELECTOR` and the styling in `styles.css` |
+| The word an input method is composing, as the reader sees it | `editing/composition_view.ts`, driven by the seam (`editing/composition_input.ts`) — an overlay at the caret, drawn over the line, never in the document |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `block_sizes.ts`, `styles.css` — the page's rhythm is written in the page's own scale (`.prose`'s `--md-page-scale`), and the estimator of an unmeasured block's height reads the same line height and paragraph skip, so a page drawn smaller estimates smaller |
 | How big a page the editor is, and the desk under it | `styles.css` (`.markdown-page`, `.markdown-scroller`) — the root's class list in `virtual_block_renderer.ts` names the page, and `markdown_editor.ts: fitPage` sets `--page-scale` from the width of the pane (capped at 1, watched by a `ResizeObserver`) so the sheet, its margin and its type shrink together rather than the pane scrolling sideways; a document opens at its own top (`setContent`), because a 297 mm sheet is taller than the pane and nothing clamps an old scroll away. Which of the two layouts is on is one attribute the editor owns (`data-layout` — `page` or the full-width `auto`), set by `setLayout`, switched by the `view:togglePage` command and drawn by `layout_toolbar.ts` in the status bar; the choice is remembered in the app config |
 | A colour — a syntax token, a surface, the ink on it | `styles.css`, and only in daisyUI's own tokens: a fixed palette is what made highlighted source illegible in the light theme |

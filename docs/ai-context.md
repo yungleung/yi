@@ -291,10 +291,13 @@ Typing is not only keystrokes: an input method, dictation and the emoji panel go
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
 system has something to compose into and puts its candidate window at the caret — and what it
 commits is inserted by `text_commands.ts: insertCommitted` as one step of its own. Nothing of a
-composition is drawn: the seam is invisible because its *ink and background* are transparent, never
-with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what the
-system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with a
-probe that holds that shape. Three facts follow from the seam: a *document* selection is one inside
+composition is drawn in the seam: it is invisible because its *ink and background* are transparent,
+never with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what
+the system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with
+a probe that holds that shape. What the method has *marked* is drawn instead where the reader is
+writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
+type at the caret and underlined, over the line rather than in it, so the page does not reflow while
+a word is being chosen. Three facts follow from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and

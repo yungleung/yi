@@ -49,6 +49,8 @@ let caretFrame: number | null = null;
 let caretTimeout: number | null = null;
 let pendingNativeSelection: Range | null = null;
 let selectionTimeout: number | null = null;
+/** Whether the blinking bar is drawn — see `setCaretBarVisible`. */
+let caretBarVisible = true;
 
 type CaretRangeListener = (range: Range | null) => void;
 const caretRangeListeners = new Set<CaretRangeListener>();
@@ -72,7 +74,7 @@ export function onCaretRangeChanged(listener: CaretRangeListener): () => void {
 
 function createCaretElement(): HTMLSpanElement {
   const caret = document.createElement('span');
-  caret.className = 'markdown-caret';
+  caret.className = caretBarVisible ? 'markdown-caret' : 'markdown-caret markdown-caret-away';
   caret.setAttribute('aria-hidden', 'true');
   return caret;
 }
@@ -400,6 +402,18 @@ export function showCaretBeside(element: HTMLElement, clientX: number): void {
 /** Removes the blinking caret from the document. */
 export function hideCaret(): void {
   showCaret(null);
+}
+
+/**
+ * Puts the blinking bar away without moving the caret: the logical range stays, and
+ * `getCaretRange` still answers, so the edit a commit lands still knows where the
+ * author was. What draws in its place is the word being composed
+ * (`editing/composition_view.ts`) — underlined text a bar blinking underneath would
+ * spoil — and the bar is placed again only by an edit, which is what a commit is.
+ */
+export function setCaretBarVisible(visible: boolean): void {
+  caretBarVisible = visible;
+  caretElement?.classList.toggle('markdown-caret-away', !visible);
 }
 
 /** Returns the current caret position, or null when no caret is shown. */

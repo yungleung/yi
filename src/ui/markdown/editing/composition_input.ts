@@ -12,13 +12,18 @@
  * hand that word to the caller, which writes it into the document as one edit
  * (`text_commands.ts: insertCommitted`).
  *
- * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`). Upholds: the document
- * text is the only source of truth — nothing is written while a word is being
- * composed, and what commits is the system's own text, once.
+ * What the method has marked so far is *drawn* — the pinyin, the kana, the syllable —
+ * where the reader is writing it (`composition_view.ts`). The field itself stays
+ * invisible, because the system composes only into a field it can see.
+ *
+ * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`) and that view. Upholds:
+ * the document text is the only source of truth — nothing is written while a word is
+ * being composed, and what commits is the system's own text, once.
  */
 
 import { getCaretRange, onCaretRangeChanged } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
+import { createCompositionView, type ComposeBox } from './composition_view';
 
 /** What the editor holds while the seam's element is in the DOM. */
 export interface CompositionInput {
@@ -59,19 +64,40 @@ export function installCompositionInput(
   let composing = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
+  const view = createCompositionView(host);
 
   /** Takes the value the system left and hands it over; an empty one commits nothing. */
   const commit = () => {
     const text = element.value;
     element.value = '';
+    // Marked text stops being marked here, whether it committed a word or was cancelled.
+    view.hide();
     if (text === '') {
       return;
     }
     onCommit(text);
   };
 
+  /** Where the composing text goes: the caret's own box, which is the seam's too. */
+  const caretBox = (): ComposeBox | null => {
+    const range = getCaretRange();
+    return range ? caretRect(range) : null;
+  };
+
+  /** Draws what the method has marked so far, if there is a caret to draw it at. */
+  const drawMarked = (): void => {
+    const box = caretBox();
+    if (box) {
+      view.show(element.value, box);
+    }
+  };
+
   element.addEventListener('compositionstart', () => {
     composing = true;
+    drawMarked();
+  });
+  element.addEventListener('compositionupdate', () => {
+    drawMarked();
   });
   element.addEventListener('compositionend', () => {
     composing = false;
@@ -89,6 +115,7 @@ export function installCompositionInput(
   //   Those arrive with `insertCompositionText`, which is exactly how they are told apart.
   element.addEventListener('input', (event) => {
     if (composing || event.inputType === 'insertCompositionText') {
+      drawMarked();
       return;
     }
     if (element.value === ' ' && performance.now() - committedAt < 50) {
@@ -134,8 +161,7 @@ export function installCompositionInput(
 
   /** Where the system should open its candidate window: the caret's own box. */
   const followCaret = () => {
-    const range = getCaretRange();
-    const box = range ? caretRect(range) : null;
+    const box = caretBox();
     if (!box) {
       element.style.left = '-1000px';
       element.style.top = '-1000px';
@@ -145,6 +171,8 @@ export function installCompositionInput(
     // refuses to compose in one as short as a line of the page's type (see `styles.css`).
     element.style.left = `${box.left}px`;
     element.style.top = `${box.top}px`;
+    // The composing text stands where the caret does, so it moves with it.
+    view.place(box);
   };
   onCaretRangeChanged(followCaret);
   host.addEventListener('scroll', followCaret);
