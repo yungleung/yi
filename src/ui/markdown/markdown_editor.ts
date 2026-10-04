@@ -657,6 +657,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // scrolls a focused element or a synchronised selection into view just the
     // same: keep the reader where they were.
     keepScroll(this.context, anchor);
+    // An undo that leaves a *caret* hands the keyboard back the way an edit does — this path
+    // never went through `onChanged`, so nothing did it before, and a field that keeps a stale
+    // input context is not in the input method: measured by the reader, the first letter typed
+    // after ⌘Z arrived as a Latin keystroke (`keyCode` 78, not `229`) and went into the
+    // document. A *selection* is not a caret and is kept: a focus change would drop it, which
+    // is `regainKeyboard`'s own rule — asked here rather than there because the highlight it
+    // would drop is painted a frame later (`context.ts: restoreSelection`).
+    if (target.from === target.to) {
+      this.composition.regainKeyboard();
+    }
     // An undo is a change like any other: whatever keeps a copy of the document has to hear it.
     void eventManager.emit(EDITOR_EDITED);
   }
