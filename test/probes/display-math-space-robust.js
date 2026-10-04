@@ -11,7 +11,12 @@
   await t.load(doc);
   await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
   const source = () => t.prose().querySelector('.markdown-source-text');
-  check('the formula shows its own text', source()?.textContent ?? null, '$$\n\\frac{d}{dx}(\\sin x) = \\cos x \\\\\ne^{i 2\\pi} = 1\n$$');
+  // Its own *body*: the `$$` lines are the delimiters, and they are not drawn.
+  check(
+    'the formula shows its own text',
+    source()?.textContent ?? null,
+    '\\frac{d}{dx}(\\sin x) = \\cos x \\\\\ne^{i 2\\pi} = 1\n'
+  );
   t.key(' ');
   await t.sleep(300);
   t.key('X');
@@ -24,7 +29,7 @@
   check(
     'and the source shows them',
     source()?.textContent ?? null,
-    '$$\n\\frac{d}{dx}(\\sin x) = \\cos x \\\\\ne^{i 2\\pi} = 1 X\n$$'
+    '\\frac{d}{dx}(\\sin x) = \\cos x \\\\\ne^{i 2\\pi} = 1 X\n'
   );
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

@@ -29,11 +29,13 @@
     await raw(),
     'text\n\n$$\n\\frac{a}{b}\n+ cX\n\n$$\n\ntail\n'
   );
+  // Still one block, and it shows its own body: the fences are not drawn, so what the element
+  // holds is the characters between them.
   checks.push({
     name: 'the block is still one block',
     actual: blockTexts(),
-    expected: ['text', '$$\n\\frac{a}{b}\n+ cX\n\n$$', 'tail'],
-    pass: JSON.stringify(blockTexts()) === JSON.stringify(['text', '$$\n\\frac{a}{b}\n+ cX\n\n$$', 'tail'])
+    expected: ['text', '\\frac{a}{b}\n+ cX\n\n', 'tail'],
+    pass: JSON.stringify(blockTexts()) === JSON.stringify(['text', '\\frac{a}{b}\n+ cX\n\n', 'tail'])
   });
   t.key('Z');
   await t.sleep(300);

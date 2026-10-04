@@ -55,20 +55,9 @@
   await t.sleep(300);
   check('and the next keystroke lands after them', await t.raw(), 'text\n\n$$\n\\frac{a}{b}  X\n$$\n');
 
-  // Tab on the closing fence's own line does nothing: two spaces in front of a
-  // fence are no longer a fence.
-  const fenceY = t.rectOf(source()).top + source().getBoundingClientRect().height - 12;
-  source().dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: Math.round(source().getBoundingClientRect().left + 2),
-      clientY: Math.round(fenceY)
-    })
-  );
-  await t.sleep(250);
-  t.key('Tab');
-  await t.sleep(300);
-  check('a `$$` line is never indented', await t.raw(), 'text\n\n$$\n\\frac{a}{b}  X\n$$\n');
+  // Tab on a delimiter's own line is not measured here any more: the delimiters are not drawn, so
+  // the caret cannot be put on one by a click. The rule that skips them — two spaces in front of a
+  // fence are no longer a fence — is the pure one in `test/checks/check-code-edits.mjs`, which
+  // holds it for a caret there and for a selection that spans them.
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()
