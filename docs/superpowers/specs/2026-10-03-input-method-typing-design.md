@@ -260,6 +260,39 @@ method's business, and it varies letter by letter; what is now true is that each
 `test/probes/input-method-passthrough.js` holds both halves — the letter carried by both paths lands
 once, and a 229 `Enter` still starts a line — and it fails without the change (`hellobb`).
 
+### A word that could not be written at all
+
+Found by the reader: click to place the caret, then type pinyin, and *the first letter* lands in the
+document as a Latin character — the composition only begins with the second, so `nihao` came out
+`ni` and 好, and the word could never be written. The seam had the keyboard throughout; what it did
+not have was the keyboard. A click is not one event but four, and the keyboard moves in the middle
+of them: `pointerdown`, the browser focusing the focusable page the pointer is on (the prose root
+has `tabindex`), `pointerup`, and only then the click that places the caret. The seam's hand-over
+stands back while a gesture is in progress (`composition_input.ts: pointerDown`), so the keyboard
+ends on the *page* and stays there — `afterClick` and `afterFrames` both the page, measured — and
+the next key is the page's: `keydown 'n' keyCode 78 isComposing false`, typed by the editor, with
+`compositionstart` only after it. That edit is what focuses the field, which is why the *second*
+letter onward composes: the word reads `helloni好`.
+
+The end of the gesture now hands the keyboard back (`composition_input.ts: regainKeyboard`, called
+from the `pointerup` listener): blur now, focus on the next frame, and not for a selection that is
+showing — the same hand-back an edit already uses, and the guard widened to take the keyboard when
+it is anywhere *in the editor*, not only when the field already holds it. The same four events now
+measure `afterFrames` the seam, and the word reads `hello你好`. Nothing about the document, the
+caret or the seam's measured shape changed: what moved is *where* and *when* the keyboard goes
+back, which is the input method's whole view of the field.
+
+`test/probes/input-method-click.js` holds the half a probe can see — the hand-back is not in the
+click's own turn, and the seat has the keyboard once that turn is over. The symptom itself needs the
+real method, because a synthetic key types nothing into a field: `helloni好` before the change,
+`hello你好` after it.
+
+One case this rig could not settle by itself, and the next reader should know it is open: with **no
+pointer gesture at all** — a dispatched click, or a field that has held the keyboard since before a
+pause — the first key is still delivered to the page, and this machine reproduces it
+intermittently behind an `osascript` activation. Every path a reader's hand actually takes (a click
+on text, a click on empty space) goes through the gesture above.
+
 ### The ghost after ⌘Z
 
 One more, found by the same reader from the other side: type a word in the middle of a word, press
