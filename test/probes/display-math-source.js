@@ -7,8 +7,16 @@
   const raw = () => t.raw();
   const formula = () => t.prose().querySelector('[data-display="true"]');
   const source = () => t.prose().querySelector('.markdown-source-text');
+  // Each block's own characters. A fenced block carries its label as chrome inside its container
+  // (`nodes/fence_label.ts`), and the label is not part of what the block shows.
   const blockTexts = () =>
-    [...t.prose().querySelectorAll('.markdown-block')].map((b) => b.textContent);
+    [...t.prose().querySelectorAll('.markdown-block')].map((block) => {
+      const copy = block.cloneNode(true);
+      for (const chrome of copy.querySelectorAll('[data-chrome]')) {
+        chrome.remove();
+      }
+      return copy.textContent;
+    });
   const doc = 'text\n\n$$\n\\frac{a}{b}\n+ c\n$$\n\ntail\n';
   await t.load(doc);
 
