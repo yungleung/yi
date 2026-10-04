@@ -205,7 +205,7 @@ function textOffsetInElement(
     // The word being composed is written into the line to be seen, and none of its
     // characters is in the document: it is stepped over here so that no offset in the block
     // is shifted by it (see `editing/composition_view.ts`).
-    for (const composing of element.querySelectorAll('[data-composing]')) {
+    for (const composing of element.querySelectorAll('[data-composing], [data-chrome]')) {
       if (range.intersectsNode(composing)) {
         length -= composing.textContent?.length ?? 0;
       }
@@ -215,7 +215,7 @@ function textOffsetInElement(
   let acc = 0;
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) =>
-      isComposing(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+      isDrawn(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
   });
   let node: Node | null;
   while ((node = walker.nextNode())) {
@@ -227,10 +227,15 @@ function textOffsetInElement(
   return null;
 }
 
-/** Whether this text is the word an input method is composing, which the document has not. */
-function isComposing(node: Node): boolean {
+/**
+ * Whether this text is something the block *draws* that is not the document's own characters: the
+ * word an input method is composing (`editing/composition_view.ts`), or a block's own chrome — the
+ * label on a fenced block (`nodes/fence_label.ts`). Neither is the block's text, so neither is
+ * counted: a caret anywhere in the block maps by the characters around them alone.
+ */
+function isDrawn(node: Node): boolean {
   const parent = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element);
-  return (parent?.closest('[data-composing]') ?? null) !== null;
+  return (parent?.closest('[data-composing], [data-chrome]') ?? null) !== null;
 }
 
 /**

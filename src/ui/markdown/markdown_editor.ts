@@ -28,6 +28,7 @@ import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
   editorSelection,
+  applyEdit,
   isDocumentRange,
   keepScroll,
   proseRoot,
@@ -42,6 +43,8 @@ import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
 import { deleteText, insertCommitted, insertNewline, insertText } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
+import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
+import { fenceLanguageEdit } from './syntax/fence_edits';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { applyCodeIndent } from './editing/code';
@@ -218,6 +221,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // under it: measured again, or the spacers below would be short by the line it gained.
       (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
     );
+    // A fenced code block's label asks for a language (`nodes/fence_label.ts`); the card that
+    // answers is the app's own chrome, and the edit it makes is the pure rule's
+    // (`syntax/fence_edits.ts: fenceLanguageEdit`).
+    setLanguagePicker(installLanguagePicker());
+    setLanguageChangeHandler((lineStart, language) => this.changeFenceLanguage(lineStart, language));
 
     // Keep the editor's selection state in sync with the native DOM selection
     // (the rendered text is selectable by dragging).
@@ -635,6 +643,20 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // a deferred frame later, and `scrollCaretIntoView` took the view to it — measured, one 24px
     // step up from the end of the demo document jumped the page **1097px**.
     this.pendingCaretOffset = restoreCaret(this.context, offset, false) ? null : offset;
+  }
+
+  /**
+   * The language the reader chose for a fenced code block: the opening fence's own line, and
+   * nothing else, replaced in one edit (`syntax/fence_edits.ts: fenceLanguageEdit`). The body is
+   * the author's text and is left exactly as it stands.
+   */
+  private changeFenceLanguage(lineStart: number, language: string): void {
+    const block = this.state.getBlockAtLine(lineStart);
+    const edit = block ? fenceLanguageEdit(block.text, language) : null;
+    if (block === null || edit === null) {
+      return;
+    }
+    applyEdit(this.context, block.charStart + edit.from, block.charStart + edit.to, edit.replacement);
   }
 
   /** Undo/redo keeps the caret at the same document offset when it can. */

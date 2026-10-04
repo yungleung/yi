@@ -14,6 +14,8 @@ import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceBody } from './nodes/fence_body';
+import { fenceLabel } from './nodes/fence_label';
+import { chooseLanguage } from './editing/language_picker';
 import { highlightCode } from './nodes/code_highlight';
 import { highlightFrontmatter } from './nodes/frontmatter_highlight';
 import { highlightLatex } from './nodes/latex_highlight';
@@ -72,6 +74,9 @@ class BlockView implements BlockComponent {
         highlight: highlightLatex
       }).element
     );
+    // A formula is `latex` while its own text is what it shows; over the KaTeX rendering there is
+    // no label, because that view is not the formula's markdown.
+    element.appendChild(fenceLabel({ text: 'latex' }));
     return element;
   }
 
@@ -133,6 +138,14 @@ class BlockView implements BlockComponent {
           ? (source: string) => highlightFrontmatter(source, node.format ?? 'yaml')
           : (source: string) => highlightCode(source, language)
       }).element
+    );
+    element.appendChild(
+      fence
+        ? fenceLabel({ text: language === 'toml' ? 'TOML Frontmatter' : 'YAML Frontmatter' })
+        : fenceLabel({
+            text: language === '' ? 'text' : language,
+            onChoose: (label) => chooseLanguage(label, language, node.lineStart)
+          })
     );
     return element;
   }

@@ -20,7 +20,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-fence-edits-'));
 const file = join(directory, 'fence_edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { fenceTypedWrite, fenceNewlineWrite } = await import(file);
+const { fenceTypedWrite, fenceNewlineWrite, fenceLanguageEdit } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -141,6 +141,20 @@ check('typing before the formula is not this rule’s',
 check('a paragraph of text is not a formula', fenceTypedWrite('Q\n$$', 0, 'x'), null);
 check('Enter where the content already holds a line is the ordinary newline',
   fenceNewlineWrite(filled, closing), null);
+
+// Choosing a language rewrites the fence's own line, and nothing else.
+check('choosing a language replaces the info string',
+  applied(code, fenceLanguageEdit(code, 'python')),
+  '```python\na\n```');
+check('and keeps the separator the author wrote',
+  applied('``` js\na\n```', fenceLanguageEdit('``` js\na\n```', 'python')),
+  '``` python\na\n```');
+check('a fence with no language gains one',
+  applied('```\na\n```', fenceLanguageEdit('```\na\n```', 'python')),
+  '```python\na\n```');
+check('and choosing `text` takes the language off',
+  applied(code, fenceLanguageEdit(code, '')),
+  '```\na\n```');
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

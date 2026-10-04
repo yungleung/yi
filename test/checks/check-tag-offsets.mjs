@@ -41,6 +41,8 @@ const exempt = {
   findStatus: 'find-bar UI state, not a document offset',
   findReplaceActions: 'find-bar UI state, not a document offset',
   layout: 'which layout the editor is drawn in (`page` or `auto`), not a document offset'
+  ,
+  language: 'the language a picker row offers, a name (`js`, `text`), not an offset'
 };
 
 const files = [];

@@ -13,7 +13,9 @@
  * function of the block's text.
  */
 
-import { fenceBody } from './markers';
+import { fenceBody, openingFence } from './markers';
+import { lineSpanAt } from './lines';
+import type { TextEdit } from './edit_range';
 
 /** What a write inside a fenced block does, in the block's own offsets. */
 export interface FenceWrite {
@@ -76,5 +78,28 @@ function lineOfItsOwn(text: string, body: { start: number; end: number }, line: 
     to: body.end,
     replacement,
     caret: body.start + replacement.length - 1
+  };
+}
+
+/**
+ * What choosing a language writes: the opening fence's own line, with its info string replaced.
+ *
+ * Only the fence's line: the body is the author's text and is left exactly as it stands. The
+ * separator the author wrote — one space, or none at all, both of which markdown reads as the info
+ * string (`syntax/markers.ts: fenceLanguage`) — is kept as they wrote it.
+ */
+export function fenceLanguageEdit(text: string, language: string): TextEdit | null {
+  const line = lineSpanAt(text, 0);
+  const raw = text.slice(line.start, line.end);
+  const fence = openingFence(raw);
+  if (fence === null) {
+    return null;
+  }
+  const after = raw.indexOf(fence) + fence.length;
+  const separated = raw.slice(after).startsWith(' ') || raw.slice(after).startsWith('\t');
+  return {
+    from: line.start + after,
+    to: line.end,
+    replacement: language === '' ? '' : `${separated ? ' ' : ''}${language}`
   };
 }
