@@ -30,10 +30,12 @@ export interface CompositionInput {
   /** The element that holds the keyboard. The editor focuses it, and nothing else may. */
   readonly element: HTMLTextAreaElement;
   /**
-   * Hands the field the keyboard again after an edit. Committing and typing are edits, and
-   * an edit costs the field its input context — the next word would never compose — so the
-   * seam takes it back once the turn is over. A selection the edit left showing is kept:
-   * a focus change would drop it.
+   * Hands the field the keyboard again — after an edit, and after a click that placed the
+   * caret. Both cost the field its input context: the next word would never compose, and
+   * after a click the *first letter* of it is delivered as a Latin keystroke instead
+   * (measured: `nihao` came out `ni` and 好 — see `markdown_editor.ts`). So the seam takes
+   * it back once the turn is over. A selection the edit left showing is kept: a focus
+   * change would drop it.
    */
   regainKeyboard(): void;
 }
@@ -131,6 +133,39 @@ export function installCompositionInput(
     return selection !== null && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
   };
 
+  /**
+   * Puts the keyboard back where the caret is — a turn later, never in the same one.
+   *
+   * Two moments need it, and they are one fact. An *edit* costs the field its input
+   * context, so the next word would never compose. A *click that places the caret* leaves
+   * the keyboard on the page — the browser focuses the focusable prose root on mousedown,
+   * and the hand-over above stands back for the reader's gesture — so the first letter
+   * typed after that click is delivered to the page's own key path and goes into the
+   * document as a Latin character, with the composition only beginning with the second
+   * one (measured: `nihao` came out `ni` and 好, so the word could not be written).
+   *
+   * A control of the app's keeps its own keyboard, and a selection the reader is showing is
+   * kept — a focus change would drop it. A field that has just lost the keyboard does not
+   * compose again if it takes it back inside the same turn, which is why the focus is
+   * raised on the next frame.
+   */
+  const regainKeyboard = (): void => {
+    const active = document.activeElement;
+    if (active !== element) {
+      // Not ours: only the keyboard that is *in the editor* comes back here. A control of
+      // the app's — a field in the find bar, a card's own — keeps its own.
+      const inEditor = active instanceof Node && host.contains(active);
+      if (!inEditor || (active instanceof Element && active.matches(CONTROLS))) {
+        return;
+      }
+    }
+    if (showingSelection()) {
+      return;
+    }
+    element.blur();
+    requestAnimationFrame(() => element.focus({ preventScroll: true }));
+  };
+
   // A pointer that is down means the reader is working with the page itself — dragging
   // over text to select it, most of all — and taking the keyboard out from under that
   // gesture is what cancels it. The hand-over waits for the gesture to be over, or for
@@ -141,6 +176,10 @@ export function installCompositionInput(
   }, true);
   document.addEventListener('pointerup', () => {
     pointerDown = false;
+    // The gesture is over, and the caret it placed is where the keyboard belongs: a click
+    // on the page leaves the keyboard *on the page*, and the first letter typed after it is
+    // the page's. A drag that selected text is not a caret — `regainKeyboard` keeps it.
+    regainKeyboard();
   }, true);
 
   // The keyboard belongs here whenever it is in the editor: a click that places a caret, a
@@ -180,13 +219,6 @@ export function installCompositionInput(
 
   return {
     element,
-    regainKeyboard: () => {
-      if (showingSelection() || document.activeElement !== element) {
-        return;
-      }
-      // Not in the same turn: the method has to see the change land.
-      element.blur();
-      requestAnimationFrame(() => element.focus({ preventScroll: true }));
-    }
+    regainKeyboard
   };
 }
