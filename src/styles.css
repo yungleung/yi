@@ -169,6 +169,18 @@
     0 12px 32px color-mix(in oklab, var(--color-base-content) 10%, transparent);
 }
 
+/* The full-width column is the editor's whole surface, and it is *opaque* for the same reason the
+   sheet is: the system's text seam is painted behind the page (`composition_input.ts`), and what it
+   draws natively — the focus ring of a focused field, the underline over a word an input method is
+   holding, the selection over one — is not hidden by transparent ink. The page layout has always
+   covered it with paper; without one, every mark showed at the caret. The paper the column draws is
+   the colour the pane already painted behind it, so nothing looks different, and it is at least a
+   viewport tall so a seam on the reader's last line is still behind it. */
+.markdown-scroller[data-layout='auto'] .markdown-page {
+  min-height: 100%;
+  background-color: var(--color-base-100);
+}
+
 /* The words take the page's own measure, so the sheet's scale is theirs too — and the
    `.prose` in the selector is doing work: the typography plugin sets `font-size: 1rem` on
    `.prose` itself, which is what the rest of its `em` sizes resolve against. At scale 1 this
@@ -301,6 +313,12 @@ body {
   min-height: 2em;
   padding: 0;
   border: 0;
+  /* A focused textarea keeps the browser's own ring — measured, five pixels of
+     `rgb(26, 169, 255)` around the box, which is drawn at the caret. The page layout hides it
+     behind the sheet's opaque paper; the full-width layout has no paper, so it was a blue box
+     around a field the reader cannot see. The outline is paint, not ink or size: the field is
+     still an opaque box a few characters wide, which is what the system composes into. */
+  outline: none;
   color: transparent;
   background: transparent;
   resize: none;

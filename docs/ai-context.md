@@ -323,7 +323,10 @@ the system's own keystrokes measured (transparent, a real box, no declared `care
 a probe that holds that shape. What the *system* paints in the field besides its ink is not
 transparent — the selection over a marked word is a blue box — and WebKit does not honour
 `::selection` for a textarea's own selection, so the field is drawn inside a box the size of the
-editor and *that* is what is clipped (`styles.css: .markdown-composition-clip`). What the method has *marked* is drawn instead where the reader is
+editor and *that* is what is clipped (`styles.css: .markdown-composition-clip`). The other blue box
+was the field's own focus ring: a textarea keeps the browser's default outline, which the *page*
+layout hid behind the sheet's opaque paper and the full-width layout showed at the caret — the
+field writes `outline: none` now, and `input-method-seam-box.js` holds it. What the method has *marked* is drawn instead where the reader is
 writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
 type at the caret and underlined, *in* the line so the words after the caret move along. That span
 is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
