@@ -301,6 +301,12 @@ body {
   min-height: 2em;
   padding: 0;
   border: 0;
+  /* A focused textarea keeps the browser's own ring — measured, five pixels of
+     `rgb(26, 169, 255)` around the box, which is drawn at the caret. The page layout hides it
+     behind the sheet's opaque paper; the full-width layout has no paper, so it was a blue box
+     around a field the reader cannot see. The outline is paint, not ink or size: the field is
+     still an opaque box a few characters wide, which is what the system composes into. */
+  outline: none;
   color: transparent;
   background: transparent;
   resize: none;

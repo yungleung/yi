@@ -12,6 +12,11 @@
  * So the field keeps its size and its place — the caret's own line and column — and is drawn inside
  * a box the size of the editor (`.markdown-composition-clip`), which is what is clipped.
  *
+ * Its own focus ring is the other blue box: a textarea keeps the browser's default outline until
+ * one is written (`styles.css`), and the page layout only ever hid it behind the sheet's opaque
+ * paper — in the full-width layout the reader saw it at the caret the moment the editor took the
+ * keyboard.
+ *
  * @covers src/ui/markdown/editing/composition_input.ts: measureFrame, followCaret
  */
 (async () => {
@@ -53,11 +58,16 @@
   // And what it paints is clipped to the editor: everything the system draws in the field — its
   // caret, the blue of a selected marked word — is inside a box the size of the editor's own.
   check('the field is drawn inside the editor’s own box', clipped !== null && clip.contains(area), true);
-  check(
+ check(
     'and that box is the editor’s',
     clipped === null ? null : [Math.round(clipped.top), Math.round(clipped.bottom)],
     [Math.round(view.top), Math.round(view.bottom)]
   );
+  // The field's own focus ring is not part of the editor either. A textarea keeps the browser's
+  // default ring — a five-pixel blue box around the box it is drawn in — and in the full-width
+  // layout nothing opaque covers the seam, so the reader saw that ring at the caret whenever the
+  // editor took the keyboard (`styles.css`: the field draws no outline of its own).
+  check('and the field draws no ring of its own', getComputedStyle(area).outlineStyle, 'none');
   check('with the marked word drawn in the line', document.querySelector('[data-composing]')?.textContent ?? null, 'nihao');
 
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
