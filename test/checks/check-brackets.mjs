@@ -96,6 +96,14 @@ check('and the ] the author types next steps over the first closer', typed('[[]]
   caret: 3
 });
 
+// A run of a self-closing character is the author's own characters, one keystroke each: a code
+// fence is three backticks, and a closer the app added would make it four.
+check('a backtick after a backtick writes only itself', typed('`', 1, '`'), {
+  text: '``',
+  caret: 2
+});
+check('and so does the third', typed('``', 2, '`'), { text: '```', caret: 3 });
+
 // --- where nothing is written ------------------------------------------------------------------
 
 check('no pair inside a fenced code block or a formula', pairingFor('x = [', 4, '[', true), null);

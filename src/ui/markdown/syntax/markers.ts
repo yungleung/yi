@@ -24,13 +24,25 @@ export function openingFence(line: string): string | null {
   return match ? match[1] : null;
 }
 
-/** The list marker info when the line starts a list item, or null. */
+/**
+ * The list marker info when the line starts a list item, or null.
+ *
+ * The marker's delimiter space is part of it: `- ` opens an item, and a bare `-` is the character
+ * itself, which is why the space is required here (see `bareMarkerLine` and
+ * `syntax/bare_markers.ts`).
+ */
 export function listMarker(line: string): { indent: number; ordered: boolean } | null {
-  const match = /^( {0,3})([-*+]|\d+[.)])(?:\s+|$)/.exec(line);
+  const match = /^( {0,3})([-*+]|\d+[.)])\s+/.exec(line);
   if (!match) {
     return null;
   }
   return { indent: match[1].length, ordered: /^\d/.test(match[2]) };
+}
+
+/** The fence delimiter a line holds when it is nothing but one: ` ``` `, `~~~`, `$$` or `---`. */
+export function soleDelimiter(line: string): string | null {
+  const match = /^ {0,3}(`{3,}|~{3,}|\$\$|---)$/.exec(line.trimEnd());
+  return match ? match[1] : null;
 }
 
 /**
@@ -69,8 +81,14 @@ export function closingFence(line: string, marker: string): boolean {
   return /^(`{3,}|~{3,})$/.test(trimmed);
 }
 
-/** A bare bullet, ordered or task marker — `[ ]`/`[x]` is part of it. */
-export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])(?:\s+\[[ xX]\])?$/;
+/**
+ * An empty list item's own line: a bullet, ordered or task marker with nothing but the
+ * delimiter space after it — `[ ]`/`[x]` is part of it.
+ */
+export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\])?\s*$/;
+
+/** A line holding a list marker with nothing after it, not even the delimiter's own space. */
+export const bareMarkerLine = /^ {0,3}(?:[-+*]|\d+[.)])$/;
 
 /** The marker a thematic break is written with, on a line of its own. */
 export const thematicBreakMarker = '---';
@@ -78,6 +96,67 @@ export const thematicBreakMarker = '---';
 /** A line that delimits a fenced code block or a display formula. */
 export function isDelimiterLine(line: string): boolean {
   return /^ {0,3}(?:`{3,}|~{3,})/.test(line) || /^ {0,3}\$\$\s*$/.test(line);
+}
+
+/** A block's lines, with the offset each starts at. A trailing newline makes no line of its own. */
+function blockLines(text: string): Array<{ start: number; text: string }> {
+  const lines: Array<{ start: number; text: string }> = [];
+  let cursor = 0;
+  for (;;) {
+    const breakAt = text.indexOf('\n', cursor);
+    const end = breakAt < 0 ? text.length : breakAt;
+    lines.push({ start: cursor, text: text.slice(cursor, end) });
+    if (breakAt < 0 || breakAt + 1 >= text.length) {
+      return lines;
+    }
+    cursor = breakAt + 1;
+  }
+}
+
+/**
+ * The body of a fenced block — the lines between its delimiter lines — as a block-relative range.
+ *
+ * The delimiters are never drawn: the body is what the block shows, and the caret maps through the
+ * body's own characters (`caret/offsets.ts`), so this is the one place that says where it begins
+ * and ends. Its end carries the last content line's newline, which is what gives a caret there —
+ * and the line Enter makes at it — somewhere to be. An unclosed fence's last line is content
+ * rather than a delimiter, so there the body runs to the end of the block.
+ */
+export function fenceBody(text: string): { start: number; end: number } {
+  const lines = blockLines(text);
+  const first = lines[0];
+  if (first === undefined) {
+    return { start: 0, end: 0 };
+  }
+  // A display formula may carry content on its own fence lines — `$$x$$` is a formula whose body
+  // is `x` — where a code fence's first line holds its language rather than content.
+  const formula = first.text.trimStart().startsWith('$$');
+  const opening = formula
+    ? first.text.length - first.text.trimStart().length + first.start + 2
+    : first.start + first.text.length + 1;
+  // The newline that ends the opening line belongs to *that* line: a formula whose `$$` has
+  // nothing after it starts on the next line, and one with content there starts at the content.
+  const start = Math.min(formula && text[opening] === '\n' ? opening + 1 : opening, text.length);
+  const last = lines[lines.length - 1];
+  const closedLine = lines.length > 1 && isDelimiterLine(last.text);
+  const closedFrontmatter = lines.length > 1 && frontmatterDelimiter(last.text) !== null;
+  const closedOnContent = formula && last.text.trimEnd().endsWith('$$') && last.text.length > 2;
+  const end = closedLine || closedFrontmatter
+    ? last.start
+    : closedOnContent
+      ? last.start + last.text.lastIndexOf('$$')
+      : text.length;
+  return { start, end: Math.max(start, end) };
+}
+
+/** The language a fence names — `` ```js `` → `js` — or the empty string when it names none. */
+export function fenceLanguage(line: string): string {
+  const fence = openingFence(line);
+  if (fence === null) {
+    return '';
+  }
+  const info = line.slice(line.indexOf(fence) + fence.length).trim();
+  return info === '' ? '' : info.split(/\s+/)[0];
 }
 
 /** Line starts that cannot continue the paragraph above them. */

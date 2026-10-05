@@ -30,11 +30,12 @@ import {
   restoreCaret,
   type EditorContext
 } from './context';
-import { isRawRendered } from '../document/blocks';
+import { isFenced, isRawRendered } from '../document/blocks';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
-import { pairAround, pairingFor, skipClosingFor } from '../syntax/brackets';
-import { mathTypedWrite, mathNewlineWrite } from '../syntax/math_edits';
+import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
+import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
+import { insertFenceOpen } from './fence_open';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -69,11 +70,11 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
   }
-  // A character typed at either edge of a display formula's content belongs *in*
-  // the content: written where the caret is, it would land on a `$$` line, which
-  // the parser reads as a different formula altogether (see `syntax/math_edits.ts`).
-  if (block?.kind === 'displayMath' && offsets.from === offsets.to) {
-    const write = mathTypedWrite(block.text, offsets.from - block.charStart, text);
+  // A character typed at the end of a fenced block's body belongs *in* the body: written where the
+  // caret is, it would land on the closing delimiter's own line, which the parser reads as part of
+  // the delimiter (see `syntax/fence_edits.ts`).
+  if (block && isFenced(block.kind) && offsets.from === offsets.to) {
+    const write = fenceTypedWrite(block.text, offsets.from - block.charStart, text);
     if (write) {
       applyEdit(
         context,
@@ -88,6 +89,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   }
   // A bracket writes its pair where prose is being written — not inside a code block or a
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
+  let pair: BracketEdit | null = null;
   if (brackets && offsets.from === offsets.to) {
     const literal = block?.kind === 'fencedCode' || block?.kind === 'displayMath';
     const source = context.state.getText();
@@ -96,11 +98,22 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
       placeCaret(context, offsets.from + 1);
       return true;
     }
-    const pair = pairingFor(source, offsets.from, text, literal);
-    if (pair) {
-      applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
-      return true;
-    }
+    pair = pairingFor(source, offsets.from, text, literal);
+  }
+  // What a delimiter line becomes when the write completes it: the fenced block it names, both
+  // delimiter lines at once (`editing/fence_open.ts`). The pair a backtick writes counts — ` `` `
+  // plus the pair is a fence's ` ``` ` — so the rule sees what would be written, not the key alone.
+  if (
+    block !== null &&
+    !isRawRendered(block.kind) &&
+    offsets.from === offsets.to &&
+    insertFenceOpen(context, offsets.from, pair ? pair.insert : text)
+  ) {
+    return true;
+  }
+  if (pair) {
+    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
+    return true;
   }
   applyEdit(context, offsets.from, offsets.to, text, undefined, brackets ? 'typing' : 'other');
   return true;
@@ -170,14 +183,13 @@ export function insertNewline(context: EditorContext): boolean {
   if (!block) {
     return false;
   }
-  // Code, math and other raw-rendered blocks keep their own line structure.
-  if (isRawRendered(block.kind) || block.kind === 'displayMath') {
-    // `Enter` in a display formula with no content yet makes the content's first
-    // line, so neither fence line takes the next character (see `syntax/math_edits.ts`).
-    const write =
-      block.kind === 'displayMath'
-        ? mathNewlineWrite(block.text, offsets.from - block.charStart)
-        : null;
+  // Code, math, frontmatter and the other raw-rendered blocks keep their own line structure.
+  if (isRawRendered(block.kind)) {
+    // `Enter` in a fenced block with no content yet makes the body's first line, so neither
+    // delimiter line takes the next character (see `syntax/fence_edits.ts`).
+    const write = isFenced(block.kind)
+      ? fenceNewlineWrite(block.text, offsets.from - block.charStart)
+      : null;
     if (write) {
       applyEdit(
         context,
@@ -187,6 +199,12 @@ export function insertNewline(context: EditorContext): boolean {
         block.charStart + write.caret
       );
       return true;
+    }
+    // `Enter` at the block's own end makes a line *after* it: the same newline, but the caret
+    // belongs on the empty paragraph it made rather than on the separator line in front of it
+    // (`blank_lines.ts: startEmptyParagraph` is the one rule for that).
+    if (offsets.from >= block.charEnd) {
+      return startEmptyParagraph(context, block, offsets);
     }
     applyEdit(context, offsets.from, offsets.to, '\n');
     return true;

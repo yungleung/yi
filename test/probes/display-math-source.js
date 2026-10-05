@@ -1,4 +1,10 @@
-/** A display formula's source view, held to a fenced code block's behaviour. */
+/**
+ * A display formula's source view, held to a fenced code block's behaviour.
+ *
+ * The source a fenced block shows while the caret is inside it is the block's own text, its
+ * delimiters included (`nodes/fence_text.ts`): the `$$` are the author's characters, drawn as the
+ * markup they are, and the caret maps through them like any other character.
+ */
 (async () => {
   const t = window.__t;
   const checks = [];
@@ -7,15 +13,23 @@
   const raw = () => t.raw();
   const formula = () => t.prose().querySelector('[data-display="true"]');
   const source = () => t.prose().querySelector('.markdown-source-text');
+  // Each block's own characters. A fenced block carries its label as chrome inside its container
+  // (`nodes/fence_label.ts`), and the label is not part of what the block shows.
   const blockTexts = () =>
-    [...t.prose().querySelectorAll('.markdown-block')].map((b) => b.textContent);
+    [...t.prose().querySelectorAll('.markdown-block')].map((block) => {
+      const copy = block.cloneNode(true);
+      for (const chrome of copy.querySelectorAll('[data-chrome]')) {
+        chrome.remove();
+      }
+      return copy.textContent;
+    });
   const doc = 'text\n\n$$\n\\frac{a}{b}\n+ c\n$$\n\ntail\n';
   await t.load(doc);
 
   // 1. The click shows the block's own text with the caret at the end of the
   // last content line: typing lands there and both fences stay put.
   await t.click(formula(), 0.5, 0.5);
-  check('the block shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
+  check('the block shows its own text, delimiters and all', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
   t.key('X');
   await t.sleep(300);
   check('typing lands on the content line', await raw(), 'text\n\n$$\n\\frac{a}{b}\n+ cX\n$$\n\ntail\n');
@@ -29,6 +43,8 @@
     await raw(),
     'text\n\n$$\n\\frac{a}{b}\n+ cX\n\n$$\n\ntail\n'
   );
+  // Still one block, and it shows its own body: the fences are not drawn, so what the element
+  // holds is the characters between them.
   checks.push({
     name: 'the block is still one block',
     actual: blockTexts(),

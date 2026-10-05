@@ -32,7 +32,9 @@ methodology; this file is the index and the conventions.
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
-| `check-math-edits.mjs` | Where a write inside a display formula lands: a character typed at either edge of the content goes *in* the content, a formula with none gets a line of its own for it, and `Enter` leaves a blank content line rather than a caret between the `$$` |
+| `check-fence-edits.mjs` | Where a write inside a fenced block lands: a character typed at either edge of a body goes *in* the body, one with no content line gets a line of its own, `Enter` leaves a blank content line rather than a caret on a delimiter, and choosing a language rewrites the opening fence's own line |
+| `check-bare-markers.mjs` | What the parser makes of a marker-only line (`syntax/bare_markers.ts`): an empty item when the marker has its delimiter space (`- `), text when it has not (`-`), and never a setext heading that swallows the paragraph above it |
+| `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): the two delimiter lines with the caret on the blank line between them, the blank lines markdown needs around the block, `---` only at the very top of a note, and the ordinary typing everything else stays |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
@@ -70,7 +72,13 @@ config, the settings tab that shows it, and the note that comes out), blocks and
 `empty-*`, `enter-new-paragraph` — a letter typed after `Enter` at the end of a block is a
 paragraph of its own, whether a block follows it or the block is the file's last, and the
 same for a new note's blank body line — `insert-rule`), code and lists (`code-tab`,
-`code-shift-tab`, `list-*`), tables
+`code-shift-tab`, `list-*`, `fence-open-typing` — a typed ` ``` `, `$$` and top-of-note `---`
+become the whole fenced block with the caret on the blank line in it, and a fresh code fence's
+label opens the language list — and `bare-marker-typing` — a typed `-` stays the character, and
+the item begins at the space that follows it; `fence-source-mode` — a fenced block renders its body
+while the caret is elsewhere and its own text, delimiters and all, while the caret is inside it;
+`fence-exit` — the closing fence is a line the caret can sit on, and `Enter` at its end makes a
+blank line under the block), tables
 (`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;

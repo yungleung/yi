@@ -19,7 +19,7 @@ mounted.
 | --- | --- | --- |
 | Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing |
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how a node whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code) — is built as that source while the caret is inside it |
+| Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
 | Commands | `editing/*`, `commands/*` (the registry, the native-menu bridge, the keymap), `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one command, one name, one way in |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
@@ -286,6 +286,32 @@ left, and the popover would open one character off and slide across on the first
 of the card is also the card's own width — daisyUI's `menu` sizes an item to what it holds, so a
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.
+
+**A delimiter line typed on its own opens the block it names**, and **a bare list marker is the
+character rather than an item**. `editing/fence_open.ts` writes both delimiter lines at once — with
+the blank lines markdown needs around them — and puts the caret on the blank line between them,
+where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
+(`editing/language_picker.ts`), `$$` needs no such thing, and `---` is frontmatter *only* on the
+note's very first line, where it would otherwise be a thematic break. `syntax/bare_markers.ts` is
+the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
+paragraph line, as a setext underline, so the repair makes it text — the delimiter space is what
+starts an item (`- `) — and the line above is never swallowed. Each rule has its check
+(`check-fence-open.mjs`, `check-bare-markers.mjs`) and its probe (`fence-open-typing.js`,
+`bare-marker-typing.js`).
+
+**A fenced block has two shapes**, decided by the caret, and one component draws both
+(`nodes/fence_text.ts`): its *body* with the delimiters hidden — a display formula's KaTeX comes
+from its parse instead (`nodes/math.ts`) — while the caret is elsewhere, and its *own text*,
+delimiters and all, while the caret is inside it. That is what lets the reader leave a block by its
+own lines: the closing ` ``` ` is a line like any other, `Down` and `End` reach it, and `Enter` at
+its end puts a blank line under the block with the caret on it — for all three kinds
+(`test/probes/fence-exit.js`). `document/blocks.ts: hasSourceMode` names the three;
+`editing/context.ts` shows a fenced block's own range while the caret is in it *and no selection is
+live* — a selection is the reader acting on text they can see, and the shape change would take the
+text it covers (a new note opens with its title selected, and that title is inside a frontmatter
+block). A character typed at the body's own end still belongs to the body, all three alike
+(`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
+shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the

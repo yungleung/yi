@@ -29,7 +29,9 @@
   };
   const lineEnd = (() => {
     const text = source().textContent;
-    const position = positionAt(source(), text.indexOf('\n$$'));
+    // The delimiters are drawn: the content's last line ends where the closing `$$` line begins
+    // (`syntax/markers.ts: fenceBody`), which is the last newline of the block's own text.
+    const position = positionAt(source(), text.lastIndexOf('\n'));
     if (!position) {
       return null;
     }
@@ -54,20 +56,14 @@
   await t.sleep(300);
   check('and the next keystroke lands after them', await t.raw(), 'text\n\n$$\n\\frac{a}{b}  X\n$$\n');
 
-  // Tab on the closing fence's own line does nothing: two spaces in front of a
-  // fence are no longer a fence.
-  const fenceY = t.rectOf(source()).top + source().getBoundingClientRect().height - 12;
-  source().dispatchEvent(
-    new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: Math.round(source().getBoundingClientRect().left + 2),
-      clientY: Math.round(fenceY)
-    })
-  );
+  // Tab on a delimiter's own line: the line is drawn, so the caret can be put on it, and the rule
+  // that leaves the delimiters alone is the pure one in `test/checks/check-code-edits.mjs`. `Tab`
+  // at the start of the closing `$$` therefore does nothing at all.
+  t.key('ArrowDown');
   await t.sleep(250);
+  const before = await t.raw();
   t.key('Tab');
   await t.sleep(300);
-  check('a `$$` line is never indented', await t.raw(), 'text\n\n$$\n\\frac{a}{b}  X\n$$\n');
+  check('Tab on the closing fence line leaves it alone', await t.raw(), before);
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

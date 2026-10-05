@@ -461,8 +461,29 @@ body {
    height of a typical note), and remembers each block's real height once it
    has been laid out. */
 .markdown-block {
+  /* The containing box for a block's own chrome: a fenced block's label hangs in its top-right
+     corner, over the first line, so nothing about the block's height changes for it. */
+  position: relative;
   content-visibility: auto;
   contain-intrinsic-size: auto calc(60px * var(--md-page-scale));
+}
+
+/* What a fenced block is called, in its own corner: `YAML Frontmatter`, `latex`, or a fenced code
+   block's language — which is a button, because that is the one thing about such a block the reader
+   may want to change (see `nodes/fence_label.ts`). It is chrome rather than text: the offsets
+   mapping steps over it (`caret/offsets.ts`), so a caret in the block is placed by the block's own
+   characters whether the label is there or not. */
+.markdown-fence-label {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: calc(0.7rem * var(--md-page-scale, 1));
+  line-height: 1.4;
+  color: color-mix(in oklab, var(--color-base-content) 65%, var(--color-base-200));
+  background-color: color-mix(in oklab, var(--color-base-200) 85%, transparent);
 }
 
 /* Blocks carry no margin of their own: the spacing belongs to the content and
@@ -548,6 +569,14 @@ body {
 .hljs-comment,
 .hljs-meta,
 .hljs-quote {
+  color: var(--md-source-comment);
+}
+
+/* A fenced block's own delimiter lines, which are drawn while the caret is inside the block
+   (`nodes/fence_text.ts`): they are the block's markup rather than its content, so they wear the
+   comment colour — the plain ink let down toward the surface — and read as the lines around the
+   body instead of as part of it. */
+.markdown-fence-delimiter {
   color: var(--md-source-comment);
 }
 

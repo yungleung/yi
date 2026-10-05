@@ -105,12 +105,34 @@ export function isRawRendered(kind: BlockKind): boolean {
  * Whether a block of this kind shows its own markdown text while the caret is
  * inside it, instead of its view.
  *
- * A display formula renders KaTeX, which has no characters to aim a caret at,
- * so the block falls back to being its own text — the shape a fenced code
- * block has at all times (see `source_mode.ts`).
+ * Every fenced block does: a display formula renders KaTeX and the other two render their body
+ * with the delimiters hidden, so none of the three has a character to aim a caret at where its
+ * own markdown is — the source view is the block's own text, delimiters and all
+ * (`nodes/fence_text.ts`), and the caret maps through it one to one (see `source_mode.ts`).
  */
 export function hasSourceMode(kind: BlockKind): boolean {
-  return kind === 'displayMath';
+  return isFenced(kind);
+}
+
+/**
+ * Whether a block of this kind is *fenced*: a body between two delimiter lines.
+ *
+ * The delimiters are drawn while the caret is inside the block and hidden the rest of the time
+ * (`nodes/fence_text.ts`), and a typed character or a newline at the body's own edge belongs in
+ * the body rather than on a delimiter's line (`syntax/fence_edits.ts`). An *indented* code block
+ * is not one: it has no delimiter to keep a line for.
+ */
+export function isFenced(kind: BlockKind): boolean {
+  return kind === 'frontmatter' || kind === 'fencedCode' || kind === 'displayMath';
+}
+
+/**
+ * Whether a block of this kind renders its **body** while the caret is elsewhere: the two fenced
+ * kinds that have no rendering of their own. A display formula's view is the KaTeX its parse draws
+ * (`nodes/math.ts`), like any other node's view, so its body is not what the reader sees.
+ */
+export function hasBodyView(kind: BlockKind): boolean {
+  return kind === 'frontmatter' || kind === 'fencedCode';
 }
 
 /** A block as an mdast-like node (the `type` field makes it a tree node). */

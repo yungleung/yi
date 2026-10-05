@@ -1,6 +1,6 @@
 /**
- * Tab inside a fenced code block or a display formula: one `Tab` is two
- * spaces, so a multi-line formula lines up the way the code around it does.
+ * Tab inside a fenced block: one `Tab` is two spaces, so a multi-line code
+ * block or formula lines up the way the text around it does.
  *
  * The rule itself is pure (`code_edits.ts`); this module is the part that
  * knows where the caret is and applies the edit. Anywhere else in the document
@@ -12,15 +12,15 @@
  * the caret is somewhere it applies.
  */
 
-import { isRawRendered } from '../document/blocks';
+import { isFenced } from '../document/blocks';
 import { codeIndentEdit } from '../syntax/code_edits';
 import { shiftOffset } from '../syntax/edit_range';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
 
 /**
  * Whether the Tab key was handled. True whenever the caret is inside a fenced
- * code block — even when the edit itself is a no-op, like Shift+Tab at the
- * start of a line — so the key never moves focus out of the code being typed.
+ * block — even when the edit itself is a no-op, like Shift+Tab at the start of
+ * a line — so the key never moves focus out of the text being typed.
  */
 export function applyCodeIndent(context: EditorContext, outdent: boolean): boolean {
   const range = editorSelection(context, true);
@@ -32,9 +32,9 @@ export function applyCodeIndent(context: EditorContext, outdent: boolean): boole
     return false;
   }
   const block = context.state.getBlockAtOffset(offsets.from);
-  // Both blocks are literal text: nothing in them is parsed, so indenting a
-  // line can only mean "move this line".
-  if (!block || (block.kind !== 'fencedCode' && block.kind !== 'displayMath') || !isRawRendered(block.kind)) {
+  // All three are literal text — nothing in them is parsed — so indenting a line can only mean
+  // "move this line".
+  if (!block || !isFenced(block.kind)) {
     return false;
   }
   const edit = codeIndentEdit(context.state.getText(), offsets.from, offsets.to, outdent);

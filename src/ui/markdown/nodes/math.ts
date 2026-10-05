@@ -123,11 +123,10 @@ function formulaRange(source: string): { start: number; end: number } {
  * Renders a display `math` node with KaTeX, and nothing else.
  *
  * A display formula is a block, and KaTeX has no characters to aim a caret at,
- * so the *block* shows its own text while the caret is inside it (see
- * `source_mode.ts`) — the shape a fenced code block always has, where the
- * caret maps through the text one to one. The rendering therefore holds no
- * caret of its own; it is what the block shows the rest of the time. The
- * formula renders lazily near the viewport, like inline math.
+ * so the *block* shows its own text — delimiters and all (see `source_mode.ts`
+ * and `create_block.ts`) — while the caret is inside it, and this rendering
+ * holds no caret of its own: it is what the block shows the rest of the time.
+ * The formula renders lazily near the viewport, like inline math.
  */
 export class DisplayMath extends EditableNodeComponent {
   constructor(node: MathNode) {

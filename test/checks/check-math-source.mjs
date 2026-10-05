@@ -84,9 +84,9 @@ moveShownSource({ from: formula.charEnd, to: formula.charEnd, replacement: 'zz' 
 check('an edit after the shown range leaves it where it is', shownSourceWithinBlock(formula), 0);
 setShownRange(null);
 
-// Where a click on the rendering enters the text: the end of the last line
-// that has content. The closing `$$` is its own line, and the caret must not
-// sit between that line and the text above it.
+// Where a click on the rendering enters the text: the end of the body's last
+// line that has content. The delimiters are not drawn, so the caret has to land
+// inside the body, and blank lines at its end are not content.
 check('a multi-line formula enters at the end of its last content line',
   sourceEntryOffset('$$\n\\frac{a}{b}\n$$'), '$$\n\\frac{a}{b}\n$$'.indexOf('\n$$'));
 check('a longer formula likewise',
@@ -95,8 +95,8 @@ check('blank lines at the end of the content are not the content',
   sourceEntryOffset('$$\n+ c\n\n\n$$'), '$$\n+ c\n\n\n$$'.indexOf('\n\n\n$$'));
 check('a formula on one line enters before its closing `$$`',
   sourceEntryOffset('$$E = mc^2$$'), '$$E = mc^2$$'.length - 2);
-check('an empty formula enters at the end of its opening line',
-  sourceEntryOffset('$$\n$$'), 2);
+check('an empty formula enters inside its body',
+  sourceEntryOffset('$$\n$$'), '$$\n'.length);
 check('a formula that never closes enters at its end',
   sourceEntryOffset('$$\n\\frac{a}{b}\n'), '$$\n\\frac{a}{b}\n'.length - 1);
 

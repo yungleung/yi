@@ -37,6 +37,7 @@
 import type { AstNode } from './ast';
 import { hasSourceMode, type MarkdownBlock } from './document/blocks';
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
+import { fenceBody } from './syntax/markers';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;
@@ -187,21 +188,22 @@ export function shownSourceText(): string | null {
 }
 
 /**
- * Where a click on a block's rendering enters its text: the end of the last
- * line that has content.
+ * Where a click on a display formula's rendering enters its text: the end of the formula's own last
+ * content line.
  *
- * The rendering cannot name a character, so the entry point is the one
- * position that is always true, and the author's next click lands on the text
- * itself, where the mapping is exact. The end of the *content* rather than the
- * end of the block: a block's closing delimiter — a formula's `$$` — is a line
- * of its own, and a character typed between it and the text above would glue
- * itself to the delimiter.
+ * KaTeX cannot name a character — its glyphs say nothing about where in the source they were
+ * written — so the entry point is the one position that is always true, and the author's next click
+ * lands on the text itself, where the mapping is exact. It is the end of the *content*, which is
+ * where a formula is still being written; the delimiter lines are drawn around it once the caret is
+ * inside (`nodes/fence_text.ts`), so nothing has to be reached past to type.
  */
 export function sourceEntryOffset(text: string): number {
-  const content = text.trimEnd();
-  const closing = content.endsWith('$$') ? content.length - 2 : content.length;
-  let offset = closing;
-  while (offset > 0 && text[offset - 1] === '\n') {
+  const body = fenceBody(text);
+  // The end of the *content* rather than the end of the body: blank lines at the body's end are
+  // not content, and a character typed between them and the closing delimiter would sit on a line
+  // of its own between the two.
+  let offset = body.end;
+  while (offset > body.start && text[offset - 1] === '\n') {
     offset -= 1;
   }
   return offset;

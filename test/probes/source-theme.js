@@ -202,8 +202,11 @@
   };
 
   const EXPECTED = {
-    frontmatter: FRONTMATTER,
-    codeFence: 'const a = 1;',
+    // What a fenced block renders while the caret is elsewhere is its *body*: the delimiters are
+    // not drawn. The formula is measured while its own text is shown, so there it is the whole
+    // block, delimiters and all (`nodes/fence_text.ts`).
+    frontmatter: 'id: 20240707122715\ntitle: "A note"\n',
+    codeFence: 'const a = 1;\n',
     inlineMath: INLINE,
     displayMath: DISPLAY
   };

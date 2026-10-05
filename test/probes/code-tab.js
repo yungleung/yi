@@ -1,22 +1,49 @@
-/** Tab inside a fenced code block types two spaces. */
+/**
+ * Tab inside a fenced block types two spaces — in all three kinds, because they are one class: a
+ * code block, the frontmatter and a display formula all keep their lines
+ * (`editing/code.ts: applyCodeIndent`).
+ */
 (async () => {
   const t = window.__t;
-  const codeText = () => t.prose().querySelector('pre code')?.textContent ?? null;
-  await t.load('intro\n\n```ts\nlet a = 1;\n```\n\noutro\n');
-  const before = { text: codeText(), caret: null };
-  await t.click(t.prose().querySelector('pre'), 0.35);
-  before.caret = t.caretRect();
-  t.report({ stage: 'clicked', before });
-  t.scroller().dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
-  );
-  await t.sleep(300);
-  const after = {
-    text: codeText(),
-    caret: t.caretRect(),
-    stillCode: t.prose().querySelector('pre') !== null,
-    highlighted: t.prose().querySelectorAll('pre code span').length
+  const checks = [];
+  const check = (name, actual, expected) =>
+    checks.push({ name, actual, expected, pass: JSON.stringify(actual) === JSON.stringify(expected) });
+  const tab = async () => {
+    t.scroller().dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    );
+    await t.sleep(300);
   };
-  t.report({ before, after });
-  return { before, after };
+  const cases = [
+    {
+      name: 'a fenced code block',
+      doc: 'intro\n\n```ts\nlet a = 1;\n```\n\noutro\n',
+      enter: () => t.prose().querySelector('pre'),
+      out: 'intro\n\n```ts\n  let a = 1;\n```\n\noutro\n'
+    },
+    {
+      name: 'the frontmatter',
+      doc: '---\nid: 1\n---\n\noutro\n',
+      enter: () => t.prose().querySelector('.markdown-frontmatter'),
+      out: '---\n  id: 1\n---\n\noutro\n'
+    },
+    {
+      name: 'a display formula',
+      doc: 'intro\n\n$$\n\\frac{a}{b}\n$$\n',
+      enter: () => t.prose().querySelector('[data-display="true"]'),
+      // A click on KaTeX cannot name a character: it enters at the end of the formula's content
+      // (`source_mode.ts: sourceEntryOffset`), so the two spaces go there.
+      out: 'intro\n\n$$\n\\frac{a}{b}  \n$$\n'
+    }
+  ];
+  for (const entry of cases) {
+    await t.load(entry.doc);
+    await t.sleep(200);
+    // The caret goes to the start of the block's first line, so the step lands in front of it.
+    await t.click(entry.enter(), 0.02, 0.5);
+    await t.sleep(250);
+    await tab();
+    check(`${entry.name}: Tab types two spaces at the caret`, await t.raw(), entry.out);
+  }
+  return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

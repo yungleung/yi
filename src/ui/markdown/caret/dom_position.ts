@@ -249,23 +249,42 @@ function mapChildrenRawToRendered(
  * The text node holding a rendered-text offset inside a block, or null when
  * the offset cannot be resolved. KaTeX-generated text is skipped because the
  * rendered-length model treats math as its placeholder value.
+ *
+ * A boundary right after a newline belongs to the text that *follows* it: the position is the
+ * start of the line below, and a caret anchored to the end of the text that holds the newline is
+ * drawn on the line above instead (measured: typing a fence put the caret after the opening
+ * ` ``` ` rather than on the blank body line it had been placed on).
  */
 function textNodeAtRenderedOffset(
   blockElement: HTMLElement,
   renderedOffset: number
 ): DomPosition | null {
-  let acc = 0;
+  // The text nodes that carry the offsets: KaTeX's own text is skipped, because the rendered-length
+  // model treats math as its placeholder value.
+  const nodes: Text[] = [];
   const walker = document.createTreeWalker(blockElement, NodeFilter.SHOW_TEXT);
   let node: Node | null;
   while ((node = walker.nextNode())) {
     const text = node as Text;
-    if (text.parentElement?.closest('.katex')) {
-      continue;
+    if (!text.parentElement?.closest('.katex')) {
+      nodes.push(text);
     }
-    if (renderedOffset <= acc + text.data.length) {
+  }
+  let acc = 0;
+  for (let index = 0; index < nodes.length; index += 1) {
+    const text = nodes[index];
+    const end = acc + text.data.length;
+    if (renderedOffset < end) {
       return { node: text, offset: Math.max(0, renderedOffset - acc) };
     }
-    acc += text.data.length;
+    if (renderedOffset === end) {
+      const next = nodes[index + 1];
+      if (next !== undefined && text.data.endsWith('\n')) {
+        return { node: next, offset: 0 };
+      }
+      return { node: text, offset: text.data.length };
+    }
+    acc = end;
   }
   return null;
 }
