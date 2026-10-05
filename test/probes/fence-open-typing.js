@@ -23,6 +23,20 @@
     return element === null ? null : { tag: element.tagName, text: element.textContent };
   };
 
+  /**
+   * How far below the top of the block's body line the drawn caret sits, in pixels: zero when it is
+   * drawn on the blank line between the fences, which is where the edit puts it. A caret anchored
+   * to the end of the opening fence's line is drawn *on* that line instead
+   * (`caret/dom_position.ts: textNodeAtRenderedOffset`).
+   */
+  const caretBelowBodyLine = () => {
+    const box = t.prose().querySelector('.markdown-block[data-line-start="1"]')?.firstElementChild;
+    const body = box?.children?.[1] ?? null;
+    const caret = t.caretRect();
+    const rect = body?.getBoundingClientRect();
+    return caret === null || rect === undefined ? null : Math.round(caret.y - rect.top);
+  };
+
   /** Types a run of keys, the way the keyboard delivers them. */
   const type = async (keys) => {
     for (const key of keys) {
@@ -55,6 +69,7 @@
   check('and the block is the frontmatter fence', tag(), 'PRE');
   check('with its own kind on it', classes().includes('markdown-frontmatter'), true);
   check('and its label', label(), { tag: 'SPAN', text: 'YAML Frontmatter' });
+  check('and the caret is drawn on the body’s blank line', Math.abs(caretBelowBodyLine() ?? 99) <= 2, true);
   t.key('Q');
   await t.sleep(250);
   check('the caret was on the blank line between the fences', await t.raw(), '---\nQ\n---\n\nhello world\n');
@@ -63,6 +78,7 @@
   await emptyFirstLine();
   await type(['`', '`', '`']);
   check('a typed ` ``` ` makes a closed code fence', await t.raw(), '```\n\n```\n\nhello world\n');
+  check('and the caret is drawn on the body’s blank line', Math.abs(caretBelowBodyLine() ?? 99) <= 2, true);
   check('and the block is the code fence', classes().includes('markdown-fenced-code'), true);
   check('its label asks for the language', label(), { tag: 'BUTTON', text: 'text' });
   const rows = [...document.querySelectorAll('[data-language]')];
@@ -93,6 +109,7 @@
   await emptyFirstLine();
   await type(['$', '$']);
   check('a typed `$$` makes a closed display formula', await t.raw(), '$$\n\n$$\n\nhello world\n');
+  check('and the caret is drawn on the body’s blank line', Math.abs(caretBelowBodyLine() ?? 99) <= 2, true);
   check('with the formula’s own label, as its source is shown', label(), { tag: 'SPAN', text: 'latex' });
   t.key('Q');
   await t.sleep(250);
