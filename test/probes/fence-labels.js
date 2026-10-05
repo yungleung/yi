@@ -1,10 +1,11 @@
 /**
  * Every fenced block says what it is, in its own top-right corner.
  *
- * The delimiters are not drawn (`nodes/fence_body.ts`), so nothing in the body says whether it is
- * frontmatter and of which format, a fenced code block and in which language, or a formula. The
- * label says it; a fenced code block's is a *button*, because the language is the one thing about
- * that block the reader may want to change, and what it opens is highlight.js's own list.
+ * A fenced block's body does not say whether it is frontmatter and of which format, a fenced code
+ * block and in which language, or a formula — the delimiters are hidden while the caret is
+ * elsewhere, and a formula's view is KaTeX (`nodes/fence_text.ts`). The label says it, in both
+ * shapes of the block; a fenced code block's is a *button*, because the language is the one thing
+ * about that block the reader may want to change, and what it opens is highlight.js's own list.
  *
  * The label is chrome, not text: it hangs over the block's box (nothing is measured again for it),
  * and the offsets step over it (`data-chrome`) — which this probe watches from the reader's side by

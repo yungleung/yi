@@ -572,6 +572,14 @@ body {
   color: var(--md-source-comment);
 }
 
+/* A fenced block's own delimiter lines, which are drawn while the caret is inside the block
+   (`nodes/fence_text.ts`): they are the block's markup rather than its content, so they wear the
+   comment colour — the plain ink let down toward the surface — and read as the lines around the
+   body instead of as part of it. */
+.markdown-fence-delimiter {
+  color: var(--md-source-comment);
+}
+
 .hljs-attr,
 .hljs-attribute,
 .hljs-char.escape_,

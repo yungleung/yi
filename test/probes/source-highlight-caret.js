@@ -2,17 +2,16 @@
  * Highlighted source hands the caret the character it means.
  *
  * Highlighting splits a block's text into as many spans as the grammar finds, and the app
- * places the caret by character offset over that markup (`caret/offsets.ts`). So the markup
- * may not add, drop or reorder a character — and a block that *is* its own source has to take
- * the caret exactly where it was clicked, which is what a fenced code block does. The
- * frontmatter is one now: it was rendered as the block rather than as a node, so a click in it
- * resolved to the nearest block edge (`editing/pointer.ts`) and editing the middle of a line
- * meant arrowing there first.
+ * places the caret by character offset over that markup (`caret/offsets.ts`). So the markup may
+ * not add, drop or reorder a character — and a click into a fenced block has to take the caret to
+ * the character it landed on, both through the body such a block renders and through the source
+ * view it becomes the moment the caret is inside it (`nodes/fence_text.ts`): the click maps
+ * through the body's own characters, and the block is rebuilt around the caret at that offset.
  *
  * `source-theme.js` holds the colours; this holds the characters.
  *
- * @covers src/ui/markdown/nodes/frontmatter.ts, src/ui/markdown/nodes/frontmatter_highlight.ts,
- *   src/ui/markdown/nodes/code_block.ts, src/ui/markdown/nodes/editable_node.ts
+ * @covers src/ui/markdown/nodes/fence_text.ts, src/ui/markdown/nodes/frontmatter_highlight.ts,
+ *   src/ui/markdown/nodes/code_highlight.ts, src/ui/markdown/nodes/editable_node.ts
  */
 (async () => {
   const t = window.__t;
@@ -37,6 +36,7 @@
   const clickCharacter = async (root, prefix, offset) => {
     const node = t.textNodesIn(root).find((candidate) => candidate.data.startsWith(prefix));
     if (!node) return null;
+    const line = root.closest('.markdown-block')?.dataset.lineStart ?? '';
     const range = document.createRange();
     range.setStart(node, offset);
     range.collapse(true);
@@ -46,12 +46,17 @@
     );
     await t.sleep(200);
     const caret = caretModule.getCaretRange();
+    // The block is built again as its own source once the caret is inside it, so "inside" is asked
+    // of the block as it is now: the element that was clicked is gone by this point.
+    const current = t.prose().querySelector(
+      `.markdown-block[data-line-start="${line}"]`
+    );
     return caret === null
       ? null
       : {
           offset: caret.startOffset,
           text: caret.startContainer.textContent,
-          inside: root.contains(caret.startContainer)
+          inside: current !== null && current.contains(caret.startContainer)
         };
   };
 

@@ -75,7 +75,10 @@ same for a new note's blank body line — `insert-rule`), code and lists (`code-
 `code-shift-tab`, `list-*`, `fence-open-typing` — a typed ` ``` `, `$$` and top-of-note `---`
 become the whole fenced block with the caret on the blank line in it, and a fresh code fence's
 label opens the language list — and `bare-marker-typing` — a typed `-` stays the character, and
-the item begins at the space that follows it), tables
+the item begins at the space that follows it; `fence-source-mode` — a fenced block renders its body
+while the caret is elsewhere and its own text, delimiters and all, while the caret is inside it;
+`fence-exit` — the closing fence is a line the caret can sit on, and `Enter` at its end makes a
+blank line under the block), tables
 (`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;

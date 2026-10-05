@@ -19,6 +19,7 @@
 
 import {
   getCaretRange,
+  getSelectionRange,
   scheduleCaret,
   scheduleNativeSelection,
   setSelectionRange
@@ -33,7 +34,7 @@ import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
-import type { MarkdownBlock } from '../document/blocks';
+import { hasSourceMode, type MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
@@ -276,7 +277,13 @@ export function showSourceAt(context: EditorContext, offset: number | null): voi
   if (shownSourceHeld()) {
     return;
   }
-  const range = offset === null ? null : sourceRangeAt(context.state, offset);
+  // A *selection* is the reader acting on text they can see, not a caret entering the markdown they
+  // are editing: a fenced block is built as its own text — delimiters and all — when the caret is
+  // inside, and that build would take the selected text with the element it replaces (a new note
+  // opens with its title selected, and the title is inside a frontmatter block). So the block keeps
+  // the shape it has while a selection is live; the selection collapsing decides the shape again.
+  const selecting = getSelectionRange() !== null;
+  const range = offset === null ? null : sourceRangeAt(context.state, offset, selecting);
   if (!setShownRange(range)) {
     return;
   }
@@ -292,17 +299,25 @@ export function showSourceAt(context: EditorContext, offset: number | null): voi
 }
 
 /**
- * The source a caret at this document offset is inside, as its own range: the
- * node the caret is in, when that node has a source to show. A caret in plain
- * text is inside no such node.
+ * The source a caret at this document offset is inside, as its own range: a
+ * fenced block's own text while the caret is in it and the reader is not
+ * selecting (`selecting`), or the node the caret is in when that node has a
+ * source to show. A caret in plain text is inside no such source.
  */
 function sourceRangeAt(
   state: MarkdownEditorState,
-  offset: number
+  offset: number,
+  selecting: boolean
 ): { from: number; to: number } | null {
   const block = state.getBlockAtOffset(offset);
   if (!block) {
     return null;
+  }
+  // A fenced block is the source the caret is in: its rendering is the body with the delimiters
+  // hidden (`nodes/fence_text.ts`), so the text that stands in for that rendering is the block's
+  // own — delimiters and all — and every offset in the block maps through it.
+  if (!selecting && hasSourceMode(block.kind)) {
+    return { from: block.charStart, to: block.charEnd };
   }
   const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);
   return range === null

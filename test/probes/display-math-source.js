@@ -1,4 +1,10 @@
-/** A display formula's source view, held to a fenced code block's behaviour. */
+/**
+ * A display formula's source view, held to a fenced code block's behaviour.
+ *
+ * The source a fenced block shows while the caret is inside it is the block's own text, its
+ * delimiters included (`nodes/fence_text.ts`): the `$$` are the author's characters, drawn as the
+ * markup they are, and the caret maps through them like any other character.
+ */
 (async () => {
   const t = window.__t;
   const checks = [];
@@ -23,7 +29,7 @@
   // 1. The click shows the block's own text with the caret at the end of the
   // last content line: typing lands there and both fences stay put.
   await t.click(formula(), 0.5, 0.5);
-  check('the block shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n+ c\n');
+  check('the block shows its own text, delimiters and all', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
   t.key('X');
   await t.sleep(300);
   check('typing lands on the content line', await raw(), 'text\n\n$$\n\\frac{a}{b}\n+ cX\n$$\n\ntail\n');
@@ -42,8 +48,8 @@
   checks.push({
     name: 'the block is still one block',
     actual: blockTexts(),
-    expected: ['text', '\\frac{a}{b}\n+ cX\n\n', 'tail'],
-    pass: JSON.stringify(blockTexts()) === JSON.stringify(['text', '\\frac{a}{b}\n+ cX\n\n', 'tail'])
+    expected: ['text', '$$\n\\frac{a}{b}\n+ cX\n\n$$', 'tail'],
+    pass: JSON.stringify(blockTexts()) === JSON.stringify(['text', '$$\n\\frac{a}{b}\n+ cX\n\n$$', 'tail'])
   });
   t.key('Z');
   await t.sleep(300);
@@ -82,7 +88,7 @@
   await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'redo' });
   await t.sleep(400);
   check('redo takes it away again', await raw(), 'text\n\n$$\n\\frac{a}{b}\n+ c\n$$\n\ntail\n');
-  check('and the block still shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n+ c\n');
+  check('and the block still shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n$$');
 
   // 4. Clicking away renders the formula again, with the document intact.
   const tail = [...t.prose().querySelectorAll('.markdown-block')].pop();

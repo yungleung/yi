@@ -3,17 +3,17 @@
  * The virtual renderer composes these individual block elements.
  *
  * May import: the document's blocks, the node registry, the caret, `source_mode.ts`, the fenced
- * block's body and the three highlighters. Upholds: a block's rendering is a pure function of its
+ * block's text and the three highlighters. Upholds: a block's rendering is a pure function of its
  * own source — the component is built from the block's slice, and the block's line range is tagged
  * on it for everything that maps back.
  */
 
-import type { BlockNode } from './document/blocks';
+import { hasBodyView, type BlockNode } from './document/blocks';
 import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
-import { FenceBody } from './nodes/fence_body';
+import { FenceText, type FenceTextStyle } from './nodes/fence_text';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
 import { highlightCode } from './nodes/code_highlight';
@@ -50,33 +50,33 @@ class BlockView implements BlockComponent {
     // inside it can tell whether its own source is the one being shown (see
     // `source_mode.ts`).
     this.element = withRenderFrame(node, () =>
-      node.kind === 'frontmatter' || node.kind === 'fencedCode'
-        ? this.renderFenceBody(node)
-        : node.kind === 'blank'
-          ? this.renderBlank(node)
-          : isSourceBlock(node)
-            ? this.renderSourceText(node)
+      node.kind === 'blank'
+        ? this.renderBlank(node)
+        : isSourceBlock(node)
+          ? this.renderSource(node)
+          : hasBodyView(node.kind)
+            ? this.renderFenceBody(node)
             : this.renderParsed(node, children)
     );
   }
 
   /**
-   * The block's own text, shown while the caret is inside it: the block is built in whichever shape
-   * `source_mode.ts` names, and this is the one a rendered view cannot hold a caret in. A display
-   * formula's text is its body, delimiters hidden, like the other two fenced blocks.
+   * The block's own text, delimiters and all, shown while the caret is inside it: the shape
+   * `source_mode.ts` names for a fenced block, and the one its rendering cannot hold a caret in —
+   * a formula's KaTeX has no characters to aim at, and the other two hide the lines a character
+   * typed at the body's edge would land on (see `nodes/fence_text.ts`).
    */
-  private renderSourceText(node: BlockNode): HTMLElement {
+  private renderSource(node: BlockNode): HTMLElement {
+    const kind = fenceKind(node);
     const element = this.container(node);
     element.appendChild(
-      new FenceBody(node, {
-        className: 'markdown-source-text overflow-x-auto',
-        language: 'latex',
-        highlight: highlightLatex
-      }).element
+      new FenceText(
+        node,
+        { ...kind, className: `${SOURCE_CLASS} ${kind.className}` },
+        true
+      ).element
     );
-    // A formula is `latex` while its own text is what it shows; over the KaTeX rendering there is
-    // no label, because that view is not the formula's markdown.
-    element.appendChild(fenceLabel({ text: 'latex' }));
+    element.appendChild(this.label(kind, node));
     return element;
   }
 
@@ -118,36 +118,35 @@ class BlockView implements BlockComponent {
 
   /**
    * A fenced block's body, its delimiters hidden: what a fenced code block and a frontmatter block
-   * show at all times, and what a display formula shows while the caret is inside it.
+   * render while the caret is elsewhere. A display formula has no body to render — its view is the
+   * KaTeX parse (`nodes/math.ts`), which is what `renderParsed` draws.
    *
    * The body is the block's own characters — a node like any other, so a click lands on the
    * character clicked and a keystroke writes there — highlighted in the language the fence named,
-   * or the block's own format, or LaTeX (see `nodes/fence_body.ts`).
+   * or the block's own format (see `nodes/fence_text.ts`).
    */
   private renderFenceBody(node: BlockNode): HTMLElement {
+    const kind = fenceKind(node);
     const element = this.container(node);
-    const fence = node.kind === 'frontmatter';
-    const language = fence
-      ? (node.format ?? 'yaml')
-      : fenceLanguage(firstLine(node.text));
     element.appendChild(
-      new FenceBody(node, {
-        className: fence ? 'markdown-frontmatter overflow-x-auto' : 'markdown-fenced-code overflow-x-auto',
-        language,
-        highlight: fence
-          ? (source: string) => highlightFrontmatter(source, node.format ?? 'yaml')
-          : (source: string) => highlightCode(source, language)
-      }).element
+      new FenceText(node, { ...kind, className: `${kind.className} ${OVERFLOW_CLASS}` }).element
     );
-    element.appendChild(
-      fence
-        ? fenceLabel({ text: language === 'toml' ? 'TOML Frontmatter' : 'YAML Frontmatter' })
-        : fenceLabel({
-            text: language === '' ? 'text' : language,
-            onChoose: (label) => chooseLanguage(label, language, node.lineStart)
-          })
-    );
+    element.appendChild(this.label(kind, node));
     return element;
+  }
+
+  /**
+   * What the block's corner says (`nodes/fence_label.ts`): a fenced code block's language is the
+   * one thing about it the reader may change, so there the label is a button that asks for it
+   * (`editing/language_picker.ts`); the other two are badges.
+   */
+  private label(kind: FenceKind, node: BlockNode): HTMLElement {
+    return kind.choosesLanguage
+      ? fenceLabel({
+          text: kind.label,
+          onChoose: (label) => chooseLanguage(label, kind.language, node.lineStart)
+        })
+      : fenceLabel({ text: kind.label });
   }
 
   private container(node: BlockNode): HTMLElement {
@@ -160,6 +159,55 @@ class BlockView implements BlockComponent {
     element.dataset.charStart = String(node.charStart);
     return element;
   }
+}
+
+/** The class that marks a block as showing its own source rather than its view. */
+const SOURCE_CLASS = 'markdown-source-text';
+
+/** The class every source box and body box carries: a long line scrolls rather than wraps. */
+const OVERFLOW_CLASS = 'overflow-x-auto';
+
+/** What a fenced block is: how its own characters are drawn, and what its corner says. */
+interface FenceKind extends FenceTextStyle {
+  /** What the block's label says (`nodes/fence_label.ts`). */
+  readonly label: string;
+  /** Whether that label is a button that asks for the block's language. */
+  readonly choosesLanguage: boolean;
+}
+
+/**
+ * The three fenced kinds, read off the block: one home for how each draws its own characters —
+ * the class of its box, the language its body is highlighted as, and what its corner says.
+ */
+function fenceKind(node: BlockNode): FenceKind {
+  if (node.kind === 'frontmatter') {
+    const format = node.format ?? 'yaml';
+    return {
+      className: 'markdown-frontmatter',
+      language: format,
+      highlight: (source) => highlightFrontmatter(source, format),
+      label: format === 'toml' ? 'TOML Frontmatter' : 'YAML Frontmatter',
+      choosesLanguage: false
+    };
+  }
+  if (node.kind === 'fencedCode') {
+    const language = fenceLanguage(firstLine(node.text));
+    return {
+      className: 'markdown-fenced-code',
+      language,
+      highlight: (source) => highlightCode(source, language),
+      label: language === '' ? 'text' : language,
+      choosesLanguage: true
+    };
+  }
+  // Display math: its view is KaTeX, so only its own text is drawn here, and that text is LaTeX.
+  return {
+    className: 'markdown-display-math',
+    language: 'latex',
+    highlight: highlightLatex,
+    label: 'latex',
+    choosesLanguage: false
+  };
 }
 
 /** A block's first line, where a fence names its language. */

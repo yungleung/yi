@@ -1,9 +1,10 @@
 /**
  * What a fenced block is called, in its own top-right corner.
  *
- * A fenced block's delimiters are not drawn (`nodes/fence_body.ts`), so what the block *is* — a
- * frontmatter block and its format, a fenced code block and its language, a display formula — is
- * not readable from the body alone. The label says it.
+ * A fenced block renders its body with the delimiters hidden while the caret is elsewhere
+ * (`nodes/fence_text.ts`), so what the block *is* — a frontmatter block and its format, a fenced
+ * code block and its language, a display formula — is not readable from the body alone. The label
+ * says it, in both shapes of the block.
  *
  * It floats over the block's own box rather than sitting in the flow, so no block's height changes
  * for it and nothing has to be measured again; the offset it hangs from is the block container's,

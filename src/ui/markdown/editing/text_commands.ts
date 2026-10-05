@@ -183,8 +183,8 @@ export function insertNewline(context: EditorContext): boolean {
   if (!block) {
     return false;
   }
-  // Code, math and other raw-rendered blocks keep their own line structure.
-  if (isRawRendered(block.kind) || block.kind === 'displayMath') {
+  // Code, math, frontmatter and the other raw-rendered blocks keep their own line structure.
+  if (isRawRendered(block.kind)) {
     // `Enter` in a fenced block with no content yet makes the body's first line, so neither
     // delimiter line takes the next character (see `syntax/fence_edits.ts`).
     const write = isFenced(block.kind)
@@ -199,6 +199,12 @@ export function insertNewline(context: EditorContext): boolean {
         block.charStart + write.caret
       );
       return true;
+    }
+    // `Enter` at the block's own end makes a line *after* it: the same newline, but the caret
+    // belongs on the empty paragraph it made rather than on the separator line in front of it
+    // (`blank_lines.ts: startEmptyParagraph` is the one rule for that).
+    if (offsets.from >= block.charEnd) {
+      return startEmptyParagraph(context, block, offsets);
     }
     applyEdit(context, offsets.from, offsets.to, '\n');
     return true;

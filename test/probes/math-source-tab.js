@@ -12,7 +12,7 @@
   await t.load(doc);
   await t.click(t.prose().querySelector('[data-display="true"]'), 0.5, 0.5);
   const source = () => t.prose().querySelector('.markdown-source-text');
-  check('the formula shows its own text', source()?.textContent ?? null, '\\frac{a}{b}\n');
+  check('the formula shows its own text', source()?.textContent ?? null, '$$\n\\frac{a}{b}\n$$');
   // The caret belongs at the end of the formula's own line, which is where the
   // click entered it (the rendering cannot name a character).
   const positionAt = (root, offset) => {
@@ -29,8 +29,9 @@
   };
   const lineEnd = (() => {
     const text = source().textContent;
-    // The delimiters are not drawn: the last content line's end is the body's, less its newline.
-    const position = positionAt(source(), text.trimEnd().length);
+    // The delimiters are drawn: the content's last line ends where the closing `$$` line begins
+    // (`syntax/markers.ts: fenceBody`), which is the last newline of the block's own text.
+    const position = positionAt(source(), text.lastIndexOf('\n'));
     if (!position) {
       return null;
     }
@@ -55,9 +56,14 @@
   await t.sleep(300);
   check('and the next keystroke lands after them', await t.raw(), 'text\n\n$$\n\\frac{a}{b}  X\n$$\n');
 
-  // Tab on a delimiter's own line is not measured here any more: the delimiters are not drawn, so
-  // the caret cannot be put on one by a click. The rule that skips them — two spaces in front of a
-  // fence are no longer a fence — is the pure one in `test/checks/check-code-edits.mjs`, which
-  // holds it for a caret there and for a selection that spans them.
+  // Tab on a delimiter's own line: the line is drawn, so the caret can be put on it, and the rule
+  // that leaves the delimiters alone is the pure one in `test/checks/check-code-edits.mjs`. `Tab`
+  // at the start of the closing `$$` therefore does nothing at all.
+  t.key('ArrowDown');
+  await t.sleep(250);
+  const before = await t.raw();
+  t.key('Tab');
+  await t.sleep(300);
+  check('Tab on the closing fence line leaves it alone', await t.raw(), before);
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

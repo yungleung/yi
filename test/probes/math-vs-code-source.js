@@ -1,10 +1,9 @@
 /**
  * The same keystroke in both kinds of block: a space at the end of a line.
  *
- * A fenced code block and a display formula being edited are both the block's own
- * body — its delimiters hidden, as they are in frontmatter too — so the two should
- * behave alike: the space reaches the document, shows in what is rendered, and
- * leaves the caret after it.
+ * A fenced code block and a display formula being edited are both the block's own text, delimiters
+ * and all (`nodes/fence_text.ts`), so the two behave alike: clicking in shows the block's own
+ * characters, the space reaches the document, and the caret is left after it.
  */
 (async () => {
   const t = window.__t;
@@ -13,10 +12,14 @@
     checks.push({ name, actual, expected, pass: JSON.stringify(actual) === JSON.stringify(expected) });
   await t.load('text\n\n```ts\nlet a = 1;\nlet b = 2;\n```\n\n$$\n\\frac{a}{b}\n$$\n');
 
-  // A fenced code block is always shown as its source: click its last line and
-  // type a space.
+  // Clicking a fenced code block's last line shows the block's own text there and types into it.
   const code = t.prose().querySelector('pre');
   await t.click(code, 0.99, 0.9);
+  check(
+    'the code block shows its own text, delimiters and all',
+    t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
+    '```ts\nlet a = 1;\nlet b = 2;\n```'
+  );
   t.key(' ');
   await t.sleep(300);
   check(
@@ -31,7 +34,7 @@
   check(
     'the formula shows its own text',
     t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
-    '\\frac{a}{b}\n'
+    '$$\n\\frac{a}{b}\n$$'
   );
   t.key(' ');
   await t.sleep(300);
@@ -43,8 +46,8 @@
   checks.push({
     name: 'and the space shows in the source',
     actual: t.prose().querySelector('.markdown-source-text')?.textContent ?? null,
-    expected: '\\frac{a}{b} \n',
-    pass: (t.prose().querySelector('.markdown-source-text')?.textContent ?? null) === '\\frac{a}{b} \n'
+    expected: '$$\n\\frac{a}{b} \n$$',
+    pass: (t.prose().querySelector('.markdown-source-text')?.textContent ?? null) === '$$\n\\frac{a}{b} \n$$'
   });
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

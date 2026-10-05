@@ -42,7 +42,7 @@
   t.key('Enter');
   await t.sleep(400);
   check('the caret is on screen after the Enter', onScreen(), true);
-  check('the caret is on the line the Enter made', t.prose().querySelector('.markdown-source-text')?.textContent ?? null, '\\frac{a}{b}\n+ c\n\n');
+  check('the caret is on the line the Enter made', t.prose().querySelector('.markdown-source-text')?.textContent ?? null, '$$\n\\frac{a}{b}\n+ c\n\n$$');
   check(
     'and the blank line is inside the formula',
     await t.raw(),

@@ -1,9 +1,9 @@
 /**
  * Renders a `code` node with highlight.js syntax highlighting.
  *
- * A `code` node is what an *indented* block holds: a fenced block renders its own body instead,
- * delimiters hidden (`create_block.ts`, `nodes/fence_body.ts`), because a fence's body is text the
- * caret maps through rather than a node whose length approximates it.
+ * A `code` node is what an *indented* block holds: a fenced block renders its own text instead
+ * (`create_block.ts`, `nodes/fence_text.ts`), because a fence is text the caret maps through rather
+ * than a node whose length approximates it.
  *
  * May import: the node contract (`editable_node.ts`), the code highlighter and the AST types.
  * Upholds: a block's rendering is a pure function of its own source — the element is built from the

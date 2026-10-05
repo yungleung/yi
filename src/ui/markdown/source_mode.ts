@@ -188,12 +188,14 @@ export function shownSourceText(): string | null {
 }
 
 /**
- * Where a click on a block's rendering enters its text: the end of the body's last content line.
+ * Where a click on a display formula's rendering enters its text: the end of the formula's own last
+ * content line.
  *
- * The rendering cannot name a character, so the entry point is the one position that is always
- * true, and the author's next click lands on the text itself, where the mapping is exact. It is the
- * *body's* content rather than the block's end — the delimiters are not drawn (`syntax/markers.ts:
- * fenceBody`), and a character typed past them would glue itself to a delimiter.
+ * KaTeX cannot name a character — its glyphs say nothing about where in the source they were
+ * written — so the entry point is the one position that is always true, and the author's next click
+ * lands on the text itself, where the mapping is exact. It is the end of the *content*, which is
+ * where a formula is still being written; the delimiter lines are drawn around it once the caret is
+ * inside (`nodes/fence_text.ts`), so nothing has to be reached past to type.
  */
 export function sourceEntryOffset(text: string): number {
   const body = fenceBody(text);
