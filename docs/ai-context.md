@@ -312,6 +312,14 @@ text it covers (a new note opens with its title selected, and that title is insi
 block). A character typed at the body's own end still belongs to the body, all three alike
 (`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
 shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
+A caret position that sits *right after a newline* — the body's first line, the body's end — is
+drawn on the line below it, never a space past the line the newline closed: a caret anchored at the
+end of a text node whose last character is a newline belongs to the text that follows it
+(`caret/dom.ts: afterNewline`, read by the caret's own drawing in `caret/caret.ts: onTheLineItNames`
+and by the position a raw offset resolves to in `caret/dom_position.ts`). Stepping *left* onto such
+a line lands one character in from the node's end (`caret/navigation.ts: endOfPreviousText`), since
+the end itself is the line the caret is already on. `fence-source-caret.js` holds both through the
+editor.
 
 **An empty line is a box, not a character.** A blank paragraph, an empty list item, an empty table
 cell and an empty fenced body all hold an *empty* text node: the space they used to hold was a

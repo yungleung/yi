@@ -57,6 +57,19 @@ export function lastTextNodeIn(element: Element): Text | null {
   return last;
 }
 
+/**
+ * Whether `offset` in `text` is the position a newline ends: the very end of a text node whose last
+ * character is a newline.
+ *
+ * That position belongs to the text on the *next* line, never to the end of the line the newline
+ * closed — the browser draws it one space past that line's text. Both carriers of the fact read it
+ * here: the caret this module's editor draws (`caret.ts: onTheLineItNames`) and the position a raw
+ * offset resolves to (`dom_position.ts: textNodeAtRenderedOffset`).
+ */
+export function afterNewline(text: Text, offset: number): boolean {
+  return offset === text.data.length && text.data.endsWith('\n');
+}
+
 /** Whether `node` is a void leaf element (image, rule, break, ...). */
 export function isVoidElement(node: Node): boolean {
   return (

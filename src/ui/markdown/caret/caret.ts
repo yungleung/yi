@@ -8,10 +8,11 @@
  * accumulates fragments.
  *
  * May import: the rendered geometry (`geometry.ts`), the layout-mutation
- * watcher (`observer.ts`). Upholds: the logical range is the source of truth
- * for arrow-key navigation and offset mapping, the rendered span is derived
- * from it, and the span is re-anchored whenever the layout around it changes —
- * a reveal swap, a lazy block, a virtualised window swap.
+ * watcher (`observer.ts`), the document-tree helpers (`dom.ts`). Upholds: the
+ * logical range is the source of truth for arrow-key navigation and offset
+ * mapping, the rendered span is derived from it, and the span is re-anchored
+ * whenever the layout around it changes — a reveal swap, a lazy block, a
+ * virtualised window swap.
  *
  * **The state is module-wide, and this module is its only owner.** Every `let`
  * below lives for the life of the window, because a window holds one editor,
@@ -37,6 +38,7 @@
  * `observer.ts`.
  */
 
+import { afterNewline, collapsed, nextPositionNode } from './dom';
 import { caretRect, proseHost } from './geometry';
 import { watchContentMutations } from './observer';
 
@@ -347,9 +349,9 @@ export function showCaret(range: Range | null, scroll = true): void {
   if (!range) {
     clearPendingNativeSelection();
   }
-  activeRange = range;
-  notifyCaretRangeChanged(range);
-  if (range) {
+  activeRange = range === null ? null : onTheLineItNames(range);
+  notifyCaretRangeChanged(activeRange);
+  if (activeRange) {
     renderCaret(scroll);
   } else {
     clearPendingCaretRender();
@@ -368,14 +370,58 @@ export function scheduleCaret(range: Range | null, scroll = true): void {
   if (!range) {
     clearPendingNativeSelection();
   }
-  activeRange = range;
-  notifyCaretRangeChanged(range);
-  if (range) {
+  activeRange = range === null ? null : onTheLineItNames(range);
+  notifyCaretRangeChanged(activeRange);
+  if (activeRange) {
     renderCaretDeferred(scroll);
   } else {
     clearPendingCaretRender();
     removeCaretElement();
   }
+}
+
+/**
+ * The position a caret lies on, when it was handed the end of a text node whose last character is a
+ * newline.
+ *
+ * WebKit draws that position at the end of the line the newline closed, one space past its text —
+ * measured in a fenced block's source view: stepping right onto the body's first line left the caret
+ * a space past the opening fence, and stepping onto the closing fence left it a space past the last
+ * line of code. The position belongs to the text the newline introduces (`dom_position.ts:
+ * textNodeAtRenderedOffset` reads it that way when it restores a caret from an offset), and one
+ * span's text is the document's own characters in order, so the next text node names the same
+ * document offset while drawing on the line below.
+ */
+function onTheLineItNames(range: Range): Range {
+  const container = range.startContainer;
+  if (!range.collapsed || container.nodeType !== Node.TEXT_NODE) {
+    return range;
+  }
+  const text = container as Text;
+  if (!afterNewline(text, range.startOffset)) {
+    return range;
+  }
+  const span = sourceSpanOf(text);
+  const next = span === null ? null : nextPositionNode(text, [span]);
+  return next !== null && next.nodeType === Node.TEXT_NODE ? collapsed(next as Text, 0) : range;
+}
+
+/**
+ * The outermost element around `node` that the renderer tagged with the text it holds (see
+ * `offsets.ts`), up to the block: the source a fenced block shows is one such element, and the body
+ * inside it is another, so the outermost one is the text that continues past both.
+ */
+function sourceSpanOf(node: Node): HTMLElement | null {
+  let span: HTMLElement | null = null;
+  for (let element = node.parentElement; element !== null; element = element.parentElement) {
+    if (element.hasAttribute('data-text-from')) {
+      span = element;
+    }
+    if (element.classList.contains('markdown-block')) {
+      break;
+    }
+  }
+  return span;
 }
 
 /**

@@ -20,6 +20,7 @@ import {
 } from './caret';
 import { caretRect } from './geometry';
 import {
+  afterNewline,
   collapsed,
   firstTextNodeIn,
   isVoidElement,
@@ -293,14 +294,16 @@ function endOfPreviousText(
   if (previous.nodeType === Node.TEXT_NODE) {
     const text = previous as Text;
     // The boundary between two inline runs is zero-width only on the same
-    // line; across lines, land at the previous node's real end.
-    const sameLine = sameLineTop(currentTop, lineTopOf(text, text.data.length));
-    return collapsed(
-      text,
-      sameLine
-        ? sourceRightEntryOffset(revealedSourceRange(text), text.data.length)
-        : text.data.length
-    );
+    // line; across lines, land at the previous node's real end — and a node whose last character
+    // is a newline ends the line *before* it, so stepping back onto that line is one character in
+    // from the node's end (`dom.ts: afterNewline`; the position at the end itself is the line the
+    // caret is already on).
+    const end = text.data.length;
+    const sameLine = sameLineTop(currentTop, lineTopOf(text, end));
+    if (sameLine) {
+      return collapsed(text, sourceRightEntryOffset(revealedSourceRange(text), end));
+    }
+    return collapsed(text, afterNewline(text, end) ? end - 1 : end);
   }
   const rect = (previous as Element).getBoundingClientRect();
   const sameLine = sameLineTop(currentTop, rect.height > 0 ? rect.top : null);
