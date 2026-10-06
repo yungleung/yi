@@ -34,7 +34,8 @@ import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
-import { hasSourceMode, type MarkdownBlock } from '../document/blocks';
+import { hasSourceMode } from '../document/block_kinds';
+import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 

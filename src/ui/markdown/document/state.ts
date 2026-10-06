@@ -17,7 +17,8 @@
  * from it, and an edit re-splits only what it touched.
  */
 
-import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
+import { blockContentKey, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
+import { isRawRendered } from './block_kinds';;
 import type { RootContent } from 'mdast';
 import {
   containsReference,

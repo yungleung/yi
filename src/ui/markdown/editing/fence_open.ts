@@ -26,7 +26,7 @@ import { lineSpanAt } from '../syntax/lines';
 import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, proseRoot, type EditorContext } from './context';
 import { chooseLanguage } from './language_picker';
-import type { BlockKind } from '../document/blocks';
+import type { BlockKind } from '../document/block_kinds';
 
 /** The blocks a typed delimiter opens. */
 export type FenceOpenKind = Extract<BlockKind, 'frontmatter' | 'fencedCode' | 'displayMath'>;

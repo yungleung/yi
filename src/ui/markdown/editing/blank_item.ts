@@ -12,7 +12,7 @@
  * text is the only source of truth — the whole line leaves in one edit.
  */
 
-import { isRawRendered } from '../document/blocks';
+import { isRawRendered } from '../document/block_kinds';;
 import { blankItemLineAt } from '../syntax/lines';
 import { applyEdit, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';

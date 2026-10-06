@@ -12,7 +12,7 @@
  * is one undo step.
  */
 
-import { isRawRendered } from '../document/blocks';
+import { isRawRendered } from '../document/block_kinds';;
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list_edits';
 import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';

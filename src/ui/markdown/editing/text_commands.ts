@@ -30,7 +30,7 @@ import {
   restoreCaret,
   type EditorContext
 } from './context';
-import { isFenced, isRawRendered } from '../document/blocks';
+import { isFenced, isRawRendered } from '../document/block_kinds';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';

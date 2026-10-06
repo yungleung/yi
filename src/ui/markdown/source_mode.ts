@@ -35,7 +35,8 @@
  */
 
 import type { AstNode } from './ast';
-import { hasSourceMode, type MarkdownBlock } from './document/blocks';
+import { type MarkdownBlock } from './document/blocks';
+import { hasSourceMode } from './document/block_kinds';;
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
 

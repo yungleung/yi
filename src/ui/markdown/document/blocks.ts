@@ -33,17 +33,8 @@ import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, op
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 import { BlockIndex, type BlockEntry } from './block_index';
+import { isRawRendered, type BlockKind } from './block_kinds';
 import type { DocumentEdit } from './history';
-
-export type BlockKind =
-  | 'frontmatter'
-  | 'fencedCode'
-  | 'indentedCode'
-  | 'displayMath'
-  | 'html'
-  | 'descriptionList'
-  | 'paragraph'
-  | 'blank';
 
 export interface MarkdownBlock {
   kind: BlockKind;
@@ -83,56 +74,6 @@ export function blockContentKey(block: MarkdownBlock): string {
   const key = `${block.kind}:${block.text}`;
   contentKeys.set(block, key);
   return key;
-}
-
-/**
- * Whether a block renders its raw source as it stands, without the markdown
- * it contains being parsed into nodes. Such a block's lines mean nothing to
- * the renderer beyond being text: a `- ` inside a code block is code, not an
- * empty list item.
- */
-export function isRawRendered(kind: BlockKind): boolean {
-  return (
-    kind === 'frontmatter' ||
-    kind === 'fencedCode' ||
-    kind === 'indentedCode' ||
-    kind === 'displayMath' ||
-    kind === 'html'
-  );
-}
-
-/**
- * Whether a block of this kind shows its own markdown text while the caret is
- * inside it, instead of its view.
- *
- * Every fenced block does: a display formula renders KaTeX and the other two render their body
- * with the delimiters hidden, so none of the three has a character to aim a caret at where its
- * own markdown is — the source view is the block's own text, delimiters and all
- * (`nodes/fence_text.ts`), and the caret maps through it one to one (see `source_mode.ts`).
- */
-export function hasSourceMode(kind: BlockKind): boolean {
-  return isFenced(kind);
-}
-
-/**
- * Whether a block of this kind is *fenced*: a body between two delimiter lines.
- *
- * The delimiters are drawn while the caret is inside the block and hidden the rest of the time
- * (`nodes/fence_text.ts`), and a typed character or a newline at the body's own edge belongs in
- * the body rather than on a delimiter's line (`syntax/fence_edits.ts`). An *indented* code block
- * is not one: it has no delimiter to keep a line for.
- */
-export function isFenced(kind: BlockKind): boolean {
-  return kind === 'frontmatter' || kind === 'fencedCode' || kind === 'displayMath';
-}
-
-/**
- * Whether a block of this kind renders its **body** while the caret is elsewhere: the two fenced
- * kinds that have no rendering of their own. A display formula's view is the KaTeX its parse draws
- * (`nodes/math.ts`), like any other node's view, so its body is not what the reader sees.
- */
-export function hasBodyView(kind: BlockKind): boolean {
-  return kind === 'frontmatter' || kind === 'fencedCode';
 }
 
 /** A block as an mdast-like node (the `type` field makes it a tree node). */
