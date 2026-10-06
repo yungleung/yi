@@ -6,8 +6,9 @@ conventions and which of them a check enforces, the modules that carry two jobs,
 structural work is worth taking. `docs/ai-context.md` is the brief to read first.
 
 The numbers below were measured on 2026-10-06 — a walk over `src/` for files, lines and the import
-graph, and `rg` for the class counts and the attribute names: 202 TypeScript modules, 26,115 lines,
-and no import cycles anywhere in them.
+graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
+described at the end of this document: 209 TypeScript modules, 26,836 lines, and no import cycles
+anywhere in them (the pass added eight modules and took one away).
 
 ## The tree
 
@@ -15,20 +16,20 @@ and no import cycles anywhere in them.
 | --- | --- | --- | --- |
 | `src/ui/markdown/syntax/` | 20 | 3,051 | the pure rules: markers, lines, the edit arithmetic, the parser pipeline |
 | `src/ui/markdown/plugins/` | 9 | 720 | the remark extensions: citation, wikilink, definition list |
-| `src/ui/markdown/document/` | 5 | 1,771 | the text (a piece table), its blocks, the block index, the edit log |
-| `src/ui/markdown/nodes/` | 29 | 1,832 | one class per mdast node: the DOM it draws |
-| `src/ui/markdown/caret/` | 7 | 2,222 | the caret, its geometry, the offsets in and out, movement, the layout watcher |
-| `src/ui/markdown/editing/` | 22 | 3,620 | the commands: typing, deleting, lists, tables, fences, find, links, formatting |
+| `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
+| `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
+| `src/ui/markdown/caret/` | 9 | 2,292 | the caret, its drawn span, its geometry, the offsets in and out, movement, the layout watcher |
+| `src/ui/markdown/editing/` | 24 | 3,765 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing |
 | `src/ui/markdown/commands/` | 4 | 260 | the command table, the keymap, the native menu |
-| `src/ui/markdown/*` (top level) | 18 | 3,625 | the renderer, the registry, source mode, the editor, the DOM patch, the shared cards |
-| `src/ui/**` outside `markdown/` (the shell) | 56 | 5,657 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions |
-| `src/services/` | 19 | 2,702 | the living state: session, workspace, bibliography, i18n, hints, versioning |
-| `src/api/` | 8 | 275 | one file per backend seam (`invoke`, or a granted plugin) |
+| `src/ui/markdown/*` (top level) | 19 | 3,630 | the renderer, the registry, source mode, the render context, the offset tags, the editor, the DOM patch, the shared cards |
+| `src/ui/**` outside `markdown/` (the shell) | 57 | 5,905 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions, the image URLs |
+| `src/services/` | 20 | 2,844 | the living state: session, workspace, bibliography, i18n, hints, versioning, the event map |
+| `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 2 | 149 | reading CSL: the types, and the parse |
 | the two entry points (`src/main.ts`, `src/settings.ts`) | 2 | 200 | the app window and the settings window |
 | `src-tauri/src/*.rs` | 10 | 2,282 | the app's own commands: files, menu, i18n, session, settings, stats, versioning |
 
-`src/ui/markdown/` is 114 of the 202 modules and 17,101 of the 26,115 lines: the editor is the app,
+`src/ui/markdown/` is 120 of the 209 modules and 17,353 of the 26,836 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -88,8 +89,8 @@ relative import in `src/`.
 
 ## Conventions, and what enforces them
 
-Seven conventions hold the tree together. Five have a check; the other two are the debt this section
-exists to name.
+Eight conventions hold the tree together, and every one has a check behind it — the two that had none
+when this document was written (the class names and the offset tags) are checked now.
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
@@ -104,23 +105,24 @@ exists to name.
 
 ## Sizes, and when a module is too big
 
-Most modules are small: the median is 90 lines, 140 of the 202 are under 150, and 18 are over 300.
+Most modules are small: the median is 90 lines, 145 of the 209 are under 150, and 18 are over 300.
 Big is not the same as bad — `syntax/parser.ts` is long because the remark pipeline is, and
 `offsets.ts` because the mapping has four flavours to keep straight. A module is too big when it
-holds **two jobs that change for different reasons**. Five do:
+holds **two jobs that change for different reasons**. Five did, and each is split now (item 6):
 
-| Module | Lines | The two jobs |
+| Module, then | Still holds (lines) | And the module the other job moved to |
 | --- | --- | --- |
-| `document/blocks.ts` | 732 | the kind vocabulary (`BlockKind` and the `isRawRendered`/`hasSourceMode`/`isFenced`/`hasBodyView` predicates) and the splitter (`splitBlocks`/`splitBlocksFrom`/`resumeFrom`) |
-| `markdown_editor.ts` | 717 | the shell and the layout (`fitPage`/`setLayout`/`captureView`/`restoreView`) and the keyboard routing (`handleKeydown`/`handleTextKey`/`handleShortcut`/`handleArrowKey`) |
-| `editing/context.ts` | 621 | the edit funnel (`applyEdit` and the deferred verify) and reading a selection back into offsets |
-| `caret/caret.ts` | 520 | the module-wide caret state (its stated single owner) and the rendered span (positioning, the deferred render, the scroll) |
-| `caret/navigation.ts` | 520 | the four directions and the line-fragment hit-testing (`collectLineFragments`/`samplePoints`/`refineColumn`) |
+| `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
+| `markdown_editor.ts`, 717 | the shell — layout, view, commands (642) | the key routing: `editing/keys.ts` (129) |
+| `editing/context.ts`, 621 | the edit funnel (463) | reading the selection: `editing/selection.ts` (175) |
+| `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
+| `caret/navigation.ts`, 520 | the four directions (401) | the line hit-testing: `caret/line_hits.ts` (136) |
 
-## What to improve, in the order worth taking
+## What was improved, in the order it was taken
 
-Each item says what it is worth, what proves it, and what it costs. None of them is needed for the
-app to work; all of them are about the next person finding what they meant to change.
+Every item below is done, on the branch that added this document, one commit each. Each says what it
+was worth, what proved it, and what it cost; the list is spent, and the conventions table above is
+what keeps it that way.
 
 1. **Name the two session modules for what they are.** `services/session.ts` ("the living session:
    the documents the reader has open, kept in step with the editor and with the file they are
@@ -148,9 +150,11 @@ app to work; all of them are about the next person finding what they meant to ch
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
    with its reason), and the other way round. Writing it found four names `format_dom.ts` looked
    for that nothing sets — a widget's rest form is drawn by its own tag — and they are gone.
-6. **Split the five two-job modules**, one branch each, moving no behaviour: the probes are the net
-   (`npm run probe:all`, plus the checks the move touches). Start with `document/blocks.ts`: its
-   kind half needs no imports at all, and the splitter keeps the three it has.
+6. **Split the five two-job modules**, moving no behaviour. Done, a commit each: the kind vocabulary
+   (`document/block_kinds.ts`), the key routing (`editing/keys.ts`), the selection reading
+   (`editing/selection.ts`), the drawn span (`caret/span.ts`) and the line hit-testing
+   (`caret/line_hits.ts`) are their own modules now, and the table above has the sizes. The probes
+   are the net, and `npm run probe:all` was run over the whole pass.
 7. **Type the event bus.** Done: `services/app_events.ts` is the map — the app's own events and the
    native menu's, 29 names, each with its payload — and the bus takes a name from it, so a listener's
    payload is typed and a constant that drifts from its name is a compile error. The menu's half is
