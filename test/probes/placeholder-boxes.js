@@ -7,8 +7,16 @@
  * (`styles.css`), and what gives the caret a place is the line box the geometry falls back to
  * (`caret/geometry.ts: lineBoxAround`) — the same box a click on the line already used.
  *
+ * An empty *item* also needs a line for the marker a list draws outside its content box: without
+ * one, WebKit paints the block the editor just replaced and leaves the marker unpainted until the
+ * next repaint — the bullet the reader has just made is missing until they type again. The line
+ * comes from a *generated* mark in the placeholder (`styles.css`), so it is not a character of the
+ * document; a bridge screenshot re-renders the page and cannot show this, so what is held here is
+ * the shape that keeps the marker painted.
+ *
  * @covers src/ui/markdown/caret/geometry.ts, src/ui/markdown/create_block.ts,
  *   src/ui/markdown/nodes/list.ts, src/ui/markdown/nodes/table.ts, src/ui/markdown/nodes/fence_text.ts
+ *   and src/styles.css: the empty item's line
  */
 (async () => {
   const t = window.__t;
@@ -75,8 +83,21 @@
   await t.load('alpha\n\n- \n\ntail\n');
   await t.sleep(250);
   const item = t.prose().querySelector('li');
-  check('an empty item holds no character', item.querySelector('.markdown-list-placeholder').textContent, '');
+  const itemPlaceholder = item.querySelector('.markdown-list-placeholder');
+  check('an empty item holds no character', itemPlaceholder.textContent, '');
   check('and the item still has a line', Math.round(item.getBoundingClientRect().height), 24);
+  // The marker a list draws sits *outside* the item's content box, and the engine only paints it
+  // with a line the item has of its own: the placeholder's box takes one from a generated mark,
+  // which the reader cannot select or copy — the document is exactly what the author wrote.
+  check(
+    'and the placeholder is a line the engine can draw the marker with',
+    {
+      box: Math.round(itemPlaceholder.getBoundingClientRect().height),
+      generated: getComputedStyle(itemPlaceholder, '::before').content !== 'none'
+    },
+    { box: 24, generated: true }
+  );
+  check('adding no character to the document', await t.raw(), 'alpha\n\n- \n\ntail\n');
   await t.click(item, 0.9, 0.5);
   await t.sleep(250);
   check('a click on it draws the caret in the item', caretOnLine(item, 6), true);

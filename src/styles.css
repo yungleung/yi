@@ -398,6 +398,17 @@ body {
   min-width: 0.5em;
 }
 
+/* The placeholder's box needs a line of its own, and this generated mark is what gives it one.
+   An empty inline-block measures as nothing, and WebKit then paints the new block *without* the
+   marker an item draws outside its content box: the bullet the reader has just made is missing
+   until the next repaint (measured on screen — absent after typing `- `, back after one more key:
+   the bridge's own screenshot re-renders the page and cannot show it). The mark is the box's, not
+   the document's, so the reader can neither see, select nor copy it, and the item is still one
+   line tall. `test/probes/placeholder-boxes.js` holds the shape. */
+.markdown-list-placeholder::before {
+  content: '\200b';
+}
+
 /* An image the note shows. It takes the width its own file has, sits in the middle of the
    column, and carries a corner rounded the way the page's own blocks are — the corner is the
    cue that says where the picture ends, since its edges can be any colour at all. The radius

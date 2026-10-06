@@ -325,6 +325,11 @@ range over a character measures as), so a blank line's caret looks like a caret 
 composition written at such a node goes *beside* it and must not join it away: `normalize()` drops
 an empty text node, and a caret anchored in one becomes an element position the offsets mapping
 cannot read (`editing/composition_view.ts`). `test/probes/placeholder-boxes.js` holds all four.
+An empty *item* takes its line from a *generated* mark inside its placeholder (`styles.css`,
+`.markdown-list-placeholder::before`), not from a character: WebKit paints a replaced block without
+the marker a list draws outside its item's content box unless the item has a line of its own, so the
+bullet the reader has just made is otherwise missing from the screen until the next repaint (a
+bridge screenshot re-renders the page and cannot show it; measure with `screencapture`).
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
