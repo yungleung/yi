@@ -152,7 +152,7 @@ interface SourceLine {
  * (`block_index.ts`), so a block keeps no position of its own to go stale — an edit
  * above it moves it by arithmetic, without touching the block.
  */
-class BlockView implements MarkdownBlock {
+class Block implements MarkdownBlock {
   readonly kind: BlockKind;
   readonly format?: 'yaml' | 'toml';
   readonly text: string;
@@ -341,7 +341,7 @@ function stridesAfter(
 
 /** A block for this seed, in this index. */
 function view(seed: BlockSeed, index: BlockIndex): MarkdownBlock {
-  return new BlockView(index, seed.kind, seed.text, seed.format);
+  return new Block(index, seed.kind, seed.text, seed.format);
 }
 
 /** What the index needs about this block: what it holds, and how far the next starts. */
@@ -359,8 +359,8 @@ function entryFor(
 
 /** The index the blocks of a list were built in, so a re-split can carry it on. */
 function indexOf(blocks: readonly MarkdownBlock[]): BlockIndex {
-  const first = blocks[0] as BlockView | undefined;
-  return first instanceof BlockView ? first.index : new BlockIndex();
+  const first = blocks[0] as Block | undefined;
+  return first instanceof Block ? first.index : new BlockIndex();
 }
 
 /** How many lines a replacement spans — its own count of line endings. */
