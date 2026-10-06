@@ -1,5 +1,6 @@
 /**
- * The documents a reader has open: the one on screen, and the stack behind it.
+ * The session's rules, over a plain object: which document is on screen, what the stack behind
+ * it holds, and where the reader was in each — the model `session.ts` follows.
  *
  * A document is a path (or nothing, for a document that has never been a file), its own text
  * as it stands — edits included — the text it was last read from or written to disk, and where
@@ -10,9 +11,9 @@
  * without a question — nothing is lost — while an unstacked one has to be asked about.
  *
  * Everything here is a rule over a plain object, with no DOM and no backend, so the whole of
- * the behaviour above is asserted in Node (`test/checks/check-document-session.mjs`). The
- * living session — which document is on screen, when the view is captured, when the file is
- * written — is `session.ts`, and the file itself is `session_store.ts`.
+ * the behaviour above is asserted in Node (`test/checks/check-session-rules.mjs`). The living
+ * session — when the view is captured, when the file is written — is `session.ts`, and the file
+ * it is written to is `src/api/session.ts` over `src-tauri/src/session.rs`.
  *
  * May import: the id and title rules (`document_identity.ts`). Upholds: one document per id, so
  * the same document cannot be in the stack twice, and one current document, which may or may

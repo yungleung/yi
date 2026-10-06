@@ -8,7 +8,7 @@
  * reason, and the answer that *saves* is deliberately never given here: it writes the file the
  * fixture workspace holds, and a probe leaves that folder as it found it.
  *
- * @covers src/services/document_session.ts, src/services/session.ts, src/ui/session/session_prompt.ts
+ * @covers src/services/session_rules.ts, src/services/session.ts, src/ui/session/session_prompt.ts
  */
 (async () => {
   const t = window.__t;

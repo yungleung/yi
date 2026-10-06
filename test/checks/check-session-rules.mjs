@@ -23,7 +23,7 @@ async function bundleModule(input, name) {
   return import(file);
 }
 
-const session = await bundleModule('src/services/document_session.ts', 'document_session');
+const session = await bundleModule('src/services/session_rules.ts', 'session_rules');
 const identity = await bundleModule('src/services/document_identity.ts', 'document_identity');
 const {
   SESSION_VERSION,

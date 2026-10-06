@@ -10,13 +10,13 @@
  * What a reload does that this cannot is start the app again, and the file is what crosses that
  * boundary — which is why the file is read back here rather than assumed.
  *
- * @covers src/services/document_session.ts, src/services/session.ts, src-tauri/src/session.rs
+ * @covers src/services/session_rules.ts, src/services/session.ts, src-tauri/src/session.rs
  */
 (async () => {
   const t = window.__t;
   const session = await t.app('/src/services/session.ts');
   const api = await t.app('/src/api/session.ts');
-  const model = await t.app('/src/services/document_session.ts');
+  const model = await t.app('/src/services/session_rules.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 

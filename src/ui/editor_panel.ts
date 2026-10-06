@@ -14,7 +14,7 @@ import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
-import type { DocumentView, SeenView } from '../services/document_session';
+import type { DocumentView, SeenView } from '../services/session_rules';
 import { documentSession } from '../services/session';
 import { DOCUMENT_OPENED } from './workspace/tree';
 import * as imageSources from './markdown/image_sources';

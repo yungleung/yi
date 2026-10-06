@@ -123,7 +123,7 @@ app to work; all of them are about the next person finding what they meant to ch
 
 1. **Name the two session modules for what they are.** `services/session.ts` ("the living session:
    the documents the reader has open, kept in step with the editor and with the file they are
-   written to") and `services/document_session.ts` ("the documents a reader has open: the one on
+   written to") and `services/session_rules.ts` ("the documents a reader has open: the one on
    screen, and the stack behind it") open with nearly the same sentence, and only the second is the
    *rules* — a difference `docs/ai-context.md` explains and the headers do not. Rename the rules
    module (`session_rules.ts`), or say which is which in the two first sentences. The cheapest item

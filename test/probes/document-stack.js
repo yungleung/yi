@@ -13,7 +13,7 @@
  * Neighbours: `document-stack-restore.js` (coming back to a document, where it was),
  * `document-stack-ask.js` (the rules about losing one) and `document-session-restart.js`.
  *
- * @covers src/services/document_session.ts, src/services/session.ts,
+ * @covers src/services/session_rules.ts, src/services/session.ts,
  *   src/ui/toolbar/session_toolbar.ts, src/ui/session/stack_popover.ts,
  *   src/ui/document_status.ts
  */

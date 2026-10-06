@@ -1,7 +1,7 @@
 //! The session file: which documents a reader has open, and where they were in them.
 //!
 //! This side only holds the text. What a session *is* — a document, its stack, its text and
-//! its view — is the frontend's model (`src/services/document_session.ts`), which writes what
+//! its view — is the frontend's model (`src/services/session_rules.ts`), which writes what
 //! it wants kept and discards a file it cannot read. So there is no shape to parse here, and
 //! nothing to migrate: one reader of the format, in one place.
 //!

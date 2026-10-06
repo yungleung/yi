@@ -75,7 +75,7 @@ export class GeneralSettings extends BaseComponent {
     languageGroup.append(languageLabel, languageHint, this.languageSelect);
 
     // Whether the stack takes the document on screen when a file is opened over it. The switch
-    // carries its own meaning: `document_session.ts: openDecision` is where the rule the words
+    // carries its own meaning: `session_rules.ts: openDecision` is where the rule the words
     // describe lives, and this only answers it.
     const stackGroup = document.createElement('div');
     stackGroup.className = 'form-control gap-1';

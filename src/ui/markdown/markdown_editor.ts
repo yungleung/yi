@@ -64,7 +64,7 @@ import { MENU_COMMANDS } from './commands/menu';
 import { runCommand } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../services/document_session';
+import type { DocumentView, SeenView } from '../../services/session_rules';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;
@@ -337,7 +337,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * Where the reader is: the selection's two ends, and the top of the view of the document.
    *
    * The session keeps this beside a document's text, so that leaving one and coming back puts
-   * the reader where they were (`services/document_session.ts`). The selection is exact; the
+   * the reader where they were (`services/session_rules.ts`). The selection is exact; the
    * view is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
    */
   captureView(): SeenView {
