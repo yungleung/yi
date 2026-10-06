@@ -99,7 +99,7 @@ exists to name.
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
 | A probe that opens a native menu says so | `testing.md` | `test/checks/probe-markers.mjs` |
 | The `data-*-from` tags that carry offsets | `caret/offsets.ts` documents their mapping | nothing: 13 modules spell the attribute names by hand (`data-text-from` in most of them) |
-| Classes the editor draws are `markdown-*` | `styles.css` | nothing: 49 distinct `markdown-…` names are written in TS, in 65 places |
+| Classes the editor draws are `markdown-*` | `styles.css` | `test/checks/class-names.mjs`: every `markdown-…` name the app uses is drawn by the stylesheet or listed as a hook with its reason, and every rule in the stylesheet has a name |
 
 ## Sizes, and when a module is too big
 
@@ -141,10 +141,10 @@ app to work; all of them are about the next person finding what they meant to ch
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
    their three lines, and the check reads `src/` (it says 201 modules).
-5. **Check the `markdown-*` class contract.** 49 distinct names are written in TS and read by
-   `styles.css` with nothing tying the two together. A check that every `markdown-…` name the app
-   sets has a rule in the stylesheet (or is on a short allow-list of hooks that deliberately have
-   none) would catch the rename that silently stops drawing.
+5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
+   `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
+   with its reason), and the other way round. Writing it found four names `format_dom.ts` looked
+   for that nothing sets — a widget's rest form is drawn by its own tag — and they are gone.
 6. **Split the five two-job modules**, one branch each, moving no behaviour: the probes are the net
    (`npm run probe:all`, plus the checks the move touches). Start with `document/blocks.ts`: its
    kind half needs no imports at all, and the splitter keeps the three it has.

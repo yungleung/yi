@@ -96,12 +96,18 @@ function taggedTexts(blockElement: HTMLElement): TaggedText[] {
   return texts;
 }
 
-/** Whether the element renders a widget (citation, math, link, ...). */
+/**
+ * Whether the element is a widget's own drawing rather than the document's text: a citation or a
+ * link at rest (`markdown-citation`, `markdown-link`, …), or any of the sources a widget shows
+ * while the caret is inside it (`markdown-…-source`).
+ *
+ * The names are the ones the app actually sets; a name here that nothing in `src/` sets would be
+ * dead, which is what `test/checks/class-names.mjs` fails on.
+ */
 function isWidget(element: HTMLElement): boolean {
   return (
     element.closest(
-      '.markdown-citation, .markdown-wikilink, .markdown-math, .markdown-link, ' +
-        '.markdown-image, .markdown-break, .markdown-thematic-break, ' +
+      '.markdown-citation, .markdown-wikilink, .markdown-link, ' +
         '.markdown-link-source, .markdown-image-source, .markdown-citation-source, ' +
         '.markdown-wikilink-source, .markdown-math-source, .markdown-break-source, ' +
         '.markdown-thematic-break-source, .markdown-footnote-source'
