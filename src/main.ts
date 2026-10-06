@@ -43,7 +43,7 @@ import { documentSession } from './services/session';
 import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
 import { imageFolderPath } from './services/settings_paths';
-import { setImageFolder } from './ui/markdown/image_sources';
+import { setImageFolder } from './ui/image/image_urls';
 import { applyLanguage, languageFor } from './services/language';
 import { language } from './services/i18n';
 

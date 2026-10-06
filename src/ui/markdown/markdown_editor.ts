@@ -16,7 +16,9 @@
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import type { AppEventName } from '../../services/app_events';
-import { CITATION_UPDATED } from '../../services/bibliography';
+import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
+import { documentManager } from '../../services/document_manager';
+import { imageSourceCandidates } from '../image/image_urls';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
   ensureCaretRendered,
@@ -134,6 +136,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView.dataset.layout = this.layout;
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
+    // What a rendering may ask the app for: the two texts a node cannot make from its own markdown,
+    // and the URLs an image destination may be. Handed in here, so the render layer imports no
+    // service (see `render_context.ts`).
+    this.renderer.setRenderContext({
+      citation: (source, cached) =>
+        cached ? bibliographyManager.formatCached(source) : bibliographyManager.format(source),
+      wikilinkTitle: (target) => documentManager.getTitle(target),
+      imageSources: (destination) => imageSourceCandidates(destination)
+    });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
     // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
     // type are drawn at (`styles.css`), and watching the pane keeps it right when the window

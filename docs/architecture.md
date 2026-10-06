@@ -31,7 +31,7 @@ layers, the invariants that hold them together, and where a change belongs.
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
-| Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | document, syntax — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
+| Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | document, syntax, the shared tag names (`offset_tags.ts`) — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
@@ -50,6 +50,7 @@ taking — is `docs/structure.md`.
 | Line spans, touched lines, item subtrees | `syntax/lines.ts` |
 | Empty-paragraph lines | `syntax/blank_lines.ts` |
 | Trailing-space rewriting | `syntax/trailing_spaces.ts` |
+| The `data-*` names that carry document offsets | `offset_tags.ts` |
 | Table source, table/list/code edits, `TextEdit` | `syntax/table_source.ts`, `syntax/table_edits.ts`, `syntax/list_edits.ts`, `syntax/code_edits.ts`, `syntax/edit_range.ts` |
 | A fenced block's body, and where a write inside one lands | `syntax/fence_edits.ts` |
 | Parser repairs (empty items, bare markers, footnote labels, what a description list can hold) and the remark pipeline | `syntax/empty_items.ts`, `syntax/bare_markers.ts`, `syntax/footnotes.ts`, `syntax/parser.ts` |

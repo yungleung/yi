@@ -70,7 +70,7 @@ export interface SessionEditor {
   setContent(content: string): void;
   /**
    * The folder of the document about to be shown. A relative image destination is read from it
-   * (`ui/markdown/image_sources.ts`), and it has to arrive *before* the content does, or the
+   * (`ui/image/image_urls.ts`), and it has to arrive *before* the content does, or the
    * first paint would resolve against the note the reader was in before this one.
    */
   setDocumentFolder(folder: string | null): void;

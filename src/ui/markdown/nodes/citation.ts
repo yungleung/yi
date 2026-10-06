@@ -4,15 +4,16 @@
  * CSL formatting (expensive on first use) runs only when the citation approaches
  * the viewport. Clicking enters the markdown source.
  *
- * May import: the revealable contract (`revealable_node.ts`), the bibliography's
- * formatted entries, the viewport observer (`lazy.ts`) and the AST types.
+ * May import: the revealable contract (`revealable_node.ts`), the render context
+ * (`render_context.ts`, which hands in the formatted reference), the viewport observer
+ * (`lazy.ts`) and the AST types.
  * Upholds: the source view is built from the node's own markdown, so the node
  * shows its source while the caret is inside it and renders itself otherwise.
  */
 
 import type { AstCitation } from '../ast';
-import { bibliographyManager } from '../../../services/bibliography';
 import { onNearViewport } from '../lazy';
+import { renderContext } from '../render_context';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-citation-source';
@@ -24,10 +25,13 @@ export class Citation extends RevealableNodeComponent {
     if (sourceView) {
       return;
     }
+    // The lazy format runs long after the render pass that handed the answers in, so the answers
+    // are captured now, while they are in force.
+    const app = renderContext();
     this.element.classList.add('markdown-citation-placeholder');
-    this.element.textContent = bibliographyManager.formatCached(node.value) ?? node.value;
+    this.element.textContent = app.citation(node.value, true) ?? node.value;
     onNearViewport(this.element, () => {
-      this.element.textContent = bibliographyManager.format(node.value);
+      this.element.textContent = app.citation(node.value, false) ?? node.value;
       this.element.classList.remove('markdown-citation-placeholder');
     });
   }

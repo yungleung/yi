@@ -26,7 +26,7 @@ import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
 import type { DocumentView, SeenView } from '../services/session_rules';
 import { documentSession } from '../services/session';
 import { DOCUMENT_OPENED } from './workspace/tree';
-import * as imageSources from './markdown/image_sources';
+import * as imageSources from './image/image_urls';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
 
@@ -75,7 +75,7 @@ export class MarkdownEditor extends BaseComponent {
 
   /**
    * Which folder the document on screen lives in — what a relative image destination is read
-   * from before the image folder the settings name (`markdown/image_sources.ts`).
+   * from before the image folder the settings name (`image/image_urls.ts`).
    */
   setDocumentFolder(folder: string | null): void {
     imageSources.setDocumentFolder(folder);

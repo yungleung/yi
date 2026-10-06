@@ -74,12 +74,12 @@ relative import in `src/`.
 - **The render layer imports the caret**, in 3 places (`nodes/editable_node.ts`, `create_block.ts`).
   That is the design — a click places the caret — and `docs/architecture.md`'s layer table said the
   opposite; the table has been corrected to say so.
-- **Five edges bend upwards** (three of them from the render layer to a service), and they are the
-  ones worth knowing:
+- **The render layer reaches no service** — it used to be three edges (`nodes/citation.ts`,
+  `nodes/wikilink.ts`, `image_sources.ts`), and they are the render context now (item 3 below).
+- **Two edges bend upwards**, and they are the ones worth knowing:
 
 | Edge | Where | What it costs |
 | --- | --- | --- |
-| render → shell | `nodes/citation.ts` → `services/bibliography`, `nodes/wikilink.ts` → `services/document_manager`, `image_sources.ts` → `services/workspace_folders` | a node reaches a *service* for the text or the URL it draws, so its rendering is not a function of its node alone |
 | render → editor | `create_block.ts` → `editing/language_picker.ts` | the language badge's button opens a command-layer list from the render layer |
 | caret → shell | `caret/offsets.ts` → `services/bibliography.ts` | the offset model asks a service how many characters a citation draws |
 
@@ -134,11 +134,13 @@ app to work; all of them are about the next person finding what they meant to ch
    `offsetOf`, and `tagSelector` for the selectors). The fast path's own duplicated list and its
    hand-written selector are that module now, `check-tag-offsets.mjs` reads the tags through it, and
    a typo in an attribute name is a compile error rather than a mispicked caret.
-3. **Take the services out of the rendering.** Three render-layer modules reach a service for the
-   text or the URL they draw (a citation's formatted reference, a wikilink's title, an image's
-   source). Passing that in — the way the renderer already passes a block's frame — would make a
-   node's rendering a function of its node and the input it was handed, which is the rule the
-   architecture already states for blocks.
+3. **Take the services out of the rendering.** Done: `ui/markdown/render_context.ts` is the port —
+   a citation's formatted reference, a wikilink's title, an image's candidate URLs — and the renderer
+   holds one (set by the editor, which may import services) and puts it in force around each block
+   build. `nodes/citation.ts`, `nodes/wikilink.ts` and `nodes/image.ts` read the answers from it and
+   capture them where a lazy callback runs later, and `image_sources.ts` moved to
+   `ui/image/image_urls.ts` (the shell side of that answer). `citation-renders.js` holds the seam: a
+   citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
    their three lines, and the check reads `src/` (it says 201 modules).

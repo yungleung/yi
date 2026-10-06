@@ -4,15 +4,15 @@
  * frontmatter `title` key, falling back to its heading 1, and finally to the
  * target when the document cannot be resolved). Clicking enters the raw markdown.
  *
- * May import: the revealable contract (`revealable_node.ts`), the document index
- * (`services/document_manager`), the viewport observer (`lazy.ts`) and the AST
+ * May import: the revealable contract (`revealable_node.ts`), the render context (`render_context.ts`,
+ * which hands in a target's title), the viewport observer (`lazy.ts`) and the AST
  * types. Upholds: the source view is built from the node's own markdown, so the
  * link shows its source while the caret is inside it and renders itself otherwise.
  */
 
-import { documentManager } from '../../../services/document_manager';
 import type { AstWikilink } from '../ast';
 import { onNearViewport } from '../lazy';
+import { renderContext } from '../render_context';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-wikilink-source';
@@ -30,8 +30,10 @@ export class Wikilink extends RevealableNodeComponent {
     if (!parsed.title) {
       // Resolve the target's title only when the wikilink approaches the
       // viewport, so off-screen wikilinks don't trigger document lookups.
+      // The answers are captured now: the lookup runs after the render pass.
+      const app = renderContext();
       onNearViewport(this.element, () => {
-        void documentManager.getTitle(parsed.target).then((title) => {
+        void app.wikilinkTitle(parsed.target).then((title) => {
           if (title && this.element.isConnected) {
             this.element.textContent = title;
           }
