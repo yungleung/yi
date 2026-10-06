@@ -56,7 +56,7 @@ import {
 } from './session_rules';
 
 /** Emitted whenever the documents, the stack or the current document change. */
-export const DOCUMENT_SESSION_CHANGED = 'session_rules_changed';
+export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
 
 /** How long after the last edit the session is written. */
 const SAVE_DELAY_MS = 800;

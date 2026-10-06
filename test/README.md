@@ -27,6 +27,7 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
+| `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |

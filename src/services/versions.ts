@@ -36,7 +36,7 @@ class VersionsOfDocument {
   private run = 0;
 
   constructor() {
-    for (const event of [DOCUMENT_SESSION_CHANGED, WORKSPACE_CHANGED, 'config_changed']) {
+    for (const event of [DOCUMENT_SESSION_CHANGED, WORKSPACE_CHANGED, 'config_changed'] as const) {
       void eventManager.on(event, () => void this.refresh());
     }
   }

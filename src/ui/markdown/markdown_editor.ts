@@ -15,6 +15,7 @@
 
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
+import type { AppEventName } from '../../services/app_events';
 import { CITATION_UPDATED } from '../../services/bibliography';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
@@ -61,7 +62,7 @@ import {
 } from './click_routing';
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
-import { runCommand } from './commands/registry';
+import { runCommand, type CommandId } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
@@ -421,8 +422,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     });
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.
-    for (const event of Object.keys(MENU_COMMANDS)) {
-      void eventManager.on(event, () => runCommand(MENU_COMMANDS[event]));
+    for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<[AppEventName, CommandId]>) {
+      void eventManager.on(event, () => runCommand(command));
     }
   }
 

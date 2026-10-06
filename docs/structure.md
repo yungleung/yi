@@ -100,6 +100,7 @@ exists to name.
 | A probe that opens a native menu says so | `testing.md` | `test/checks/probe-markers.mjs` |
 | The `data-*` tags that carry offsets | `offset_tags.ts`, with `caret/offsets.ts` documenting the mapping | `test/checks/check-tag-offsets.mjs`: every `setOffset` names a tag from that module, and the fast path's moved list is read through it |
 | Classes the editor draws are `markdown-*` | `styles.css` | `test/checks/class-names.mjs`: every `markdown-…` name the app uses is drawn by the stylesheet or listed as a hook with its reason, and every rule in the stylesheet has a name |
+| The app's events, and what each carries | `services/app_events.ts` | the type of the bus (`services/event_manager.ts`) for the frontend's half, and `test/checks/check-events.mjs` for the native menu's: every name the Rust side emits is declared in the map |
 
 ## Sizes, and when a module is too big
 
@@ -148,9 +149,12 @@ app to work; all of them are about the next person finding what they meant to ch
 6. **Split the five two-job modules**, one branch each, moving no behaviour: the probes are the net
    (`npm run probe:all`, plus the checks the move touches). Start with `document/blocks.ts`: its
    kind half needs no imports at all, and the splitter keeps the three it has.
-7. **Type the event bus.** `services/event_manager.ts` takes `(event: any) => void`, and the app's
-   dozen event names each live in their emitter with no catalogue. A name → payload map would type
-   every listener, and a single place would say which events exist.
+7. **Type the event bus.** Done: `services/app_events.ts` is the map — the app's own events and the
+   native menu's, 29 names, each with its payload — and the bus takes a name from it, so a listener's
+   payload is typed and a constant that drifts from its name is a compile error. The menu's half is
+   Rust, so `check-events.mjs` reads `src-tauri/src/*.rs` and fails on a name the map does not have
+   (the check was proved against a deliberately invented one). Typing it also found the
+   `document_session_changed` wire name that the session rename had changed by accident — reverted.
 8. **Delete the template's `greet`.** `src/api/greet.ts`, `src-tauri/src/greeting.rs` and its
    registration in `lib.rs` are the Tauri scaffold; nothing calls them.
 9. **Kill the `BlockView` collision.** The model's class and the render component's class share a
