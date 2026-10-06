@@ -14,6 +14,7 @@ import { tagRawRange } from './editable_node';
 import type { AstInlineCode } from '../ast';
 import { preserveSpaces } from './text';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
+import { TEXT_FROM, setOffset } from './../offset_tags';
 
 const SOURCE_CLASS = 'markdown-inline-code-source';
 
@@ -40,7 +41,7 @@ export class InlineCode extends RevealableNodeComponent {
       node as { position?: { start: { offset?: number } } }
     ).position?.start.offset;
     if (start !== undefined) {
-      this.element.dataset.textFrom = String(start + 1);
+      setOffset(this.element, TEXT_FROM, start + 1);
     }
   }
 

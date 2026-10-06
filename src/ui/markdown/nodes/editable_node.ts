@@ -11,6 +11,7 @@
 import type { AstNode } from '../ast';
 import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
 import { caretLeft } from '../caret/geometry';
+import { FORMAT_FROM, FORMAT_TO, setOffset } from './../offset_tags';
 
 export interface EditableMarkdownNode {
   /** The mdast node type this component renders (also acts as a capability marker). */
@@ -36,8 +37,8 @@ export function tagRawRange(
 ): void {
   const position = node.position;
   if (position?.start.offset !== undefined && position.end.offset !== undefined) {
-    element.dataset.formatFrom = String(position.start.offset);
-    element.dataset.formatTo = String(position.end.offset);
+    setOffset(element, FORMAT_FROM, position.start.offset);
+    setOffset(element, FORMAT_TO, position.end.offset);
   }
 }
 

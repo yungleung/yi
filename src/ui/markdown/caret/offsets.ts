@@ -29,6 +29,7 @@ import type { MarkdownEditorState } from '../document/state';
 import { markerShape } from '../syntax/footnotes';
 import { readTableSource } from '../syntax/table_source';
 import { getCaretRange } from './caret';
+import { LINE_START, TABLE_ROW_START, TEXT_FROM, offsetOf } from './../offset_tags';
 
 export interface CaretLocation {
   /** The block containing the caret. */
@@ -90,7 +91,7 @@ export function documentOffsetAt(
     const from = Number(sourceSpan.dataset.sourceFrom ?? NaN);
     const blockElement = sourceSpan.closest('.markdown-block') as HTMLElement | null;
     const block = blockElement
-      ? state.getBlockAtLine(Number(blockElement.dataset.lineStart))
+      ? state.getBlockAtLine(offsetOf(blockElement, LINE_START))
       : null;
     const within = sourceTextOffset(sourceSpan, containerNode, positionOffset);
     if (Number.isFinite(from) && block && within !== null) {
@@ -115,9 +116,9 @@ export function documentOffsetAt(
     if (tablePlaceholder && tableCell) {
       const blockElement = tableCell.closest('.markdown-block') as HTMLElement | null;
       const block = blockElement
-        ? state.getBlockAtLine(Number(blockElement.dataset.lineStart))
+        ? state.getBlockAtLine(offsetOf(blockElement, LINE_START))
         : null;
-      const hint = Number(tableCell.dataset.tableRowStart);
+      const hint = offsetOf(tableCell, TABLE_ROW_START);
       const [row, column] = (tableCell.dataset.tableCell ?? '').split(':').map(Number);
       const source = block
         ? readTableSource(block.text, Number.isFinite(hint) ? hint : undefined)
@@ -132,10 +133,10 @@ export function documentOffsetAt(
       }
     }
     const textSpan = (containerNode.parentElement as HTMLElement | null)?.closest<HTMLElement>(
-      '[data-text-from]'
+      `[data-${TEXT_FROM}]`
     );
     if (textSpan) {
-      const from = Number(textSpan.dataset.textFrom);
+      const from = offsetOf(textSpan, TEXT_FROM);
       const blockElement = textSpan.closest('.markdown-block') as HTMLElement | null;
       const block = blockElement
         ? state

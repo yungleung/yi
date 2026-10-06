@@ -10,6 +10,7 @@
 import { appendChildren, createComponent } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstList, AstListItem } from '../ast';
+import { TASK_SOURCE_FROM, TEXT_FROM, setOffset } from './../offset_tags';
 
 export class List extends EditableNodeComponent {
   constructor(node: AstList) {
@@ -58,7 +59,7 @@ export class ListItem extends EditableNodeComponent {
     this.element.classList.add('list-none');
     const position = node.position?.start.offset;
     if (position !== undefined) {
-      this.element.dataset.taskSourceFrom = String(position);
+      setOffset(this.element, TASK_SOURCE_FROM, position);
     }
 
     const wrapper = document.createElement('div');
@@ -125,7 +126,7 @@ export class ListItem extends EditableNodeComponent {
     span.appendChild(document.createTextNode(''));
     const offset = contentOffset(node, markerOnly);
     if (offset !== null) {
-      span.dataset.textFrom = String(offset);
+      setOffset(span, TEXT_FROM, offset);
     }
     return span;
   }

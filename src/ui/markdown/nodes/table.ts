@@ -11,6 +11,7 @@
 import { appendChildren } from '../registry';
 import { EditableNodeComponent } from './editable_node';
 import type { AstTable, AstTableCell } from '../ast';
+import { TABLE_ROW_START, setOffset } from './../offset_tags';
 
 export class Table extends EditableNodeComponent {
   private readonly tableNode: AstTable;
@@ -57,7 +58,7 @@ export class Table extends EditableNodeComponent {
       this.tableNode.children[row] as { position?: { start: { offset?: number } } } | undefined
     )?.position?.start.offset;
     if (rowStart !== undefined) {
-      content.dataset.tableRowStart = String(rowStart);
+      setOffset(content, TABLE_ROW_START, rowStart);
     }
     if (cell.children.length === 0) {
       // An empty cell has no text to aim at: this span gives the caret something

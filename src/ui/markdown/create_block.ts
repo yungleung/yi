@@ -20,6 +20,7 @@ import { highlightCode } from './nodes/code_highlight';
 import { highlightFrontmatter } from './nodes/frontmatter_highlight';
 import { highlightLatex } from './nodes/latex_highlight';
 import { fenceLanguage } from './syntax/markers';
+import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -94,7 +95,7 @@ class BlockView implements BlockComponent {
     // reader could select and copy. What gives the line a box is the paragraph (`styles.css`) and
     // what gives the caret a place is `caret/geometry.ts: lineBoxAround` (see also `nodes/list.ts`
     // and `nodes/table.ts`, which hold the same empty node for an empty item and cell).
-    placeholder.dataset.textFrom = '0';
+    setOffset(placeholder, TEXT_FROM, 0);
     placeholder.appendChild(document.createTextNode(''));
     paragraph.appendChild(placeholder);
     element.appendChild(paragraph);
@@ -157,11 +158,11 @@ class BlockView implements BlockComponent {
   private container(node: BlockNode): HTMLElement {
     const element = document.createElement('div');
     element.className = 'markdown-block';
-    element.dataset.lineStart = String(node.lineStart);
-    element.dataset.lineEnd = String(node.lineEnd);
+    setOffset(element, LINE_START, node.lineStart);
+    setOffset(element, LINE_END, node.lineEnd);
     // The block's character start, refreshed on every render/edit. Revealed
     // source spans use it to tag block-relative positions.
-    element.dataset.charStart = String(node.charStart);
+    setOffset(element, CHAR_START, node.charStart);
     return element;
   }
 }

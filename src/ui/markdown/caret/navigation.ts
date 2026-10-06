@@ -19,6 +19,7 @@ import {
   setCaretRange
 } from './caret';
 import { caretRect } from './geometry';
+import { CONTENT_START } from '../offset_tags';
 import {
   afterNewline,
   collapsed,
@@ -227,7 +228,7 @@ function moveRight(range: Range, blocks: readonly HTMLElement[]): Range | null {
  * a raw marker (`[[target]]` → `target`, `[title](url)` → `title`, ...).
  */
 function revealedSourceRange(text: Text): { start: number; end: number } | null {
-  const span = text.parentElement?.closest('[data-content-start]') as HTMLElement | null;
+  const span = text.parentElement?.closest(`[data-${CONTENT_START}]`) as HTMLElement | null;
   if (!span) {
     return null;
   }

@@ -19,6 +19,7 @@ import { documentOffsetAt } from '../caret/offsets';
 import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
 import { proseRoot, restoreSelection, type EditorContext } from './context';
+import { FORMAT_FROM, FORMAT_TO, LINE_START, TEXT_FROM, offsetOf } from './../offset_tags';
 
 /** Applies a formatting style to the current selection. */
 export function applyFormatting(context: EditorContext, style: FormattingStyle): void {
@@ -151,18 +152,18 @@ function unitRangeOf(context: EditorContext, unit: HTMLElement): FormatUnit {
   // (refreshed on every edit).
   const blockElement = unit.closest('.markdown-block') as HTMLElement | null;
   const block = blockElement
-    ? context.state.getBlocks().find((b) => String(b.lineStart) === blockElement.dataset.lineStart)
+    ? context.state.getBlocks().find((b) => b.lineStart === offsetOf(blockElement, LINE_START))
     : null;
   const base = block?.charStart ?? 0;
-  const textSpans = unit.querySelectorAll<HTMLElement>('[data-text-from]');
+  const textSpans = unit.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`);
   const first = textSpans[0];
   const last = textSpans[textSpans.length - 1];
   return {
-    from: base + Number(unit.dataset.formatFrom),
-    to: base + Number(unit.dataset.formatTo),
-    contentFrom: first ? base + Number(first.dataset.textFrom) : base + Number(unit.dataset.formatFrom),
+    from: base + offsetOf(unit, FORMAT_FROM),
+    to: base + offsetOf(unit, FORMAT_TO),
+    contentFrom: first ? base + offsetOf(first, TEXT_FROM) : base + offsetOf(unit, FORMAT_FROM),
     contentTo: last
-      ? base + Number(last.dataset.textFrom) + (last.firstChild as Text).data.length
-      : base + Number(unit.dataset.formatTo)
+      ? base + offsetOf(last, TEXT_FROM) + (last.firstChild as Text).data.length
+      : base + offsetOf(unit, FORMAT_TO)
   };
 }

@@ -98,7 +98,7 @@ exists to name.
 | A command has one name, one home, one way in | `adding-a-command.md` | `test/checks/commands.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
 | A probe that opens a native menu says so | `testing.md` | `test/checks/probe-markers.mjs` |
-| The `data-*-from` tags that carry offsets | `caret/offsets.ts` documents their mapping | nothing: 13 modules spell the attribute names by hand (`data-text-from` in most of them) |
+| The `data-*` tags that carry offsets | `offset_tags.ts`, with `caret/offsets.ts` documenting the mapping | `test/checks/check-tag-offsets.mjs`: every `setOffset` names a tag from that module, and the fast path's moved list is read through it |
 | Classes the editor draws are `markdown-*` | `styles.css` | `test/checks/class-names.mjs`: every `markdown-…` name the app uses is drawn by the stylesheet or listed as a hook with its reason, and every rule in the stylesheet has a name |
 
 ## Sizes, and when a module is too big
@@ -128,11 +128,11 @@ app to work; all of them are about the next person finding what they meant to ch
    *rules* — a difference `docs/ai-context.md` explains and the headers do not. Rename the rules
    module (`session_rules.ts`), or say which is which in the two first sentences. The cheapest item
    here.
-2. **Give the `data-*-from` tags one home.** Thirteen modules spell `data-text-from` (and
-   `data-source-from`, `data-format-from`, `data-table-cell`) by hand; a typo in `dataset.textFrom`
-   is a silent offset bug. One module exporting the names (and, where it reads well, small
-   `read`/`write` helpers) makes the set visible and the typos impossible. The offset probes
-   (`plain-edit-offsets.js`, `boundary-caret.js`, and the caret suite) are the net.
+2. **Give the `data-*-from` tags one home.** Done: `src/ui/markdown/offset_tags.ts` names the
+   eleven offset tags and carries the two helpers every writer and reader now uses (`setOffset`,
+   `offsetOf`, and `tagSelector` for the selectors). The fast path's own duplicated list and its
+   hand-written selector are that module now, `check-tag-offsets.mjs` reads the tags through it, and
+   a typo in an attribute name is a compile error rather than a mispicked caret.
 3. **Take the services out of the rendering.** Three render-layer modules reach a service for the
    text or the URL they draw (a citation's formatted reference, a wikilink's title, an image's
    source). Passing that in — the way the renderer already passes a block's frame — would make a

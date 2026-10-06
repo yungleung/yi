@@ -28,6 +28,7 @@
 import { domPositionAtOffset } from '../caret/dom_position';
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
+import { FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
 
 /** The rendered text a plain edit can be written into, and where in it. */
 export interface TypedRun {
@@ -42,19 +43,10 @@ export interface TypedRun {
 }
 
 /** The attributes whose value is a raw offset within the block. */
-const OFFSET_TAGS = [
-  'textFrom',
-  'sourceFrom',
-  'formatFrom',
-  'formatTo',
-  'tableRowStart',
-  'taskSourceFrom'
-];
+const MOVED_TAGS = [TEXT_FROM, SOURCE_FROM, FORMAT_FROM, FORMAT_TO, TABLE_ROW_START, TASK_SOURCE_FROM] as const;
 
 /** The elements that carry one of them. */
-const TAGGED =
-  '[data-text-from], [data-source-from], [data-format-from], [data-table-row-start], ' +
-  '[data-task-source-from]';
+const TAGGED = tagSelector(...MOVED_TAGS);
 
 /**
  * The text node this edit can be written into, or null when the mapping is not
@@ -76,7 +68,7 @@ export function plainRun(
     return null;
   }
   const node = start.node as Text;
-  const span = node.parentElement?.closest<HTMLElement>('[data-text-from]') ?? null;
+  const span = node.parentElement?.closest<HTMLElement>(`[data-${TEXT_FROM}]`) ?? null;
   if (!span || span.childNodes.length !== 1) {
     return null;
   }
@@ -85,7 +77,7 @@ export function plainRun(
   // refuses a link's title, a citation's formatted reference, KaTeX, an entity and
   // an escaped character — none of which is the text the author typed.
   const text = state.getText();
-  const tag = Number(span.dataset.textFrom);
+  const tag = offsetOf(span, TEXT_FROM);
   const rawStart = block.charStart + tag;
   const raw = text.slice(rawStart, rawStart + span.textContent.length);
   if (!Number.isFinite(rawStart) || span.textContent !== raw) {
@@ -119,11 +111,10 @@ export function writeRun(run: TypedRun, inserted: string): void {
   }
   const edit: TextEdit = { from: run.from, to: run.to, replacement: inserted };
   for (const element of blockElement.querySelectorAll<HTMLElement>(TAGGED)) {
-    for (const tag of OFFSET_TAGS) {
-      const value = element.dataset[tag];
-      const offset = Number(value);
-      if (value !== undefined && Number.isFinite(offset)) {
-        element.dataset[tag] = String(shiftOffset(offset, edit));
+    for (const tag of MOVED_TAGS) {
+      const offset = offsetOf(element, tag);
+      if (Number.isFinite(offset)) {
+        setOffset(element, tag, shiftOffset(offset, edit));
       }
     }
   }

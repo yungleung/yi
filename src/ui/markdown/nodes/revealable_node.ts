@@ -14,6 +14,7 @@ import { serializeMarkdown } from '../syntax/parser';
 import { EditableNodeComponent } from './editable_node';
 import { enterSourceOf, isShownSource, shownSourceText } from '../source_mode';
 import type { AstNode } from '../ast';
+import { CONTENT_END, CONTENT_START, SOURCE_FROM, setOffset } from './../offset_tags';
 
 /**
  * The parser's canonical markdown for a node — `***` for a rule written
@@ -94,11 +95,11 @@ export function sourceViewFor(
   const span = document.createElement('span');
   span.className = `${SOURCE_VIEW_CLASS} ${className}`;
   const { start, end } = contentRange(source);
-  span.dataset.contentStart = String(start);
-  span.dataset.contentEnd = String(end);
+  setOffset(span, CONTENT_START, start);
+  setOffset(span, CONTENT_END, end);
   const position = (node as { position?: { start?: { offset?: number } } }).position;
   if (position?.start?.offset !== undefined) {
-    span.dataset.sourceFrom = String(position.start.offset);
+    setOffset(span, SOURCE_FROM, position.start.offset);
   }
   if (fill) {
     fill(span, source);

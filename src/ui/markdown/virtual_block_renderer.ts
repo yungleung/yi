@@ -30,6 +30,7 @@ import { type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
+import { CHAR_START, LINE_END, LINE_START, setOffset } from './offset_tags';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -337,9 +338,9 @@ export class VirtualBlockRenderer {
       if (!block) {
         continue;
       }
-      element.dataset.lineStart = String(block.lineStart);
-      element.dataset.lineEnd = String(block.lineEnd);
-      element.dataset.charStart = String(block.charStart);
+      setOffset(element, LINE_START, block.lineStart);
+      setOffset(element, LINE_END, block.lineEnd);
+      setOffset(element, CHAR_START, block.charStart);
     }
   }
 

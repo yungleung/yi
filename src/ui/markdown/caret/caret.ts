@@ -41,6 +41,7 @@
 import { afterNewline, collapsed, nextPositionNode } from './dom';
 import { caretRect, proseHost } from './geometry';
 import { watchContentMutations } from './observer';
+import { TEXT_FROM } from '../offset_tags';
 
 let caretElement: HTMLSpanElement | null = null;
 let listenersAttached = false;
@@ -414,7 +415,7 @@ function onTheLineItNames(range: Range): Range {
 function sourceSpanOf(node: Node): HTMLElement | null {
   let span: HTMLElement | null = null;
   for (let element = node.parentElement; element !== null; element = element.parentElement) {
-    if (element.hasAttribute('data-text-from')) {
+    if (element.hasAttribute(`data-${TEXT_FROM}`)) {
       span = element;
     }
     if (element.classList.contains('markdown-block')) {
