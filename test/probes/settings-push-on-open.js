@@ -14,7 +14,7 @@
  * probe put there.
  *
  * @covers src/ui/settings/general_settings.ts, src/services/session.ts
- * @covers src/services/document_session.ts
+ * @covers src/services/session_rules.ts
  */
 (async () => {
   const t = window.__t;

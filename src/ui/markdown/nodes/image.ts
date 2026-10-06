@@ -1,20 +1,22 @@
 /**
  * Renders an `image` node; clicking it enters the markdown that made it.
  *
- * The destination the author wrote is turned into something the webview can load
- * (`image_sources.ts`): a web URL is itself, and a path is a file the app has to hand over through
+ * The destination the author wrote is turned into something the webview can load (the render
+ * context's `imageSources`, whose shell half is `ui/image/image_urls.ts`): a web URL is itself, and
+ * a path is a file the app has to hand over through
  * the asset protocol. A relative path may mean a file beside the note or one in the folder the
  * settings name for images, so the candidates are tried in that order and the next is taken when
  * the browser says the first did not load — the browser is the only thing here that can answer
  * whether a file is there, and it answers by asking for it.
  *
- * May import: the revealable contract (`revealable_node.ts`) and the AST types.
+ * May import: the revealable contract (`revealable_node.ts`), the render context
+ * (`render_context.ts`) and the AST types.
  * Upholds: the source view is built from the node's own markdown, so the image
  * shows its source while the caret is inside it and renders itself otherwise.
  */
 
-import { imageSourceCandidates } from '../image_sources';
 import type { AstImage } from '../ast';
+import { renderContext } from '../render_context';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-image-source';
@@ -29,7 +31,7 @@ export class Image extends RevealableNodeComponent {
     const img = this.element as HTMLImageElement;
     img.alt = node.alt || '';
     img.title = node.title || '';
-    const candidates = imageSourceCandidates(node.url ?? '');
+    const candidates = renderContext().imageSources(node.url ?? '');
     let next = 0;
     img.addEventListener('error', () => {
       next += 1;

@@ -39,20 +39,16 @@
  */
 
 import { afterNewline, collapsed, nextPositionNode } from './dom';
-import { caretRect, proseHost } from './geometry';
-import { watchContentMutations } from './observer';
+import * as span from './span';
+import { TEXT_FROM } from '../offset_tags';
 
-let caretElement: HTMLSpanElement | null = null;
 let listenersAttached = false;
 let activeRange: Range | null = null;
 let selectionRange: Range | null = null;
-let stopWatchingLayout: (() => void) | null = null;
-let caretFrame: number | null = null;
-let caretTimeout: number | null = null;
 let pendingNativeSelection: Range | null = null;
 let selectionTimeout: number | null = null;
-/** Whether the blinking bar is drawn — see `setCaretBarVisible`. */
-let caretBarVisible = true;
+// The drawn span reads the range through this, on the frames after a rebuild.
+span.setRangeSource(() => activeRange);
 
 type CaretRangeListener = (range: Range | null) => void;
 const caretRangeListeners = new Set<CaretRangeListener>();
@@ -74,94 +70,12 @@ export function onCaretRangeChanged(listener: CaretRangeListener): () => void {
   };
 }
 
-function createCaretElement(): HTMLSpanElement {
-  const caret = document.createElement('span');
-  caret.className = caretBarVisible ? 'markdown-caret' : 'markdown-caret markdown-caret-away';
-  caret.setAttribute('aria-hidden', 'true');
-  return caret;
-}
-
-/** Removes the rendered caret span (and any stale ones from other instances). */
-function removeCaretElement(): void {
-  for (const stray of document.querySelectorAll('.markdown-caret')) {
-    if (stray === caretElement) {
-      continue;
-    }
-    stray.remove();
-  }
-  caretElement?.remove();
-  caretElement = null;
-}
-
 /**
  * Navigation hook. The positioned caret never interferes with text walking,
  * so nothing needs cleaning; keeping the element in place lets movement reuse
  * it (style-only updates) instead of mutating the DOM on every arrow.
  */
 export function normalizeCaretDom(): void {
-}
-
-/** Positions the (reused) caret span for the active range. */
-function renderCaret(scroll: boolean): void {
-  renderCaretNow(scroll);
-}
-
-/**
- * Positions the caret on the next animation frame, coalescing consecutive
- * requests. Used right after a DOM mutation (a block re-render) where
- * measuring immediately would force a full layout; the caller returns before
- * the expensive geometry is computed. A timer fallback guarantees the caret
- * still renders when animation frames are throttled (occluded/backgrounded
- * windows), since a missing caret is worse than a slightly later one.
- */
-function renderCaretDeferred(scroll: boolean): void {
-  if (caretFrame !== null) {
-    return;
-  }
-  caretFrame = requestAnimationFrame(() => {
-    caretFrame = null;
-    if (caretTimeout !== null) {
-      clearTimeout(caretTimeout);
-      caretTimeout = null;
-    }
-    // This frame's measurement can be stale — an edit can insert a block that
-    // layout has not placed yet, a `content-visibility: auto` block can still
-    // be skipped — so the caret is neither trusted nor scrolled from it. One
-    // more frame re-anchors it, and scrolls, against the settled layout;
-    // scrolling from the stale measurement moved the page when the caret had
-    // not moved at all.
-    renderCaretNow(false);
-    requestAnimationFrame(() => {
-      positionCaret();
-      // `scroll` is the difference between a caret that *moved* and one that was put back
-      // where it already was: a move brings the caret into view, a window change must not
-      // move the page (measured: scrolling up from the end of the demo document, the view
-      // jumped 1097px to a caret that had not moved at all).
-      if (caretElement && scroll) {
-        scrollCaretIntoView(caretElement);
-      }
-    });
-  });
-  caretTimeout = window.setTimeout(() => {
-    if (caretFrame !== null) {
-      cancelAnimationFrame(caretFrame);
-      caretFrame = null;
-    }
-    caretTimeout = null;
-    renderCaretNow(scroll);
-  }, 120);
-}
-
-/** Cancels a pending deferred caret render. */
-function clearPendingCaretRender(): void {
-  if (caretFrame !== null) {
-    cancelAnimationFrame(caretFrame);
-    caretFrame = null;
-  }
-  if (caretTimeout !== null) {
-    clearTimeout(caretTimeout);
-    caretTimeout = null;
-  }
 }
 
 /**
@@ -200,125 +114,6 @@ function clearPendingNativeSelection(): void {
   }
 }
 
-function renderCaretNow(scroll = true): void {
-  if (!activeRange) {
-    removeCaretElement();
-    return;
-  }
-
-  const container = activeRange.startContainer;
-  if (!container.isConnected) {
-    removeCaretElement();
-    return;
-  }
-  const host = proseHost(container);
-  if (!host) {
-    removeCaretElement();
-    return;
-  }
-  let caret = caretElement;
-  if (!caret || !caret.isConnected || caret.parentElement !== host) {
-    caret = createCaretElement();
-    host.appendChild(caret);
-    caretElement = caret;
-  }
-  // Ensure the caret element exists before measuring, so one layout serves
-  // both the range rect and the host rect instead of two.
-  const rect = caretRect(activeRange);
-  if (!rect || rect.height <= 0) {
-    removeCaretElement();
-    return;
-  }
-  placeCaret(caret, host, rect);
-  ensureLayoutWatcher(host);
-  if (scroll) {
-    scrollCaretIntoView(caret);
-  }
-}
-
-/**
- * Re-anchors the rendered caret to the active range without touching the DOM
- * tree (style only). Used after layout shifts such as reveal swaps and lazy
- * rendering, whose mutations would otherwise leave the caret misplaced.
- */
-function positionCaret(): void {
-  if (!caretElement || !activeRange || !activeRange.startContainer.isConnected) {
-    removeCaretElement();
-    return;
-  }
-  const host = proseHost(activeRange.startContainer);
-  if (!host || caretElement.parentElement !== host) {
-    removeCaretElement();
-    return;
-  }
-  const rect = caretRect(activeRange);
-  if (!rect || rect.height <= 0) {
-    removeCaretElement();
-    return;
-  }
-  placeCaret(caretElement, host, rect);
-}
-
-/**
- * Positions the caret span inside its host. The transform moves it without
- * invalidating layout; only the initial creation mutates the DOM.
- */
-function placeCaret(
-  caret: HTMLElement,
-  host: HTMLElement,
-  rect: { left: number; top: number; height: number }
-): void {
-  const hostRect = host.getBoundingClientRect();
-  caret.style.transform = `translate(${rect.left - hostRect.left}px, ${rect.top - hostRect.top}px)`;
-  caret.style.height = `${rect.height}px`;
-}
-
-/**
- * Re-creates the caret element when a DOM swap (a virtualized window change)
- * dropped it, leaving the logical range untouched.
- */
-export function ensureCaretRendered(): void {
-  if (activeRange && (!caretElement || !caretElement.isConnected)) {
-    // Called from the renderer's swap hook, where the DOM is mid-reconcile:
-    // the caret span has to come back, but scrolling from a measurement taken
-    // here moved the page to a position the caret never occupied. The deferred
-    // pass scrolls once the layout has settled.
-    renderCaretNow(false);
-  }
-}
-
-/** Watches the editor's scroll container so content mutations re-anchor the caret. */
-function ensureLayoutWatcher(host: HTMLElement): void {
-  if (stopWatchingLayout) {
-    return;
-  }
-  const scroller = host.closest('.overflow-auto') as HTMLElement | null;
-  if (!scroller) {
-    return;
-  }
-  stopWatchingLayout = watchContentMutations(scroller, () => positionCaret());
-}
-
-/**
- * Keeps the caret inside its scroll container: when the caret is rendered
- * (or moved with arrows) past the visible edge, scroll the editor so the
- * caret stays in view instead of drifting out to the status bar area.
- */
-function scrollCaretIntoView(caret: HTMLElement): void {
-  const scroller = caret.closest('.overflow-auto') as HTMLElement | null;
-  if (!scroller) {
-    return;
-  }
-  const caretBox = caret.getBoundingClientRect();
-  const scrollerRect = scroller.getBoundingClientRect();
-  const margin = 8;
-  if (caretBox.top < scrollerRect.top + margin) {
-    scroller.scrollTop += caretBox.top - scrollerRect.top - margin;
-  } else if (caretBox.bottom > scrollerRect.bottom - margin) {
-    scroller.scrollTop += caretBox.bottom - scrollerRect.bottom + margin;
-  }
-}
-
 /**
  * Returns the collapsed caret range under a viewport point, when the browser
  * can resolve one (WebKit/Chromium expose `caretRangeFromPoint`; standards
@@ -352,10 +147,9 @@ export function showCaret(range: Range | null, scroll = true): void {
   activeRange = range === null ? null : onTheLineItNames(range);
   notifyCaretRangeChanged(activeRange);
   if (activeRange) {
-    renderCaret(scroll);
+    span.render(scroll);
   } else {
-    clearPendingCaretRender();
-    removeCaretElement();
+    span.hide();
   }
 }
 
@@ -373,10 +167,9 @@ export function scheduleCaret(range: Range | null, scroll = true): void {
   activeRange = range === null ? null : onTheLineItNames(range);
   notifyCaretRangeChanged(activeRange);
   if (activeRange) {
-    renderCaretDeferred(scroll);
+    span.scheduleRender(scroll);
   } else {
-    clearPendingCaretRender();
-    removeCaretElement();
+    span.hide();
   }
 }
 
@@ -414,7 +207,7 @@ function onTheLineItNames(range: Range): Range {
 function sourceSpanOf(node: Node): HTMLElement | null {
   let span: HTMLElement | null = null;
   for (let element = node.parentElement; element !== null; element = element.parentElement) {
-    if (element.hasAttribute('data-text-from')) {
+    if (element.hasAttribute(`data-${TEXT_FROM}`)) {
       span = element;
     }
     if (element.classList.contains('markdown-block')) {
@@ -451,6 +244,14 @@ export function hideCaret(): void {
 }
 
 /**
+ * Re-creates the drawn caret when a DOM swap dropped it, leaving the logical range untouched
+ * (see `span.ts: ensureRendered`).
+ */
+export function ensureCaretRendered(): void {
+  span.ensureRendered();
+}
+
+/**
  * Puts the blinking bar away without moving the caret: the logical range stays, and
  * `getCaretRange` still answers, so the edit a commit lands still knows where the
  * author was. What draws in its place is the word being composed
@@ -458,8 +259,7 @@ export function hideCaret(): void {
  * spoil — and the bar is placed again only by an edit, which is what a commit is.
  */
 export function setCaretBarVisible(visible: boolean): void {
-  caretBarVisible = visible;
-  caretElement?.classList.toggle('markdown-caret-away', !visible);
+  span.setBarVisible(visible);
 }
 
 /** Returns the current caret position, or null when no caret is shown. */

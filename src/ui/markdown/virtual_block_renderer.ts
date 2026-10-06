@@ -30,6 +30,8 @@ import { type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
+import { CHAR_START, LINE_END, LINE_START, setOffset } from './offset_tags';
+import { withRenderContext, type RenderContext } from './render_context';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -55,6 +57,8 @@ export class VirtualBlockRenderer {
   private readonly mounted = new Map<number, HTMLElement>();
   private range: { first: number; last: number } | null = null;
   private syncing = false;
+  /** What a rendering may ask the app for; the editor sets it (see `render_context.ts`). */
+  private renderContext: RenderContext | null = null;
 
   constructor(
     private readonly scroller: HTMLElement,
@@ -66,6 +70,11 @@ export class VirtualBlockRenderer {
   /** Registers the caret-preservation hooks used around DOM swaps. */
   setSyncHooks(hooks: RendererSyncHooks | null): void {
     this.hooks = hooks;
+  }
+
+  /** Sets what a rendering may ask the app for — the citation, wikilink and image answers. */
+  setRenderContext(context: RenderContext | null): void {
+    this.renderContext = context;
   }
 
   /**
@@ -337,9 +346,9 @@ export class VirtualBlockRenderer {
       if (!block) {
         continue;
       }
-      element.dataset.lineStart = String(block.lineStart);
-      element.dataset.lineEnd = String(block.lineEnd);
-      element.dataset.charStart = String(block.charStart);
+      setOffset(element, LINE_START, block.lineStart);
+      setOffset(element, LINE_END, block.lineEnd);
+      setOffset(element, CHAR_START, block.charStart);
     }
   }
 
@@ -463,7 +472,9 @@ export class VirtualBlockRenderer {
       return spare;
     }
     const node: BlockNode = { ...block, type: 'block' };
-    const element = createBlockComponent(node, this.state.getBlockContent(block)).element;
+    const element = withRenderContext(this.renderContext, () =>
+      createBlockComponent(node, this.state.getBlockContent(block)).element
+    );
     this.setIntrinsicSize(element, this.sizes.heightOf(block));
     this.builtFrom.set(element, key);
     return element;

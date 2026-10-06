@@ -4,7 +4,7 @@
  *
  * The raw document is the single source of truth; blocks are views over
  * slices of its lines. The editor reads the blocks to render them (one
- * {@link MarkdownBlockView} per block) and will apply edits against the raw
+ * {@link BlockComponent} per block) and will apply edits against the raw
  * text through this state, re-splitting only the affected region.
  *
  * The text itself is a piece table (`text_store.ts`), so an edit costs the piece
@@ -17,7 +17,8 @@
  * from it, and an edit re-splits only what it touched.
  */
 
-import { blockContentKey, isRawRendered, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
+import { blockContentKey, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
+import { isRawRendered } from './block_kinds';;
 import type { RootContent } from 'mdast';
 import {
   containsReference,

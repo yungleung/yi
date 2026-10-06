@@ -1,3 +1,10 @@
+/**
+ * The image button: runs the editor's own insert-image command.
+ *
+ * May import: the command registry, the catalogue and the toolbar base. Upholds: the button names
+ * the command; the clipboard, the card and the file it writes stay with the image flow.
+ */
+
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';

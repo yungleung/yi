@@ -1,3 +1,11 @@
+/**
+ * The app config: its shape, and the calls that read and write it.
+ *
+ * May import: the app's own command seam (`invoke`). Upholds: one declaration of what a config
+ * holds, which the settings window, the workspace tree and the session all read rather than each
+ * naming a field of their own.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 export type AppConfig = {
@@ -25,7 +33,7 @@ export type AppConfig = {
    * own system locale. */
   language: string;
   /** Whether opening a file pushes the document on screen into the stack instead of asking about
-   * it (`src/services/document_session.ts: openDecision`); false — the default — keeps the
+   * it (`src/services/session_rules.ts: openDecision`); false — the default — keeps the
    * question, which is asked only when replacing that document would lose the reader's words. */
   push_unstacked_on_open: boolean;
   config_version: number;

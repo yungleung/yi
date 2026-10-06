@@ -1,3 +1,10 @@
+/**
+ * The sidebar: the sections a reader can fold, and where they are put.
+ *
+ * May import: the component base and the catalogue. Upholds: one sidebar per window, whose sections
+ * are added to it rather than positioned by whoever made them.
+ */
+
 import { t } from '../services/i18n';
 import { BaseComponent } from './component';
 import { SidebarSection } from './sidebar_section';

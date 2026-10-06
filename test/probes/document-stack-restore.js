@@ -9,7 +9,7 @@
  *
  * `document-stack.js` holds the push and the listing; this holds the coming back.
  *
- * @covers src/services/document_session.ts, src/services/session.ts,
+ * @covers src/services/session_rules.ts, src/services/session.ts,
  *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/virtual_block_renderer.ts,
  *   src/ui/session/stack_popover.ts
  */

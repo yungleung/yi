@@ -2,7 +2,7 @@
  * The living session: the documents the reader has open, kept in step with the editor and with
  * the file they are written to.
  *
- * The rules live in `document_session.ts` and are pure; this is the part that holds the editor
+ * The rules live in `session_rules.ts` and are pure; this is the part that holds the editor
  * and the dialog and the disk. It is the only place that knows all three, so it is the only
  * place that decides what a click in the tree means:
  *
@@ -12,11 +12,11 @@
  * - a file being opened while an *unstacked* document is on screen **asks** first, because saying
  *   no would lose it — unless the document on screen is one the file already holds, which has
  *   nothing to lose, or the reader has asked for it to be pushed instead of being asked
- *   (`push_unstacked_on_open`, `document_session.ts: openDecision`);
+ *   (`push_unstacked_on_open`, `session_rules.ts: openDecision`);
  * - the session file is written soon after any change rather than on the way out, since the
  *   webview is not promised a moment on the way out.
  *
- * May import: the session's rules (`document_session.ts`), the app's config, events and file
+ * May import: the session's rules (`session_rules.ts`), the app's config, events and file
  * commands, and the dialog plugin. Upholds: one copy of a document — the one in the session — so
  * nothing here keeps a second text of its own.
  */
@@ -53,7 +53,7 @@ import {
   type SeenView,
   type SessionDocument,
   type SessionState
-} from './document_session';
+} from './session_rules';
 
 /** Emitted whenever the documents, the stack or the current document change. */
 export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
@@ -70,7 +70,7 @@ export interface SessionEditor {
   setContent(content: string): void;
   /**
    * The folder of the document about to be shown. A relative image destination is read from it
-   * (`ui/markdown/image_sources.ts`), and it has to arrive *before* the content does, or the
+   * (`ui/image/image_urls.ts`), and it has to arrive *before* the content does, or the
    * first paint would resolve against the note the reader was in before this one.
    */
   setDocumentFolder(folder: string | null): void;
@@ -133,7 +133,7 @@ class DocumentSession {
 
   /**
    * A file was clicked in the tree. What that means depends on what is on screen
-   * (`document_session.ts: openDecision`), and only the unstacked case has to ask.
+   * (`session_rules.ts: openDecision`), and only the unstacked case has to ask.
    */
   async openFile(incoming: IncomingDocument): Promise<void> {
     const id = keyFor(incoming.path, incoming.content, () => `${this.run}-${++this.madeKeys}`);

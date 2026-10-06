@@ -1,3 +1,12 @@
+/**
+ * The formatting buttons — bold, italic, strikethrough, inline code — and the state they show while
+ * the caret is inside a formatted run.
+ *
+ * May import: the command registry, the formatting styles, the catalogue and the toolbar base.
+ * Upholds: one button per style, named the same as the style itself, so a new style is added in the
+ * format module and appears here by name.
+ */
+
 import type { FormattingStyle } from '../markdown/format';
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';

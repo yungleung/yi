@@ -13,6 +13,10 @@ renders it, and every edit is a plain-text edit to the file. The raw markdown is
 only source of truth; blocks are slices of it; only the blocks near the viewport are
 mounted.
 
+`docs/README.md` maps the documents. Of them, this one is the brief, `docs/architecture.md`
+is the model (the layers, the invariants, the four offsets), and `docs/structure.md` is the
+shape (the tree, the class families, and which convention each check enforces).
+
 ## Map
 
 | Layer | Files | Job |
@@ -74,7 +78,7 @@ they happened on, with no ✕, gone at the next press (or Escape). A hint's plac
 — a workspace path, which is the row it is found by (`hintPlaceSelector`, escaped) — never as an
 element, because the event bus is Tauri's and its payload is JSON.
 
-Documents are a *session*: `services/document_session.ts` holds the rules (pure, checked in
+Documents are a *session*: `services/session_rules.ts` holds the rules (pure, checked in
 Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
 file it is written to. It keeps the document on screen, the stack behind it, and where the reader
 was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,

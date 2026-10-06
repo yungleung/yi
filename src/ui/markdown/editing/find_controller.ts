@@ -11,7 +11,8 @@
  */
 
 import { domPositionAtOffset } from '../caret/dom_position';
-import { proseRoot, restoreCaret, type EditorContext } from './context';
+import { restoreCaret, type EditorContext } from './context';
+import { proseRoot } from './selection';
 import { t } from '../../../services/i18n';
 import type { FindBar } from './find_bar';
 

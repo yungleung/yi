@@ -24,6 +24,7 @@
 import type { FormattingEdit, FormattingStyle } from './format';
 import type { MarkdownEditorState } from './document/state';
 import { preserveSpaces } from './nodes/text';
+import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf, setOffset } from './offset_tags';
 
 const FORMAT_TAGS: Record<FormattingStyle, string> = {
   bold: 'strong',
@@ -63,7 +64,7 @@ export function patchFormatDom(
     return false;
   }
   const blockElement = root.querySelector<HTMLElement>(
-    `.markdown-block[data-line-start="${block.lineStart}"]`
+    `.markdown-block[data-${LINE_START}="${block.lineStart}"]`
   );
   if (!blockElement) {
     return false;
@@ -82,12 +83,12 @@ export function patchFormatDom(
 /** The block's text leaves in DOM order, with their raw ranges. */
 function taggedTexts(blockElement: HTMLElement): TaggedText[] {
   const texts: TaggedText[] = [];
-  for (const element of blockElement.querySelectorAll<HTMLElement>('[data-text-from]')) {
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`)) {
     const text = element.firstChild;
     if (!text || text.nodeType !== Node.TEXT_NODE) {
       continue;
     }
-    const start = Number(element.dataset.textFrom);
+    const start = offsetOf(element, TEXT_FROM);
     if (!Number.isFinite(start)) {
       continue;
     }
@@ -96,12 +97,18 @@ function taggedTexts(blockElement: HTMLElement): TaggedText[] {
   return texts;
 }
 
-/** Whether the element renders a widget (citation, math, link, ...). */
+/**
+ * Whether the element is a widget's own drawing rather than the document's text: a citation or a
+ * link at rest (`markdown-citation`, `markdown-link`, …), or any of the sources a widget shows
+ * while the caret is inside it (`markdown-…-source`).
+ *
+ * The names are the ones the app actually sets; a name here that nothing in `src/` sets would be
+ * dead, which is what `test/checks/class-names.mjs` fails on.
+ */
 function isWidget(element: HTMLElement): boolean {
   return (
     element.closest(
-      '.markdown-citation, .markdown-wikilink, .markdown-math, .markdown-link, ' +
-        '.markdown-image, .markdown-break, .markdown-thematic-break, ' +
+      '.markdown-citation, .markdown-wikilink, .markdown-link, ' +
         '.markdown-link-source, .markdown-image-source, .markdown-citation-source, ' +
         '.markdown-wikilink-source, .markdown-math-source, .markdown-break-source, ' +
         '.markdown-thematic-break-source, .markdown-footnote-source'
@@ -123,7 +130,7 @@ function createFormatElement(style: FormattingStyle): HTMLElement {
 function makeTaggedSpan(oldStart: number, text: Text): HTMLElement {
   const span = document.createElement('span');
   span.classList.add('markdown-node');
-  span.dataset.textFrom = String(oldStart);
+  setOffset(span, TEXT_FROM, oldStart);
   span.appendChild(document.createTextNode(preserveSpaces(text.data)));
   return span;
 }
@@ -135,7 +142,7 @@ function makeTaggedSpan(oldStart: number, text: Text): HTMLElement {
  */
 function isolatePiece(element: HTMLElement, pieceStart: number, pieceEnd: number): Text {
   const text = element.firstChild as Text;
-  const prefixLen = Math.max(0, pieceStart - (Number(element.dataset.textFrom) || 0));
+  const prefixLen = Math.max(0, pieceStart - (offsetOf(element, TEXT_FROM) || 0));
   let node = text;
   if (prefixLen > 0) {
     node = text.splitText(prefixLen);
@@ -167,9 +174,9 @@ function wrapRange(
   // (e.g. wrapping `*x*` in bold) — its content sits inside its markers, so
   // it counts as whole even though the content range is narrower than it.
   const wholeUnits: HTMLElement[] = [];
-  for (const element of blockElement.querySelectorAll<HTMLElement>('[data-format-from]')) {
-    const start = Number(element.dataset.formatFrom);
-    const end = Number(element.dataset.formatTo);
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${FORMAT_FROM}]`)) {
+    const start = offsetOf(element, FORMAT_FROM);
+    const end = offsetOf(element, FORMAT_TO);
     if (!Number.isFinite(start) || !Number.isFinite(end)) {
       continue;
     }
@@ -211,7 +218,7 @@ function wrapRange(
   // A stable anchor at the first moved node's position: every insertion is
   // done relative to it, so detaching leaves never invalidates the reference.
   const firstLeaf = overlapping[0];
-  const firstUnit = firstLeaf.element.closest<HTMLElement>('[data-format-from]');
+  const firstUnit = firstLeaf.element.closest<HTMLElement>(`[data-${FORMAT_FROM}]`);
   const firstMoved =
     firstUnit && movedSet.has(firstUnit) ? firstUnit : firstLeaf.element;
   const firstParent = firstMoved.parentNode;
@@ -233,7 +240,7 @@ function wrapRange(
 
   for (const t of overlapping) {
     // Leaves inside a moved unit ride along with it.
-    const unit = t.element.closest<HTMLElement>('[data-format-from]');
+    const unit = t.element.closest<HTMLElement>(`[data-${FORMAT_FROM}]`);
     if (unit && movedSet.has(unit)) {
       if (!appended.has(unit)) {
         appended.add(unit);
@@ -282,7 +289,7 @@ function wrapRange(
       span.classList.add('markdown-node');
       // The raw start is the old value; the shift pass moves it by the
       // marker length into the correct new position.
-      span.dataset.textFrom = String(piece.start);
+      setOffset(span, TEXT_FROM, piece.start);
       span.appendChild(piece.text);
       wrapper.appendChild(span);
     }
@@ -294,11 +301,11 @@ function wrapRange(
   // Shift every raw tag in the block: content shifts by one marker, text
   // after the wrap range by two.
   shiftTags(blockElement, wrapFrom, wrapTo, markerLen, 1);
-  wrapper.dataset.formatFrom = String(wrapFrom);
+  setOffset(wrapper, FORMAT_FROM, wrapFrom);
   // The wrap always adds two markers, so the wrapper ends after both.
-  wrapper.dataset.formatTo = String(wrapTo + 2 * markerLen);
+  setOffset(wrapper, FORMAT_TO, wrapTo + 2 * markerLen);
   if (style === 'inlineCode') {
-    wrapper.dataset.textFrom = String(contentFrom + markerLen);
+    setOffset(wrapper, TEXT_FROM, contentFrom + markerLen);
   }
   return true;
 }
@@ -312,8 +319,8 @@ function unwrapUnit(
 ): boolean {
   const tag = FORMAT_TAGS[style].toUpperCase();
   let unit: HTMLElement | null = null;
-  for (const element of blockElement.querySelectorAll<HTMLElement>(`${tag}[data-format-from]`)) {
-    if (Number(element.dataset.formatFrom) === wrapFrom && Number(element.dataset.formatTo) === wrapTo) {
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`${tag}[data-${FORMAT_FROM}]`)) {
+    if (offsetOf(element, FORMAT_FROM) === wrapFrom && offsetOf(element, FORMAT_TO) === wrapTo) {
       unit = element;
       break;
     }
@@ -327,7 +334,7 @@ function unwrapUnit(
     return false;
   }
   if (style === 'inlineCode') {
-    const span = makeTaggedSpan(Number(unit.dataset.textFrom) || wrapFrom, document.createTextNode(unit.textContent ?? ''));
+    const span = makeTaggedSpan(offsetOf(unit, TEXT_FROM) || wrapFrom, document.createTextNode(unit.textContent ?? ''));
     parent.replaceChild(span, unit);
   } else {
     while (unit.firstChild) {
@@ -385,24 +392,24 @@ function shiftTags(
     return end <= wrapTo - markerLen ? -markerLen : -2 * markerLen;
   };
 
-  for (const element of blockElement.querySelectorAll<HTMLElement>('[data-text-from]')) {
-    const start = Number(element.dataset.textFrom);
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`)) {
+    const start = offsetOf(element, TEXT_FROM);
     if (Number.isFinite(start)) {
-      element.dataset.textFrom = String(start + deltaStart(start));
+      setOffset(element, TEXT_FROM, start + deltaStart(start));
     }
   }
-  for (const element of blockElement.querySelectorAll<HTMLElement>('[data-format-from]')) {
-    const start = Number(element.dataset.formatFrom);
-    const end = Number(element.dataset.formatTo);
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${FORMAT_FROM}]`)) {
+    const start = offsetOf(element, FORMAT_FROM);
+    const end = offsetOf(element, FORMAT_TO);
     if (Number.isFinite(start) && Number.isFinite(end)) {
-      element.dataset.formatFrom = String(start + deltaStart(start));
-      element.dataset.formatTo = String(end + deltaEnd(end));
+      setOffset(element, FORMAT_FROM, start + deltaStart(start));
+      setOffset(element, FORMAT_TO, end + deltaEnd(end));
     }
   }
-  for (const element of blockElement.querySelectorAll<HTMLElement>('[data-source-from]')) {
-    const start = Number(element.dataset.sourceFrom);
+  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${SOURCE_FROM}]`)) {
+    const start = offsetOf(element, SOURCE_FROM);
     if (Number.isFinite(start)) {
-      element.dataset.sourceFrom = String(start + deltaStart(start));
+      setOffset(element, SOURCE_FROM, start + deltaStart(start));
     }
   }
 }

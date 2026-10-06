@@ -1,3 +1,12 @@
+/**
+ * The workspace the app has open: opening a folder, remembering it in the config, and telling the
+ * tree (and the session) that it changed.
+ *
+ * May import: the config seam, the config manager, the events and the catalogue. Upholds: one
+ * workspace for the window, written to the config before anything is told about it, so the tree, the
+ * session and the renderer cannot disagree about which folder they are in.
+ */
+
 import {
   getCurrentConfigVersion,
 } from '../api/settings';

@@ -1,4 +1,13 @@
 /**
+ * The bibliography: loads the configured file, formats citations, and keeps the file watched for
+ * edits something else made (Zotero rewriting the library).
+ *
+ * May import: the bibliography and config seams, the citation parser, and the events that say when
+ * either changed. Upholds: one loaded library for the window, and one answer to "how does this
+ * citation read", so every rendering of a citation agrees.
+ */
+
+/**
  * Bibliography manager: loads the configured bibliography file, formats
  * citations, and keeps the file watched for external edits (e.g. Zotero
  * rewriting the library). It listens for citation-config changes, reloads the

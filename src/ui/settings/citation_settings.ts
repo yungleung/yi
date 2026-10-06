@@ -1,3 +1,11 @@
+/**
+ * The Citation tab: the bibliography file and the CSL style, each chosen through the system's own
+ * file picker.
+ *
+ * May import: the dialog plugin, the config manager, the catalogue and the component base. Upholds:
+ * the tab writes the config through one manager, so the bibliography's own reload hears about it.
+ */
+
 import { open } from '@tauri-apps/plugin-dialog';
 import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';

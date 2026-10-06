@@ -10,6 +10,7 @@
 
 import { EditableNodeComponent } from './editable_node';
 import type { AstText } from '../ast';
+import { TEXT_FROM, setOffset } from '../offset_tags';
 
 export class TextNode extends EditableNodeComponent {
   constructor(node: AstText) {
@@ -24,7 +25,7 @@ export class TextNode extends EditableNodeComponent {
       node as { position?: { start: { offset?: number } } }
     ).position?.start.offset;
     if (start !== undefined) {
-      this.element.dataset.textFrom = String(start);
+      setOffset(this.element, TEXT_FROM, start);
     }
   }
 }

@@ -1,3 +1,10 @@
+/**
+ * The drag handle between the sidebar and the content: a pointer that resizes the pane beside it.
+ *
+ * May import: the component base. Upholds: one thing a drag on this edge can mean — a size — so no
+ * caller has to interpret a pointer move itself.
+ */
+
 import { BaseComponent } from './component';
 
 export class ResizeHandle extends BaseComponent {

@@ -25,6 +25,7 @@ import { EditableNodeComponent } from './editable_node';
 import { fenceBody } from '../syntax/markers';
 import type { AstNode } from '../ast';
 import type { BlockNode } from '../document/blocks';
+import { TEXT_FROM, setOffset } from './../offset_tags';
 
 /** How one kind of fenced block draws its text: the class on the box, its language, its markup. */
 export interface FenceTextStyle {
@@ -48,13 +49,13 @@ export class FenceText extends EditableNodeComponent {
     const { start, end } = fenceBody(node.text);
     const body = markup(node.text.slice(start, end), style);
     if (!delimiters) {
-      this.element.dataset.textFrom = String(start);
+      setOffset(this.element, TEXT_FROM, start);
       this.element.appendChild(body);
       return;
     }
     // The block's own text, delimiters and all: the three pieces are contiguous and in order, so
     // the element holds the document's characters from zero on.
-    this.element.dataset.textFrom = '0';
+    setOffset(this.element, TEXT_FROM, 0);
     const opening = delimiterLine(node.text.slice(0, start));
     const closing = delimiterLine(node.text.slice(end));
     if (opening) {

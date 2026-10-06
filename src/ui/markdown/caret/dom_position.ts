@@ -11,11 +11,12 @@
  */
 
 import type { RootContent } from 'mdast';
-import { SOURCE_SELECTOR, drawnMarkerLength, nodeRawRange, renderedLength } from './offsets';
+import { drawnMarkerLength, nodeRawRange, renderedLength, SOURCE_SELECTOR } from './offsets';
 import { afterNewline } from './dom';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { locateCell, readTableSource } from '../syntax/table_source';
+import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf } from './../offset_tags';
 
 /** The text position a character offset inside a revealed source lands on. */
 export function sourceTextPosition(source: HTMLElement, offset: number): DomPosition | null {
@@ -45,7 +46,7 @@ export function domPositionAtOffset(
     return null;
   }
   const blockElement = root.querySelector<HTMLElement>(
-    `.markdown-block[data-line-start="${block.lineStart}"]`
+    `.markdown-block[data-${LINE_START}="${block.lineStart}"]`
   );
   if (!blockElement) {
     return null;
@@ -57,7 +58,7 @@ export function domPositionAtOffset(
   // position (a formula renders as KaTeX, not as its source) and the caret
   // would drift away from where the edit left it.
   for (const source of blockElement.querySelectorAll<HTMLElement>(SOURCE_SELECTOR)) {
-    const from = block.charStart + Number(source.dataset.sourceFrom ?? NaN);
+    const from = block.charStart + offsetOf(source, SOURCE_FROM);
     if (!Number.isFinite(from)) {
       continue;
     }
@@ -92,11 +93,11 @@ export function domPositionAtOffset(
       ? blockElement.querySelector<HTMLElement>(`[data-table-cell="${cell.row}:${cell.column}"]`)
       : null;
     if (cell && element) {
-      const textSpan = element.querySelector<HTMLElement>('[data-text-from]');
+      const textSpan = element.querySelector<HTMLElement>(`[data-${TEXT_FROM}]`);
       const node = textSpan?.firstChild ?? element.querySelector('.markdown-table-placeholder')?.firstChild;
       if (node && node.nodeType === Node.TEXT_NODE) {
         const from = textSpan
-          ? block.charStart + Number(textSpan.dataset.textFrom)
+          ? block.charStart + offsetOf(textSpan, TEXT_FROM)
           : block.charStart + cell.contentStart;
         return { node, offset: Math.max(0, Math.min(clamped - from, (node as Text).data.length)) };
       }
@@ -106,8 +107,8 @@ export function domPositionAtOffset(
   // Plain text leaves tag their block-relative raw start: the global offset
   // is block.charStart + the tag. Exact at leaf boundaries too, where a flat
   // rendered offset would be ambiguous (e.g. between list items).
-  for (const span of blockElement.querySelectorAll<HTMLElement>('[data-text-from]')) {
-    const from = block.charStart + Number(span.dataset.textFrom);
+  for (const span of blockElement.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`)) {
+    const from = block.charStart + offsetOf(span, TEXT_FROM);
     if (!Number.isFinite(from) || clamped < from) {
       continue;
     }
@@ -122,24 +123,24 @@ export function domPositionAtOffset(
   // Raw offsets that fall on a formatted unit's markers (outside its text
   // leaves) resolve to the unit's rendered content edge, so the caret and
   // selection land on the visible text instead of the hidden markers.
-  for (const unit of blockElement.querySelectorAll<HTMLElement>('[data-format-from]')) {
-    const from = block.charStart + Number(unit.dataset.formatFrom);
-    const to = block.charStart + Number(unit.dataset.formatTo);
+  for (const unit of blockElement.querySelectorAll<HTMLElement>(`[data-${FORMAT_FROM}]`)) {
+    const from = block.charStart + offsetOf(unit, FORMAT_FROM);
+    const to = block.charStart + offsetOf(unit, FORMAT_TO);
     if (!Number.isFinite(from) || !Number.isFinite(to) || clamped < from || clamped > to) {
       continue;
     }
-    const textSpans = unit.querySelectorAll<HTMLElement>('[data-text-from]');
+    const textSpans = unit.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`);
     const first = textSpans[0];
     const last = textSpans[textSpans.length - 1];
     if (first) {
       const firstNode = first.firstChild as Text;
-      if (clamped <= block.charStart + Number(first.dataset.textFrom)) {
+      if (clamped <= block.charStart + offsetOf(first, TEXT_FROM)) {
         return { node: firstNode, offset: 0 };
       }
     }
     if (last) {
       const lastNode = last.firstChild as Text;
-      const contentEnd = block.charStart + Number(last.dataset.textFrom) + lastNode.data.length;
+      const contentEnd = block.charStart + offsetOf(last, TEXT_FROM) + lastNode.data.length;
       if (clamped >= contentEnd) {
         return { node: lastNode, offset: lastNode.data.length };
       }

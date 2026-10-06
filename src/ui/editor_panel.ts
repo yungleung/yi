@@ -1,4 +1,13 @@
 /**
+ * The editor panel: the shell around the markdown editor — its state in the session, the toolbar
+ * row, the find bar, and the news it emits when the document it holds changes.
+ *
+ * May import: the component base, the editor itself, the session and the events. Upholds: one panel
+ * per window, and the document it shows is the session's — the panel captures and restores the view
+ * around the editor rather than keeping a text of its own.
+ */
+
+/**
  * The editor panel: the shell around the markdown editor.
  *
  * This file was called `markdown_editor.ts`, one directory above
@@ -14,10 +23,10 @@ import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
-import type { DocumentView, SeenView } from '../services/document_session';
+import type { DocumentView, SeenView } from '../services/session_rules';
 import { documentSession } from '../services/session';
 import { DOCUMENT_OPENED } from './workspace/tree';
-import * as imageSources from './markdown/image_sources';
+import * as imageSources from './image/image_urls';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
 
@@ -66,7 +75,7 @@ export class MarkdownEditor extends BaseComponent {
 
   /**
    * Which folder the document on screen lives in — what a relative image destination is read
-   * from before the image folder the settings name (`markdown/image_sources.ts`).
+   * from before the image folder the settings name (`image/image_urls.ts`).
    */
   setDocumentFolder(folder: string | null): void {
     imageSources.setDocumentFolder(folder);

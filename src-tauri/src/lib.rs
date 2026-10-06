@@ -1,7 +1,6 @@
 mod i18n;
 mod menu;
 mod files;
-mod greeting;
 mod session;
 mod stats;
 mod settings;
@@ -36,7 +35,6 @@ pub fn run() {
             files::write_text_atomically,
             stats::get_word_count, 
             files::list_folder_files, 
-            greeting::greet,
             session::load_session,
             session::save_session,
             settings::get_config,

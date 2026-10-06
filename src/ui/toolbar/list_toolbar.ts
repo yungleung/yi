@@ -1,3 +1,11 @@
+/**
+ * The list buttons: make the selection a list of a kind, take it away, indent and outdent — each by
+ * naming the editor's own command.
+ *
+ * May import: the command registry, the list commands' names, the catalogue and the toolbar base.
+ * Upholds: one button per list command, so the list rules stay in `editing/lists.ts`.
+ */
+
 import type { ListCommand } from '../markdown/editing/lists';
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';

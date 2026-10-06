@@ -2,7 +2,7 @@
  * The versions of the document on screen: read from the repository, kept, and announced.
  *
  * The rules are pure (`services/versioning.ts`); this is the half that reads the disk and holds the
- * answer, the way `services/session.ts` is the living half of `document_session.ts`. Two things
+ * answer, the way `services/session.ts` is the living half of `session_rules.ts`. Two things
  * decide whether it reads at all: the reader's answer for *this* workspace — a workspace they said
  * no to is never read, so the button can be hidden from the config alone — and whether the document
  * on screen has a file to have a history. It reads when the document changes (the *path* is the
@@ -36,7 +36,7 @@ class VersionsOfDocument {
   private run = 0;
 
   constructor() {
-    for (const event of [DOCUMENT_SESSION_CHANGED, WORKSPACE_CHANGED, 'config_changed']) {
+    for (const event of [DOCUMENT_SESSION_CHANGED, WORKSPACE_CHANGED, 'config_changed'] as const) {
       void eventManager.on(event, () => void this.refresh());
     }
   }

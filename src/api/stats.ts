@@ -1,3 +1,10 @@
+/**
+ * The word count, asked of the backend.
+ *
+ * May import: the app's own command seam (`invoke`). Upholds: one counting rule — Rust's — so the
+ * status bar's numbers and any other reader's cannot drift apart.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 export interface WordsCount {

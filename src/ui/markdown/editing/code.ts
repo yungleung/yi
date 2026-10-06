@@ -12,10 +12,11 @@
  * the caret is somewhere it applies.
  */
 
-import { isFenced } from '../document/blocks';
+import { isFenced } from '../document/block_kinds';;
 import { codeIndentEdit } from '../syntax/code_edits';
 import { shiftOffset } from '../syntax/edit_range';
-import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
+import { applyEdit, caretOffset, type EditorContext } from './context';
+import { editorSelection, rangeOffsets } from './selection';
 
 /**
  * Whether the Tab key was handled. True whenever the caret is inside a fenced

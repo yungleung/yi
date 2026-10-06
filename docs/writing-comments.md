@@ -1,9 +1,9 @@
 # Writing comments
 
-Comments are part of the interface here, not an extra. The editor is around
-ninety modules, and the way anyone — a contributor, or an agent with no history —
-finds the right one is by reading headers before code. That is why one rule is
-checked and the rest is a voice worth learning.
+Comments are part of the interface here, not an extra. The editor subtree is 114
+modules, and the way anyone — a contributor, or an agent with no history — finds
+the right one is by reading headers before code. That is why one rule is checked
+and the rest is a voice worth learning.
 
 ## The module header
 
@@ -18,7 +18,9 @@ Every module under `src/ui/markdown` opens with this, and nothing else:
 ```
 
 `test/checks/headers.mjs` enforces it, so `npm run check` fails naming the file and
-what is missing. Three things the check decides, in case you are wondering:
+what is missing. It covers the whole of `src/` — every module, declaration files
+included — and a module without a header is a failure, not a style note. Three things
+the check decides, in case you are wondering:
 
 - **The header comes first** — above the imports. A prose block below them counts
   as no header at all, which is how seven modules were wrong before that check ran.

@@ -1,3 +1,10 @@
+/**
+ * The table picker: the grid a reader drags over to say how big a new table is.
+ *
+ * May import: the catalogue and the anchored-panel base. Upholds: one place that turns a size into a
+ * hover state and an answer, so the table command gets a size rather than a pointer stream.
+ */
+
 import { t } from '../../services/i18n';
 import { AnchoredPanel } from '../floating/panel';
 

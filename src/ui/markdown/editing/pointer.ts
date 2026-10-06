@@ -13,7 +13,8 @@
  * offsets model.
  */
 
-import { proseRoot, restoreCaret, type EditorContext } from './context';
+import { restoreCaret, type EditorContext } from './context';
+import { proseRoot } from './selection';
 import { firstTextNodeIn, lastTextNodeIn } from '../caret/dom';
 import { lineBoxAround } from '../caret/geometry';
 

@@ -1,3 +1,11 @@
+/**
+ * The status bar: the strip at the bottom of the window, built as groups of whatever each feature
+ * shows there.
+ *
+ * May import: the component base. Upholds: one row of groups, in one order, so a feature adds its
+ * own status to the bar instead of placing it against the window's edge.
+ */
+
 import { BaseComponent, type Renderable } from './component';
 
 export class StatusBar extends BaseComponent {

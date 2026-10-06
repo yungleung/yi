@@ -1,3 +1,10 @@
+/**
+ * The settings window: the tabs, and the one window they live in.
+ *
+ * May import: the tabs, the window API, the catalogue and the component base. Upholds: one settings
+ * window per app — a second press focuses the one that is open rather than building another.
+ */
+
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';

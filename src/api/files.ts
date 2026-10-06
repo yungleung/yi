@@ -1,3 +1,12 @@
+/**
+ * The workspace's files, through the app's own commands: listing, creating, moving, renaming,
+ * deleting, and the atomic write a note is saved with.
+ *
+ * May import: the app's own command seam (`invoke`). Upholds: one call per file operation, and the
+ * written shape (`writeTextAtomically`) for every save — temp file plus rename — so a cloud drive
+ * or a git client never reads half a note.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 export interface FileInfo {

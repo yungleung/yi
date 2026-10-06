@@ -1,3 +1,12 @@
+/**
+ * The session button: shows whether the document on screen is in the stack, and opens the panel that
+ * switches between the documents that are.
+ *
+ * May import: the session, its news, the stack panel, the catalogue and the toolbar base. Upholds:
+ * the button's state is read from the session, never kept locally, so it cannot show a stack the
+ * session does not have.
+ */
+
 import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { runCommand } from '../markdown/commands/registry';

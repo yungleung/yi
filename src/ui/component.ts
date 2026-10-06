@@ -1,3 +1,11 @@
+/**
+ * The component contract every widget in the shell implements: an element, `mount`, `destroy`, and
+ * the small helpers a subclass needs to build its own children.
+ *
+ * May import: nothing. Upholds: one base for the shell's widgets, so a widget is always something
+ * that can be mounted and taken away by the same two calls.
+ */
+
 export interface UIComponent {
   element: HTMLElement;
   mount(parent: HTMLElement): this;

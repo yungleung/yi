@@ -1,3 +1,12 @@
+/**
+ * The app window: builds the shell — title bar, tree, editor panel, status bar — and wires the
+ * services to it, once.
+ *
+ * May import: everything: this is the composition root, and the only module whose job is to know
+ * the whole shell. Upholds: one construction of each widget and one wiring of the config, the
+ * language and the session, so nothing else has to order them.
+ */
+
 import { platform } from '@tauri-apps/plugin-os';
 import { eventManager } from './services/event_manager';
 import { TitleBar } from './ui/title_bar';
@@ -34,7 +43,7 @@ import { documentSession } from './services/session';
 import { bibliographyManager } from './services/bibliography';
 import { openSettingsWindow } from './ui/settings/settings_window';
 import { imageFolderPath } from './services/settings_paths';
-import { setImageFolder } from './ui/markdown/image_sources';
+import { setImageFolder } from './ui/image/image_urls';
 import { applyLanguage, languageFor } from './services/language';
 import { language } from './services/i18n';
 

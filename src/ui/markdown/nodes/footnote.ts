@@ -21,6 +21,7 @@ import { markerShape } from '../syntax/footnotes';
 import { EditableNodeComponent } from './editable_node';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
+import { CONTENT_END, CONTENT_START, SOURCE_FROM, TEXT_FROM, setOffset } from './../offset_tags';
 
 /** The class a marker's source view carries, so the caret mapping can find it. */
 const SOURCE_CLASS = 'markdown-footnote-source';
@@ -103,14 +104,14 @@ function labelElement(shape: {
   span.className = `markdown-source-view ${SOURCE_CLASS} markdown-footnote-label inline-block align-top`;
   span.textContent = shownSourceText() ?? `[^${shape.label}]`;
   // Block-relative, like every source view: the caret mapping adds the block's start.
-  span.dataset.sourceFrom = String(shape.start);
-  span.dataset.contentStart = String(marker.label.start);
-  span.dataset.contentEnd = String(marker.label.end);
+  setOffset(span, SOURCE_FROM, shape.start);
+  setOffset(span, CONTENT_START, marker.label.start);
+  setOffset(span, CONTENT_END, marker.label.end);
   // This source *is* the characters the author typed, so it keeps the tag that says so:
   // the caret mapping and the local write both read it (`caret/offsets.ts`,
   // `editing/typed_text.ts`). The drawn marker carries no tag — `[1]` is not the
   // document's text, and a tag claiming it was would be a lie the write path acts on.
-  span.dataset.textFrom = String(shape.start);
+  setOffset(span, TEXT_FROM, shape.start);
   return span;
 }
 

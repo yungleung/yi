@@ -1,3 +1,11 @@
+/**
+ * What the table's context menu offers, for the row that was right-clicked: the pure model the native
+ * menu is built from.
+ *
+ * May import: the table's source reader. Upholds: one rule for which commands a row may be given, so
+ * the menu and its check read the same model.
+ */
+
 import { rowAt, type TableSource } from '../markdown/syntax/table_source';
 import type { TableCommand } from '../markdown/editing/table';
 

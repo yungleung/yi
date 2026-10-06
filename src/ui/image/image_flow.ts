@@ -14,7 +14,7 @@
  * write; the pixels come off the clipboard as RGBA and are drawn on a canvas, which is what turns
  * them into a PNG (or a JPEG or a WebP, when the name asks for one). The text that goes into the
  * note is a path *relative* to where the image is read from — the note's own folder or the image
- * folder — which is what `image_sources.ts` resolves again when the image is painted.
+ * folder — which is what `image_urls.ts` resolves again when the image is painted.
  *
  * May import: the clipboard's reads, the app's paths and settings, the image rules, the card, and
  * the editing context. Upholds: the document text is the only source of truth — one `applyEdit`
@@ -31,10 +31,9 @@ import { imageFolderPath } from '../../services/settings_paths';
 import { destinationForFile, joinPath, parentFolder } from '../../services/workspace_folders';
 import {
   applyEdit,
-  editorSelection,
-  rangeOffsets,
   type EditorContext
 } from '../markdown/editing/context';
+import { editorSelection, rangeOffsets } from '../markdown/editing/selection';
 import {
   clipboardImageDestination,
   imageInsertion,
