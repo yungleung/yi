@@ -41,16 +41,15 @@ import {
 import { editorSelection, isDocumentRange, proseRoot, rangeOffsets } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
-import { deleteText, insertCommitted, insertNewline, insertText } from './editing/text_commands';
+import { insertCommitted } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
 import { fenceLanguageEdit } from './syntax/fence_edits';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
-import { applyCodeIndent } from './editing/code';
 import { Completions } from './editing/completions';
 import { installFootnotePreview } from './footnote_preview';
-import { continueTableDown, moveTableCell } from './editing/table';
+import { handleEditorKey, type KeyHost } from './editing/keys';
 import {
   routeContextMenu,
   routeFootnoteMenu,
@@ -120,6 +119,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private pendingCaretOffset: number | null = null;
   /** The citation and wikilink lists, which own the arrows and Enter while one is open. */
   private completions!: Completions;
+  /** What the key path needs of this editor (see `editing/keys.ts`). */
+  private keyHost!: KeyHost;
 
   constructor() {
     super('div', ['relative', 'flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
@@ -188,7 +189,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.find = new FindController(this.context, this.findBar);
     this.element.appendChild(this.findBar.element);
 
-    this.contentView.addEventListener('keydown', (event) => this.handleKeydown(event));
+    this.contentView.addEventListener('keydown', (event) => handleEditorKey(event, this.keyHost));
     // The routed clicks, in the order they have to run: a checkbox and a footnote
     // marker are handled before a node can place a caret where the click landed, a
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
@@ -252,6 +253,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
     this.registerCommandEvents();
     this.completions = new Completions(this.context);
+    this.keyHost = {
+      context: this.context,
+      composition: this.composition,
+      completions: this.completions,
+      shortcut: (event) => this.handleShortcut(event),
+      arrow: (event) => this.handleArrowKey(event)
+    };
     this.renderer.render();
     // The bibliography manager announces when its data is ready or refreshed;
     // citations render from it, so the mounted blocks are rebuilt.
@@ -433,98 +441,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<[AppEventName, CommandId]>) {
       void eventManager.on(event, () => runCommand(command));
     }
-  }
-
-  /** Keyboard shortcuts and plain text input. */
-  private handleKeydown(event: KeyboardEvent): void {
-    // A character the input method is handling is not the editor's. The keys *during* a
-    // composition say so with `isComposing`; a key the method routes does so with
-    // `keyCode` 229 — the key that picks a candidate, and (with Caps Lock on, so the method
-    // composes nothing) every letter it passes straight through. Typing those writes the
-    // author's character twice: the method leaves the same letter in the seam, and the seam
-    // commits it. A 229 key that is *not* a character — `Enter` while a method is merely
-    // active, an arrow, `Backspace`, `Tab` — is still the editor's, which is why the guard
-    // is about the character and not about 229 alone (see
-    // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
-    if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
-      return;
-    }
-    // A Backspace that edits the word being composed is the input method's: while the word is
-    // marked, it takes a letter off *it*. The key that takes the last one arrives with the
-    // composition already over and nothing on it to say so, and read as the editor's it
-    // deletes the character before the caret in the *document* — measured by the reader: `你好`
-    // with `zhongguo` being composed lost 好, and the same happens inside an English word,
-    // which is the same event with a different word around it.
-    if (event.key === 'Backspace' && this.composition.markedText()) {
-      return;
-    }
-    // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and
-    // what it wrote is what the list is drawn from again.
-    if (this.completions.handleKey(event)) {
-      event.preventDefault();
-      return;
-    }
-    this.handleTextKey(event);
-    this.completions.refresh();
-  }
-
-  /** The text path: the chords, and the keys that write and move. */
-  private handleTextKey(event: KeyboardEvent): void {
-    if (this.handleShortcut(event)) {
-      return;
-    }
-    if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      // Tab walks a table's cells and moves a list item a level in or out;
-      // elsewhere the browser keeps its own Tab, as it did before.
-      if (moveTableCell(this.context, event.shiftKey ? -1 : 1)) {
-        event.preventDefault();
-        return;
-      }
-      // The list step goes through the registry like any other trigger: the
-      // command is available where there is a list line to move, so a Tab that
-      // cannot indent here falls through to the code block below.
-      if (runCommand(event.shiftKey ? 'list:outdent' : 'list:indent')) {
-        event.preventDefault();
-        return;
-      }
-      // Inside a fenced code block a Tab is two spaces, and Shift+Tab takes
-      // them back.
-      if (applyCodeIndent(this.context, event.shiftKey)) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      // Enter in a table cell goes down its column; where there is no cell
-      // below, it leaves the table with an empty paragraph after it. A cell
-      // holds text, not lines, so a soft break has no meaning there either.
-      if (continueTableDown(this.context)) {
-        event.preventDefault();
-        return;
-      }
-      if (insertNewline(this.context)) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if (
-      (event.key === 'Backspace' || event.key === 'Delete') &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.altKey
-    ) {
-      if (deleteText(this.context, event.key === 'Delete')) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      if (insertText(this.context, event.key)) {
-        event.preventDefault();
-      }
-      return;
-    }
-    this.handleArrowKey(event);
   }
 
   /** Command/control shortcuts, returning true when one was handled. */
