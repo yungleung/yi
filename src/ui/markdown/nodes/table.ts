@@ -60,11 +60,15 @@ export class Table extends EditableNodeComponent {
       content.dataset.tableRowStart = String(rowStart);
     }
     if (cell.children.length === 0) {
-      // An empty cell has no text to aim at: this span gives it a line box and
-      // the caret something to sit in. Its offset comes from the source model.
+      // An empty cell has no text to aim at: this span gives the caret something
+      // to sit in, and the node it holds is *empty* — a space would be a
+      // character the reader could select and copy that the document does not
+      // hold. The cell's own line box is what the caret reads
+      // (`caret/geometry.ts: lineBoxAround`); the offset comes from the source
+      // model.
       const placeholder = document.createElement('span');
       placeholder.className = 'markdown-table-placeholder markdown-node';
-      placeholder.textContent = '\u00a0';
+      placeholder.appendChild(document.createTextNode(''));
       content.appendChild(placeholder);
     }
     appendChildren(content, cell.children);

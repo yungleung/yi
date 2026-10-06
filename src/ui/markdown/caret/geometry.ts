@@ -25,10 +25,30 @@ export function caretRect(range: Range): { left: number; top: number; height: nu
     const nodeRange = document.createRange();
     nodeRange.selectNodeContents(container);
     const box = nodeRange.getBoundingClientRect();
+    if (box.height > 0 || box.width > 0) {
+      return {
+        left: rect.left || box.left,
+        top: box.top,
+        height: box.height || estimateLineHeight(container)
+      };
+    }
+    // A text node that measures as nothing — the *empty* one a placeholder holds, on a blank line,
+    // an empty list item or an empty cell — has no position of its own: the line it sits on does.
+    const line = lineBoxAround(container);
+    if (line) {
+      // The bar is as tall as the *type*, not as tall as the line: that is what a caret in a text
+      // node measures as, and a blank line's own box is the block's `min-height` (one whole line).
+      const height = Math.min(caretFontHeight(container.parentElement ?? document.body), line.height || Infinity);
+      return {
+        left: line.left,
+        top: line.top + Math.max(0, (line.height - height) / 2),
+        height: height > 0 ? height : estimateLineHeight(container)
+      };
+    }
     return {
-      left: rect.left || box.left,
-      top: box.top,
-      height: box.height || estimateLineHeight(container)
+      left: rect.left,
+      top: rect.top,
+      height: estimateLineHeight(container)
     };
   }
 
@@ -63,6 +83,80 @@ export function caretRect(range: Range): { left: number; top: number; height: nu
     top: box.top + padTop,
     height: box.height > 0 ? box.height : estimateLineHeight(element)
   };
+}
+
+/**
+ * The left edge of a collapsed position, for a position that has no box of its own: the line's own
+ * left edge (`lineBoxAround`) instead of the nothing an *empty* text node measures as. This is what
+ * picks between the two ends of a node whose only text is a placeholder (`nodes/editable_node.ts:
+ * placeCaretFallback`).
+ */
+export function caretLeft(node: Text, offset: number): number {
+  const range = document.createRange();
+  range.setStart(node, offset);
+  range.collapse(true);
+  const rect = range.getBoundingClientRect();
+  if (rect.height > 0 || rect.width > 0) {
+    return rect.left;
+  }
+  const line = lineBoxAround(node);
+  return line ? line.left : rect.left;
+}
+
+/** Caret heights by font, so a fallback costs one style read and no canvas work after the first. */
+const fontHeights = new Map<string, number>();
+
+/**
+ * The height a caret takes in this element's font: what a range over one of its characters measures
+ * as — the font's own ascent and descent, which is *not* the line height. Measured from the font
+ * itself (`fontBoundingBoxAscent`/`Descent`), because the line box of a blank line is the block's
+ * own `min-height` and would give the caret a bar as tall as the line.
+ */
+export function caretFontHeight(element: Element): number {
+  const style = getComputedStyle(element);
+  const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const cached = fontHeights.get(font);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let height = 0;
+  const context = document.createElement('canvas').getContext('2d');
+  if (context) {
+    context.font = font;
+    const metrics = context.measureText('M');
+    height = (metrics.fontBoundingBoxAscent ?? 0) + (metrics.fontBoundingBoxDescent ?? 0);
+  }
+  if (!(height > 0)) {
+    height = (parseFloat(style.fontSize) || 16) * 1.2;
+  }
+  fontHeights.set(font, height);
+  return height;
+}
+
+/**
+ * The box of the line a text position sits on, for a position that has no box of its own: the
+ * nearest ancestor that has one — the paragraph, the list item, the cell, the body a fence draws —
+ * read as its *content* box, so padding is not mistaken for the line. Null when nothing around it
+ * has a box either.
+ */
+export function lineBoxAround(
+  node: Node
+): { left: number; top: number; height: number } | null {
+  for (let element = node.parentElement; element !== null; element = element.parentElement) {
+    const box = element.getBoundingClientRect();
+    if (box.height <= 0) {
+      continue;
+    }
+    const style = getComputedStyle(element);
+    const padTop = parseFloat(style.paddingTop) || 0;
+    const padBottom = parseFloat(style.paddingBottom) || 0;
+    return {
+      left: box.left + (parseFloat(style.paddingLeft) || 0),
+      top: box.top + padTop,
+      height: Math.max(0, box.height - padTop - padBottom)
+    };
+  }
+  return null;
 }
 
 /** The computed line height around a node, with a sane default. */

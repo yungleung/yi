@@ -40,6 +40,14 @@ export interface CompositionView {
 export function createCompositionView(layoutChanged: LayoutChanged): CompositionView {
   let span: HTMLSpanElement | null = null;
   let block: HTMLElement | null = null;
+  /**
+   * Whether the span sits *between* the halves of a text node. Only then is there anything to join
+   * again when it goes: `normalize()` also drops an *empty* text node, and the placeholder a blank
+   * line, an empty item or an empty cell holds is exactly that — a caret anchored in one is moved
+   * to the element, where the offsets mapping cannot read it, so the word composed on a line the
+   * reader had just made committed nothing (measured).
+   */
+  let cut = false;
 
   /**
    * Puts the span into the flow at the caret: after the caret's own characters and before
@@ -60,20 +68,24 @@ export function createCompositionView(layoutChanged: LayoutChanged): Composition
       // read, which is how a word composed on a new blank line committed nothing (measured).
       if (at === 0) {
         parent.insertBefore(span!, text);
+        cut = false;
         return true;
       }
       if (at >= text.data.length) {
         parent.insertBefore(span!, text.nextSibling);
+        cut = false;
         return true;
       }
       const rest = text.splitText(at);
       rest.parentNode?.insertBefore(span!, rest);
+      cut = true;
       return true;
     }
     if (container.nodeType === Node.ELEMENT_NODE) {
       const element = container as Element;
       const index = Math.min(Math.max(0, range.startOffset), element.childNodes.length);
       element.insertBefore(span!, element.childNodes[index] ?? null);
+      cut = false;
       return true;
     }
     return false;
@@ -89,9 +101,10 @@ export function createCompositionView(layoutChanged: LayoutChanged): Composition
     // element are all read off that DOM.
     const parent = span.parentNode;
     span.remove();
-    if (parent instanceof Element) {
+    if (cut && parent instanceof Element) {
       parent.normalize();
     }
+    cut = false;
   };
 
   const hide = (): void => {

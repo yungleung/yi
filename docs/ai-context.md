@@ -312,6 +312,32 @@ text it covers (a new note opens with its title selected, and that title is insi
 block). A character typed at the body's own end still belongs to the body, all three alike
 (`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
 shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
+A caret position that sits *right after a newline* — the body's first line, the body's end — is
+drawn on the line below it, never a space past the line the newline closed: a caret anchored at the
+end of a text node whose last character is a newline belongs to the text that follows it
+(`caret/dom.ts: afterNewline`, read by the caret's own drawing in `caret/caret.ts: onTheLineItNames`
+and by the position a raw offset resolves to in `caret/dom_position.ts`). Stepping *left* onto such
+a line lands one character in from the node's end (`caret/navigation.ts: endOfPreviousText`), since
+the end itself is the line the caret is already on. `fence-source-caret.js` holds both through the
+editor.
+
+**An empty line is a box, not a character.** A blank paragraph, an empty list item, an empty table
+cell and an empty fenced body all hold an *empty* text node: the space they used to hold was a
+character the reader could select and copy, and the document never had it. What gives each of them a
+line is the block's own box — a fence body's `code` is a block one line tall (`styles.css`) — and
+what gives the caret a place is the line the geometry falls back to
+(`caret/geometry.ts: lineBoxAround`, read by the caret's own drawing, by a click's nearest line, and
+by the choice between a node's two ends). The caret's *bar* is the height of the type rather than of
+the line (`caret/geometry.ts: caretFontHeight`, the font's own ascent and descent, which is what a
+range over a character measures as), so a blank line's caret looks like a caret in text. A
+composition written at such a node goes *beside* it and must not join it away: `normalize()` drops
+an empty text node, and a caret anchored in one becomes an element position the offsets mapping
+cannot read (`editing/composition_view.ts`). `test/probes/placeholder-boxes.js` holds all four.
+An empty *item* takes its line from a *generated* mark inside its placeholder (`styles.css`,
+`.markdown-list-placeholder::before`), not from a character: WebKit paints a replaced block without
+the marker a list draws outside its item's content box unless the item has a line of its own, so the
+bullet the reader has just made is otherwise missing from the screen until the next repaint (a
+bridge screenshot re-renders the page and cannot show it; measure with `screencapture`).
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the

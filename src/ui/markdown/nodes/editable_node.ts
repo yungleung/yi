@@ -10,6 +10,7 @@
 
 import type { AstNode } from '../ast';
 import { caretRangeAtPoint, showCaret, showCaretBeside } from '../caret/caret';
+import { caretLeft } from '../caret/geometry';
 
 export interface EditableMarkdownNode {
   /** The mdast node type this component renders (also acts as a capability marker). */
@@ -100,8 +101,11 @@ export abstract class EditableNodeComponent implements EditableMarkdownNode {
     if (firstText && lastText) {
       const startRange = this.collapsedRange(firstText, 0);
       const endRange = this.collapsedRange(lastText, lastText.data.length);
-      const startLeft = startRange.getBoundingClientRect().left;
-      const endLeft = endRange.getBoundingClientRect().left;
+      // The ends are compared by where they sit on screen, which for an *empty* text node — the
+      // placeholder an empty line, item or cell holds — is the line it sits on
+      // (`caret/geometry.ts: caretLeft`), not the nothing the node itself measures as.
+      const startLeft = caretLeft(firstText, 0);
+      const endLeft = caretLeft(lastText, lastText.data.length);
       showCaret(Math.abs(startLeft - clientX) <= Math.abs(endLeft - clientX) ? startRange : endRange);
       return;
     }

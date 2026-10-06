@@ -88,9 +88,14 @@ class BlockView implements BlockComponent {
     paragraph.className = 'markdown-node markdown-empty-line';
     const placeholder = document.createElement('span');
     placeholder.className = 'markdown-empty-line-placeholder markdown-node';
-    // Block-relative: an empty paragraph starts at its own line start.
+    // Block-relative: an empty paragraph starts at its own line start. The node it holds is
+    // *empty*: a blank line has no character of its own — the space it used to hold was a
+    // placeholder only the caret could see, and a character that is not the author's is one the
+    // reader could select and copy. What gives the line a box is the paragraph (`styles.css`) and
+    // what gives the caret a place is `caret/geometry.ts: lineBoxAround` (see also `nodes/list.ts`
+    // and `nodes/table.ts`, which hold the same empty node for an empty item and cell).
     placeholder.dataset.textFrom = '0';
-    placeholder.textContent = '\u00a0';
+    placeholder.appendChild(document.createTextNode(''));
     paragraph.appendChild(placeholder);
     element.appendChild(paragraph);
     // An empty paragraph holds no characters to aim at, so every click on it

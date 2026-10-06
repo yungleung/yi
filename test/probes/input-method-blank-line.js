@@ -1,14 +1,15 @@
 /**
  * A word composed on a paragraph the reader has just made commits into it.
  *
- * Enter at the end of the document leaves a blank line, and its paragraph is drawn as a
- * placeholder rather than characters. A word being composed is written into the line, and at a
- * text node's *edge* that must go beside the node rather than into a split: splitting at the
- * very start leaves an empty text node, a caret anchored in one is moved to the *element* when
- * the halves are joined again, and the offsets mapping cannot read an element-anchored caret —
- * so the commit found no offsets and wrote nothing at all (measured: the line stayed empty).
+ * Enter at the end of the document leaves a blank line, and its paragraph is a *box* rather than
+ * characters: the placeholder it holds is an empty text node (`create_block.ts`). A word being
+ * composed is written into the line, and at a text node's *edge* it must go beside the node rather
+ * than into a split — and what goes must not *join* the node away either: `normalize()` drops an
+ * empty text node, a caret anchored in one is moved to the *element*, and the offsets mapping
+ * cannot read an element-anchored caret, so the commit found no offsets and wrote nothing at all
+ * (measured: the line stayed empty).
  *
- * @covers src/ui/markdown/editing/composition_view.ts: insertAt
+ * @covers src/ui/markdown/editing/composition_view.ts: insertAt, detach
  */
 (async () => {
   const t = window.__t;

@@ -12,6 +12,7 @@
 
 import type { RootContent } from 'mdast';
 import { SOURCE_SELECTOR, drawnMarkerLength, nodeRawRange, renderedLength } from './offsets';
+import { afterNewline } from './dom';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { locateCell, readTableSource } from '../syntax/table_source';
@@ -279,7 +280,7 @@ function textNodeAtRenderedOffset(
     }
     if (renderedOffset === end) {
       const next = nodes[index + 1];
-      if (next !== undefined && text.data.endsWith('\n')) {
+      if (next !== undefined && afterNewline(text, text.data.length)) {
         return { node: next, offset: 0 };
       }
       return { node: text, offset: text.data.length };
