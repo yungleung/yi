@@ -36,10 +36,13 @@ export function caretRect(range: Range): { left: number; top: number; height: nu
     // an empty list item or an empty cell — has no position of its own: the line it sits on does.
     const line = lineBoxAround(container);
     if (line) {
+      // The bar is as tall as the *type*, not as tall as the line: that is what a caret in a text
+      // node measures as, and a blank line's own box is the block's `min-height` (one whole line).
+      const height = Math.min(caretFontHeight(container.parentElement ?? document.body), line.height || Infinity);
       return {
         left: line.left,
-        top: line.top,
-        height: line.height || estimateLineHeight(container)
+        top: line.top + Math.max(0, (line.height - height) / 2),
+        height: height > 0 ? height : estimateLineHeight(container)
       };
     }
     return {
@@ -98,6 +101,36 @@ export function caretLeft(node: Text, offset: number): number {
   }
   const line = lineBoxAround(node);
   return line ? line.left : rect.left;
+}
+
+/** Caret heights by font, so a fallback costs one style read and no canvas work after the first. */
+const fontHeights = new Map<string, number>();
+
+/**
+ * The height a caret takes in this element's font: what a range over one of its characters measures
+ * as — the font's own ascent and descent, which is *not* the line height. Measured from the font
+ * itself (`fontBoundingBoxAscent`/`Descent`), because the line box of a blank line is the block's
+ * own `min-height` and would give the caret a bar as tall as the line.
+ */
+export function caretFontHeight(element: Element): number {
+  const style = getComputedStyle(element);
+  const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const cached = fontHeights.get(font);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let height = 0;
+  const context = document.createElement('canvas').getContext('2d');
+  if (context) {
+    context.font = font;
+    const metrics = context.measureText('M');
+    height = (metrics.fontBoundingBoxAscent ?? 0) + (metrics.fontBoundingBoxDescent ?? 0);
+  }
+  if (!(height > 0)) {
+    height = (parseFloat(style.fontSize) || 16) * 1.2;
+  }
+  fontHeights.set(font, height);
+  return height;
 }
 
 /**

@@ -22,10 +22,15 @@
     const box = element.getBoundingClientRect();
     if (caret === null) return null;
     return (
-      Math.abs(caret.y - box.top) <= 8 &&
+      Math.abs(caret.y - box.top) <= 12 &&
       caret.x >= box.left + left - 2 &&
       caret.x <= box.left + left + 24
     );
+  };
+  /** The height of the drawn caret, in pixels. */
+  const caretHeight = () => {
+    const element = document.querySelector('.markdown-caret');
+    return element === null ? null : Math.round(element.getBoundingClientRect().height);
   };
 
   // 1. The blank line of a paragraph: the paragraph's own height is the line's.
@@ -34,11 +39,18 @@
   const blank = [...t.prose().querySelectorAll('.markdown-block')].find((b) =>
     b.classList.contains('markdown-blank')
   );
+  // A caret in text is the yardstick the blank line's caret has to match: a caret is as tall as the
+  // *type*, not as tall as the line the block draws (a blank line's box is the paragraph's own
+  // `min-height`).
+  await t.click(t.prose().querySelectorAll('p')[0], 0.3, 0.5);
+  await t.sleep(250);
+  const textHeight = caretHeight();
   check('a blank line holds no character', blank.querySelector('.markdown-empty-line-placeholder').textContent, '');
   check('and its paragraph still has a line', Math.round(blank.querySelector('p').getBoundingClientRect().height), 24);
   await t.click(blank.querySelector('p'), 0.05, 0.5);
   await t.sleep(250);
   check('a click on it draws the caret on that line', caretOnLine(blank.querySelector('p')), true);
+  check('and the bar is the height of a caret in text', caretHeight(), textHeight);
   t.key('x');
   await t.sleep(250);
   check('and typing lands on it', await t.raw(), 'alpha\n\nx\n\n\nbeta\n');

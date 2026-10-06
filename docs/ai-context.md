@@ -319,10 +319,12 @@ character the reader could select and copy, and the document never had it. What 
 line is the block's own box — a fence body's `code` is a block one line tall (`styles.css`) — and
 what gives the caret a place is the line the geometry falls back to
 (`caret/geometry.ts: lineBoxAround`, read by the caret's own drawing, by a click's nearest line, and
-by the choice between a node's two ends). A composition written at such a node goes *beside* it and
-must not join it away: `normalize()` drops an empty text node, and a caret anchored in one becomes
-an element position the offsets mapping cannot read (`editing/composition_view.ts`).
-`test/probes/placeholder-boxes.js` holds all four.
+by the choice between a node's two ends). The caret's *bar* is the height of the type rather than of
+the line (`caret/geometry.ts: caretFontHeight`, the font's own ascent and descent, which is what a
+range over a character measures as), so a blank line's caret looks like a caret in text. A
+composition written at such a node goes *beside* it and must not join it away: `normalize()` drops
+an empty text node, and a caret anchored in one becomes an element position the offsets mapping
+cannot read (`editing/composition_view.ts`). `test/probes/placeholder-boxes.js` holds all four.
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
