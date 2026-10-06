@@ -420,6 +420,16 @@ body {
   min-height: 1lh;
 }
 
+/* A list's marker is the page's own ink. The typography plugin draws its bullets from a palette made
+   for one light background — measured, a 50 %-alpha grey that came out at 2.4:1 on the sheet and
+   2.6:1 in dim, a dot the reader can barely see — so the marker takes the same "as dark or as light
+   as the theme's own text" mix the highlighted source and the fence labels use.
+   `test/probes/list-marker-ink.js` holds it in both themes. */
+.prose ul > li::marker,
+.prose ol > li::marker {
+  color: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
+}
+
 /* A table is typeset like a figure: it takes the width its content needs, it
    is centred in the column, and every cell keeps a visible border — a row of
    pipes the author cannot see is a row the author cannot trust. */
