@@ -58,7 +58,8 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-A hundred and thirty-nine of them, grouped by area: the workspace tree (`tree-rename` — a name edited
+a hundred and sixty-eight of them (`probe:all` runs 153 and skips 15, each skip for the reason its
+header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

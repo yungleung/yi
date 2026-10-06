@@ -13,6 +13,10 @@ renders it, and every edit is a plain-text edit to the file. The raw markdown is
 only source of truth; blocks are slices of it; only the blocks near the viewport are
 mounted.
 
+`docs/README.md` maps the documents. Of them, this one is the brief, `docs/architecture.md`
+is the model (the layers, the invariants, the four offsets), and `docs/structure.md` is the
+shape (the tree, the class families, and which convention each check enforces).
+
 ## Map
 
 | Layer | Files | Job |

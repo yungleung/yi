@@ -599,6 +599,11 @@ elements) unless it says otherwise.
   has no diff library) and `cargo test` **35/35**; the probes are `versioning-diff` (the whole note,
   the marks, the first change in view, the keyboard with the sheet) and `versioning-restore` (the
   file, the document, the stack, *Saved*), beside the thirteen the versioning slices left.
+- **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
+  `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
+  the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the
+  end of the document leaves is on the line below it. Something in the work since this entry was
+  written fixed it; nothing else in this ledger claims it.
 
 ## Open, in the order to take them
 
@@ -647,16 +652,9 @@ elements) unless it says otherwise.
   init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
   and a probe that only sometimes finishes is read as too long whatever the window was doing;
   `test/README.md` says so where probes are written.
-- **`insert-rule.js`'s `atTheEnd` check.** A rule written at the end of the document
-  writes the right raw text (`only line\n\n---\n\n`) and leaves the caret at the top of the
-  document (`y 49`) instead of on the line under the rule — measured on the app, and older
-  than the phases above (it fails at `d4a26cf` too). The caret the command resolves for the
-  document's end (`state.getText().length`, since no block starts after the rule) sits on a
-  blank line, and the placement snaps somewhere else; the fix belongs in that resolver or in
-  `nearestTextOffset`, with the probe as its test. It is the last check the strict harness
-  reports: the harness never judged a probe's own verdict until the link branch fixed that
-  (`test/tauri-probe.mjs: failedChecks`), which is why it and the formatting bug had both
-  been invisible.
+The structural work — splitting the modules that carry two jobs, one home for the `data-*-from`
+tags, the header check over the whole of `src/`, the class-name collisions — is not listed here: it
+is `docs/structure.md`'s list, with its evidence, in the order it is worth taking.
 
 Everything else the phase handoffs left is either closed above or waiting in "measure
 before deciding"; what is left is the "measure before deciding" column below.

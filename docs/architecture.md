@@ -31,12 +31,16 @@ layers, the invariants that hold them together, and where a change belongs.
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
-| Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | render, document |
+| Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | document, syntax — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
 | Commands | `editing/*`, `commands/*`, `markdown_editor.ts`, `click_routing.ts` | everything above |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
 keeps the rules testable in Node, and it is the boundary most likely to be broken by
 an innocent import. `test/checks/layering.mjs` enforces it.
+
+What the tree does *today* — the edges that bend, the sizes, the conventions a check
+enforces and the ones nothing enforces yet, and the order the structural work is worth
+taking — is `docs/structure.md`.
 
 ### One fact, one home
 

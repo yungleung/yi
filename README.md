@@ -54,9 +54,11 @@ Both layers live in `test/`:
 ## AI agents
 
 An agent works on this repository the way a person does — the running app, the
-checks, the probes — and three pages are written for it: `AGENTS.md` (the house
-rules), `docs/ai-context.md` (read this one first) and `docs/writing-comments.md`
-(the conventions every module follows). What has to be installed is below.
+checks, the probes — and four pages are written for it: `AGENTS.md` (the house
+rules), `docs/ai-context.md` (read this one first), `docs/structure.md` (the tree,
+the class families, and what each check enforces) and `docs/writing-comments.md`
+(the conventions every module follows). `docs/README.md` maps the rest. What has to
+be installed is below.
 
 ### The Tauri MCP bridge
 
@@ -118,7 +120,7 @@ is for and when it applies at the top of its own `SKILL.md`.
 | `src/services/` | Workspace, documents, bibliography, settings |
 | `src-tauri/` | The Rust side: window, config, file access |
 | `test/` | Checks, probes, fixtures |
-| `docs/` | Architecture, testing, and the recipes: a node type, a command, a comment |
+| `docs/` | Architecture, structure, testing, and the recipes: a node type, a command, a comment (`docs/README.md` maps them) |
 
 ## Contributing
 
