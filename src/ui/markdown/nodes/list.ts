@@ -113,12 +113,16 @@ export class ListItem extends EditableNodeComponent {
   /**
    * The caret/typing placeholder for an item without content. Its raw offset
    * is where the item's content would start: the paragraph's own start when
-   * there is one, otherwise the end of the item's marker line.
+   * there is one, otherwise the end of the item's marker line. The node it
+   * holds is *empty*: an item with nothing in it has no character of its own,
+   * and the space that used to stand here was one the reader could select and
+   * copy. The line's box comes from the item itself, and the caret reads it
+   * through `caret/geometry.ts: lineBoxAround`.
    */
   private placeholder(node: AstListItem, markerOnly: boolean): HTMLElement {
     const span = document.createElement('span');
     span.className = 'markdown-list-placeholder markdown-node';
-    span.textContent = '\u00a0';
+    span.appendChild(document.createTextNode(''));
     const offset = contentOffset(node, markerOnly);
     if (offset !== null) {
       span.dataset.textFrom = String(offset);

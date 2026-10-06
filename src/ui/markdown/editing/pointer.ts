@@ -15,6 +15,7 @@
 
 import { proseRoot, restoreCaret, type EditorContext } from './context';
 import { firstTextNodeIn, lastTextNodeIn } from '../caret/dom';
+import { lineBoxAround } from '../caret/geometry';
 
 /** The top of a text node's first line, or the element's own top. */
 function lineTop(node: Text | null, element: HTMLElement): number {
@@ -35,8 +36,13 @@ function edgeRect(node: Text, offset: number): { top: number; bottom: number } {
   if (rect.height > 0) {
     return { top: rect.top, bottom: rect.bottom };
   }
-  // An empty text node (a placeholder) has no box of its own: use the line it
-  // sits on.
+  // An empty text node (a placeholder) has no box of its own: use the line it sits on, which is
+  // the nearest ancestor with a box (`caret/geometry.ts` — the caret's own drawing reads it the
+  // same way).
+  const line = lineBoxAround(node);
+  if (line) {
+    return { top: line.top, bottom: line.top + line.height };
+  }
   const parent = node.parentElement?.getBoundingClientRect();
   return parent ? { top: parent.top, bottom: parent.bottom } : { top: rect.top, bottom: rect.bottom };
 }

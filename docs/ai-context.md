@@ -313,6 +313,17 @@ block). A character typed at the body's own end still belongs to the body, all t
 (`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
 shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
 
+**An empty line is a box, not a character.** A blank paragraph, an empty list item, an empty table
+cell and an empty fenced body all hold an *empty* text node: the space they used to hold was a
+character the reader could select and copy, and the document never had it. What gives each of them a
+line is the block's own box — a fence body's `code` is a block one line tall (`styles.css`) — and
+what gives the caret a place is the line the geometry falls back to
+(`caret/geometry.ts: lineBoxAround`, read by the caret's own drawing, by a click's nearest line, and
+by the choice between a node's two ends). A composition written at such a node goes *beside* it and
+must not join it away: `normalize()` drops an empty text node, and a caret anchored in one becomes
+an element position the offsets mapping cannot read (`editing/composition_view.ts`).
+`test/probes/placeholder-boxes.js` holds all four.
+
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
 system has something to compose into and puts its candidate window at the caret — and what it

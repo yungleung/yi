@@ -414,6 +414,10 @@ body {
 .markdown-table-placeholder {
   display: inline-block;
   min-width: 0.5em;
+  /* A box, not a character (`nodes/table.ts`): a click inside a table is resolved through the
+     nearest text, and a placeholder that measures as nothing hands the click to the next cell's
+     text. The height is the cell's own line, so the placeholder is the nearer text by position. */
+  min-height: 1lh;
 }
 
 /* A table is typeset like a figure: it takes the width its content needs, it
@@ -582,6 +586,17 @@ body {
 .prose pre {
   background-color: var(--color-base-200);
   color: var(--md-source-plain);
+}
+
+/* A fenced block's body is one line tall even when it holds nothing: an empty body is a place —
+   the caret sits on it, a click lands on it, the system's seam follows it — and a body with no
+   line of its own would leave the block as its padding alone. The body's node is *empty* there, so
+   the line has to come from the box (`nodes/fence_text.ts`), not from a character. */
+.markdown-fenced-code code,
+.markdown-frontmatter code,
+.markdown-source-text code {
+  display: block;
+  min-height: 1lh;
 }
 
 .hljs-comment,

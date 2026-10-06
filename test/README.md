@@ -78,7 +78,9 @@ label opens the language list — and `bare-marker-typing` — a typed `-` stays
 the item begins at the space that follows it; `fence-source-mode` — a fenced block renders its body
 while the caret is elsewhere and its own text, delimiters and all, while the caret is inside it;
 `fence-exit` — the closing fence is a line the caret can sit on, and `Enter` at its end makes a
-blank line under the block), tables
+blank line under the block; `placeholder-boxes` — a blank paragraph, an empty list item, an empty
+table cell and an empty fenced body hold no character, keep their line, and put the caret on it),
+tables
 (`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
