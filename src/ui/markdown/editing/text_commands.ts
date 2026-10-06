@@ -24,12 +24,11 @@ import {
 import {
   applyEdit,
   caretOffset,
-  editorSelection,
   placeCaret,
-  rangeOffsets,
   restoreCaret,
   type EditorContext
 } from './context';
+import { editorSelection, rangeOffsets } from './selection';
 import { isFenced, isRawRendered } from '../document/block_kinds';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';

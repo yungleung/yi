@@ -30,18 +30,15 @@ import { setSourceEntryHandler, sourceEntryOffset } from './source_mode';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
-  editorSelection,
   applyEdit,
-  isDocumentRange,
   keepScroll,
-  proseRoot,
-  rangeOffsets,
   restoreCaret,
   restoreMark,
   restoreSelection,
   showSourceAt,
   type EditorContext
 } from './editing/context';
+import { editorSelection, isDocumentRange, proseRoot, rangeOffsets } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
 import { deleteText, insertCommitted, insertNewline, insertText } from './editing/text_commands';

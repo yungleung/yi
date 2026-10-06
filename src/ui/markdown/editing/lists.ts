@@ -15,7 +15,8 @@
 import { isRawRendered } from '../document/block_kinds';;
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list_edits';
-import { applyEdit, caretOffset, editorSelection, rangeOffsets, type EditorContext } from './context';
+import { applyEdit, caretOffset, type EditorContext } from './context';
+import { editorSelection, rangeOffsets } from './selection';
 
 /**
  * What a list trigger asks for: make the line a list of a kind, or move the

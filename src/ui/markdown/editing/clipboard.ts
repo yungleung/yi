@@ -11,7 +11,8 @@
  * clipboard carries never depends on which blocks happen to be mounted.
  */
 
-import { editorSelection, rangeOffsets, applyEdit, proseRoot, type EditorContext } from './context';
+import { applyEdit, type EditorContext } from './context';
+import { editorSelection, rangeOffsets, proseRoot } from './selection';
 import { materializeInsertion, pasteInsertion } from './blank_lines';
 
 /** The selected raw range and its text, or null when nothing is selected. */

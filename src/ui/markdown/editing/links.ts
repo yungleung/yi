@@ -21,7 +21,8 @@
 
 import { readClipboardText } from '../../../api/clipboard';
 import { clipboardDestination, linkInsertion, selectionTitle } from '../syntax/link_edits';
-import { applyEdit, editorSelection, rangeOffsets, type EditorContext } from './context';
+import { applyEdit, type EditorContext } from './context';
+import { editorSelection, rangeOffsets } from './selection';
 
 /**
  * Writes a link at the caret, or around the selection. Returns false when there is no

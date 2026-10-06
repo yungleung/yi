@@ -18,7 +18,8 @@ import { getSelectionRange } from '../caret/caret';
 import { documentOffsetAt } from '../caret/offsets';
 import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
 import { patchFormatDom } from '../format_dom';
-import { proseRoot, restoreSelection, type EditorContext } from './context';
+import { restoreSelection, type EditorContext } from './context';
+import { proseRoot } from './selection';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, TEXT_FROM, offsetOf } from './../offset_tags';
 
 /** Applies a formatting style to the current selection. */

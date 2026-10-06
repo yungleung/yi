@@ -31,10 +31,9 @@ import { imageFolderPath } from '../../services/settings_paths';
 import { destinationForFile, joinPath, parentFolder } from '../../services/workspace_folders';
 import {
   applyEdit,
-  editorSelection,
-  rangeOffsets,
   type EditorContext
 } from '../markdown/editing/context';
+import { editorSelection, rangeOffsets } from '../markdown/editing/selection';
 import {
   clipboardImageDestination,
   imageInsertion,

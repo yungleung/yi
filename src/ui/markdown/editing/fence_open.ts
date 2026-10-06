@@ -24,7 +24,8 @@
 import { soleDelimiter } from '../syntax/markers';
 import { lineSpanAt } from '../syntax/lines';
 import { blockPadding } from './blank_lines';
-import { applyEdit, caretOffset, proseRoot, type EditorContext } from './context';
+import { applyEdit, caretOffset, type EditorContext } from './context';
+import { proseRoot } from './selection';
 import { chooseLanguage } from './language_picker';
 import type { BlockKind } from '../document/block_kinds';
 
