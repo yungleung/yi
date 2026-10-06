@@ -1,3 +1,11 @@
+/**
+ * The app's event bus: the one way a service says something happened to whoever is listening, over
+ * Tauri's own events (so a payload is JSON).
+ *
+ * May import: the event API. Upholds: one listener per event name per window — several callbacks
+ * share it — so a name means the same thing to the emitter and to every listener.
+ */
+
 import { listen, emit } from '@tauri-apps/api/event';
 
 let instance: EventManager | null = null;

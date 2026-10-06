@@ -1,3 +1,11 @@
+/**
+ * The settings window's own entry point: builds the settings shell and keeps its labels in the
+ * reader's language.
+ *
+ * May import: the settings window and the services it shows. Upholds: the settings window is a
+ * window of its own — it reads the config and the catalogue, and never the editor's state.
+ */
+
 import { SettingsWindow } from './ui/settings/settings_window';
 import { eventManager } from './services/event_manager';
 import { applyLanguage, languageFor } from './services/language';

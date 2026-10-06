@@ -1,3 +1,10 @@
+/**
+ * One sidebar section: a header with a title, a chevron and a body a feature fills.
+ *
+ * May import: the component base. Upholds: one shape for every section, so a new panel in the
+ * sidebar is content and a name, not another layout.
+ */
+
 import { BaseComponent, type Renderable } from './component';
 
 /**

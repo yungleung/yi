@@ -11,12 +11,16 @@
  * looks only at the first header block, so a module may keep its long prose below
  * the three lines.
  *
+ * It covers the whole of `src/`: the editor subtree was where it started, and the
+ * shell, the services and the api seams are written in the same voice
+ * (`docs/structure.md`, item 4).
+ *
  * The shape, and what each line is for, is `docs/writing-comments.md`.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const root = 'src/ui/markdown';
+const root = 'src';
 const files = [];
 (function walk(directory) {
   for (const entry of readdirSync(directory)) {

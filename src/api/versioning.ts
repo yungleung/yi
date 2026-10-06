@@ -4,6 +4,9 @@
  * `src-tauri/src/versioning.rs` gathers them — which git may be run, whether the folder is in a
  * repository, whether a cloud drive could reach it — and this is the one way the frontend reads
  * them. Nothing here decides anything: the rule is `src/services/versioning.ts`, and it is pure.
+ *
+ * May import: the app's own command seam (`invoke`) and the versioning types. Upholds: one way to
+ * ask what git said, so the decision above it is made from one shape of facts.
  */
 
 import { invoke } from '@tauri-apps/api/core';

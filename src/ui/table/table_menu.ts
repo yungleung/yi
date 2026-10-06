@@ -1,3 +1,11 @@
+/**
+ * The table's native context menu: builds the system menu the menu model describes, and runs the
+ * command a chosen item names.
+ *
+ * May import: the command registry, the menu model and the menu API. Upholds: the menu is built from
+ * the pure model (`table_menu_model.ts`), so what it offers and what it does cannot drift.
+ */
+
 import { runCommand } from '../markdown/commands/registry';
 import type { TableCommand, TableTarget } from '../markdown/editing/table';
 import type { TableMenuNode } from './table_menu_model';

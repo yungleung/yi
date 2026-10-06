@@ -1,3 +1,10 @@
+/**
+ * The system clipboard, through the app: its text, and an image as raw pixels.
+ *
+ * May import: the clipboard plugin's two reads. Upholds: one way in from the pasteboard, so the
+ * link command and the image command cannot disagree about what the clipboard is holding.
+ */
+
 import { readImage, readText } from "@tauri-apps/plugin-clipboard-manager";
 
 /** An image off the clipboard: how big it is, and its pixels, RGBA, row-major from the top. */

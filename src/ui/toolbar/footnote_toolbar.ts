@@ -1,3 +1,10 @@
+/**
+ * The footnote button: inserts a marker and its definition through the editor's own command.
+ *
+ * May import: the command registry, the catalogue and the toolbar base. Upholds: the button names
+ * the command and nothing else, so the footnote rule stays in `editing/footnotes.ts`.
+ */
+
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';

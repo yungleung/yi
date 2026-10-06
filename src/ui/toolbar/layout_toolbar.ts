@@ -1,3 +1,11 @@
+/**
+ * The page button: runs `view:togglePage` and draws the icon of the layout the editor is in.
+ *
+ * May import: the command registry, the editor's layout news, the catalogue and the toolbar base.
+ * Upholds: the button's icon follows the editor's own announcement, so the button cannot disagree
+ * with the page it is describing.
+ */
+
 import { eventManager } from '../../services/event_manager';
 import { runCommand } from '../markdown/commands/registry';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from '../markdown/markdown_editor';

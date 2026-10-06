@@ -1,3 +1,11 @@
+/**
+ * The session file's text, as the backend holds it.
+ *
+ * May import: the app's own command seam (`invoke`). Upholds: the backend stores the text and
+ * nothing else — the shape belongs to the model (`services/session_rules.ts`) — so there is one
+ * reader of the format.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 /**

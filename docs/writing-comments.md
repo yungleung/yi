@@ -18,10 +18,9 @@ Every module under `src/ui/markdown` opens with this, and nothing else:
 ```
 
 `test/checks/headers.mjs` enforces it, so `npm run check` fails naming the file and
-what is missing. It covers `src/ui/markdown` today; the 41 modules outside it — the
-shell, `services/`, `api/` — are written in the same voice without the guarantee, and
-extending it over all of `src/` is `docs/structure.md` item 4. Three things the check
-decides, in case you are wondering:
+what is missing. It covers the whole of `src/` — every module, declaration files
+included — and a module without a header is a failure, not a style note. Three things
+the check decides, in case you are wondering:
 
 - **The header comes first** — above the imports. A prose block below them counts
   as no header at all, which is how seven modules were wrong before that check ran.

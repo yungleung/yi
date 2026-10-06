@@ -1,3 +1,11 @@
+/**
+ * The app config: its shape, and the calls that read and write it.
+ *
+ * May import: the app's own command seam (`invoke`). Upholds: one declaration of what a config
+ * holds, which the settings window, the workspace tree and the session all read rather than each
+ * naming a field of their own.
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 
 export type AppConfig = {

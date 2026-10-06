@@ -1,4 +1,13 @@
 /**
+ * The editor panel: the shell around the markdown editor — its state in the session, the toolbar
+ * row, the find bar, and the news it emits when the document it holds changes.
+ *
+ * May import: the component base, the editor itself, the session and the events. Upholds: one panel
+ * per window, and the document it shows is the session's — the panel captures and restores the view
+ * around the editor rather than keeping a text of its own.
+ */
+
+/**
  * The editor panel: the shell around the markdown editor.
  *
  * This file was called `markdown_editor.ts`, one directory above

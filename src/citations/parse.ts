@@ -1,4 +1,11 @@
 /**
+ * Parses the raw source of a pandoc citation node into the pieces CSL needs.
+ *
+ * May import: nothing. Upholds: one reading of a citation's own characters — keys, prefix, suffix,
+ * locator, suppression — so the formatter and the offset model see the same citation.
+ */
+
+/**
  * Parses the raw source of a pandoc citation node into the pieces CSL needs:
  * citation key(s), optional prefix/suffix, locator, and the suppression flag.
  * The source is exactly what the micromark plugin captured (`@key`,

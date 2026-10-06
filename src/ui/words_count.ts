@@ -1,3 +1,10 @@
+/**
+ * What the status bar says about the document's size: words, characters, and the CJK count.
+ *
+ * May import: the component base, the stats seam and the events that say the text changed. Upholds:
+ * one reading of the count for the window, asked of the backend rather than counted twice.
+ */
+
 import { getWordsCount } from '../api/stats';
 import { eventManager } from '../services/event_manager';
 import { t } from '../services/i18n';

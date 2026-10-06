@@ -1,3 +1,10 @@
+/**
+ * The app config, in memory: one read, one write, and the news that it changed.
+ *
+ * May import: the config seam. Upholds: one copy of the config for this window, so every reader of
+ * it sees the same values and a write is announced once.
+ */
+
 import { loadConfig, saveConfig, type AppConfig } from '../api/settings';
 
 /** Tauri event emitted when the citation config (file/style) may have changed. */

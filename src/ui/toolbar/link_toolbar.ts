@@ -1,3 +1,10 @@
+/**
+ * The link button: runs the editor's own insert-link command.
+ *
+ * May import: the command registry, the catalogue and the toolbar base. Upholds: the button names
+ * the command; what a link is and where the clipboard is read stay with the link flow.
+ */
+
 import { runCommand } from '../markdown/commands/registry';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';

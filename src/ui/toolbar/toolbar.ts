@@ -1,3 +1,11 @@
+/**
+ * The toolbar: a row of buttons that know the *name* of the command they run, not its behaviour —
+ * and the two size constants the app's toolbars share.
+ *
+ * May import: the component base. Upholds: one way to add a button (a label, an icon, a command
+ * name), so a toolbar never reaches into the editor to do its work.
+ */
+
 import { BaseComponent } from '../component';
 
 /** One button of a toolbar: its name, its icon, and any classes it needs. */

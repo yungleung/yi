@@ -93,7 +93,7 @@ exists to name.
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — for `src/ui/markdown/**` only: 41 modules outside it (the shell, `services/`, `api/`, `citations/`, the two entry points) have no header yet |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 201 modules) |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one name, one home, one way in | `adding-a-command.md` | `test/checks/commands.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
@@ -138,9 +138,9 @@ app to work; all of them are about the next person finding what they meant to ch
    source). Passing that in — the way the renderer already passes a block's frame — would make a
    node's rendering a function of its node and the input it was handed, which is the rule the
    architecture already states for blocks.
-4. **Extend `headers.mjs` over the whole of `src/`.** 41 modules outside `src/ui/markdown` have no
-   three-line header, and they include the shell and `services/` — where a newcomer starts. The
-   work is mechanical (one header per file), and the check is already written.
+4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
+   `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
+   their three lines, and the check reads `src/` (it says 201 modules).
 5. **Check the `markdown-*` class contract.** 49 distinct names are written in TS and read by
    `styles.css` with nothing tying the two together. A check that every `markdown-…` name the app
    sets has a rule in the stylesheet (or is on a short allow-list of hooks that deliberately have

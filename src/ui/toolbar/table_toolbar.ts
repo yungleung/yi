@@ -1,3 +1,11 @@
+/**
+ * The table button: opens the picker, and runs the editor's own create-table command with the size it
+ * answered.
+ *
+ * May import: the command registry, the picker, the catalogue and the toolbar base. Upholds: the
+ * button names the command; what a table's source looks like stays with the table edits.
+ */
+
 import { runCommand } from '../markdown/commands/registry';
 import { TablePicker, type TableSize } from './table_picker';
 import { t } from '../../services/i18n';

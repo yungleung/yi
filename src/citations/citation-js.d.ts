@@ -1,3 +1,10 @@
+/**
+ * The types `@citation-js/core` does not ship: what a `Cite` instance the app builds can format.
+ *
+ * May import: nothing. Upholds: one declaration of the citation library's surface, so the formatter
+ * (`services/bibliography.ts`) is typed against what it actually calls.
+ */
+
 declare module '@citation-js/core' {
   interface CiteFormatOptions {
     entry?: string | string[] | Array<Record<string, unknown>>;

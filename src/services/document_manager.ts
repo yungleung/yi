@@ -1,4 +1,13 @@
 /**
+ * Resolving a wikilink target to a file in the workspace, and reading the title a target is shown
+ * under.
+ *
+ * May import: the file seam, the config, the id and title rules, and the workspace's news. Upholds:
+ * one index of the workspace's documents — by file name and by frontmatter id — so every wikilink
+ * to one target resolves to one file.
+ */
+
+/**
  * Document manager: resolves wikilink targets to files inside the current
  * workspace and reads their heading 1 for rendering.
  *

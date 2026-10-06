@@ -1,3 +1,11 @@
+/**
+ * The title bar: the window's own controls, the menu-ish buttons, and the document's title where it
+ * is not the system's.
+ *
+ * May import: the window API and the component base. Upholds: the window's chrome is one component,
+ * so the app's own title bar and the system's cannot both try to own the top strip.
+ */
+
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BaseComponent, type Renderable } from './component';
 
