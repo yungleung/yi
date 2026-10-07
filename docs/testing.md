@@ -47,6 +47,12 @@ Harness flags:
 
 ### Rules that save you time
 
+- **`raw()` leaves the document selected.** Reading the whole text is Select All + Copy, and the app
+  paints the selection a moment after the command — so a probe that reads the document and then
+  types *without clicking* replaces the whole document with what it typed (measured: `raw()` then
+  `t.key('x')` leaves `'x'`). It is the app behaving as any editor does over a live selection, not a
+  bug: click the line you mean to type in first, as a reader would. `click-away-deselects.js` holds
+  the pair — a selection is live after Select All, and a click outside takes it away.
 - **Editing a probe reloads the page** (Vite watches the repo). Wait ~10 s after
   editing before running it, or the probe runs against a half-loaded page.
 - **Two writes to one source file in the same moment leave Vite serving the first

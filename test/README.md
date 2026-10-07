@@ -98,6 +98,8 @@ the preview card, the label's own edits, and the shapes a definition is written 
 `footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,
 `footnote-label-rebuild`, `footnote-label-edge`), description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
+`click-away-deselects` — Select All leaves the document selected, and a click outside takes the
+selection away with the caret so the next keystroke writes nothing — 
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
@@ -225,5 +227,11 @@ live index; the newest probes carry a header naming what they cover:
   non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did
   not always — two probes had been failing quietly, see `docs/roadmap.md`). Use
   `t.report(...)` for progress, so a bridge timeout still yields evidence.
+- **`raw()` leaves the document selected.** Reading the whole text is Select All + Copy, and the app
+  paints that selection a moment after the command; a probe that reads the document and then types
+  *without clicking* replaces the whole document with what it typed (`raw()` then `t.key('x')` leaves
+  `'x'` — measured). It is the app behaving as any editor does over a live selection; click the line
+  you mean to type in first. `click-away-deselects.js` holds both halves: the selection after Select
+  All, and the click outside that takes it away with the caret.
 - Name probes for the behaviour, not the file they touch.
 - A check prints `all checks passed` on success and the failures on stderr.
