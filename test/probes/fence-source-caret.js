@@ -56,13 +56,17 @@
   /** Enters the block's source view and leaves the caret on its opening fence's first character. */
   const intoSource = async () => {
     await t.load('```ts\nlet a = 1;\n```\n');
-    await t.sleep(300);
+    await t.sleep(200);
     for (let attempt = 0; attempt < 2 && parts().opening === null; attempt += 1) {
       await t.click(block().firstElementChild, 0.25, 0.5);
-      await t.sleep(350);
+      await t.sleep(250);
+    }
+    if (parts().opening === null) {
+      return false;
     }
     await t.click(parts().opening, 0.001, 0.5);
-    await t.sleep(300);
+    await t.sleep(200);
+    return true;
   };
   /** Steps the caret right, one character at a time. */
   const stepRight = async (times) => {
@@ -81,16 +85,22 @@
     await t.sleep(70);
   };
 
-  // Walk the block: every position must be drawn on the line its offset names, and each step of the
-  // way back must land on the line above.
-  await intoSource();
+  // The body's first line: right from the end of the opening fence, then back.
+  if (!(await intoSource())) {
+    check('the block shows its own source while the caret is inside it', false, true);
+    return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
+  }
   await stepRight('```ts'.length);
   check('the caret at the end of the opening fence is at its end', atEndOf(parts().opening), true);
   await stepRight(1);
   check('and a step right draws it at the body’s own start', atStartOf(parts().body), true);
   await stepLeft(1);
   check('and a step left puts it back on the opening fence’s line', atEndOf(parts().opening), true);
-  await stepRight(1 + 'let a = 1;'.length);
+
+  // The body's end: right from the end of the last line of code, then back. The click past the
+  // text lands on that line's end (the body fills the width it is drawn in).
+  await t.click(parts().body, 0.99, 0.5);
+  await t.sleep(250);
   check('the caret at the end of the last line of code is at its end', atEndOf(parts().body), true);
   await stepRight(1);
   check('and a step right draws it on the closing fence’s line', onLine(parts().closing), true);
