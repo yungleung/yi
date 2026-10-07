@@ -49,6 +49,7 @@ import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';
 import { installFootnotePreview } from './footnote_preview';
+import { watchPointerPresses } from './editing/pointer';
 import { handleEditorKey, type KeyHost } from './editing/keys';
 import {
   routeContextMenu,
@@ -201,6 +202,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       true
     );
     this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
+    // Where the pointer goes down, for the click that may end a drag: a drag-selection
+    // crosses blocks, and the click it ends with lands on the page, not on a node (see
+    // `editing/pointer.ts`).
+    watchPointerPresses(this.contentView);
     this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
     // A click is not typing. A list belongs to the query the author is typing, so any click in the
     // document puts it away — the card's own rule (`completion_card.ts`), and the one gesture that

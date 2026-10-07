@@ -84,13 +84,19 @@ export function routeFootnoteMenu(context: EditorContext, event: MouseEvent): vo
   jumpToFootnote(context, label, marker ? 'reference' : 'definition');
 }
 
-/** Places the caret for a click that no markdown node handled. */
+/**
+ * Places the caret for a click that no markdown node handled.
+ *
+ * The click a drag ends with arrives here too — across two blocks its target is the
+ * page rather than any node — and `placeCaretFromPointer` refuses the ones that moved,
+ * so a selection made by dragging is left alone (see `editing/pointer.ts`).
+ */
 export function routePointerClick(context: EditorContext, event: MouseEvent): void {
   const target = event.target;
   if (target instanceof Element && target.closest('.markdown-node')) {
     return;
   }
-  placeCaretFromPointer(context, event.clientY);
+  placeCaretFromPointer(context, event.clientX, event.clientY);
 }
 
 /**

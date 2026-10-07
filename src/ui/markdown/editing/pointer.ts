@@ -7,16 +7,73 @@
  * through: they go to the nearest line edge, which is the line the reader is
  * pointing at.
  *
- * May import: the editing context and the caret's DOM helpers (`caret/dom.ts`).
+ * **A click that ends a drag belongs to the drag, not to the caret.** The
+ * browser fires that click at the nearest common ancestor of where the press and
+ * the release landed; across two blocks that ancestor is the page, which owns no
+ * node, so this is exactly the spot that would otherwise place a caret — and
+ * placing it clears the selection the drag just made (`context.ts: placeCaret`
+ * drops the native ranges). A drag that ends on a node — a selection inside one
+ * paragraph — never reaches here, which is why only the cross-block drag was
+ * broken. So where the pointer went down is remembered, and a gesture that both
+ * travelled past a few pixels and left the reader a selection asks for no caret;
+ * a margin click that merely jittered a pixel or two still does.
+ *
+ * May import: the editing context and the caret (`caret/caret.ts`,
+ * `caret/dom.ts`).
  * Upholds: the caret is a document offset — this resolves a pointer to the
  * nearest line edge and hands that to `restoreCaret`, which maps it through the
- * offsets model.
+ * offsets model — and this module is the only owner of the one gesture fact it
+ * needs to read.
  */
 
+import { getSelectionRange } from '../caret/caret';
 import { restoreCaret, type EditorContext } from './context';
 import { proseRoot } from './selection';
 import { firstTextNodeIn, lastTextNodeIn } from '../caret/dom';
 import { lineBoxAround } from '../caret/geometry';
+
+/**
+ * How far the pointer may travel and still be a click rather than a drag. The tree's
+ * rule takes a press that moves this far as a drag (`workspace/tree_drag.ts`); here the
+ * distance is only half of it — see `endedADrag`.
+ */
+const DRAG_THRESHOLD = 4;
+
+/** Where the pointer last went down, until the click it leads to reads it. */
+let pressed: { x: number; y: number } | null = null;
+
+/**
+ * Remembers where the pointer goes down, so the click it leads to can be told from the
+ * drag it may have ended. Capture, like every other pointer watcher on the editor
+ * (`editing/composition_input.ts`), because a node may stop what it handles.
+ */
+export function watchPointerPresses(root: HTMLElement): void {
+  root.addEventListener(
+    'pointerdown',
+    (event) => {
+      pressed = { x: event.clientX, y: event.clientY };
+    },
+    true
+  );
+}
+
+/**
+ * Whether the gesture that arrived at this point was a drag the editor must leave alone.
+ *
+ * Both halves are needed. The distance is what the browser's click cannot tell us — the
+ * click that ends a drag is an ordinary click in every other way — and the live selection
+ * is what says the gesture really was a drag: a click the pointer merely jittered through
+ * leaves nothing selected, and the caret it asks for is still placed.
+ */
+function endedADrag(clientX: number, clientY: number): boolean {
+  const from = pressed;
+  pressed = null;
+  return (
+    from !== null &&
+    Math.hypot(clientX - from.x, clientY - from.y) >= DRAG_THRESHOLD &&
+    getSelectionRange() !== null
+  );
+}
 
 /** The top of a text node's first line, or the element's own top. */
 function lineTop(node: Text | null, element: HTMLElement): number {
@@ -49,12 +106,22 @@ function edgeRect(node: Text, offset: number): { top: number; bottom: number } {
 }
 
 /**
- * Places the caret at the line edge nearest to a pointer position. Distances
- * are measured to the text, not to the block boxes: a block's box contains its
- * own margins, so neighbouring boxes touch and their edges cannot be told
- * apart.
+ * Places the caret at the line edge nearest to the point a click arrived at.
+ * Distances are measured to the text, not to the block boxes: a block's box
+ * contains its own margins, so neighbouring boxes touch and their edges cannot
+ * be told apart.
+ *
+ * A point that ends a drag is not a click, and asks for no caret — see the
+ * header.
  */
-export function placeCaretFromPointer(context: EditorContext, clientY: number): boolean {
+export function placeCaretFromPointer(
+  context: EditorContext,
+  clientX: number,
+  clientY: number
+): boolean {
+  if (endedADrag(clientX, clientY)) {
+    return false;
+  }
   const root = proseRoot(context);
   if (!root) {
     return false;

@@ -99,7 +99,9 @@ the preview card, the label's own edits, and the shapes a definition is written 
 `footnote-label-rebuild`, `footnote-label-edge`), description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `click-away-deselects` — Select All leaves the document selected, and a click outside takes the
-selection away with the caret so the next keystroke writes nothing — 
+selection away with the caret so the next keystroke writes nothing —
+`select-across-blocks` — a drag that crosses a block boundary keeps the selection it made, while a
+margin click the pointer never moved through still places a caret —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
