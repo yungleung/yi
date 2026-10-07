@@ -289,6 +289,17 @@ counts the backticks that wrap it. The reveal is decided by the caret, not by a 
 (see `source_mode.ts`), so the run a formatting command just wrote stays revealed —
 its caret is inside it — until the caret leaves (`test/probes/format-buttons.js`).
 
+**A click that ends a drag is the drag's, not the caret's.** The browser fires that click
+at the nearest common ancestor of where the press and the release landed, so a selection
+that crosses two blocks ends it on the page itself — the one spot
+`click_routing.ts: routePointerClick` answers by placing a caret, and placing it drops the
+range the drag just made (`editing/context.ts: placeCaret` clears the native ranges). A
+selection inside one paragraph ends on its node and never reached that path, which is why
+the cross-block drag was the one that broke. `editing/pointer.ts` remembers where the
+pointer went down and refuses the caret for a gesture that both travelled past a few
+pixels and left the reader a selection; a margin click the pointer merely jittered through
+still places one (`test/probes/select-across-blocks.js`).
+
 ## Where does this change go?
 
 | Change | Where |
@@ -302,7 +313,7 @@ its caret is inside it — until the caret leaves (`test/probes/format-buttons.j
 | What writing a delimiter line opens, and what a bare list marker is | `editing/fence_open.ts` is the rule — the delimiter becomes both of a fence's lines with the caret on the blank line between them, and a fresh code fence asks for its language (`editing/language_picker.ts`) — and `syntax/bare_markers.ts` is the repair that keeps a bare `-` from rendering as an item (`syntax/markers.ts` says what a marker and a delimiter are). The rules have their checks (`check-fence-open.mjs`, `check-bare-markers.mjs`) and their probes (`fence-open-typing.js`, `bare-marker-typing.js`) |
 | A surface that floats over the page — a card beside a point, a panel above or below its button, a question over the window | `src/ui/floating/` — one base and three kinds: `surface.ts` (`FloatingSurface`: hidden until opened, the card's chrome in `CHROME`, Escape, and the refusal to take the focus or the caret), `beside.ts` (`BesideCard`, `fixed` on the body and placed by `placement.ts`'s pure rule beside a box the caller measures — the caret's range, a marker, a row — or in the window's corner when it names nothing; the pointer policy is what it is built with), `panel.ts` (`AnchoredPanel`, `absolute` inside its `relative` host and hanging by its own `side` — `below` for the titlebar's two, `above` for the status bar's versions, because the bottom strip of the window has nothing below it), and `question_card.ts` (`QuestionCard`: the veil, the centred card a subclass fills, one answer at a time, and Escape giving the cautious answer). The footnote preview, the completion list, the stack panel, the table picker, the versions panel, the prompt and the two cards are one of those kinds; a kind may add to Escape and never replace it, and the base grows no mode flag — a fact one kind has is a parameter it is built with, or a subclass of it. Whatever a probe finds inside a surface (`[data-prompt-yes]`, `[data-completion-row]`, `.markdown-footnote-preview`, …) stays where it is: the migration changed how a surface is built, never what it is called |
 | Something the app has to tell the reader, or wants them to notice | two surfaces, and the difference is whether the reader has to *act*: a **message** (`services/messages.ts`: `Message`, `MESSAGE_EVENT`, `notify`) is a failure and needs their attention, so `ui/messages.ts` (`installMessages()`) shows one `BesideCard` per message in the window's bottom-right corner — whatever it is about — stacked upward, with its ✕ at the card's right edge, closed by the ✕ or Escape and by nothing else; a **hint** (`services/hints.ts`: `Hint`, `HintPlace`, `HINT_EVENT`, `hintPlaceSelector`, `showHint`) is a confirmation the reader only has to notice, so `ui/hints.ts` (`installHints()`) shows one card beside the row it happened on, with no ✕, gone at the next press or Escape, replaced by the next hint. A hint's place travels as a *name* — a workspace path, which is the row its selector finds — never as an element, because the bus is Tauri's and its payload is JSON, and `hintPlaceSelector` escapes it |
-| Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`) |
+| Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`); a click that lands on no node is `editing/pointer.ts`, routed by `click_routing.ts: routePointerClick` |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | An inline run while the caret is inside it — bold, italic, strikethrough, inline code | `nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts`, `nodes/inline_code.ts` over `nodes/revealable_node.ts`; the source classes are in `caret/offsets.ts: SOURCE_SELECTOR` and the styling in `styles.css` |
 | The word an input method is composing, as the reader sees it | `editing/composition_view.ts`, driven by the seam (`editing/composition_input.ts`) — written into the line at the caret, never in the document, and taken out again when the word commits |

@@ -291,6 +291,15 @@ of the card is also the card's own width — daisyUI's `menu` sizes an item to w
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.
 
+**A click that ends a drag is the drag's, not the caret's.** The browser fires that click at the
+nearest common ancestor of the press and the release, so a selection that crosses two blocks ends
+it on the page itself, which owns no node — the one spot the editor answers by placing a caret, and
+placing it drops the selection the drag just made. A selection inside one paragraph ends on its
+node and was never affected, which is why only the cross-block drag was broken. `editing/pointer.ts`
+remembers where the pointer went down and refuses the caret for a gesture that both travelled past
+a few pixels and left a selection; a margin click the pointer merely jittered through still places
+one (`test/probes/select-across-blocks.js`).
+
 **A delimiter line typed on its own opens the block it names**, and **a bare list marker is the
 character rather than an item**. `editing/fence_open.ts` writes both delimiter lines at once — with
 the blank lines markdown needs around them — and puts the caret on the blank line between them,
