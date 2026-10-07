@@ -102,6 +102,8 @@ lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 selection away with the caret so the next keystroke writes nothing —
 `select-across-blocks` — a drag that crosses a block boundary keeps the selection it made, while a
 margin click the pointer never moved through still places a caret —
+`select-in-code-block` — a drag inside a fenced block keeps the selection it made, though the click
+that ends it lands the caret back in the block whose own text is the shape being shown —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over

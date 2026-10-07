@@ -289,6 +289,15 @@ counts the backticks that wrap it. The reveal is decided by the caret, not by a 
 (see `source_mode.ts`), so the run a formatting command just wrote stays revealed —
 its caret is inside it — until the caret leaves (`test/probes/format-buttons.js`).
 
+**A block that is showing its own text keeps it while the reader is selecting in it.** The caret
+observer asks for the shape on every caret move, and the click a drag inside a fenced block ends
+with places the caret back in that same block — where a live selection makes the ask name no block
+at all (`editing/context.ts: showSourceAt`), so the block is rebuilt as its rendering and the
+element the selected text was drawn on goes with it. The observer therefore holds that one ask
+back while a selection is live (`markdown_editor.ts: followCaret`); nothing else about the decision
+changed, and a run inside a paragraph is not one of these blocks, so a formatting command still
+gets the run it wrote shown (`test/probes/select-in-code-block.js`, `format-buttons.js`).
+
 **A click that ends a drag is the drag's, not the caret's.** The browser fires that click
 at the nearest common ancestor of where the press and the release landed, so a selection
 that crosses two blocks ends it on the page itself — the one spot
