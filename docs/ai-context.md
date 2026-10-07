@@ -322,7 +322,11 @@ its end puts a blank line under the block with the caret on it — for all three
 `editing/context.ts` shows a fenced block's own range while the caret is in it *and no selection is
 live* — a selection is the reader acting on text they can see, and the shape change would take the
 text it covers (a new note opens with its title selected, and that title is inside a frontmatter
-block). A character typed at the body's own end still belongs to the body, all three alike
+block). The caret observer holds that ask back too while a selection is live, for the block that is
+*already* showing its own text: the click a drag inside a fenced block ends with places the caret in
+that same block, and the rebuild it would ask for replaces the element the selected text is drawn on
+(`markdown_editor.ts: followCaret`, `test/probes/select-in-code-block.js`). A character typed at the
+body's own end still belongs to the body, all three alike
 (`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
 shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
 A caret position that sits *right after a newline* — the body's first line, the body's end — is

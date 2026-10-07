@@ -23,10 +23,11 @@ import { registerEditorCommands } from './commands/editor_commands';
 import {
   ensureCaretRendered,
   getCaretRange,
+  getSelectionRange,
   onCaretRangeChanged,
   setSelectionRange
 } from './caret/caret';
-import { setSourceEntryHandler, sourceEntryOffset } from './source_mode';
+import { isSourceBlock, setSourceEntryHandler, sourceEntryOffset } from './source_mode';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
@@ -487,6 +488,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * `source_mode.ts`). A caret the editor cannot map yet — the block holding
    * it is being rebuilt — says nothing about where the author is, so it leaves
    * the mode as it stands; the next caret position decides.
+   *
+   * **A block that is showing its own text keeps it while the reader is selecting.** The change
+   * this asks for rebuilds the block, which replaces the element the selected text is drawn on.
+   * Measured: a drag over the first word of a fenced block emptied the selection the moment the
+   * click that ended it placed the caret, because the block had been built as its own text while
+   * the reader's selection was live. The ask is held back for that block alone — a run inside a
+   * paragraph is not one of these, so a formatting command still gets the run it wrote shown
+   * (`test/probes/format-buttons.js`, `test/probes/select-in-code-block.js`).
    */
   private followCaret(): void {
     const range = getCaretRange();
@@ -495,9 +504,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     const location = documentOffsetAt(this.state, range.startContainer, range.startOffset);
-    if (location) {
-      showSourceAt(this.context, location.offset);
+    if (!location) {
+      return;
     }
+    const block = this.state.getBlockAtOffset(location.offset);
+    if (getSelectionRange() !== null && block !== null && isSourceBlock(block)) {
+      return;
+    }
+    showSourceAt(this.context, location.offset);
   }
 
   /**

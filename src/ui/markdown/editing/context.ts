@@ -122,8 +122,11 @@ export function showSourceAt(context: EditorContext, offset: number | null): voi
   // A *selection* is the reader acting on text they can see, not a caret entering the markdown they
   // are editing: a fenced block is built as its own text — delimiters and all — when the caret is
   // inside, and that build would take the selected text with the element it replaces (a new note
-  // opens with its title selected, and the title is inside a frontmatter block). So the block keeps
-  // the shape it has while a selection is live; the selection collapsing decides the shape again.
+  // opens with its title selected, and the title is inside a frontmatter block). So the source a
+  // decision asked for while a selection is live names the *node* the caret is in and never the
+  // block, which leaves a block that is not showing its text in the shape it has; a block that *is*
+  // showing its own text is left in it by the caret observer, which holds that one ask back while a
+  // selection is live (`markdown_editor.ts: followCaret`).
   const selecting = getSelectionRange() !== null;
   const range = offset === null ? null : sourceRangeAt(context.state, offset, selecting);
   if (!setShownRange(range)) {
