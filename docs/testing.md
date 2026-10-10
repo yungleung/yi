@@ -74,6 +74,14 @@ Harness flags:
   apiece), and the culprit is the probe *before*: one that right-clicked. It must carry
   `@needs-foreground-window` so `probe:all` skips it — `probe-markers.mjs` fails until it
   does, and `table-menu-open.js` is why that check exists.
+- **A layout read cannot see a block the browser is skipping.** Blocks are
+  `content-visibility: auto`, and one that was just put in the document reports its own
+  `contain-intrinsic-size` to `offsetHeight` until the frame ends — so a probe that only reads
+  layout sees a stable number while the reader sees a paragraph painted blank for one frame
+  (measured: 176px against a real 156px for the citations paragraph, and only the pixels show the
+  hole). Watch the height over frames (`reveal-keeps-its-height.js`), and read the paint itself
+  from the pixels: capture the window natively (`screencapture -x -o -l<window number>`) with no
+  probe in between, because a probe that reads layout heals the blank.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
 - **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and

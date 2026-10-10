@@ -61,7 +61,7 @@ export class BlockSizes {
 
   constructor(private readonly key: (block: MarkdownBlock) => string) {}
 
-  /** Forgets every measured height (a new document, or changed global inputs). */
+  /** Forgets every remembered height — a new document, whose blocks this record does not describe. */
   clear(): void {
     this.heights.clear();
   }
@@ -83,8 +83,39 @@ export class BlockSizes {
     return this.heights.get(this.key(block)) ?? estimateHeight(block, this.scale);
   }
 
+  /**
+   * The height remembered for a rendering identity, or null when nothing is remembered for it.
+   *
+   * A block's rendering identity is not its block object: the shape a reader reveals is a second
+   * identity for the same block (`renderKey`), and this is how the height of one is found while
+   * starting the other (see {@link seed}).
+   */
+  heightForKey(key: string): number | null {
+    return this.heights.get(key) ?? null;
+  }
+
   /** Remembers a measured height. A block that lays out to nothing is no measurement. */
   remember(block: MarkdownBlock, height: number): void {
+    if (height > 0) {
+      this.heights.set(this.key(block), height);
+    }
+  }
+
+  /**
+   * Remembers the height a block's next shape is expected to have, taken from the shape it is
+   * leaving.
+   *
+   * A block whose shape changes under the reader — the click that reveals a citation's or a
+   * wikilink's own source, and the click that closes it again — is the same block at the same
+   * width, so the height it just had is the truth for the shape it is becoming. Left to the
+   * line-count estimate instead, the new shape is painted at the estimate for the frame before the
+   * browser lays it out (measured: 176px against a real 156px for the citations paragraph), and the
+   * block twitches while everything below it moves with it.
+   *
+   * This writes the same record a measurement does — both are the best-known height for a rendering
+   * identity — so the next measurement of the shape replaces it the moment it is available.
+   */
+  seed(block: MarkdownBlock, height: number): void {
     if (height > 0) {
       this.heights.set(this.key(block), height);
     }
