@@ -489,10 +489,11 @@ own: its config names *their* workspace, bibliography and layout, and its sessio
 documents they had open. So a test run that points the app at `test/fixtures/workspace` — or at a
 folder a probe made — **backs both up before it starts and puts both back when it ends**, and no
 test ever runs *in* the reader's own folder. `--with-workspace` does the config half for you (the
-harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and the session half is
-the probe's own: a probe that opens documents into the session leaves them in the reader's next start
-unless it reads `loadSessionText` first and puts it back with `saveSessionText` in a `finally`
-(`src/api/session.ts`; `test/probes/first-run.js` is the pattern for the config half). A fixture is
+harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and the harness does the
+session half too, for **every** run: it reads `load_session` up front and writes it back through
+`save_session` once the probe has reported, waiting out the app's own 800 ms session debounce first —
+because a probe loads documents into the maintainer's app, and one that types into them leaves its
+copy in the session the reader's next start restores. A fixture is
 disposable *as a fixture* — `npm run fixtures` refreshes it — while the reader's own notes are not,
 and a probe that writes belongs in a folder of its own under `$HOME`.
 

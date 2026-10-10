@@ -181,10 +181,9 @@ live index; the newest probes carry a header naming what they cover:
 
 - **The fixture is a test's, never the reader's.** A dev app holds the maintainer's config (their
   workspace, bibliography and layout) and their session (the documents they had open).
-  `--with-workspace` snapshots and restores the config for you; the session is the probe's own job —
-  read `loadSessionText` before and put it back with `saveSessionText` in the `finally`
-  (`src/api/session.ts`) — and a probe that writes works in a folder of its own under `$HOME`, never
-  in the reader's notes.
+  `--with-workspace` snapshots and restores the config for you, and the harness snapshots and
+  restores the **session** for every run (`test/tauri-probe.mjs`), so a probe does not have to; a
+  probe that writes works in a folder of its own under `$HOME`, never in the reader's notes.
 - A probe header may declare what it needs: `@needs-workspace` (the app pointed at the
   fixtures: run with `--with-workspace`), `@needs-source-workspace` (the maintainer's own
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it

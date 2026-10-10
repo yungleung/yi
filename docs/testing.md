@@ -108,9 +108,12 @@ own: its config names their workspace, their bibliography and their layout, and 
 the documents they had open. So a run that points it at this folder — or at a folder a probe made —
 backs both up before it starts and puts both back when it ends. `--with-workspace` already does the
 config half (`test/tauri-probe.mjs` snapshots `get_config` and writes it back afterwards), and the
-session half is the probe's own: read `loadSessionText` before, put it back with `saveSessionText`
-in the probe's `finally` (`src/api/session.ts`), or the reader's next start restores the tests'
-documents over the ones they had. A fixture is disposable *as a fixture* — `npm run fixtures`
+harness does the session half now, for *every* run: it reads `load_session` up front and writes it
+back through `save_session` when the probe has reported, settling the app's own 800 ms session
+debounce first, because a probe loads documents into the maintainer's app and one that types leaves
+its copy behind — which the reader's next start would then restore over the notes they had open.
+A probe's own `loadSessionText`/`saveSessionText` pair is no longer needed (`src/api/session.ts`
+is the seam). A fixture is disposable *as a fixture* — `npm run fixtures`
 refreshes it from the maintainer's notes — while the reader's own folder is never a test's.
 
 ## Adding a test
