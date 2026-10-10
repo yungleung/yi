@@ -55,6 +55,26 @@ export class VirtualBlockRenderer {
   private readonly spare = new Map<string, HTMLElement>();
   /** Mounted block elements, keyed by line start. */
   private readonly mounted = new Map<number, HTMLElement>();
+  /**
+   * Elements inserted since the last frame boundary.
+   *
+   * A block just put in the document has not been laid out yet: the browser decides whether it is
+   * on screen at the end of the frame, so until then the element reports its own
+   * `contain-intrinsic-size` to `offsetHeight` instead of its height (measured: 176px against a
+   * real 156px for the citations paragraph) — and for an element reused from the spare cache, the
+   * size the browser remembered for its previous rendering. Neither is a measurement of the block.
+   */
+  private pendingLayout = new WeakSet<HTMLElement>();
+  /**
+   * The scroller's own geometry as it was last read, so a rebuild does not have to ask for it.
+   *
+   * Reading `scrollTop` or `clientHeight` makes the browser lay the document out first, and inside
+   * the task a reader's click runs in, that layout is the cost of the click (measured: ~150 ms, the
+   * first read ~45 ms of it and the window measure that follows the same again). The scroller only
+   * changes size when the window does, and only scrolls when something scrolls it — both of which
+   * the renderer already hears — so the numbers are kept here and a rebuild reads nothing.
+   */
+  private geometry: { scrollTop: number; clientHeight: number } | null = null;
   private range: { first: number; last: number } | null = null;
   private syncing = false;
   /** What a rendering may ask the app for; the editor sets it (see `render_context.ts`). */
@@ -64,7 +84,14 @@ export class VirtualBlockRenderer {
     private readonly scroller: HTMLElement,
     private readonly state: MarkdownEditorState
   ) {
-    this.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
+    this.scroller.addEventListener(
+      'scroll',
+      () => {
+        this.readGeometry();
+        this.schedule();
+      },
+      { passive: true }
+    );
   }
 
   /** Registers the caret-preservation hooks used around DOM swaps. */
@@ -207,10 +234,15 @@ export class VirtualBlockRenderer {
     }
     for (const [lineStart, element] of [...this.mounted]) {
       const block = byLine.get(lineStart);
-      if (!block || this.builtFrom.get(element) !== this.renderKey(block)) {
-        this.releaseElement(element, this.builtFrom.get(element));
-        this.mounted.delete(lineStart);
+      if (block) {
+        const key = this.renderKey(block);
+        if (this.builtFrom.get(element) === key) {
+          continue;
+        }
+        this.carryHeightOver(block, element, key);
       }
+      this.releaseElement(element, this.builtFrom.get(element));
+      this.mounted.delete(lineStart);
     }
     this.syncWindow(true);
   }
@@ -224,10 +256,14 @@ export class VirtualBlockRenderer {
       element.remove();
       this.mounted.delete(lineStart);
     }
-    // The bibliography or the settings changed: nothing rendered before is
-    // known to still be valid.
+    // The elements are all gone, but the heights are not: a block's height is a function of its own
+    // source, and the source has not moved — a citation that now formats (Smith, 2020) instead of
+    // [@smith2020] is a different rendering of the same block, and the height it had a moment ago is
+    // a better start for the rebuilt element than the line-count estimate (measured: the estimate is
+    // 176px against a real 156px for the citations paragraph, which is painted for one frame). The
+    // rebuild measures each block once it is laid out again, and that measurement replaces the
+    // carried height wherever the rendering really did change.
     this.dropSpare();
-    this.sizes.clear();
     this.syncWindow(true);
   }
 
@@ -244,8 +280,9 @@ export class VirtualBlockRenderer {
       0,
       this.contentTop() +
         this.sizes.offsetOf(this.state.getBlocks(), index) -
-        this.scroller.clientHeight / 3
+        (this.geometry ?? this.readGeometry()).clientHeight / 3
     );
+    this.readGeometry();
     this.syncWindow(true);
   }
 
@@ -322,6 +359,7 @@ export class VirtualBlockRenderer {
     }
     const top = this.sizes.offsetOf(blocks, index) + Math.max(0, anchor?.within ?? 0);
     this.scroller.scrollTop = Math.max(0, this.contentTop() + top);
+    this.readGeometry();
     this.syncWindow(true);
     // That sync mounts the blocks around the anchor and measures them, so the offsets above it
     // are the real ones now: the first pass was close enough to bring them in, and this one
@@ -358,6 +396,10 @@ export class VirtualBlockRenderer {
     }
     this.frame = requestAnimationFrame(() => {
       this.frame = null;
+      this.readGeometry();
+      // A frame has been laid out since the last sync: whatever was inserted before this point has
+      // a height now, so the elements it was carrying are the ones to measure (`pendingLayout`).
+      this.pendingLayout = new WeakSet();
       this.syncWindow(false);
     });
   }
@@ -384,11 +426,12 @@ export class VirtualBlockRenderer {
         return;
       }
 
+      const geometry = this.geometry ?? this.readGeometry();
       const [first, last] = windowRange(
         this.sizes,
         this.state.getBlocks(),
-        this.scroller.scrollTop,
-        this.scroller.clientHeight
+        geometry.scrollTop,
+        geometry.clientHeight
       );
       if (!force && this.range?.first === first && this.range.last === last) {
         this.measureMounted(blocks, first, last);
@@ -402,7 +445,11 @@ export class VirtualBlockRenderer {
         const block = blocks[index];
         keep.add(block.lineStart);
         let element = this.mounted.get(block.lineStart);
-        if (!element || this.builtFrom.get(element) !== this.renderKey(block)) {
+        const key = this.renderKey(block);
+        if (!element || this.builtFrom.get(element) !== key) {
+          if (element) {
+            this.carryHeightOver(block, element, key);
+          }
           element = this.createBlockElement(block);
           this.mounted.set(block.lineStart, element);
         }
@@ -419,7 +466,12 @@ export class VirtualBlockRenderer {
 
       this.reconcile(root, desired);
       this.range = { first, last };
-      this.measureMounted(blocks, first, last);
+      // The measuring waits for the frame (`schedule`), because it is 47 ms of the task the reader's
+      // click runs in (measured), and because a block measured in the very task that inserted it
+      // answers with its fallback rather than its height. What the spacers are sized from is what is
+      // remembered for each block, and a rebuilt block starts at the height the shape it replaced
+      // had (`carryHeightOver`), so nothing here needs a fresh measurement to be right.
+      this.schedule();
       this.updateSpacers();
       this.refreshBlockTags();
       this.hooks?.restore(snapshot);
@@ -469,6 +521,7 @@ export class VirtualBlockRenderer {
       // The same content, rendered before: reuse it instead of rebuilding.
       this.spare.delete(key);
       this.setIntrinsicSize(spare, this.sizes.heightOf(block));
+      this.pendingLayout.add(spare);
       return spare;
     }
     const node: BlockNode = { ...block, type: 'block' };
@@ -477,6 +530,7 @@ export class VirtualBlockRenderer {
     );
     this.setIntrinsicSize(element, this.sizes.heightOf(block));
     this.builtFrom.set(element, key);
+    this.pendingLayout.add(element);
     return element;
   }
 
@@ -493,6 +547,40 @@ export class VirtualBlockRenderer {
    */
   private setIntrinsicSize(element: HTMLElement, height: number): void {
     element.style.containIntrinsicSize = `auto ${Math.round(height)}px`;
+  }
+
+  /**
+   * Starts a block's new shape at the height its previous shape had.
+   *
+   * A block whose shape changes under the reader — the click that reveals a citation's or a
+   * wikilink's own source, and the click that closes it again — is the same block at the same
+   * width, so the height it just had is the truth for the shape it is becoming (see
+   * `BlockSizes.seed`). Only a *shape* swap of one block qualifies: a rendering that is not the
+   * same block's other shape (a block entering the window, a block whose text was edited) has no
+   * height to inherit, and keeps the estimate.
+   */
+  private carryHeightOver(block: MarkdownBlock, outgoing: HTMLElement, incoming: string): void {
+    const outgoingKey = this.builtFrom.get(outgoing);
+    if (!outgoingKey || outgoingKey === incoming) {
+      return;
+    }
+    if (shapeBaseOf(outgoingKey) !== shapeBaseOf(incoming)) {
+      return;
+    }
+    const height = this.sizes.heightForKey(outgoingKey);
+    if (height !== null) {
+      this.sizes.seed(block, height);
+    }
+  }
+
+  /** Reads the scroller's geometry and keeps it: the one place that asks the browser. */
+  private readGeometry(): { scrollTop: number; clientHeight: number } {
+    const geometry = {
+      scrollTop: this.scroller.scrollTop,
+      clientHeight: this.scroller.clientHeight
+    };
+    this.geometry = geometry;
+    return geometry;
   }
 
   /** Keeps a block's element for later instead of throwing its rendering away. */
@@ -548,6 +636,15 @@ export class VirtualBlockRenderer {
 
   private rememberHeight(block: MarkdownBlock, element: HTMLElement): void {
     const height = element.offsetHeight;
+    // A block the browser has not laid out yet — one inserted since the last frame — reports its
+    // own `contain-intrinsic-size`, not its height, so that number measures nothing: storing it
+    // would replace the height the block is known by with the fallback the seed happens to name,
+    // and hand that number to the next frame that seeds from it (see `pendingLayout`). The block is
+    // measured on the next frame instead, once it is laid out.
+    if (this.pendingLayout.has(element)) {
+      this.schedule();
+      return;
+    }
     if (height > 0) {
       this.sizes.remember(block, height);
       this.setIntrinsicSize(element, height);
@@ -593,4 +690,16 @@ function isRendererOwned(node: Node): boolean {
     return false;
   }
   return node.classList.contains('markdown-block') || node.hasAttribute('data-virtual-spacer');
+}
+
+/**
+ * A render key without its shape suffix: the same block's other rendering carries this same base.
+ *
+ * `renderKey` appends `:source@<offset>` to a block that shows its own source, so two renderings of
+ * one block are two identities that share a base — which is how a swap between them is told from a
+ * block that simply changed.
+ */
+function shapeBaseOf(key: string): string {
+  const suffix = key.indexOf(':source@');
+  return suffix < 0 ? key : key.slice(0, suffix);
 }

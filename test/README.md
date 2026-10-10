@@ -115,7 +115,9 @@ reader left behind), what a keystroke costs (`edit-cost`, `scroll-cost`, `block-
 localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is; `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
-page where it was), links (`insert-link` — the button, the clipboard destination and the
+page where it was; `reveal-keeps-its-height` — and the block it opens never spends a frame at
+the `contain-intrinsic-size` fallback, which is what a reader sees as the paragraph blinking and
+the page under it moving), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
 `link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source) and images
