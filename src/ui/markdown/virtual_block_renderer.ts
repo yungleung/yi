@@ -65,6 +65,16 @@ export class VirtualBlockRenderer {
    * size the browser remembered for its previous rendering. Neither is a measurement of the block.
    */
   private pendingLayout = new WeakSet<HTMLElement>();
+  /**
+   * The scroller's own geometry as it was last read, so a rebuild does not have to ask for it.
+   *
+   * Reading `scrollTop` or `clientHeight` makes the browser lay the document out first, and inside
+   * the task a reader's click runs in, that layout is the cost of the click (measured: ~150 ms, the
+   * first read ~45 ms of it and the window measure that follows the same again). The scroller only
+   * changes size when the window does, and only scrolls when something scrolls it — both of which
+   * the renderer already hears — so the numbers are kept here and a rebuild reads nothing.
+   */
+  private geometry: { scrollTop: number; clientHeight: number } | null = null;
   private range: { first: number; last: number } | null = null;
   private syncing = false;
   /** What a rendering may ask the app for; the editor sets it (see `render_context.ts`). */
@@ -74,7 +84,14 @@ export class VirtualBlockRenderer {
     private readonly scroller: HTMLElement,
     private readonly state: MarkdownEditorState
   ) {
-    this.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
+    this.scroller.addEventListener(
+      'scroll',
+      () => {
+        this.readGeometry();
+        this.schedule();
+      },
+      { passive: true }
+    );
   }
 
   /** Registers the caret-preservation hooks used around DOM swaps. */
@@ -263,8 +280,9 @@ export class VirtualBlockRenderer {
       0,
       this.contentTop() +
         this.sizes.offsetOf(this.state.getBlocks(), index) -
-        this.scroller.clientHeight / 3
+        (this.geometry ?? this.readGeometry()).clientHeight / 3
     );
+    this.readGeometry();
     this.syncWindow(true);
   }
 
@@ -341,6 +359,7 @@ export class VirtualBlockRenderer {
     }
     const top = this.sizes.offsetOf(blocks, index) + Math.max(0, anchor?.within ?? 0);
     this.scroller.scrollTop = Math.max(0, this.contentTop() + top);
+    this.readGeometry();
     this.syncWindow(true);
     // That sync mounts the blocks around the anchor and measures them, so the offsets above it
     // are the real ones now: the first pass was close enough to bring them in, and this one
@@ -377,6 +396,7 @@ export class VirtualBlockRenderer {
     }
     this.frame = requestAnimationFrame(() => {
       this.frame = null;
+      this.readGeometry();
       // A frame has been laid out since the last sync: whatever was inserted before this point has
       // a height now, so the elements it was carrying are the ones to measure (`pendingLayout`).
       this.pendingLayout = new WeakSet();
@@ -406,11 +426,12 @@ export class VirtualBlockRenderer {
         return;
       }
 
+      const geometry = this.geometry ?? this.readGeometry();
       const [first, last] = windowRange(
         this.sizes,
         this.state.getBlocks(),
-        this.scroller.scrollTop,
-        this.scroller.clientHeight
+        geometry.scrollTop,
+        geometry.clientHeight
       );
       if (!force && this.range?.first === first && this.range.last === last) {
         this.measureMounted(blocks, first, last);
@@ -550,6 +571,16 @@ export class VirtualBlockRenderer {
     if (height !== null) {
       this.sizes.seed(block, height);
     }
+  }
+
+  /** Reads the scroller's geometry and keeps it: the one place that asks the browser. */
+  private readGeometry(): { scrollTop: number; clientHeight: number } {
+    const geometry = {
+      scrollTop: this.scroller.scrollTop,
+      clientHeight: this.scroller.clientHeight
+    };
+    this.geometry = geometry;
+    return geometry;
   }
 
   /** Keeps a block's element for later instead of throwing its rendering away. */
