@@ -86,6 +86,14 @@ Harness flags:
   own work and its frame peaks at ~86 ms, which is the browser laying the document out on the frame
   *after* the click rather than anything the click still does. `reveal-does-not-freeze-the-page.js`
   bounds both — it was 148/102/149 ms and gaps of ~150 ms before the geometry was kept.
+- **An opened document is not at its start, and a probe must not assume it is.** The app remembers
+  where the reader was in each document and the harness restores that session alongside the document,
+  so opening a file can legitimately land mid-way through it (measured: `default-document.md` opened
+  onto its display formula, one block mounted, because the session had left the reader there — which
+  read for two rounds as "the tree click does not open the document"). Assert a document by its own
+  text (`t.raw()`) rather than by its first mounted block, and where a measurement needs the top, go
+  there (`scrollTop = 0`) instead of assuming it. Accepted as a known sharp edge: the probes that
+  respect it report rendering bugs, and the ones that do not report session positions.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
 - **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and
