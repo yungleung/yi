@@ -42,11 +42,12 @@ Three families, each with one base class — or one table — and one rule.
 `mount`, `destroy`) has 17 direct subclasses, and the two families under it are the floating
 surfaces and the toolbars. `ui/floating/surface.ts: FloatingSurface` → `BesideCard` (fixed on the
 body, placed by the pure rule in `floating/placement.ts`) and `AnchoredPanel` (inside the button's
-own `relative` host) → the footnote preview, the completion list, the session stack, the table
-picker, the messages; `ui/floating/question_card.ts: QuestionCard<T>` (6 subclasses) is the one that
-asks. `ui/toolbar/toolbar.ts: Toolbar` (12 subclasses) is a button row that knows its command's
-*name*, not its behaviour. The rule: a kind may *add* to Escape but never replace it, and a fact one
-kind has is a parameter it is built with, or a subclass — never a mode flag on the base.
+own `relative` host) → the footnote preview, the citation preview, the completion list, the session
+stack, the table picker, the messages; `ui/floating/question_card.ts: QuestionCard<T>` (6
+subclasses) is the one that asks. `ui/toolbar/toolbar.ts: Toolbar` (12 subclasses) is a button row
+that knows its command's *name*, not its behaviour. The rule: a kind may *add* to Escape but never
+replace it, and a fact one kind has is a parameter it is built with, or a subclass — never a mode
+flag on the base.
 
 **The node components.** `nodes/editable_node.ts: EditableNodeComponent` is the contract every
 rendered node implements — bind an mdast node, expose the element, place the caret where it was

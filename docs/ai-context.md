@@ -65,11 +65,12 @@ it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floatin
 a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
 `relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
 card, and one answer
-with Escape giving the cautious one). The footnote preview, the completion list, the stack panel,
-the table picker, the prompt and the two cards are all one of those kinds now; a kind may *add* to
-Escape but never replace it, and the base must not grow a mode flag — a fact one kind has is a
-parameter it is built with, or a subclass of it. `ui/messages.ts` replaces the old toast: one
-`BesideCard` per message in the window's bottom-right corner *whatever it is about*, stacked upward,
+with Escape giving the cautious one). The footnote preview, the citation preview, the completion
+list, the stack panel, the table picker, the prompt and the two cards are all one of those kinds
+now; a kind may *add* to Escape but never replace it, and the base must not grow a mode flag — a
+fact one kind has is a parameter it is built with, or a subclass of it. `ui/messages.ts` replaces
+the old toast: one `BesideCard` per message in the window's bottom-right corner *whatever it is
+about*, stacked upward,
 with its ✕ at the card's right edge, and nothing disappearing on its own: a **message** is for
 something that needs the reader's attention — a failure — so it waits for the ✕ or Escape, and a
 press elsewhere leaves it. What the reader only has to *notice* is a **hint** instead
@@ -290,6 +291,17 @@ left, and the popover would open one character off and slide across on the first
 of the card is also the card's own width — daisyUI's `menu` sizes an item to what it holds, so a
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.
+
+A **rendered citation is also a place to read**, not only a thing to click: resting the pointer on
+it shows the reference entries the works it names are listed under, in the CSL style and
+bibliography file the settings name — `services/bibliography.ts: reference` over the pure rule in
+`services/citation_reference.ts` (the keys the citation names, each once, only the ones the library
+holds), drawn by `ui/markdown/citation_preview.ts` as one of the floating family's `BesideCard`s.
+It shows the *reference*, not the in-text form the sentence already carries, and a key the library
+does not hold shows no card at all; the citation's own source travels on the rendering
+(`data-citation`, written by `nodes/citation.ts`) because the formatted span no longer holds the
+keys, so a citation showing its own source is one no card can appear on
+(`test/probes/citation-preview.js`).
 
 **A click that ends a drag is the drag's, not the caret's.** The browser fires that click at the
 nearest common ancestor of the press and the release, so a selection that crosses two blocks ends
