@@ -25,6 +25,11 @@ export class Citation extends RevealableNodeComponent {
     if (sourceView) {
       return;
     }
+    // The rendered span carries the source it was made from, because the formatted citation no
+    // longer holds the keys: the card that shows what the citation stands for on hover reads it
+    // (`../citation_preview.ts`), the way a footnote marker carries its label. A name, not an
+    // offset — nothing maps a caret through it, and a source view does not carry it either.
+    this.element.dataset.citation = node.value;
     // The lazy format runs long after the render pass that handed the answers in, so the answers
     // are captured now, while they are in force.
     const app = renderContext();

@@ -22,6 +22,7 @@ const stylesheet = 'src/styles.css';
 /** Names with no rule on purpose: what each is, and where. */
 const hooks = {
   'markdown-citation-placeholder': 'the formatted text has not arrived yet',
+  'markdown-citation-preview': 'the card is drawn by the floating surface it is',
   'markdown-empty-line-placeholder': 'the empty line is drawn by its paragraph',
   'markdown-footnote-preview': 'the card is drawn by the floating surface it is',
   'markdown-footnote-source': 'a label’s source is shown inline, without the source chrome',
