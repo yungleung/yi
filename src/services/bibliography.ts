@@ -20,6 +20,7 @@ import '@citation-js/plugin-csl';
 import '@citation-js/plugin-bibtex';
 import { readBibliography } from '../api/bibliography';
 import { parseCitation, type CitationItem } from '../citations/parse';
+import { referenceIds } from './citation_reference';
 import { CITATION_CONFIG_CHANGED, configManager } from './config_manager';
 import { eventManager } from './event_manager';
 
@@ -31,6 +32,9 @@ let loadPromise: Promise<boolean> | null = null;
 let unwatch: (() => void) | null = null;
 
 const formatCache = new Map<string, string>();
+
+/** The reference entries a citation was resolved to, keyed by the citation's own source. */
+const referenceCache = new Map<string, string[]>();
 
 export class BibliographyManager {
   constructor() {
@@ -74,6 +78,7 @@ export class BibliographyManager {
       bibliography = buildCite(content);
       // Previous renders may have cached raw fallbacks; formatting data changed.
       formatCache.clear();
+      referenceCache.clear();
       await this.startWatcher();
       await eventManager.emit(CITATION_UPDATED);
       return bibliography !== null;
@@ -81,6 +86,7 @@ export class BibliographyManager {
       console.error('Failed to load the bibliography file:', error);
       bibliography = null;
       formatCache.clear();
+      referenceCache.clear();
       await eventManager.emit(CITATION_UPDATED);
       return false;
     }
@@ -154,6 +160,48 @@ export class BibliographyManager {
    */
   formatCached(value: string): string | null {
     return formatCache.get(value) ?? null;
+  }
+
+  /**
+   * The reference entries a citation's works are listed under in the configured style — one per
+   * work the library holds, in the style's own order. Empty when there is nothing to show: no
+   * bibliography loaded, or no key the library holds, which is a card that never appears
+   * (`ui/markdown/citation_preview.ts`).
+   */
+  reference(value: string): string[] {
+    const cached = referenceCache.get(value);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const entries = this.referenceUncached(value);
+    referenceCache.set(value, entries);
+    return entries;
+  }
+
+  private referenceUncached(value: string): string[] {
+    if (!bibliography) {
+      return [];
+    }
+    const ids = referenceIds(value, (id) => this.holds(id));
+    if (ids.length === 0) {
+      return [];
+    }
+    try {
+      // The same style and library the in-text formatting reads, so a key's reference and its
+      // citation in the sentence are two views of one answer.
+      return bibliography
+        .format('bibliography', { entry: ids, style: this.configuredStyle() })
+        .split('\n')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry !== '');
+    } catch {
+      return [];
+    }
+  }
+
+  /** Whether the loaded library holds `id` — read off the same data `entries()` offers. */
+  private holds(id: string): boolean {
+    return this.entries().some((entry) => entry.key === id);
   }
 
   private formatUncached(value: string): string {

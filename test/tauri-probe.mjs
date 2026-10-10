@@ -374,9 +374,78 @@ async function restoreConfig(previous) {
   );
 }
 
+/** How long the app's own session write can still be in flight once a probe has reported. */
+const SESSION_SAVE_SETTLE_MS = 900;
+
+/** A session with nothing in it: the state a reader who has never opened a document starts on. */
+const EMPTY_SESSION = '{"version":1,"current":null,"documents":[]}';
+
+/**
+ * The session file's text, as the app's own command reads it — the JSON text of that text, or the
+ * text `null` when the app has never written a session at all. `null` means the *read* failed.
+ */
+async function readSessionText() {
+  const reply = await call(
+    `(async () => JSON.stringify(await window.__TAURI_INTERNALS__.invoke('load_session')))()`,
+    15000
+  );
+  if (!reply.success) {
+    return null;
+  }
+  const text = String(reply.data);
+  try {
+    JSON.parse(text);
+  } catch {
+    // A reply that is not the JSON text of a session is a *read* that failed, not one to hand
+    // back: a harness that threw here would read as the probe failing.
+    return null;
+  }
+  return text;
+}
+
+/** Writes the session's own text through the app's own command. */
+async function writeSessionText(text) {
+  await call(
+    `(async () => {
+       await window.__TAURI_INTERNALS__.invoke('save_session', { session: ${JSON.stringify(text)} });
+       return 'session written';
+     })()`,
+    15000
+  );
+}
+
+/**
+ * Puts the session file back the way it was found, so a run leaves the reader's own documents
+ * alone. A probe loads documents into a dev app that is the maintainer's, and one that types into
+ * them leaves its copy in the session — which the *next* start would then restore over the notes
+ * the reader had open.
+ *
+ * The app writes its session on a debounce (800 ms after the last edit or scroll,
+ * `src/services/session.ts`), so a write the probe scheduled can land *after* this restore: that
+ * window is waited out first, and the file is read back once and written again if the app had a
+ * write of its own still in flight. A run that began with no session leaves the app's own empty
+ * one, which is the state a reader who has never opened a document starts on.
+ */
+async function restoreSession(previous) {
+  if (previous === null) {
+    return;
+  }
+  const found = JSON.parse(previous);
+  const wanted = found === null ? EMPTY_SESSION : String(found);
+  await sleep(SESSION_SAVE_SETTLE_MS);
+  await writeSessionText(wanted);
+  const writtenBack = await readSessionText();
+  if (writtenBack === null || JSON.parse(writtenBack) !== wanted) {
+    await writeSessionText(wanted);
+  }
+}
+
 // A probe that needs the workspace open gets it, and the maintainer's own
-// workspace is put back once the probe has reported.
+// workspace is put back once the probe has reported. The session is read up
+// here for the same reason: the documents the reader had open are put back
+// whatever the probe did with them.
 const previousConfig = withWorkspace ? await useFixtureWorkspace() : null;
+const previousSession = await readSessionText();
 
 /**
  * A probe's own verdict, as the harness reads it: a probe returns `{ checks, failed }`,
@@ -407,6 +476,7 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
   reply = await runProbe();
 }
 await restoreConfig(previousConfig);
+await restoreSession(previousSession);
 await restoreLanguage(languageBeforeProbing);
 if (reply.success) {
   reportResult(reply.data);

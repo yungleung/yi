@@ -55,6 +55,7 @@ import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';
 import { installFootnotePreview } from './footnote_preview';
+import { installCitationPreview } from './citation_preview';
 import { watchPointerPresses } from './editing/pointer';
 import { handleEditorKey, type KeyHost } from './editing/keys';
 import {
@@ -228,6 +229,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Resting the pointer on a footnote marker shows the note it names, in a card the
     // pointer cannot interact with (see `footnote_preview.ts`).
     installFootnotePreview(this.context);
+    // Resting the pointer on a citation shows the works it stands for — their reference
+    // entries, in the style and bibliography the settings name (see `citation_preview.ts`).
+    installCitationPreview(this.context);
     // The context menu is routed to the table menu first, and to a footnote marker's
     // jump for the one gesture that arrives as a context menu rather than a click —
     // a Ctrl-click on macOS (see `click_routing.ts`).
