@@ -82,6 +82,10 @@ Harness flags:
   hole). Watch the height over frames (`reveal-keeps-its-height.js`), and read the paint itself
   from the pixels: capture the window natively (`screencapture -x -o -l<window number>`) with no
   probe in between, because a probe that reads layout heals the blank.
+  What is left of that blink is accepted, not open: a click that reveals a source costs ~50 ms of its
+  own work and its frame peaks at ~86 ms, which is the browser laying the document out on the frame
+  *after* the click rather than anything the click still does. `reveal-does-not-freeze-the-page.js`
+  bounds both — it was 148/102/149 ms and gaps of ~150 ms before the geometry was kept.
 - Probes are one per page load when they depend on the demo document: use `--reload`
   between them, or `--with-doc`/`--fixture` to load what they need.
 - **A probe cannot stand in for the app's IPC.** `window.__TAURI_INTERNALS__` and
