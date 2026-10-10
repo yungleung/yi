@@ -445,7 +445,12 @@ export class VirtualBlockRenderer {
 
       this.reconcile(root, desired);
       this.range = { first, last };
-      this.measureMounted(blocks, first, last);
+      // The measuring waits for the frame (`schedule`), because it is 47 ms of the task the reader's
+      // click runs in (measured), and because a block measured in the very task that inserted it
+      // answers with its fallback rather than its height. What the spacers are sized from is what is
+      // remembered for each block, and a rebuilt block starts at the height the shape it replaced
+      // had (`carryHeightOver`), so nothing here needs a fresh measurement to be right.
+      this.schedule();
       this.updateSpacers();
       this.refreshBlockTags();
       this.hooks?.restore(snapshot);
