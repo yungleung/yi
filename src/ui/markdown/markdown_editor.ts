@@ -27,7 +27,12 @@ import {
   onCaretRangeChanged,
   setSelectionRange
 } from './caret/caret';
-import { isSourceBlock, setSourceEntryHandler, sourceEntryOffset } from './source_mode';
+import {
+  isSourceBlock,
+  setSourceEntryHandler,
+  sourceEntryOffset,
+  withHeldShownSource
+} from './source_mode';
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
@@ -178,7 +183,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // when the block it lived in was dropped, so scrolling never moves it.
     this.renderer.setSyncHooks({
       capture: () => this.pendingCaretOffset ?? caretOffset(this.context),
-      restore: (snapshot) => this.reanchorCaret(snapshot)
+      // The restore puts the caret back where it already was, so the source decision cannot have
+      // changed while it runs — and asking again is not harmless: `showSourceAt` would rebuild
+      // this block a second time, *inside* the sync that is still running. That second build's own
+      // sync finds its window without the block (the element has just been released, and the shape
+      // it now needs has no remembered height), so the block is left out of the page — blank, with
+      // its space in a spacer, until the window's range changes. Holding the decision is what the
+      // plain write's caret placement already does for the same reason (`source_mode.ts`).
+      restore: (snapshot) => withHeldShownSource(() => this.reanchorCaret(snapshot))
     });
 
     this.findBar = new FindBar({
