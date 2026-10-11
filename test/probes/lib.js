@@ -102,16 +102,33 @@ window.__t = (() => {
     return rect ? { x: Math.round(rect.left), y: Math.round(rect.top) } : null;
   };
 
-  /** Clicks a point inside an element, which is how the editor places carets. */
+  /**
+   * Clicks a point inside an element, which is how the editor places carets.
+   *
+   * A click is the *end* of a gesture — the browser sends `pointerdown` where the pointer
+   * went down, then `pointerup`, then the click — and the editor reads that press to tell a
+   * click from the drag its click may be ending (`editing/pointer.ts: endedADrag` refuses a
+   * caret to a gesture that travelled a few pixels and left a selection). So the gesture is
+   * sent whole, from the point the click lands on.
+   *
+   * A bare `click` is judged against whatever press the page last saw, and that press can be
+   * a markdown node's: a node answers the click that lands on it and stops it, so the press
+   * it came from is never consumed — measured, one coordinate-less `pointerdown` (what
+   * `input-method-click.js` dispatches to stand the keyboard hand-over back) left a press at
+   * the window's origin, and the next probe's click, hundreds of pixels away and with the
+   * document selected from `t.raw()`, was refused as the end of a drag.
+   */
   const click = async (element, ratio = 0.99, dy = 0.5) => {
     const rect = element.getBoundingClientRect();
-    element.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        clientX: rect.left + rect.width * ratio,
-        clientY: rect.top + rect.height * dy
-      })
-    );
+    const at = {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + rect.width * ratio,
+      clientY: rect.top + rect.height * dy
+    };
+    element.dispatchEvent(new PointerEvent('pointerdown', at));
+    element.dispatchEvent(new PointerEvent('pointerup', at));
+    element.dispatchEvent(new MouseEvent('click', at));
     await sleep(120);
   };
 

@@ -53,6 +53,16 @@ Harness flags:
   `t.key('x')` leaves `'x'`). It is the app behaving as any editor does over a live selection, not a
   bug: click the line you mean to type in first, as a reader would. `click-away-deselects.js` holds
   the pair — a selection is live after Select All, and a click outside takes it away.
+- **A click is a gesture, and a probe has to send the press.** The editor keeps where the pointer
+  went down, to tell a click from the drag its click may be ending: a gesture that travelled a few
+  pixels *and* left a selection asks for no caret (`editing/pointer.ts: endedADrag`). A reader's
+  click always carries its own press — the browser sends `pointerdown`, `pointerup`, then the click
+  — but a probe's bare `MouseEvent('click')` is judged against whatever press the page last saw, and
+  that can be another probe's, standing since a markdown node answered *its* click and stopped it.
+  `t.click` sends the whole gesture now; a probe that clicks by hand should too. Measured with the
+  document selected from `raw()`: a bare click moved the caret to the end of the block, a bare click
+  with one fabricated press left in the page moved it **not at all**, and `t.click` moved it —
+  which is what `insert-link.js` was failing on inside a suite while passing by name.
 - **Editing a probe reloads the page** (Vite watches the repo). Wait ~10 s after
   editing before running it, or the probe runs against a half-loaded page.
 - **Two writes to one source file in the same moment leave Vite serving the first

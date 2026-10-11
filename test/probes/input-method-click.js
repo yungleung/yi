@@ -32,10 +32,13 @@
   const node = t.blocks()[0].querySelector('.markdown-node');
   const rect = node.getBoundingClientRect();
   const at = { clientX: rect.left + rect.width * 0.99, clientY: rect.top + rect.height / 2 };
-  t.scroller().dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  // The press carries the point the click lands on: a press is never at the window's
+  // origin, and the editor keeps it to tell a click from the drag its click may be
+  // ending (`editing/pointer.ts: endedADrag`).
+  t.scroller().dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, ...at }));
   t.prose().focus({ preventScroll: true });
   check('the gesture leaves the keyboard on the page', document.activeElement === seam(), false);
-  document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+  document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, ...at }));
   node.dispatchEvent(
     new MouseEvent('click', { bubbles: true, cancelable: true, ...at })
   );
@@ -49,5 +52,10 @@
   const caret = t.caretRect();
   check('with the caret where the click put it', caret !== null && Math.abs(caret.y - rect.top) <= 40, true);
 
+  // What this leaves behind is the app's own state after any click on a markdown node: the
+  // node answered the click and stopped it, so the press it came from stands in
+  // `editing/pointer.ts` until a click reaches the page's own handler. That is the reader's
+  // situation too, and it is only a problem for a probe that fabricates a click *without* a
+  // press of its own — see `test/README.md`, "a click is a gesture".
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()
