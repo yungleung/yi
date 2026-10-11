@@ -14,13 +14,6 @@
  * app *pointed at* the fixtures (wikilinks, citations) and is run by name with
  * `--with-workspace`. Requires `npm run tauri dev` in another terminal.
  *
- * The page is reloaded every RELOAD_EVERY probes rather than before every one. A probe drives the
- * reader's path, and a page that has been through a hundred of them holds stale handlers and a
- * document the harness's own load may no longer settle (docs/testing.md), which is what the failures
- * at the end of a sweep were. Reloading between every probe was tried and measured at ~42 s a probe
- * against ~5 s — a sweep of ~100 minutes rather than ~15 — because a reload costs the page boot plus
- * a helper reinstall, and bounding the staleness is what is wanted.
- *
  * A lost bridge stops the sweep: the app is gone, and every probe after it would fail for the app
  * rather than itself (measured: a dev app died mid-sweep and ~150 probes reported "no MCP bridge").
  */
@@ -41,12 +34,6 @@ const probes = readdirSync(directory)
 
 const failed = [];
 let skipped = 0;
-/** How many probes may share one page before the runner reloads it (see the header). */
-const RELOAD_EVERY = 20;
-let sinceReload = 0;
-
-/** Waits for a reloading page to come back, the way the harness waits after its own reloads. */
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Is there an app to drive? Without this, a stopped dev server reports all
 // sixty-odd probes as failures — a wall of red that says nothing about the code
@@ -107,12 +94,6 @@ for (const name of probes) {
   }
   console.log(`\n=== ${name}`);
   const document = header.includes('@needs-large-document') ? largeDocument : demoDocument;
-  if (sinceReload >= RELOAD_EVERY) {
-    spawnSync(process.execPath, [harness, '--reload'], { stdio: 'inherit' });
-    await sleep(2500);
-    sinceReload = 0;
-  }
-  sinceReload += 1;
   const run = spawnSync(process.execPath, [harness, '--with-doc', document, join(directory, name)], {
     stdio: 'inherit'
   });
