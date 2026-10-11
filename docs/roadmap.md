@@ -675,6 +675,18 @@ elements) unless it says otherwise.
   window still mounts whole, which is what one that fits should do. Held by `check-block-sizes.mjs`
   (the case is `[0, 199]` without the fix against `[155, 199]` with it) and by
   `edit-keeps-the-window.js`, which fails against the old rule on keystroke 2 of 3.
+- **A press is forgotten when the gesture that made it is over.** Closed in `editing/pointer.ts`.
+  The editor keeps where the pointer went down, to tell a click from the drag its click may be
+  ending — a gesture that travelled a few pixels *and* left a selection asks for no caret — and a
+  markdown node answers the click that lands on it and stops it. So a press whose click a node took
+  was never read by that rule and lay in wait for the next click that reached the page: measured,
+  with the document selected, a bare click placed the caret and the same click with one such press
+  standing did **not**. `insert-link.js` lost its last check to exactly that inside a whole suite,
+  while passing by name every time. A gesture released where it went down travelled nowhere and
+  cannot have been a drag, so its press is forgotten now — and a cancelled gesture's is too, since
+  no click follows it. The drag the rule exists for is untouched: `select-across-blocks.js` still
+  holds it, and the new `press-released-where-it-started.js` fails against the old rule (the caret
+  stayed at the node's own click, 0, against the control's 15).
 
 ## Open, in the order to take them
 
