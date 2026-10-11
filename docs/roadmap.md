@@ -687,6 +687,17 @@ elements) unless it says otherwise.
   no click follows it. The drag the rule exists for is untouched: `select-across-blocks.js` still
   holds it, and the new `press-released-where-it-started.js` fails against the old rule (the caret
   stayed at the node's own click, 0, against the control's 15).
+- **A run that died mid-probe no longer leaves the app's config where the probe put it.** Closed in
+  the harness. The config a run finds is written to `<tmpdir>/yi-probe-config.json` before the probe
+  runs, and the note is removed once the run is over: a note still there means the run that wrote it
+  never finished, and the next run writes that config back before it reads anything — with a line
+  saying so, because a reader who changed their own settings after such a crash would otherwise see
+  them revert unexplained (`tauri-probe.mjs: openTheConfig`). Measured with a note left by hand and a
+  different value in the app: the next run printed the line, put the app's config back to the note's,
+  and removed the note; a normal run writes and removes its own quietly. The leak this closes is the
+  one measured in the wild — after a sweep whose app had died, `get_config` named a workspace the
+  fixtures' notes are not in, and five fixture-dependent probes failed identically on `main` and on
+  the branch under test, on a freshly started app.
 
 ## Open, in the order to take them
 
