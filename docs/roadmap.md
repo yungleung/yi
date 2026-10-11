@@ -647,6 +647,19 @@ elements) unless it says otherwise.
   suite it failed because the `edit-cost.js` above had been cut off mid-run and was *still typing
   into the page* while the next probe's document was loaded — collateral damage the split fixes, and
   one of the two failures that went away with it.
+- **A probe's evidence is its own run's.** Closed: every report a run makes is stamped with the run
+  that made it, and the harness reads back only its own. The bridge gives one script five seconds,
+  so a probe cut off at five keeps running while the *next* probe drives the page — and what it
+  leaves behind (its result, and every `t.report` in `window.__probeSteps`) is one slot on the
+  window, which is what the harness polls when a run outlives its budget. Measured, twice. A run
+  that never reported at all printed another run's result as *recovered* and exited **0**: the
+  reproduction is a probe that stashes a result three seconds after its own run was read, followed
+  by a probe that sleeps forty seconds and reports nothing. And it had already happened in a suite:
+  the baseline sweep reported `empty-line-delete.js` as passed, on `edit-cost.js`'s numbers.
+  A false pass is worse than a failure — a sweep counts it as a probe that passed.
+  The stamp is made where the probe's wrapper is built (`test/tauri-probe.mjs`) and captured in
+  that script's own scope, so a later run overwriting the page's globals cannot relabel an earlier
+  run's report; the rule is `test/probe_stash.mjs` and `check-probe-stash.mjs` holds it in Node.
 
 ## Open, in the order to take them
 

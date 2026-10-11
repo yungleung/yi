@@ -78,6 +78,15 @@ Harness flags:
   app, whatever the probe's length). Split a probe that needs longer than 5 s, or make
   its rounds cheaper; `test/probes/load-cost.js` is the probe that says whether the app
   itself has started to cost more. The cost probes that sat on the budget were split into
+  A cut-off probe keeps running, so what it leaves in the stash can arrive while the *next*
+  probe is driving the page. What is recovered has to be the run's own, so every report is
+  stamped with the run that made it — `test/probe_stash.mjs` is the rule, `check-probe-stash.mjs`
+  holds it in Node, and `test/tauri-probe.mjs` builds the one script that stamps and reads it.
+  Measured before that: a probe that stashed a result three seconds after its own run was read,
+  then a probe that outlived the bridge and never reported, printed the *first* probe's result as
+  *recovered* and exited **0** — a false pass on evidence that was never its own, which a sweep
+  counts as a probe that passed.
+  The cost probes that sat on the budget were split into
   rounds that fit (measured on the fixture note, by name): `block-rebuild-cost.js` 1 795 ms
   — the block's own parse, build and swap, `block-keystroke-cost.js` 2 434 ms — the fast
   path's keys, `block-keystroke-structural-cost.js` 3 113 ms — the asterisk the editor
