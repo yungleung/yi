@@ -660,6 +660,21 @@ elements) unless it says otherwise.
   The stamp is made where the probe's wrapper is built (`test/tauri-probe.mjs`) and captured in
   that script's own scope, so a later run overwriting the page's globals cannot relabel an earlier
   run's report; the rule is `test/probe_stash.mjs` and `check-probe-stash.mjs` holds it in Node.
+- **An edit at the end of a long note no longer mounts the document.** Closed in
+  `viewport_window.ts`. A block that has never been laid out is estimated from its own line count
+  (`block_sizes.ts`), and that estimate under-counts a note whose paragraphs are taller than their
+  lines: measured on the fixture note, **17 544px** of estimate against **20 047px** of document. A
+  reader at the real end is therefore *below* the end the sizes describe, and the window rule's case
+  for that — a scroll past every block the sizes know — fell back to block one. Measured in the
+  renderer's own numbers at a keystroke: asked with `scrollTop 19 175` and a total of `17 544`, the
+  rule answered **`[0, 483]`** — the whole note, 484 blocks, freshly built — and the keystroke paid
+  for laying the document out. `edit-cost.js` at the note's end got **2 keystrokes at ~1 100 ms** in
+  its round before the fix and **9–10 at 129 ms** after it (slowest 199 against 1 165), measured on
+  the same app in one session. The window is now the *end*: the blocks the viewport and its margins
+  fill from the last one back — while a document the estimates really do describe as shorter than the
+  window still mounts whole, which is what one that fits should do. Held by `check-block-sizes.mjs`
+  (the case is `[0, 199]` without the fix against `[155, 199]` with it) and by
+  `edit-keeps-the-window.js`, which fails against the old rule on keystroke 2 of 3.
 
 ## Open, in the order to take them
 

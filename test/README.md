@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-one of them (`probe:all` runs 160 and skips 21, each skip for the reason its
+a hundred and eighty-two of them (`probe:all` runs 161 and skips 21, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -114,7 +114,8 @@ definitions pasted on: each round is bounded by the clock, because what a keystr
 not a constant; `scroll-cost`, `block-rebuild-cost` — what parsing, building and replacing the block
 a keystroke lands in costs, `block-keystroke-cost` — the fast path's keys and the geometry reads
 they make, and `block-keystroke-structural-cost` — the asterisk the editor answers by rendering the
-block, from the same caret the fast path is measured at),
+block, from the same caret the fast path is measured at; `edit-keeps-the-window` — a keystroke at
+the end of a long note leaves the window it was in rather than mounting the whole document),
 `typed-text`,
 `plain-edit-parse`, `plain-edit-markers`, `block-offset-cost`, `load-cost`,
 `typing-cost-by-kind`, `code-local-write` — writing into a highlighted code block locally, which
