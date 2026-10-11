@@ -329,10 +329,6 @@ async function restoreLanguage(previous) {
 
 /** Runs the probe, installing the helpers again if the page lost them. */
 async function runProbe() {
-  // Clear any earlier probe's stash, and put back the one seam a probe can leave set on the app
-  // itself: `versioning_use_git` — a global in the Rust process, which a page reload does not
-  // clear. A run cut off by the bridge then costs the next probe nothing, and the stash it left is
-  // never mistaken for the previous one's result.
   // The one seam a probe can leave set on the app itself goes back before the probe runs:
   // `versioning_use_git` is a global in the Rust process, which a page reload does not clear.
   // The page's own stash is *not* cleared here — a run's frames say which run made them
@@ -348,7 +344,48 @@ async function runProbe() {
        return null;
      })()`
   );
+  await holdTheOpener();
   return await call(wrappedProbe, 20000, 'probe');
+}
+
+/**
+ * Takes the opener's system hand away before the probe runs, and keeps what the app asked it to
+ * open in `window.__probeOpenedUrls` (the URL is in the request's own body).
+ *
+ * The app posts every command through the page's `fetch`, which is the outer edge a probe can
+ * reach (`window.__TAURI_INTERNALS__.invoke` is non-writable). It matters because a probe that
+ * clicks over prose can land on a link, and the app — rightly — asks the system to open it: the
+ * system's browser then takes the front, and every probe after that measures an occluded page
+ * (measured: four frame-dependent probes failed at the five-second line while a browser held the
+ * front, and passed once the app was in front again — `test/README.md`, "the app's window has to
+ * be in front"). A probe that checks the opener itself (`footnote-preview.js`,
+ * `link-cmd-click.js`) installs its own stand-in over this one and still sees the call.
+ */
+async function holdTheOpener() {
+  await call(
+    `(async () => {
+       window.__probeRealFetch = window.__probeRealFetch ?? window.fetch;
+       window.__probeOpenedUrls = [];
+       window.fetch = async (input, init) => {
+         const url = decodeURIComponent(
+           typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
+         );
+         if (!url.includes('plugin:opener')) {
+           return await window.__probeRealFetch.call(window, input, init);
+         }
+         window.__probeOpenedUrls.push({
+           url,
+           body: typeof init?.body === 'string' ? init.body : String(init?.body ?? '')
+         });
+         return new Response('null', {
+           status: 200,
+           headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
+         });
+       };
+       return null;
+     })()`,
+    8000
+  );
 }
 
 /**

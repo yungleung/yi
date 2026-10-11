@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-three of them (`probe:all` runs 162 and skips 21, each skip for the reason its
+a hundred and eighty-four of them (`probe:all` runs 163 and skips 21, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -131,7 +131,9 @@ the `contain-intrinsic-size` fallback, which is what a reader sees as the paragr
 the page under it moving), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
-`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source) and images
+`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source;
+`link-click-stays-in-the-window` — the harness's own stand-in, with a ⌘-click still reaching the
+app and asking for the URL while the window stays where it was) and images
 (`insert-image` — the button, a URL, a path and a `file://` URL from the clipboard, a
 selection becoming the alt text, and the empty image a clipboard the app cannot use leaves behind;
 `insert-image-blob` — a picture on the clipboard, the card with it drawn in it, the name it starts
@@ -225,14 +227,20 @@ live index; the newest probes carry a header naming what they cover:
   that kind (`document-opens-at-its-top`, `document-session-restart`, `completion`,
   `footnote-label-edge`) failed at the five-second line while the app was behind, and passed by
   name at 2 900–4 200 ms with it in front. Two things put it behind without anyone noticing.
-  **A click that lands on a link in the demo document opens it in the system's browser**: the app
-  is right to open it and the browser then takes the front, so a probe that clicks over prose
-  should stand in for the opener the way `footnote-preview.js` does — and a sweep that comes back
-  with frame-dependent failures should look at what is frontmost before believing them. And a
-  window that has been **closed** leaves the process answering with a page that never paints at
-  all: the tell is the page's own, `document.hidden === true` (`visibilityState: "hidden"`, and
+  **A ⌘-click on a link asks the system to open it, and the system's browser then takes the
+  front** — measured, a ⌘-click on a link in a probe's own document brought Google Chrome to the
+  front while the probe ran, and a browser held the front through part of one sweep with the page
+  reporting `document.hidden === true`. (A *plain* click on a link is not this: it places the
+  caret, `click_routing.ts: routeLinkClick` asks for ⌘ or Ctrl.) The harness takes the opener's
+  system hand away before every probe and keeps what the app asked for in
+  `window.__probeOpenedUrls` (`tauri-probe.mjs: holdTheOpener`), so this cannot cost a run its
+  front; a probe that checks the opener itself installs its own stand-in over that and still sees
+  the call. `link-click-stays-in-the-window.js` holds both halves of the seam. And a window that
+  has been **closed** leaves the process answering with a page that never paints at all: the tell
+  is the page's own, `document.hidden === true` (`visibilityState: "hidden"`, and
   `document.hasFocus()` false), and a sweep on such a page measured 5 007 ms for *every* probe,
-  each one recovered, with the same four failing. Restarting `npm run tauri dev` clears both.
+  each one recovered, with the same four failing. Restarting `npm run tauri dev` clears the second,
+  and `frontmost` is worth a look whenever a cluster of frame-dependent probes fails.
 - **A run that died mid-probe leaves the *config* where the probe put it.** The harness reads the
   config before a run and writes it back after (`--with-workspace` does it for the workspace and the
   bibliography; a probe that points the app at a folder of its own restores it itself), and none of

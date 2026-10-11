@@ -687,6 +687,19 @@ elements) unless it says otherwise.
   no click follows it. The drag the rule exists for is untouched: `select-across-blocks.js` still
   holds it, and the new `press-released-where-it-started.js` fails against the old rule (the caret
   stayed at the node's own click, 0, against the control's 15).
+- **A probe's ⌘-click cannot take the window away.** Closed in the harness. A ⌘-click on a link
+  asks the *system* to open the URL (`click_routing.ts: routeLinkClick`), and the system's browser
+  then comes to the front: measured, a ⌘-click on a link brought Google Chrome to the front while
+  the probe ran, and a browser held the front through part of one sweep with the page reporting
+  `document.hidden === true` — behind which every frame-dependent probe fails, because the frames
+  a page needs stop (`test/README.md`, "the app's window has to be in front"). The harness now takes
+  the opener's system hand away before every probe (`tauri-probe.mjs: holdTheOpener`), answering the
+  command in the page and keeping the ask in `window.__probeOpenedUrls`; probes that stand in for the
+  opener themselves (`footnote-preview.js`, `link-cmd-click.js`) install their own over it and see
+  the call as before. `link-click-stays-in-the-window.js` holds both halves: with the seam the ask is
+  recorded and the window stays, and with the seam stashed the same ⌘-click opened a browser. What
+  put a browser in front in one long sweep is still unaccounted for, so `frontmost` and the page's
+  own `document.hidden` are what to look at when frame-dependent probes fail together.
 
 ## Open, in the order to take them
 
