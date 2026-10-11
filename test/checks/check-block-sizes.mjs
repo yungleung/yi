@@ -95,6 +95,21 @@ check('the whole document mounts when the margin covers it', windowRange(sizes, 
   0,
   2
 ]);
+// A reader below the end the *estimates* describe: a long document of unmeasured blocks, and a
+// scroll past what their line counts add up to. The window is the end the reader is at — the
+// blocks the viewport and its margins can fill from the last one back — and not the whole
+// document (which is what the fixture note mounted at one keystroke, measured: 484 blocks).
+const estimated = new BlockSizes((candidate) => candidate.text);
+const long = Array.from({ length: 200 }, (_, index) => block(`line ${index}\n`));
+check('scrolled past the estimates, the window is the end', windowRange(estimated, long, 13000, 100), [
+  155,
+  199
+]);
+check(
+  'and a document the estimates call shorter than the window still mounts whole',
+  windowRange(estimated, many, 13000, 100),
+  [0, 29]
+);
 
 const spacers = spacerHeights(sizes, blocks, { first: 1, last: 1 });
 check('the top spacer is everything above the window', spacers.top, 100);
