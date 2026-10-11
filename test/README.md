@@ -241,16 +241,22 @@ live index; the newest probes carry a header naming what they cover:
   `document.hasFocus()` false), and a sweep on such a page measured 5 007 ms for *every* probe,
   each one recovered, with the same four failing. Restarting `npm run tauri dev` clears the second,
   and `frontmost` is worth a look whenever a cluster of frame-dependent probes fails.
-- **A run that died mid-probe leaves the *config* where the probe put it.** The harness reads the
-  config before a run and writes it back after (`--with-workspace` does it for the workspace and the
-  bibliography; a probe that points the app at a folder of its own restores it itself), and none of
-  that happens when the app is gone before the probe reports — measured, after a sweep whose app had
-  died: `get_config` still named a workspace the fixtures' notes are not in, and five probes that
-  silently depend on the fixtures (`completion-wikilink`, `document-stack`, `document-stack-ask`,
-  `document-stack-restore`, `settings-push-on-open`) failed *identically on `main` and on the branch
-  under test*, on a freshly started app. Read `get_config` before believing a cluster of failures
-  like that, and put the workspace back through the app's own path (`t.openWorkspace` is the one
-  `test/probes/lib.js` hands a probe).
+- **A run that died mid-probe leaves the *config* where the probe put it — and the next run puts it
+  back.** The harness reads the config before a run and writes it back after (`--with-workspace` does
+  it for the workspace and the bibliography; a probe that points the app at a folder of its own
+  restores it itself), and none of that happens when the run is gone before the probe reports:
+  measured, after a sweep whose app had died, `get_config` still named a workspace the fixtures'
+  notes are not in, and five probes that silently depend on the fixtures (`completion-wikilink`,
+  `document-stack`, `document-stack-ask`, `document-stack-restore`, `settings-push-on-open`) failed
+  *identically on `main` and on the branch under test*, on a freshly started app. So the config a run
+  *finds* is written to `<tmpdir>/yi-probe-config.json` before the probe runs and the note is removed
+  when the run is over: a note still there means the run that wrote it never finished, and the next
+  run writes that config back — with a line saying so, because a reader who changed their own
+  settings after such a crash would otherwise see them revert unexplained (`tauri-probe.mjs:
+  openTheConfig`; measured with a note left by hand and a different value in the app: the next run
+  printed the line, put the config back, and removed the note). Read `get_config` before believing a
+  cluster of failures like that anyway — a crash in the middle of a *sweep* still costs the rest of
+  that sweep.
 - A file read over the raw bridge (`plugin:fs|read_text_file`) comes back as an **`ArrayBuffer`**,
   and `Uint8Array.from(buffer)` on one is an *empty* array rather than its bytes — take it as it
   is: `bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)`, which is what the plugin's

@@ -27,7 +27,8 @@
  * (or a promise) which is printed as JSON. Helpers are installed separately
  * (`--install`), so every probe is sent verbatim.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ownFrame } from './probe_stash.mjs';
@@ -62,6 +63,8 @@ const withWorkspace = flags.has('--with-workspace');
 const fixturesRoot = fileURLToPath(new URL('./fixtures/workspace', import.meta.url));
 /** Where this checkout is, for a probe that has to name one of its files. */
 const probePaths = { checkout: fileURLToPath(new URL('..', import.meta.url)) };
+/** Where a run keeps the config it found, so a run that dies can be tidied up after. */
+const configSnapshot = join(tmpdir(), 'yi-probe-config.json');
 const documentArgument = withDoc || withFixture ? positional[0] : null;
 const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
@@ -296,6 +299,12 @@ async function ensureEnglish() {
   }
   return null;
 }
+// Before the language (and before anything else that writes the config): the config this run found
+// is written down for a run that may die, and a run that died is tidied up after (`openTheConfig`).
+// It is read *here* rather than beside the session below, because `ensureEnglish` writes the
+// language into the config — a note written after that would heal a crashed run's language, not the
+// reader's.
+const previousConfig = await openTheConfig();
 const languageBeforeProbing = await ensureEnglish();
 
 /** Puts the language back where it was found, the way the workspace is put back. */
@@ -388,16 +397,20 @@ async function holdTheOpener() {
   );
 }
 
-/**
- * Points the app's config at the fixture workspace, so wikilinks and citations
- * in a probe resolve against the committed notes. Returns the previous config
- * as JSON text, for {@link restoreConfig}.
- */
-async function useFixtureWorkspace() {
-  const previous = await call(
+/** The app's config as its own JSON text, or null when the page cannot answer. */
+async function readConfigText() {
+  const reply = await call(
     "(async () => JSON.stringify(await window.__TAURI_INTERNALS__.invoke('get_config')))()",
     15000
   );
+  return reply.success ? String(reply.data) : null;
+}
+
+/**
+ * Points the app's config at the fixture workspace, so wikilinks and citations
+ * in a probe resolve against the committed notes.
+ */
+async function useFixtureWorkspace() {
   await call(
     `(async () => {
        const cfg = {
@@ -416,7 +429,51 @@ async function useFixtureWorkspace() {
     15000
   );
   await sleep(1500);
-  return previous.success ? String(previous.data) : null;
+}
+
+/**
+ * Puts back the config a run that died left behind, and keeps this run's own copy of what it
+ * found.
+ *
+ * A probe changes the app's config: the settings probes do it on purpose, and one that points the
+ * app at a folder of its own does it to work at all. The harness puts back what it found once the
+ * probe has reported — and none of that happens when the run dies first. Measured, after a sweep
+ * whose app had died: `get_config` still named a workspace the fixtures' notes are not in, and five
+ * probes that silently depend on the fixtures (`completion-wikilink`, `document-stack`,
+ * `document-stack-ask`, `document-stack-restore`, `settings-push-on-open`) failed *identically on
+ * `main` and on the branch under test*, on a freshly started app, until the workspace was put back.
+ *
+ * So the config a run finds is written down before the probe runs and the note is removed when the
+ * run is over: a note still there means the run that wrote it never finished, and its config goes
+ * back into the app before this run reads anything — with a line saying so, because a reader who
+ * changed their own settings after such a crash would otherwise see them revert unexplained.
+ */
+async function openTheConfig() {
+  let left = null;
+  try {
+    left = readFileSync(configSnapshot, 'utf8');
+  } catch {
+    left = null;
+  }
+  if (left !== null) {
+    console.error(
+      'a run died before it could put the config back: writing back the config from before that ' +
+        'run, then measuring with it (' +
+        configSnapshot +
+        ')'
+    );
+    await restoreConfig(left);
+  }
+  const found = (await readConfigText()) ?? left;
+  if (found !== null) {
+    writeFileSync(configSnapshot, found);
+  }
+  return found;
+}
+
+/** The run is over and the config is back: nothing is left for the next run to tidy up. */
+function forgetTheConfig() {
+  rmSync(configSnapshot, { force: true });
 }
 
 /** Puts the app's config back the way it was before the probe ran. */
@@ -504,11 +561,13 @@ async function restoreSession(previous) {
   }
 }
 
-// A probe that needs the workspace open gets it, and the maintainer's own
-// workspace is put back once the probe has reported. The session is read up
-// here for the same reason: the documents the reader had open are put back
-// whatever the probe did with them.
-const previousConfig = withWorkspace ? await useFixtureWorkspace() : null;
+// A probe that needs the workspace open gets it here, once the language is settled (that reloads
+// the page, and the workspace is set through it). The config itself was read up top, and goes back
+// once the probe has reported, whatever the probe did with it. The session is read up here for the
+// same reason: the documents the reader had open are put back whatever the probe did with them.
+if (withWorkspace) {
+  await useFixtureWorkspace();
+}
 const previousSession = await readSessionText();
 
 /**
@@ -540,6 +599,7 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
   reply = await runProbe();
 }
 await restoreConfig(previousConfig);
+forgetTheConfig();
 await restoreSession(previousSession);
 await restoreLanguage(languageBeforeProbing);
 if (reply.success) {
