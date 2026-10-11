@@ -1,19 +1,26 @@
 /**
- * What a keystroke costs: fifty characters typed at the end of a document,
- * timed one at a time, with the blocks the edit rebuilt and the elements that
- * survived beside them.
+ * What a keystroke costs at the end of a document, timed one at a time, with the blocks
+ * the edit rebuilt and the elements that survived beside them.
  *
- * The point of the phase, as a number: an edit does not cost what the document
- * costs. Run the probe against the two ends of the range — `probe:all` gives it
- * the 323 KB fixture note, `--fixture default-document.md` gives it the 2 KB
- * demo document — and the numbers are the comparison. Each run also types into
- * the same text with a thousand footnote definitions pasted at the end of it,
- * which is the document where a label scan per keystroke would show.
+ * The point of the phase, as a number: an edit does not cost what the document costs.
+ * Run the probe against the two ends of the range — `probe:all` gives it the 323 KB
+ * fixture note, `--fixture default-document.md` gives it the 2 KB demo document — and the
+ * numbers are the comparison.
  *
- * The timings need the editor window to be visible: an occluded webview
- * throttles animation frames, and every keystroke then reports
- * `settled: false` instead of a time. The rest of the report — what the edit
- * rebuilt, what survived it — stands either way.
+ * The round is bounded by the clock, not by a count of characters. The bridge gives one
+ * script five seconds, and what a keystroke at the end of this note costs is not a
+ * constant: measured at 54 ms and at 979 ms inside one pass of ten, because the window the
+ * renderer mounts moves and grows under the edit (24 blocks before a keystroke, 57 after
+ * it, 484 in the pass that cost the most). So the probe types for as long as it is allowed
+ * to and reports every step it took, with how many that was — a round that fits whatever
+ * the window and the document are. The same text with a thousand footnote definitions
+ * pasted at the end of it — the document where a label scan per keystroke would show — is
+ * `edit-cost-notes.js`: held together the two outlived the budget (measured: the pass
+ * below alone took 5 019 ms once the note's own last block was the one being rebuilt).
+ *
+ * The timings need the editor window to be visible: an occluded webview throttles
+ * animation frames, and every keystroke then reports `settled: false` instead of a time.
+ * The rest of the report — what the edit rebuilt, what survived it — stands either way.
  *
  * @covers src/ui/markdown/document/state.ts, src/ui/markdown/document/blocks.ts
  * @needs-large-document — run against the 323 KB fixture note.
@@ -26,20 +33,18 @@
 (async () => {
   const t = window.__t;
   const out = t.report({});
-  /** The characters typed at the end of the document as it loaded. */
-  const keystrokes = 50;
   /**
-   * The characters typed into the note with a thousand definitions in it. Fewer,
-   * because the per-keystroke cost is what the pass is for and the bridge gives a
-   * probe a budget, not a stopwatch: a citation-bearing document already spends
-   * tens of milliseconds per keystroke on painting alone.
+   * How long the round types for, in wall clock: the probe's own share of the bridge's
+   * five seconds, after the document the harness loads and the walk to the caret.
+   * Measured at 1 200: the probe as a whole is 3 000–3 700 ms whatever the window mounts —
+   * a keystroke can cost a second, so the round's last one can overshoot the budget by
+   * that much — and the round still gets tens of keystrokes where they are cheap and
+   * three or four where they are not.
    */
-  const notesKeystrokes = 20;
+  const budgetMs = 1200;
+  /** A cap, so a document whose keystrokes are free still ends. */
+  const maxKeystrokes = 50;
   const round = (value) => Math.round(value * 100) / 100;
-  // One definition per block — a blank line between them — so that the pass over
-  // a note full of notes types into a paragraph and a definition line, and not
-  // into a thousand-line block whose re-parse would be what the probe measured.
-  const definitions = Array.from({ length: 1000 }, (_, index) => `[^n${index}]: note ${index}`).join('\n\n');
 
   /** Walks to the end of the document and puts the caret after the last character. */
   const caretAtTheEnd = async () => {
@@ -66,13 +71,17 @@
     return true;
   };
 
-  /** Types `character` `count` times at the end of the document, timing each one. */
-  const typeAtTheEnd = async (character, count) => {
+  /**
+   * Types `character` at the end of the document until `budgetMs` have gone by, timing
+   * each keystroke, and reports how many it got and how long it typed for.
+   */
+  const typeAtTheEnd = async (character) => {
     if (!(await caretAtTheEnd())) {
       return null;
     }
     const steps = [];
-    for (let index = 0; index < count; index += 1) {
+    const startedTyping = performance.now();
+    while (steps.length < maxKeystrokes && performance.now() - startedTyping < budgetMs) {
       const mounted = new Set(t.blocks());
       const started = performance.now();
       t.key(character);
@@ -91,14 +100,18 @@
         survived: after.filter((element) => mounted.has(element)).length
       });
     }
+    const typedForMs = Math.round(performance.now() - startedTyping);
     // The characters are in the document, in a block the renderer mounted: the
     // keystrokes went where the caret was put, not into whatever was focused.
     // Its size is here because it is part of the reading: the edit rebuilds the
     // block it lands in, and a note that ends in one enormous paragraph pays for
     // that block rather than for the document (see the phase's non-goal).
-    const block = t.blocks().find((element) => element.textContent.includes(character.repeat(count)));
+    const block = t
+      .blocks()
+      .find((element) => element.textContent.includes(character.repeat(steps.length)));
     return {
       steps,
+      typedForMs,
       typed: Boolean(block),
       typedBlock: block
         ? { lineStart: Number(block.dataset.lineStart), renderedCharacters: block.textContent.length }
@@ -115,11 +128,13 @@
     if (!measured) {
       return { label, error: 'no block to put the caret in' };
     }
-    const { steps, typed, typedBlock } = measured;
+    const { steps, typed, typedBlock, typedForMs } = measured;
     return {
       label,
       typed,
       typedBlock,
+      budgetMs,
+      typedForMs,
       keystrokes: steps.length,
       medianMs: median(steps.map((step) => step.ms)),
       slowestMs: Math.max(...steps.map((step) => step.ms)),
@@ -134,27 +149,8 @@
     };
   };
 
-  /** Pastes `text` at the caret, which is where the last keystroke left it. */
-  const paste = async (text) => {
-    const data = new DataTransfer();
-    data.setData('text/plain', text);
-    t.scroller().dispatchEvent(
-      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })
-    );
-    await t.sleep(500);
-  };
-
-  out.given = summarise('the document as it loaded', await typeAtTheEnd('x', keystrokes));
+  out.given = summarise('the document as it loaded', await typeAtTheEnd('x'));
   t.report(out);
-
-  await paste(`\n\n${definitions}`);
-  out.notes = { definitions: 1000, pasted: true };
-  out.thousandFootnotes = summarise(
-    'the same text with a thousand definitions pasted in',
-    await typeAtTheEnd('y', notesKeystrokes)
-  );
-  t.report(out);
-
   return out;
 
   /** The next animation frame, or a give-up if frames are throttled. */

@@ -67,7 +67,19 @@ Harness flags:
   harness prints beside it says what the app's own calls cost (median ~3 ms on an idle
   app, whatever the probe's length). Split a probe that needs longer than 5 s, or make
   its rounds cheaper; `test/probes/load-cost.js` is the probe that says whether the app
-  itself has started to cost more.
+  itself has started to cost more. The cost probes that sat on the budget were split into
+  rounds that fit (measured on the fixture note, by name): `block-rebuild-cost.js` 1 795 ms
+  — the block's own parse, build and swap, `block-keystroke-cost.js` 2 434 ms — the fast
+  path's keys, `block-keystroke-structural-cost.js` 3 113 ms — the asterisk the editor
+  answers by rendering the block, three rounds instead of six, `edit-cost.js` ~3 300 ms —
+  the keystrokes at the end of the document as it loaded, `edit-cost-notes.js` ~3 900 ms —
+  the same with a thousand footnote definitions pasted on, `code-local-write.js` 2 153 ms
+  and `code-local-write-stale.js` 619 ms — the local write into highlighted code, split
+  into the writes that show nothing and the delimiters that do. What a keystroke at the end
+  of the fixture note costs is *not* a constant: the window the renderer mounts moves under
+  the edit (measured in `edit-cost.js`'s own steps: 24 blocks mounted and 65 ms for one
+  keystroke, then 484 blocks — the whole note — and 1 105 ms for the next), so the edit
+  rounds are bounded by the clock and report how many keystrokes they got.
 - **A `bridge:` line with a seconds-long *median* is an open native menu.** Nothing is
   slow: the webview is blocked, and the menu it is blocked on cannot be closed by a
   script. The tell is the probe's own time beside it (small) against the calls (seconds
