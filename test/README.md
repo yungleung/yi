@@ -238,5 +238,16 @@ live index; the newest probes carry a header naming what they cover:
   `'x'` — measured). It is the app behaving as any editor does over a live selection; click the line
   you mean to type in first. `click-away-deselects.js` holds both halves: the selection after Select
   All, and the click outside that takes it away with the caret.
+- **A click a probe makes is a gesture: send the press with it.** The editor remembers where the
+  pointer last went down, to tell a click from the drag its click may be ending — a gesture that
+  travelled a few pixels and left a selection asks for no caret (`editing/pointer.ts: endedADrag`).
+  A reader's click always carries its own press, a probe's need not: `t.click` now dispatches
+  `pointerdown`, `pointerup` and the click at the point, and a probe that dispatches a bare
+  `MouseEvent('click')` is judged against whatever press the page last saw — which may be another
+  probe's, standing there since a markdown node answered *its* click and stopped it. Measured, with
+  the document selected from `raw()`: a bare click moved the caret to the end of the block, a bare
+  click with one fabricated press left in the page did **not** move it at all, and `t.click` did —
+  `insert-link.js` lost its last check in a whole suite to exactly that, and passed by name the whole
+  time.
 - Name probes for the behaviour, not the file they touch.
 - A check prints `all checks passed` on success and the failures on stderr.

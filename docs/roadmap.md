@@ -573,6 +573,28 @@ elements) unless it says otherwise.
   is not the same as on screen. The same report caught the button's stamp at the bar's own size and
   weight (`text-xs font-normal`, not the 16 px and weight 600 `btn-ghost` had given it), which
   `versioning-status.js` now holds next to the status bar's other words.
+- **A probe's click is a gesture, and the editor refuses one that did not carry its own press.**
+  Closed by sending the press with the click, in the harness's own `click` helper and in the one
+  probe that fabricates a press by hand. `insert-link.js` failed its last check inside a whole suite
+  and passed by name (3 runs), which read as the session opening its document somewhere else; the
+  measurement says otherwise. The editor remembers where the pointer went down, to tell a click from
+  the drag its click may be ending — a gesture that travelled a few pixels *and* left a selection
+  asks for no caret (`editing/pointer.ts: endedADrag`) — and a reader's click always carries its own
+  press, while a probe's was judged against whatever press the page last saw. Measured with the
+  document selected from `raw()`: a bare click moved the caret to the end of the block; a bare click
+  with one fabricated press left in the page moved it **not at all** (`caretAfter` 2 where it should
+  have been 15); `t.click`, with the press sent at the point, moved it. The press that was standing
+  came from `input-method-click.js`, whose fabricated `pointerdown` carried no coordinates (a press
+  is never at the window's origin) and whose click a markdown node answers and stops, so nothing
+  ever consumed it — reproduction, in one line: a lone `pointerdown` on the scroller made
+  `insert-link.js` fail, and no other probe did. One more thing the same investigation measured and
+  left as it is: a probe's own `--with-doc` load puts its document at the **top** (the document was
+  scrolled to its end in one run, and the next run's load still began at scrollTop 0), so "an opened
+  document is not at its start" belongs to the documents the *session* opens — the tree, a restore —
+  and not to the ones a probe loads. What the reader's-path item did **not** turn out to need, then:
+  `edit-stability.js` reading its whole document with `raw()` first — measured, that leaves a live
+  selection, and the probe keeps 24 of 28 elements against 27 without it, which is its own subject.
+  It is taken to the top instead, and its guard reports what is mounted.
 - **Seeing a version, and going back to it**, as the reader asked: the versions panel's rows are
   pressable now, and one opens a sheet over the editor showing the **whole note** — one row per
   line, unchanged lines once, removals and additions marked, opening at the first change — with a
