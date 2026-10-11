@@ -46,6 +46,20 @@ let pressed: { x: number; y: number } | null = null;
  * Remembers where the pointer goes down, so the click it leads to can be told from the
  * drag it may have ended. Capture, like every other pointer watcher on the editor
  * (`editing/composition_input.ts`), because a node may stop what it handles.
+ *
+ * A press is kept for one reason, and it is kept for one gesture: the click that ends a drag
+ * is an ordinary click in every other way, so the distance the pointer travelled is the only
+ * thing that can tell them apart. A gesture released where it went down travelled nowhere and
+ * cannot have been a drag, so the press it left answers nothing — and *standing* it is not
+ * harmless. A markdown node answers the click that lands on it and stops it (`click_routing.ts`),
+ * so a press whose click a node took is never read by `endedADrag`; it lies in wait for the
+ * next click that does reach the page, and refuses the caret to a click that merely happened
+ * to arrive while something was selected.
+ *
+ * So the release, wherever the browser delivers it, is the end of the press: one that lands
+ * within the click's own threshold is forgotten, and one that travelled is kept — it is
+ * exactly the press a drag's click is read against. A cancelled gesture is forgotten too:
+ * no click follows it, so there is nothing for the press to answer.
  */
 export function watchPointerPresses(root: HTMLElement): void {
   root.addEventListener(
@@ -55,6 +69,21 @@ export function watchPointerPresses(root: HTMLElement): void {
     },
     true
   );
+  document.addEventListener(
+    'pointerup',
+    (event) => {
+      if (
+        pressed &&
+        Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) < DRAG_THRESHOLD
+      ) {
+        pressed = null;
+      }
+    },
+    true
+  );
+  document.addEventListener('pointercancel', () => {
+    pressed = null;
+  }, true);
 }
 
 /**

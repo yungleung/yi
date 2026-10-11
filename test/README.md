@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-two of them (`probe:all` runs 161 and skips 21, each skip for the reason its
+a hundred and eighty-three of them (`probe:all` runs 162 and skips 21, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -102,6 +102,8 @@ lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 selection away with the caret so the next keystroke writes nothing —
 `select-across-blocks` — a drag that crosses a block boundary keeps the selection it made, while a
 margin click the pointer never moved through still places a caret —
+`press-released-where-it-started` — a press the node's own click left standing does not judge the
+next click, because a gesture released where it went down is not a drag —
 `select-in-code-block` — a drag inside a fenced block keeps the selection it made, though the click
 that ends it lands the caret back in the block whose own text is the shape being shown —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
@@ -263,5 +265,12 @@ live index; the newest probes carry a header naming what they cover:
   click with one fabricated press left in the page did **not** move it at all, and `t.click` did —
   `insert-link.js` lost its last check in a whole suite to exactly that, and passed by name the whole
   time.
+  The editor's own half of that is closed now, in the same rule: a press is forgotten when the
+  gesture is released where it went down — a gesture that travelled nowhere cannot have been a drag
+  — and when it is cancelled, which no click follows. What a bare click can still be judged against
+  is a press no release has ended, which a reader cannot make and a probe has to be caught making;
+  `press-released-where-it-started.js` holds the pair (the same click with no press, and with one a
+  node's click left standing) and fails against the old rule: measured there, the caret stayed where
+  the node's click put it, at 0, against the control's 15.
 - Name probes for the behaviour, not the file they touch.
 - A check prints `all checks passed` on success and the failures on stderr.
