@@ -218,6 +218,29 @@ live index; the newest probes carry a header naming what they cover:
   (`osascript -e 'tell application "System Events" to set frontmost of (first process whose name is
   "yi") to true'` is what this project's sessions use), and read a probe that only sometimes
   finishes as too long whatever the window was doing.
+  It is not only the clock: an occluded webview stops the *frames*, so what depends on the
+  frame-scheduled sync of the window fails outright rather than slowly — measured, four probes of
+  that kind (`document-opens-at-its-top`, `document-session-restart`, `completion`,
+  `footnote-label-edge`) failed at the five-second line while the app was behind, and passed by
+  name at 2 900–4 200 ms with it in front. Two things put it behind without anyone noticing.
+  **A click that lands on a link in the demo document opens it in the system's browser**: the app
+  is right to open it and the browser then takes the front, so a probe that clicks over prose
+  should stand in for the opener the way `footnote-preview.js` does — and a sweep that comes back
+  with frame-dependent failures should look at what is frontmost before believing them. And a
+  window that has been **closed** leaves the process answering with a page that never paints at
+  all: the tell is the page's own, `document.hidden === true` (`visibilityState: "hidden"`, and
+  `document.hasFocus()` false), and a sweep on such a page measured 5 007 ms for *every* probe,
+  each one recovered, with the same four failing. Restarting `npm run tauri dev` clears both.
+- **A run that died mid-probe leaves the *config* where the probe put it.** The harness reads the
+  config before a run and writes it back after (`--with-workspace` does it for the workspace and the
+  bibliography; a probe that points the app at a folder of its own restores it itself), and none of
+  that happens when the app is gone before the probe reports — measured, after a sweep whose app had
+  died: `get_config` still named a workspace the fixtures' notes are not in, and five probes that
+  silently depend on the fixtures (`completion-wikilink`, `document-stack`, `document-stack-ask`,
+  `document-stack-restore`, `settings-push-on-open`) failed *identically on `main` and on the branch
+  under test*, on a freshly started app. Read `get_config` before believing a cluster of failures
+  like that, and put the workspace back through the app's own path (`t.openWorkspace` is the one
+  `test/probes/lib.js` hands a probe).
 - A file read over the raw bridge (`plugin:fs|read_text_file`) comes back as an **`ArrayBuffer`**,
   and `Uint8Array.from(buffer)` on one is an *empty* array rather than its bytes — take it as it
   is: `bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)`, which is what the plugin's
