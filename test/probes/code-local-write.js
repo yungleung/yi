@@ -1,19 +1,27 @@
 /**
- * What writing into a highlighted code block *locally* would cost, and what it would show.
+ * What writing into a highlighted code block *locally* would show: the writes that leave
+ * the markup exactly as a fresh render of the same document would.
  *
  * A keystroke inside a fenced code block costs 25–34 ms on a 4.7 KB block because the block
  * is rebuilt: the write half of the fast path needs one tagged text node and highlight.js
- * leaves none (`typing-cost-by-kind.js`). The other shape is to write the character into the
- * text node the caret is in anyway — the plain write's own 0–1 ms patch — and let the
- * highlight be refreshed when the burst stops, the way the deferred check already parses once
- * a burst. That trade would put the *previous* text's colours on screen for the length of a
- * burst, and this probe measures exactly that: it patches a text node by hand, times it, and
- * compares the element it left with a fresh render of the same document by the app's own
- * block factory — the app's own answer to "what should this look like".
+ * leaves none (`typing-cost-by-kind.js`). The other shape is to write the character into
+ * the text node the caret is in anyway — the plain write's own 0–1 ms patch — and let the
+ * highlight be refreshed when the burst stops. That trade puts the *previous* text's
+ * colours on screen for the length of a burst, and this probe measures the half of that
+ * where it does not show: it patches a text node by hand, times it, and compares the
+ * element it left with a fresh render of the same document by the app's own block factory —
+ * the app's own answer to "what should this look like".
  *
- * Reported per case: the write's cost (with the one height read a fast path makes), whether
- * the markup is identical to a fresh render, how many characters of the visible text carry
- * the wrong styling when it is not, and what the repair costs when the burst ends.
+ * The other half — the delimiters a typed character *opens or closes*, where the rest of
+ * the line keeps its old colours until the burst stops — is
+ * `code-local-write-stale.js`: the two no longer fit one probe's five seconds (measured:
+ * 3 121 ms for the nine cases together on a fresh page, and cut off on an app that had
+ * been driven for a while).
+ *
+ * Reported per case: the write's cost (with the one height read a fast path makes),
+ * whether the markup is identical to a fresh render, how many characters of the visible
+ * text carry the wrong styling when it is not, and what the repair costs when the burst
+ * ends.
  *
  * @covers src/ui/markdown/nodes/code_block.ts, src/ui/markdown/editing/typed_text.ts
  *
@@ -39,11 +47,9 @@
     { label: 'a letter in a string', needle: 'some', insert: 'x' },
     { label: 'a letter in a comment', needle: 'comment', insert: 'x' },
     { label: 'a digit in an identifier', needle: 'answer', insert: '7' },
-    { label: 'a quote in an identifier', needle: 'answer', insert: '"' },
     { label: 'a backtick in a string', needle: 'some', insert: '`' },
     { label: 'a slash in a comment', needle: 'a comment', insert: '/' },
-    { label: 'a slash after a slash (a comment starts)', needle: '/', insert: '/' },
-    { label: 'a quote closing a string', needle: 'string here', insert: '"' }
+    { label: 'a slash after a slash (a comment starts)', needle: '/', insert: '/' }
   ];
 
   /** Every character of an element's text with the classes its own span carries. */

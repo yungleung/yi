@@ -604,6 +604,27 @@ elements) unless it says otherwise.
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the
   end of the document leaves is on the line below it. Something in the work since this entry was
   written fixed it; nothing else in this ledger claims it.
+- **The four cost probes that sat on the bridge's 5 s budget are split into rounds that fit.**
+  `block-rebuild-cost.js` and `edit-cost.js` typed into the 323 KB note and were the suite's two
+  longest probes: measured at a 709 px window they took 5020 ms and 5037 ms, the same on the
+  layout without the A4 page, so it was the window and not the page. Each now has siblings, and
+  each was measured by name on the fixture note: `block-rebuild-cost.js` (the block's own parse,
+  build and swap) **1 795 ms**, `block-keystroke-cost.js` (the fast path's keys) **2 434 ms**,
+  `block-keystroke-structural-cost.js` (the asterisk the editor answers by rendering the block)
+  **3 113 ms**, `edit-cost.js` (the keystrokes at the end of the document as it loaded)
+  **~3 300 ms**, `edit-cost-notes.js` (the same with a thousand footnote definitions pasted on)
+  **~3 900 ms**, `code-local-write.js` **2 153 ms** and `code-local-write-stale.js` **619 ms** —
+  the local write into highlighted code, split into the writes that show nothing and the
+  delimiters that do.
+  Two of the four were not what the handoff said, and the measurements are the record. **What a
+  keystroke at the end of the fixture note costs is not a constant**: the window the renderer
+  mounts moves under the edit — 24 blocks mounted and 65 ms for one keystroke, then 484 blocks
+  (the whole note) and 1 105 ms for the next — so the edit rounds are bounded by the *clock* and
+  report how many keystrokes they got, rather than a count that can overshoot the budget.
+  **`edit-stability.js` is not long** (measured: 497 ms) and is not part of the split: inside a whole
+  suite it failed because the `edit-cost.js` above had been cut off mid-run and was *still typing
+  into the page* while the next probe's document was loaded — collateral damage the split fixes, and
+  one of the two failures that went away with it.
 
 ## Open, in the order to take them
 
@@ -629,22 +650,17 @@ elements) unless it says otherwise.
   The catalogues are already in the binary and `i18n::t` already reads them, so this is a pass over
   the Rust messages and a decision about the plugin ones — worth doing before a reader meets a
   mixed-language window.
-- **The window decides what these probes measure.** A few of them sit on the bridge's 5 s
-  budget, and a narrow one tips them over. `edit-cost.js` and `block-rebuild-cost.js` type into
-  the 323 KB note and are the suite's two longest probes: in a pane narrower than the one
-  `npm run tauri dev` opens with, that note wraps into more lines and they no longer finish
-  inside the harness's 5 s budget — measured at a 709 px window: 5020 ms and 5037 ms, and the
-  same on the layout without the A4 page, so it is the window and not the page. The project's
-  own answer to a probe that needs longer is to split it (`docs/ai-context.md`); these are the
-  ones it now applies to. The same budget is what makes the suite's tail noisy: the last full run
-  was **101/104 (14 skipped)** with `edit-cost.js`, `edit-stability.js` and `insert-rule.js` (below)
-  red, where the run before it (**97/101**) also failed `display-math-source.js` — which passes
-  when run alone, measuring 5006 ms with only 3000 ms of that in its own sleeps. A *click* is the
-  other thing the pane decides, and a wider one is not always kinder: at a 1200 px window
+- **What a *click* costs under a pane, and the suite's noisy tail.** The probes that sat on the 5 s
+  budget are split (see *Closed*), and what is left is the other half of the same subject: a wider
+  pane is not always kinder. At a 1200 px window
   `description-list.js`'s "typing after three widgets" clicked the end of its line in the A4
   layout in two runs and typed in the right place in the full-width one — and passed the next run
   in the A4 layout — so that check is measuring the page's scale and the frame it lands on as much
-  as the caret's mapping.
+  as the caret's mapping. `a4-page.js` fails three checks only inside a sweep and passes with
+  identical numbers by name (on `main` and on the pre-merge `f7e0fb0`), so a bisect of the sweep
+  run — the probes before it, then it — is what a fix has to start from. And
+  `display-math-source.js` measures 5006 ms when run alone, 3000 ms of it its own sleeps, and
+  passes: the tail of a sweep is noisy for the same reason the cost probes were.
   An **occluded** window is the other half of this, and the larger one: the system throttles a
   background window's timers, so every `t.sleep(...)` a probe takes can cost a second of wall clock.
   Measured while the versioning probes were written — the same probe, in the same state, took
@@ -692,7 +708,8 @@ before deciding"; what is left is the "measure before deciding" column below.
   into the text node *inside* the highlighted span that holds it — the plain write's own
   patch — and refresh the highlight when the burst stops, on the deferred check's existing
   timer. Measured in the running app, with the app's own renderer as the reference for what a
-  fresh render would produce (`test/probes/code-local-write.js`):
+  fresh render would produce — the two that go stale are `test/probes/code-local-write-stale.js`
+  now, the writes that show nothing are `test/probes/code-local-write.js`:
 
   | Typed | Write | Stale characters on screen | Re-highlight when the burst ends |
   | --- | --- | --- | --- |

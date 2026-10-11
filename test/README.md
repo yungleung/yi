@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and sixty-eight of them (`probe:all` runs 153 and skips 15, each skip for the reason its
+a hundred and eighty-one of them (`probe:all` runs 160 and skips 21, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -108,10 +108,18 @@ that ends it lands the caret back in the block whose own text is the shape being
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
-reader left behind), what a keystroke costs (`edit-cost`, `scroll-cost`, `block-rebuild-cost`,
+reader left behind), what a keystroke costs (`edit-cost` — the keystrokes at the end of the
+document as it loaded, and `edit-cost-notes` — the same in a text with a thousand footnote
+definitions pasted on: each round is bounded by the clock, because what a keystroke there costs is
+not a constant; `scroll-cost`, `block-rebuild-cost` — what parsing, building and replacing the block
+a keystroke lands in costs, `block-keystroke-cost` — the fast path's keys and the geometry reads
+they make, and `block-keystroke-structural-cost` — the asterisk the editor answers by rendering the
+block, from the same caret the fast path is measured at),
 `typed-text`,
 `plain-edit-parse`, `plain-edit-markers`, `block-offset-cost`, `load-cost`,
-`typing-cost-by-kind`, `code-local-write`, `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
+`typing-cost-by-kind`, `code-local-write` — writing into a highlighted code block locally, which
+shows nothing while the write is a letter or a digit, and `code-local-write-stale` — the delimiters,
+where the rest of the line keeps its old colours — `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
 localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is; `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
