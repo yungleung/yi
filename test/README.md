@@ -240,6 +240,11 @@ live index; the newest probes carry a header naming what they cover:
   non-empty `failed` exits non-zero, so `npm run probe:all` fails with it (it did
   not always — two probes had been failing quietly, see `docs/roadmap.md`). Use
   `t.report(...)` for progress, so a bridge timeout still yields evidence.
+  Every report a run makes is stamped with that run, and the harness reads back only its own:
+  a probe cut off at five seconds keeps running while the next probe drives the page, so
+  without the stamp its numbers were read as the next probe's — measured, a probe that never
+  reported at all passed on another run's result (`test/probe_stash.mjs` is the rule,
+  `docs/testing.md` the account).
 - **`raw()` leaves the document selected.** Reading the whole text is Select All + Copy, and the app
   paints that selection a moment after the command; a probe that reads the document and then types
   *without clicking* replaces the whole document with what it typed (`raw()` then `t.key('x')` leaves

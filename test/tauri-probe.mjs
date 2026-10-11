@@ -30,6 +30,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ownFrame } from './probe_stash.mjs';
 
 const usage =
   'usage: node test/tauri-probe.mjs <probe.js> | --install | --reload\n' +
@@ -80,20 +81,43 @@ if (probe !== null) {
 const documentText = documentArgument
   ? readFileSync(withFixture ? join(fixturesRoot, documentArgument) : documentArgument, 'utf8')
   : null;
+/**
+ * What this run stamps its own stash with.
+ *
+ * The bridge gives one script five seconds, and a probe that outlives it keeps running while
+ * the harness polls the page for what it stashed. That stash is one slot for the whole page,
+ * so a report has to say which run made it: the wrapper below captures this token in its own
+ * script's scope — a later run can overwrite the global but not that — and only a frame
+ * carrying it is read back (`test/probe_stash.mjs`). Measured without it: a probe that stashed
+ * a result three seconds after its own run was over, and a probe that then outlived the bridge
+ * and never reported at all, printed the *first* probe's result as recovered and exited 0 —
+ * a false pass, which in a sweep is worse than a failure.
+ */
+const runToken = `${process.pid.toString(36)}-${Date.now().toString(36)}`;
 // A probe that loads a document and then reads layout can outlive the
 // bridge's budget while the page is still settling. The wrapper stashes the
 // result, so a timed-out probe is still readable a moment later.
 const wrappedProbe = probe
   ? `(async () => {
+  const run = ${JSON.stringify(runToken)};
+  window.__probeRun = run;
   window.__probeResult = undefined;
   window.__probeSteps = undefined;
+  // Every report this run makes is stamped with it, so a probe that outlives the bridge
+  // cannot leave steps a later run would read as its own.
+  const report = window.__t.report;
+  window.__t.report = (value) => {
+    window.__probeSteps = { run, value };
+    return report(value);
+  };
   window.__probePaths = ${JSON.stringify(probePaths)};
   window.__probeDoc = ${JSON.stringify(documentText)};
   ${documentText === null ? '' : 'await window.__t.load(window.__probeDoc);'}
-  window.__probeResult = await (
+  const value = await (
 ${probe}
   );
-  return window.__probeResult;
+  window.__probeResult = { run, value };
+  return value;
 })()`
   : null;
 
@@ -309,10 +333,13 @@ async function runProbe() {
   // itself: `versioning_use_git` — a global in the Rust process, which a page reload does not
   // clear. A run cut off by the bridge then costs the next probe nothing, and the stash it left is
   // never mistaken for the previous one's result.
+  // The one seam a probe can leave set on the app itself goes back before the probe runs:
+  // `versioning_use_git` is a global in the Rust process, which a page reload does not clear.
+  // The page's own stash is *not* cleared here — a run's frames say which run made them
+  // (`test/probe_stash.mjs`), and a clear sent in another script raced the probe it was meant
+  // to tidy up after.
   await call(
     `(async () => {
-       window.__probeResult = undefined;
-       window.__probeSteps = undefined;
        try {
          await window.__TAURI_INTERNALS__.invoke('versioning_use_git', { git: null });
        } catch (error) {
@@ -486,6 +513,10 @@ if (reply.success) {
 // while it settles. Only a probe that *finished* — one whose wrapper returned —
 // counts as recovered: `__probeSteps` holds whatever the probe reported on the
 // way, so treating that as success once hid a probe that threw half-way through.
+// And only *this* run's frames count: what is stashed is stamped with the run that
+// wrote it, because a probe that outlived the bridge is still running while the next
+// probe drives the page, and its report is not the next probe's (measured before this:
+// one run printed another's result as recovered and exited 0).
 for (let attempt = 0; attempt < 8; attempt += 1) {
   await sleep(4000);
   const recovered = await call(
@@ -498,16 +529,18 @@ for (let attempt = 0; attempt < 8; attempt += 1) {
   } catch {
     state = null;
   }
-  if (state && state.result !== null) {
+  const result = state ? ownFrame(state.result, runToken) : null;
+  if (result !== null) {
     console.log(
       '(recovered after the bridge timed out; the probe had already run — the bridge gives a ' +
         'script 5 s, so this is what a longer probe always looks like, and the bridge: line ' +
         'below says whether the app was answering while it ran)'
     );
-    reportResult(state.result);
+    reportResult(result);
   }
-  if (state && state.steps !== null) {
-    console.error(JSON.stringify(state.steps, null, 2));
+  const steps = state ? ownFrame(state.steps, runToken) : null;
+  if (steps !== null) {
+    console.error(JSON.stringify(steps, null, 2));
     console.error('(the probe did not finish; the steps above are what it reported)');
     process.exit(1);
   }
