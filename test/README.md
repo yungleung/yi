@@ -52,7 +52,7 @@ methodology; this file is the index and the conventions.
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
 | `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
-| `check-workspace-folders.mjs` | Where a new note may go (`services/workspace_folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read |
+| `check-workspace-folders.mjs` | Where a new note may go (`services/workspace_folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read — including which file an image destination names, and that a `%20` spelling is tried *resolved* before it is tried as written |
 | `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
@@ -147,8 +147,9 @@ selection becoming the alt text, and the empty image a clipboard the app cannot 
 `insert-image-blob` — a picture on the clipboard, the card with it drawn in it, the name it starts
 from, the file saved where the settings say, and the image *painted* once the note names it;
 `image-path-with-spaces` — a path a reader wrote by hand, spaces and all, painted from the note's
-own folder and from the folder the settings name, with the prose it shares its paragraph with left
-as prose), the
+own folder and from the folder the settings name, and a path that spells the space as a browser
+does (`%20`) read as the file it resolves to, with the prose it shares its paragraph with left as
+prose), the
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the

@@ -8,7 +8,9 @@
  * (`syntax/image_paths.ts`); this probe holds the whole way from there — the repaired line, the
  * two folders a relative path is resolved against (the note's own first, the settings' next, and
  * a first candidate that is not there falls through to the second), the asset protocol and the
- * pixels on screen.
+ * pixels on screen. The same path *copied* out of something else may spell the space the way a
+ * browser spells it, `%20`, and that is still the file it names (`services/workspace_folders.ts`),
+ * which is the last case here.
  *
  * The probe makes its own folder under the home directory — what the file plugin and the asset
  * protocol are scoped to — removes it again, and puts the image-folder setting back. It points the
@@ -55,6 +57,17 @@
   };
   /** Whether the note is showing the markdown it was written as instead of a picture. */
   const showsTheMarkdown = () => (t.prose().textContent ?? '').includes('![');
+  /**
+   * The picture once the page has it. The candidates are tried one at a time, each by the error of
+   * the one before it, so a picture from the *second* (or a later) candidate arrives some frames
+   * after the note does: waiting for the pixels beats waiting a fixed time and hoping.
+   */
+  const paintedEventually = async (alt) => {
+    for (let attempt = 0; attempt < 25 && painted(alt).width === 0; attempt += 1) {
+      await t.sleep(100);
+    }
+    return painted(alt);
+  };
 
   let previousConfig = null;
   try {
@@ -82,20 +95,30 @@
       `${beside}/continued.md`,
       '![shot](my shot.png)\nThe paragraph carries on here.\n'
     );
+    await files.writeTextAtomically(
+      `${beside}/encoded.md`,
+      'A path written the way a browser spells it.\n\n![shot](my%20shot.png)\n'
+    );
     previousConfig = await configManager.update({ image_folder: images });
-    await t.sleep(600);
+    // The setting reaches the page through the app's own announcement (`config_changed` →
+    // `main.ts`), so wait for the folder the images are read with to *be* the one named here: a
+    // run that is cut off leaves its own announcement in flight, and a probe that measured
+    // through that would be reading a folder this run has already removed.
+    const urls = await t.app('/src/ui/image/image_urls.ts');
+    for (let attempt = 0; attempt < 25 && urls.imageBases().images !== images; attempt += 1) {
+      await t.sleep(100);
+    }
+    check('the app reads images from the folder the probe named', urls.imageBases().images === images, urls.imageBases());
 
     // 1. Beside the note: the file's own name, spaces and all.
     await session.documentSession.openPath(`${beside}/note.md`);
-    await t.sleep(700);
-    check('a path with spaces beside the note shows the picture', painted('shot').width === 2, painted('shot'));
-    check(
-      'and it was read from the note’s own folder',
-      painted('shot').from === 'beside/my shot.png',
-      painted('shot')
-    );
+    await t.sleep(400);
+    const besideTheNote = await paintedEventually('shot');
+    check('a path with spaces beside the note shows the picture', besideTheNote.width === 2, besideTheNote);
+    check('and it was read from the note’s own folder', besideTheNote.from === 'beside/my shot.png', besideTheNote);
     check('and the note is not showing that line as markdown', !showsTheMarkdown(), t.prose().textContent?.slice(0, 60));
-    check('a path without spaces beside it still shows its picture', painted('plain').width === 2, painted('plain'));
+    const withoutSpaces = await paintedEventually('plain');
+    check('a path without spaces beside it still shows its picture', withoutSpaces.width === 2, withoutSpaces);
 
     // 2. The shape most of a reading library has: the image is the paragraph's first line and the
     //    prose carries on under it, so the picture and the words are in one paragraph. The click
@@ -104,27 +127,39 @@
     await session.documentSession.openPath(`${beside}/continued.md`);
     await t.sleep(400);
     await t.click(t.prose().querySelector('.markdown-block'), 0.99, 0.99);
-    await t.sleep(500);
-    check('a picture with prose under it still shows', painted('shot').width === 2, painted('shot'));
+    const withProse = await paintedEventually('shot');
+    check('a picture with prose under it still shows', withProse.width === 2, withProse);
     check(
       'and the words under it are still the words',
       (t.prose().textContent ?? '').includes('The paragraph carries on here.'),
       t.prose().textContent?.slice(0, 60)
     );
 
-    // 3. In the folder the settings name: the note's own folder has no such file, so the second
+    // 3. The same path copied out of something else, spelling the space the way a browser does.
+    await session.documentSession.openPath(`${beside}/encoded.md`);
+    await t.sleep(400);
+    const encoded = await paintedEventually('shot');
+    check('a path written with %20 shows the picture', encoded.width === 2, encoded);
+    check(
+      'and it was read from the file that path resolves to',
+      encoded.from === 'beside/my shot.png',
+      encoded
+    );
+
+    // 4. In the folder the settings name: the note's own folder has no such file, so the second
     //    candidate is the one that answers.
     await session.documentSession.openPath(`${notes}/other.md`);
-    await t.sleep(700);
+    await t.sleep(400);
+    const fromTheImageFolder = await paintedEventually('shot');
     check(
       'a path with spaces in the settings’ image folder shows the picture',
-      painted('shot').width === 2,
-      painted('shot')
+      fromTheImageFolder.width === 2,
+      fromTheImageFolder
     );
     check(
       'and it was read from the folder the settings name',
-      painted('shot').from === 'images/my shot.png',
-      painted('shot')
+      fromTheImageFolder.from === 'images/my shot.png',
+      fromTheImageFolder
     );
   } finally {
     if (previousConfig !== null) {

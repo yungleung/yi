@@ -181,6 +181,14 @@ function inside(folder: string | null, file: string): string | null {
  * from the document's folder first and from the image folder after it, and an absolute one is
  * itself. Anything with a scheme of its own (a web URL, a `data:` URL) names no file at all and
  * answers nothing, so the caller leaves it to the webview.
+ *
+ * A path *copied* out of something else may spell what a file name holds the way a browser spells
+ * it — `my%20shot.png` for a file called `my shot.png` — and that is the file it names. So the
+ * escapes are resolved as a spelling of their own, and it is tried *first*: the resolved path is
+ * the one the author meant, and the spelling as written is the rarer case (a file whose own name
+ * holds the escape). Measured, that order is also the only one that works: the webview accepts the
+ * 404 the asset protocol answers for a `%2520` URL as a *load*, so a chain that reached the
+ * written spelling first would stop there and never try the file that is really there.
  */
 export function imagePathCandidates(
   destination: string,
@@ -191,20 +199,55 @@ export function imagePathCandidates(
   if (path === '' || /^[a-z][a-z0-9+.-]*:/i.test(path)) {
     return [];
   }
-  if (path.startsWith('/') || path.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(path)) {
-    return [path];
-  }
   const candidates: string[] = [];
+  for (const spelling of spellingsOf(path)) {
+    for (const path of pathsFor(spelling, base, documentFolder)) {
+      if (!candidates.includes(path)) {
+        candidates.push(path);
+      }
+    }
+  }
+  return candidates;
+}
+
+/** The path the destination resolves to, when it holds escapes, and then the destination itself. */
+function spellingsOf(path: string): string[] {
+  const resolved = resolveEscapes(path);
+  return resolved === null ? [path] : [resolved, path];
+}
+
+/**
+ * The path with its percent-escapes resolved (`my%20shot.png` → `my shot.png`), or null when it
+ * holds none — or holds a `%` that is not one, which makes the path exactly what it says.
+ */
+function resolveEscapes(path: string): string | null {
+  if (!/%[0-9A-Fa-f]{2}/.test(path)) {
+    return null;
+  }
+  try {
+    const resolved = decodeURIComponent(path);
+    return resolved === path ? null : resolved;
+  } catch {
+    return null;
+  }
+}
+
+/** One spelling of a destination: the files it names, in the order they are tried. */
+function pathsFor(spelling: string, base: string | null, documentFolder: string | null): string[] {
+  if (spelling.startsWith('/') || spelling.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(spelling)) {
+    return [spelling];
+  }
+  const paths: string[] = [];
   for (const folder of [documentFolder, base]) {
     if (folder === null) {
       continue;
     }
-    const joined = joinPath(folder, path);
-    if (joined !== null && !candidates.includes(joined)) {
-      candidates.push(joined);
+    const joined = joinPath(folder, spelling);
+    if (joined !== null) {
+      paths.push(joined);
     }
   }
-  return candidates;
+  return paths;
 }
 
 /**
