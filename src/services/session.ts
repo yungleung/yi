@@ -17,11 +17,12 @@
  *   webview is not promised a moment on the way out.
  *
  * May import: the session's rules (`session_rules.ts`), the app's config, events and file
- * commands, and the dialog plugin. Upholds: one copy of a document — the one in the session — so
- * nothing here keeps a second text of its own.
+ * commands (`api/files`, the file plugin's read), and the dialog plugin. Upholds: one copy of a
+ * document — the one in the session — so nothing here keeps a second text of its own.
  */
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { readTextFile } from '@tauri-apps/plugin-fs';
 import { writeTextAtomically } from '../api/files';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
@@ -174,6 +175,18 @@ class DocumentSession {
     }
     this.announce();
     await this.persist();
+  }
+
+  /**
+   * A file's own text read and opened: what a click on a row of the tree and a ⌘-click on a
+   * wikilink both mean, and the one place the two agree about how a path becomes the document on
+   * screen. Nothing is said about a file that cannot be read — a caller that can name it in its
+   * own message catches this (`ui/workspace/tree.ts` says which file, `ui/editor_panel.ts` says
+   * which wikilink target), because only it knows what to call the thing that failed.
+   */
+  async openPath(path: string): Promise<void> {
+    const content = await readTextFile(path);
+    await this.openFile({ path, content });
   }
 
   /**

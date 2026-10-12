@@ -34,6 +34,7 @@ const exempt = {
   'task-checkbox': 'a flag, not an offset',
   'footnote-ref': 'a footnote label, not an offset',
   'footnote-def': 'a footnote label, not an offset',
+  'wikilink-target': 'the target a wikilink names, a name, not an offset',
   math: 'the formula’s own source, kept as a value',
   citation: 'the citation’s own source, kept as a value the preview shows a reference for',
   display: 'the formula’s mode, a flag',

@@ -64,7 +64,8 @@ import {
   routeFootnoteClick,
   routeLinkClick,
   routePointerClick,
-  routeTaskClick
+  routeTaskClick,
+  routeWikilinkClick
 } from './click_routing';
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
@@ -208,7 +209,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // The routed clicks, in the order they have to run: a checkbox and a footnote
     // marker are handled before a node can place a caret where the click landed, a
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
-    // its source, and a click that missed every node still places a caret.
+    // its source, a wikilink opened with ⌘ (Ctrl) asks the app for the document it
+    // names, and a click that missed every node still places a caret.
     this.contentView.addEventListener('click', (event) => routeTaskClick(this.context, event), true);
     this.contentView.addEventListener(
       'click',
@@ -216,6 +218,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       true
     );
     this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
+    this.contentView.addEventListener('click', (event) => routeWikilinkClick(event), true);
     // Where the pointer goes down, for the click that may end a drag: a drag-selection
     // crosses blocks, and the click it ends with lands on the page, not on a node (see
     // `editing/pointer.ts`).

@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-five of them (`probe:all` runs 164 and skips 21, each skip for the reason its
+a hundred and eighty-six of them (`probe:all` runs 164 and skips 22, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -89,7 +89,10 @@ tables
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
-with no id is written by, which its title beside it must not be mistaken for — the citation probe
+with no id is written by, which its title beside it must not be mistaken for; `wikilink-cmd-click` —
+the same resolver followed rather than typed: ⌘-click opens the document a rendered wikilink names,
+through the session, the way a click on the tree's own row does, a target no document answers to is
+said so, and a plain click still opens the link's own source — the citation probe
 also holds the popover's own geometry: a row flush inside the card, and a card that stays put while
 the arrows move), footnotes
 (`footnote-*` — the button, the marker's two clicks and its source,

@@ -2,9 +2,10 @@
  * The editor panel: the shell around the markdown editor — its state in the session, the toolbar
  * row, the find bar, and the news it emits when the document it holds changes.
  *
- * May import: the component base, the editor itself, the session and the events. Upholds: one panel
- * per window, and the document it shows is the session's — the panel captures and restores the view
- * around the editor rather than keeping a text of its own.
+ * May import: the component base, the editor itself, the session, the wikilink resolver, the
+ * messages and the events. Upholds: one panel per window, and the document it shows is the
+ * session's — the panel captures and restores the view around the editor rather than keeping a
+ * text of its own.
  */
 
 /**
@@ -25,7 +26,11 @@ import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
 import type { DocumentView, SeenView } from '../services/session_rules';
 import { documentSession } from '../services/session';
+import { documentManager } from '../services/document_manager';
+import { MESSAGE_EVENT } from '../services/messages';
+import { t } from '../services/i18n';
 import { DOCUMENT_OPENED } from './workspace/tree';
+import { setWikilinkOpenHandler } from './markdown/wikilink_open';
 import * as imageSources from './image/image_urls';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
@@ -37,6 +42,12 @@ export class MarkdownEditor extends BaseComponent {
     super('div', ['flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
     this.innerEditor = new WysiwygMarkdownEditor();
     this.element.appendChild(this.innerEditor.element);
+
+    // A wikilink clicked with ⌘ (Ctrl) asks for the document it names. The editor knows the target
+    // (`markdown/wikilink_open.ts` is the port it asks through) and this is the shell that can
+    // answer: the resolver turns a target into a path, and the session takes it from there — the
+    // same way a click on the tree's own row arrives.
+    setWikilinkOpenHandler((target) => void this.openWikilink(target));
 
     // Open documents clicked in the workspace tree without a global reference.
     void eventManager.on(DOCUMENT_OPENED, (event: any) => {
@@ -71,6 +82,32 @@ export class MarkdownEditor extends BaseComponent {
   setContent(content: string): void {
     this.innerEditor.setContent(content);
     void eventManager.emit(MARKDOWN_CONTENT_CHANGED, this.getContent());
+  }
+
+  /**
+   * Opens the document a wikilink target names, the way a click on the tree's own row opens one.
+   *
+   * A target is resolved by the workspace's own index — the file's name or its frontmatter id
+   * (`services/document_manager.ts`) — and a target nothing answers to is *said so*: a reader who
+   * asked to follow a link is looking at a link that goes nowhere, and the message names it. A file
+   * that resolves but cannot be read says that instead, with the reason the read gave.
+   */
+  private async openWikilink(target: string): Promise<void> {
+    const path = await documentManager.resolve(target);
+    if (path === null) {
+      void eventManager.emit(MESSAGE_EVENT, { text: t('wikilink.notFound', { target }) });
+      return;
+    }
+    try {
+      await documentSession.openPath(path);
+    } catch (error) {
+      void eventManager.emit(MESSAGE_EVENT, {
+        text: t('wikilink.openFailed', {
+          target,
+          message: error instanceof Error ? error.message : String(error)
+        })
+      });
+    }
   }
 
   /**

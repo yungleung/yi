@@ -120,6 +120,8 @@
   "tree.delete.no": "保留",
   "message.close": "关闭提示",
   "completion.empty": "这里没有可选项。",
+  "wikilink.notFound": "没有名为“{target}”的笔记。",
+  "wikilink.openFailed": "无法打开笔记“{target}”：{message}",
   "newNote.title": "新建 Markdown",
   "newNote.folder": "文件夹",
   "newNote.name": "文件名",

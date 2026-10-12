@@ -120,6 +120,8 @@
   "tree.delete.no": "Conservar",
   "message.close": "Cerrar la notificación",
   "completion.empty": "No hay nada que ofrecer.",
+  "wikilink.notFound": "No hay ninguna nota llamada «{target}».",
+  "wikilink.openFailed": "No se pudo abrir la nota «{target}»: {message}",
   "newNote.title": "Markdown nuevo",
   "newNote.folder": "Carpeta",
   "newNote.name": "Nombre del archivo",
