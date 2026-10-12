@@ -754,6 +754,43 @@ elements) unless it says otherwise.
   init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
   and a probe that only sometimes finishes is read as too long whatever the window was doing;
   `test/README.md` says so where probes are written.
+- **`fence-exit.js`'s display-formula case eats its document: a Select All range is still live when
+  the next case types.** Open. `test/probes/fence-exit.js` types `End`, `Enter` and `N` on the
+  closing `$$` line of a formula and reads `"N"` back where the file's four blocks should be (three
+  runs of three), with the fenced-code and frontmatter cases before it passing. The chain is now
+  measured end to end, and the missing link is one question wide.
+  **The edit's range is the whole document.** Instrumenting `context.ts: applyEdit` shows the Enter
+  arriving as `applyEdit(0, 24, '\n') ← insertNewline`, and `insertNewline`/`insertAt` get their
+  range from `editorSelection` — which prefers the *browser's* range over the editor's own state
+  (`editing/selection.ts:28`). **That range was anchored on the prose root**: `boundaryOffset` sends a
+  root-anchored boundary to `rootBoundaryOffset`, whose `start` branch answers `0` for "before the
+  first child" — its own comment says that is what Select All produces — and whose `end` branch falls
+  through to `documentLength`. So Select All's shape maps to `0..documentLength`, exactly the range
+  the Enter was handed. `t.raw()` *is* Select All + Copy, and the app makes that selection itself
+  (`editing/clipboard.ts: selectAll`), delivered through its event bus.
+  **And what is taken *is* that range, not a caret.** Instrumenting `editorSelection` itself (the one
+  read that decides) shows every case handing the editor a **live, non-collapsed**
+  `prose root@0 .. prose root@N` — Select All's own shape, taken four times in four cases (case 3's
+  is `root@0 .. root@4`). So the caret is not the culprit and neither is the mapping: the browser's
+  selection really is a Select All range at the moment the keys run.
+  Five fixes were written, run and reverted for measuring nothing: cancelling
+  `scheduleNativeSelection`'s pending paint from the caret setters (a paint log shows that path is
+  never taken here); a probe-side wait for the editor's own selection to fall silent (traced `null`
+  at every step); clearing the browser's ranges in `raw()` until they are gone (a fixed wait and then
+  a poll); a `rangeOffsets` rule that a *collapsed* range is one position (correct on its face, and
+  `fence-exit` unmoved); and clearing the ranges in a node's own click handler unless the gesture
+  ended a drag — that last one is the shape a fix will have, since `editable_node.ts: placeCaretAt`
+  reaches `showCaret` without dropping the ranges the way `context.ts: placeCaret` does for a click
+  on the page, but on its own it did not move the probe either.
+  The next measurement is narrow: wrap `Selection.prototype.addRange`/`removeAllRanges` *and* the
+  `selectionchange` handler for one failing run and print them on one timeline with the probe's own
+  steps — the app's `select_all` delivery time against the probe's clear is the one number missing,
+  and it decides whether the fix is in the harness's read, in `editorSelection`'s preference for the
+  browser's range, or in what re-creates it after a clear.
+  The probe's other half is fixed and landed: it waits for the block it clicks to stop moving
+  (the caret check failed three of three before the wait, passes three of three after it).
+  `undo-run-taken-back.js` is flaky in the same runs but has *not* been shown to be the same fault;
+  it is its own measurement.
 The structural work — splitting the modules that carry two jobs, one home for the `data-*-from`
 tags, the header check over the whole of `src/`, the class-name collisions — is not listed here: it
 is `docs/structure.md`'s list, with its evidence, in the order it is worth taking.

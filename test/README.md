@@ -291,6 +291,10 @@ live index; the newest probes carry a header naming what they cover:
   `'x'` — measured). It is the app behaving as any editor does over a live selection; click the line
   you mean to type in first. `click-away-deselects.js` holds both halves: the selection after Select
   All, and the click outside that takes it away with the caret.
+  A read's selection does not, on its own, explain what fails: measured while `fence-exit.js` was
+  being fixed, the *editor* holds the read's selection only until the read's own clear lands as a
+  `selectionchange`, and the case that eats its document does so with the editor's selection
+  `null` (traced). The open item in the roadmap says what is ruled out and what to measure next.
 - **A click a probe makes is a gesture: send the press with it.** The editor remembers where the
   pointer last went down, to tell a click from the drag its click may be ending — a gesture that
   travelled a few pixels and left a selection asks for no caret (`editing/pointer.ts: endedADrag`).
