@@ -330,6 +330,19 @@ starts an item (`- `) — and the line above is never swallowed. Each rule has i
 (`check-fence-open.mjs`, `check-bare-markers.mjs`) and its probe (`fence-open-typing.js`,
 `bare-marker-typing.js`).
 
+**A path a reader writes by hand has spaces in it, and markdown refuses those**: a link destination
+may not contain a space unless it is wrapped in `<…>` (which is what the app *writes*,
+`syntax/link_edits.ts`), so `![shot](my shot.png)` — the way another editor writes a path, and how a
+reading library of imported notes is written — is a paragraph of that literal text, and the picture
+it names is never asked for. `syntax/image_paths.ts` is the repair: such a run is read as the image
+wherever it stands, since the `)` ends the path, and the words around it stay text; an escaped
+`\![` and code are left alone, because those characters are meant literally. Its check is
+`check-image-paths.mjs` and its probe is `image-path-with-spaces.js`, which holds the file beside
+the note and the one in the settings' image folder, through the asset protocol to the pixels. The
+same path *copied* may spell the space as `%20`, and `services/workspace_folders.ts` tries the
+spelling that resolves to the file **before** the one as written — a `%2520` URL's 404 is what the
+webview reports as a *load*, so the written spelling would end the search where it stands.
+
 **A fenced block has two shapes**, decided by the caret, and one component draws both
 (`nodes/fence_text.ts`): its *body* with the delimiters hidden — a display formula's KaTeX comes
 from its parse instead (`nodes/math.ts`) — while the caret is elsewhere, and its *own text*,

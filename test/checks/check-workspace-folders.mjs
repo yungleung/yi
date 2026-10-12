@@ -177,6 +177,41 @@ check(
   []
 );
 
+// A path copied out of something else may spell a space as `%20` — what a browser shows for a file
+// name with one — and the file it names is the one that spelling *resolves* to, so that is tried
+// first. The spelling as written is tried after it: a file whose own name holds the escape is
+// found there, and nothing is lost by asking second.
+check(
+  'a percent-encoded destination is also read as the file it resolves to',
+  imagePathCandidates('my%20shot.png', '/pics', '/vault/notes'),
+  [
+    '/vault/notes/my shot.png',
+    '/pics/my shot.png',
+    '/vault/notes/my%20shot.png',
+    '/pics/my%20shot.png'
+  ]
+);
+check(
+  'an absolute one too',
+  imagePathCandidates('/pics/my%20shot.png', '/pics', '/vault/notes'),
+  ['/pics/my shot.png', '/pics/my%20shot.png']
+);
+check(
+  'and a resolved destination climbs out of its folder like any other',
+  imagePathCandidates('..%2Fa.png', '/pics', '/vault/notes').includes('/vault/a.png'),
+  true
+);
+check(
+  'a destination with no escape is itself, once',
+  imagePathCandidates('a.png', '/pics', '/vault/notes'),
+  ['/vault/notes/a.png', '/pics/a.png']
+);
+check(
+  'and a stray percent is not an escape',
+  imagePathCandidates('100%.png', '/pics', '/vault/notes'),
+  ['/vault/notes/100%.png', '/pics/100%.png']
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

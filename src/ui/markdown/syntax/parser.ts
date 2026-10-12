@@ -23,6 +23,7 @@ import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
+import { restoreImagePaths } from './image_paths';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
@@ -82,6 +83,7 @@ export function parseMarkdown(markdown: string): Root {
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);
+  restoreImagePaths(root, markdown);
   return root;
 }
 
