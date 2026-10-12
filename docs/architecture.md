@@ -85,6 +85,15 @@ Almost every bug in this editor has been a confusion between these:
    when the node it points into is replaced. That is why a rebuild re-places the
    caret by offset (`editing/context.ts: showSourceAt`, `placeCaret`).
 
+   It is also why the DOM is swept *after* the caret is captured and never before: the range
+   a removal relocates comes back connected, between two blocks, and naming no document offset,
+   so a snapshot taken afterwards has nothing to put back. The renderer takes one before every
+   sweep it makes (`virtual_block_renderer.ts` — `syncWindow`'s capture, and `refresh`, which
+   drops the mounted blocks inside that sync for this reason), and `markdown_editor.ts:
+   reanchorCaret` reads it. Measured: a `config_changed` rebuild took a caret sitting on a
+   formula's closing fence to `el.prose@1`, and the next letter replaced the note with itself
+   (`test/probes/rebuild-keeps-the-caret.js`).
+
 **What maps to what, and when.** Each flavour has one direction in and one out,
 and none of them is stored: every mapping is re-derived from the one above it.
 

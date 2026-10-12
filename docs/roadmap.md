@@ -754,6 +754,39 @@ elements) unless it says otherwise.
   init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
   and a probe that only sometimes finishes is read as too long whatever the window was doing;
   `test/README.md` says so where probes are written.
+- **A page-wide rebuild no longer takes the caret off the page.** Closed in
+  `virtual_block_renderer.ts: refresh`. `fence-exit.js`'s display-formula case read `"N"` back where
+  the file's four blocks should be, three runs of three, and the formula was not the reason: a run
+  of that probe points the app at a workspace, and the app builds every mounted block again when a
+  setting is announced (`src/main.ts` on `config_changed`) — about a second and a half in, which put
+  that rebuild inside the third case, between the `ArrowDown` that placed the caret and the `Enter`
+  that used it. Tracing `editorSelection` (its caller's frames beside the shape of what it read)
+  names the chain end to end: the caret went from `text("$$")@2` to `el.prose@1` in
+  `caretOffset ← syncWindow ← refresh ← main.ts:184`, and the very next read was `insertNewline`,
+  whose `rangeOffsets` maps a root-anchored range to `0..documentLength` — the document replaced by
+  `"N"`. The browser *relocates* a range rather than dropping it when the element its boundary sits
+  in is removed, which is exactly why the renderer's sync hooks capture the caret before they touch
+  the DOM (`markdown_editor.ts: reanchorCaret` says so); `refresh` was the one path that removed the
+  mounted blocks first and captured after, so its snapshot was already a caret naming no offset. It
+  now drops the elements *inside* the sync (`syncWindow(force, rebuildAll)`), after the capture.
+  `fence-exit` passes all its checks with the fix; the new `rebuild-keeps-the-caret.js` is the
+  focused proof and fails without it — a letter typed after a `config_changed` left `"Y"` where the
+  note's two paragraphs and the letter typed before the rebuild should have been.
+  Two earlier readings of this bug were wrong and are worth not repeating. Nine of the ten
+  `fence-exit` checks were the probe's own: a case's click was measured against a block that was
+  still moving, and the click a line low left the caret on the closing fence already — the probe now
+  waits for the block to be still (that check failed three of three before, passes three of three
+  after). The tenth was blamed on a live Select All range, because `t.raw()` *is* Select All + Copy
+  and the reads showed one; that was a measurement of the *read*, taken at the end of a case, not of
+  the edit. Five fixes were written, run and reverted on the way (cancelling
+  `scheduleNativeSelection`'s paint from the caret setters; a probe-side wait for the editor's
+  selection to fall silent; clearing the browser's ranges in `raw()` until they were gone; a
+  `rangeOffsets` rule that a collapsed range is one position; and clearing the ranges in a node's
+  own click handler unless the gesture ended a drag). What decided it was instrumenting the one read
+  that chooses — `editorSelection` — instead of the state around it.
+  `undo-run-taken-back.js` was flaky in the same sweep runs; it is not this fault — it passes three
+  of three by name with the fix and three of three without it, so what makes it flaky is the run
+  around it and it is its own measurement.
 The structural work — splitting the modules that carry two jobs, one home for the `data-*-from`
 tags, the header check over the whole of `src/`, the class-name collisions — is not listed here: it
 is `docs/structure.md`'s list, with its evidence, in the order it is worth taking.

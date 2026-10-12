@@ -60,7 +60,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-four of them (`probe:all` runs 163 and skips 21, each skip for the reason its
+a hundred and eighty-five of them (`probe:all` runs 164 and skips 21, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -110,7 +110,11 @@ that ends it lands the caret back in the block whose own text is the shape being
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
-reader left behind), what a keystroke costs (`edit-cost` — the keystrokes at the end of the
+reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is what a saved setting
+or the bibliography arriving asks for, leaves the caret in the note it was in: the reader's caret
+is a live DOM range, the browser relocates it rather than dropping it when the element it sits in
+is removed, and a letter typed at a caret that names no offset replaces the whole document),
+what a keystroke costs (`edit-cost` — the keystrokes at the end of the
 document as it loaded, and `edit-cost-notes` — the same in a text with a thousand footnote
 definitions pasted on: each round is bounded by the clock, because what a keystroke there costs is
 not a constant; `scroll-cost`, `block-rebuild-cost` — what parsing, building and replacing the block
@@ -291,6 +295,10 @@ live index; the newest probes carry a header naming what they cover:
   `'x'` — measured). It is the app behaving as any editor does over a live selection; click the line
   you mean to type in first. `click-away-deselects.js` holds both halves: the selection after Select
   All, and the click outside that takes it away with the caret.
+  A read's selection does not, on its own, explain what fails: measured while `fence-exit.js` was
+  being fixed, the *editor* holds the read's selection only until the read's own clear lands as a
+  `selectionchange`, and the case that eats its document does so with the editor's selection
+  `null` (traced). The open item in the roadmap says what is ruled out and what to measure next.
 - **A click a probe makes is a gesture: send the press with it.** The editor remembers where the
   pointer last went down, to tell a click from the drag its click may be ending — a gesture that
   travelled a few pixels and left a selection asks for no caret (`editing/pointer.ts: endedADrag`).

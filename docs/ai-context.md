@@ -436,7 +436,10 @@ decision was taken on.
 `caret/offsets.ts: documentOffsetAt` and `caret/dom_position.ts: domPositionAtOffset`
 are the two directions; `editing/context.ts: applyEdit` and `placeCaret` are where
 they are used. The table in `docs/architecture.md` says what each mapping is
-re-derived from, and when.
+re-derived from, and when. A sweep of the DOM captures the caret *before* it removes
+anything (`virtual_block_renderer.ts: syncWindow`'s snapshot, and `refresh`), because the
+range a removal relocates names no offset for a snapshot taken after it — a letter typed
+at one replaces the document (`test/probes/rebuild-keeps-the-caret.js`).
 
 ## Commands you will need
 
