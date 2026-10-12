@@ -250,21 +250,23 @@ export class VirtualBlockRenderer {
   /**
    * Rebuilds every mounted block. Used when the renderers' inputs changed
    * (for example the bibliography arrived), so widgets re-read their data.
+   *
+   * The mounted elements are dropped *inside* the sync (`syncWindow`'s `rebuildAll`), never here:
+   * removing a block element relocates the caret's live range to the point it occupied — connected,
+   * between two blocks, and naming no document offset (`markdown_editor.ts: reanchorCaret`) — so a
+   * renderer that touches the DOM before the snapshot has taken the caret off the page, and the
+   * next keystroke reads a whole-document range and replaces the note. Measured: the caret was
+   * `el.prose@1` for a reader whose caret sat in a formula, after a `config_changed` refresh.
    */
   refresh(): void {
-    for (const [lineStart, element] of [...this.mounted]) {
-      element.remove();
-      this.mounted.delete(lineStart);
-    }
-    // The elements are all gone, but the heights are not: a block's height is a function of its own
+    // The heights are not dropped with the elements: a block's height is a function of its own
     // source, and the source has not moved — a citation that now formats (Smith, 2020) instead of
     // [@smith2020] is a different rendering of the same block, and the height it had a moment ago is
     // a better start for the rebuilt element than the line-count estimate (measured: the estimate is
     // 176px against a real 156px for the citations paragraph, which is painted for one frame). The
     // rebuild measures each block once it is laid out again, and that measurement replaces the
     // carried height wherever the rendering really did change.
-    this.dropSpare();
-    this.syncWindow(true);
+    this.syncWindow(true, true);
   }
 
   /** Scrolls so the block containing `offset` is visible, then mounts it. */
@@ -408,7 +410,7 @@ export class VirtualBlockRenderer {
    * Brings the mounted blocks in line with the viewport: unchanged blocks
    * stay in place, new ones are created, far ones are dropped.
    */
-  private syncWindow(force: boolean): void {
+  private syncWindow(force: boolean, rebuildAll = false): void {
     const root = this.root;
     if (!root || this.syncing) {
       return;
@@ -439,6 +441,15 @@ export class VirtualBlockRenderer {
         return;
       }
       const snapshot = this.hooks?.capture();
+      if (rebuildAll) {
+        // Every block is built again, so the elements standing now are dropped — after the capture,
+        // because removing one takes the caret's range off the position it names (see `refresh`).
+        for (const element of this.mounted.values()) {
+          element.remove();
+        }
+        this.mounted.clear();
+        this.dropSpare();
+      }
       const desired: Node[] = [this.spacer('top')];
       const keep = new Set<number>();
       for (let index = first; index <= last; index += 1) {

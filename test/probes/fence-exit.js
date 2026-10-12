@@ -13,14 +13,15 @@
  * the wait: the display formula's case failed three runs of three (`caretText` `tail` against
  * `$$`) with the first two cases passing, and the same step alone passed.
  *
- * One thing this does *not* fix, and it is why the display formula's case still fails: the keys a
- * case types can land while the *editor* holds a selection nobody can see. Reading the document
- * (`t.raw()`) is Select All + Copy, the editor keeps that selection as its own state, and clearing
- * the browser's ranges from the page does not clear it in this WebKit — measured, right after a
- * read: the editor's selection live while the browser's ranges were empty (`{ appSelected: true,
- * nativeLength: 0 }`), and the case's `N` then replaced the whole document with `"N"`. It is the
- * app's own state and its own deferred paint of the Select All (`caret.ts: scheduleNativeSelection`)
- * that put it back, so the fix belongs there; this probe is the evidence it is waiting for.
+ * The display formula's case used to fail on its own, and the formula was not the reason: a run of
+ * this probe has the app pointed at a workspace, and the app builds the page again when a setting
+ * is announced (`src/main.ts` on `config_changed`) — about a second and a half in, which put that
+ * rebuild inside the third case, between the `ArrowDown` that placed the caret and the `Enter` that
+ * used it. Measured with the caret traced: it went from `text("$$")@2` to `el.prose@1` during the
+ * rebuild, because the renderer removed the blocks before the caret was captured, and the `Enter`
+ * then read a whole-document range and replaced the note with `"N"`. Fixed in the renderer
+ * (`virtual_block_renderer.ts: refresh`), and `test/probes/rebuild-keeps-the-caret.js` is the probe
+ * that fails without that fix.
  *
  * @covers src/ui/markdown/editing/text_commands.ts, src/ui/markdown/nodes/fence_text.ts,
  *   src/ui/markdown/syntax/fence_edits.ts
