@@ -120,6 +120,8 @@
   "tree.delete.no": "Garder",
   "message.close": "Fermer la notification",
   "completion.empty": "Rien à proposer ici.",
+  "wikilink.notFound": "Aucune note nommée « {target} ».",
+  "wikilink.openFailed": "Impossible d’ouvrir la note « {target} » : {message}",
   "newNote.title": "Nouveau Markdown",
   "newNote.folder": "Dossier",
   "newNote.name": "Nom du fichier",

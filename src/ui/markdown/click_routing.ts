@@ -11,10 +11,11 @@
  * table menu; it keeps no state of its own, so a click routes the same way
  * wherever the editor happens to be.
  *
- * May import: the editing commands it routes to (`editing/*`), the table menu
- * and the editor context. Upholds: a click is routed by what is under it —
- * the handlers read the document and the rendered tree, and hold no state that
- * could disagree with them.
+ * May import: the editing commands it routes to (`editing/*`), the table menu,
+ * the editor context, and the port a wikilink's click asks through
+ * (`wikilink_open.ts` — the shell's answer, never the shell itself). Upholds: a
+ * click is routed by what is under it — the handlers read the document and the
+ * rendered tree, and hold no state that could disagree with them.
  */
 
 import { showTableMenu } from '../table/table_menu';
@@ -26,6 +27,7 @@ import { placeCaretFromPointer } from './editing/pointer';
 import { isOpenableUrl } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
 import { toggleTask } from './editing/text_commands';
+import { openWikilinkTarget } from './wikilink_open';
 
 /** Toggles a task-list checkbox without moving the caret. */
 export function routeTaskClick(context: EditorContext, event: MouseEvent): void {
@@ -129,6 +131,34 @@ export function routeLinkClick(event: MouseEvent): void {
   event.preventDefault();
   event.stopPropagation();
   void openUrl(href).catch(() => undefined);
+}
+
+/**
+ * Opens the document a wikilink names, for the click that asks for it.
+ *
+ * A plain click on a wikilink belongs to the editor: the node shows its own markdown, like every
+ * other node whose rendering holds none of its characters. ⌘-click — Ctrl-click, the gesture the
+ * link and the footnote marker use — is the one that asks for the *document*, and the target it
+ * asks for is the node's own (`nodes/wikilink.ts` writes it on the element, because the title on
+ * screen is another document's and may be stale).
+ *
+ * What opening it means is the shell's answer (`wikilink_open.ts`), and this is the one routed
+ * click that does *not* hand itself back to the node when nothing comes of it: a target no
+ * document answers to is a broken link, and the shell says which one rather than quietly opening
+ * the source of a link the reader asked to follow.
+ */
+export function routeWikilinkClick(event: MouseEvent): void {
+  if (!event.metaKey && !event.ctrlKey) {
+    return;
+  }
+  const element = (event.target as Element | null)?.closest<HTMLElement>('[data-wikilink-target]');
+  const target = element?.dataset.wikilinkTarget;
+  if (!target) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  openWikilinkTarget(target);
 }
 
 /**

@@ -283,6 +283,12 @@ write its own pair *in front of* the `]` the first one's pair left after the car
 makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves the
 wikilink one bracket short, which is exactly what Enter then writes into (measured: `[[<id>]`,
 against `test/probes/brackets.js`).
+A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) asks for the document
+its target names and it opens through the session, exactly as a click on a row of the tree opens
+one — a plain click still opens the link's own source, and a target no document answers to is said
+so rather than opened as source. The editor asks through a port with no service in it
+(`ui/markdown/wikilink_open.ts`; the session owns the editor, so the shell answers —
+`ui/editor_panel.ts`), and `test/probes/wikilink-cmd-click.js` holds both gestures.
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
 node itself and stops there, so a listener that waits for it to bubble never sees it. And the card
 is placed from the caret's *range*, never from the span that draws the caret: `scheduleCaret` draws

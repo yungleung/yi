@@ -120,6 +120,8 @@
   "tree.delete.no": "Manter",
   "message.close": "Fechar a notificação",
   "completion.empty": "Nada a oferecer aqui.",
+  "wikilink.notFound": "Nenhuma nota chamada “{target}”.",
+  "wikilink.openFailed": "Não foi possível abrir a nota “{target}”: {message}",
   "newNote.title": "Novo Markdown",
   "newNote.folder": "Pasta",
   "newNote.name": "Nome do arquivo",

@@ -26,6 +26,12 @@ export class Wikilink extends RevealableNodeComponent {
     }
     const parsed = parseWikilinkValue(node.value);
     this.element.textContent = parsed.title ?? parsed.target;
+    // The target travels with the element it rendered: a click cannot read it out of the title
+    // (which is another document's, and may be a title the target's file no longer answers to),
+    // so whoever asks for the document the link names reads it here (`click_routing.ts:
+    // routeWikilinkClick`). A name, not an offset — the source shape shows the characters
+    // themselves and carries none of this.
+    this.element.dataset.wikilinkTarget = parsed.target;
 
     if (!parsed.title) {
       // Resolve the target's title only when the wikilink approaches the

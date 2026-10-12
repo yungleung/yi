@@ -52,9 +52,11 @@ window.__t = (() => {
    * config it had so the probe can put it back.
    *
    * A probe that drives the tree needs a folder it may write to and that is not the
-   * repository's own fixtures: it makes one with the app's own commands (under
-   * `/private/tmp`, on the platform these probes run on), points the app at it with this,
-   * and removes it when it is done.
+   * repository's own fixtures: it makes one with the app's own commands, points the app at it
+   * with this, and removes it when it is done. Put it under the home directory: the app reads
+   * a document's text through the file plugin, which is scoped to `$HOME/**`
+   * (`src-tauri/capabilities/default.json`), while the folder commands that list and write are
+   * not — so a workspace in `/private/tmp` can be listed, written and never opened.
    */
   const openWorkspace = async (path) => {
     const previous = await window.__TAURI_INTERNALS__.invoke('get_config');
