@@ -61,7 +61,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-seven of them (`probe:all` runs 165 and skips 22, each skip for the reason its
+a hundred and eighty-eight of them (`probe:all` runs 166 and skips 22, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -153,7 +153,7 @@ prose), the
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
-documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it), the
+documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it; `document-opens-without-a-caret` — a document opened with nothing remembered invents no caret, so a note opening on a picture draws the picture, while a caret the session *does* remember comes back where it was, and a keystroke with no caret writes at the text's own start), the
 things the app says (`messages-and-hints` — a failure raised from the tree waiting in the window's
 bottom-right corner with its ✕ at the card's right edge, a press elsewhere leaving it, Escape and
 the ✕ closing it, a second message stacking above the first; and a copied path as a hint beside

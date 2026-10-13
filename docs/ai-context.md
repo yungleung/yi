@@ -229,6 +229,16 @@ to a caret the reader had left in the first paragraph (`test/probes/scroll-caret
 it). It is the same rule a click that opens a source already follows: a rebuild under the reader
 is not a request to move the page.
 
+**A document opened with nothing remembered is opened without a caret.** The view the session
+hands over is the truth about where the reader was (`services/session_rules.ts`: `caret: null` when
+nothing is remembered, and a remembered one comes back exactly where it was); a caret the app
+invents is one nobody put anywhere, and it *decides what the page shows*, because a node the caret
+is in renders its own markdown — which is how a note that opens on a picture used to open on that
+picture's markdown, with the picture hidden. So a document with no remembered view is drawn as it
+is written, the reader's first click or keystroke places a caret (the keystroke at the text's own
+start: `editing/text_commands.ts: textSelection`), and `test/probes/document-opens-without-a-caret.js`
+holds both halves.
+
 An **image** is written by the button beside the link button, one command `edit:insertImage`, and
 the clipboard decides what that means (`ui/image/image_flow.ts`): a destination it is offering — a
 web URL, a `file://` URL, a path to an image — is written as `![alt](destination)` where the caret
