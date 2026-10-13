@@ -144,5 +144,26 @@
     recorder.stop();
   }
 
+  // 5. A link whose *path* has spaces in it, and the same path written the way a browser spells
+  //    one: another editor writes both, and both are links here (`syntax/spaced_destinations.ts`).
+  //    A destination like this is inert — nothing in the app resolves a path, only a URL — so what
+  //    this holds is the reading, and that a plain click is still the editor's.
+  const spacedDoc = 'See [note](my note.md) and [other](my%20note.md) here.\n';
+  await t.load(spacedDoc);
+  await t.sleep(250);
+  const written = [...t.prose().querySelectorAll('a.markdown-link')].map((anchor) => ({
+    text: anchor.textContent,
+    href: anchor.getAttribute('href')
+  }));
+  check('a link whose path has spaces is a link', written.some((entry) => entry.href === 'my note.md'), written);
+  check('and one written with %20 is a link too', written.some((entry) => entry.href === 'my%20note.md'), written);
+  click(t.prose().querySelector('a.markdown-link'));
+  await t.sleep(300);
+  check(
+    'and a plain click still opens it as its own source',
+    source()?.textContent === '[note](my note.md)',
+    source()?.textContent ?? null
+  );
+
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

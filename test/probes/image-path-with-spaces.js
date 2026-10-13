@@ -5,7 +5,7 @@
  * A markdown destination may not hold a space unless it is wrapped in `<…>`, so a line written
  * the way a reader writes a path — `![shot](my shot.png)` — used to be no image at all: the note
  * showed the markdown, and the file it names was never asked for. The parser repairs that line
- * (`syntax/image_paths.ts`); this probe holds the whole way from there — the repaired line, the
+ * (`syntax/spaced_destinations.ts`); this probe holds the whole way from there — the repaired line, the
  * two folders a relative path is resolved against (the note's own first, the settings' next, and
  * a first candidate that is not there falls through to the second), the asset protocol and the
  * pixels on screen. The same path *copied* out of something else may spell the space the way a
@@ -17,7 +17,7 @@
  * app at no workspace and drives no tree: a note's own folder comes from the session showing the
  * note, so the probe is safe to run in a sweep.
  *
- * @covers src/ui/markdown/syntax/image_paths.ts, src/ui/image/image_urls.ts,
+ * @covers src/ui/markdown/syntax/spaced_destinations.ts, src/ui/image/image_urls.ts,
  *   src/services/workspace_folders.ts, src/ui/markdown/nodes/image.ts
  */
 (async () => {

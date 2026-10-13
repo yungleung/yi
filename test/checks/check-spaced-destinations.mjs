@@ -1,16 +1,16 @@
 /**
- * Checks what the parser makes of an image whose path has spaces in it.
+ * Checks what the parser makes of an image or a link whose path has spaces in it.
  *
- * markdown's link destination may not contain a space unless it is wrapped in `<…>`, so
- * `![shot](my shot.png)` is a paragraph of literal text — not an image — even though a reader
- * writing a path means the file it names, and an editor that is lenient about paths wrote it
- * that way. The repair reads that line as the image it names, and only that line: a path with a
- * space inside a sentence is left exactly as it is, because where such a destination ends is
- * guesswork there, and one wrapped in `<…>` is already read.
+ * markdown's destination may not contain a space unless it is wrapped in `<…>`, so
+ * `![shot](my shot.png)` and `[note](my note.md)` are paragraphs of literal text — not an image
+ * and not a link — even though a reader writing a path means the file it names, and an editor that
+ * is lenient about paths wrote it that way. The repair reads such a run as the node it names,
+ * wherever it stands, and the characters around it stay the text they were; a path the author
+ * escaped and one already wrapped in `<…>` are left exactly as they are.
  *
  * The repair is a pure function of the parse and the source, so it is asserted here;
  * `image-path-with-spaces.js` proves the same through the editor, the asset protocol and the two
- * folders an image may live in.
+ * folders an image may live in, and `link-cmd-click.js` holds the link half from the click side.
  */
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -64,6 +64,26 @@ const images = (markdown) => {
   }
   return found;
 };
+
+/** Every link in the tree: its path, and the words it shows. */
+const links = (markdown) => {
+  const found = [];
+  const walk = (node) => {
+    if (node.type === 'link') {
+      found.push({ url: node.url, text: (node.children ?? []).map((child) => child.value ?? '').join('') });
+    }
+    for (const child of node.children ?? []) {
+      walk(child);
+    }
+  };
+  for (const child of parseMarkdown(markdown).children) {
+    walk(child);
+  }
+  return found;
+};
+
+/** The first link's field, or null when the line is not a link at all. */
+const firstLink = (markdown, field) => links(markdown)[0]?.[field] ?? null;
 
 /** The first image's field, or null when the line is not an image at all. */
 const firstImage = (markdown, field) => images(markdown)[0]?.[field] ?? null;
@@ -135,8 +155,26 @@ check(
   null
 );
 
+// A link's destination is a path a reader writes too, and markdown refuses a space in it for the
+// same reason: `[note](my note.md)` is a paragraph of that literal text, so the note it names is
+// not linked at all.
+check('a link whose path has spaces is a link', shape('[note](my note.md)\n'), 'paragraph(link(text))');
+check('and the path is the file it names', firstLink('[note](my note.md)\n', 'url'), 'my note.md');
+check('and its words are what stands between the brackets', firstLink('[my note](my note.md)\n', 'text'), 'my note');
+check(
+  'and the words around it stay text',
+  shape('see [note](my note.md) here\n'),
+  'paragraph(text,link(text),text)'
+);
+check('an escaped link stays text', shape('\\[note](my note.md)\n'), 'paragraph(text)');
+check(
+  'a link whose path spells the space as %20 is a link too, and keeps its path',
+  firstLink('[other](my%20note.md)\n', 'url'),
+  'my%20note.md'
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
 }
-console.log('image paths: a path with spaces is read as the image it names');
+console.log('spaced destinations: a path with spaces is read as the node it names');
