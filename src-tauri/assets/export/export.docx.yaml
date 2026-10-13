@@ -7,6 +7,11 @@
 # this kind needs it, and every export then hands it to pandoc unchanged (`--defaults`), so a key
 # below is pandoc's own and the manual above says what it means. A file that is already there is
 # never overwritten — an edited one is the reader's.
+#
+# Two things the app adds on the command line, because they are its own settings rather than this
+# file's: the bibliography the citations were formatted from (Settings → Citation) and the CSL style
+# it formats them in, so citeproc resolves the keys and appends the reference list. A reader who
+# wants none of that can set `filters: []` here, or clear the bibliography in the settings.
 reader: markdown
 writer: docx
 self-contained: true

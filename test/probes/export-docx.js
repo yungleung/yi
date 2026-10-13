@@ -56,6 +56,13 @@
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.docx`;
   const elsewhere = `${folder}/never.docx`;
+  const checkout = window.__probePaths.checkout;
+  const note = [
+    '# Going out',
+    '',
+    `A note with an alias: [[other|an alias]], a citation [@smith2020], and a picture: ![icon](${checkout}src-tauri/icons/icon.png).`,
+    ''
+  ].join('\n');
 
   /** The app's card, as the page has it, and whether it is the one on show. */
   const card = () => document.querySelector('[data-export-dialog]');
@@ -100,12 +107,9 @@
     }
     await files.createEntry(home, 'yi-probe-export-docx', false);
     await files.createEntry(folder, 'note.md', true);
-    await files.writeTextAtomically(
-      notePath,
-      ['# Going out', '', 'A note with an alias: [[other|an alias]].', ''].join('\n')
-    );
+    await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
-    await show(notePath, await textOf(notePath));
+    await show(notePath, note);
 
     // --- the card, as the menu opens it --------------------------------------------------------
 
@@ -166,9 +170,11 @@
     // so no editor comes up during a run — and the file it names is on the disk to be edited.
     veil.querySelector('[data-export-open-config]').click();
     await until(() => (window.__probeOpenedUrls ?? []).length > 0);
-    const asked = (window.__probeOpenedUrls ?? []).filter((entry) => entry.body.includes(config));
+    const asked = (window.__probeOpenedUrls ?? []).filter(
+      (entry) => entry.url.includes('reveal_item_in_dir') && entry.body.includes(config)
+    );
     check(
-      'the settings button has the file written and asks the system to open it',
+      'the settings button has the file written and asks the system to reveal it in its folder',
       asked.length === 1 && (await exists(config)),
       { asked: asked.length, written: await exists(config) }
     );
@@ -178,10 +184,18 @@
     veil.querySelector('[data-export-run]').click();
     const written = await until(async () => (await exists(target)) && (await bytesOf(target)).length > 2000);
     const bytes = await bytesOf(target);
+    // A docx is a zip, and a zip keeps its entry *names* uncompressed: the media folder of a
+    // document with a picture in it is a name this can look for without unzipping anything.
+    const latin = bytes === null ? '' : new TextDecoder('latin1').decode(bytes);
     check(
       'pressing Export writes a Word file where the reader asked, through the real pandoc',
       written && bytes !== null && bytes[0] === 0x50 && bytes[1] === 0x4b,
       { written, first: bytes === null ? null : [...bytes.slice(0, 2)] }
+    );
+    check(
+      'and the picture the note shows is inside it, not left as its own description',
+      latin.includes('word/media/'),
+      { media: latin.includes('word/media/') }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');
     check(

@@ -2,9 +2,10 @@
  * What the app asks pandoc to do, watched by a pandoc that only records.
  *
  * The app's whole hand is one call — `pandoc --defaults <the kind's own file> --output <where>
- * --resource-path <the note's folders> <the note>` — and the note it hands over is the text *after*
- * the export's pre-process: every wikilink written as the words it renders as. Proving both from
- * the outside means a pandoc that records instead of converting (`test/probes/fake-pandoc.sh`,
+ * --resource-path <the note's folders> --bibliography <the library> --csl <the style> <the note>` —
+ * and the note it hands over is the text *after* the export's pre-process: every wikilink written as
+ * the words it renders as, every image's destination written as the file it names. Proving all of it
+ * from the outside means a pandoc that records instead of converting (`test/probes/fake-pandoc.sh`,
  * committed, since a probe cannot set an executable bit), pointed at through the app's own seam
  * (`export_use_pandoc`), which the harness puts back before every probe.
  *
@@ -20,6 +21,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
+  const { configManager } = await t.app('/src/services/config_manager.ts');
   const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
@@ -53,10 +55,14 @@
   const notePath = `${folder}/note.md`;
   const otherPath = `${folder}/other.md`;
   const target = `${folder}/out.docx`;
+  const checkout = window.__probePaths.checkout;
+  const library = `${checkout}test/fixtures/workspace/zotero.bib`;
   const note = [
     '# Going out',
     '',
     'An alias: [[other|an alias]], and a bare one: [[other]].',
+    '',
+    `A citation [@smith2020], and a picture: ![icon](${checkout}src-tauri/icons/icon.png).`,
     '',
     '```md',
     '[[still code]]',
@@ -99,6 +105,9 @@
     await files.writeTextAtomically(otherPath, '---\ntitle: The Other Note\n---\n\n# other\n');
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
+    // The library the app hands pandoc is the one its settings name, so this probe names one it can
+    // rely on — the fixtures' own — and puts the reader's back in `finally`.
+    await configManager.update({ bibliography_file: library });
     await show(notePath, note);
 
     await api.pointAtPandoc(`${window.__probePaths.checkout}test/probes/fake-pandoc.sh`);
@@ -118,22 +127,31 @@
     const written = await until(() => exists(target));
     const lines = (await readText(`${recorder}/argv.log`)).trim().split('\n');
     const asked = lines.slice(1);
-    const scratch = asked[6] ?? '';
+    const scratch = asked.at(-1) ?? '';
+    // The style pandoc was handed, read out of the call itself rather than guessed at.
+    const csl = asked[11] ?? '';
     const parts = {
       written,
       program: lines[0],
-      count: asked.length,
       defaults: asked[0] === '--defaults' && asked[1] === config,
       output: asked[2] === '--output' && asked[3] === target,
       resources: asked[4] === '--resource-path' && asked[5].split(':')[0] === folder,
+      library: asked.slice(6, 8).join(' ') === `--bibliography ${library}`,
+      heading: asked[8] === '--metadata' && asked[9] === 'reference-section-title=References',
+      style: asked[10] === '--csl' && csl.endsWith('/export/styles/apa.csl'),
       note:
         scratch.startsWith(`${config.slice(0, config.lastIndexOf('/'))}/`) &&
         scratch.endsWith('.md')
     };
     check(
-      'the app asks pandoc for the kind’s own defaults file, the output, the folders a destination resolves against, and the note',
+      'the app asks pandoc for the kind’s own defaults file, the output, the folders a destination resolves against, the library, the heading and the style the citations came from, and the note',
       Object.values(parts).every(Boolean),
       parts
+    );
+    check(
+      'and the style the reader’s citations are formatted in is a CSL file pandoc can read',
+      (await readText(csl)).includes('<style'),
+      { csl }
     );
     check(
       'and it is pandoc’s, not the app’s: the file pandoc wrote is a copy of what it was handed',
@@ -158,6 +176,11 @@
       'and a wikilink that is a fence’s body left exactly as it was written',
       prepared.includes('[[still code]]'),
       prepared.includes('[[still code]]')
+    );
+    check(
+      'and an image’s destination written as the file it names, so pandoc embeds what the page showed',
+      prepared.includes(`![icon](${checkout}src-tauri/icons/icon.png)`),
+      prepared.split('\n').find((line) => line.startsWith('A citation'))?.trim()
     );
 
     // --- the app's own scratch -----------------------------------------------------------------

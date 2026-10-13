@@ -1,10 +1,16 @@
 /**
- * Checks the export's shared pre-process (`ui/export/preprocess.ts`) in Node: a wikilink is written
- * as the words it renders as — the title the author gave it, or the title of the document it names,
- * or its target — and every other character of the note is left exactly as it was written.
+ * Checks the export's shared pre-process (`ui/export/preprocess.ts`) in Node. Two rules, both about
+ * what the *app* knows and pandoc does not:
  *
- * The parse is what says where the wikilinks *are*, so the shapes that are deliberately not one are
- * asserted here too: a fence's body, an inline code span, frontmatter, and an image's brackets. The
+ * - a wikilink is written as the words it renders as — the title the author gave it, or the title of
+ *   the document it names, or its target;
+ * - an image's destination is written as the file the app resolves it to, absolute and encoded, so
+ *   the picture pandoc embeds is the picture the page showed: a destination read from the document's
+ *   folder, from the image folder, spelled with `%20` or with spaces, or naming a file that is not
+ *   there at all.
+ *
+ * The parse is what says where those spans *are*, so the shapes that are deliberately not one are
+ * asserted here too: a fence's body, an inline code span, frontmatter, and a link's brackets. The
  * run itself — pandoc against the app's defaults file — is `test/probes/export-docx.js` and
  * `test/probes/export-pandoc-arguments.js`.
  *
@@ -26,7 +32,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'preprocess.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { withRenderedWikilinks } = await import(file);
+const { exportSource } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -35,52 +41,66 @@ const check = (name, actual, expected) => {
   if (a !== e) failures.push(`${name}\n  expected ${e}\n  actual   ${a}`);
 };
 
-/** Every title a workspace answers with, and which targets were asked about at all. */
-function workspace(titles) {
+/**
+ * A workspace with these titles and these files, and what was asked about at all: every title the
+ * pre-process looked up, and every path it looked for.
+ */
+function workspace({ titles = {}, files = [], document: documentFolder = '/notes', images = null } = {}) {
   const asked = [];
+  const looked = [];
   return {
     asked,
+    looked,
     titleOf: async (target) => {
       asked.push(target);
       return titles[target] ?? null;
+    },
+    bases: { document: documentFolder, images },
+    exists: async (path) => {
+      looked.push(path);
+      return files.includes(path);
     }
   };
 }
 
-const render = async (text, titles = {}) => {
-  const notes = workspace(titles);
-  const rendered = await withRenderedWikilinks(text, notes.titleOf);
-  return { rendered, asked: notes.asked };
+const render = async (text, answers = {}) => {
+  const notes = workspace(answers);
+  const rendered = await exportSource(text, {
+    titleOf: notes.titleOf,
+    bases: notes.bases,
+    exists: notes.exists
+  });
+  return { rendered, asked: notes.asked, looked: notes.looked };
 };
 
 // --- what a wikilink reads as ------------------------------------------------------------------
 
 {
   const { rendered, asked } = await render('See [[target|the name I chose]].', {
-    target: 'The Other Note'
+    titles: { target: 'The Other Note' }
   });
   check('a title the author wrote wins over the document it names', rendered, 'See the name I chose.');
   check('and a link that names its own text is not resolved at all', asked, []);
 }
 
 {
-  const { rendered, asked } = await render('See [[target]].', { target: 'The Other Note' });
+  const { rendered, asked } = await render('See [[target]].', { titles: { target: 'The Other Note' } });
   check('a bare target reads as the title of the document it names', rendered, 'See The Other Note.');
   check('which is one question to the workspace', asked, ['target']);
 }
 
 {
-  const { rendered } = await render('See [[nowhere]].', {});
+  const { rendered } = await render('See [[nowhere]].');
   check('and a target no document answers is written as itself', rendered, 'See nowhere.');
 }
 
 {
-  const { rendered } = await render('See [[target]].', { target: '' });
+  const { rendered } = await render('See [[target]].', { titles: { target: '' } });
   check('an empty title counts as no answer rather than as nothing to write', rendered, 'See target.');
 }
 
 {
-  const { rendered, asked } = await render('[[a]] and [[a]] and [[b|b]].', { a: 'A' });
+  const { rendered, asked } = await render('[[a]] and [[a]] and [[b|b]].', { titles: { a: 'A' } });
   check(
     'one target is resolved once however many links name it',
     rendered,
@@ -114,7 +134,7 @@ const render = async (text, titles = {}) => {
     '- a list item with [[target|an alias]]',
     ''
   ].join('\n');
-  const { rendered } = await render(note, { target: 'The Other Note' });
+  const { rendered } = await render(note, { titles: { target: 'The Other Note' } });
   check(
     'a wikilink is written where it stands, and nothing else in the note moves',
     rendered,
@@ -149,8 +169,120 @@ const render = async (text, titles = {}) => {
 }
 
 {
-  const { rendered } = await render('A fence only:\n\n```\n[[target]]\n```\n', { target: 'Nope' });
+  const { rendered } = await render('A fence only:\n\n```\n[[target]]\n```\n', {
+    titles: { target: 'Nope' }
+  });
   check('and a wikilink that is a fence’s body is not a wikilink', rendered, 'A fence only:\n\n```\n[[target]]\n```\n');
+}
+
+// --- what an image's destination becomes --------------------------------------------------------
+
+{
+  const { rendered } = await render('Beside the note: ![shot.png](shot.png)', {
+    files: ['/notes/shot.png']
+  });
+  check('an image beside the note is written as its own absolute path', rendered, 'Beside the note: ![shot.png](/notes/shot.png)');
+}
+
+{
+  const { rendered } = await render('In the image folder: ![shot.png](shot.png)', {
+    files: ['/pics/shot.png'],
+    images: '/pics'
+  });
+  check('and one the image folder holds is found there', rendered, 'In the image folder: ![shot.png](/pics/shot.png)');
+}
+
+{
+  const { looked } = await render('![a](shot.png)', { files: ['/notes/shot.png'] });
+  check('the document’s own folder is tried before the settings’ image folder', looked, ['/notes/shot.png']);
+}
+
+{
+  const written = '![a](shot with space.png)';
+  const { rendered } = await render(written, { files: ['/notes/shot with space.png'] });
+  check(
+    'a name with a space is written encoded, so markdown reads the path as one destination',
+    rendered,
+    '![a](/notes/shot%20with%20space.png)'
+  );
+}
+
+{
+  const { rendered } = await render('![a](<shot with space.png>)', {
+    files: ['/notes/shot with space.png']
+  });
+  check('however the author spelled it, wrapped or not', rendered, '![a](/notes/shot%20with%20space.png)');
+}
+
+{
+  const { rendered } = await render('![a](shot%20with%20space.png)', {
+    files: ['/notes/shot with space.png']
+  });
+  check('and a path copied as a browser spells it names the file it means', rendered, '![a](/notes/shot%20with%20space.png)');
+}
+
+{
+  const name = 'a(1) b#c%.png';
+  // A name with a space in it is written `<…>`-wrapped by the app, and this one holds every
+  // character a destination could mean something else by.
+  const { rendered } = await render(`![a](<${name}>)`, { files: [`/notes/${name}`] });
+  check(
+    'every character a destination could mean something else by is encoded',
+    rendered,
+    '![a](/notes/a(1)%20b%23c%25.png)'
+  );
+}
+
+{
+  // Parentheses balance, so markdown reads this one plainly — and it is still rewritten, because
+  // what the app resolved is the answer, not what the characters looked like.
+  const { rendered } = await render('![a](a(1).png)', { files: ['/notes/a(1).png'] });
+  check('a destination markdown can read plainly is written as the path all the same', rendered, '![a](/notes/a(1).png)');
+}
+
+{
+  const { rendered } = await render('![shot.png](shot.png "the picture")', {
+    files: ['/notes/shot.png']
+  });
+  check('a title after the destination stays a title', rendered, '![shot.png](/notes/shot.png "the picture")');
+}
+
+{
+  const { rendered } = await render('![a\\]b](shot.png)', { files: ['/notes/shot.png'] });
+  check('and a bracket in the alt text is escaped, so the image is still one image', rendered, '![a\\]b](/notes/shot.png)');
+}
+
+{
+  const written = '![gone.png](gone.png)';
+  const { rendered } = await render(written, { files: [] });
+  check('an image whose file is not there is left exactly as the author wrote it', rendered, written);
+}
+
+{
+  const written = '![web](https://example.com/shot.png) and ![data](data:image/png;base64,AAAA)';
+  const { rendered, looked } = await render(written);
+  check('and one that names no file at all is left to pandoc', rendered, written);
+  check('nor is anything looked for', looked, []);
+}
+
+{
+  const written = '```\n![a](shot.png)\n```\n';
+  const { rendered } = await render(written, { files: ['/notes/shot.png'] });
+  check('an image inside a fence is code, not an image', rendered, written);
+}
+
+// --- the two rules together ---------------------------------------------------------------------
+
+{
+  const { rendered } = await render('[[target]] then ![shot.png](shot.png) then [[target|a name]]\n', {
+    titles: { target: 'The Other Note' },
+    files: ['/notes/shot.png']
+  });
+  check(
+    'a note with both is rewritten once, in one pass over the text',
+    rendered,
+    'The Other Note then ![shot.png](/notes/shot.png) then a name\n'
+  );
 }
 
 if (failures.length > 0) {

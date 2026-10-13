@@ -202,19 +202,27 @@ ask (held by the recorder: a whole restore is one `show` and none of the write v
 **A note goes out through pandoc**, one kind at a time. The File menu's *Export* is the command
 `file:export` (`src/ui/export/export_flow.ts`), and what it opens is a card
 (`src/ui/export/export_dialog.ts`) with a tab per kind the app ships, the target the file is written
-to, and the **conversion settings** file the reader may edit — a button opens it in the system's own
-editor. The kinds are Rust's (`src-tauri/src/export.rs: KINDS`): each is a name, the extension its
+to, and the **conversion settings** file the reader may edit — a button reveals it in its folder
+(not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
+kinds are Rust's (`src-tauri/src/export.rs: KINDS`): each is a name, the extension its
 output is written under, whether pandoc is needed at all (PDF will say no), and the bytes of a
 pandoc *defaults file* — `src-tauri/assets/export/export.<kind>.yaml`, written into
 `<app data>/export/` the first time that kind is used and **never overwritten again**, which is what
 makes a reader's edit theirs (the docx one is Zettlr's own defaults file, kept word for word). The
 window is told the list (`src/api/export.ts: exportKinds`) and knows no kind by name except the one
 that labels its tab, so a new kind is a row and an asset and nothing else. Two facts about a run:
-every kind shares one **pre-process** (`src/ui/export/preprocess.ts`) that writes each wikilink as
-the words it renders as, walked out of the parse — so a `[[…]]` in a fence or in code stays code —
-and the app's own scratch note (written under its data folder, because pandoc reads files) is
-deleted whether pandoc succeeded or not. What the app may ask pandoc is one list in one place, held
-by `test/probes/export-pandoc-arguments.js` against a pandoc that only records
+every kind shares one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own reading
+of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
+image's destination written as the file the app resolves it to (absolute and encoded, through
+`workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
+what the docx embeds is what the page showed). Both rules walk the *parse*, so a `[[…]]` in a fence
+or in code, and an image inside one, stay exactly as written. And the app's scratch note (written
+under its data folder, because pandoc reads files) is deleted whether pandoc succeeded or not. What
+the app may ask pandoc is one list in one place — `--defaults`, `--output`, `--resource-path`, the
+**library and CSL style its own citations were formatted from** (`--bibliography`; `--csl`, from
+citation-js's bundled styles, which is why `[@key]` resolves and the reference list is appended in
+the style the page showed), and the note — held by `test/probes/export-pandoc-arguments.js` against
+a pandoc that only records
 (`test/probes/fake-pandoc.sh`); `export_use_pandoc` is the seam that points the app at it, put back
 by the harness like the git one.
 

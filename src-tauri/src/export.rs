@@ -17,6 +17,13 @@
 //!   comes before both. A name that is not there means *no pandoc*, never a different one.
 //! - **the note handed over**: the text is written to a file under the app's data folder, because
 //!   pandoc reads files, and that file is deleted again whether pandoc succeeded or not.
+//! - **the two things the app knows and pandoc does not**: the library the note's citations were
+//!   formatted from, and the style they were formatted in. Handing citeproc a `--bibliography` is
+//!   what makes it resolve the keys *and append the reference list* the reader asked for; the style
+//!   arrives as CSL text from citation-js (`src/services/bibliography.ts`), because a style the
+//!   app *names* (`apa`) is not a style pandoc can read. A library that is not there is not named
+//!   at all: pandoc exits non-zero on a file it cannot read, and a note with citations is better
+//!   exported without its references than not exported.
 //!
 //! Every call the app makes to pandoc goes through [`run_pandoc`] — one list in one place, and the
 //! list `test/probes/export-pandoc-arguments.js` holds to with a pandoc that only records.
@@ -28,6 +35,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
 use tauri::Manager;
+
 
 /// One kind of export the app knows.
 #[derive(Debug)]
@@ -90,6 +98,25 @@ pub struct ExportRequest {
     /// note and a path in the defaults file both mean what the reader sees them mean.
     #[serde(default)]
     pub source_dir: Option<String>,
+    /// The library the citations in the note were formatted from, as the settings name it — or
+    /// null when they name none.
+    #[serde(default)]
+    pub bibliography: Option<String>,
+    /// The CSL style the editor formats citations with, so the reference list pandoc appends is the
+    /// style the page showed. Null when citation-js bundles no such style.
+    #[serde(default)]
+    pub csl: Option<CslStyle>,
+    /// What that list is called, in the language the app is speaking. A word, so it arrives from the
+    /// window's catalogue with every other word the app says (`locales/*.json`).
+    #[serde(default)]
+    pub references: Option<String>,
+}
+
+/// A CSL style as the window can hand it over: the name it is known by, and its own text.
+#[derive(Debug, serde::Deserialize, Serialize, Clone)]
+pub struct CslStyle {
+    pub name: String,
+    pub xml: String,
 }
 
 /// The kind asked for, or the one sentence worth saying when the app does not have it.
@@ -124,6 +151,42 @@ fn ensure_defaults_in(dir: &Path, kind: &ExportKind) -> Result<PathBuf, String> 
     let path = dir.join(config_file_name(kind.kind));
     if !path.exists() {
         fs::write(&path, kind.defaults)
+            .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+    }
+    Ok(path)
+}
+
+/// The name a style file may have: the style's own name when it is one, and `style` when it is not.
+///
+/// The name comes from a config value a reader may type anything into, and it ends up in a path, so
+/// it is *filtered* rather than trusted: a name that is not made of letters, digits, dots, dashes
+/// and underscores cannot name a file below the folder it is put in.
+fn style_file_name(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .filter(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_')
+        })
+        .collect();
+    if cleaned.is_empty() || cleaned.starts_with('.') {
+        "style".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// A CSL style as a file pandoc can read, under the app's export folder, and where it is.
+///
+/// Written when the text differs and left alone when it does not: the app hands the same style over
+/// on every export, and a file rewritten each time would be one a launcher watching that folder
+/// would see change for nothing.
+fn ensure_csl_in(dir: &Path, style: &CslStyle) -> Result<PathBuf, String> {
+    let styles = dir.join("styles");
+    fs::create_dir_all(&styles)
+        .map_err(|error| format!("Yi cannot make {}: {error}", styles.display()))?;
+    let path = styles.join(format!("{}.csl", style_file_name(&style.name)));
+    if fs::read_to_string(&path).ok().as_deref() != Some(style.xml.as_str()) {
+        fs::write(&path, &style.xml)
             .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
     }
     Ok(path)
@@ -282,25 +345,32 @@ pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<(), S
     let dir = export_dir(&app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     let note = write_note(&dir, &request.text)?;
-    let result = export_through_pandoc(
-        pandoc.as_deref(),
-        &defaults,
-        &note,
-        &request,
-    );
+    let result = pandoc_arguments(&dir, &defaults, &note, &request).and_then(|arguments| {
+        match pandoc.as_deref() {
+            // A kind that needs pandoc always has one here (`run_export` refuses first); the arms
+            // are kept apart so the PDF tick, which will write its own file, has somewhere to go.
+            Some(pandoc) => run_pandoc(
+                pandoc,
+                &arguments,
+                request.source_dir.as_deref().map(Path::new),
+            ),
+            None => Err("This kind of export has nothing to run it with.".to_string()),
+        }
+    });
     // The note's copy under the app's data folder is a thing of this call, whatever pandoc said.
     let _ = fs::remove_file(&note);
     result
 }
 
-/// The call itself: pandoc, the defaults file, the destination, the folders a relative destination
-/// is resolved against, and the note.
-fn export_through_pandoc(
-    pandoc: Option<&Path>,
+/// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
+/// folders a relative destination is resolved against, the library and the style the citations came
+/// from, and the note itself.
+fn pandoc_arguments(
+    dir: &Path,
     defaults: &Path,
     note: &Path,
     request: &ExportRequest,
-) -> Result<(), String> {
+) -> Result<Vec<OsString>, String> {
     let mut arguments: Vec<OsString> = vec![
         OsString::from("--defaults"),
         defaults.as_os_str().to_os_string(),
@@ -314,26 +384,39 @@ fn export_through_pandoc(
         arguments.push(OsString::from("--resource-path"));
         arguments.push(joined);
     }
-    arguments.push(note.as_os_str().to_os_string());
-
-    match pandoc {
-        // A kind that needs pandoc always has one here (`run_export` refuses first); the arms are
-        // kept apart so the PDF tick, which will write its own file, has somewhere to go.
-        Some(pandoc) => run_pandoc(
-            pandoc,
-            &arguments,
-            request.source_dir.as_deref().map(Path::new),
-        ),
-        None => Err("This kind of export has nothing to run it with.".to_string()),
+    // The library and the style the note's citations were formatted from. Pandoc appends the
+    // reference list itself once it has a bibliography, so what is owed at the end of the document
+    // is what citing the note in the app already showed the reader.
+    if let Some(library) = request
+        .bibliography
+        .as_deref()
+        .filter(|path| Path::new(path).exists())
+    {
+        arguments.push(OsString::from("--bibliography"));
+        arguments.push(OsString::from(library));
+        // The list pandoc appends is a section of the document, and a section has a name. Pandoc
+        // leaves it unnamed unless it is told one, which reads as a page of references with nothing
+        // introducing them.
+        if let Some(title) = request.references.as_deref().filter(|title| !title.is_empty()) {
+            arguments.push(OsString::from("--metadata"));
+            arguments.push(OsString::from(format!("reference-section-title={title}")));
+        }
     }
+    if let Some(style) = &request.csl {
+        arguments.push(OsString::from("--csl"));
+        arguments.push(ensure_csl_in(dir, style)?.into_os_string());
+    }
+    arguments.push(note.as_os_str().to_os_string());
+    Ok(arguments)
 }
 
 /// A kind's defaults file, written from the shipped one when it is not there yet, and where it is.
 ///
 /// A *read* that keeps its own promise: the file a reader is about to edit has to exist, or the
-/// button that opens it would open nothing. Handing the path back rather than opening it is what
-/// leaves the system's editor the window's call — the app opens what the reader points at through
-/// the granted opener plugin (`ui/export/export_dialog.ts`), the way it opens a link.
+/// button that reveals it would reveal nothing. Handing the path back rather than opening it is
+/// what leaves the system's hand to the window: it is revealed in the folder it lives in, or
+/// opened in whatever edits text, by the granted opener plugin
+/// (`ui/export/export_dialog.ts: revealConfiguration`).
 #[tauri::command]
 pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
@@ -433,5 +516,122 @@ mod tests {
         let (found, source) = find_pandoc_from(None, &[], Some("/nowhere".to_string()));
         assert!(found.is_none());
         assert!(source.is_empty());
+    }
+
+    /// A request for the tests that read the arguments: every name it can carry, carried.
+    fn request_in(dir: &Path) -> ExportRequest {
+        ExportRequest {
+            kind: "docx".to_string(),
+            text: "# a note\n".to_string(),
+            output_path: dir.join("out.docx").to_string_lossy().into_owned(),
+            resource_paths: vec![dir.to_string_lossy().into_owned()],
+            source_dir: None,
+            bibliography: Some(dir.join("library.bib").to_string_lossy().into_owned()),
+            csl: Some(CslStyle {
+                name: "apa".to_string(),
+                xml: "<style>apa</style>".to_string(),
+            }),
+            references: Some("References".to_string()),
+        }
+    }
+
+    fn named_arguments(dir: &Path, request: &ExportRequest) -> Vec<String> {
+        pandoc_arguments(dir, &dir.join("export.docx.yaml"), &dir.join("note-1.md"), request)
+            .unwrap()
+            .iter()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect()
+    }
+
+    /// A folder of this test's own, made and taken away again.
+    fn scratch(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("yi-export-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn the_arguments_are_the_whole_of_what_the_app_asks_pandoc_for() {
+        let dir = scratch("arguments");
+        fs::write(dir.join("library.bib"), "@article{smith2020}\n").unwrap();
+        let request = request_in(&dir);
+
+        assert_eq!(
+            named_arguments(&dir, &request),
+            vec![
+                "--defaults".to_string(),
+                dir.join("export.docx.yaml").to_string_lossy().into_owned(),
+                "--output".to_string(),
+                request.output_path.clone(),
+                "--resource-path".to_string(),
+                dir.to_string_lossy().into_owned(),
+                "--bibliography".to_string(),
+                dir.join("library.bib").to_string_lossy().into_owned(),
+                "--metadata".to_string(),
+                "reference-section-title=References".to_string(),
+                "--csl".to_string(),
+                dir.join("styles/apa.csl").to_string_lossy().into_owned(),
+                dir.join("note-1.md").to_string_lossy().into_owned(),
+            ]
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_library_that_is_not_there_is_not_named_at_all() {
+        // Pandoc exits non-zero on a bibliography it cannot read, which would lose the whole export
+        // over a setting that names a file the reader has since moved.
+        let dir = scratch("no-library");
+        fs::write(dir.join("library.bib"), "@article{smith2020}\n").unwrap();
+        let mut request = request_in(&dir);
+        assert!(named_arguments(&dir, &request).contains(&"--bibliography".to_string()));
+
+        request.bibliography = Some(dir.join("gone.bib").to_string_lossy().into_owned());
+        assert!(!named_arguments(&dir, &request).contains(&"--bibliography".to_string()));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn no_style_at_all_is_no_style_argument() {
+        let dir = scratch("no-style");
+        let mut request = request_in(&dir);
+        request.csl = None;
+        assert!(!named_arguments(&dir, &request).contains(&"--csl".to_string()));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_style_lands_in_a_file_named_for_the_style_and_nowhere_else() {
+        assert_eq!(style_file_name("apa"), "apa");
+        assert_eq!(style_file_name("harvard1"), "harvard1");
+        // A config value a reader may type anything into: what it cannot do is name a file outside
+        // the folder its styles are kept in, or a hidden one.
+        for dangerous in ["../../evil", "/etc/passwd", "..", ".hidden", "", "  "] {
+            let name = style_file_name(dangerous);
+            assert!(
+                !name.contains('/') && !name.contains('\\') && name != ".." && !name.starts_with('.'),
+                "{dangerous} became {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_style_is_written_once_and_replaced_when_the_style_changes() {
+        let dir = scratch("csl");
+        let mut style = CslStyle {
+            name: "apa".to_string(),
+            xml: "<style>one</style>".to_string(),
+        };
+
+        let written = ensure_csl_in(&dir, &style).unwrap();
+        assert_eq!(written, dir.join("styles/apa.csl"));
+        assert_eq!(fs::read_to_string(&written).unwrap(), "<style>one</style>");
+
+        style.xml = "<style>two</style>".to_string();
+        assert_eq!(ensure_csl_in(&dir, &style).unwrap(), written);
+        assert_eq!(fs::read_to_string(&written).unwrap(), "<style>two</style>");
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

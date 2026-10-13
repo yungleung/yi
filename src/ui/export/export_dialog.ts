@@ -18,7 +18,7 @@
  */
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { openPath } from '@tauri-apps/plugin-opener';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { exportConfigPath, type ExportKindInfo } from '../../api/export';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
@@ -107,9 +107,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.configPath.setAttribute('data-export-config', 'true');
     this.openConfig = this.button(
       'export-open-config',
-      t('export.openConfig'),
+      t('export.revealConfig'),
       'btn btn-ghost btn-xs px-0',
-      () => void this.openConfiguration()
+      () => void this.revealConfiguration()
     );
 
     this.status = document.createElement('p');
@@ -235,12 +235,18 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
   }
 
-  /** Opens the kind's configuration file in whatever the system edits text with. */
-  private async openConfiguration(): Promise<void> {
+  /**
+   * Reveals the kind's configuration file in the folder it lives in, with the file selected.
+   *
+   * *Revealed* rather than opened: which editor a file belongs to is the reader's own arrangement,
+   * and the folder they can see is one they can drag the file out of, open in whatever they like,
+   * or copy before changing. The app's tree reveals a file the same way (`tree_ops.ts: reveal`).
+   */
+  private async revealConfiguration(): Promise<void> {
     try {
       const path = await exportConfigPath(this.selected);
       this.configPath.textContent = path;
-      await openPath(path);
+      await revealItemInDir(path);
     } catch (error) {
       notify('Export configuration', error);
     }

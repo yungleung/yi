@@ -736,6 +736,24 @@ elements) unless it says otherwise.
   `syntax/wikilink_text.ts` with the node reading it from there; and a hint put away with **Escape**
   left its card hidden in the page — the next `[data-hint]` found it — which `messages-and-hints.js`
   now holds with a check that fails without the one-line fix in `ui/hints.ts`.
+  **The three things a first read of it turned up** landed on the same branch. An image's
+  destination is now rewritten to the file it names — absolute, percent-encoded — by the app's *own*
+  rule (`preprocess.ts: imageRewrites` over `services/workspace_folders.ts: destinationPaths`), so
+  what the docx embeds is the picture the page showed, found through the same two folders the
+  renderer reads it from and whatever spelling the destination arrived in (measured: a file names
+  with a space, a `#`, a `(`, a `?` and a `%` in it each resolve; a bare, a `<…>`-wrapped and a
+  `%20`-spelled destination are one file). The library the citations were formatted from is handed
+  to citeproc (`--bibliography`) along with the CSL text of the style the editor shows them in
+  (`--csl`, written into `<data>/export/styles/<name>.csl`, the style's *name* from citation-js and
+  its text from citation-js's own bundled styles) — so `[@key]` resolves and pandoc appends the
+  reference list, headed with the app's own word for it, which is what citing the note in the app
+  already showed. Measured on a note citing the fixtures' library: `(Smith, 2020)` in the text and
+  `Smith, J. (2020). …` under a References heading at the end. A library that is *not there* is not
+  named at all (pandoc exits non-zero on a bibliography it cannot read, so a stale setting would
+  otherwise lose the whole export). And the settings button **reveals** the configuration file in
+  its folder rather than opening it in whatever the system thinks edits text — which editor a file
+  belongs to is the reader's own arrangement, and this is how the tree reveals a file too
+  (`tree_ops.ts: reveal`).
 
 ## Open, in the order to take them
 
@@ -755,15 +773,12 @@ elements) unless it says otherwise.
   decision: `window.print()` in the webview prints the *chrome as well as the page* unless the
   stylesheet is told not to, and it computes page breaks from the viewport, while a Rust-side render
   needs an engine the app would then have to ship.
-- **The bibliography the workspace already names.** The shipped defaults carry the citeproc filter
-  (`filters: [type: citeproc]`) with an empty `bibliography: []`, so a note with `[@key]` exports
-  with `Citeproc: citation doe2001 not found` in pandoc's log and the keys written as they stand
-  (measured with the docx probe's own note). Zettlr answers this by putting the app's configured
-  library into the defaults it hands pandoc, and the app knows it: `cfg.bibliography_file` and
-  `cfg.csl_style`. Two things to settle first — citation-js's style *name* (`apa`) is not a CSL file
-  pandoc can read, so the style has to come from somewhere (a bundled CSL file, or a `csl:` key the
-  reader writes), and a file the reader edits should not be partly the app's, so the bibliography
-  belongs in the run rather than in the file.
+- **The citation *forms* the editor writes and citeproc does not read.** With the library handed over
+  (`--bibliography`), `[@key]` and `@key` resolve. What is untested is the rest of the app's own
+  citation syntax — a locator (`[@key, p. 45]`), several keys in one bracket, a narrative citation
+  with the author outside it — against citeproc's parser, and `suppress-bibliography` for a reader
+  who wants the keys resolved but no list. A probe over each form is the way in, and the fixtures'
+  library has two entries to write them with.
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
   new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
   the one an inserted image is written with — and the asset protocol that *serves* a rendered image

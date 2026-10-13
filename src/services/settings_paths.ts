@@ -42,3 +42,16 @@ export async function imageFolderPath(): Promise<string | null> {
   }
   return expandHome(named, await homeFolder());
 }
+
+/**
+ * The bibliography file the settings name, or null when they name none. The same reading as the
+ * image folder's, and needed by the export: a library handed to pandoc has to be a path pandoc can
+ * open, not the `~/…` spelling a reader writes in a settings field.
+ */
+export async function bibliographyPath(): Promise<string | null> {
+  const named = configManager.get()?.bibliography_file.trim() ?? '';
+  if (named === '') {
+    return null;
+  }
+  return expandHome(named, await homeFolder());
+}

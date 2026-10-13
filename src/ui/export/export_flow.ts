@@ -19,18 +19,21 @@
  */
 
 import { join } from '@tauri-apps/api/path';
+import { exists } from '@tauri-apps/plugin-fs';
 import { exportKinds, runExport } from '../../api/export';
+import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentManager } from '../../services/document_manager';
 import { showHint } from '../../services/hints';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
-import { homeFolderPath, imageFolderPath } from '../../services/settings_paths';
+import { bibliographyPath, homeFolderPath, imageFolderPath } from '../../services/settings_paths';
 import { fileName, parentFolder } from '../../services/workspace_folders';
+import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
 import { exportDialog } from './export_dialog';
-import { withRenderedWikilinks } from './preprocess';
+import { exportSource } from './preprocess';
 
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {
@@ -61,18 +64,42 @@ export async function exportNote(text: string): Promise<void> {
 
   try {
     // The pre-process is the one step every kind shares, and the parser is what says where the
-    // wikilinks are — a `[[…]]` in a fence or in code is code, and stays exactly as written.
-    const prepared = await withRenderedWikilinks(text, (target) => documentManager.getTitle(target));
+    // wikilinks and the images *are* — a `[[…]]` in a fence, or an image's destination in a code
+    // span, is code and stays exactly as written. What it answers with is the app's own reading of
+    // the note: the titles a wikilink renders as, and the file each picture is found at — the same
+    // folders the renderer resolves a relative destination against, so what goes into the file is
+    // what the reader saw.
+    const prepared = await exportSource(text, {
+      titleOf: (target) => documentManager.getTitle(target),
+      bases: imageBases(),
+      exists: fileExists
+    });
     await runExport({
       kind: answer.kind,
       text: prepared,
       output_path: answer.outputPath,
       resource_paths: await resourcePaths(folder),
-      source_dir: note?.path ? parentFolder(note.path) : null
+      source_dir: note?.path ? parentFolder(note.path) : null,
+      bibliography: await bibliographyPath(),
+      csl: bibliographyManager.cslForExport(),
+      references: t('export.references')
     });
     showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
   } catch (error) {
     notify('Export', error);
+  }
+}
+
+/**
+ * Whether a path names a file that is there. The file plugin reads only what it is scoped to
+ * (`$HOME/**`), and a refusal is an answer like any other: an image outside that scope is left as
+ * the author wrote it, for pandoc to try for itself.
+ */
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    return await exists(path);
+  } catch {
+    return false;
   }
 }
 

@@ -36,6 +36,12 @@ export interface ExportRequest {
   resource_paths: string[];
   /** The note's own folder, when it has one: pandoc is run there, so its paths mean what they say. */
   source_dir: string | null;
+  /** The library the citations were formatted from, so pandoc can append their references. */
+  bibliography: string | null;
+  /** The CSL style the page showed, so the appended reference list is that style. */
+  csl: { name: string; xml: string } | null;
+  /** What that list is called in the reader's language — pandoc leaves it unnamed without one. */
+  references: string | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */
