@@ -104,9 +104,14 @@ export function openDocument(incoming: IncomingDocument, id: string): SessionDoc
     content: incoming.content,
     saved: incoming.content,
     stacked: false,
+    // Nothing is remembered about where the reader was, and nothing is invented either: a caret
+    // placed here is a caret they never put anywhere, and it decides what the page shows (a node
+    // the caret is in renders its own markdown, so a note opening on a picture opened on the
+    // picture's markdown). The reader's first click or keystroke places one (`editing/text_commands`)
+    // — and a document coming back *with* a view keeps it (`restoreView`).
     view: incoming.select
       ? { caret: incoming.select.start, to: incoming.select.end, scroll: null }
-      : { caret: 0, to: null, scroll: null }
+      : { caret: null, to: null, scroll: null }
   };
 }
 
@@ -362,7 +367,7 @@ function isDocument(value: unknown): value is SessionDocument {
     typeof document.stacked === 'boolean' &&
     typeof document.view === 'object' &&
     document.view !== null &&
-    typeof document.view.caret === 'number' &&
+    (document.view.caret === null || typeof document.view.caret === 'number') &&
     (document.view.to === undefined ||
       document.view.to === null ||
       typeof document.view.to === 'number')

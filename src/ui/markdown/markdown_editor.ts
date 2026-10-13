@@ -24,6 +24,7 @@ import {
   ensureCaretRendered,
   getCaretRange,
   getSelectionRange,
+  hideCaret,
   onCaretRangeChanged,
   setSelectionRange
 } from './caret/caret';
@@ -126,6 +127,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private layout: EditorLayout = 'page';
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
+  /**
+   * Whether a caret has been placed in the document on screen at all.
+   *
+   * A document the session opens with nothing remembered is shown *without* a caret
+   * (`services/session_rules.ts`), which keeps a note that opens on a picture from rendering that
+   * picture's markdown. The reader's first keystroke still has to write somewhere, so it places a
+   * caret at the text's own start first ({@link placeCaretForTheTextPath}) — but only while this is
+   * false: a caret that was *taken away* later (a click outside the document does that) must stay
+   * away, which is what makes the next keystroke write nothing.
+   */
+  private caretPlaced = false;
   /** The citation and wikilink lists, which own the arrows and Enter while one is open. */
   private completions!: Completions;
   /** What the key path needs of this editor (see `editing/keys.ts`). */
@@ -178,7 +190,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Source mode follows the caret: the block the caret is in shows its own
     // text (see `source_mode.ts`). A click on a block's rendering asks the
     // editor to enter it, because only the editor knows the block's text.
-    onCaretRangeChanged(() => this.followCaret());
+    onCaretRangeChanged((range) => {
+      if (range !== null) {
+        this.caretPlaced = true;
+      }
+      this.followCaret();
+    });
     setSourceEntryHandler((blockElement, offset) => this.enterSource(blockElement, offset));
 
     // The window is rebuilt as the user scrolls; re-anchor the caret only
@@ -205,7 +222,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.find = new FindController(this.context, this.findBar);
     this.element.appendChild(this.findBar.element);
 
-    this.contentView.addEventListener('keydown', (event) => handleEditorKey(event, this.keyHost));
+    this.contentView.addEventListener('keydown', (event) => {
+      this.placeCaretForTheTextPath();
+      handleEditorKey(event, this.keyHost);
+    });
     // The routed clicks, in the order they have to run: a checkbox and a footnote
     // marker are handled before a node can place a caret where the click landed, a
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
@@ -250,6 +270,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.composition = installCompositionInput(
       this.contentView,
       (text) => {
+        this.placeCaretForTheTextPath();
         insertCommitted(this.context, text);
       },
       // The word being composed is written into the line, so the block it lands in can grow
@@ -412,6 +433,23 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   }
 
   /**
+   * Gives the text path a caret to write at, in a document that has never had one.
+   *
+   * A document the session opens with nothing remembered is shown without a caret
+   * ({@link caretPlaced}). A keystroke still means "write here", so the first one places the caret
+   * where the text starts — the position the editor would have put it in — and then the key is
+   * handled as usual. Once a caret has been placed this does nothing, because a caret that was
+   * *taken away* (a click outside the document does that) has to stay away: that is what makes the
+   * next keystroke write nothing (`click-away-deselects.js`).
+   */
+  private placeCaretForTheTextPath(): void {
+    if (this.caretPlaced) {
+      return;
+    }
+    restoreCaret(this.context, 0, false);
+  }
+
+  /**
    * Puts the reader back where `captureView` found them.
    *
    * The selection goes first and the view after it, because placing it can make the browser
@@ -430,6 +468,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
             restoreCaret(this.context, view.caret, false)
           : restoreCaret(this.context, view.caret, false);
       this.pendingCaretOffset = placed ? null : view.caret;
+    } else {
+      // A view that says nothing about a caret leaves the document *without* one. What the page
+      // shows follows the caret, so a caret invented here would decide it — and one the previous
+      // document left behind is a range the browser relocated into this one, which is a caret
+      // nobody chose either. The reader's first click or keystroke places one.
+      this.pendingCaretOffset = null;
+      this.caretPlaced = false;
+      hideCaret();
     }
     this.renderer.scrollToAnchor(view.scroll);
     const anchor = this.contentView.scrollTop;

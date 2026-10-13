@@ -229,6 +229,16 @@ to a caret the reader had left in the first paragraph (`test/probes/scroll-caret
 it). It is the same rule a click that opens a source already follows: a rebuild under the reader
 is not a request to move the page.
 
+**A document opened with nothing remembered is opened without a caret.** The view the session
+hands over is the truth about where the reader was (`services/session_rules.ts`: `caret: null` when
+nothing is remembered, and a remembered one comes back exactly where it was); a caret the app
+invents is one nobody put anywhere, and it *decides what the page shows*, because a node the caret
+is in renders its own markdown — which is how a note that opens on a picture used to open on that
+picture's markdown, with the picture hidden. So a document with no remembered view is drawn as it
+is written, the reader's first click or keystroke places a caret (the keystroke at the text's own
+start: `editing/text_commands.ts: textSelection`), and `test/probes/document-opens-without-a-caret.js`
+holds both halves.
+
 An **image** is written by the button beside the link button, one command `edit:insertImage`, and
 the clipboard decides what that means (`ui/image/image_flow.ts`): a destination it is offering — a
 web URL, a `file://` URL, a path to an image — is written as `![alt](destination)` where the caret
@@ -334,10 +344,10 @@ starts an item (`- `) — and the line above is never swallowed. Each rule has i
 may not contain a space unless it is wrapped in `<…>` (which is what the app *writes*,
 `syntax/link_edits.ts`), so `![shot](my shot.png)` — the way another editor writes a path, and how a
 reading library of imported notes is written — is a paragraph of that literal text, and the picture
-it names is never asked for. `syntax/image_paths.ts` is the repair: such a run is read as the image
+it names is never asked for. `syntax/spaced_destinations.ts` is the repair: such a run is read as the image
 wherever it stands, since the `)` ends the path, and the words around it stay text; an escaped
 `\![` and code are left alone, because those characters are meant literally. Its check is
-`check-image-paths.mjs` and its probe is `image-path-with-spaces.js`, which holds the file beside
+`check-spaced-destinations.mjs` and its probe is `image-path-with-spaces.js`, which holds the file beside
 the note and the one in the settings' image folder, through the asset protocol to the pixels. The
 same path *copied* may spell the space as `%20`, and `services/workspace_folders.ts` tries the
 spelling that resolves to the file **before** the one as written — a `%2520` URL's 404 is what the

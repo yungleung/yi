@@ -36,7 +36,7 @@ methodology; this file is the index and the conventions.
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
 | `check-fence-edits.mjs` | Where a write inside a fenced block lands: a character typed at either edge of a body goes *in* the body, one with no content line gets a line of its own, `Enter` leaves a blank content line rather than a caret on a delimiter, and choosing a language rewrites the opening fence's own line |
 | `check-bare-markers.mjs` | What the parser makes of a marker-only line (`syntax/bare_markers.ts`): an empty item when the marker has its delimiter space (`- `), text when it has not (`-`), and never a setext heading that swallows the paragraph above it |
-| `check-image-paths.mjs` | What the parser makes of an image path with spaces in it (`syntax/image_paths.ts`): the run is the image wherever it stands, the words around it stay text, a title after the path is the title, and an escaped `\![` or a run in code is left as the characters it is |
+| `check-spaced-destinations.mjs` | What the parser makes of a path with spaces in it, in an image or a link (`syntax/spaced_destinations.ts`): the run is the node it names wherever it stands, the words around it stay text, a title after the path is the title, the `%20` spelling stays a link, and an escaped `\![` or a run in code is left as the characters it is |
 | `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): the two delimiter lines with the caret on the blank line between them, the blank lines markdown needs around the block, `---` only at the very top of a note, and the ordinary typing everything else stays |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
@@ -61,7 +61,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-seven of them (`probe:all` runs 165 and skips 22, each skip for the reason its
+a hundred and eighty-eight of them (`probe:all` runs 166 and skips 22, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -153,7 +153,7 @@ prose), the
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
-documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it), the
+documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it; `document-opens-without-a-caret` — a document opened with nothing remembered invents no caret, so a note opening on a picture draws the picture, while a caret the session *does* remember comes back where it was, and a keystroke with no caret writes at the text's own start), the
 things the app says (`messages-and-hints` — a failure raised from the tree waiting in the window's
 bottom-right corner with its ✕ at the card's right edge, a press elsewhere leaving it, Escape and
 the ✕ closing it, a second message stacking above the first; and a copied path as a hint beside

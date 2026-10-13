@@ -1,24 +1,25 @@
 /**
- * Reads an image whose path has spaces in it.
+ * Reads an image or a link whose *path* has spaces in it.
  *
- * A markdown link destination may not contain a space unless it is wrapped in `<…>` — which is
- * why the app *writes* one that way (`link_edits.ts`) — so a line another editor wrote as
- * `![shot](my shot.png)` is a paragraph of that literal text: no image, no path, and nothing of
- * the picture the reader asked for. A reader writing a path means the file it names, and that
- * file is what stands between the parentheses.
+ * A markdown destination may not contain a space unless it is wrapped in `<…>` — which is why the
+ * app *writes* one that way (`link_edits.ts`) — so a line another editor wrote as
+ * `![shot](my shot.png)` or `[note](my note.md)` is a paragraph of that literal text: no image, no
+ * link, and nothing of the file either names. A reader writing a path means the file it names, and
+ * that file is what stands between the parentheses — for an image and for a link alike, which is
+ * why this is one repair and not two.
  *
- * So a run like that is read as the image it names, wherever it stands, and the characters around
- * it stay the text they were: the `)` ends the path, so nothing there has to be guessed. What is
- * *not* read is a run whose characters are not the document's own — `\![a](b c.png)`, where the
- * author escaped it to mean exactly those characters, and text holding an entity, whose offsets
- * this repair could not split exactly.
+ * So a run like that is read as the node it names, wherever it stands, and the characters around it
+ * stay the text they were: the `)` ends the path, so nothing there has to be guessed. What is *not*
+ * read is a run whose characters are not the document's own — `\![a](b c.png)`, where the author
+ * escaped it to mean exactly those characters, and text holding an entity, whose offsets this
+ * repair could not split exactly.
  *
  * Measured over the imported library that asked for this: 66 image lines, 35 of them with a space
  * in the path, and 24 of those sharing their paragraph with the prose after them — which is why the
  * reading is not limited to a line of its own.
  *
  * May import: the parse (mdast types). Upholds: one fact about markdown syntax has one home — this
- * is the reading of an image path that markdown itself refuses to read.
+ * is the reading of a path that markdown itself refuses to read.
  */
 
 import type { Root } from 'mdast';
@@ -38,11 +39,11 @@ interface Point {
   column: number;
 }
 
-/** An image run, with a path's spaces allowed: `![alt](my shot.png)`. */
-const IMAGE_RUN = /!\[([^\]]*)\]\(([^()<>]*)\)/g;
+/** An image or a link run, with a path's spaces allowed: `![alt](a b.png)`, `[title](a b.md)`. */
+const DESTINATION_RUN = /!?\[([^\]]*)\]\(([^()<>]*)\)/g;
 
-/** Reads every image markdown refused, wherever the run stands. */
-export function restoreImagePaths(root: Root, markdown: string): void {
+/** Reads every destination markdown refused, wherever the run stands. */
+export function restoreSpacedDestinations(root: Root, markdown: string): void {
   repairContainer(root as unknown as Container, markdown);
 }
 
@@ -64,8 +65,8 @@ function repairContainer(container: Container, markdown: string): void {
 }
 
 /**
- * The text and image nodes a text node becomes, or null when there is no such image in it: each
- * run read, and the characters between them kept as text.
+ * The text and node a text node becomes, or null when there is no such destination in it: each run
+ * read, and the characters between them kept as text.
  */
 function partsOf(markdown: string, node: Container): Container[] | null {
   const position = node.position;
@@ -77,14 +78,14 @@ function partsOf(markdown: string, node: Container): Container[] | null {
   const source = markdown.slice(start, end);
   // The characters have to be the document's own: anything escaped reads as different text, and
   // the offsets this repair splits by would no longer line up with it.
-  if (source !== node.value || !source.includes('![')) {
+  if (source !== node.value || !source.includes('[')) {
     return null;
   }
   const parts: Container[] = [];
   let cursor = 0;
-  for (const match of source.matchAll(IMAGE_RUN)) {
-    // The space is what markdown refused: without one the run was already an image, and this
-    // repair has no business reading it.
+  for (const match of source.matchAll(DESTINATION_RUN)) {
+    // The space is what markdown refused: without one the run was already a node, and this repair
+    // has no business reading it.
     if (!match[2].includes(' ')) {
       continue;
     }
@@ -94,16 +95,24 @@ function partsOf(markdown: string, node: Container): Container[] | null {
       parts.push(textAt(source.slice(cursor, from), start + cursor, start + from, position));
     }
     const { url, title } = splitDestination(match[2]);
-    parts.push({
-      type: 'image',
-      url,
-      alt: match[1],
-      title,
-      position: {
-        start: { ...position.start, offset: start + from },
-        end: { ...position.end, offset: start + to }
-      }
-    } as Container);
+    const span = {
+      start: { ...position.start, offset: start + from },
+      end: { ...position.end, offset: start + to }
+    };
+    const image = match[0].startsWith('!');
+    parts.push(
+      image
+        ? ({ type: 'image', url, alt: match[1], title, position: span } as Container)
+        : ({
+            type: 'link',
+            url,
+            title,
+            children: [
+              textAt(match[1], start + from + 1, start + from + 1 + match[1].length, position)
+            ],
+            position: span
+          } as Container)
+    );
     cursor = to;
   }
   if (parts.length === 0) {
