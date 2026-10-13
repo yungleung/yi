@@ -397,6 +397,32 @@ async function holdTheOpener() {
   );
 }
 
+/**
+ * Gives the opener's system hand *back*, once the run is over.
+ *
+ * The hold above is installed for the probe's own sake — a probe that clicks over prose can land on
+ * a link, and the browser that opens then takes the window's front, which makes every probe after it
+ * measure an occluded page. What it must not do is outlive the run: this is the app the *reader* is
+ * using, and while the hold stands their own ⌘-click on a link asks the stub and no browser ever
+ * opens — measured, after a sweep: `String(window.fetch).includes('__probeOpenedUrls')` was true in
+ * the running page, and false again one run after this was added.
+ *
+ * A probe that stands in for the opener itself restores *this* fetch (or its own) when it is done,
+ * and the hold is installed again before every run, so nothing here is lost by taking it back.
+ */
+async function releaseTheOpener() {
+  await call(
+    `(async () => {
+       if (typeof window.__probeRealFetch === 'function') {
+         window.fetch = window.__probeRealFetch;
+       }
+       window.__probeRealFetch = undefined;
+       return null;
+     })()`,
+    8000
+  );
+}
+
 /** The app's config as its own JSON text, or null when the page cannot answer. */
 async function readConfigText() {
   const reply = await call(
@@ -602,6 +628,7 @@ await restoreConfig(previousConfig);
 forgetTheConfig();
 await restoreSession(previousSession);
 await restoreLanguage(languageBeforeProbing);
+await releaseTheOpener();
 if (reply.success) {
   reportResult(reply.data);
 }
@@ -628,6 +655,8 @@ for (let attempt = 0; attempt < 8; attempt += 1) {
   }
   const result = state ? ownFrame(state.result, runToken) : null;
   if (result !== null) {
+    // The probe is over however it reported, so the opener's hand goes back here too.
+    await releaseTheOpener();
     console.log(
       '(recovered after the bridge timed out; the probe had already run — the bridge gives a ' +
         'script 5 s, so this is what a longer probe always looks like, and the bridge: line ' +

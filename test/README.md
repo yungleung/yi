@@ -247,7 +247,12 @@ live index; the newest probes carry a header naming what they cover:
   system hand away before every probe and keeps what the app asked for in
   `window.__probeOpenedUrls` (`tauri-probe.mjs: holdTheOpener`), so this cannot cost a run its
   front; a probe that checks the opener itself installs its own stand-in over that and still sees
-  the call. `link-click-stays-in-the-window.js` holds both halves of the seam. And a window that
+  the call, and the hand goes **back** when the run is over (`tauri-probe.mjs: releaseTheOpener`):
+  the app is the reader's, and while the hold stood their own ⌘-click on a link asked the stub and
+  no browser opened — measured after a sweep, `String(window.fetch).includes('__probeOpenedUrls')`
+  was true in the running page and false again one run after the release was added.
+  `link-click-stays-in-the-window.js` holds both halves of the seam, and the release is a line of
+  its own in the log, not something a probe can see: it runs inside the hold. And a window that
   has been **closed** leaves the process answering with a page that never paints at all: the tell
   is the page's own, `document.hidden === true` (`visibilityState: "hidden"`, and
   `document.hasFocus()` false), and a sweep on such a page measured 5 007 ms for *every* probe,
