@@ -35,6 +35,7 @@ export type CommandId =
   | 'edit:insertImage'
   | 'file:save'
   | 'file:saveAs'
+  | 'file:export'
   | 'file:newMarkdown'
   | 'version:save'
   | 'session:toggleStack'

@@ -13,6 +13,7 @@
 import type { AstWikilink } from '../ast';
 import { onNearViewport } from '../lazy';
 import { renderContext } from '../render_context';
+import { wikilinkParts, wikilinkText } from '../syntax/wikilink_text';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 
 const SOURCE_CLASS = 'markdown-wikilink-source';
@@ -24,24 +25,24 @@ export class Wikilink extends RevealableNodeComponent {
     if (sourceView) {
       return;
     }
-    const parsed = parseWikilinkValue(node.value);
-    this.element.textContent = parsed.title ?? parsed.target;
+    const parts = wikilinkParts(node.value);
+    this.element.textContent = wikilinkText(parts, null);
     // The target travels with the element it rendered: a click cannot read it out of the title
     // (which is another document's, and may be a title the target's file no longer answers to),
     // so whoever asks for the document the link names reads it here (`click_routing.ts:
     // routeWikilinkClick`). A name, not an offset — the source shape shows the characters
     // themselves and carries none of this.
-    this.element.dataset.wikilinkTarget = parsed.target;
+    this.element.dataset.wikilinkTarget = parts.target;
 
-    if (!parsed.title) {
+    if (!parts.title) {
       // Resolve the target's title only when the wikilink approaches the
       // viewport, so off-screen wikilinks don't trigger document lookups.
       // The answers are captured now: the lookup runs after the render pass.
       const app = renderContext();
       onNearViewport(this.element, () => {
-        void app.wikilinkTitle(parsed.target).then((title) => {
+        void app.wikilinkTitle(parts.target).then((title) => {
           if (title && this.element.isConnected) {
-            this.element.textContent = title;
+            this.element.textContent = wikilinkText(parts, title);
           }
         });
       });
@@ -57,15 +58,4 @@ export class Wikilink extends RevealableNodeComponent {
 /** The target/title between the `[[` and `]]` markers. */
 function wikilinkRange(source: string): { start: number; end: number } {
   return { start: 2, end: Math.max(2, source.length - 2) };
-}
-
-function parseWikilinkValue(value: string): { target: string; title: string | null } {
-  const inner = value.slice(2, -2);
-  const separator = inner.indexOf('|');
-  if (separator >= 0) {
-    const target = inner.slice(0, separator).trim();
-    const title = inner.slice(separator + 1).trim();
-    return { target, title: title || null };
-  }
-  return { target: inner.trim(), title: null };
 }

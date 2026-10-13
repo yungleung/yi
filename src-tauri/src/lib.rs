@@ -1,6 +1,7 @@
 mod i18n;
 mod menu;
 mod files;
+mod export;
 mod session;
 mod stats;
 mod settings;
@@ -41,6 +42,10 @@ pub fn run() {
             settings::set_config,
             settings::get_current_config_version,
             settings::read_bibliography,
+            export::export_kinds,
+            export::run_export,
+            export::export_config_path,
+            export::export_use_pandoc,
             versioning::versioning_facts,
             versioning::versioning_use_git,
             versioning::versioning_history,

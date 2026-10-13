@@ -199,6 +199,25 @@ stack on their behalf); and **no git write happens at all** — the reader's sta
 work stays staged, `git status` shows the modification, and a version is still only made when they
 ask (held by the recorder: a whole restore is one `show` and none of the write verbs).
 
+**A note goes out through pandoc**, one kind at a time. The File menu's *Export* is the command
+`file:export` (`src/ui/export/export_flow.ts`), and what it opens is a card
+(`src/ui/export/export_dialog.ts`) with a tab per kind the app ships, the target the file is written
+to, and the **conversion settings** file the reader may edit — a button opens it in the system's own
+editor. The kinds are Rust's (`src-tauri/src/export.rs: KINDS`): each is a name, the extension its
+output is written under, whether pandoc is needed at all (PDF will say no), and the bytes of a
+pandoc *defaults file* — `src-tauri/assets/export/export.<kind>.yaml`, written into
+`<app data>/export/` the first time that kind is used and **never overwritten again**, which is what
+makes a reader's edit theirs (the docx one is Zettlr's own defaults file, kept word for word). The
+window is told the list (`src/api/export.ts: exportKinds`) and knows no kind by name except the one
+that labels its tab, so a new kind is a row and an asset and nothing else. Two facts about a run:
+every kind shares one **pre-process** (`src/ui/export/preprocess.ts`) that writes each wikilink as
+the words it renders as, walked out of the parse — so a `[[…]]` in a fence or in code stays code —
+and the app's own scratch note (written under its data folder, because pandoc reads files) is
+deleted whether pandoc succeeded or not. What the app may ask pandoc is one list in one place, held
+by `test/probes/export-pandoc-arguments.js` against a pandoc that only records
+(`test/probes/fake-pandoc.sh`); `export_use_pandoc` is the seam that points the app at it, put back
+by the harness like the git one.
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:

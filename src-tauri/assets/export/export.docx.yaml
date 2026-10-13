@@ -1,0 +1,47 @@
+# ZETTLR DEFAULTS FILE
+# ====================
+# Conversion: Markdown --> Word document
+# More info: https://pandoc.org/MANUAL.html
+#
+# Yi's copy of that file: it is written into the app's data folder the first time an export of
+# this kind needs it, and every export then hands it to pandoc unchanged (`--defaults`), so a key
+# below is pandoc's own and the manual above says what it means. A file that is already there is
+# never overwritten — an edited one is the reader's.
+reader: markdown
+writer: docx
+self-contained: true
+variables: {}
+metadata-files: []
+include-before-body: []
+include-after-body: []
+include-in-header: []
+bibliography: []
+filters:
+- type: citeproc
+top-level-division: chapter
+wrap: none
+columns: 78
+dpi: 72
+toc: false
+toc-depth: 2
+number-sections: false
+number-offset:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+shift-heading-level-by: 1
+section-divs: true
+identifier-prefix: ''
+title-prefix: ''
+eol: lf
+strip-comments: false
+indented-code-classes: []
+ascii: false
+default-image-extension: .jpg
+highlight-style: pygments
+tab-stop: 4
+preserve-tabs: false
+fail-if-warnings: false

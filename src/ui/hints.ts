@@ -16,8 +16,14 @@ import { HINT_EVENT, hintPlaceSelector, type Hint, type HintPlace } from '../ser
 import { BesideCard, boxOf } from './floating/beside';
 import type { Box } from './floating/placement';
 
-/** The box of the row a hint is about, or null when this window cannot show it. */
-function boxOfPlace(place: HintPlace): Box | null {
+/**
+ * The box of the row a hint is about, or null when this window cannot show it — which is also the
+ * answer for a hint that names no place at all: the card goes to the window's corner.
+ */
+function boxOfPlace(place: HintPlace | null): Box | null {
+  if (place === null) {
+    return null;
+  }
   const element = document.querySelector(hintPlaceSelector(place));
   return element ? boxOf(element) : null;
 }
@@ -35,6 +41,10 @@ class HintCards {
         if (this.showing === card) {
           this.showing = null;
         }
+        // Escape *closes* a floating surface and leaves its element in the page; a hint that has
+        // gone away is gone — a hidden card would be the card the next `[data-hint]` finds, and the
+        // one the next hint would stack above.
+        card.destroy();
       }
     });
     card.element.setAttribute('data-hint', 'true');

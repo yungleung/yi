@@ -338,8 +338,9 @@ async function restoreLanguage(previous) {
 
 /** Runs the probe, installing the helpers again if the page lost them. */
 async function runProbe() {
-  // The one seam a probe can leave set on the app itself goes back before the probe runs:
-  // `versioning_use_git` is a global in the Rust process, which a page reload does not clear.
+  // The seams a probe can leave set on the app itself go back before the probe runs:
+  // `versioning_use_git` and `export_use_pandoc` are globals in the Rust process, which a page
+  // reload does not clear.
   // The page's own stash is *not* cleared here — a run's frames say which run made them
   // (`test/probe_stash.mjs`), and a clear sent in another script raced the probe it was meant
   // to tidy up after.
@@ -349,6 +350,11 @@ async function runProbe() {
          await window.__TAURI_INTERNALS__.invoke('versioning_use_git', { git: null });
        } catch (error) {
          // A build without the versioning seam has nothing to put back.
+       }
+       try {
+         await window.__TAURI_INTERNALS__.invoke('export_use_pandoc', { pandoc: null });
+       } catch (error) {
+         // Nor a build without the export seam.
        }
        return null;
      })()`

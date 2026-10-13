@@ -24,6 +24,14 @@ function homeFolder(): Promise<string | null> {
 }
 
 /**
+ * The reader's home folder, for a caller that has to name a place when nothing else does — an
+ * export from a note with no file and no workspace still has to say where its output would go.
+ */
+export async function homeFolderPath(): Promise<string | null> {
+  return await homeFolder();
+}
+
+/**
  * The folder an image the reader saves goes in, or null when the settings name none — in which
  * case it goes beside the note, which is the answer every caller already has.
  */

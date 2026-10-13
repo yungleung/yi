@@ -13,6 +13,7 @@
  * parser in one place, so parsing and serializing cite the same rule.
  */
 import type { Processor } from 'unified';
+import type { Position } from 'unist';
 import { wikilinkFromMarkdown } from './from-markdown';
 import { wikilinkSyntax } from './syntax';
 import { wikilinkToMarkdown } from './to-markdown';
@@ -21,6 +22,13 @@ export interface WikilinkNode {
   type: 'wikilink';
   /** Raw markdown source: `[[filename]]` or `[[filename|title]]`. */
   value: string;
+  /**
+   * Where it stands in the text it was parsed from, which mdast sets on every node built from a
+   * token. The editor never needs it — a node is drawn where the renderer put it — but a reader
+   * that rewrites the *text* does: an export writes the link's own words into the span this names
+   * (`ui/export/preprocess.ts`).
+   */
+  position?: Position;
 }
 
 /**

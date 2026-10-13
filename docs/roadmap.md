@@ -711,9 +711,59 @@ elements) unless it says otherwise.
   one measured in the wild — after a sweep whose app had died, `get_config` named a workspace the
   fixtures' notes are not in, and five fixture-dependent probes failed identically on `main` and on
   the branch under test, on a freshly started app.
+- **A note goes out through pandoc, first as a Word document.** Landed: the File menu's *Export*
+  opens a card (`ui/export/export_dialog.ts`) with one tab per kind the app ships, the target it is
+  written to, and the conversion settings file — which the card's button opens in the reader's own
+  text editor, because the parameters are theirs. None of the conversion is the app's: a kind *is* a
+  pandoc **defaults file** (`<app data>/export/export.<kind>.yaml`), written from the copy the build
+  ships the first time that kind is used and never overwritten again
+  (`src-tauri/src/export.rs: ensure_defaults_in`), and the docx one is Zettlr's own defaults file
+  kept word for word, header and all. Every kind shares one pre-process
+  (`ui/export/preprocess.ts`): a wikilink is written as the words it renders as — its own title, or
+  the title of the note it names, or its target — and it is walked out of the *parse* rather than
+  scanned for, so a `[[…]]` in a fence, in an inline code span or in frontmatter is not a wikilink
+  and stays exactly as written. Measured: the pandoc on this machine (3.12.1) takes the Zettlr
+  defaults verbatim — `self-contained`, `number-offset` and the citeproc filter all accepted — and
+  `export-docx.js` writes a real Word file (`PK`) where the reader asked, its images embedded (the
+  docx holds `word/media/rId10.png`, read out of the zip by hand). What pandoc is asked is one list
+  in one place, held by `export-pandoc-arguments.js` against a pandoc that only records
+  (`test/probes/fake-pandoc.sh`): `--defaults <the kind's file> --output <where> --resource-path
+  <the note's folders> <the note>`, where the note is the pre-processed text and is deleted again
+  whatever pandoc said. A machine with no pandoc is refused *before* anything is written, and
+  pandoc's own sentence is what a reader is given when it refuses (`export-refused.js`, through the
+  `export_use_pandoc` seam the harness puts back like the git one). Two things fell out on the way:
+  the wikilink rule lived inside the rendered node, which builds DOM, so it moved to
+  `syntax/wikilink_text.ts` with the node reading it from there; and a hint put away with **Escape**
+  left its card hidden in the page — the next `[data-hint]` found it — which `messages-and-hints.js`
+  now holds with a check that fails without the one-line fix in `ui/hints.ts`.
 
 ## Open, in the order to take them
 
+- **The rest of the export kinds.** The machinery is already generic: a kind is a row in
+  `src-tauri/src/export.rs: KINDS` (name, extension, whether pandoc is needed, and the asset's own
+  bytes) plus the YAML it names, and the card reads the list from the app — no module in the webview
+  knows a kind by name except the one that gives its tab a label. So `export.odt.yaml`,
+  `export.latex.yaml`, `export.html.yaml` and `export.epub.yaml` are Zettlr's defaults for those
+  kinds (`writer`, plus `standalone`/`self-contained` where the format has a document of its own),
+  and each one wants its own pass over what pandoc actually writes: an odt that opens, an epub that
+  validates, a LaTeX file whose `\includegraphics` paths resolve.
+- **PDF, which has two hands.** It is the one kind that may be written *without* pandoc, and
+  `KINDS[].needs_pandoc` already carries the answer the card reads (its status line says which hand
+  a kind would use, and the button refuses when that hand is missing). So the tab has to offer both:
+  pandoc with a `pdf-engine` — which the defaults file names, `xelatex` or `tectonic` or
+  `weasyprint` — or the app's own rendering of the page. What the second hand is exactly is the
+  decision: `window.print()` in the webview prints the *chrome as well as the page* unless the
+  stylesheet is told not to, and it computes page breaks from the viewport, while a Rust-side render
+  needs an engine the app would then have to ship.
+- **The bibliography the workspace already names.** The shipped defaults carry the citeproc filter
+  (`filters: [type: citeproc]`) with an empty `bibliography: []`, so a note with `[@key]` exports
+  with `Citeproc: citation doe2001 not found` in pandoc's log and the keys written as they stand
+  (measured with the docx probe's own note). Zettlr answers this by putting the app's configured
+  library into the defaults it hands pandoc, and the app knows it: `cfg.bibliography_file` and
+  `cfg.csl_style`. Two things to settle first — citation-js's style *name* (`apa`) is not a CSL file
+  pandoc can read, so the style has to come from somewhere (a bundled CSL file, or a `csl:` key the
+  reader writes), and a file the reader edits should not be partly the app's, so the bibliography
+  belongs in the run rather than in the file.
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
   new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
   the one an inserted image is written with — and the asset protocol that *serves* a rendered image

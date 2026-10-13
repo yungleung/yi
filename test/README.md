@@ -28,6 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
+| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — walked out of the parse, so a fence's body, an inline code span, frontmatter and an image's brackets are left exactly as they were written |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
@@ -157,7 +158,7 @@ documents and their stack (`document-stack` — a file opened, pushed, and the n
 things the app says (`messages-and-hints` — a failure raised from the tree waiting in the window's
 bottom-right corner with its ✕ at the card's right edge, a press elsewhere leaving it, Escape and
 the ✕ closing it, a second message stacking above the first; and a copied path as a hint beside
-its row, with no ✕, gone at the next press), the
+its row, with no ✕, gone at the next press — or at Escape, which leaves no card behind), the
 first start (`first-run` — the card the start-up path asks with, saying where a new workspace would
 be made, a folder taken from the path field and becoming the workspace the tree then shows, the
 answer remembered, and "not now" writing nothing; `first-run-create` — the other answer, with the
@@ -172,6 +173,15 @@ there to commit after a version of another note; `versioning-consent` — the an
 nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
 — a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
 never nested into; `versioning-no-git` — the machine with no git, which is told and writes nothing),
+watching what the app asks a tool (`export-pandoc-arguments` — the whole of what the app hands
+pandoc, watched by a pandoc that only records (`probes/fake-pandoc.sh`, committed for the reason the
+git one is): the kind's own defaults file, the output, the folders a relative destination resolves
+against, and the note — which is the text *after* the export's pre-process, so a wikilink arrives as
+the words it renders as and a fence's body is untouched; `export-docx` — the File menu's item from
+end to end: the card, its tab, the target field, the real pandoc writing a Word file where the
+reader asked, the hint that says so, and Escape writing nothing at all; `export-refused` — the two
+ways an export stops: a machine with no pandoc saying so with the button refused, and a pandoc whose
+own sentence reaches the reader as a message while nothing of the note is left behind),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and

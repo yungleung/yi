@@ -26,7 +26,13 @@ export interface HintPlace {
 /** What the app says quietly. */
 export interface Hint {
   text: string;
-  at: HintPlace;
+  /**
+   * Beside what it happened on — or `null` when it happened on nothing in this window, in which
+   * case the card takes the window's corner, which is where a card pointing at nothing has always
+   * gone (`ui/floating/placement.ts`). An export is the case: it worked, and the file it worked on
+   * is not a row of the tree.
+   */
+  at: HintPlace | null;
 }
 
 /** Emitted with a `Hint` whenever the app has good news to get out of the way. */
@@ -45,7 +51,7 @@ export function hintPlaceSelector(place: HintPlace): string {
   return `[data-tree-path="${attributeValue(place.path)}"]`;
 }
 
-/** Something worked, and the reader only has to notice it. */
-export function showHint(text: string, at: HintPlace): void {
+/** Something worked, and the reader only has to notice it — beside `at`, or in the corner. */
+export function showHint(text: string, at: HintPlace | null): void {
   void eventManager.emit(HINT_EVENT, { text, at } satisfies Hint);
 }
