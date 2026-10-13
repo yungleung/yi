@@ -360,6 +360,11 @@ delimiters and all, while the caret is inside it. That is what lets the reader l
 own lines: the closing ` ``` ` is a line like any other, `Down` and `End` reach it, and `Enter` at
 its end puts a blank line under the block with the caret on it — for all three kinds
 (`test/probes/fence-exit.js`). `document/blocks.ts: hasSourceMode` names the three;
+which is also why such a block may not be folded into a paragraph: `document/blocks.ts` ends a
+paragraph run before a fence or a `$$` line, because both may interrupt a paragraph and both *must*
+be blocks for their own text to have a shape to be shown in (a `$$` region with no blank line
+around it was exactly that — a formula whose click entered the paragraph's text and showed nothing;
+`display-math-source.js` holds the gesture both ways);
 `editing/context.ts` shows a fenced block's own range while the caret is in it *and no selection is
 live* — a selection is the reader acting on text they can see, and the shape change would take the
 text it covers (a new note opens with its title selected, and that title is inside a frontmatter
