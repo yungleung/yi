@@ -17,6 +17,13 @@
 //!   comes before both. A name that is not there means *no pandoc*, never a different one.
 //! - **the note handed over**: the text is written to a file under the app's data folder, because
 //!   pandoc reads files, and that file is deleted again whether pandoc succeeded or not.
+//! - **a picture the note names on the web**: fetched by the app, not by pandoc, and handed over as
+//!   a local file ([`export_fetch_image`]). Pandoc downloads remote images only when it was built
+//!   with HTTP support, and the pandoc this app finds may not have been — measured: the one on the
+//!   machine this was written on answers *"pandoc was compiled without HTTP support"* and puts the
+//!   picture's description in the document instead. The app can see the picture, so it is the app's
+//!   job to hand it over. The download goes through [`run_curl`] — one list in one place, held by a
+//!   probe against a curl that only records, like the git and pandoc ones.
 //! - **the two things the app knows and pandoc does not**: the library the note's citations were
 //!   formatted from, and the style they were formatted in. Handing citeproc a `--bibliography` is
 //!   what makes it resolve the keys *and append the reference list* the reader asked for; the style
@@ -80,6 +87,15 @@ pub struct ExportKinds {
     /// The pandoc found, or `None` when the machine has none — the dialog's *cannot export*.
     pub pandoc: Option<String>,
     pub kinds: Vec<ExportKindInfo>,
+}
+
+/// What an export did: whether it wrote the file, and what pandoc said on the way.
+#[derive(Debug, Serialize, Clone)]
+pub struct ExportOutcome {
+    /// Pandoc's own warnings — a picture it could not fetch, a citation it could not resolve. They
+    /// are the *reason* a document is not quite what the reader asked for, so they are not thrown
+    /// away: the window says them.
+    pub warnings: Vec<String>,
 }
 
 /// The note to write and where to write it, as the window asks for it.
@@ -201,9 +217,22 @@ fn known_pandoc_locations() -> Vec<PathBuf> {
     ]
 }
 
+/// The known places a curl lives on a Mac. It is a system tool: `/usr/bin/curl` is there on every
+/// machine this app runs on, and no other path is worth guessing at.
+fn known_curl_locations() -> Vec<PathBuf> {
+    vec![
+        PathBuf::from("/usr/bin/curl"),
+        PathBuf::from("/opt/homebrew/bin/curl"),
+    ]
+}
+
 /// The pandoc a probe has pointed the app at, if it has. `YI_PANDOC` is the same seam; this is the
 /// one a caller can reach while the process is already running.
 static PANDOC_FOR_TESTS: Mutex<Option<String>> = Mutex::new(None);
+
+/// The curl a probe has pointed the app at, if it has — `YI_CURL` and [`export_use_curl`], the same
+/// pair the pandoc seam has.
+static CURL_FOR_TESTS: Mutex<Option<String>> = Mutex::new(None);
 
 /// Where pandoc was found, and how. A function of its arguments, so the search order can be tested
 /// without a machine to test it on.
@@ -249,6 +278,15 @@ pub fn find_pandoc() -> (Option<PathBuf>, String) {
     )
 }
 
+pub fn find_curl() -> (Option<PathBuf>, String) {
+    let named = CURL_FOR_TESTS.lock().ok().and_then(|named| named.clone());
+    find_pandoc_from(
+        named.or_else(|| std::env::var("YI_CURL").ok()),
+        &known_curl_locations(),
+        std::env::var("PATH").ok(),
+    )
+}
+
 /// Points the app at another pandoc — `YI_PANDOC`, as a call, for a probe, which cannot change the
 /// environment of the process it is driving. `None` puts the app back to looking for one.
 ///
@@ -263,6 +301,19 @@ pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
         .lock()
         .map_err(|_| "The pandoc seam is unusable.".to_string())?;
     *named = pandoc.filter(|value| !value.trim().is_empty());
+    Ok(())
+}
+
+/// Points the app at another curl — `YI_CURL`, as a call, for a probe. `None` puts it back.
+#[tauri::command]
+pub fn export_use_curl(curl: Option<String>) -> Result<(), String> {
+    if !cfg!(debug_assertions) {
+        return Err("Only a debug build can be pointed at another curl.".to_string());
+    }
+    let mut named = CURL_FOR_TESTS
+        .lock()
+        .map_err(|_| "The curl seam is unusable.".to_string())?;
+    *named = curl.filter(|value| !value.trim().is_empty());
     Ok(())
 }
 
@@ -307,7 +358,15 @@ fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
 
 /// Runs pandoc, and answers with *its* sentence when it fails: a missing bibliography, a bad key in
 /// the defaults file and a destination that cannot be written each say something only pandoc knows.
-fn run_pandoc(pandoc: &Path, arguments: &[OsString], working_dir: Option<&Path>) -> Result<(), String> {
+///
+/// What it says on the way *without* failing is kept too — a picture it could not fetch, a citation
+/// it could not resolve: those are the reasons a document is not quite what the reader asked for,
+/// and the window says them rather than leaving the reader to notice the hole.
+fn run_pandoc(
+    pandoc: &Path,
+    arguments: &[OsString],
+    working_dir: Option<&Path>,
+) -> Result<Vec<String>, String> {
     let mut command = Command::new(pandoc);
     if let Some(dir) = working_dir.filter(|dir| dir.is_dir()) {
         command.current_dir(dir);
@@ -324,12 +383,164 @@ fn run_pandoc(pandoc: &Path, arguments: &[OsString], working_dir: Option<&Path>)
             complaint
         });
     }
-    Ok(())
+    Ok(warnings_in(&String::from_utf8_lossy(&output.stderr)))
+}
+
+/// The lines pandoc wrote that are not blank: its warnings, one sentence each.
+fn warnings_in(stderr: &str) -> Vec<String> {
+    stderr
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        // Pandoc decorates each warning with `[WARNING]` for a log's sake; the reader is looking at
+        // a card that *is* the warning, so the decoration comes off.
+        .map(|line| line.strip_prefix("[WARNING] ").unwrap_or(line).to_string())
+        .collect()
+}
+
+/// Where a run's own files live: the note written for pandoc, and the pictures fetched for it.
+fn tmp_dir(dir: &Path) -> PathBuf {
+    dir.join("tmp")
+}
+
+/// Where a run's fetched pictures live. One folder, emptied when a run is over: they are that run's
+/// files and nothing else's, and a note's picture is re-fetched rather than remembered, because the
+/// web page it came from may have changed since.
+fn remote_dir(dir: &Path) -> PathBuf {
+    tmp_dir(dir).join("remote")
+}
+
+/// The extension a picture's own content type has — for the types a Word file can hold, and for
+/// nothing else. A file named wrongly is a picture Word will not draw, and a page that answered
+/// instead of a picture is not a picture at all.
+fn image_extension(content_type: &str) -> Option<&'static str> {
+    match content_type.split(';').next().unwrap_or("").trim() {
+        "image/png" => Some("png"),
+        "image/jpeg" | "image/jpg" => Some("jpg"),
+        "image/gif" => Some("gif"),
+        "image/bmp" => Some("bmp"),
+        "image/tiff" => Some("tiff"),
+        _ => None,
+    }
+}
+
+/// A hash of a URL, so one URL is one file however many times a note names it. FNV-1a: what a name
+/// needs is that no two URLs of one note share it, not a cryptographic digest.
+fn url_hash(url: &str) -> u64 {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in url.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
+}
+
+/// What a fetched picture is called: the last piece of the URL's own path, filtered the way a
+/// style's name is, and the URL's hash — so a name that came from the web can only ever name a file
+/// inside the folder it is put in.
+fn remote_file_name(url: &str) -> String {
+    let tail = url
+        .split(['?', '#'])
+        .next()
+        .unwrap_or(url)
+        .rsplit('/')
+        .find(|piece| !piece.is_empty())
+        .unwrap_or("picture");
+    let stem: String = tail
+        .split('.')
+        .next()
+        .unwrap_or("")
+        .chars()
+        .filter(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_')
+        })
+        .take(40)
+        .collect();
+    let stem = if stem.is_empty() { "picture" } else { stem.as_str() };
+    format!("{stem}-{:016x}", url_hash(url))
+}
+
+/// The whole of what the app asks curl to do: fetch one URL into one file, following redirects,
+/// refusing a status that is not a document, answering what the server called the thing it sent, and
+/// giving up rather than hanging — and nothing else. No upload, no credentials, no cookie jar.
+///
+/// Every curl call the app makes goes through here, so that list is one list in one place — the list
+/// `test/probes/export-web-image.js` holds to with a curl that only records.
+fn run_curl(curl: &Path, dir: &Path, url: &str, path: &Path) -> Result<String, String> {
+    let output = Command::new(curl)
+        .current_dir(dir)
+        .arg("--fail")
+        .arg("--silent")
+        .arg("--show-error")
+        .arg("--location")
+        .arg("--max-time")
+        .arg("30")
+        .arg("--output")
+        .arg(path)
+        .arg("--write-out")
+        .arg("%{content_type}")
+        .arg("--")
+        .arg(url)
+        .output()
+        .map_err(|error| format!("Could not run {}: {error}", curl.display()))?;
+    if !output.status.success() {
+        let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if complaint.is_empty() {
+            format!("{url} could not be fetched")
+        } else {
+            complaint
+        });
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// One picture from the web, downloaded into a run's own folder, and where it landed.
+fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String> {
+    fs::create_dir_all(dir).map_err(|error| format!("Yi cannot make {}: {error}", dir.display()))?;
+    let name = remote_file_name(url);
+    // The name carries the picture's type, and the type is only known once the server has answered —
+    // so it is fetched under a name of its own first and named properly afterwards.
+    let partial = dir.join(format!("{name}.download"));
+    let content_type = run_curl(curl, dir, url, &partial)?;
+    let extension = match image_extension(&content_type) {
+        Some(extension) => extension,
+        None => {
+            let _ = fs::remove_file(&partial);
+            return Err(format!(
+                "{url} is {}, and a Word file cannot hold that.",
+                if content_type.is_empty() {
+                    "of no type this app knows".to_string()
+                } else {
+                    content_type
+                }
+            ));
+        }
+    };
+    let path = dir.join(format!("{name}.{extension}"));
+    fs::rename(&partial, &path)
+        .map_err(|error| format!("Yi cannot name {}: {error}", path.display()))?;
+    Ok(path)
+}
+
+/// A picture the note names on the web, handed over as a local file for pandoc to embed.
+///
+/// The app fetches it because pandoc may not be able to: a pandoc built without HTTP support answers
+/// *"Could not fetch resource …"* and puts the picture's description in the document, which is the
+/// hole this fills. A URL that cannot be fetched, or that is not a picture a Word file can hold, is
+/// an error here and the window leaves the destination exactly as the note wrote it — pandoc's own
+/// warning about it reaches the reader either way (`ExportOutcome.warnings`).
+#[tauri::command]
+pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    let curl = find_curl()
+        .0
+        .ok_or_else(|| "This machine has no curl to fetch it with.".to_string())?;
+    let path = download_image(&curl, &remote_dir(&export_dir(&app)?), &url)?;
+    Ok(path.to_string_lossy().into_owned())
 }
 
 /// Exports the note, through pandoc and the kind's own defaults file.
 #[tauri::command]
-pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<(), String> {
+pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
     // Refused *before* anything is written: an export that cannot run should not leave a file of the
     // reader's text in the app's data folder.
@@ -353,12 +564,16 @@ pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<(), S
                 pandoc,
                 &arguments,
                 request.source_dir.as_deref().map(Path::new),
-            ),
+            )
+            .map(|warnings| ExportOutcome { warnings }),
             None => Err("This kind of export has nothing to run it with.".to_string()),
         }
     });
-    // The note's copy under the app's data folder is a thing of this call, whatever pandoc said.
+    // The note's copy under the app's data folder is a thing of this call, whatever pandoc said —
+    // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
+    // page it came from may have changed since the last export.
     let _ = fs::remove_file(&note);
+    let _ = fs::remove_dir_all(remote_dir(&dir));
     result
 }
 
@@ -633,5 +848,67 @@ mod tests {
         assert_eq!(fs::read_to_string(&written).unwrap(), "<style>two</style>");
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_picture_is_named_for_its_own_type_and_never_for_a_path() {
+        assert_eq!(image_extension("image/png"), Some("png"));
+        assert_eq!(image_extension("image/jpeg"), Some("jpg"));
+        assert_eq!(image_extension("IMAGE/GIF"), None); // curl reports lower case; anything else is
+        assert_eq!(image_extension("image/png; charset=binary"), Some("png"));
+        assert_eq!(image_extension("image/svg+xml"), None);
+        assert_eq!(image_extension("text/html"), None);
+        assert_eq!(image_extension(""), None);
+    }
+
+    #[test]
+    fn a_fetched_picture_can_only_name_a_file_below_its_own_folder() {
+        for url in [
+            "https://placehold.co/200x80/png",
+            "https://example.com/a/b/pic.png?token=1#frag",
+            "https://example.com/../../etc/passwd",
+            "https://example.com/",
+        ] {
+            let name = remote_file_name(url);
+            assert!(
+                !name.contains('/') && !name.contains('\\') && !name.starts_with('.'),
+                "{url} became {name}"
+            );
+        }
+        // One URL is one file, so a note that names a picture twenty times fetches it once.
+        assert_eq!(
+            remote_file_name("https://example.com/pic.png"),
+            remote_file_name("https://example.com/pic.png")
+        );
+        assert_ne!(
+            remote_file_name("https://example.com/pic.png"),
+            remote_file_name("https://example.com/other.png")
+        );
+    }
+
+    #[test]
+    fn what_pandoc_says_on_the_way_is_kept_line_by_line() {
+        let stderr = "[WARNING] Could not fetch resource https://x/y.png: no\n\n\
+             [WARNING] Citeproc: citation smith2020 not found\n";
+        assert_eq!(
+            warnings_in(stderr),
+            vec![
+                "Could not fetch resource https://x/y.png: no".to_string(),
+                "Citeproc: citation smith2020 not found".to_string(),
+            ]
+        );
+        assert!(warnings_in("").is_empty());
+    }
+
+    #[test]
+    fn a_curl_named_by_the_test_seam_is_the_one_that_is_run() {
+        let here = std::env::current_exe().unwrap();
+        let (found, source) = find_pandoc_from(
+            Some(here.to_string_lossy().into_owned()),
+            &[],
+            Some("/nowhere".to_string()),
+        );
+        assert_eq!(found, Some(here));
+        assert_eq!(source, "env");
     }
 }

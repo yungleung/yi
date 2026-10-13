@@ -48,9 +48,11 @@ const check = (name, actual, expected) => {
 function workspace({ titles = {}, files = [], document: documentFolder = '/notes', images = null } = {}) {
   const asked = [];
   const looked = [];
+  const fetched = [];
   return {
     asked,
     looked,
+    fetched,
     titleOf: async (target) => {
       asked.push(target);
       return titles[target] ?? null;
@@ -59,6 +61,11 @@ function workspace({ titles = {}, files = [], document: documentFolder = '/notes
     exists: async (path) => {
       looked.push(path);
       return files.includes(path);
+    },
+    // A picture on the web: the app fetches it itself, and this stands in for that fetch.
+    fetchRemote: async (url) => {
+      fetched.push(url);
+      return url.includes('unfetchable') ? null : `/export/tmp/remote/${url.split('/').pop()}.png`;
     }
   };
 }
@@ -68,9 +75,10 @@ const render = async (text, answers = {}) => {
   const rendered = await exportSource(text, {
     titleOf: notes.titleOf,
     bases: notes.bases,
-    exists: notes.exists
+    exists: notes.exists,
+    fetchRemote: notes.fetchRemote
   });
-  return { rendered, asked: notes.asked, looked: notes.looked };
+  return { rendered, asked: notes.asked, looked: notes.looked, fetched: notes.fetched };
 };
 
 // --- what a wikilink reads as ------------------------------------------------------------------
@@ -260,9 +268,32 @@ const render = async (text, answers = {}) => {
 
 {
   const written = '![web](https://example.com/shot.png) and ![data](data:image/png;base64,AAAA)';
-  const { rendered, looked } = await render(written);
-  check('and one that names no file at all is left to pandoc', rendered, written);
-  check('nor is anything looked for', looked, []);
+  const { rendered, looked, fetched } = await render(written, {
+    // A picture on the web is fetched by the app — pandoc may not be able to (`export-web-image.js`
+    // is that story with a real document) — and this one came back as a file.
+  });
+  check(
+    'and one that names a picture on the web is written as the file the app fetched',
+    rendered,
+    '![web](/export/tmp/remote/shot.png.png) and ![data](data:image/png;base64,AAAA)'
+  );
+  check('nor is a local file looked for, for either of them', looked, []);
+  check(
+    'and a data URL is not fetched — pandoc reads those itself',
+    fetched,
+    ['https://example.com/shot.png']
+  );
+}
+
+{
+  const written = '![gone](https://example.com/unfetchable.png)';
+  const { rendered } = await render(written);
+  check('a picture the app cannot fetch is left exactly as the author wrote it', rendered, written);
+}
+
+{
+  const { fetched } = await render('![a](https://example.com/pic.png) and ![b](https://example.com/pic.png)', {});
+  check('and one URL is fetched once, however many images name it', fetched, ['https://example.com/pic.png']);
 }
 
 {

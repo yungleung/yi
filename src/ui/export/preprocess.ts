@@ -53,6 +53,13 @@ export interface ExportAnswers {
   titleOf: TitleLookup;
   bases: ImageBases;
   exists: FileExists;
+  /**
+   * The local file a picture **on the web** has been fetched to, or null when it could not be. The
+   * app fetches it rather than pandoc (`src-tauri/src/export.rs: export_fetch_image`), because a
+   * pandoc built without HTTP support cannot fetch anything at all — and a note's picture is
+   * something the page shows, which is what an export is owed.
+   */
+  fetchRemote: (url: string) => Promise<string | null>;
 }
 
 /** One span of the document, and the text it is rewritten to. */
@@ -113,14 +120,35 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
  */
 async function imageRewrites(tree: Walkable, answers: ExportAnswers): Promise<Rewrite[]> {
   const rewrites: Rewrite[] = [];
+  // One URL is one download, however many times a note names it.
+  const fetched = new Map<string, string | null>();
   for (const span of spansOfType(tree, 'image')) {
     const image = span.node as AstImage;
-    const file = await resolvedFile(image.url, answers);
+    const file = (await resolvedFile(image.url, answers)) ?? (await remoteFile(image.url, answers, fetched));
     if (file !== null) {
       rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, file) });
     }
   }
   return rewrites;
+}
+
+/** The local file a picture on the web was fetched to, or null when it names no such picture. */
+async function remoteFile(
+  destination: string,
+  answers: ExportAnswers,
+  fetched: Map<string, string | null>
+): Promise<string | null> {
+  const url = destination.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    return null;
+  }
+  const known = fetched.get(url);
+  if (known !== undefined) {
+    return known;
+  }
+  const file = await answers.fetchRemote(url);
+  fetched.set(url, file);
+  return file;
 }
 
 /** The file an image's destination names, or null when it names none that is there. */

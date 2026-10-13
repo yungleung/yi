@@ -754,6 +754,25 @@ elements) unless it says otherwise.
   its folder rather than opening it in whatever the system thinks edits text — which editor a file
   belongs to is the reader's own arrangement, and this is how the tree reveals a file too
   (`tree_ops.ts: reveal`).
+  **A picture on the web** (the demo document's own `![A sample image](https://placehold.co/200x80/png)`)
+  turned out to be two bugs at once. The first was ours, in the copied defaults file:
+  `default-image-extension: .jpg` is what Zettlr ships, and pandoc applies it to any destination
+  whose *path* has no extension — URLs included, so `https://placehold.co/200x80/png` became
+  `…/png.jpg`, a 404 (measured; pandoc's own warning names the URL it tried). That line is gone from
+  Yi's copy and the header says why. The second is the pandoc: the one on this machine answers
+  *"Could not fetch resource …: pandoc was compiled without HTTP support"* and puts the picture's
+  description in the document, so no remote image can ever be embedded by it. The app therefore
+  **fetches the picture itself** (`export.rs: export_fetch_image`, through the system's curl — one
+  documented list of flags, a `YI_CURL`/`export_use_curl` seam, a curl that only records in
+  `test/probes/fake-curl.sh`) and hands pandoc a local file, which is the same principle as the local
+  case: what the page showed is what the document gets. Measured on the real demo document, with the
+  real curl and the real pandoc: `word/media/rId19.png`, 1811 bytes — the size the server answers
+  with. And pandoc's warnings now reach the reader instead of the hole: a successful export whose
+  stderr holds warnings (`run_pandoc` keeps them, `ExportOutcome.warnings`) shows them as a message,
+  which is how "the image is not there" stops being a mystery — the demo document's own export says
+  `Citeproc: citation 2014 not found` in a card, because its citations are not in the fixture library.
+  A fetched picture is re-fetched rather than remembered, and the run's copies are deleted with the
+  note written for pandoc.
 
 ## Open, in the order to take them
 
@@ -779,6 +798,11 @@ elements) unless it says otherwise.
   with the author outside it — against citeproc's parser, and `suppress-bibliography` for a reader
   who wants the keys resolved but no list. A probe over each form is the way in, and the fixtures'
   library has two entries to write them with.
+- **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
+  types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
+  to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc
+  needs a rasteriser for that), and whether a `data:` URL that is not an image should be refused with
+  a sentence of ours rather than pandoc's, are the questions there.
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
   new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
   the one an inserted image is written with — and the asset protocol that *serves* a rendered image

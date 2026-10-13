@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
-| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used, or left exactly as written when the file is not there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a web URL are left alone |
+| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
@@ -184,7 +184,11 @@ target field, the settings button asking the system to *reveal* the file, the re
 Word file where the reader asked with the note's picture inside it (`word/media/`, read out of the
 zip's own entry names), the hint that says so, and Escape writing nothing at all; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
-pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind),
+pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
+`export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
+with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
+pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left
+behind),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and

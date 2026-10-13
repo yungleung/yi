@@ -27,6 +27,11 @@ export interface ExportKinds {
   kinds: ExportKindInfo[];
 }
 
+/** What an export did: what pandoc said on the way, which is why a document may be missing a piece. */
+export interface ExportOutcome {
+  warnings: string[];
+}
+
 /** One export to run: the note's text, the kind, and where the output goes. */
 export interface ExportRequest {
   kind: string;
@@ -49,9 +54,20 @@ export async function exportKinds(): Promise<ExportKinds> {
   return await invoke<ExportKinds>('export_kinds');
 }
 
-/** Runs one export. Answers nothing; a refusal comes back as the reader-facing sentence. */
-export async function runExport(request: ExportRequest): Promise<void> {
-  await invoke<void>('run_export', { request });
+/**
+ * Runs one export. A refusal comes back as the reader-facing sentence; what pandoc warned about on
+ * the way comes back in the outcome, so the window can say it.
+ */
+export async function runExport(request: ExportRequest): Promise<ExportOutcome> {
+  return await invoke<ExportOutcome>('run_export', { request });
+}
+
+/**
+ * Fetches a picture from the web for one export, and answers the local file it was written to.
+ * A URL that cannot be fetched, or that is not a picture a Word file can hold, throws.
+ */
+export async function exportFetchImage(url: string): Promise<string> {
+  return await invoke<string>('export_fetch_image', { url });
 }
 
 /**
@@ -69,4 +85,12 @@ export async function exportConfigPath(kind: string): Promise<string> {
  */
 export async function pointAtPandoc(pandoc: string | null): Promise<void> {
   await invoke('export_use_pandoc', { pandoc });
+}
+
+/**
+ * Points the app at another curl — `YI_CURL`, as a call, for a probe that cannot change the
+ * environment of the app it drives. `null` puts it back to looking for one.
+ */
+export async function pointAtCurl(curl: string | null): Promise<void> {
+  await invoke('export_use_curl', { curl });
 }

@@ -8,6 +8,12 @@
 # below is pandoc's own and the manual above says what it means. A file that is already there is
 # never overwritten — an edited one is the reader's.
 #
+# One key of Zettlr's is *not* here. `default-image-extension: .jpg` is what that file ships, and
+# pandoc applies it to any image destination whose path has no extension — a URL as well as a file:
+# `https://placehold.co/200x80/png` became `https://placehold.co/200x80/png.jpg`, which is a 404,
+# and the picture was replaced by its own description (measured). Left out, pandoc uses the path it
+# was given, which is what a note's own picture is named.
+#
 # Two things the app adds on the command line, because they are its own settings rather than this
 # file's: the bibliography the citations were formatted from (Settings → Citation) and the CSL style
 # it formats them in, so citeproc resolves the keys and appends the reference list. A reader who
@@ -45,7 +51,6 @@ eol: lf
 strip-comments: false
 indented-code-classes: []
 ascii: false
-default-image-extension: .jpg
 highlight-style: pygments
 tab-stop: 4
 preserve-tabs: false

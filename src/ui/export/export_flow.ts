@@ -20,7 +20,7 @@
 
 import { join } from '@tauri-apps/api/path';
 import { exists } from '@tauri-apps/plugin-fs';
-import { exportKinds, runExport } from '../../api/export';
+import { exportFetchImage, exportKinds, runExport } from '../../api/export';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentManager } from '../../services/document_manager';
@@ -72,9 +72,10 @@ export async function exportNote(text: string): Promise<void> {
     const prepared = await exportSource(text, {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
-      exists: fileExists
+      exists: fileExists,
+      fetchRemote: fetchedPicture
     });
-    await runExport({
+    const outcome = await runExport({
       kind: answer.kind,
       text: prepared,
       output_path: answer.outputPath,
@@ -85,8 +86,28 @@ export async function exportNote(text: string): Promise<void> {
       references: t('export.references')
     });
     showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
+    // Pandoc's own warnings, in its own words: what it could not fetch, what it could not resolve.
+    // A document that is missing a piece is not a failure — the file is there — but the reader is
+    // owed the reason rather than the hole.
+    if (outcome.warnings.length > 0) {
+      notify('Export', new Error(outcome.warnings.slice(0, 4).join('\n')));
+    }
   } catch (error) {
     notify('Export', error);
+  }
+}
+
+/**
+ * A picture the note names on the web, fetched for this export. A URL the app cannot fetch answers
+ * null and the destination is left exactly as the note wrote it: pandoc is then asked for it, and
+ * its warning about it is one of the warnings the reader is told.
+ */
+async function fetchedPicture(url: string): Promise<string | null> {
+  try {
+    return await exportFetchImage(url);
+  } catch (error) {
+    console.error('Export could not fetch a picture:', error);
+    return null;
   }
 }
 
