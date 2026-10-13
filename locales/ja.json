@@ -120,6 +120,7 @@
   "tree.delete.no": "残す",
   "message.close": "通知を閉じる",
   "completion.empty": "ここに出せるものはありません。",
+  "link.openFailed": "{name} を開けませんでした: {message}",
   "wikilink.notFound": "「{target}」というノートはありません。",
   "wikilink.openFailed": "「{target}」というノートを開けませんでした: {message}",
   "newNote.title": "新規 Markdown",

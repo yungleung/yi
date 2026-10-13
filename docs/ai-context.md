@@ -299,6 +299,7 @@ one — a plain click still opens the link's own source, and a target no documen
 so rather than opened as source. The editor asks through a port with no service in it
 (`ui/markdown/wikilink_open.ts`; the session owns the editor, so the shell answers —
 `ui/editor_panel.ts`), and `test/probes/wikilink-cmd-click.js` holds both gestures.
+An ordinary link takes the same gesture for the *same reason* when its destination is a **path**: a path is not something the webview may be handed, so ⌘-click asks the app for the note it names — the note's own folder first and the workspace root next, with a `%20` spelling resolved (`syntax/link_edits.ts: isFilePath`, `services/workspace_folders.ts`) — and the plain click still opens the link's own source. A `#fragment` and an empty href name no file, so they keep the plain click; a URL keeps the browser's (`test/probes/link-opens-a-note.js`).
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
 node itself and stops there, so a listener that waits for it to bubble never sees it. And the card
 is placed from the caret's *range*, never from the span that draws the caret: `scheduleCaret` draws

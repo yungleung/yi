@@ -21,7 +21,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-link-edits-'));
 const file = join(directory, 'link_edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { linkInsertion, clipboardDestination, isOpenableUrl } = await import(file);
+const { linkInsertion, clipboardDestination, isOpenableUrl, isFilePath } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -104,6 +104,29 @@ check(
 check(
   'and nothing else',
   [isOpenableUrl('mailto:a@b.c'), isOpenableUrl('#fragment'), isOpenableUrl('README.md'), isOpenableUrl('')],
+  [false, false, false, false]
+);
+
+// What the app may open *inside* itself: a link to a note, which is the half the browser's rule
+// does not cover.
+check(
+  'a path is a file the app may open',
+  [isFilePath('notes/a.md'), isFilePath('./a.md'), isFilePath('../a.md'), isFilePath('/Users/me/a.md'), isFilePath('a.png')],
+  [true, true, true, true, true]
+);
+check(
+  'and a Windows drive letter is a path, not a scheme',
+  [isFilePath('C:\\notes\\a.md'), isFilePath('C:/notes/a.md')],
+  [true, true]
+);
+check(
+  'a destination with a scheme is not a file',
+  [isFilePath('https://example.com'), isFilePath('mailto:a@b.c'), isFilePath('data:text/plain,x'), isFilePath('javascript:alert(1)')],
+  [false, false, false, false]
+);
+check(
+  'nor is a place in this page, a host, or nothing',
+  [isFilePath('#fragment'), isFilePath('//example.com/a.md'), isFilePath(''), isFilePath('   ')],
   [false, false, false, false]
 );
 

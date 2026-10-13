@@ -61,7 +61,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-eight of them (`probe:all` runs 166 and skips 22, each skip for the reason its
+a hundred and eighty-nine of them (`probe:all` runs 166 and skips 23, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -139,7 +139,7 @@ the `contain-intrinsic-size` fallback, which is what a reader sees as the paragr
 the page under it moving), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
-`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source;
+`link-cmd-click` — ⌘-click opens in the browser, a plain click opens the source, and a destination that names neither a file nor a URL keeps that plain click; `link-opens-a-note` — a link whose destination is a *path*: ⌘-click opens the note it names, beside the note being read or written from the root of the workspace, in either spelling, and says which path failed when there is nothing there —
 `link-click-stays-in-the-window` — the harness's own stand-in, with a ⌘-click still reaching the
 app and asking for the URL while the window stays where it was) and images
 (`insert-image` — the button, a URL, a path and a `file://` URL from the clipboard, a

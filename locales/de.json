@@ -120,6 +120,7 @@
   "tree.delete.no": "Behalten",
   "message.close": "Hinweis schließen",
   "completion.empty": "Hier gibt es nichts anzubieten.",
+  "link.openFailed": "{name} konnte nicht geöffnet werden: {message}",
   "wikilink.notFound": "Keine Notiz mit dem Namen „{target}“.",
   "wikilink.openFailed": "Die Notiz „{target}“ konnte nicht geöffnet werden: {message}",
   "newNote.title": "Neues Markdown",

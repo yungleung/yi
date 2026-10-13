@@ -120,6 +120,7 @@
   "tree.delete.no": "Manter",
   "message.close": "Fechar a notificação",
   "completion.empty": "Nada a oferecer aqui.",
+  "link.openFailed": "Não foi possível abrir {name}: {message}",
   "wikilink.notFound": "Nenhuma nota chamada “{target}”.",
   "wikilink.openFailed": "Não foi possível abrir a nota “{target}”: {message}",
   "newNote.title": "Novo Markdown",
