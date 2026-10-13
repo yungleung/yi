@@ -523,8 +523,20 @@ function* blocksFrom(
       continue;
     }
 
-    // A run of consecutive non-blank lines.
-    while (j < lines.length && lines[j].text.trim() !== '') {
+    // A run of consecutive non-blank lines — which stops before a fence or a display formula.
+    //
+    // Both may interrupt a paragraph, and markdown reads them as blocks when they do (`text\n```\n`
+    // is a paragraph and then a code block; `text\n$$\n` is a paragraph and then a formula). They
+    // also *have* to be blocks here: a fence's and a formula's own text is the shape the app shows
+    // while the caret is inside them (`block_kinds.ts: hasSourceMode`), and a formula folded into a
+    // paragraph is one whose source cannot be shown at all — measured, a click on it in
+    // `notes/Game Theory/6 Bayesian Game.md` entered the paragraph's text and no source appeared.
+    while (
+      j < lines.length &&
+      lines[j].text.trim() !== '' &&
+      openingFence(lines[j].text) === null &&
+      !lines[j].text.trimStart().startsWith('$$')
+    ) {
       lineEnd = lines[j].number;
       charEnd = lines[j].end;
       j += 1;

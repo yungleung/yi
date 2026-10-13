@@ -45,7 +45,20 @@ const cases = [
     'a run with an empty paragraph ends the list',
     '- a\n\n\n- b',
     'paragraph@1 blank@3 paragraph@4'
-  ]
+  ],
+  // A construct whose *own text* is the shape the app shows while the caret is inside it — a
+  // fence, a display formula (`block_kinds.ts: hasSourceMode`) — begins where markdown says it
+  // begins, even when it interrupts a paragraph. markdown reads both as blocks
+  // (`text\n```\ncode\n``` ` is a paragraph, a code block, a paragraph), and a formula folded into a
+  // paragraph has no shape in which its source can be shown at all: measured, a click on one
+  // entered the paragraph's text and no source view appeared.
+  ['a fence that interrupts a paragraph is a block of its own', 'text\n```\ncode\n```\nafter\n', 'paragraph@1 fencedCode@2 paragraph@5'],
+  ['and its language is kept', 'text\n```js\nlet x = 1;\n```\nafter\n', 'paragraph@1 fencedCode@2 paragraph@5'],
+  ['display math that interrupts one too', 'text\n$$\nx\n$$\nafter\n', 'paragraph@1 displayMath@2 paragraph@5'],
+  ['two formulas under one paragraph are two blocks', 'a\n$$\nx\n$$\n$$\ny\n$$\nb\n', 'paragraph@1 displayMath@2 displayMath@5 paragraph@8'],
+  // The same two with the blank lines markdown's own reading does not need: unchanged.
+  ['a fence with blank lines around it is what it was', 'text\n\n```\ncode\n```\n\nafter\n', 'paragraph@1 fencedCode@3 paragraph@7'],
+  ['and so is display math', 'text\n\n$$\nx\n$$\n\nafter\n', 'paragraph@1 displayMath@3 paragraph@7']
 ];
 
 let failures = 0;

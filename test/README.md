@@ -19,7 +19,7 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
-| `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs |
+| `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
 | `check-hints.mjs` | Where a hint goes (`services/hints.ts`): the tree row a file's hint is found by, and the escaping a quote, a backslash or a newline in a file name needs |
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |

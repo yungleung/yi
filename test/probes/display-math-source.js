@@ -98,5 +98,29 @@
   check('and the source view is gone', source(), null);
   check('with the document untouched', await raw(), doc);
 
+  // 5. A formula that *interrupts* a paragraph — no blank line around it, which is how another
+  //    editor writes a note — is a block of its own too (`document/blocks.ts`), and the same click
+  //    shows its own text. Measured before the fix, on `notes/Game Theory/6 Bayesian Game.md`: the
+  //    block *was* the paragraph, so the click entered the paragraph's text and no source appeared
+  //    at all — four formulas in that note that could not be opened.
+  const interrupted = 'text\n$$\n\\frac{a}{b}\n$$\nafter\n';
+  await t.load(interrupted);
+  await t.sleep(200);
+  await t.click(formula(), 0.5, 0.5);
+  await t.sleep(300);
+  check(
+    'a formula that interrupts a paragraph is its own block',
+    blockTexts(),
+    ['text', '$$\n\\frac{a}{b}\n$$', 'after']
+  );
+  check(
+    'and the click shows its own text',
+    source()?.textContent ?? null,
+    '$$\n\\frac{a}{b}\n$$'
+  );
+  t.key('X');
+  await t.sleep(300);
+  check('and typing lands in the formula', await raw(), 'text\n$$\n\\frac{a}{b}X\n$$\nafter\n');
+
   return { checks, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()
