@@ -173,7 +173,8 @@ function inside(folder: string | null, file: string): string | null {
 }
 
 /**
- * The files a destination in the text may name, in the order they are tried.
+ * The files a destination in the text may name, in the order they are tried — an image's, a link's,
+ * whichever the text holds.
  *
  * A destination the app wrote is relative to *one* of two folders — the one the settings name for
  * images, or the document's own — and a destination an author typed by hand may be relative to
@@ -190,7 +191,7 @@ function inside(folder: string | null, file: string): string | null {
  * 404 the asset protocol answers for a `%2520` URL as a *load*, so a chain that reached the
  * written spelling first would stop there and never try the file that is really there.
  */
-export function imagePathCandidates(
+export function destinationPaths(
   destination: string,
   base: string | null,
   documentFolder: string | null

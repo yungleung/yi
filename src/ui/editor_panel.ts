@@ -2,10 +2,10 @@
  * The editor panel: the shell around the markdown editor — its state in the session, the toolbar
  * row, the find bar, and the news it emits when the document it holds changes.
  *
- * May import: the component base, the editor itself, the session, the wikilink resolver, the
- * messages and the events. Upholds: one panel per window, and the document it shows is the
- * session's — the panel captures and restores the view around the editor rather than keeping a
- * text of its own.
+ * May import: the component base, the editor itself, the session, the resolver and the path rules,
+ * the config, the messages and the events. Upholds: one panel per window, and the document it shows
+ * is the session's — the panel captures and restores the view around the editor rather than keeping
+ * a text of its own.
  */
 
 /**
@@ -30,7 +30,9 @@ import { documentManager } from '../services/document_manager';
 import { MESSAGE_EVENT } from '../services/messages';
 import { t } from '../services/i18n';
 import { DOCUMENT_OPENED } from './workspace/tree';
-import { setWikilinkOpenHandler } from './markdown/wikilink_open';
+import { setOpenRequestHandler, type OpenRequest } from './markdown/link_opens';
+import { configManager } from '../services/config_manager';
+import { destinationPaths } from '../services/workspace_folders';
 import * as imageSources from './image/image_urls';
 
 export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
@@ -43,11 +45,12 @@ export class MarkdownEditor extends BaseComponent {
     this.innerEditor = new WysiwygMarkdownEditor();
     this.element.appendChild(this.innerEditor.element);
 
-    // A wikilink clicked with ⌘ (Ctrl) asks for the document it names. The editor knows the target
-    // (`markdown/wikilink_open.ts` is the port it asks through) and this is the shell that can
-    // answer: the resolver turns a target into a path, and the session takes it from there — the
-    // same way a click on the tree's own row arrives.
-    setWikilinkOpenHandler((target) => void this.openWikilink(target));
+    // A link clicked with ⌘ (Ctrl) asks for the document it names — a wikilink's target, or an
+    // ordinary link's path. The editor knows which (`markdown/link_opens.ts` is the port it asks
+    // through) and this is the shell that can answer: a target through the workspace's index, a
+    // path through the note's own folder and the workspace, and the session takes it from there —
+    // the same way a click on the tree's own row arrives.
+    setOpenRequestHandler((request) => void this.openRequested(request));
 
     // Open documents clicked in the workspace tree without a global reference.
     void eventManager.on(DOCUMENT_OPENED, (event: any) => {
@@ -85,7 +88,21 @@ export class MarkdownEditor extends BaseComponent {
   }
 
   /**
-   * Opens the document a wikilink target names, the way a click on the tree's own row opens one.
+   * Opens what a link asked for with ⌘ (Ctrl), the way a click on the tree's own row opens a file.
+   *
+   * Two kinds of link ask: a wikilink, by the *target* it names, and an ordinary link, by the
+   * *path* it was written with — and each is resolved by its own rule.
+   */
+  private async openRequested(request: OpenRequest): Promise<void> {
+    if (request.kind === 'wikilink') {
+      await this.openWikilink(request.target);
+      return;
+    }
+    await this.openLinkPath(request.destination);
+  }
+
+  /**
+   * Opens the document a wikilink target names.
    *
    * A target is resolved by the workspace's own index — the file's name or its frontmatter id
    * (`services/document_manager.ts`) — and a target nothing answers to is *said so*: a reader who
@@ -106,6 +123,36 @@ export class MarkdownEditor extends BaseComponent {
           target,
           message: error instanceof Error ? error.message : String(error)
         })
+      });
+    }
+  }
+
+  /**
+   * Opens the note an ordinary link's path names.
+   *
+   * A link is written by hand as often as it is pasted, so its path is read the way an image's is
+   * (`services/workspace_folders.ts`): the note's own folder first and then the root of the
+   * workspace, each of them also read with the escapes a copied path may carry. The first
+   * candidate that *reads* is the one that opens, and a destination none of them answers to is
+   * *said so*, with the reason the last read gave — a reader who asked to follow a link is looking
+   * at a link that goes nowhere.
+   */
+  private async openLinkPath(destination: string): Promise<void> {
+    const workspace = configManager.get()?.workspace ?? null;
+    const candidates = destinationPaths(destination, workspace, imageSources.imageBases().document);
+    let failure: string | null = null;
+    for (const path of candidates) {
+      try {
+        await documentSession.openPath(path);
+        return;
+      } catch (error) {
+        // A candidate that is not there is not the answer: the next one is tried.
+        failure = error instanceof Error ? error.message : String(error);
+      }
+    }
+    if (failure !== null) {
+      void eventManager.emit(MESSAGE_EVENT, {
+        text: t('link.openFailed', { name: destination, message: failure })
       });
     }
   }

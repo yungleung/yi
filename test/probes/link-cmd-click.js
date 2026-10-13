@@ -1,8 +1,14 @@
 /**
  * What each gesture on a link does: ⌘-click (Ctrl-click) opens the URL in the
  * default browser through the app's opener, a plain click opens the link as its own
- * source for editing, and a link with nothing openable — a relative path — keeps the
- * plain click, because opening its source is the only thing left that it can mean.
+ * source for editing, and a destination that names no file *and* no URL — a `#fragment`,
+ * an empty href — keeps the plain click, because opening its source is the only thing
+ * left that it can mean.
+ *
+ * A *path* is the app's own to open instead (`syntax/link_edits.ts: isFilePath`), which this
+ * probe holds from the browser's side: a path is never handed to the opener, and its source does
+ * not open on a ⌘-click. What happens instead is `link-opens-a-note.js`'s, in a note whose links
+ * really are files.
  *
  * The webview must never navigate to the URL itself: the opened link is checked the
  * way `footnote-preview.js` checks the same thing, by standing in for the backend for
@@ -105,20 +111,44 @@
     recorder.stop();
   }
 
-  // 3. A link the app cannot open: the plain click's behaviour, for the same click.
+  // 3. Two destinations that name no file *and* no URL.
+  //
+  // A `#fragment` is a place in this page, so the browser is asked for nothing and the plain
+  // click's behaviour stands, because opening the source is the only thing left that it can mean.
+  // A *path* is different: it is the app's to open now (`syntax/link_edits.ts: isFilePath`), so a
+  // ⌘-click on one is the editor's own and its source does *not* open — `link-opens-a-note.js`
+  // holds what happens instead, in a note whose links really are files.
+  await t.load('See [frag](#here) here.\n');
+  recorder = watchOpener();
+  try {
+    click(link(), { metaKey: true });
+    await t.sleep(300);
+    check('a fragment is not opened', !opened(recorder), recorder.calls);
+    check(
+      'and its source opens instead, which is the only thing it can mean',
+      source()?.textContent === '[frag](#here)',
+      source()?.textContent ?? null
+    );
+  } finally {
+    recorder.stop();
+  }
+
   await t.load('See [rel](notes/a.md) here.\n');
   recorder = watchOpener();
   try {
     click(link(), { metaKey: true });
     await t.sleep(300);
-    check('a relative link is not opened', !opened(recorder), recorder.calls);
+    check('a path is not handed to the browser', !opened(recorder), recorder.calls);
     check(
-      'and its source opens instead, which is the only thing it can mean',
-      source()?.textContent === '[rel](notes/a.md)',
+      'and its source does not open: the app asked for the file',
+      source() === null,
       source()?.textContent ?? null
     );
   } finally {
     recorder.stop();
+    for (const close of [...document.querySelectorAll('[data-message-close]')]) {
+      close.click();
+    }
   }
 
   // 4. An autolink holds no source to open, and is one the app may open.

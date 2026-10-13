@@ -28,7 +28,7 @@ const {
   FOLDER_LIMIT,
   destinationForFile,
   fileName,
-  imagePathCandidates,
+  destinationPaths,
   joinPath,
   parentFolder,
   placementOfPath,
@@ -156,24 +156,24 @@ check(
 
 check(
   'a relative destination is read from the document first, and from the image folder after it',
-  imagePathCandidates('a.png', '/pics', '/vault/notes'),
+  destinationPaths('a.png', '/pics', '/vault/notes'),
   ['/vault/notes/a.png', '/pics/a.png']
 );
 check(
   'a relative destination climbs out of the folder it is read from',
-  imagePathCandidates('../a.png', '/pics/yi', '/vault/notes'),
+  destinationPaths('../a.png', '/pics/yi', '/vault/notes'),
   ['/vault/a.png', '/pics/a.png']
 );
-check('an absolute destination is itself', imagePathCandidates('/pics/a.png', '/pics', '/vault/notes'), ['/pics/a.png']);
+check('an absolute destination is itself', destinationPaths('/pics/a.png', '/pics', '/vault/notes'), ['/pics/a.png']);
 check(
   'a destination with a scheme is left to the webview',
-  [imagePathCandidates('https://x.example/a.png', '/pics', '/vault'), imagePathCandidates('data:image/png;base64,AAA', null, '/vault')],
+  [destinationPaths('https://x.example/a.png', '/pics', '/vault'), destinationPaths('data:image/png;base64,AAA', null, '/vault')],
   [[], []]
 );
-check('an empty destination names nothing', imagePathCandidates('', '/pics', '/vault'), []);
+check('an empty destination names nothing', destinationPaths('', '/pics', '/vault'), []);
 check(
   'and with neither folder named, there is nothing to read it from',
-  imagePathCandidates('a.png', null, null),
+  destinationPaths('a.png', null, null),
   []
 );
 
@@ -183,7 +183,7 @@ check(
 // found there, and nothing is lost by asking second.
 check(
   'a percent-encoded destination is also read as the file it resolves to',
-  imagePathCandidates('my%20shot.png', '/pics', '/vault/notes'),
+  destinationPaths('my%20shot.png', '/pics', '/vault/notes'),
   [
     '/vault/notes/my shot.png',
     '/pics/my shot.png',
@@ -193,22 +193,22 @@ check(
 );
 check(
   'an absolute one too',
-  imagePathCandidates('/pics/my%20shot.png', '/pics', '/vault/notes'),
+  destinationPaths('/pics/my%20shot.png', '/pics', '/vault/notes'),
   ['/pics/my shot.png', '/pics/my%20shot.png']
 );
 check(
   'and a resolved destination climbs out of its folder like any other',
-  imagePathCandidates('..%2Fa.png', '/pics', '/vault/notes').includes('/vault/a.png'),
+  destinationPaths('..%2Fa.png', '/pics', '/vault/notes').includes('/vault/a.png'),
   true
 );
 check(
   'a destination with no escape is itself, once',
-  imagePathCandidates('a.png', '/pics', '/vault/notes'),
+  destinationPaths('a.png', '/pics', '/vault/notes'),
   ['/vault/notes/a.png', '/pics/a.png']
 );
 check(
   'and a stray percent is not an escape',
-  imagePathCandidates('100%.png', '/pics', '/vault/notes'),
+  destinationPaths('100%.png', '/pics', '/vault/notes'),
   ['/vault/notes/100%.png', '/pics/100%.png']
 );
 

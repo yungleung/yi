@@ -24,10 +24,10 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
 import { placeCaretFromPointer } from './editing/pointer';
-import { isOpenableUrl } from './syntax/link_edits';
+import { isFilePath, isOpenableUrl } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
 import { toggleTask } from './editing/text_commands';
-import { openWikilinkTarget } from './wikilink_open';
+import { openLinkDestination, openWikilinkTarget } from './link_opens';
 
 /** Toggles a task-list checkbox without moving the caret. */
 export function routeTaskClick(context: EditorContext, event: MouseEvent): void {
@@ -111,8 +111,12 @@ export function routePointerClick(context: EditorContext, event: MouseEvent): vo
  * hands it to the system's opener, which is what the preview card's links do too, and
  * the same rule decides which hrefs may go (`syntax/link_edits.ts: isOpenableUrl`).
  *
- * A link the app cannot open — a relative path, a fragment, an empty href — keeps the
- * plain click, because opening the source is the only thing left that it can mean.
+ * A link to a *note* — a path, not a URL — is the app's to open, the way a wikilink's target is:
+ * a path is not something the webview may be handed, and ⌘-click on one means "take me there"
+ * rather than "show me the markdown of the link I can already see". The shell resolves it (the
+ * note's own folder first, then the workspace) and opens what it finds (`link_opens.ts`), and a
+ * destination that is none of these — a `mailto:`, a `#fragment`, an empty href — keeps the plain
+ * click, because opening the source is the only thing left that it can mean.
  */
 export function routeLinkClick(event: MouseEvent): void {
   if (!event.metaKey && !event.ctrlKey) {
@@ -126,6 +130,11 @@ export function routeLinkClick(event: MouseEvent): void {
   }
   const href = anchor.getAttribute('href') ?? '';
   if (!isOpenableUrl(href)) {
+    if (isFilePath(href)) {
+      event.preventDefault();
+      event.stopPropagation();
+      openLinkDestination(href.trim());
+    }
     return;
   }
   event.preventDefault();

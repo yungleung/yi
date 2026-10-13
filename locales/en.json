@@ -120,6 +120,7 @@
   "tree.delete.no": "Keep it",
   "message.close": "Close notification",
   "completion.empty": "Nothing to offer here.",
+  "link.openFailed": "Failed to open {name}: {message}",
   "wikilink.notFound": "No note named “{target}”.",
   "wikilink.openFailed": "Failed to open the note “{target}”: {message}",
   "newNote.title": "New Markdown",

@@ -57,6 +57,26 @@ export function isOpenableUrl(href: string): boolean {
 }
 
 /**
+ * Whether a destination names a *file* the app may open, rather than a URL or a place in this page.
+ *
+ * A link can point at a note: the one beside the note being read, or one written from the root of
+ * the workspace. That is the half `isOpenableUrl` does not cover — a path where *it* covers the
+ * web — and a ⌘-click on such a link asks the shell to open the document it names
+ * (`click_routing.ts: routeLinkClick`), the way a wikilink's target is opened.
+ *
+ * A destination with a scheme names a protocol's resource (`mailto:`, `data:`, `javascript:`), a
+ * protocol-relative one names a host, and a `#fragment` names a place in this page: none of them is
+ * a file, and a Windows drive letter is the one `X:` that is.
+ */
+export function isFilePath(destination: string): boolean {
+  const path = destination.trim();
+  if (path === '' || path.startsWith('#') || path.startsWith('//')) {
+    return false;
+  }
+  return /^[A-Za-z]:[\\/]/.test(path) || !/^[a-z][a-z0-9+.-]*:/i.test(path);
+}
+
+/**
  * What a selection contributes to a title: its own words, without the whitespace a drag picks up
  * at either end. A link's title and an image's alt text are both written this way, because both
  * are held to the text the author meant to keep.
