@@ -15,7 +15,7 @@
  * re-render.
  */
 import { BaseDirectory, watch } from '@tauri-apps/plugin-fs';
-import { Cite, type CiteInstance } from '@citation-js/core';
+import { Cite, plugins, type CiteInstance } from '@citation-js/core';
 import '@citation-js/plugin-csl';
 import '@citation-js/plugin-bibtex';
 import { readBibliography } from '../api/bibliography';
@@ -150,6 +150,22 @@ export class BibliographyManager {
     const formatted = this.formatUncached(value);
     formatCache.set(value, formatted);
     return formatted;
+  }
+
+  /**
+   * The style the editor formats citations in, as pandoc needs it: the style's own name and its CSL
+   * text. A style citation-js does not bundle answers null, and pandoc's own default style stands.
+   *
+   * It is the *same* name the formatting above reads (`configuredStyle`), which is the point: the
+   * reference list an export appends is the style the page showed, not a second opinion about it.
+   */
+  cslForExport(): { name: string; xml: string } | null {
+    const name = this.configuredStyle();
+    const styles = (
+      plugins.config.get('@csl') as { styles?: { get(name: string): unknown } } | undefined
+    )?.styles;
+    const xml = styles?.get(name);
+    return typeof xml === 'string' ? { name, xml } : null;
   }
 
   /**

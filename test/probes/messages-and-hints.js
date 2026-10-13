@@ -120,5 +120,12 @@
   check('and a press elsewhere takes it away', hint() === null, { open: hint() !== null });
   await clear();
 
+  // 6. Escape puts a hint away too, and leaves nothing of the card behind.
+  await copyPath();
+  t.key('Escape');
+  await t.sleep(250);
+  check('as does Escape, with no card left in the page', hint() === null, { open: hint() !== null });
+  await clear();
+
   return { checks, failed: checks.filter((item) => !item.pass).map((item) => item.name) };
 })()

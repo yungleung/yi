@@ -24,11 +24,32 @@ function homeFolder(): Promise<string | null> {
 }
 
 /**
+ * The reader's home folder, for a caller that has to name a place when nothing else does — an
+ * export from a note with no file and no workspace still has to say where its output would go.
+ */
+export async function homeFolderPath(): Promise<string | null> {
+  return await homeFolder();
+}
+
+/**
  * The folder an image the reader saves goes in, or null when the settings name none — in which
  * case it goes beside the note, which is the answer every caller already has.
  */
 export async function imageFolderPath(): Promise<string | null> {
   const named = configManager.get()?.image_folder.trim() ?? '';
+  if (named === '') {
+    return null;
+  }
+  return expandHome(named, await homeFolder());
+}
+
+/**
+ * The bibliography file the settings name, or null when they name none. The same reading as the
+ * image folder's, and needed by the export: a library handed to pandoc has to be a path pandoc can
+ * open, not the `~/…` spelling a reader writes in a settings field.
+ */
+export async function bibliographyPath(): Promise<string | null> {
+  const named = configManager.get()?.bibliography_file.trim() ?? '';
   if (named === '') {
     return null;
   }

@@ -711,9 +711,98 @@ elements) unless it says otherwise.
   one measured in the wild — after a sweep whose app had died, `get_config` named a workspace the
   fixtures' notes are not in, and five fixture-dependent probes failed identically on `main` and on
   the branch under test, on a freshly started app.
+- **A note goes out through pandoc, first as a Word document.** Landed: the File menu's *Export*
+  opens a card (`ui/export/export_dialog.ts`) with one tab per kind the app ships, the target it is
+  written to, and the conversion settings file — which the card's button opens in the reader's own
+  text editor, because the parameters are theirs. None of the conversion is the app's: a kind *is* a
+  pandoc **defaults file** (`<app data>/export/export.<kind>.yaml`), written from the copy the build
+  ships the first time that kind is used and never overwritten again
+  (`src-tauri/src/export.rs: ensure_defaults_in`), and the docx one is Zettlr's own defaults file
+  kept word for word, header and all. Every kind shares one pre-process
+  (`ui/export/preprocess.ts`): a wikilink is written as the words it renders as — its own title, or
+  the title of the note it names, or its target — and it is walked out of the *parse* rather than
+  scanned for, so a `[[…]]` in a fence, in an inline code span or in frontmatter is not a wikilink
+  and stays exactly as written. Measured: the pandoc on this machine (3.12.1) takes the Zettlr
+  defaults verbatim — `self-contained`, `number-offset` and the citeproc filter all accepted — and
+  `export-docx.js` writes a real Word file (`PK`) where the reader asked, its images embedded (the
+  docx holds `word/media/rId10.png`, read out of the zip by hand). What pandoc is asked is one list
+  in one place, held by `export-pandoc-arguments.js` against a pandoc that only records
+  (`test/probes/fake-pandoc.sh`): `--defaults <the kind's file> --output <where> --resource-path
+  <the note's folders> <the note>`, where the note is the pre-processed text and is deleted again
+  whatever pandoc said. A machine with no pandoc is refused *before* anything is written, and
+  pandoc's own sentence is what a reader is given when it refuses (`export-refused.js`, through the
+  `export_use_pandoc` seam the harness puts back like the git one). Two things fell out on the way:
+  the wikilink rule lived inside the rendered node, which builds DOM, so it moved to
+  `syntax/wikilink_text.ts` with the node reading it from there; and a hint put away with **Escape**
+  left its card hidden in the page — the next `[data-hint]` found it — which `messages-and-hints.js`
+  now holds with a check that fails without the one-line fix in `ui/hints.ts`.
+  **The three things a first read of it turned up** landed on the same branch. An image's
+  destination is now rewritten to the file it names — absolute, percent-encoded — by the app's *own*
+  rule (`preprocess.ts: imageRewrites` over `services/workspace_folders.ts: destinationPaths`), so
+  what the docx embeds is the picture the page showed, found through the same two folders the
+  renderer reads it from and whatever spelling the destination arrived in (measured: a file names
+  with a space, a `#`, a `(`, a `?` and a `%` in it each resolve; a bare, a `<…>`-wrapped and a
+  `%20`-spelled destination are one file). The library the citations were formatted from is handed
+  to citeproc (`--bibliography`) along with the CSL text of the style the editor shows them in
+  (`--csl`, written into `<data>/export/styles/<name>.csl`, the style's *name* from citation-js and
+  its text from citation-js's own bundled styles) — so `[@key]` resolves and pandoc appends the
+  reference list, headed with the app's own word for it, which is what citing the note in the app
+  already showed. Measured on a note citing the fixtures' library: `(Smith, 2020)` in the text and
+  `Smith, J. (2020). …` under a References heading at the end. A library that is *not there* is not
+  named at all (pandoc exits non-zero on a bibliography it cannot read, so a stale setting would
+  otherwise lose the whole export). And the settings button **reveals** the configuration file in
+  its folder rather than opening it in whatever the system thinks edits text — which editor a file
+  belongs to is the reader's own arrangement, and this is how the tree reveals a file too
+  (`tree_ops.ts: reveal`).
+  **A picture on the web** (the demo document's own `![A sample image](https://placehold.co/200x80/png)`)
+  turned out to be two bugs at once. The first was ours, in the copied defaults file:
+  `default-image-extension: .jpg` is what Zettlr ships, and pandoc applies it to any destination
+  whose *path* has no extension — URLs included, so `https://placehold.co/200x80/png` became
+  `…/png.jpg`, a 404 (measured; pandoc's own warning names the URL it tried). That line is gone from
+  Yi's copy and the header says why. The second is the pandoc: the one on this machine answers
+  *"Could not fetch resource …: pandoc was compiled without HTTP support"* and puts the picture's
+  description in the document, so no remote image can ever be embedded by it. The app therefore
+  **fetches the picture itself** (`export.rs: export_fetch_image`, through the system's curl — one
+  documented list of flags, a `YI_CURL`/`export_use_curl` seam, a curl that only records in
+  `test/probes/fake-curl.sh`) and hands pandoc a local file, which is the same principle as the local
+  case: what the page showed is what the document gets. Measured on the real demo document, with the
+  real curl and the real pandoc: `word/media/rId19.png`, 1811 bytes — the size the server answers
+  with. And pandoc's warnings now reach the reader instead of the hole: a successful export whose
+  stderr holds warnings (`run_pandoc` keeps them, `ExportOutcome.warnings`) shows them as a message,
+  which is how "the image is not there" stops being a mystery — the demo document's own export says
+  `Citeproc: citation 2014 not found` in a card, because its citations are not in the fixture library.
+  A fetched picture is re-fetched rather than remembered, and the run's copies are deleted with the
+  note written for pandoc.
 
 ## Open, in the order to take them
 
+- **The rest of the export kinds.** The machinery is already generic: a kind is a row in
+  `src-tauri/src/export.rs: KINDS` (name, extension, whether pandoc is needed, and the asset's own
+  bytes) plus the YAML it names, and the card reads the list from the app — no module in the webview
+  knows a kind by name except the one that gives its tab a label. So `export.odt.yaml`,
+  `export.latex.yaml`, `export.html.yaml` and `export.epub.yaml` are Zettlr's defaults for those
+  kinds (`writer`, plus `standalone`/`self-contained` where the format has a document of its own),
+  and each one wants its own pass over what pandoc actually writes: an odt that opens, an epub that
+  validates, a LaTeX file whose `\includegraphics` paths resolve.
+- **PDF, which has two hands.** It is the one kind that may be written *without* pandoc, and
+  `KINDS[].needs_pandoc` already carries the answer the card reads (its status line says which hand
+  a kind would use, and the button refuses when that hand is missing). So the tab has to offer both:
+  pandoc with a `pdf-engine` — which the defaults file names, `xelatex` or `tectonic` or
+  `weasyprint` — or the app's own rendering of the page. What the second hand is exactly is the
+  decision: `window.print()` in the webview prints the *chrome as well as the page* unless the
+  stylesheet is told not to, and it computes page breaks from the viewport, while a Rust-side render
+  needs an engine the app would then have to ship.
+- **The citation *forms* the editor writes and citeproc does not read.** With the library handed over
+  (`--bibliography`), `[@key]` and `@key` resolve. What is untested is the rest of the app's own
+  citation syntax — a locator (`[@key, p. 45]`), several keys in one bracket, a narrative citation
+  with the author outside it — against citeproc's parser, and `suppress-bibliography` for a reader
+  who wants the keys resolved but no list. A probe over each form is the way in, and the fixtures'
+  library has two entries to write them with.
+- **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
+  types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
+  to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc
+  needs a rasteriser for that), and whether a `data:` URL that is not an image should be refused with
+  a sentence of ours rather than pandoc's, are the questions there.
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
   new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
   the one an inserted image is written with — and the asset protocol that *serves* a rendered image
