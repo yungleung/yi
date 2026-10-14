@@ -913,20 +913,24 @@ elements) unless it says otherwise.
   rely on (any card for a single-hand kind cleared it) and one that made two probes depend on the
   order they ran in. What did **not** last is the second hand: the crate could not draw the notes some
   readers write — measured in the entry below — so the app's own renderer left the app, and with it
-  the two-hand machinery: the `hands` row fact, the hand selector, the theme/page/orientation
-  options, and the app-side citation rendering the crate's lack of citeproc had called for. Every kind
-  the app ships is written by pandoc, which is the simplest thing that has ever been true here.
+  the two-hand machinery: the `hands` row fact, the hand selector, and the theme/page/orientation
+  options. Every kind is now written by pandoc **except one** — see the entry below, where the
+  markdown kind came back to the app's own hand — so what a row says is `needs_pandoc`, one fact for
+  the same reason the `hands` list was two.
 - **Plain markdown, `markdown`** (called *Processed Markdown* until the reader renamed it): the note
   **as every other export is handed it** — each wikilink written as the words it renders as (the
   pre-process), each citation resolved and its reference list appended (citeproc over the settings'
   library and style) — kept as a file of its own for a reader who wants to hand the text to something
-  else. It was the app's own hand for one round, on the reading that the pre-process *is* this
-  conversion; the round after put pandoc back, and that is what it is now: `KINDS` gives it an asset
-  of Yi's own (`export.markdown.yaml`, in the shape of the epub one) and pandoc writes the note back
-  out as markdown. Measured: `# Going out` stays an `h1` (the family's `shift-heading-level-by: 1` is
-  for a *document* whose title sits above its first heading and would re-level every heading of a
-  *note*, so this file leaves it out), `[[other|an alias]]` comes out `an alias`, `[@smith2020]` comes
-  out `(Smith, 2020)` over a `References` heading and its entry, and the file is written as
+  else. **It went back and forth and landed where it started**: the app's own hand (`needs_pandoc:
+  false`), then pandoc for one round, then the app's own hand again — the reader's call each time, and
+  the shape it has now is the one where the pre-process *is* the conversion, so there is no defaults
+  file, no pandoc, and the citations are the app's own rendering (the third rule in
+  `ui/export/preprocess.ts` and `bibliography.referenceList`, which the crate's round had added for a
+  different reason and this round brought back for this one). Measured: `# Going out` stays an `h1`
+  (nothing re-serializes the note at all, which is also what keeps the family's
+  `shift-heading-level-by: 1` — for a *document* whose title sits above its first heading — from
+  re-leveling every heading of a *note*), `[[other|an alias]]` comes out `an alias`, `[@smith2020]`
+  comes out `(Smith, 2020)` over a `## References` heading and its entry, and the file is written as
   `note.processed.md` — never as `note.md`, because the default target is the note's own folder and
   name and an export that writes over the note it is exporting is not one anybody means
   (`ExportKind::name_suffix` is the one fact that says so). The `.processed` in that name is the one
@@ -940,15 +944,31 @@ elements) unless it says otherwise.
   it.`, read back through the page's own `ToUnicode` maps — the instrument the round before had used
   to see the citation rule working). So `markdown2pdf` is gone from the app: the dependency and its
   whole tree (704 lines of `Cargo.lock`), the `export_with_markdown2pdf` function, the theme/page/
-  orientation options and the request fields behind them, the `own` hand and `export_own_text` (with
-  the crate gone, nothing the app ships is *not* pandoc's), and the pre-process's third rule, the
-  citation rendering and `bibliography.referenceList` that only the app's own hands needed. What is
-  left is one hand for every kind. **The same measurement says what the remaining hand needs**: with
-  the shipped `export.pdf.yaml`, which names no font, XeTeX warns *"Missing character: There is no 一
-  (U+4E00) in font [lmroman10-regular]"* for every CJK character and draws none of them — and with
-  `CJKmainfont: "Songti SC"` added under `variables:` the same note comes out saying `你好，世界` with
-  its Latin text untouched. That repair is in the asset's own header now, where the reader who needs it
-  is already editing.
+  orientation options and the request fields behind them. **And the same measurement says what the
+  hand that is left needs**: with the shipped `export.pdf.yaml`, which names no font, XeTeX warns
+  *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for every CJK character
+  and draws none of them, so a note written in CJK came out of pandoc's PDF with the space its words
+  took and none of the words.
+- **The app names a font for a note the TeX suite cannot set, and a comment nearly stopped it.** The
+  reader's report was that *the CJK characters are still missing*, and they were, on the hand that was
+  left: the report above is about the crate, but the same note through **pandoc's** PDF lost its
+  characters too, because XeTeX draws the page with the font the defaults file names and that file
+  names none. What landed is the app doing it: `cjk_font_argument` names a font for a note written in
+  CJK, on the one kind whose engine lays a page out (`needs_a_cjk_font` — a docx or a page or a book
+  carries the characters as characters and needs nothing named), when the reader's own file names none
+  *and* this machine has one of a short list of known ones. Measured, through the app, by
+  `export-pdf-cjk.js` reading the page back: the characters are on it *and* a reader can extract them,
+  which is what the list's **order** is for — `Songti SC` keeps a `ToUnicode` map and `Hiragino Sans
+  GB`, `Heiti SC`, `STSong` and `Arial Unicode MS` draw the characters with no way to name them back,
+  a page nobody can search or copy from (and the probe fails without the app's font: the page came
+  back as eleven `U+FFFD`s and the Latin text).
+  Two things about it are worth keeping. **Pandoc concatenates** a variable the file already sets with
+  one from the command line — measured, `\setCJKmainfont[]{Songti SCHiragino Sans GB}` and a failed
+  run — so the app steps aside for a file that names one instead of overruling it. And that check
+  counts only a line that is **not a comment**: the first version read the shipped file's own header,
+  which documents this very repair, as a reader who had chosen a font — so the app stepped aside for
+  its own documentation and the characters stayed missing, which is how the second report was nearly
+  answered with the first fix's explanation.
 
 ## Open, in the order to take them
 
@@ -960,11 +980,13 @@ elements) unless it says otherwise.
   the one they set up once.
 - **A PDF of a note that is not written in Latin.** Measured both ways: the shipped
   `export.pdf.yaml` names no font, so XeTeX draws the note with its own Latin Modern and warns
-  *"Missing character"* for every CJK character, leaving none of them on the page; adding
-  `CJKmainfont: "Songti SC"` under `variables:` puts them there (the asset's header carries that,
-  and the measurement). What is *not* decided is whether the app should offer the font at all — a
-  card row over a list it cannot know, a setting, or a shipped default that names a font the
-  reader's machine may not have — and the file is the honest answer until a reader asks twice.
+  *"Missing character"* for every CJK character, leaving none of them on the page; the app now names
+  one it finds (`cjk_font_argument`, the entry above), and a reader may name their own instead, which
+  the app steps aside for. What is still open is the edges: a machine whose fonts are not on the
+  known list (nothing is named, and the reader is back to the asset's header to name one), a **LaTeX
+  export** of a note like this, whose `.tex` names no font either and so will not compile its own
+  characters for whoever opens it, and whether the card should offer the choice at all rather than a
+  list the app guesses from.
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a

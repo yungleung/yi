@@ -1,16 +1,21 @@
 //! Turning the note on screen into a file another program can read.
 //!
-//! The conversion is pandoc's, and so are its parameters: each kind of export is a YAML *defaults
-//! file* in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy
-//! this build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing
-//! here parses it — what it says is pandoc's business, and a key it does not know is answered by
-//! pandoc's own complaint. A file that is already there is never overwritten, so an edit stands.
+//! The conversion is pandoc's, and so are its parameters: a kind of export is a YAML *defaults file*
+//! in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy this
+//! build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing here
+//! parses it — what it says is pandoc's business, and a key it does not know is answered by pandoc's
+//! own complaint. A file that is already there is never overwritten, so an edit stands.
+//!
+//! One kind is **not** pandoc's: `markdown`, whose conversion *is* the pre-process every kind shares
+//! (`ui/export/preprocess.ts`) — the app writes the text it prepared ([`export_own_text`]). It is the
+//! kind the row's `needs_pandoc: false` says so, and the card offers no settings file for it because
+//! there is none.
 //!
 //! What *is* the app's business:
 //!
 //! - **which kinds exist** ([`KINDS`]): one row per kind — the name, the extension its output is
-//!   written under, and the defaults file's bytes, compiled in. A kind is added by adding a row and
-//!   its asset; nothing else in the app lists kinds.
+//!   written under, whether pandoc writes it, and the defaults file's bytes, compiled in. A kind is
+//!   added by adding a row and its asset; nothing else in the app lists kinds.
 //! - **which pandoc may be run** ([`find_pandoc`]): never `PATH` alone, because an app started from
 //!   Finder inherits no shell's `PATH` — the known places are searched first, and `YI_PANDOC`, or
 //!   [`export_use_pandoc`] for a probe (which cannot change the environment of the app it drives),
@@ -56,6 +61,18 @@ pub struct ExportKind {
     /// extension is markdown's own, because the default target is the note's folder and the note's
     /// name: an export that writes over the document it is exporting is not one anybody means.
     pub name_suffix: &'static str,
+    /// Whether the conversion is pandoc's at all. `markdown` says **no**: its conversion *is* the
+    /// pre-process every kind shares (`ui/export/preprocess.ts`) — a wikilink written as the words it
+    /// renders as, a citation as the words *it* reads as with the works it names listed under them —
+    /// so the app writes that text out itself ([`export_own_text`]) and there is no pandoc to hand a
+    /// defaults file to.
+    pub needs_pandoc: bool,
+    /// Whether the engine that lays this kind out must be **told a font** to draw a note written in
+    /// CJK. True of the PDF alone: its page is drawn by XeTeX with the font the file names, and the
+    /// font the TeX suite ships has none of `你好，世界` — measured, a note with those characters in
+    /// it comes out with the space they took and none of them. Every other kind's output is a *file*
+    /// that carries the characters as characters, and whatever opens it picks a font of its own.
+    pub needs_a_cjk_font: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -83,6 +100,8 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_language: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
+        needs_pandoc: true,
+        needs_a_cjk_font: false,
         defaults: include_str!("../assets/export/export.docx.yaml"),
     },
     ExportKind {
@@ -91,6 +110,8 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        needs_pandoc: true,
+        needs_a_cjk_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -101,6 +122,8 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        needs_pandoc: true,
+        needs_a_cjk_font: false,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
@@ -111,6 +134,8 @@ pub const KINDS: &[ExportKind] = &[
         // says it, so it comes from the note.
         takes_a_title: true,
         needs_a_language: false,
+        needs_pandoc: true,
+        needs_a_cjk_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
     ExportKind {
@@ -121,6 +146,8 @@ pub const KINDS: &[ExportKind] = &[
         // (measured: without one pandoc writes `C`, and the title page reads UNTITLED).
         takes_a_title: true,
         needs_a_language: true,
+        needs_pandoc: true,
+        needs_a_cjk_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
     },
     ExportKind {
@@ -129,10 +156,13 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         // The TeX engine the reader's config names does the work (their defaults file says
         // `xelatex`): this is the kind that needs a TeX suite on the machine, and the one whose
-        // defaults file is worth editing for a page size — or for a font that can draw the
-        // characters the note is written in (see the asset's own header).
+        // defaults file is worth editing for a page size. It is also the one kind whose *engine*
+        // cannot draw a note written in CJK without being told a font, which the app does for a note
+        // that has them ([`cjk_font_argument`]).
         takes_a_title: false,
         needs_a_language: false,
+        needs_pandoc: true,
+        needs_a_cjk_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
     },
     ExportKind {
@@ -142,9 +172,11 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: ".processed",
         takes_a_title: false,
         needs_a_language: false,
-        // Yi's own file, as the epub one is: the note as every other export is handed it, and pandoc
-        // writing it back out as markdown rather than styling it into another document.
-        defaults: include_str!("../assets/export/export.markdown.yaml"),
+        // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
+        // would be a file a reader could edit with no effect.
+        needs_pandoc: false,
+        needs_a_cjk_font: false,
+        defaults: "",
     },
 ];
 
@@ -156,6 +188,9 @@ pub struct ExportKindInfo {
     /// What the output's name adds to the note's own (`note.processed.md` for the one kind whose
     /// extension is markdown's own).
     pub name_suffix: String,
+    /// Whether pandoc writes this kind. A kind that says no is written by the app itself, so it has
+    /// no defaults file to name and no pandoc to run — the card says so instead of offering either.
+    pub needs_pandoc: bool,
     /// Whether the window should hand this kind the note's own name, and a language.
     pub takes_a_title: bool,
     pub needs_a_language: bool,
@@ -424,17 +459,23 @@ pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
 }
 
 /// One kind as the window reads it: the facts off its row, and where the reader's own copy of its
-/// defaults file is — there whether or not it exists yet.
+/// defaults file is — there whether or not it exists yet, and *no path at all* for the kind the app
+/// writes itself, which has no file to name or reveal.
 fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
-    let config = dir.join(config_file_name(kind.kind));
+    let config = kind
+        .needs_pandoc
+        .then(|| dir.join(config_file_name(kind.kind)));
     ExportKindInfo {
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
         name_suffix: kind.name_suffix.to_string(),
+        needs_pandoc: kind.needs_pandoc,
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
-        config_exists: config.exists(),
-        config_path: config.to_string_lossy().into_owned(),
+        config_exists: config.as_deref().is_some_and(Path::exists),
+        config_path: config
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default(),
     }
 }
 
@@ -650,7 +691,23 @@ pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, 
 #[tauri::command]
 pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
-    export_with_pandoc(&app, kind, &request)
+    if kind.needs_pandoc {
+        export_with_pandoc(&app, kind, &request)
+    } else {
+        export_own_text(&request)
+    }
+}
+
+/// The kind the app writes itself: the text it was handed is the answer.
+///
+/// `markdown` is that kind (`needs_pandoc: false`): the note with its wikilinks written as the words
+/// they render as, its citations as the words *they* read as, and the works they name listed under
+/// them (`ui/export/preprocess.ts`). Re-serializing that through pandoc would be a second conversion
+/// of a text that is already the answer.
+fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
+    crate::files::write_atomically(Path::new(&request.output_path), &request.text)
+        .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
+    Ok(ExportOutcome { warnings: Vec::new() })
 }
 
 /// The whole of an export: pandoc, the kind's own defaults file, and the note written out for it to
@@ -684,9 +741,110 @@ fn export_with_pandoc(
     result
 }
 
+/// The fonts a machine is known to keep that can draw CJK, in the order they are worth trying, each
+/// as *the name its own engine looks a font up by* and the file that being there is what says so.
+///
+/// The two are not the same string — measured: `Songti SC` resolves for XeTeX and `PingFang SC`,
+/// whose file sits beside it, does not — so the pair is written down once, here, and asking is the
+/// file's existence.
+///
+/// The **order** is measured too, and it is the more surprising half: a font's page can carry the
+/// characters without carrying any way to *read* them back (`export-pdf-cjk.js` is what reads one
+/// back). Measured on this machine with the same note: `Songti SC` gives a PDF whose CJK a reader
+/// can extract — the characters come back out of the file — while `Hiragino Sans GB`, `Heiti SC`,
+/// `STSong` and `Arial Unicode MS` each draw them with no `ToUnicode` map to name them by, which is
+/// a page nobody can search or copy from. So the font that can be read is tried first, and the ones
+/// that can only be seen after it.
+const KNOWN_CJK_FONTS: &[(&str, &str)] = &[
+    ("/System/Library/Fonts/Supplemental/Songti.ttc", "Songti SC"),
+    ("/System/Library/Fonts/Hiragino Sans GB.ttc", "Hiragino Sans GB"),
+    ("/Library/Fonts/Arial Unicode.ttf", "Arial Unicode MS"),
+    (
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "Noto Sans CJK SC",
+    ),
+    ("/usr/share/fonts/truetype/arphic/uming.ttc", "AR PL UMing CN"),
+    ("C:/Windows/Fonts/msyh.ttc", "Microsoft YaHei"),
+];
+
+/// The name of the first of those this machine has, or none.
+fn cjk_font_in(
+    known: &[(&'static str, &'static str)],
+    exists: impl Fn(&str) -> bool,
+) -> Option<&'static str> {
+    known
+        .iter()
+        .find(|(file, _)| exists(file))
+        .map(|(_, name)| *name)
+}
+
+/// Whether the text is written in characters the TeX suite's own font cannot draw: the CJK ranges.
+///
+/// A range check and not a font lookup, because the app knows what the *note* is written in and not
+/// what the font holds; the ranges are the ones a note written in Chinese, Japanese or Korean is
+/// written in, and the two ways a note is mostly Latin are the ones this must *not* answer for (an
+/// accented letter, a dash, a curly quote are all in Latin Modern).
+fn has_cjk(text: &str) -> bool {
+    text.chars().any(|character| {
+        matches!(
+            character as u32,
+            0x2E80..=0x2EFF      // radicals
+                | 0x3000..=0x303F // CJK punctuation: 、。「」
+                | 0x3040..=0x30FF // hiragana and katakana
+                | 0x3400..=0x4DBF // unified ideographs, extension A
+                | 0x4E00..=0x9FFF // unified ideographs
+                | 0xAC00..=0xD7AF // hangul syllables
+                | 0xF900..=0xFAFF // compatibility ideographs
+                | 0x20000..=0x2FA1F // extensions B to F
+        )
+    })
+}
+
+/// The font the app names for a note its engine cannot set by itself, or none when nothing needs
+/// naming. Four things have to hold, and each of them is measured or the reader's own:
+///
+/// - the kind is one whose engine **lays a page out** (`needs_a_cjk_font`): the kinds pandoc writes
+///   as a file carry the characters as characters and need no font named for them;
+/// - the note **has** those characters ([`has_cjk`]);
+/// - the reader's own defaults file does **not** name a CJK font of its own. Pandoc *concatenates*
+///   the two when both are set — measured: a file saying `CJKmainfont: Songti SC` and a `--variable
+///   CJKmainfont=Hiragino Sans GB` together produce `\setCJKmainfont[]{Songti SCHiragino Sans GB}`
+///   and a failed run — so the app steps aside for a file the reader has made their own rather than
+///   overruling it. Looking for one word in the file is not parsing it: what it says is still
+///   pandoc's business, and this only decides whether the app may add a parameter of its own;
+/// - **this machine has one** where it is known to be ([`cjk_font_in`]). A machine with none is left
+///   exactly as it was: the characters are missing from the page, which is the bug being repaired
+///   and not something new to fail on.
+fn cjk_font_argument(
+    kind: &ExportKind,
+    request: &ExportRequest,
+    defaults: &Path,
+) -> Option<&'static str> {
+    if !kind.needs_a_cjk_font || !has_cjk(&request.text) || names_a_cjk_font(defaults) {
+        return None;
+    }
+    cjk_font_in(KNOWN_CJK_FONTS, |file| Path::new(file).exists())
+}
+
+/// Whether the reader's own defaults file names a CJK font for pandoc to use.
+///
+/// A **comment does not count**: the shipped file's own header talks about fonts (it says what
+/// happens without one), and a copy written from it must not be read as a reader who has chosen —
+/// measured the hard way, the app stepped aside for its own documentation and the characters stayed
+/// missing.
+fn names_a_cjk_font(defaults: &Path) -> bool {
+    fs::read_to_string(defaults)
+        .map(|text| {
+            text.lines()
+                .filter(|line| !line.trim_start().starts_with('#'))
+                .any(|line| line.to_lowercase().contains("cjkmainfont"))
+        })
+        .unwrap_or(false)
+}
+
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
 /// folders a relative destination is resolved against, the library and the style the citations came
-/// from, and the note itself.
+/// from, a font for a note the engine has none of ([`cjk_font_argument`]), and the note itself.
 fn pandoc_arguments(
     dir: &Path,
     defaults: &Path,
@@ -729,6 +887,12 @@ fn pandoc_arguments(
         arguments.push(OsString::from("--csl"));
         arguments.push(ensure_csl_in(dir, style)?.into_os_string());
     }
+    // A font for a note whose own characters the TeX suite's default font has none of (see
+    // `cjk_font_argument`): without it the page keeps the words' places and loses the words.
+    if let Some(font) = cjk_font_argument(kind, request, defaults) {
+        arguments.push(OsString::from("--variable"));
+        arguments.push(OsString::from(format!("CJKmainfont={font}")));
+    }
     // What the note is called, and the language it is in — for the kinds that carry their own name
     // or must declare a language (see `ExportKind`). The window sends both whatever the kind is, and
     // the kind's own row decides: a docx whose body already opens with the note's own heading would
@@ -763,6 +927,11 @@ fn pandoc_arguments(
 #[tauri::command]
 pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
+    if !kind.needs_pandoc {
+        // A kind whose conversion is the app's own has no configuration to read — and a file made of
+        // nothing would be a file a reader could edit with no effect.
+        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+    }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
 }
@@ -807,7 +976,9 @@ mod tests {
             "markdown" => "md",
             _ => "",
         };
-        for kind in KINDS {
+        // The `markdown` kind ships none at all: its conversion is the app's own, which
+        // `the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file` holds the other way.
+        for kind in KINDS.iter().filter(|kind| !kind.defaults.is_empty()) {
             assert!(
                 kind.defaults.contains("reader: markdown"),
                 "{} defaults do not name markdown as the reader",
@@ -912,7 +1083,7 @@ mod tests {
     fn named_arguments_for(dir: &Path, request: &ExportRequest, kind: &ExportKind) -> Vec<String> {
         pandoc_arguments(
             dir,
-            &dir.join("export.docx.yaml"),
+            &dir.join(config_file_name(kind.kind)),
             &dir.join("note-1.md"),
             request,
             kind,
@@ -1021,6 +1192,109 @@ mod tests {
         // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    #[test]
+    fn the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file() {
+        // One fact, one home: a row that says the app writes this kind says it by having nothing to
+        // hand pandoc, and a row pandoc writes always has something. A kind added with one and not
+        // the other says so here.
+        for kind in KINDS {
+            assert_eq!(
+                kind.defaults.is_empty(),
+                !kind.needs_pandoc,
+                "{} says pandoc writes it while shipping no defaults file, or the other way round",
+                kind.kind
+            );
+        }
+    }
+
+    #[test]
+    fn a_note_is_written_in_cjk_when_it_has_those_characters() {
+        for text in ["你好，世界", "こんにちは", "한국어", "。", "ひとつ。"] {
+            assert!(has_cjk(text), "{text} is not read as CJK");
+        }
+        // The rarer half: a note that is Latin with accents, dashes and curly quotes is *not* one
+        // the engine needs to be told a font for — Latin Modern has all of those.
+        for text in ["", "A note in plain English.", "Ünïcödé, em—dash, “quotes”", "Ω≈ç√∫"] {
+            assert!(!has_cjk(text), "{text} is read as CJK");
+        }
+    }
+
+    #[test]
+    fn of_the_fonts_a_machine_is_known_to_have_the_first_is_the_one_named() {
+        let known = [("/nowhere/a.ttc", "No Font"), ("/here/b.ttc", "Here Font")];
+        assert_eq!(
+            cjk_font_in(&known, |file| file == "/here/b.ttc"),
+            Some("Here Font")
+        );
+        assert_eq!(cjk_font_in(&known, |_| false), None);
+    }
+
+    #[test]
+    fn a_file_names_a_font_when_a_line_that_is_not_a_comment_says_so() {
+        let dir = scratch("cjk-names");
+        let file = dir.join("export.pdf.yaml");
+
+        // The shipped file's own header talks about the font — a copy written from it says so in
+        // comments, and a comment is not a reader who has chosen one.
+        fs::write(
+            &file,
+            "# A note with `你好` in it needs a font: add\n#   CJKmainfont: \"Songti SC\"\nreader: markdown\n",
+        )
+        .unwrap();
+        assert!(!names_a_cjk_font(&file));
+
+        fs::write(&file, "variables:\n  CJKmainfont: \"Songti SC\"\n").unwrap();
+        assert!(names_a_cjk_font(&file));
+
+        // A file that is not there at all is not one that names anything.
+        assert!(!names_a_cjk_font(&dir.join("never.yaml")));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_arguments_name_a_font_only_for_a_note_and_a_kind_that_need_one() {
+        let dir = scratch("cjk");
+        let defaults = dir.join("export.pdf.yaml");
+        fs::write(&defaults, "reader: markdown\nwriter: pdf\n").unwrap();
+        let mut request = request_in(&dir);
+        request.kind = "pdf".to_string();
+        let pdf = kind_of("pdf").unwrap();
+        let docx = kind_of("docx").unwrap();
+
+        let named = |arguments: &[String]| {
+            arguments
+                .iter()
+                .position(|argument| argument == "--variable")
+                .and_then(|at| arguments.get(at + 1))
+                .filter(|value| value.starts_with("CJKmainfont="))
+                .cloned()
+        };
+
+        // A Latin note on the kind whose engine lays a page out: nothing to name, so nothing named.
+        request.text = "# Going out\n\nA note in plain English.\n".to_string();
+        assert_eq!(named(&named_arguments_for(&dir, &request, pdf)), None);
+
+        // A note that *is* written in CJK, on a kind whose output carries the characters as
+        // characters (a docx, a page, a book): the software that opens it picks a font itself.
+        request.text = "# 你好，世界\n\n这是一个测试。\n".to_string();
+        assert_eq!(named(&named_arguments_for(&dir, &request, docx)), None);
+
+        // A file the reader has made their own by naming a font: the app steps aside, because pandoc
+        // *concatenates* the two (measured: `\setCJKmainfont[]{Songti SCHiragino Sans GB}`).
+        fs::write(&defaults, "variables:\n  CJKmainfont: \"Songti SC\"\n").unwrap();
+        assert_eq!(named(&named_arguments_for(&dir, &request, pdf)), None);
+
+        // And with no font in the file, a CJK note is named one this machine has — or none is, on a
+        // machine that has none of them, which is the machine this leaves exactly as it was.
+        fs::write(&defaults, "reader: markdown\nwriter: pdf\n").unwrap();
+        let here = cjk_font_in(KNOWN_CJK_FONTS, |file| Path::new(file).exists());
+        assert_eq!(
+            named(&named_arguments_for(&dir, &request, pdf)),
+            here.map(|font| format!("CJKmainfont={font}"))
+        );
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

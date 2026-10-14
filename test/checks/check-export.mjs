@@ -1,18 +1,22 @@
 /**
- * Checks the export's shared pre-process (`ui/export/preprocess.ts`) in Node. Two rules, both about
- * what the *app* knows and pandoc does not:
+ * Checks the export's shared pre-process (`ui/export/preprocess.ts`) in Node. Three rules, each about
+ * what the *app* knows and the converting side does not:
  *
  * - a wikilink is written as the words it renders as — the title the author gave it, or the title of
  *   the document it names, or its target;
  * - an image's destination is written as the file the app resolves it to, absolute and encoded, so
  *   the picture pandoc embeds is the picture the page showed: a destination read from the document's
  *   folder, from the image folder, spelled with `%20` or with spaces, or naming a file that is not
- *   there at all.
+ *   there at all;
+ * - and, for the kind whose conversion *is* this pre-process, a citation is written as the words it
+ *   reads as and the works it names are listed under them — the app's own rendering, where citeproc
+ *   would be doing it on the other side.
  *
  * The parse is what says where those spans *are*, so the shapes that are deliberately not one are
- * asserted here too: a fence's body, an inline code span, frontmatter, and a link's brackets. The
- * run itself — pandoc against the app's defaults file — is `test/probes/export-docx.js` and
- * `test/probes/export-pandoc-arguments.js`.
+ * asserted here too: a fence's body, an inline code span, frontmatter, a link's brackets, and a
+ * citation inside a fence. The run itself — pandoc against the app's defaults file — is
+ * `test/probes/export-docx.js` and `test/probes/export-pandoc-arguments.js`, and the kind the app
+ * writes is `test/probes/export-markdown.js`.
  *
  * The bundle is built for Node (`platform`), because the browser build of
  * `decode-named-character-reference` decodes entities by making a DOM element.
@@ -76,7 +80,8 @@ const render = async (text, answers = {}) => {
     titleOf: notes.titleOf,
     bases: notes.bases,
     exists: notes.exists,
-    fetchRemote: notes.fetchRemote
+    fetchRemote: notes.fetchRemote,
+    citations: answers.citations ?? null
   });
   return { rendered, asked: notes.asked, looked: notes.looked, fetched: notes.fetched };
 };
@@ -313,6 +318,59 @@ const render = async (text, answers = {}) => {
     'a note with both is rewritten once, in one pass over the text',
     rendered,
     'The Other Note then ![shot.png](/notes/shot.png) then a name\n'
+  );
+}
+
+// --- and the third rule, for the kind whose conversion is the app's own ---------------------------
+
+{
+  // What the app hands a *pandoc* kind: the citations stay as the author wrote them, and citeproc
+  // renders them (and appends the list) on the other side.
+  const { rendered } = await render('See [@doe2001] and @smith2020.');
+  check('with no citation rendering asked for, a citation is left exactly as written', rendered, 'See [@doe2001] and @smith2020.');
+}
+
+{
+  const asked = [];
+  const citations = {
+    render: (source) => `«${source}»`,
+    references: (sources) => {
+      asked.push(...sources);
+      return sources.map((source) => `entry for ${source}`);
+    },
+    title: 'References'
+  };
+  const { rendered } = await render('See [@doe2001] and @smith2020.\n', { citations });
+  check(
+    'when the app converts, a citation is written as its own words and the works it names listed under them',
+    rendered,
+    'See «[@doe2001]» and «@smith2020».\n\n## References\n\n- entry for [@doe2001]\n- entry for @smith2020\n'
+  );
+  check('and the list is asked about each citation once, in the order they are written', asked, [
+    '[@doe2001]',
+    '@smith2020'
+  ]);
+}
+
+{
+  const asked = [];
+  const citations = {
+    render: (source) => `«${source}»`,
+    references: (sources) => {
+      asked.push(...sources);
+      return [];
+    },
+    title: 'References'
+  };
+  const { rendered } = await render(
+    'One [@a], again [@a], and a fence:\n\n```\n[@notacitation]\n```\n',
+    { citations }
+  );
+  check('one work named twice is asked about once, and a fence is not a citation', asked, ['[@a]']);
+  check(
+    'and a note whose works are listed under nothing gets no list',
+    rendered,
+    'One «[@a]», again «[@a]», and a fence:\n\n```\n[@notacitation]\n```\n'
   );
 }
 

@@ -4,9 +4,10 @@
  * It is about **one kind**, and that kind was chosen before the card was drawn: the File menu's
  * *Export* is a submenu with an item per kind (`src-tauri/src/menu.rs`), and the item's own kind
  * travels with the event that opens this. So the card asks the one thing left — where the file goes
- * — and names what writes it: the kind's own defaults file, which is the reader's to edit. Every
- * fact on it comes from the app rather than from this module (`api/export.ts: exportKinds`), so a
- * kind added to the Rust side appears in the menu and here without a line of this file changing.
+ * — and names what writes it: the kind's own defaults file, which is the reader's to edit, or the
+ * app itself, for the one kind that needs no pandoc at all. Every fact on it comes from the app
+ * rather than from this module (`api/export.ts: exportKinds`), so a kind added to the Rust side
+ * appears in the menu and here without a line of this file changing.
  *
  * The target is a real field, and that is deliberate — the app's questions take a native sheet for
  * a reader and a card for a probe (`ui/prompt.ts` is the same pair), because a probe cannot drive a
@@ -39,9 +40,8 @@ export interface ExportQuestion {
   baseTarget: string;
 }
 
-/** The reader's answer: which kind, and where the file goes. */
+/** The reader's answer: where the file goes. */
 export interface ExportAnswer {
-  kind: string;
   outputPath: string;
 }
 
@@ -191,15 +191,22 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     if (!this.edited) {
       this.target.value = `${this.question?.baseTarget ?? ''}${info.name_suffix}.${info.extension}`;
     }
+    // A kind the app writes itself has no defaults file: the row is taken away rather than naming a
+    // path that will never be written.
+    this.configRowElement.classList.toggle('hidden', !info.needs_pandoc);
     // A file the reader has not been given yet is a place as much as a file: the first export (or
     // the button below) writes the shipped defaults there, and an edited file is never rewritten.
     this.configPath.textContent = info.config_exists
       ? info.config_path
       : t('export.configNew', { path: info.config_path });
-    this.status.textContent =
-      pandoc === null ? t('export.noPandoc') : t('export.pandoc', { path: pandoc });
+    // What would write it: pandoc, or the app itself for the kind that needs none.
+    this.status.textContent = !info.needs_pandoc
+      ? t('export.ownHand')
+      : pandoc === null
+        ? t('export.noPandoc')
+        : t('export.pandoc', { path: pandoc });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
-    this.run.disabled = pandoc === null;
+    this.run.disabled = info.needs_pandoc && pandoc === null;
   }
 
   /** The system's own sheet, for a reader who would rather not type a path. */
@@ -239,12 +246,11 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   /** The answer: only a path with something in it, since an empty one names no file. */
   private export(): void {
     const outputPath = this.target.value.trim();
-    const kind = this.question?.kind.kind ?? '';
-    if (outputPath === '' || kind === '') {
+    if (outputPath === '') {
       this.status.textContent = t('export.noTarget');
       return;
     }
-    this.settle({ kind, outputPath });
+    this.settle({ outputPath });
   }
 
   private row(label: HTMLElement, control: HTMLElement, ...rest: HTMLElement[]): HTMLElement {

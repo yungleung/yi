@@ -71,6 +71,7 @@
   "export.kind.epub": "Libro EPUB (.epub)",
   "export.kind.pdf": "Documento PDF (.pdf)",
   "export.kind.markdown": "Markdown simple (.md)",
+  "export.ownHand": "Este lo escribe Yi mismo: sin pandoc.",
   "export.target": "Guardar en",
   "export.choose": "Elegir…",
   "export.configLabel": "Ajustes de conversión",

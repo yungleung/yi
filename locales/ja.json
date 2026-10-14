@@ -71,6 +71,7 @@
   "export.kind.epub": "EPUB ブック（.epub）",
   "export.kind.pdf": "PDF 文書（.pdf）",
   "export.kind.markdown": "プレーン Markdown（.md）",
+  "export.ownHand": "これは Yi 自身が書き出します（pandoc は不要）。",
   "export.target": "保存先",
   "export.choose": "選択…",
   "export.configLabel": "変換の設定",

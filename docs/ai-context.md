@@ -209,17 +209,21 @@ menu, before any card is drawn. That event runs the command `file:export`
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
 kinds are Rust's (`KINDS`) and there are seven of them so far, **docx**,
 **odt**, **latex**, **html**, **epub**, **pdf** and **markdown**: each is a name, the extension its
-output is written under, and the bytes of a pandoc *defaults file* —
+output is written under, whether pandoc writes it at all, and the bytes of a pandoc *defaults file* —
 `src-tauri/assets/export/export.<kind>.yaml`, written into
 `<app data>/export/` the first time that kind is used and **never overwritten again**, which is what
 makes a reader's edit theirs (the docx one is Zettlr's own defaults file, less one key: their
 `default-image-extension: .jpg` is applied by pandoc to a URL whose path has no extension, turning a
-working web image into a 404 — measured — so it is left out and the header says so; the epub and
-markdown ones are Yi's own, written in that shape). Every kind is written by pandoc, so a machine
-without one is told so and offered no run button; **pdf** is the one that needs more than pandoc — a
-TeX engine, named in its file, and a font that can draw the note's own characters if they are not
-Latin (measured: the shipped file names none, so a note with CJK comes out with none of it; the asset
-header has the repair). The window is told the list (`src/api/export.ts: exportKinds`) and knows no
+working web image into a 404 — measured — so it is left out and the header says so; the epub one is
+Yi's own, written in that shape). **One kind is not pandoc's at all**: `markdown` (`needs_pandoc:
+false`) *is* the pre-process — the app writes the text it prepared (`export_own_text`) — so it ships
+no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
+is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that
+needs more than pandoc — a TeX engine, named in its file, and a font that can draw a note written in
+CJK (measured: XeTeX's own Latin Modern draws none of `你好，世界`, so the app names this machine's
+`Songti SC`-class font for a note that has those characters and whose file names none of its own —
+`cjk_font_argument`, and `export-pdf-cjk.js` reads such a page back to prove the characters are
+there *and* extractable). The window is told the list (`src/api/export.ts: exportKinds`) and knows no
 kind by name except the one that labels its menu item, so a new kind is a row and an asset and
 nothing else. A row also says whether
 its kind **carries its own name** (a book's title page and its
@@ -233,7 +237,10 @@ image's destination written as the file the app resolves it to (absolute and enc
 `workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
 what the docx embeds is what the page showed — and for a picture *on the web*, fetched by the app,
 through the system's curl, because a pandoc built without HTTP support cannot fetch it at all; the
-files land in `<data>/export/tmp/remote/` and go at the end of the run). Both rules walk the *parse*,
+files land in `<data>/export/tmp/remote/` and go at the end of the run) — and a third, for the kind
+pandoc is not the one converting for: each citation written as the words it reads as, with the works
+it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind
+has no citeproc behind it. Those rules walk the *parse*,
 so a `[[…]]` in a fence or in code, and an image inside one, stay exactly as written. The app's
 scratch note (written under its data folder, because pandoc reads files) is deleted whether pandoc
 succeeded or not — and pandoc's own warnings are **kept** (`ExportOutcome.warnings`) and shown to the

@@ -71,6 +71,7 @@
   "export.kind.epub": "EPUB 電子書（.epub）",
   "export.kind.pdf": "PDF 文件（.pdf）",
   "export.kind.markdown": "純 Markdown（.md）",
+  "export.ownHand": "這一份由 Yi 自己寫出：不需要 pandoc。",
   "export.target": "儲存至",
   "export.choose": "選擇…",
   "export.configLabel": "轉換設定",

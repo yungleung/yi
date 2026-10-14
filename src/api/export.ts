@@ -15,6 +15,11 @@ export interface ExportKindInfo {
   extension: string;
   /** What the output's name adds to the note's own (the markdown kind's `.processed`). */
   name_suffix: string;
+  /**
+   * Whether pandoc writes this kind. A kind that says no is written by the app itself, so it has no
+   * defaults file (its `config_path` is the empty string) and no pandoc to run.
+   */
+  needs_pandoc: boolean;
   /** Whether the kind carries its own name, so the window hands it the note's. */
   takes_a_title: boolean;
   /** Whether the kind must declare a language, so the window hands it one. */

@@ -3,7 +3,8 @@
  *
  * The order is the whole module, and it is the order Zettlr uses: ask how and where, prepare the
  * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
- * as the file it names), run it, and then say what happened. The *asking* is the card's
+ * as the file it names, and a citation as the words it reads as for the kind the app writes itself),
+ * run it, and then say what happened. The *asking* is the card's
  * (`export_dialog.ts`) and the *doing* is
  * Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
  * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
@@ -73,6 +74,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   if (answer === null) {
     return;
   }
+  const outputPath = answer.outputPath;
 
   /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
   const unfetched: string[] = [];
@@ -87,12 +89,22 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: (url) => fetchedPicture(url, unfetched)
+      fetchRemote: (url) => fetchedPicture(url, unfetched),
+      // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
+      // itself has none, so for it the app renders what it already knows — the words a citation
+      // reads as in the page (`bibliography.format`) — and lists the works it names under them.
+      citations: first.needs_pandoc
+        ? null
+        : {
+            render: (source) => bibliographyManager.format(source),
+            references: (sources) => bibliographyManager.referenceList(sources),
+            title: t('export.references')
+          }
     });
     const outcome = await runExport({
-      kind: answer.kind,
+      kind: first.kind,
       text: prepared,
-      output_path: answer.outputPath,
+      output_path: outputPath,
       resource_paths: await resourcePaths(folder),
       source_dir: note?.path ? parentFolder(note.path) : null,
       bibliography: await bibliographyPath(),
@@ -104,7 +116,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       title: documentTitle(text, note?.path ?? null),
       language: readFrontmatterLang(text) ?? language()
     });
-    showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
+    showHint(t('export.done', { file: fileName(outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about
     // it, which blames pandoc for its own missing HTTP support and would leave the reader none the
     // wiser about which URL is missing from the document they are holding.

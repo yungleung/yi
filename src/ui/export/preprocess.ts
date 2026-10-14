@@ -2,7 +2,8 @@
  * The note as an export reads it: the rewrites every kind of export shares, before pandoc is handed
  * anything.
  *
- * Two rules, one step, and both of them are the *app's* own answers rather than pandoc's guesses:
+ * Three rules, one step, and every one of them is the *app's* own answer rather than the converting
+ * side's guess:
  *
  * - **a wikilink is written as the words it renders as** — the title after the `|`, the title of
  *   the document the target names, or the target itself when no note answers to it;
@@ -11,13 +12,19 @@
  *   read from (`services/workspace_folders.ts: destinationPaths`) and the spellings a copied path
  *   may use are the renderer's rules, and a hand-written `../` or a name with a space in it is
  *   exactly what an export has to get right. It is one path per image, so what the docx embeds is
- *   what the reader saw.
+ *   what the reader saw;
+ * - **a citation is written as the words it reads as, and the works it names are listed under them**
+ *   — for the kind the app writes itself, whose conversion is this pre-process and which has no
+ *   citeproc behind it. Which kinds those are is the caller's answer (`ExportAnswers.citations`),
+ *   because it is a fact about the *conversion* and not about the note: a kind pandoc writes leaves
+ *   `[@key]` exactly as the author wrote it and lets citeproc render it.
  *
  * What a wikilink says is `syntax/wikilink_text.ts`'s rule and what a wikilink *is* is the parser's
  * construct, so this walks the parse instead of scanning for brackets: a `[[…]]` inside a code
  * fence, an inline code span or frontmatter is not a wikilink to the parser, and so it is not one
  * in an export either. An image's destination is read the same way — from the node the parser
- * built, never from the characters.
+ * built, never from the characters — and so is a citation, which is why a `[@key]` in a fence stays
+ * the characters it was written as.
  *
  * Resolving a title and finding a file are the app's answers rather than this module's — both are
  * arguments — which is what keeps this a rule about text, testable in Node, and what lets a caller
@@ -29,7 +36,7 @@
  */
 
 import type { Position } from 'unist';
-import type { AstImage, AstNode, AstWikilink } from '../markdown/ast';
+import type { AstCitation, AstImage, AstNode, AstWikilink } from '../markdown/ast';
 import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
@@ -48,7 +55,7 @@ export interface ImageBases {
   images: string | null;
 }
 
-/** What the pre-process has to ask the app: the two rules' answers, and nothing else. */
+/** What the pre-process has to ask the app: the rules' answers, and nothing else. */
 export interface ExportAnswers {
   titleOf: TitleLookup;
   bases: ImageBases;
@@ -60,6 +67,24 @@ export interface ExportAnswers {
    * something the page shows, which is what an export is owed.
    */
   fetchRemote: (url: string) => Promise<string | null>;
+  /**
+   * How the citations are written, for kinds whose conversion is the app's *own* (`markdown`): every
+   * other kind leaves `[@key]` as written and lets pandoc's citeproc render it, and such a kind has
+   * no citeproc behind it. So the app renders what it already knows how to render — the words a
+   * citation reads as in the page (`bibliography.format`), and the works it names listed under them
+   * (`bibliography.referenceList`). Null means *leave them to pandoc*.
+   */
+  citations: CitationRendering | null;
+}
+
+/** The app rendering citations itself, and what the appended list is called. */
+export interface CitationRendering {
+  /** One citation's own source (`@key`, `[@key, p. 45]`) as the words it renders as. */
+  render(source: string): string;
+  /** The entries the works of these citations are listed under, or none. */
+  references(sources: string[]): string[];
+  /** The word the appended list is headed with, in the reader's language. */
+  title: string;
 }
 
 /** One span of the document, and the text it is rewritten to. */
@@ -76,10 +101,29 @@ interface Rewrite {
  */
 export async function exportSource(text: string, answers: ExportAnswers): Promise<string> {
   const tree = parseMarkdown(text) as unknown as Walkable;
-  return applyRewrites(text, [
+  const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
+  const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
+  const rewritten = applyRewrites(text, [
     ...(await wikilinkRewrites(tree, answers.titleOf)),
-    ...(await imageRewrites(tree, answers))
+    ...(await imageRewrites(tree, answers)),
+    ...(cited ?? []).map((span) => ({
+      start: span.start,
+      end: span.end,
+      text: answers.citations!.render((span.node as AstCitation).value)
+    }))
   ]);
+  if (answers.citations === null || sources.length === 0) {
+    return rewritten;
+  }
+  const entries = answers.citations.references(sources);
+  if (entries.length === 0) {
+    return rewritten;
+  }
+  // The list the works are listed under, as markdown: a heading under the note's own, and one bullet
+  // per work. A kind that gets this is one pandoc is not rendering, so nothing else will add it.
+  return `${rewritten.trimEnd()}\n\n## ${answers.citations.title}\n\n${entries
+    .map((entry) => `- ${entry}`)
+    .join('\n')}\n`;
 }
 
 /**
