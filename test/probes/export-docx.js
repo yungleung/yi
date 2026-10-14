@@ -52,7 +52,12 @@
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
-  const folder = `${home}/yi-probe-export-docx`;
+  // A folder of this run's own: a probe's *live* session is not reset between runs — the harness
+  // puts the session *file* back, which the next start reads — so a note opened twice under one
+  // name is a note the session already holds, and opening it again hands the editor nothing. One
+  // name per run is what makes this probe a function of its own state and nothing else's.
+  const folderName = `yi-probe-export-docx-${Date.now().toString(36)}`;
+  const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.docx`;
   const elsewhere = `${folder}/never.docx`;
@@ -86,15 +91,33 @@
     await invoke('plugin:event|emit', { event: 'export', payload: null });
     return await until(() => open(), 60);
   };
-  /** Opens a note through the session, declining the question a replaced document may raise. */
+  /**
+   * Opens a note through the session, declining the question a replaced document may raise, and
+   * waits for it — *bounded*, because a probe whose open never settles reports no verdict at all
+   * (the bridge gives a script five seconds, and a probe that is still awaiting has nothing to
+   * stash). The question is polled for rather than clicked at after a fixed sleep: how long the
+   * session takes to ask is the app's business, and a click that lands before the card is up leaves
+   * the open pending for ever. Where the document did *not* arrive, the probe's own first check
+   * says so.
+   */
   const show = async (path, content) => {
     const pending = session.documentSession.openFile({ path, content });
-    await sleep(150);
-    const prompt = document.querySelector('[data-prompt]');
-    if (prompt !== null && !prompt.classList.contains('hidden')) {
-      prompt.querySelector('[data-prompt-no]')?.click();
+    let opened = false;
+    void pending.then(() => {
+      opened = true;
+    });
+    // The question is polled for *while the open is still pending*: answering it is what lets the
+    // open finish, and an open that finished on its own needed no answer — so the common path costs
+    // nothing, and the card that is up for a while is still answered.
+    for (let attempt = 0; attempt < 40 && !opened; attempt += 1) {
+      const prompt = document.querySelector('[data-prompt]');
+      if (prompt !== null && !prompt.classList.contains('hidden')) {
+        prompt.querySelector('[data-prompt-no]')?.click();
+        break;
+      }
+      await sleep(50);
     }
-    await pending;
+    await Promise.race([pending, sleep(2000)]);
     await sleep(200);
   };
 
@@ -105,11 +128,16 @@
     } catch {
       // A folder a run the bridge cut off left behind.
     }
-    await files.createEntry(home, 'yi-probe-export-docx', false);
+    await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
     await show(notePath, note);
+    check(
+      'the note the probe opened is the document on screen',
+      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
+    );
 
     // --- the card, as the menu opens it --------------------------------------------------------
 
@@ -120,9 +148,9 @@
     const tabs = [...(veil?.querySelectorAll('[data-export-tab]') ?? [])];
     check(
       'one tab per kind the app ships, and the docx is the one on show',
-      tabs.length === 1 &&
-        tabs[0].dataset.exportTab === 'docx' &&
-        tabs[0].classList.contains('tab-active'),
+      tabs.map((tab) => tab.dataset.exportTab).join(',') === 'docx,odt' &&
+        tabs[0].classList.contains('tab-active') &&
+        !tabs[1].classList.contains('tab-active'),
       tabs.map((tab) => tab.dataset.exportTab)
     );
     check(

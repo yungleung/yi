@@ -185,6 +185,10 @@ Word file where the reader asked with the note's picture inside it (`word/media/
 zip's own entry names), the hint that says so, and Escape writing nothing at all; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
+`export-odt` — the second kind: pressing its tab moves the choice and the target's extension with it,
+the configuration file it names is that kind's own, and what comes out is a valid ODF (`mimetype`
+first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which is a row, an
+asset and a tab label;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left

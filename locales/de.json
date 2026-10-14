@@ -65,6 +65,7 @@
   "session.saveFailed": "{title} konnte nicht gesichert werden: {message}",
   "export.title": "Exportieren",
   "export.kind.docx": "Word-Dokument (.docx)",
+  "export.kind.odt": "LibreOffice-Dokument (.odt)",
   "export.target": "Speichern unter",
   "export.choose": "Auswählen…",
   "export.configLabel": "Konvertierungseinstellungen",

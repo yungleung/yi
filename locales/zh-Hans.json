@@ -65,6 +65,7 @@
   "session.saveFailed": "保存{title}失败：{message}",
   "export.title": "导出",
   "export.kind.docx": "Word 文档（.docx）",
+  "export.kind.odt": "LibreOffice 文档（.odt）",
   "export.target": "保存到",
   "export.choose": "选择…",
   "export.configLabel": "转换设置",

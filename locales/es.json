@@ -65,6 +65,7 @@
   "session.saveFailed": "No se pudo guardar {title}: {message}",
   "export.title": "Exportar",
   "export.kind.docx": "Documento de Word (.docx)",
+  "export.kind.odt": "Documento de LibreOffice (.odt)",
   "export.target": "Guardar en",
   "export.choose": "Elegir…",
   "export.configLabel": "Ajustes de conversión",

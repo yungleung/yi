@@ -65,6 +65,7 @@
   "session.saveFailed": "{title} を保存できませんでした: {message}",
   "export.title": "エクスポート",
   "export.kind.docx": "Word 文書（.docx）",
+  "export.kind.odt": "LibreOffice 文書（.odt）",
   "export.target": "保存先",
   "export.choose": "選択…",
   "export.configLabel": "変換の設定",

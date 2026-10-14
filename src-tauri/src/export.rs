@@ -59,14 +59,22 @@ pub struct ExportKind {
 }
 
 /// Every kind of export this build ships, in the order the dialog shows them.
-pub const KINDS: &[ExportKind] = &[ExportKind {
-    kind: "docx",
-    extension: "docx",
-    needs_pandoc: true,
-    // Zettlr's own defaults, kept word for word (see the file's header): the shape a reader who
-    // knows that app already knows, and a set of pandoc parameters worth respecting.
-    defaults: include_str!("../assets/export/export.docx.yaml"),
-}];
+pub const KINDS: &[ExportKind] = &[
+    ExportKind {
+        kind: "docx",
+        extension: "docx",
+        needs_pandoc: true,
+        // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
+        // that app already knows, and a set of pandoc parameters worth respecting.
+        defaults: include_str!("../assets/export/export.docx.yaml"),
+    },
+    ExportKind {
+        kind: "odt",
+        extension: "odt",
+        needs_pandoc: true,
+        defaults: include_str!("../assets/export/export.odt.yaml"),
+    },
+];
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
 #[derive(Debug, Serialize, Clone)]
@@ -650,9 +658,13 @@ mod tests {
 
     #[test]
     fn a_kind_the_app_does_not_ship_is_refused_by_name() {
-        let refused = kind_of("odt").expect_err("odt is not a kind this build ships");
-        assert!(refused.contains("odt"), "{refused}");
-        assert!(kind_of("docx").is_ok());
+        // `epub` is the kind this test is written against: a kind that *is* shipped belongs in the
+        // list below, and adding one is what makes this test say so.
+        let refused = kind_of("epub").expect_err("epub is not a kind this build ships");
+        assert!(refused.contains("epub"), "{refused}");
+        for shipped in ["docx", "odt"] {
+            assert!(kind_of(shipped).is_ok(), "{shipped} is not shipped");
+        }
     }
 
     #[test]
