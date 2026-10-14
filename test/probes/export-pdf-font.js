@@ -1,25 +1,25 @@
 /**
- * The sixth kind, and a note it could not draw: a PDF of a note written in more than Latin.
+ * The sixth kind, and a note it could not draw until the file named a font: a PDF written in CJK.
  *
- * XeTeX draws a page with the font the defaults file names, and the TeX suite's own font holds nothing
- * but Latin, its punctuation and the symbols a TeX font carries — measured, a note written in
- * `你好，世界`, `Русский` or `हिन्दी` came out with the space its words took and none of the words
- * (XeTeX warns *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each). So
- * the app names one font wide enough for all of them, from ones this machine is known to have
- * (`export.rs: font_argument`), and this reads the page back through its fonts' `ToUnicode` maps — the
- * same instrument a reader's text extraction is built from — to see the characters *on* it.
+ * XeTeX draws a page with the font its defaults file names, and the TeX suite's own font holds Latin,
+ * its punctuation and the symbols a TeX font carries — nothing else. Measured, a note written in
+ * `你好，世界` came out with the space its words took and none of the words (XeTeX warns *"Missing
+ * character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each, and the app shows those
+ * lines as a message). So `export.pdf.yaml` names one — `CJKmainfont: "Songti SC"` — and this is that
+ * working: the page read back out of the file through its fonts' `ToUnicode` maps, the same instrument
+ * a reader's text extraction is built from, with the characters *on* it.
  *
- * That last word is why the font list is the one it is: a font can draw a script with no map to name
- * it by, and that is a page nobody can search or copy from. Measured with one page each, `Arial
- * Unicode MS` draws Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian, Georgian, Chinese,
- * Japanese and Korean *and* keeps the map; the narrower fonts the list knows cover less. This failing
- * on another machine is therefore a statement about *its* fonts, not about the app.
+ * Readable as well as drawn is why that font: a page can carry a script with no map to name it by,
+ * which is a page nobody can search or copy from. Measured with this same note, `Songti SC` keeps the
+ * map and `Hiragino Sans GB` does not. What the default does *not* cover — Hangul, and every script
+ * outside CJK — is in the file's own header, where the reader who needs one adds it: the fonts are the
+ * reader's, and the file is theirs to edit.
  *
  * It is a probe of its own because a real TeX run is ~4 s of the five the bridge gives a script, and
  * `export-pdf.js` already spends them on the Latin half (see its header).
  *
- * @covers src-tauri/src/export.rs (font_argument, beyond_latin, pandoc_arguments),
- *   src-tauri/assets/export/export.pdf.yaml (the file the font is *not* in)
+ * @covers src-tauri/assets/export/export.pdf.yaml (the font it names),
+ *   src-tauri/src/export.rs (the reader's file is what pandoc is handed)
  */
 (async () => {
   const t = window.__t;
@@ -143,22 +143,9 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  // One page of every script the app's rule covers — a line each, so a single TeX run proves them all
-  // — and a line of Latin to show that naming a font for them did not take the rest of the page with
-  // it.
-  const samples = [
-    '简体中文',   // Chinese
-    '日本語',     // Japanese
-    '한국어',     // Korean
-    'Русский',    // Cyrillic
-    'Ελληνικά',   // Greek
-    'עברית',      // Hebrew
-    'العربية',    // Arabic
-    'हिन्दी',      // Devanagari
-    'ภาษาไทย',     // Thai
-    'Հայերեն',    // Armenian
-    'ქართული'     // Georgian
-  ];
+  // The two scripts the shipped default is for — Han and kana — and a line of Latin, because a font
+  // named for CJK must leave the Latin text in the document's own face.
+  const samples = ['简体中文', '日本語'];
   const latin = 'And latin after it.';
   const note = `# Going out\n\n${samples.join(' ')} ${latin}\n`;
 
@@ -211,27 +198,26 @@
     const written = await until(async () => (await bytesOf(target)) !== null);
     const bytes = await bytesOf(target);
     check(
-      'a PDF of a note written in scripts the TeX font has none of is written where the reader asked',
+      'a PDF of a note written in CJK is written where the reader asked',
       written && bytes !== null && String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-',
       { written, size: bytes?.length ?? 0 }
     );
 
     const page = bytes === null ? '' : await pageText(bytes);
-    // XeTeX positions words rather than drawing the spaces between them, and draws Arabic and Indic in
-    // their contextual forms in visual order — so the page is compared character by character, through
-    // NFKC, rather than as a substring. What is pinned is that the *characters* are there, not how the
-    // page orders them.
+    // XeTeX positions words rather than drawing the spaces between them, so the page is compared
+    // character by character rather than as a substring: what is pinned is that the *characters* are
+    // there, not where the spaces fell.
     const normalized = page.normalize('NFKC');
     const missing = samples.filter((sample) =>
       [...sample].some((character) => !normalized.includes(character))
     );
     check(
-      'every script the note is written in is on the page, not just the Latin around it',
+      'the characters the note is written in are on the page, Han and kana both',
       missing.length === 0,
       { missing, page: page.slice(0, 140) }
     );
     check(
-      'and the Latin beside them is drawn as it always was, in the document’s own font',
+      'and the Latin beside them is drawn as it always was, in the document’s own face',
       [...latin].every((character) => normalized.includes(character) || character === ' '),
       { page: page.slice(0, 140) }
     );

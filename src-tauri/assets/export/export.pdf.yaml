@@ -17,23 +17,25 @@
 # The engine below is the one this kind runs: a machine without it fails with the engine's own
 # sentence, which is what the reader is shown.
 #
-# **A note written in more than Latin is given a font by the app, not by this file.** Nothing here
-# names one, so XeTeX would draw the page with its own Latin Modern, which holds Latin, its
-# punctuation and the symbols a TeX font carries — and nothing else: measured, a note written in
-# `你好，世界`, `Русский` or `हिन्दी` came out with the space its words took and none of the words
-# (XeTeX warns *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each).
-# So for a note that has such characters the app names **one font this machine is known to have that
-# is wide enough for all of them** (`src-tauri/src/export.rs: font_argument`), and the characters come
-# out — and come out *readable*, since the wide fonts are the ones whose page keeps a `ToUnicode` map
-# to search and copy by (`export-pdf-font.js` reads one back).
+# **A note written in a script this file names no font for comes out without it**, which is why one is
+# named below. Nothing named means XeTeX draws the page with its own Latin Modern, which holds Latin,
+# its punctuation and the symbols a TeX font carries and nothing else: measured, a note written in
+# `你好，世界` came out with the space its words took and none of the words (XeTeX warns *"Missing
+# character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each, and the app shows those
+# lines to the reader).
 #
-# **Naming one here takes the app's place**: uncomment what you want below and this file's fonts are
-# the ones pandoc is given, whatever the app found — which is also the answer for a machine whose
-# fonts the app does not know, or for a script this machine has no font for.
+# **These fonts are the reader's**, and this file is only where they start: `CJKmainfont` is the one
+# below, and it is the *default* — `Songti SC` is on every machine this was measured on, it draws Han
+# and kana, and its pages keep a `ToUnicode` map, so what a reader copies out of the PDF is the text
+# they wrote (`export-pdf-font.js` reads one back). Two things it does **not** do, both measured:
+# it has no **Hangul**, so a Korean note needs `mainfont:` with a font that has it; and it covers CJK
+# only, so a note in Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian or Georgian needs a
+# font named for *those* — `mainfont: "Arial Unicode MS"` is the one measured to draw all of them (and
+# it sets the whole document in itself, Latin text included).
 #
 #     variables:
-#       mainfont: "Arial Unicode MS"   # the whole document, which is what covers every script
-#       CJKmainfont: "Songti SC"       # CJK only, keeping Latin Modern for the Latin text
+#       CJKmainfont: "Songti SC"       # what is below: CJK only, Latin text left in Latin Modern
+#       mainfont: "Arial Unicode MS"   # everything, any script that font has
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the
@@ -44,6 +46,9 @@ self-contained: true
 variables:
   # Sets the size of the document's pages.
   papersize: a4 # Possible values: a0-a6, b0-b6, c0-c6,b0j, letter, executive, legal
+  # The typeface for CJK, and the reader's to change: see the note above for what it does and does not
+  # cover.
+  CJKmainfont: "Songti SC"
   # Further variables are documented here: https://pandoc.org/MANUAL.html#variables-for-latex
 metadata-files: []
 include-before-body: []

@@ -219,12 +219,14 @@ Yi's own, written in that shape). **One kind is not pandoc's at all**: `markdown
 false`) *is* the pre-process — the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
 is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that
-needs more than pandoc — a TeX engine, named in its file, and a font that can draw a note written in
-more than Latin (measured: XeTeX's own Latin Modern draws none of `你好，世界`, `Русский` or
-`हिन्दी`, so the app names **one font wide enough for all of them** — the first this machine is known
-to have, `font_argument` over `KNOWN_WIDE_FONTS`, with `beyond_latin` deciding whether a note needs
-one — and `export-pdf-font.js` reads such a page back to prove every script on it is there *and*
-extractable). The window is told the list (`src/api/export.ts: exportKinds`) and knows no
+needs more than pandoc — a TeX engine, named in its file, and a **font for a note that is not written
+in Latin**, which is a fact of the *file* and not of the app: `export.pdf.yaml` ships with
+`CJKmainfont: "Songti SC"` under `variables:`, measured to draw Han and kana with a `ToUnicode` map a
+reader can search and copy by (`export-pdf-font.js` reads such a page back; without a font named, XeTeX
+draws the space the words took and none of the words, and the app shows the reader its warning for each
+character). That default covers CJK and nothing else — no Hangul, no Greek, Cyrillic, Hebrew, Arabic,
+Devanagari, Thai, Armenian or Georgian — and a reader who needs one names it in the same file, which is
+theirs and which the app never rewrites. The window is told the list (`src/api/export.ts: exportKinds`) and knows no
 kind by name except the one that labels its menu item, so a new kind is a row and an asset and
 nothing else. A row also says whether
 its kind **carries its own name** (a book's title page and its

@@ -977,6 +977,18 @@ elements) unless it says otherwise.
   which documents this very repair, as a reader who had chosen a font — so the app stepped aside for
   its own documentation and the characters stayed missing, which is how the second report was nearly
   answered with the first fix's explanation.
+- **And then the app stopped naming fonts at all.** The reader's call, and the simpler shape: the font
+  belongs in the **file**, because the file is the one thing the reader owns and the app never
+  rewrites. `export.pdf.yaml` now ships `CJKmainfont: "Songti SC"` under `variables:` and names nothing
+  on any command line — `font_argument`, `beyond_latin`, `KNOWN_WIDE_FONTS` and the `needs_a_font` row
+  fact all went, so the app hands pandoc the reader's file and nothing else. The default is measured
+  where it stands rather than assumed: Songti draws Han and kana and keeps a `ToUnicode` map (a page a
+  reader can search and copy from), and it covers **no Hangul** and none of the scripts outside CJK —
+  which the file's own header says in as many words, with the two lines a reader adds for those
+  (`mainfont: "Arial Unicode MS"` for everything at once, or a font of their own). The turning over of
+  the three answers before this one is worth remembering: the app naming a CJK font (which silently
+  lost Korean), then one wide font (which did draw every script, but only on a machine that has one —
+  macOS), and now the file, which is what the yaml-on-disk design was for all along.
 
 ## Open, in the order to take them
 
@@ -986,15 +998,18 @@ elements) unless it says otherwise.
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **A PDF of a note that is not written in Latin.** Measured both ways: the shipped
-  `export.pdf.yaml` names no font, so XeTeX draws the note with its own Latin Modern and warns
-  *"Missing character"* for every CJK character, leaving none of them on the page; the app now names
-  one it finds (`font_argument`, the entry above), and a reader may name their own instead, which the
-  app steps aside for. What is still open is the edges: a machine whose fonts are not on the known
-  list (nothing is named, and the reader is back to the asset's header to name one), a **LaTeX
-  export** of a note like this, whose `.tex` names no font either and so will not compile its own
-  characters for whoever opens it, and whether the card should offer the choice at all rather than a
-  list the app guesses from.
+- **The scripts the shipped font does not cover.** The default draws Han and kana; a note written in
+  **Hangul**, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian or Georgian still comes out
+  with the space its words took and none of the words until the reader names a font for it — measured,
+  one page each, and the file's header names the two variables that fix it. Whether that is enough is
+  the question this leaves: it is a *working* answer for a reader who reads their yaml, and nothing at
+  all for one who does not. The three ways to answer it for them were measured in the round before
+  this one — a per-OS list of wide fonts (macOS has one; Windows has none by default), a per-script
+  list *per OS* (each name resolved, each script covered, each page extractable — the `Hiragino` and
+  `Apple SD Gothic Neo` rows are why that is three checks and not one), and shipping the fonts and
+  naming them by path (the only one where working everywhere is a property of the app; tens of
+  megabytes and an OFL notice to carry). A **LaTeX export** of such a note is still unheld too: its
+  `.tex` names no font either, so it will not compile its own characters for whoever opens it.
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
