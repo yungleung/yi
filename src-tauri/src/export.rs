@@ -67,12 +67,13 @@ pub struct ExportKind {
     /// so the app writes that text out itself ([`export_own_text`]) and there is no pandoc to hand a
     /// defaults file to.
     pub needs_pandoc: bool,
-    /// Whether the engine that lays this kind out must be **told a font** to draw a note written in
-    /// CJK. True of the PDF alone: its page is drawn by XeTeX with the font the file names, and the
-    /// font the TeX suite ships has none of `你好，世界` — measured, a note with those characters in
-    /// it comes out with the space they took and none of them. Every other kind's output is a *file*
-    /// that carries the characters as characters, and whatever opens it picks a font of its own.
-    pub needs_a_cjk_font: bool,
+    /// Whether the engine that lays this kind out must be **told a font** for a note it cannot set
+    /// by itself. True of the PDF alone: its page is drawn by XeTeX with the font the file names, and
+    /// the font the TeX suite ships has nothing but Latin — measured, a note written in `你好，世界`
+    /// or `Русский` or `हिन्दी` comes out with the space its words took and none of the words. Every
+    /// other kind's output is a *file* that carries the characters as characters, and whatever opens
+    /// it picks a font of its own.
+    pub needs_a_font: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -101,7 +102,7 @@ pub const KINDS: &[ExportKind] = &[
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         needs_pandoc: true,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.docx.yaml"),
     },
     ExportKind {
@@ -111,7 +112,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -123,7 +124,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
@@ -135,7 +136,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: false,
         needs_pandoc: true,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
     ExportKind {
@@ -147,7 +148,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: true,
         needs_pandoc: true,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
     },
     ExportKind {
@@ -157,12 +158,12 @@ pub const KINDS: &[ExportKind] = &[
         // The TeX engine the reader's config names does the work (their defaults file says
         // `xelatex`): this is the kind that needs a TeX suite on the machine, and the one whose
         // defaults file is worth editing for a page size. It is also the one kind whose *engine*
-        // cannot draw a note written in CJK without being told a font, which the app does for a note
-        // that has them ([`cjk_font_argument`]).
+        // cannot draw a note written in anything but Latin without being told a font, which the app
+        // does for a note that needs one ([`font_argument`]).
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
-        needs_a_cjk_font: true,
+        needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
     },
     ExportKind {
@@ -175,7 +176,7 @@ pub const KINDS: &[ExportKind] = &[
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
         needs_pandoc: false,
-        needs_a_cjk_font: false,
+        needs_a_font: false,
         defaults: "",
     },
 ];
@@ -741,34 +742,34 @@ fn export_with_pandoc(
     result
 }
 
-/// The fonts a machine is known to keep that can draw CJK, in the order they are worth trying, each
-/// as *the name its own engine looks a font up by* and the file that being there is what says so.
+/// The fonts a machine is known to keep that are **wide enough to be the whole answer**, in the order
+/// they are worth trying, each as *the name its own engine looks a font up by* and the file that
+/// being there is what says so.
 ///
 /// The two are not the same string — measured: `Songti SC` resolves for XeTeX and `PingFang SC`,
 /// whose file sits beside it, does not — so the pair is written down once, here, and asking is the
 /// file's existence.
 ///
-/// The **order** is measured too, and it is the more surprising half: a font's page can carry the
-/// characters without carrying any way to *read* them back (`export-pdf-cjk.js` is what reads one
-/// back). Measured on this machine with the same note: `Songti SC` gives a PDF whose CJK a reader
-/// can extract — the characters come back out of the file — while `Hiragino Sans GB`, `Heiti SC`,
-/// `STSong` and `Arial Unicode MS` each draw them with no `ToUnicode` map to name them by, which is
-/// a page nobody can search or copy from. So the font that can be read is tried first, and the ones
-/// that can only be seen after it.
-const KNOWN_CJK_FONTS: &[(&str, &str)] = &[
-    ("/System/Library/Fonts/Supplemental/Songti.ttc", "Songti SC"),
-    ("/System/Library/Fonts/Hiragino Sans GB.ttc", "Hiragino Sans GB"),
+/// One font for everything, as the reader asked: measured on this machine, `Arial Unicode MS` draws
+/// **every** script the others must divide between them — Greek, Cyrillic, Hebrew, Arabic, Devanagari,
+/// Thai, Armenian, Georgian, Chinese, Japanese and Korean — and keeps a `ToUnicode` map while it does,
+/// so the page can be searched and copied from as well (`export-pdf-font.js` is what reads one back).
+/// The others are the ones the same idea has on the platforms this app is built for; **macOS is the
+/// one that was measured**, and a machine with none of them is left exactly as it was rather than
+/// failed at.
+const KNOWN_WIDE_FONTS: &[(&str, &str)] = &[
     ("/Library/Fonts/Arial Unicode.ttf", "Arial Unicode MS"),
+    ("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", "FreeSerif"),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "DejaVu Sans"),
     (
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         "Noto Sans CJK SC",
     ),
-    ("/usr/share/fonts/truetype/arphic/uming.ttc", "AR PL UMing CN"),
     ("C:/Windows/Fonts/msyh.ttc", "Microsoft YaHei"),
 ];
 
 /// The name of the first of those this machine has, or none.
-fn cjk_font_in(
+fn wide_font_in(
     known: &[(&'static str, &'static str)],
     exists: impl Fn(&str) -> bool,
 ) -> Option<&'static str> {
@@ -778,73 +779,75 @@ fn cjk_font_in(
         .map(|(_, name)| *name)
 }
 
-/// Whether the text is written in characters the TeX suite's own font cannot draw: the CJK ranges.
+/// Whether the text has a character the TeX suite's own font cannot draw.
 ///
 /// A range check and not a font lookup, because the app knows what the *note* is written in and not
-/// what the font holds; the ranges are the ones a note written in Chinese, Japanese or Korean is
-/// written in, and the two ways a note is mostly Latin are the ones this must *not* answer for (an
-/// accented letter, a dash, a curly quote are all in Latin Modern).
-fn has_cjk(text: &str) -> bool {
+/// what a font holds. What Latin Modern has is Latin, its punctuation, and the symbols a TeX font
+/// carries — so everything else is a script it has none of: Greek, Cyrillic, Hebrew, Arabic, Indic,
+/// Thai, Armenian, Georgian, CJK. The allowed ranges are the ones a *Latin* note is written in as
+/// well (accents, Vietnamese, an em dash, an arrow, `™`), because naming a font for a note that did
+/// not need one changes the whole page's face for nothing.
+fn beyond_latin(text: &str) -> bool {
     text.chars().any(|character| {
-        matches!(
-            character as u32,
-            0x2E80..=0x2EFF      // radicals
-                | 0x3000..=0x303F // CJK punctuation: 、。「」
-                | 0x3040..=0x30FF // hiragana and katakana
-                | 0x3400..=0x4DBF // unified ideographs, extension A
-                | 0x4E00..=0x9FFF // unified ideographs
-                | 0xAC00..=0xD7AF // hangul syllables
-                | 0xF900..=0xFAFF // compatibility ideographs
-                | 0x20000..=0x2FA1F // extensions B to F
-        )
+        let point = character as u32;
+        point > 0x024F
+            && !matches!(
+                point,
+                0x0250..=0x036F   // Latin extended B and IPA, spacing modifiers, combining marks
+                    | 0x1E00..=0x1EFF // Latin extended additional (Vietnamese)
+                    | 0x2000..=0x2BFF // punctuation, symbols, arrows, maths, shapes — TeX has these
+                    | 0x2C60..=0x2C7F // Latin extended C
+                    | 0xA720..=0xA7FF // Latin extended D
+                    | 0xFB00..=0xFB4F // Latin ligatures
+            )
     })
 }
 
 /// The font the app names for a note its engine cannot set by itself, or none when nothing needs
 /// naming. Four things have to hold, and each of them is measured or the reader's own:
 ///
-/// - the kind is one whose engine **lays a page out** (`needs_a_cjk_font`): the kinds pandoc writes
-///   as a file carry the characters as characters and need no font named for them;
-/// - the note **has** those characters ([`has_cjk`]);
-/// - the reader's own defaults file does **not** name a CJK font of its own. Pandoc *concatenates*
-///   the two when both are set — measured: a file saying `CJKmainfont: Songti SC` and a `--variable
+/// - the kind is one whose engine **lays a page out** (`needs_a_font`): the kinds pandoc writes as a
+///   file carry the characters as characters and need no font named for them;
+/// - the note **has** characters that engine has none of ([`beyond_latin`]);
+/// - the reader's own defaults file does **not** name a font of its own. Pandoc *concatenates* the
+///   two when both are set — measured: a file saying `CJKmainfont: Songti SC` and a `--variable
 ///   CJKmainfont=Hiragino Sans GB` together produce `\setCJKmainfont[]{Songti SCHiragino Sans GB}`
 ///   and a failed run — so the app steps aside for a file the reader has made their own rather than
 ///   overruling it. Looking for one word in the file is not parsing it: what it says is still
 ///   pandoc's business, and this only decides whether the app may add a parameter of its own;
-/// - **this machine has one** where it is known to be ([`cjk_font_in`]). A machine with none is left
-///   exactly as it was: the characters are missing from the page, which is the bug being repaired
-///   and not something new to fail on.
-fn cjk_font_argument(
-    kind: &ExportKind,
-    request: &ExportRequest,
-    defaults: &Path,
-) -> Option<&'static str> {
-    if !kind.needs_a_cjk_font || !has_cjk(&request.text) || names_a_cjk_font(defaults) {
+/// - **this machine has one** where it is known to be ([`wide_font_in`]). A machine with none is left
+///   exactly as it was: the characters are missing from the page, which is the bug being repaired and
+///   not something new to fail on.
+fn font_argument(kind: &ExportKind, request: &ExportRequest, defaults: &Path) -> Option<&'static str> {
+    if !kind.needs_a_font || !beyond_latin(&request.text) || names_a_font(defaults) {
         return None;
     }
-    cjk_font_in(KNOWN_CJK_FONTS, |file| Path::new(file).exists())
+    wide_font_in(KNOWN_WIDE_FONTS, |file| Path::new(file).exists())
 }
 
-/// Whether the reader's own defaults file names a CJK font for pandoc to use.
+/// Whether the reader's own defaults file names a font for the document for pandoc to use — either
+/// the main one or the CJK one, since pandoc concatenates each with what the app would add.
 ///
 /// A **comment does not count**: the shipped file's own header talks about fonts (it says what
 /// happens without one), and a copy written from it must not be read as a reader who has chosen —
 /// measured the hard way, the app stepped aside for its own documentation and the characters stayed
 /// missing.
-fn names_a_cjk_font(defaults: &Path) -> bool {
+fn names_a_font(defaults: &Path) -> bool {
     fs::read_to_string(defaults)
         .map(|text| {
             text.lines()
                 .filter(|line| !line.trim_start().starts_with('#'))
-                .any(|line| line.to_lowercase().contains("cjkmainfont"))
+                .any(|line| {
+                    let line = line.to_lowercase();
+                    line.contains("mainfont")
+                })
         })
         .unwrap_or(false)
 }
 
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
 /// folders a relative destination is resolved against, the library and the style the citations came
-/// from, a font for a note the engine has none of ([`cjk_font_argument`]), and the note itself.
+/// from, a font for a note the engine has none of ([`font_argument`]), and the note itself.
 fn pandoc_arguments(
     dir: &Path,
     defaults: &Path,
@@ -888,10 +891,11 @@ fn pandoc_arguments(
         arguments.push(ensure_csl_in(dir, style)?.into_os_string());
     }
     // A font for a note whose own characters the TeX suite's default font has none of (see
-    // `cjk_font_argument`): without it the page keeps the words' places and loses the words.
-    if let Some(font) = cjk_font_argument(kind, request, defaults) {
+    // `font_argument`): without it the page keeps the words' places and loses the words. It is the
+    // document's *main* font, because a wide font is the one thing that covers every script at once.
+    if let Some(font) = font_argument(kind, request, defaults) {
         arguments.push(OsString::from("--variable"));
-        arguments.push(OsString::from(format!("CJKmainfont={font}")));
+        arguments.push(OsString::from(format!("mainfont={font}")));
     }
     // What the note is called, and the language it is in — for the kinds that carry their own name
     // or must declare a language (see `ExportKind`). The window sends both whatever the kind is, and
@@ -1210,25 +1214,48 @@ mod tests {
     }
 
     #[test]
-    fn a_note_is_written_in_cjk_when_it_has_those_characters() {
-        for text in ["你好，世界", "こんにちは", "한국어", "。", "ひとつ。"] {
-            assert!(has_cjk(text), "{text} is not read as CJK");
+    fn a_note_needs_a_font_when_it_is_written_in_more_than_latin() {
+        // Each of these is a script the TeX suite's own font has nothing for — measured, one page at
+        // a time, with the same pandoc and the same defaults file the app hands it.
+        for text in [
+            "Ελληνικά",     // Greek
+            "Русский",      // Cyrillic
+            "עברית",        // Hebrew
+            "العربية",      // Arabic
+            "हिन्दी",         // Devanagari
+            "ภาษาไทย",       // Thai
+            "Հայերեն",      // Armenian
+            "ქართული",       // Georgian
+            "한국어",          // Korean
+            "日本語",          // Japanese
+            "简体中文",        // Chinese
+            "、。「」",        // CJK punctuation
+        ] {
+            assert!(beyond_latin(text), "{text} is not read as needing a font");
         }
-        // The rarer half: a note that is Latin with accents, dashes and curly quotes is *not* one
-        // the engine needs to be told a font for — Latin Modern has all of those.
-        for text in ["", "A note in plain English.", "Ünïcödé, em—dash, “quotes”", "Ω≈ç√∫"] {
-            assert!(!has_cjk(text), "{text} is read as CJK");
+        // And the other half: everything a *Latin* note is written in, which Latin Modern holds
+        // (measured: these drew with no font named), so a note made of them is not set in another
+        // face for nothing.
+        for text in [
+            "",
+            "A note in plain English.",
+            "Ünïcödé, em—dash, “quotes”, ellipsis…",
+            "Tiếng Việt",   // Vietnamese, Latin extended additional
+            "a → b, x ≤ y, ™, €",
+            "e\u{301}",     // a combining accent, as a keyboard may write it
+        ] {
+            assert!(!beyond_latin(text), "{text} is read as needing a font");
         }
     }
 
     #[test]
-    fn of_the_fonts_a_machine_is_known_to_have_the_first_is_the_one_named() {
+    fn the_first_wide_font_a_machine_is_known_to_have_is_the_one_named() {
         let known = [("/nowhere/a.ttc", "No Font"), ("/here/b.ttc", "Here Font")];
         assert_eq!(
-            cjk_font_in(&known, |file| file == "/here/b.ttc"),
+            wide_font_in(&known, |file| file == "/here/b.ttc"),
             Some("Here Font")
         );
-        assert_eq!(cjk_font_in(&known, |_| false), None);
+        assert_eq!(wide_font_in(&known, |_| false), None);
     }
 
     #[test]
@@ -1243,13 +1270,13 @@ mod tests {
             "# A note with `你好` in it needs a font: add\n#   CJKmainfont: \"Songti SC\"\nreader: markdown\n",
         )
         .unwrap();
-        assert!(!names_a_cjk_font(&file));
+        assert!(!names_a_font(&file));
 
         fs::write(&file, "variables:\n  CJKmainfont: \"Songti SC\"\n").unwrap();
-        assert!(names_a_cjk_font(&file));
+        assert!(names_a_font(&file));
 
         // A file that is not there at all is not one that names anything.
-        assert!(!names_a_cjk_font(&dir.join("never.yaml")));
+        assert!(!names_a_font(&dir.join("never.yaml")));
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -1268,7 +1295,7 @@ mod tests {
                 .iter()
                 .position(|argument| argument == "--variable")
                 .and_then(|at| arguments.get(at + 1))
-                .filter(|value| value.starts_with("CJKmainfont="))
+                .filter(|value| value.starts_with("mainfont="))
                 .cloned()
         };
 
@@ -1289,10 +1316,10 @@ mod tests {
         // And with no font in the file, a CJK note is named one this machine has — or none is, on a
         // machine that has none of them, which is the machine this leaves exactly as it was.
         fs::write(&defaults, "reader: markdown\nwriter: pdf\n").unwrap();
-        let here = cjk_font_in(KNOWN_CJK_FONTS, |file| Path::new(file).exists());
+        let here = wide_font_in(KNOWN_WIDE_FONTS, |file| Path::new(file).exists());
         assert_eq!(
             named(&named_arguments_for(&dir, &request, pdf)),
-            here.map(|font| format!("CJKmainfont={font}"))
+            here.map(|font| format!("mainfont={font}"))
         );
         let _ = fs::remove_dir_all(&dir);
     }

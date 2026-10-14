@@ -17,20 +17,23 @@
 # The engine below is the one this kind runs: a machine without it fails with the engine's own
 # sentence, which is what the reader is shown.
 #
-# **A note written in CJK is given a font by the app, not by this file.** Nothing here names one, so
-# XeTeX would draw the page with its own Latin Modern — and measured, a note with `你好，世界` in it
-# makes XeTeX warn *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for
-# every one of them, with the page holding none of the characters. So for a note that has them the app
-# names a font this machine is known to have (`src-tauri/src/export.rs: cjk_font_argument`), and the
-# characters come out — and come out *readable*, since `Songti SC` is the font whose page keeps a
-# `ToUnicode` map to search and copy by (`export-pdf-cjk.js` reads one back).
+# **A note written in more than Latin is given a font by the app, not by this file.** Nothing here
+# names one, so XeTeX would draw the page with its own Latin Modern, which holds Latin, its
+# punctuation and the symbols a TeX font carries — and nothing else: measured, a note written in
+# `你好，世界`, `Русский` or `हिन्दी` came out with the space its words took and none of the words
+# (XeTeX warns *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each).
+# So for a note that has such characters the app names **one font this machine is known to have that
+# is wide enough for all of them** (`src-tauri/src/export.rs: font_argument`), and the characters come
+# out — and come out *readable*, since the wide fonts are the ones whose page keeps a `ToUnicode` map
+# to search and copy by (`export-pdf-font.js` reads one back).
 #
-# **Naming one here takes the app's place**: uncomment the variable below and this file's font is the
-# one pandoc is given, whatever the app found — which is also the answer for a machine whose fonts the
-# app does not know, or for a note whose whole body is not Latin (`mainfont:` is that one).
+# **Naming one here takes the app's place**: uncomment what you want below and this file's fonts are
+# the ones pandoc is given, whatever the app found — which is also the answer for a machine whose
+# fonts the app does not know, or for a script this machine has no font for.
 #
 #     variables:
-#       CJKmainfont: "Songti SC"
+#       mainfont: "Arial Unicode MS"   # the whole document, which is what covers every script
+#       CJKmainfont: "Songti SC"       # CJK only, keeping Latin Modern for the Latin text
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the

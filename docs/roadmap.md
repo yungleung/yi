@@ -953,15 +953,23 @@ elements) unless it says otherwise.
   reader's report was that *the CJK characters are still missing*, and they were, on the hand that was
   left: the report above is about the crate, but the same note through **pandoc's** PDF lost its
   characters too, because XeTeX draws the page with the font the defaults file names and that file
-  names none. What landed is the app doing it: `cjk_font_argument` names a font for a note written in
-  CJK, on the one kind whose engine lays a page out (`needs_a_cjk_font` — a docx or a page or a book
-  carries the characters as characters and needs nothing named), when the reader's own file names none
-  *and* this machine has one of a short list of known ones. Measured, through the app, by
-  `export-pdf-cjk.js` reading the page back: the characters are on it *and* a reader can extract them,
-  which is what the list's **order** is for — `Songti SC` keeps a `ToUnicode` map and `Hiragino Sans
-  GB`, `Heiti SC`, `STSong` and `Arial Unicode MS` draw the characters with no way to name them back,
-  a page nobody can search or copy from (and the probe fails without the app's font: the page came
-  back as eleven `U+FFFD`s and the Latin text).
+  names none. What landed is the app doing it: `font_argument` names **one font wide enough for every script at once**, for a note written in
+  anything but Latin, on the one kind whose engine lays a page out (`needs_a_font` — a docx or a page
+  or a book carries the characters as characters and needs nothing named), when the reader's own file
+  names none *and* this machine has one of a short list of known ones. `beyond_latin` is what "written
+  in anything but Latin" means: anything outside Latin, its punctuation and the symbols a TeX font
+  carries, so a note with an accent, a Vietnamese word or an em dash is not set in another face for
+  nothing.
+  **The first cut of this was CJK only, and wrong twice.** It named `Songti SC` as the *CJK* font,
+  which kept Latin Modern for the Latin text — prettier — but `has_cjk` included Hangul, and Songti has
+  no Hangul: a Korean note was handed a font that could not draw it, which is the worst of the three
+  states (the app *looks* like it is handling it). And the reader's ask made the answer simpler than
+  the question: one font for everything non-Latin. Measured, one page each, with `mainfont` — the
+  variable that covers every script, where `CJKmainfont` covers only CJK and, measured, does not even
+  reach Hangul: Chinese, Japanese, Korean, Russian, Greek, Hebrew, Arabic, Devanagari, Thai, Armenian
+  and Georgian all come out, and `Arial Unicode MS` keeps a `ToUnicode` map while drawing all of them,
+  so the page can be searched and copied from too (`export-pdf-font.js` reads one back; it fails
+  without the app's font, the page coming back as `U+FFFD`s and the Latin text).
   Two things about it are worth keeping. **Pandoc concatenates** a variable the file already sets with
   one from the command line — measured, `\setCJKmainfont[]{Songti SCHiragino Sans GB}` and a failed
   run — so the app steps aside for a file that names one instead of overruling it. And that check
@@ -981,9 +989,9 @@ elements) unless it says otherwise.
 - **A PDF of a note that is not written in Latin.** Measured both ways: the shipped
   `export.pdf.yaml` names no font, so XeTeX draws the note with its own Latin Modern and warns
   *"Missing character"* for every CJK character, leaving none of them on the page; the app now names
-  one it finds (`cjk_font_argument`, the entry above), and a reader may name their own instead, which
-  the app steps aside for. What is still open is the edges: a machine whose fonts are not on the
-  known list (nothing is named, and the reader is back to the asset's header to name one), a **LaTeX
+  one it finds (`font_argument`, the entry above), and a reader may name their own instead, which the
+  app steps aside for. What is still open is the edges: a machine whose fonts are not on the known
+  list (nothing is named, and the reader is back to the asset's header to name one), a **LaTeX
   export** of a note like this, whose `.tex` names no font either and so will not compile its own
   characters for whoever opens it, and whether the card should offer the choice at all rather than a
   list the app guesses from.

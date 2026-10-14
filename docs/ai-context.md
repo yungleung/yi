@@ -220,10 +220,11 @@ false`) *is* the pre-process — the app writes the text it prepared (`export_ow
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
 is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that
 needs more than pandoc — a TeX engine, named in its file, and a font that can draw a note written in
-CJK (measured: XeTeX's own Latin Modern draws none of `你好，世界`, so the app names this machine's
-`Songti SC`-class font for a note that has those characters and whose file names none of its own —
-`cjk_font_argument`, and `export-pdf-cjk.js` reads such a page back to prove the characters are
-there *and* extractable). The window is told the list (`src/api/export.ts: exportKinds`) and knows no
+more than Latin (measured: XeTeX's own Latin Modern draws none of `你好，世界`, `Русский` or
+`हिन्दी`, so the app names **one font wide enough for all of them** — the first this machine is known
+to have, `font_argument` over `KNOWN_WIDE_FONTS`, with `beyond_latin` deciding whether a note needs
+one — and `export-pdf-font.js` reads such a page back to prove every script on it is there *and*
+extractable). The window is told the list (`src/api/export.ts: exportKinds`) and knows no
 kind by name except the one that labels its menu item, so a new kind is a row and an asset and
 nothing else. A row also says whether
 its kind **carries its own name** (a book's title page and its

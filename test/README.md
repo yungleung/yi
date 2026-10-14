@@ -208,10 +208,10 @@ the navigation and the chapter's `References` list are all values it asserts;
 `%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
 result out of the page's stash; there is nothing to split, since the overrun *is* one export);
-`export-pdf-cjk` — the same kind with a note it could not draw: the characters the note is written in,
-read back out of the PDF through its fonts' `ToUnicode` maps, *on* the page — which is the app naming
-a font for a note XeTeX has none for (`Songti SC`, the one on its list whose page can be searched and
-copied from), and the other TeX-run probe;
+`export-pdf-font` — the same kind with a note it could not draw: one page of eleven scripts, read back
+out of the PDF through its fonts' `ToUnicode` maps, every one of them *on* the page — which is the app
+naming one wide font (`Arial Unicode MS`, measured to draw them all *and* keep the map a reader
+searches and copies by), and the other TeX-run probe;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
