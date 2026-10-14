@@ -4,9 +4,8 @@
  * The order is the whole module, and it is the order Zettlr uses: ask how and where, prepare the
  * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
  * as the file it names, and a citation as the words it reads as for the kind the app writes itself),
- * run it, and then say what happened. The *asking* is the card's
- * (`export_dialog.ts`) and the *doing* is
- * Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
+ * run it, and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing*
+ * is Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
  * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
  * and a message for a failure, which waits for them (`services/hints.ts`, `services/messages.ts`).
  *

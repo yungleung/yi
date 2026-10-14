@@ -34,8 +34,8 @@
 # it sets the whole document in itself, Latin text included).
 #
 #     variables:
-#       CJKmainfont: "Songti SC"       # what is below: CJK only, Latin text left in Latin Modern
-#       mainfont: "Arial Unicode MS"   # everything, any script that font has
+#       mainfont: "Arial Unicode MS"   # the whole document, any script that font has
+#       CJKmainfont: "Songti SC"       # CJK only — the default, and it is already set below
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the

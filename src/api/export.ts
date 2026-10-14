@@ -86,7 +86,8 @@ export async function exportFetchImage(url: string): Promise<string> {
 /**
  * Where a kind's defaults file is, writing it from the shipped copy first when it is not there yet.
  * Opening it is the window's call: it is a file path, and the opener plugin is what the app opens
- * paths with.
+ * paths with. A kind with no file of its own — the one the app writes itself — refuses rather than
+ * naming a path that will never be made, which is why the card asks `exportKinds` first.
  */
 export async function exportConfigPath(kind: string): Promise<string> {
   return await invoke<string>('export_config_path', { kind });
