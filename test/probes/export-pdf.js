@@ -15,7 +15,7 @@
  * result out of the page's stash), which is what that recovery is for.
  *
  * @covers src-tauri/src/export.rs (run_export's two hands, export_with_pandoc),
- *   src/ui/export/export_dialog.ts (the menu, the hand, the kind's own options)
+ *   src/ui/export/export_dialog.ts (the kind's hands, and the options each of them brings)
  */
 (async () => {
   const t = window.__t;

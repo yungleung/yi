@@ -20,11 +20,27 @@ fn export_submenu(
     let mut submenu = SubmenuBuilder::new(app, t(language, "menu.file.export", &[]));
     for kind in crate::export::KINDS {
         submenu = submenu.text(
-            format!("export_{}", kind.kind),
+            export_item_id(kind.kind),
             t(language, &format!("export.kind.{}", kind.kind), &[]),
         );
     }
     Ok(submenu.build()?)
+}
+
+/// The id an *Export* item carries (`export_<kind>`), and the kind read back off one.
+///
+/// One wire, one home: the menu that writes the id and the handler that reads it are the two ends of
+/// it, and they are one line apart so neither can drift from the other. An id is never translated —
+/// it is what the window's menu bridge maps to a command (`src/ui/markdown/commands/menu.ts`), and
+/// what the event's payload is read off.
+fn export_item_id(kind: &str) -> String {
+    format!("export_{kind}")
+}
+
+/// The kind an *Export* item's id names, or `None` when the id belongs to some other item — which is
+/// most of them, and none of them is read as a kind.
+fn kind_of_export_item(id: &str) -> Option<&str> {
+    id.strip_prefix("export_")
 }
 
 /// The app menu, in the language the app is speaking.
@@ -181,7 +197,7 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
 
         // An Export submenu item names its kind (`export_<kind>`) and nothing else: the kind travels
         // with the event, so the window opens the card for the kind that was asked for.
-        if let Some(kind) = event.id().0.as_str().strip_prefix("export_") {
+        if let Some(kind) = kind_of_export_item(event.id().0.as_str()) {
             app_handle.emit("export", kind.to_string()).unwrap();
             return;
         }
@@ -262,4 +278,28 @@ pub fn set_menu_for_language(app: &AppHandle) -> Result<(), Box<dyn Error>> {
     let menu = build(app, &language)?;
     app.set_menu(menu)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A menu cannot be built without an app, so the one thing about the Export submenu a test *can*
+    /// hold is the wire the window depends on: the id an item carries and the kind the handler reads
+    /// back off it. A kind whose id does not round-trip is an item that opens nothing.
+    #[test]
+    fn every_export_items_id_is_the_kind_the_handler_reads_back() {
+        for kind in crate::export::KINDS {
+            assert_eq!(
+                kind_of_export_item(&export_item_id(kind.kind)),
+                Some(kind.kind),
+                "{} does not round-trip through its own menu item's id",
+                kind.kind
+            );
+        }
+        // And the ids of the items beside them are not read as kinds — the menu is full of those.
+        for other in ["save", "version_save", "export", "settings"] {
+            assert_eq!(kind_of_export_item(other), None, "{other}");
+        }
+    }
 }

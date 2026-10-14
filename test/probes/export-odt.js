@@ -1,16 +1,17 @@
 /**
  * The second kind: the same card, the same pre-process, and a LibreOffice file at the end.
  *
- * What this proves beyond `export-docx.js` is that *choosing* a kind is real — the tab moves, the
- * target's extension travels with it, and the configuration the run is handed is that kind's own
- * file — and that the document which comes out is a document LibreOffice will open: an ODF is a zip
+ * What this proves beyond `export-docx.js` is that *choosing* a kind is real — the menu item for odt
+ * opens the card for it, the target's extension is that kind's, and the configuration the run is
+ * handed is that kind's own file — and that the document which comes out is a document LibreOffice
+ * will open: an ODF is a zip
  * whose *first* entry is a stored `mimetype` naming the type, and the string is in the file. The
  * picture and the citation go through the same steps they do for the docx, so they are asserted here
  * too: the note's image in the odt's own media folder (`Pictures/`), and the reference list the
  * library was handed for.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts (a tab
- *   per kind, and the target following it), src/ui/export/export_flow.ts
+ * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts (a card
+ *   about the kind its menu item names, and the target that kind's own), src/ui/export/export_flow.ts
  */
 (async () => {
   const t = window.__t;
