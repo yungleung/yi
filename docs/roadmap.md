@@ -773,6 +773,15 @@ elements) unless it says otherwise.
   `Citeproc: citation 2014 not found` in a card, because its citations are not in the fixture library.
   A fetched picture is re-fetched rather than remembered, and the run's copies are deleted with the
   note written for pandoc.
+  **And when the app's *own* fetch fails** — which is what a reader sees as a missing picture, and
+  what one did: a book whose fetch had failed carried the picture's *description*, and the only word
+  about it came from pandoc, blaming itself ("compiled without HTTP support") for a failure that was
+  the app's. The window now says it in its own words, naming the URL (`export.pictureNotFetched`, in
+  all eight catalogues, one message for up to four of them) and the download is retried once, because
+  a fetch that fails once is likelier to be a network that blinked than a picture that is not there.
+  Measured both ways: with a curl that cannot run, the reader gets the app's sentence with the URL and
+  the prepared note keeps the URL as written; with the real curl, the same note's picture is in the
+  book (`EPUB/media/file0.png`, 1811 bytes — the server's own length). `export-refused.js` holds it.
   **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export.rs` — plus the
   asset `src-tauri/assets/export/export.odt.yaml` (Zettlr's own LibreOffice defaults, less the same
   one key), a tab label in the catalogues and not one line of dialog code that knows what `odt` is.
@@ -816,6 +825,40 @@ elements) unless it says otherwise.
   message rather than being swallowed. `export-html.js` holds the page: the heading shifted the way
   the file says, the picture carried, the math marked, and the citations as `(Smith, 2020)` over a
   `References` heading and its entry.
+- **The fifth kind is `epub`**, and it is the one file in that folder Yi writes *itself*: the four
+  beside it are copies of Zettlr's defaults, and this one is the same shape with the values a book
+  wants, each choice measured. What came out of measuring it:
+  - **A book's name belongs to the note.** The note's own frontmatter reaches the container
+    (`title:` → `<dc:title>`, `author:` → `<dc:creator>`, `lang:` → `<dc:language>`), and a
+    `metadata:` block written *in the defaults file* overrides it — measured: a file saying
+    `lang: en-US` won over a note saying `lang: en-GB`, and a bare `title:`/`lang:` key at the top
+    level of a defaults file is not even parsed (`Aeson exception`). So `export.epub.yaml` says
+    nothing about metadata at all, and a note with no `title:` makes a book called UNTITLED, which is
+    the honest name for it. The app therefore passes no title for any kind — the *note* names itself,
+    and the roadmaps' "metadata from the frontmatter" item is answered by pandoc reading it.
+  - **`self-contained` is not a question for a container**: measured, a book carries its pictures,
+    its stylesheet and its math either way, so the key is left out rather than copied for the look of
+    it. Math is MathML in the book — no CDN script, unlike the html kind's MathJax — so an EPUB's
+    math renders offline.
+  - `export-epub.js` reads the book the way a reader's software does, and reads *inside* it: the
+    page walks the zip's central directory and inflates an entry by name (`DecompressionStream`), so
+    the `mimetype` (first and stored, `application/epub+zip`), the note's frontmatter as the title,
+    author and language, the picture the app *fetched from the web* carried in `EPUB/media/`, and the
+    `References` section are all asserted values rather than things taken on trust.
+  - What is *not* proved: `epubcheck` is not on this machine, so the book's validity is structural
+    (the container, the parts, the metadata) and read by hand. A machine with `epubcheck` could hold
+    the next epub to a validator, which is the roadmap item below.
+  - **A book must declare a title and a language, and the note's own is the first answer.** Measured:
+    with neither, pandoc's title page reads UNTITLED and `dc:language` is the machine locale's `C` —
+    and a reader who exported the demo document saw exactly that page. So a kind's row now says
+    whether it **carries its own name** (a book's title page and its `<dc:title>`, a page's
+    `<title>`: epub and html) and whether it **must declare a language** (epub: `dc:language` is
+    required of one); the window hands the note's own name (frontmatter title, else its first
+    heading, else its file's name) and language (the frontmatter's `lang:`, else the language the app
+    is speaking) over for *every* kind, and the row decides. Measured the other way round, which is
+    what settled it: given a title in the metadata, a docx and an odt of a note that opens with its
+    own `#` heading say that name **twice** (a Title paragraph and the heading), and `lang` in a
+    LaTeX run picks a hyphenation package by language — so those three take neither.
 - **The session a probe leaves behind, and the one the app kept.** Closed in the harness.
   `restoreSession` puts the session *file* back, and the app reads that file only at a start: the
   session the probes left in *memory* stayed the one on screen, so a probe that opened a note the
@@ -849,12 +892,12 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
-- **The kind that is left: epub.** `docx`, `odt`, `latex` and `html` are in, and the shape of a kind
-  is settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label — so
-  what epub still needs is its own pass over what pandoc actually writes: a file that validates
-  (`epubcheck`, which the machine may not have), a cover the reader may want to name, and the
-  metadata (title, author, language) a book's own front matter takes from the note's frontmatter
-  rather than from a defaults file.
+- **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
+  `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
+  of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
+  validator found when it is not — so that the two things nobody has looked at (an EPUB 3 with a
+  `nav.xhtml` *and* a `toc.ncx`, an accessibility `schema:*` metadata set pandoc writes itself) are
+  held by something other than this app's own reading of its own output.
 - **A citation's locator and its suppressed author, against a key the library holds.** The demo
   document's forms all reach citeproc (measured through the odt export), but the two entries the
   fixture library has are cited there without a locator, so `[@smith2020, p. 45]` and `-@smith2020`

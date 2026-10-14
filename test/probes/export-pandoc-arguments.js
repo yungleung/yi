@@ -212,6 +212,42 @@
       (hint?.textContent ?? '').includes('out.docx'),
       hint?.textContent ?? null
     );
+
+    // --- what a kind that carries its own name is told -------------------------------------------
+
+    // The window hands over the note's own name and language whatever the kind is; the *kind's row*
+    // decides whether it uses them. A book does (its title page and its required `dc:title` and
+    // `dc:language`), a docx does not (measured: with a title in the metadata, a docx of a note that
+    // opens with its own heading says that name twice), and this is that decision seen from outside.
+    const i18n = await t.app('/src/services/i18n.ts');
+    const epubTarget = `${folder}/out.epub`;
+    await askForExport();
+    document.querySelector('[data-export-tab="epub"]').click();
+    await sleep(150);
+    document.querySelector('[data-export-target]').value = epubTarget;
+    document.querySelector('[data-export-run]').click();
+    await until(() => exists(epubTarget));
+
+    const calls = (await readText(`${recorder}/argv.log`))
+      .trim()
+      .split(/\npandoc\n/)
+      .map((call) => call.replace(/^pandoc\n/, '').split('\n'));
+    const docxCall = calls[0] ?? [];
+    const epubCall = calls[1] ?? [];
+    check(
+      'a docx is not told what the note is called, because its own body says it',
+      docxCall.length > 0 &&
+        !docxCall.some((argument) => argument.startsWith('title=')) &&
+        !docxCall.some((argument) => argument.startsWith('lang=')),
+      { docx: docxCall }
+    );
+    check(
+      'and an epub is: the note’s own name (here its heading) and the language the app speaks',
+      epubCall.includes('--metadata') &&
+        epubCall.includes('title=Going out') &&
+        epubCall.includes(`lang=${i18n.language()}`),
+      { epub: epubCall, language: i18n.language() }
+    );
   } finally {
     await api.pointAtPandoc(null);
     for (const stale of [folder, recorder]) {

@@ -54,6 +54,19 @@ pub struct ExportKind {
     /// Whether the conversion is pandoc's at all. PDF will say no: it is the one kind the app can
     /// also write itself, and the reader chooses which hand does it.
     pub needs_pandoc: bool,
+    /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
+    /// book's title page and its `<dc:title>`, a page's `<title>`.
+    ///
+    /// The kinds that write the title as *body* content (docx, odt, latex) say no, and that is
+    /// measured: given a title in the metadata, a docx of a note that opens with its own `#` heading
+    /// says that name **twice** — a Title paragraph and then the heading — and an odt the same.
+    pub takes_a_title: bool,
+    /// Whether the kind must declare a **language** of its own. An EPUB must: `dc:language` is
+    /// required of one, and pandoc otherwise writes the machine locale's `C` — which is not a
+    /// language tag at all. The others either say their language in their own way or have none to
+    /// give, and `lang` in a LaTeX run pulls in a hyphenation package chosen by language, which is
+    /// not something to do unasked.
+    pub needs_a_language: bool,
     /// The defaults file this build ships, as its own bytes: what a reader's copy starts as.
     pub defaults: &'static str,
 }
@@ -64,6 +77,8 @@ pub const KINDS: &[ExportKind] = &[
         kind: "docx",
         extension: "docx",
         needs_pandoc: true,
+        takes_a_title: false,
+        needs_a_language: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         defaults: include_str!("../assets/export/export.docx.yaml"),
@@ -72,6 +87,8 @@ pub const KINDS: &[ExportKind] = &[
         kind: "odt",
         extension: "odt",
         needs_pandoc: true,
+        takes_a_title: false,
+        needs_a_language: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -80,13 +97,29 @@ pub const KINDS: &[ExportKind] = &[
         // a `.tex`, and `every_shipped_kind...` below is where those two facts are held together.
         extension: "tex",
         needs_pandoc: true,
+        takes_a_title: false,
+        needs_a_language: false,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
         kind: "html",
         extension: "html",
         needs_pandoc: true,
+        // The page's `<title>` is the reader's tab, not a line of the document: nothing in the body
+        // says it, so it comes from the note.
+        takes_a_title: true,
+        needs_a_language: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
+    },
+    ExportKind {
+        kind: "epub",
+        extension: "epub",
+        needs_pandoc: true,
+        // A book has a title page and a required `<dc:title>`, and a required `<dc:language>`
+        // (measured: without one pandoc writes `C`, and the title page reads UNTITLED).
+        takes_a_title: true,
+        needs_a_language: true,
+        defaults: include_str!("../assets/export/export.epub.yaml"),
     },
 ];
 
@@ -96,6 +129,9 @@ pub struct ExportKindInfo {
     pub kind: String,
     pub extension: String,
     pub needs_pandoc: bool,
+    /// Whether the window should hand this kind the note's own name, and a language.
+    pub takes_a_title: bool,
+    pub needs_a_language: bool,
     /// Where the reader's copy of the defaults file is — there whether or not it exists yet.
     pub config_path: String,
     /// Whether that copy has been written yet. A missing one is made by the first export or by
@@ -148,6 +184,15 @@ pub struct ExportRequest {
     /// window's catalogue with every other word the app says (`locales/*.json`).
     #[serde(default)]
     pub references: Option<String>,
+    /// What the note is called, as the app knows it: its frontmatter title, else its first heading,
+    /// else its file's name. Used by the kinds that carry their own name (`takes_a_title`), and
+    /// ignored by the kinds whose body already says it.
+    #[serde(default)]
+    pub title: Option<String>,
+    /// The language the note is written in, as the app knows it: the frontmatter's `lang:`, else the
+    /// language the app is speaking. Used by the kinds that must declare one (`needs_a_language`).
+    #[serde(default)]
+    pub language: Option<String>,
 }
 
 /// A CSL style as the window can hand it over: the name it is known by, and its own text.
@@ -352,6 +397,8 @@ pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
                 kind: kind.kind.to_string(),
                 extension: kind.extension.to_string(),
                 needs_pandoc: kind.needs_pandoc,
+                takes_a_title: kind.takes_a_title,
+                needs_a_language: kind.needs_a_language,
                 config_exists: path.exists(),
                 config_path: path.to_string_lossy().into_owned(),
             }
@@ -523,7 +570,18 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
     // The name carries the picture's type, and the type is only known once the server has answered —
     // so it is fetched under a name of its own first and named properly afterwards.
     let partial = dir.join(format!("{name}.download"));
-    let content_type = run_curl(curl, dir, url, &partial)?;
+    // One retry, because a fetch that fails once is far likelier to be a network that blinked than a
+    // picture that is not there — and measured the other way round: a run whose fetch failed left a
+    // book holding the picture's *description*, with the only word about it coming from pandoc, which
+    // blamed itself ("compiled without HTTP support") for a failure that was the app's. The second
+    // failure is the answer.
+    let content_type = match run_curl(curl, dir, url, &partial) {
+        Ok(content_type) => content_type,
+        Err(first) => {
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            run_curl(curl, dir, url, &partial).map_err(|_| first)?
+        }
+    };
     let extension = match image_extension(&content_type) {
         Some(extension) => extension,
         None => {
@@ -578,7 +636,7 @@ pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<Expor
     let dir = export_dir(&app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     let note = write_note(&dir, &request.text)?;
-    let result = pandoc_arguments(&dir, &defaults, &note, &request).and_then(|arguments| {
+    let result = pandoc_arguments(&dir, &defaults, &note, &request, kind).and_then(|arguments| {
         match pandoc.as_deref() {
             // A kind that needs pandoc always has one here (`run_export` refuses first); the arms
             // are kept apart so the PDF tick, which will write its own file, has somewhere to go.
@@ -607,6 +665,7 @@ fn pandoc_arguments(
     defaults: &Path,
     note: &Path,
     request: &ExportRequest,
+    kind: &ExportKind,
 ) -> Result<Vec<OsString>, String> {
     let mut arguments: Vec<OsString> = vec![
         OsString::from("--defaults"),
@@ -643,6 +702,26 @@ fn pandoc_arguments(
         arguments.push(OsString::from("--csl"));
         arguments.push(ensure_csl_in(dir, style)?.into_os_string());
     }
+    // What the note is called, and the language it is in — for the kinds that carry their own name
+    // or must declare a language (see `ExportKind`). The window sends both whatever the kind is, and
+    // the kind's own row decides: a docx whose body already opens with the note's own heading would
+    // say that name twice, and a `lang` in a LaTeX run picks a hyphenation package by language.
+    let metadata = |key: &str, value: Option<&str>| {
+        let value = value.map(str::trim).filter(|value| !value.is_empty());
+        value.map(|value| (key.to_string(), format!("{key}={value}")))
+    };
+    let named = kind
+        .takes_a_title
+        .then(|| metadata("title", request.title.as_deref()))
+        .flatten();
+    let spoken = kind
+        .needs_a_language
+        .then(|| metadata("lang", request.language.as_deref()))
+        .flatten();
+    for (_, pair) in named.into_iter().chain(spoken) {
+        arguments.push(OsString::from("--metadata"));
+        arguments.push(OsString::from(pair));
+    }
     arguments.push(note.as_os_str().to_os_string());
     Ok(arguments)
 }
@@ -672,11 +751,12 @@ mod tests {
 
     #[test]
     fn a_kind_the_app_does_not_ship_is_refused_by_name() {
-        // `epub` is the kind this test is written against: a kind that *is* shipped belongs in the
-        // list below, and adding one is what makes this test say so.
-        let refused = kind_of("epub").expect_err("epub is not a kind this build ships");
-        assert!(refused.contains("epub"), "{refused}");
-        for shipped in ["docx", "odt"] {
+        // `rtf` is the writer this test is written against: one no kind of ours will ever be, so the
+        // list below is the thing that ages — and adding a kind makes this test say so (it has, three
+        // times: `odt`, `latex`, `html`, each one moved the example along).
+        let refused = kind_of("rtf").expect_err("rtf is not a kind this build ships");
+        assert!(refused.contains("rtf"), "{refused}");
+        for shipped in ["docx", "odt", "latex", "html", "epub"] {
             assert!(kind_of(shipped).is_ok(), "{shipped} is not shipped");
         }
     }
@@ -695,6 +775,7 @@ mod tests {
             "odt" => "odt",
             "latex" => "tex",
             "html" => "html",
+            "epub" => "epub",
             _ => "",
         };
         for kind in KINDS {
@@ -790,15 +871,27 @@ mod tests {
                 xml: "<style>apa</style>".to_string(),
             }),
             references: Some("References".to_string()),
+            title: Some("Going out".to_string()),
+            language: Some("en-GB".to_string()),
         }
     }
 
     fn named_arguments(dir: &Path, request: &ExportRequest) -> Vec<String> {
-        pandoc_arguments(dir, &dir.join("export.docx.yaml"), &dir.join("note-1.md"), request)
-            .unwrap()
-            .iter()
-            .map(|argument| argument.to_string_lossy().into_owned())
-            .collect()
+        named_arguments_for(dir, request, kind_of(&request.kind).unwrap())
+    }
+
+    fn named_arguments_for(dir: &Path, request: &ExportRequest, kind: &ExportKind) -> Vec<String> {
+        pandoc_arguments(
+            dir,
+            &dir.join("export.docx.yaml"),
+            &dir.join("note-1.md"),
+            request,
+            kind,
+        )
+        .unwrap()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect()
     }
 
     /// A folder of this test's own, made and taken away again.
@@ -856,6 +949,40 @@ mod tests {
         let mut request = request_in(&dir);
         request.csl = None;
         assert!(!named_arguments(&dir, &request).contains(&"--csl".to_string()));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn only_a_kind_that_carries_its_own_name_is_told_what_the_note_is_called() {
+        // The window hands over the note's title and language whatever kind it is exporting, and the
+        // *kind* decides: a book and a web page need them (a title page, a `<dc:title>`, a required
+        // `dc:language`), while a docx whose body already opens with the note's own heading would say
+        // that name twice — measured, with a title in the metadata, the docx and the odt each said
+        // it twice — and a `lang` in a LaTeX run picks a hyphenation package by language.
+        let dir = scratch("names");
+        let request = request_in(&dir);
+
+        let docx = named_arguments(&dir, &request);
+        assert!(!docx.iter().any(|argument| argument.starts_with("title=")), "{docx:?}");
+        assert!(!docx.iter().any(|argument| argument.starts_with("lang=")), "{docx:?}");
+
+        let epub = named_arguments_for(&dir, &request, kind_of("epub").unwrap());
+        assert!(epub.contains(&"--metadata".to_string()), "{epub:?}");
+        assert!(epub.contains(&"title=Going out".to_string()), "{epub:?}");
+        assert!(epub.contains(&"lang=en-GB".to_string()), "{epub:?}");
+
+        // A page's own name, but no language to declare.
+        let html = named_arguments_for(&dir, &request, kind_of("html").unwrap());
+        assert!(html.contains(&"title=Going out".to_string()), "{html:?}");
+        assert!(!html.iter().any(|argument| argument.starts_with("lang=")), "{html:?}");
+
+        // And a note the app knows nothing about says nothing: no empty `title=`.
+        let mut silent = request_in(&dir);
+        silent.title = None;
+        silent.language = Some("   ".to_string());
+        let epub = named_arguments_for(&dir, &silent, kind_of("epub").unwrap());
+        assert!(!epub.iter().any(|argument| argument.starts_with("title=")), "{epub:?}");
+        assert!(!epub.iter().any(|argument| argument.starts_with("lang=")), "{epub:?}");
         let _ = fs::remove_dir_all(&dir);
     }
 

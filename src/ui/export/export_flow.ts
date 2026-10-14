@@ -23,9 +23,10 @@ import { exists } from '@tauri-apps/plugin-fs';
 import { exportFetchImage, exportKinds, runExport } from '../../api/export';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
+import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
 import { documentManager } from '../../services/document_manager';
 import { showHint } from '../../services/hints';
-import { t } from '../../services/i18n';
+import { language, t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
 import { bibliographyPath, homeFolderPath, imageFolderPath } from '../../services/settings_paths';
@@ -62,6 +63,8 @@ export async function exportNote(text: string): Promise<void> {
     return;
   }
 
+  /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
+  const unfetched: string[] = [];
   try {
     // The pre-process is the one step every kind shares, and the parser is what says where the
     // wikilinks and the images *are* — a `[[…]]` in a fence, or an image's destination in a code
@@ -73,7 +76,7 @@ export async function exportNote(text: string): Promise<void> {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: fetchedPicture
+      fetchRemote: (url) => fetchedPicture(url, unfetched)
     });
     const outcome = await runExport({
       kind: answer.kind,
@@ -83,9 +86,23 @@ export async function exportNote(text: string): Promise<void> {
       source_dir: note?.path ? parentFolder(note.path) : null,
       bibliography: await bibliographyPath(),
       csl: bibliographyManager.cslForExport(),
-      references: t('export.references')
+      references: t('export.references'),
+      // What the note is *called*, and the language it is in. The kind's own row decides whether it
+      // uses them (a book's title page and its required language, a page's `<title>`), and a kind
+      // whose body already opens with the note's own heading takes neither.
+      title: documentTitle(text, note?.path ?? null),
+      language: readFrontmatterLang(text) ?? language()
     });
     showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
+    // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about
+    // it, which blames pandoc for its own missing HTTP support and would leave the reader none the
+    // wiser about which URL is missing from the document they are holding.
+    if (unfetched.length > 0) {
+      notify(
+        'Export',
+        new Error(unfetched.slice(0, 4).map((url) => t('export.pictureNotFetched', { url })).join('\n'))
+      );
+    }
     // Pandoc's own warnings, in its own words: what it could not fetch, what it could not resolve.
     // A document that is missing a piece is not a failure — the file is there — but the reader is
     // owed the reason rather than the hole.
@@ -102,11 +119,12 @@ export async function exportNote(text: string): Promise<void> {
  * null and the destination is left exactly as the note wrote it: pandoc is then asked for it, and
  * its warning about it is one of the warnings the reader is told.
  */
-async function fetchedPicture(url: string): Promise<string | null> {
+async function fetchedPicture(url: string, unfetched: string[]): Promise<string | null> {
   try {
     return await exportFetchImage(url);
   } catch (error) {
     console.error('Export could not fetch a picture:', error);
+    unfetched.push(url);
     return null;
   }
 }

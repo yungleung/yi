@@ -15,6 +15,10 @@ export interface ExportKindInfo {
   extension: string;
   /** Whether the conversion is pandoc's; PDF will answer no, since the app can write it itself. */
   needs_pandoc: boolean;
+  /** Whether the kind carries its own name, so the window hands it the note's. */
+  takes_a_title: boolean;
+  /** Whether the kind must declare a language, so the window hands it one. */
+  needs_a_language: boolean;
   /** Where the reader's copy of the defaults file is. */
   config_path: string;
   /** Whether that copy has been written yet. */
@@ -47,6 +51,10 @@ export interface ExportRequest {
   csl: { name: string; xml: string } | null;
   /** What that list is called in the reader's language — pandoc leaves it unnamed without one. */
   references: string | null;
+  /** What the note is called, and the language it is in: the kinds that carry their own name use
+   * them, and the kinds whose body already says the name ignore them. */
+  title: string | null;
+  language: string | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

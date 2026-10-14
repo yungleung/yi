@@ -1,0 +1,267 @@
+/**
+ * The fifth kind, the one that is a *book*: a container with its own title page, its navigation and
+ * its pictures inside it.
+ *
+ * An EPUB is a zip, so this probe reads it the way a reader's own software does — and reads *inside*
+ * it, which no other kind's probe can: the page inflates an entry by name (the zip's central
+ * directory, then the entry's own data through `DecompressionStream`), so the book's metadata is
+ * something to assert rather than something to take on trust. What is asserted is what makes it a
+ * book: `mimetype`, read first and stored, saying `application/epub+zip`; a `container.xml` and a
+ * `content.opf`; the *note's own frontmatter* as the book's title, author and language (the one place
+ * a book's name belongs — a defaults file that said so would override the note, which is why
+ * `export.epub.yaml` says nothing about metadata at all); the picture the app *fetched from the web*
+ * carried in `EPUB/media/`; and the citations resolved into a `References` section of the chapter.
+ *
+ * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts,
+ *   src-tauri/assets/export/export.epub.yaml
+ */
+(async () => {
+  const t = window.__t;
+  const files = await t.app('/src/api/files.ts');
+  const session = await t.app('/src/services/session.ts');
+  const { configManager } = await t.app('/src/services/config_manager.ts');
+  const api = await t.app('/src/api/export.ts');
+  const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
+  const checks = [];
+  const check = (name, pass, actual) => checks.push({ name, pass, actual });
+  const sleep = t.sleep;
+
+  const bytesOf = async (path) => {
+    try {
+      const read = await invoke('plugin:fs|read_file', { path });
+      return read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
+    } catch {
+      return null;
+    }
+  };
+  const exists = async (path) => {
+    try {
+      return await invoke('plugin:fs|exists', { path });
+    } catch {
+      return false;
+    }
+  };
+  const until = async (ready, tries = 120) => {
+    for (let attempt = 0; attempt < tries; attempt += 1) {
+      if (await ready()) {
+        return true;
+      }
+      await sleep(100);
+    }
+    return false;
+  };
+
+  /**
+   * One entry of the zip, by name — the book read the way a reader's own software reads it: the
+   * central directory holds every entry's name, offset and size, the local header says where that
+   * entry's data begins, and the page inflates it with `DecompressionStream`.
+   */
+  const entryOf = async (bytes, name) => {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const latin = new TextDecoder('latin1');
+    let at = -1;
+    for (let index = bytes.length - 22; index >= 0; index -= 1) {
+      if (view.getUint32(index, true) === 0x06054b50) {
+        at = index;
+        break;
+      }
+    }
+    if (at < 0) {
+      return null;
+    }
+    const count = view.getUint16(at + 10, true);
+    let cursor = view.getUint32(at + 16, true);
+    for (let index = 0; index < count; index += 1) {
+      if (view.getUint32(cursor, true) !== 0x02014b50) {
+        return null;
+      }
+      const method = view.getUint16(cursor + 10, true);
+      const size = view.getUint32(cursor + 20, true);
+      const nameLength = view.getUint16(cursor + 28, true);
+      const extraLength = view.getUint16(cursor + 30, true);
+      const commentLength = view.getUint16(cursor + 32, true);
+      const localOffset = view.getUint32(cursor + 42, true);
+      const entryName = latin.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
+      if (entryName === name) {
+        const start =
+          localOffset +
+          30 +
+          view.getUint16(localOffset + 26, true) +
+          view.getUint16(localOffset + 28, true);
+        const data = bytes.subarray(start, start + size);
+        if (method === 0) {
+          return latin.decode(data);
+        }
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return await new Response(stream).text();
+      }
+      cursor += 46 + nameLength + extraLength + commentLength;
+    }
+    return null;
+  };
+
+  const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
+  const checkout = window.__probePaths.checkout;
+  // A folder of this run's own — see `export-docx.js` for why: the live session is not reset
+  // between runs, so a note opened twice under one name is one the session already holds.
+  const folderName = `yi-probe-export-epub-${Date.now().toString(36)}`;
+  const folder = `${home}/${folderName}`;
+  const notePath = `${folder}/note.md`;
+  const target = `${folder}/note.epub`;
+  const url = 'https://placehold.co/200x80/png';
+  const note = [
+    '---',
+    'title: The Book of Going Out',
+    'author: The Reader',
+    'lang: en-GB',
+    '---',
+    '',
+    '# Going out',
+    '',
+    `A picture from the web: ![shot](${url}), and a citation [@smith2020].`,
+    ''
+  ].join('\n');
+
+  const card = () => document.querySelector('[data-export-dialog]');
+  const open = () => {
+    const veil = card();
+    return veil !== null && !veil.classList.contains('hidden');
+  };
+  /** Opens the note and waits for it, bounded — see `export-docx.js` for why. */
+  const show = async (path, content) => {
+    const pending = session.documentSession.openFile({ path, content });
+    let opened = false;
+    void pending.then(() => {
+      opened = true;
+    });
+    for (let attempt = 0; attempt < 40 && !opened; attempt += 1) {
+      const prompt = document.querySelector('[data-prompt]');
+      if (prompt !== null && !prompt.classList.contains('hidden')) {
+        prompt.querySelector('[data-prompt-no]')?.click();
+        break;
+      }
+      await sleep(50);
+    }
+    await Promise.race([pending, sleep(2000)]);
+    await sleep(200);
+  };
+
+  const before = await invoke('get_config');
+  try {
+    try {
+      await files.deleteEntry(folder);
+    } catch {
+      // A folder a run the bridge cut off left behind.
+    }
+    await files.createEntry(home, folderName, false);
+    await files.createEntry(folder, 'note.md', true);
+    await files.writeTextAtomically(notePath, note);
+    await t.openWorkspace(folder);
+    // The web picture is the app's fetch, stood in for by a curl that only records and answers with
+    // a real PNG — so this needs no network, and what is proved is the book, not the internet.
+    await api.pointAtCurl(`${checkout}test/probes/fake-curl.sh`);
+    await configManager.update({
+      bibliography_file: `${checkout}test/fixtures/workspace/zotero.bib`
+    });
+    await show(notePath, note);
+    check(
+      'the note the probe opened is the document on screen',
+      (document.querySelector('.prose')?.textContent ?? '').includes('Going out'),
+      { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
+    );
+
+    // --- choosing the kind ---------------------------------------------------------------------
+
+    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await until(() => open(), 60);
+    const veil = card();
+    const field = veil.querySelector('[data-export-target]');
+    const docxTarget = field.value;
+    const epub = veil.querySelector('[data-export-tab="epub"]');
+    epub?.click();
+    await sleep(150);
+    check(
+      'pressing the epub tab moves the choice, and the target becomes a .epub',
+      epub !== null &&
+        epub.classList.contains('tab-active') &&
+        docxTarget.endsWith('/note.docx') &&
+        field.value === target,
+      { docxTarget, chosen: field.value }
+    );
+
+    // --- the book -------------------------------------------------------------------------------
+
+    field.value = target;
+    veil.querySelector('[data-export-run]').click();
+    const written = await until(() => exists(target));
+    const bytes = await bytesOf(target);
+    if (bytes === null) {
+      check('Export writes an EPUB where the reader asked', false, { written });
+    } else {
+      const names = new TextDecoder('latin1').decode(bytes);
+      const mimetype = await entryOf(bytes, 'mimetype');
+      check(
+        'Export writes an EPUB: a container whose first entry is the stored mimetype',
+        written && mimetype === 'application/epub+zip' && bytes[30] === 0x6d,
+        { written, mimetype, first: names.slice(30, 50) }
+      );
+      check(
+        'with the parts a reader’s software looks for',
+        names.includes('META-INF/container.xml') &&
+          names.includes('EPUB/content.opf') &&
+          names.includes('EPUB/nav.xhtml') &&
+          names.includes('EPUB/text/ch001.xhtml'),
+        { entries: names.match(/EPUB\/[a-zA-Z0-9_./-]+/g)?.slice(0, 8) ?? [] }
+      );
+      const opf = (await entryOf(bytes, 'EPUB/content.opf')) ?? '';
+      check(
+        'and the note’s own frontmatter as the book’s name, author and language',
+        opf.includes('<dc:title id="epub-title-1">The Book of Going Out</dc:title>') &&
+          opf.includes('<dc:creator id="epub-creator-1">The Reader</dc:creator>') &&
+          opf.includes('<dc:language>en-GB</dc:language>'),
+        {
+          title: /<dc:title[^>]*>[^<]*/.exec(opf)?.[0] ?? null,
+          creator: /<dc:creator[^>]*>[^<]*/.exec(opf)?.[0] ?? null,
+          language: /<dc:language>[^<]*/.exec(opf)?.[0] ?? null
+        }
+      );
+      const chapter = (await entryOf(bytes, 'EPUB/text/ch001.xhtml')) ?? '';
+      check(
+        'the picture the app fetched from the web is carried in the book, not linked',
+        names.includes('EPUB/media/') && chapter.includes('../media/'),
+        {
+          media: names.match(/EPUB\/media\/[a-zA-Z0-9_.-]+/)?.[0] ?? null,
+          referenced: chapter.includes('../media/')
+        }
+      );
+      check(
+        'and the citations are resolved into a References section of the book',
+        chapter.includes('(Smith, 2020)') &&
+          chapter.includes('References') &&
+          chapter.includes('Smith, J. (2020)'),
+        {
+          citation: chapter.includes('(Smith, 2020)'),
+          heading: chapter.includes('References'),
+          entry: chapter.includes('Smith, J. (2020)')
+        }
+      );
+    }
+    const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
+    check(
+      'and the reader is told which file it wrote',
+      (hint?.textContent ?? '').includes('note.epub'),
+      hint?.textContent ?? null
+    );
+  } finally {
+    await api.pointAtCurl(null);
+    await configManager.save(before);
+    try {
+      await files.deleteEntry(folder);
+    } catch {
+      // Nothing to tidy.
+    }
+    await t.restoreWorkspace(before);
+  }
+
+  return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
+})()

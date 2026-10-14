@@ -1,0 +1,84 @@
+# EPUB DEFAULTS FILE
+# ==================
+# Conversion: Markdown --> EPUB book
+# More info: https://pandoc.org/MANUAL.html
+#
+# Yi's own file — the four kinds beside it are copies of Zettlr's defaults, and this one is written
+# in the same shape, because that is the family a reader who has edited one of them already knows.
+# Every choice below was measured with pandoc 3.12.
+#
+# What is *not* here, and why:
+#
+# - `default-image-extension`, which the other four leave out too: pandoc applies it to any image
+#   destination whose path has no extension — a URL as well as a file — and a working web picture
+#   became `…/png.jpg`, a 404.
+# - `self-contained`, which says nothing for this kind: measured, an EPUB carries its pictures, its
+#   stylesheet and its math inside the container either way, so the key is not a question here.
+# - **no `metadata:` block, of any kind.** A book's title, author and language belong to the *note*:
+#   its frontmatter's `title:`, `author:` and `lang:` are read by pandoc into `<dc:title>`,
+#   `<dc:creator>` and `<dc:language>` (measured), and a `metadata:` block written here would
+#   *override the note's own* — measured: a file saying `lang: en-US` beat a note saying `lang:
+#   en-GB`. So this file says nothing about metadata, and a note's own answer stands. A note with no
+#   `title:` makes a book called UNTITLED, which is the honest name for it.
+#
+#   What the note does *not* say, the app fills in on the command line — because an EPUB has to
+#   declare both a title and a language, and a book whose title page reads UNTITLED and whose
+#   `dc:language` is the machine locale's `C` is one a reader cannot shelve and a validator cannot
+#   pass: the note's own name (its frontmatter title, else its first heading, else its file's name)
+#   and a language (the frontmatter's `lang:`, else the language the app is speaking). The kinds
+#   that write the title as *body* content take neither — measured: given one, a docx of a note that
+#   opens with its own `#` heading says that name **twice**.
+#
+# Keys a reader may add, which pandoc reads and this file leaves alone:
+#
+# - `epub-cover-image: cover.png` — a cover, the one part of a book no note can draw.
+# - `epub-metadata: file.xml` — extra Dublin Core records, for a publisher's own fields.
+# - `epub-chapter-level: 2` — which heading level starts a chapter. With `shift-heading-level-by: 1`
+#   below, a note's own `#` title is not a chapter and its `##` sections are; measured, a note-sized
+#   book comes out as one chapter file, which is what it is.
+# - `css: [style.css]` — a stylesheet to carry in the book; empty, as below, leaves pandoc its own.
+# - `toc: true` — a visible contents page. Without it the book still has its navigation document,
+#   built from the headings (measured: `nav.xhtml` and `toc.ncx`), which is what a reader's own
+#   table of contents is drawn from.
+#
+# What the app adds on the command line, as for every kind: the bibliography the citations were
+# formatted from and the CSL style they were formatted in (measured: `(Smith, 2020)` in the text,
+# a `References` heading and its entry in the book), and the heading's own word in the reader's
+# language.
+reader: markdown
+writer: epub
+variables: {}
+metadata-files: []
+include-before-body: []
+include-after-body: []
+include-in-header: []
+bibliography: []
+filters:
+- type: citeproc
+top-level-division: chapter
+wrap: none
+columns: 78
+dpi: 72
+toc: false
+toc-depth: 2
+number-sections: false
+number-offset:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+shift-heading-level-by: 1
+section-divs: true
+identifier-prefix: ''
+title-prefix: ''
+eol: lf
+strip-comments: false
+indented-code-classes: []
+ascii: false
+highlight-style: pygments
+tab-stop: 4
+preserve-tabs: false
+css: []
+fail-if-warnings: false
