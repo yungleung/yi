@@ -1,16 +1,21 @@
 //! Turning the note on screen into a file another program can read.
 //!
-//! The conversion is pandoc's, and so are its parameters: each kind of export is a YAML *defaults
-//! file* in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy
-//! this build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing
-//! here parses it — what it says is pandoc's business, and a key it does not know is answered by
-//! pandoc's own complaint. A file that is already there is never overwritten, so an edit stands.
+//! The conversion is pandoc's, and so are its parameters: a kind of export is a YAML *defaults file*
+//! in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy this
+//! build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing here
+//! parses it — what it says is pandoc's business, and a key it does not know is answered by pandoc's
+//! own complaint. A file that is already there is never overwritten, so an edit stands.
+//!
+//! One kind is **not** pandoc's: `markdown`, whose conversion *is* the pre-process every kind shares
+//! (`ui/export/preprocess.ts`) — the app writes the text it prepared ([`export_own_text`]). It is the
+//! kind the row's `needs_pandoc: false` says so, and the card offers no settings file for it because
+//! there is none.
 //!
 //! What *is* the app's business:
 //!
 //! - **which kinds exist** ([`KINDS`]): one row per kind — the name, the extension its output is
-//!   written under, whether pandoc is needed for it at all, and the defaults file's bytes, compiled
-//!   in. A kind is added by adding a row and its asset; nothing else in the app lists kinds.
+//!   written under, whether pandoc writes it, and the defaults file's bytes, compiled in. A kind is
+//!   added by adding a row and its asset; nothing else in the app lists kinds.
 //! - **which pandoc may be run** ([`find_pandoc`]): never `PATH` alone, because an app started from
 //!   Finder inherits no shell's `PATH` — the known places are searched first, and `YI_PANDOC`, or
 //!   [`export_use_pandoc`] for a probe (which cannot change the environment of the app it drives),
@@ -51,8 +56,16 @@ pub struct ExportKind {
     pub kind: &'static str,
     /// The extension an output of this kind is written under.
     pub extension: &'static str,
-    /// Whether the conversion is pandoc's at all. PDF will say no: it is the one kind the app can
-    /// also write itself, and the reader chooses which hand does it.
+    /// What the output's name is made of: the note's own name, plus this. Empty for every kind
+    /// whose output is a *different* file from the note — and `.processed` for the one kind whose
+    /// extension is markdown's own, because the default target is the note's folder and the note's
+    /// name: an export that writes over the document it is exporting is not one anybody means.
+    pub name_suffix: &'static str,
+    /// Whether the conversion is pandoc's at all. `markdown` says **no**: its conversion *is* the
+    /// pre-process every kind shares (`ui/export/preprocess.ts`) — a wikilink written as the words it
+    /// renders as, a citation as the words *it* reads as with the works it names listed under them —
+    /// so the app writes that text out itself ([`export_own_text`]) and there is no pandoc to hand a
+    /// defaults file to.
     pub needs_pandoc: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
@@ -76,19 +89,21 @@ pub const KINDS: &[ExportKind] = &[
     ExportKind {
         kind: "docx",
         extension: "docx",
-        needs_pandoc: true,
+        name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
+        needs_pandoc: true,
         defaults: include_str!("../assets/export/export.docx.yaml"),
     },
     ExportKind {
         kind: "odt",
         extension: "odt",
-        needs_pandoc: true,
+        name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        needs_pandoc: true,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -96,30 +111,59 @@ pub const KINDS: &[ExportKind] = &[
         // The one kind whose output is *not* named after its writer: pandoc's `latex` writer writes
         // a `.tex`, and `every_shipped_kind...` below is where those two facts are held together.
         extension: "tex",
-        needs_pandoc: true,
+        name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        needs_pandoc: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
         kind: "html",
         extension: "html",
-        needs_pandoc: true,
+        name_suffix: "",
         // The page's `<title>` is the reader's tab, not a line of the document: nothing in the body
         // says it, so it comes from the note.
         takes_a_title: true,
         needs_a_language: false,
+        needs_pandoc: true,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
     ExportKind {
         kind: "epub",
         extension: "epub",
-        needs_pandoc: true,
+        name_suffix: "",
         // A book has a title page and a required `<dc:title>`, and a required `<dc:language>`
         // (measured: without one pandoc writes `C`, and the title page reads UNTITLED).
         takes_a_title: true,
         needs_a_language: true,
+        needs_pandoc: true,
         defaults: include_str!("../assets/export/export.epub.yaml"),
+    },
+    ExportKind {
+        kind: "pdf",
+        extension: "pdf",
+        name_suffix: "",
+        // The TeX engine the reader's config names does the work (their defaults file says
+        // `xelatex`): this is the kind that needs a TeX suite on the machine, and the one whose
+        // defaults file is worth editing for a page size. It is also the one kind whose *engine*
+        // draws its page with the font the file names, which is where a reader whose note is not
+        // written in Latin adds one (`variables: CJKmainfont`, or `mainfont` for any script).
+        takes_a_title: false,
+        needs_a_language: false,
+        needs_pandoc: true,
+        defaults: include_str!("../assets/export/export.pdf.yaml"),
+    },
+    ExportKind {
+        kind: "markdown",
+        extension: "md",
+        // Not the note's own name: `note.md` beside `note.md` is the note.
+        name_suffix: ".processed",
+        takes_a_title: false,
+        needs_a_language: false,
+        // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
+        // would be a file a reader could edit with no effect.
+        needs_pandoc: false,
+        defaults: "",
     },
 ];
 
@@ -128,6 +172,11 @@ pub const KINDS: &[ExportKind] = &[
 pub struct ExportKindInfo {
     pub kind: String,
     pub extension: String,
+    /// What the output's name adds to the note's own (`note.processed.md` for the one kind whose
+    /// extension is markdown's own).
+    pub name_suffix: String,
+    /// Whether pandoc writes this kind. A kind that says no is written by the app itself, so it has
+    /// no defaults file to name and no pandoc to run — the card says so instead of offering either.
     pub needs_pandoc: bool,
     /// Whether the window should hand this kind the note's own name, and a language.
     pub takes_a_title: bool,
@@ -389,25 +438,32 @@ pub fn export_use_curl(curl: Option<String>) -> Result<(), String> {
 pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
     let dir = export_dir(&app)?;
     let (pandoc, _source) = find_pandoc();
-    let kinds = KINDS
-        .iter()
-        .map(|kind| {
-            let path = dir.join(config_file_name(kind.kind));
-            ExportKindInfo {
-                kind: kind.kind.to_string(),
-                extension: kind.extension.to_string(),
-                needs_pandoc: kind.needs_pandoc,
-                takes_a_title: kind.takes_a_title,
-                needs_a_language: kind.needs_a_language,
-                config_exists: path.exists(),
-                config_path: path.to_string_lossy().into_owned(),
-            }
-        })
-        .collect();
+    let kinds = KINDS.iter().map(|kind| kind_info(&dir, kind)).collect();
     Ok(ExportKinds {
         pandoc: pandoc.map(|found| found.to_string_lossy().into_owned()),
         kinds,
     })
+}
+
+/// One kind as the window reads it: the facts off its row, and where the reader's own copy of its
+/// defaults file is — there whether or not it exists yet, and *no path at all* for the kind the app
+/// writes itself, which has no file to name or reveal.
+fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
+    let config = kind
+        .needs_pandoc
+        .then(|| dir.join(config_file_name(kind.kind)));
+    ExportKindInfo {
+        kind: kind.kind.to_string(),
+        extension: kind.extension.to_string(),
+        name_suffix: kind.name_suffix.to_string(),
+        needs_pandoc: kind.needs_pandoc,
+        takes_a_title: kind.takes_a_title,
+        needs_a_language: kind.needs_a_language,
+        config_exists: config.as_deref().is_some_and(Path::exists),
+        config_path: config
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+    }
 }
 
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
@@ -618,36 +674,51 @@ pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, 
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// Exports the note, through pandoc and the kind's own defaults file.
+/// Exports the note: the kind the reader chose, in pandoc's own hands.
 #[tauri::command]
 pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
+    if kind.needs_pandoc {
+        export_with_pandoc(&app, kind, &request)
+    } else {
+        export_own_text(&request)
+    }
+}
+
+/// The kind the app writes itself: the text it was handed is the answer.
+///
+/// `markdown` is that kind (`needs_pandoc: false`): the note with its wikilinks written as the words
+/// they render as, its citations as the words *they* read as, and the works they name listed under
+/// them (`ui/export/preprocess.ts`). Re-serializing that through pandoc would be a second conversion
+/// of a text that is already the answer.
+fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
+    crate::files::write_atomically(Path::new(&request.output_path), &request.text)
+        .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
+    Ok(ExportOutcome { warnings: Vec::new() })
+}
+
+/// The whole of an export: pandoc, the kind's own defaults file, and the note written out for it to
+/// read.
+fn export_with_pandoc(
+    app: &tauri::AppHandle,
+    kind: &ExportKind,
+    request: &ExportRequest,
+) -> Result<ExportOutcome, String> {
     // Refused *before* anything is written: an export that cannot run should not leave a file of the
     // reader's text in the app's data folder.
-    let pandoc = if kind.needs_pandoc {
-        Some(
-            find_pandoc()
-                .0
-                .ok_or_else(|| "This machine has no pandoc to run.".to_string())?,
-        )
-    } else {
-        None
-    };
-    let dir = export_dir(&app)?;
+    let pandoc = find_pandoc()
+        .0
+        .ok_or_else(|| "This machine has no pandoc to run.".to_string())?;
+    let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     let note = write_note(&dir, &request.text)?;
-    let result = pandoc_arguments(&dir, &defaults, &note, &request, kind).and_then(|arguments| {
-        match pandoc.as_deref() {
-            // A kind that needs pandoc always has one here (`run_export` refuses first); the arms
-            // are kept apart so the PDF tick, which will write its own file, has somewhere to go.
-            Some(pandoc) => run_pandoc(
-                pandoc,
-                &arguments,
-                request.source_dir.as_deref().map(Path::new),
-            )
-            .map(|warnings| ExportOutcome { warnings }),
-            None => Err("This kind of export has nothing to run it with.".to_string()),
-        }
+    let result = pandoc_arguments(&dir, &defaults, &note, request, kind).and_then(|arguments| {
+        run_pandoc(
+            &pandoc,
+            &arguments,
+            request.source_dir.as_deref().map(Path::new),
+        )
+        .map(|warnings| ExportOutcome { warnings })
     });
     // The note's copy under the app's data folder is a thing of this call, whatever pandoc said —
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
@@ -736,6 +807,11 @@ fn pandoc_arguments(
 #[tauri::command]
 pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
+    if !kind.needs_pandoc {
+        // A kind whose conversion is the app's own has no configuration to read — and a file made of
+        // nothing would be a file a reader could edit with no effect.
+        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+    }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
 }
@@ -776,9 +852,13 @@ mod tests {
             "latex" => "tex",
             "html" => "html",
             "epub" => "epub",
+            "pdf" => "pdf",
+            "markdown" => "md",
             _ => "",
         };
-        for kind in KINDS {
+        // The `markdown` kind ships none at all: its conversion is the app's own, which
+        // `the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file` holds the other way.
+        for kind in KINDS.iter().filter(|kind| !kind.defaults.is_empty()) {
             assert!(
                 kind.defaults.contains("reader: markdown"),
                 "{} defaults do not name markdown as the reader",
@@ -883,7 +963,7 @@ mod tests {
     fn named_arguments_for(dir: &Path, request: &ExportRequest, kind: &ExportKind) -> Vec<String> {
         pandoc_arguments(
             dir,
-            &dir.join("export.docx.yaml"),
+            &dir.join(config_file_name(kind.kind)),
             &dir.join("note-1.md"),
             request,
             kind,
@@ -984,6 +1064,29 @@ mod tests {
         assert!(!epub.iter().any(|argument| argument.starts_with("title=")), "{epub:?}");
         assert!(!epub.iter().any(|argument| argument.starts_with("lang=")), "{epub:?}");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_kind_whose_output_would_be_the_note_itself_names_it_otherwise() {
+        // The one row whose extension is markdown's own: its target is the note's own folder and the
+        // note's own name, so without this the export would write over the document it is exporting.
+        assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
+        assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    #[test]
+    fn the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file() {
+        // One fact, one home: a row that says the app writes this kind says it by having nothing to
+        // hand pandoc, and a row pandoc writes always has something. A kind added with one and not
+        // the other says so here.
+        for kind in KINDS {
+            assert_eq!(
+                kind.defaults.is_empty(),
+                !kind.needs_pandoc,
+                "{} says pandoc writes it while shipping no defaults file, or the other way round",
+                kind.kind
+            );
+        }
     }
 
     #[test]

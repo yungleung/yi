@@ -6,6 +6,43 @@ use tauri_plugin_dialog::DialogExt;
 use crate::i18n::{language_for, t};
 use crate::settings::load_config;
 
+/// The Export submenu: one item per kind the app ships, in the order the kinds are declared.
+///
+/// The kinds are not a fact of this menu — they are `export::KINDS`, so a kind added there appears
+/// here without this file changing, and each item's label is that kind's own word from the same
+/// catalogues the window reads (`export.kind.<kind>`). An item's id is `export_<kind>`, which is what
+/// reaches the webview as the event `export` carrying that kind — so *which* kind is exported is
+/// decided in the menu, before any card is drawn.
+fn export_submenu(
+    app: &AppHandle,
+    language: &str,
+) -> Result<tauri::menu::Submenu<tauri::Wry>, Box<dyn Error>> {
+    let mut submenu = SubmenuBuilder::new(app, t(language, "menu.file.export", &[]));
+    for kind in crate::export::KINDS {
+        submenu = submenu.text(
+            export_item_id(kind.kind),
+            t(language, &format!("export.kind.{}", kind.kind), &[]),
+        );
+    }
+    Ok(submenu.build()?)
+}
+
+/// The id an *Export* item carries (`export_<kind>`), and the kind read back off one.
+///
+/// One wire, one home: the menu that writes the id and the handler that reads it are the two ends of
+/// it, and they are one line apart so neither can drift from the other. An id is never translated —
+/// it is what the window's menu bridge maps to a command (`src/ui/markdown/commands/menu.ts`), and
+/// what the event's payload is read off.
+fn export_item_id(kind: &str) -> String {
+    format!("export_{kind}")
+}
+
+/// The kind an *Export* item's id names, or `None` when the id belongs to some other item — which is
+/// most of them, and none of them is read as a kind.
+fn kind_of_export_item(id: &str) -> Option<&str> {
+    id.strip_prefix("export_")
+}
+
 /// The app menu, in the language the app is speaking.
 ///
 /// Every label comes from the catalogue (`src-tauri/src/i18n.rs`, over the same files the webview
@@ -71,7 +108,7 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
         )
         .text("version_save", t(language, "menu.file.saveVersion", &[]))
         .separator()
-        .text("export", t(language, "menu.file.export", &[]))
+        .item(&export_submenu(app, language)?)
         .separator()
         .close_window_with_text(t(language, "menu.window.close", &[]))
         .build()?;
@@ -158,6 +195,13 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
     app.on_menu_event(move |app_handle: &tauri::AppHandle, event| {
         println!("menu event: {:?}", event.id());
 
+        // An Export submenu item names its kind (`export_<kind>`) and nothing else: the kind travels
+        // with the event, so the window opens the card for the kind that was asked for.
+        if let Some(kind) = kind_of_export_item(event.id().0.as_str()) {
+            app_handle.emit("export", kind.to_string()).unwrap();
+            return;
+        }
+
         match event.id().0.as_str() {
             "settings" => {
                 app_handle.emit("setting", ()).unwrap();
@@ -202,9 +246,6 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
             "select_all" => {
                 app_handle.emit("select_all", ()).unwrap();
             }
-            "export" => {
-                app_handle.emit("export", ()).unwrap();
-            }
             "find" => {
                 app_handle.emit("find", ()).unwrap();
             }
@@ -237,4 +278,28 @@ pub fn set_menu_for_language(app: &AppHandle) -> Result<(), Box<dyn Error>> {
     let menu = build(app, &language)?;
     app.set_menu(menu)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A menu cannot be built without an app, so the one thing about the Export submenu a test *can*
+    /// hold is the wire the window depends on: the id an item carries and the kind the handler reads
+    /// back off it. A kind whose id does not round-trip is an item that opens nothing.
+    #[test]
+    fn every_export_items_id_is_the_kind_the_handler_reads_back() {
+        for kind in crate::export::KINDS {
+            assert_eq!(
+                kind_of_export_item(&export_item_id(kind.kind)),
+                Some(kind.kind),
+                "{} does not round-trip through its own menu item's id",
+                kind.kind
+            );
+        }
+        // And the ids of the items beside them are not read as kinds — the menu is full of those.
+        for other in ["save", "version_save", "export", "settings"] {
+            assert_eq!(kind_of_export_item(other), None, "{other}");
+        }
+    }
 }

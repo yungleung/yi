@@ -890,8 +890,126 @@ elements) unless it says otherwise.
   failure is `a4-page.js`, the probe this document already lists as failing only inside a sweep and
   passing by name (checked again here: it passes).
 
+- **PDF, the kind with two hands, and the card that lets a kind have its own options.** Landed: a
+  PDF can be written by **pandoc and a TeX engine** (Zettlr's own defaults file, `pdf-engine:
+  xelatex`, `papersize: a4` — measured: a real 20 KB `%PDF-` through the installed XeTeX) or by **the
+  app's own renderer**, the `markdown2pdf` crate, which needs neither pandoc nor a TeX suite (measured:
+  a real PDF from a Rust test *and* through the card; `cargo tree` shows printpdf and rustybuzz, no
+  TeX tool). A kind's row now names its **hands** (`hands`), the request names the one asked for, and
+  a hand a kind does not have is *refused* rather than answered by another — the shape `find_git`'s
+  env seam has. The app's own hand takes a **theme** (the four the reader asked for: academic,
+  minimal, compact, modern), a **page size** and an **orientation**, each checked against the list the
+  crate knows before it is used. The card became a **menu of kinds** (daisyUI's `menu`, not tabs) with
+  each kind's *own* options under it: the conversion settings file for a pandoc hand, the
+  theme/page/orientation for the app's own, and a hand selector for the one kind that has two. When
+  the machine has no pandoc, the card opens a PDF on the hand that does not need one.
+  **The next reading of that ask kept the menu and lost the hand.** A menu *inside* the card is not a
+  submenu: with one card holding every kind's own options it was overstaffed, and what was asked for
+  is the File menu's *Export* with **one item per kind** (`src-tauri/src/menu.rs`, built from `KINDS`,
+  so a kind added there appears in the menu without this file changing), the item's own kind
+  travelling with the event it emits — so the kind is chosen *before* any card is drawn and the card
+  is about that one kind, its heading naming it. That is the shape the menu still has. The card also
+  stopped opening on the hand the *last* card was answered with, which was a memory nothing could
+  rely on (any card for a single-hand kind cleared it) and one that made two probes depend on the
+  order they ran in. What did **not** last is the second hand: the crate could not draw the notes some
+  readers write — measured in the entry below — so the app's own renderer left the app, and with it
+  the two-hand machinery: the `hands` row fact, the hand selector, and the theme/page/orientation
+  options. Every kind is now written by pandoc **except one** — see the entry below, where the
+  markdown kind came back to the app's own hand — so what a row says is `needs_pandoc`, one fact for
+  the same reason the `hands` list was two.
+- **Plain markdown, `markdown`** (called *Processed Markdown* until the reader renamed it): the note
+  **as every other export is handed it** — each wikilink written as the words it renders as (the
+  pre-process), each citation resolved and its reference list appended (citeproc over the settings'
+  library and style) — kept as a file of its own for a reader who wants to hand the text to something
+  else. **It went back and forth and landed where it started**: the app's own hand (`needs_pandoc:
+  false`), then pandoc for one round, then the app's own hand again — the reader's call each time, and
+  the shape it has now is the one where the pre-process *is* the conversion, so there is no defaults
+  file, no pandoc, and the citations are the app's own rendering (the third rule in
+  `ui/export/preprocess.ts` and `bibliography.referenceList`, which the crate's round had added for a
+  different reason and this round brought back for this one). Measured: `# Going out` stays an `h1`
+  (nothing re-serializes the note at all, which is also what keeps the family's
+  `shift-heading-level-by: 1` — for a *document* whose title sits above its first heading — from
+  re-leveling every heading of a *note*), `[[other|an alias]]` comes out `an alias`, `[@smith2020]`
+  comes out `(Smith, 2020)` over a `## References` heading and its entry, and the file is written as
+  `note.processed.md` — never as `note.md`, because the default target is the note's own folder and
+  name and an export that writes over the note it is exporting is not one anybody means
+  (`ExportKind::name_suffix` is the one fact that says so). The `.processed` in that name is the one
+  word left from the old label; the suffix is what keeps the export off the note, and renaming it is a
+  one-line question for the reader.
+- **The crate could not draw its own notes, so the app stopped drawing.** The reader's report was
+  that *PDF export can not process CJK characters*, and it is true of the hand that was supposed to
+  make a PDF without a TeX suite: measured with a scratch example against the crate's own API, a note
+  whose heading is `# 你好，世界` and whose body holds `这是一个测试。` came out with **no** heading on the
+  page at all and the body's CJK as glyph codes no font declares (`A note with CJK: … And latin after
+  it.`, read back through the page's own `ToUnicode` maps — the instrument the round before had used
+  to see the citation rule working). So `markdown2pdf` is gone from the app: the dependency and its
+  whole tree (704 lines of `Cargo.lock`), the `export_with_markdown2pdf` function, the theme/page/
+  orientation options and the request fields behind them. **And the same measurement says what the
+  hand that is left needs**: with the shipped `export.pdf.yaml`, which names no font, XeTeX warns
+  *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for every CJK character
+  and draws none of them, so a note written in CJK came out of pandoc's PDF with the space its words
+  took and none of the words.
+- **The app names a font for a note the TeX suite cannot set, and a comment nearly stopped it.** The
+  reader's report was that *the CJK characters are still missing*, and they were, on the hand that was
+  left: the report above is about the crate, but the same note through **pandoc's** PDF lost its
+  characters too, because XeTeX draws the page with the font the defaults file names and that file
+  names none. What landed is the app doing it: `font_argument` names **one font wide enough for every script at once**, for a note written in
+  anything but Latin, on the one kind whose engine lays a page out (`needs_a_font` — a docx or a page
+  or a book carries the characters as characters and needs nothing named), when the reader's own file
+  names none *and* this machine has one of a short list of known ones. `beyond_latin` is what "written
+  in anything but Latin" means: anything outside Latin, its punctuation and the symbols a TeX font
+  carries, so a note with an accent, a Vietnamese word or an em dash is not set in another face for
+  nothing.
+  **The first cut of this was CJK only, and wrong twice.** It named `Songti SC` as the *CJK* font,
+  which kept Latin Modern for the Latin text — prettier — but `has_cjk` included Hangul, and Songti has
+  no Hangul: a Korean note was handed a font that could not draw it, which is the worst of the three
+  states (the app *looks* like it is handling it). And the reader's ask made the answer simpler than
+  the question: one font for everything non-Latin. Measured, one page each, with `mainfont` — the
+  variable that covers every script, where `CJKmainfont` covers only CJK and, measured, does not even
+  reach Hangul: Chinese, Japanese, Korean, Russian, Greek, Hebrew, Arabic, Devanagari, Thai, Armenian
+  and Georgian all come out, and `Arial Unicode MS` keeps a `ToUnicode` map while drawing all of them,
+  so the page can be searched and copied from too (`export-pdf-font.js` reads one back; it fails
+  without the app's font, the page coming back as `U+FFFD`s and the Latin text).
+  Two things about it are worth keeping. **Pandoc concatenates** a variable the file already sets with
+  one from the command line — measured, `\setCJKmainfont[]{Songti SCHiragino Sans GB}` and a failed
+  run — so the app steps aside for a file that names one instead of overruling it. And that check
+  counts only a line that is **not a comment**: the first version read the shipped file's own header,
+  which documents this very repair, as a reader who had chosen a font — so the app stepped aside for
+  its own documentation and the characters stayed missing, which is how the second report was nearly
+  answered with the first fix's explanation.
+- **And then the app stopped naming fonts at all.** The reader's call, and the simpler shape: the font
+  belongs in the **file**, because the file is the one thing the reader owns and the app never
+  rewrites. `export.pdf.yaml` now ships `CJKmainfont: "Songti SC"` under `variables:` and names nothing
+  on any command line — `font_argument`, `beyond_latin`, `KNOWN_WIDE_FONTS` and the `needs_a_font` row
+  fact all went, so the app hands pandoc the reader's file and nothing else. The default is measured
+  where it stands rather than assumed: Songti draws Han and kana and keeps a `ToUnicode` map (a page a
+  reader can search and copy from), and it covers **no Hangul** and none of the scripts outside CJK —
+  which the file's own header says in as many words, with the two lines a reader adds for those
+  (`mainfont: "Arial Unicode MS"` for everything at once, or a font of their own). The turning over of
+  the three answers before this one is worth remembering: the app naming a CJK font (which silently
+  lost Korean), then one wide font (which did draw every script, but only on a machine that has one —
+  macOS), and now the file, which is what the yaml-on-disk design was for all along.
+
 ## Open, in the order to take them
 
+- **A PDF page's own options on the card.** A PDF's page size and orientation live in its defaults
+  file (`variables.papersize`, and a `geometry` variable beside it), which is a thing a reader may
+  edit and a thing the card does not offer — the card offers only the file. Whether it *should* offer
+  a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
+  file says) is the decision, and the answer depends on how often a reader wants a page that is not
+  the one they set up once.
+- **The scripts the shipped font does not cover.** The default draws Han and kana; a note written in
+  **Hangul**, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian or Georgian still comes out
+  with the space its words took and none of the words until the reader names a font for it — measured,
+  one page each, and the file's header names the two variables that fix it. Whether that is enough is
+  the question this leaves: it is a *working* answer for a reader who reads their yaml, and nothing at
+  all for one who does not. The three ways to answer it for them were measured in the round before
+  this one — a per-OS list of wide fonts (macOS has one; Windows has none by default), a per-script
+  list *per OS* (each name resolved, each script covered, each page extractable — the `Hiragino` and
+  `Apple SD Gothic Neo` rows are why that is three checks and not one), and shipping the fonts and
+  naming them by path (the only one where working everywhere is a property of the app; tens of
+  megabytes and an OFL notice to carry). A **LaTeX export** of such a note is still unheld too: its
+  `.tex` names no font either, so it will not compile its own characters for whoever opens it.
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
@@ -905,14 +1023,6 @@ elements) unless it says otherwise.
   the suppressed author leaves the parentheses pandoc would. Two lines in a probe with the fixture
   library answer it, and `suppress-bibliography` is the third question for a reader who wants the
   keys resolved and no list.
-- **PDF, which has two hands.** It is the one kind that may be written *without* pandoc, and
-  `KINDS[].needs_pandoc` already carries the answer the card reads (its status line says which hand
-  a kind would use, and the button refuses when that hand is missing). So the tab has to offer both:
-  pandoc with a `pdf-engine` — which the defaults file names, `xelatex` or `tectonic` or
-  `weasyprint` — or the app's own rendering of the page. What the second hand is exactly is the
-  decision: `window.print()` in the webview prints the *chrome as well as the page* unless the
-  stylesheet is told not to, and it computes page breaks from the viewport, while a Rust-side render
-  needs an engine the app would then have to ship.
 - **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
   types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
   to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc

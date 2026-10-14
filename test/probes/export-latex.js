@@ -117,21 +117,15 @@
 
     // --- choosing the kind ---------------------------------------------------------------------
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'latex' });
     await until(() => open(), 60);
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
-    const docxTarget = field.value;
-    const latex = veil.querySelector('[data-export-tab="latex"]');
-    latex?.click();
-    await sleep(150);
     check(
-      'pressing the latex tab moves the choice, and the target becomes a .tex',
-      latex !== null &&
-        latex.classList.contains('tab-active') &&
-        docxTarget.endsWith('/note.docx') &&
+      'the menu’s latex item opens the card for the LaTeX kind, and the target becomes a .tex',
+      card().dataset.exportKind === 'latex' &&
         field.value === target,
-      { docxTarget, chosen: field.value }
+      { kind: card().dataset.exportKind, chosen: field.value }
     );
 
     // --- the document ---------------------------------------------------------------------------

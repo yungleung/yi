@@ -111,7 +111,7 @@
     );
     await api.pointAtCurl(`${window.__probePaths.checkout}test/probes/fake-curl.sh`);
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'docx' });
     await until(() => open(), 60);
     document.querySelector('[data-export-target]').value = target;
     document.querySelector('[data-export-run]').click();

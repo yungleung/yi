@@ -65,7 +65,7 @@
     return veil !== null && !veil.classList.contains('hidden');
   };
   const askForExport = async () => {
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'docx' });
     return await until(() => open(), 60);
   };
   /** Opens the probe's note and waits for it, bounded — see `export-docx.js` for why. */

@@ -111,21 +111,15 @@
 
     // --- choosing the kind ---------------------------------------------------------------------
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'html' });
     await until(() => open(), 60);
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
-    const docxTarget = field.value;
-    const html = veil.querySelector('[data-export-tab="html"]');
-    html?.click();
-    await sleep(150);
     check(
-      'pressing the html tab moves the choice, and the target becomes a .html',
-      html !== null &&
-        html.classList.contains('tab-active') &&
-        docxTarget.endsWith('/note.docx') &&
+      'the menu’s html item opens the card for the HTML kind, and the target becomes a .html',
+      card().dataset.exportKind === 'html' &&
         field.value === target,
-      { docxTarget, chosen: field.value }
+      { kind: card().dataset.exportKind, chosen: field.value }
     );
 
     // --- the document ---------------------------------------------------------------------------

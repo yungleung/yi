@@ -2,9 +2,10 @@
  * Exporting the note on screen: the question, the pre-process, the run, and the news.
  *
  * The order is the whole module, and it is the order Zettlr uses: ask how and where, prepare the
- * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as), run it,
- * and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing* is
- * Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
+ * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
+ * as the file it names, and a citation as the words it reads as for the kind the app writes itself),
+ * run it, and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing*
+ * is Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
  * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
  * and a message for a failure, which waits for them (`services/hints.ts`, `services/messages.ts`).
  *
@@ -42,26 +43,37 @@ export interface ExportHost {
   text(): string;
 }
 
-/** Registers the File menu's *Export*. */
+/** Registers the File menu's *Export* submenu: one command, and the kind travels as its payload. */
 export function registerExportCommand(host: ExportHost): void {
-  registerCommand({ id: 'file:export', run: () => void exportNote(host.text()) });
+  registerCommand({
+    id: 'file:export',
+    run: (payload) => void exportNote(host.text(), typeof payload === 'string' ? payload : null)
+  });
 }
 
-/** Asks how the text goes out, prepares it if the reader answers, and says what happened. */
-export async function exportNote(text: string): Promise<void> {
+/**
+ * Asks how the text goes out, prepares it if the reader answers, and says what happened.
+ *
+ * `asked` is the kind the menu item names, or null when nothing named one — a command run without a
+ * payload exports the first kind, which is what the app did before the menu had a submenu.
+ */
+export async function exportNote(text: string, asked: string | null = null): Promise<void> {
   const { pandoc, kinds } = await exportKinds();
-  const first = kinds[0];
+  const first = kinds.find((kind) => kind.kind === asked) ?? kinds[0];
   if (first === undefined) {
     return;
   }
   const note = documentSession.current();
   const folder = await targetFolder(note?.path ?? null);
-  const target = await join(folder, `${noteName(note?.path ?? null, note?.title ?? null)}.${first.extension}`);
+  // The note's own path with no extension: the card adds the chosen kind's name suffix and
+  // extension to it, because the *kind* is what the card knows and this is what it is asked with.
+  const baseTarget = await join(folder, noteName(note?.path ?? null, note?.title ?? null));
 
-  const answer = await exportDialog.ask({ kinds, pandoc, defaultTarget: target });
+  const answer = await exportDialog.ask({ kind: first, pandoc, baseTarget });
   if (answer === null) {
     return;
   }
+  const outputPath = answer.outputPath;
 
   /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
   const unfetched: string[] = [];
@@ -76,12 +88,22 @@ export async function exportNote(text: string): Promise<void> {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: (url) => fetchedPicture(url, unfetched)
+      fetchRemote: (url) => fetchedPicture(url, unfetched),
+      // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
+      // itself has none, so for it the app renders what it already knows — the words a citation
+      // reads as in the page (`bibliography.format`) — and lists the works it names under them.
+      citations: first.needs_pandoc
+        ? null
+        : {
+            render: (source) => bibliographyManager.format(source),
+            references: (sources) => bibliographyManager.referenceList(sources),
+            title: t('export.references')
+          }
     });
     const outcome = await runExport({
-      kind: answer.kind,
+      kind: first.kind,
       text: prepared,
-      output_path: answer.outputPath,
+      output_path: outputPath,
       resource_paths: await resourcePaths(folder),
       source_dir: note?.path ? parentFolder(note.path) : null,
       bibliography: await bibliographyPath(),
@@ -93,7 +115,7 @@ export async function exportNote(text: string): Promise<void> {
       title: documentTitle(text, note?.path ?? null),
       language: readFrontmatterLang(text) ?? language()
     });
-    showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
+    showHint(t('export.done', { file: fileName(outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about
     // it, which blames pandoc for its own missing HTTP support and would leave the reader none the
     // wiser about which URL is missing from the document they are holding.

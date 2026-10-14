@@ -172,21 +172,15 @@
 
     // --- choosing the kind ---------------------------------------------------------------------
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'epub' });
     await until(() => open(), 60);
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
-    const docxTarget = field.value;
-    const epub = veil.querySelector('[data-export-tab="epub"]');
-    epub?.click();
-    await sleep(150);
     check(
-      'pressing the epub tab moves the choice, and the target becomes a .epub',
-      epub !== null &&
-        epub.classList.contains('tab-active') &&
-        docxTarget.endsWith('/note.docx') &&
+      'the menu’s epub item opens the card for the EPUB kind, and the target becomes a .epub',
+      card().dataset.exportKind === 'epub' &&
         field.value === target,
-      { docxTarget, chosen: field.value }
+      { kind: card().dataset.exportKind, chosen: field.value }
     );
 
     // --- the book -------------------------------------------------------------------------------

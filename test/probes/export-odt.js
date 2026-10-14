@@ -1,16 +1,17 @@
 /**
  * The second kind: the same card, the same pre-process, and a LibreOffice file at the end.
  *
- * What this proves beyond `export-docx.js` is that *choosing* a kind is real — the tab moves, the
- * target's extension travels with it, and the configuration the run is handed is that kind's own
- * file — and that the document which comes out is a document LibreOffice will open: an ODF is a zip
+ * What this proves beyond `export-docx.js` is that *choosing* a kind is real — the menu item for odt
+ * opens the card for it, the target's extension is that kind's, and the configuration the run is
+ * handed is that kind's own file — and that the document which comes out is a document LibreOffice
+ * will open: an ODF is a zip
  * whose *first* entry is a stored `mimetype` naming the type, and the string is in the file. The
  * picture and the citation go through the same steps they do for the docx, so they are asserted here
  * too: the note's image in the odt's own media folder (`Pictures/`), and the reference list the
  * library was handed for.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts (a tab
- *   per kind, and the target following it), src/ui/export/export_flow.ts
+ * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts (a card
+ *   about the kind its menu item names, and the target that kind's own), src/ui/export/export_flow.ts
  */
 (async () => {
   const t = window.__t;
@@ -108,26 +109,24 @@
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'odt' });
     await until(() => open(), 60);
 
     // --- choosing the kind ---------------------------------------------------------------------
 
     const veil = card();
-    const tabs = [...veil.querySelectorAll('[data-export-tab]')];
-    const odt = tabs.find((tab) => tab.dataset.exportTab === 'odt') ?? null;
     const field = veil.querySelector('[data-export-target]');
-    const docxTarget = field.value;
-    odt?.click();
-    await sleep(150);
     check(
-      'pressing the odt tab moves the choice, and the target’s extension with it',
-      odt !== null &&
-        odt.classList.contains('tab-active') &&
-        !tabs[0].classList.contains('tab-active') &&
-        docxTarget.endsWith('/note.docx') &&
+      'the menu’s odt item opens the card for the LibreOffice kind, and the target’s extension with it',
+      card().dataset.exportKind === 'odt' &&
         field.value === target,
-      { docxTarget, chosen: field.value }
+      {
+        kind: card().dataset.exportKind,
+        dialogs: document.querySelectorAll('[data-export-dialog]').length,
+        heading: document.querySelector('[data-export-card] p')?.textContent ?? null,
+        chosen: field.value,
+        target
+      }
     );
     const status = veil.querySelector('[data-export-status]')?.textContent ?? '';
     check('and the card still says what will write it', status.includes('pandoc:'), status);
@@ -161,9 +160,8 @@
 
     // --- the kind's own configuration ----------------------------------------------------------
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'odt' });
     await until(() => open(), 60);
-    card().querySelector('[data-export-tab="odt"]')?.click();
     await sleep(150);
     const { kinds } = await api.exportKinds();
     const odtConfig = kinds.find((kind) => kind.kind === 'odt')?.config_path ?? '';
