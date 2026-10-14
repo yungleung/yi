@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and ninety-six of them (`probe:all` runs 168 and skips 28, each skip for the reason its
+a hundred and ninety-seven of them (`probe:all` runs 169 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -197,6 +197,10 @@ resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}
 picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
 heading is shifted the way the file says, the math is marked for MathJax (a CDN script, the one
 thing that leaves the page), and the citations become a headed `References` list;
+`export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
+a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
+frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
+the navigation and the chapter's `References` list are all values it asserts;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left

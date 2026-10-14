@@ -88,6 +88,12 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
+    ExportKind {
+        kind: "epub",
+        extension: "epub",
+        needs_pandoc: true,
+        defaults: include_str!("../assets/export/export.epub.yaml"),
+    },
 ];
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
@@ -672,11 +678,12 @@ mod tests {
 
     #[test]
     fn a_kind_the_app_does_not_ship_is_refused_by_name() {
-        // `epub` is the kind this test is written against: a kind that *is* shipped belongs in the
-        // list below, and adding one is what makes this test say so.
-        let refused = kind_of("epub").expect_err("epub is not a kind this build ships");
-        assert!(refused.contains("epub"), "{refused}");
-        for shipped in ["docx", "odt"] {
+        // `rtf` is the writer this test is written against: one no kind of ours will ever be, so the
+        // list below is the thing that ages — and adding a kind makes this test say so (it has, three
+        // times: `odt`, `latex`, `html`, each one moved the example along).
+        let refused = kind_of("rtf").expect_err("rtf is not a kind this build ships");
+        assert!(refused.contains("rtf"), "{refused}");
+        for shipped in ["docx", "odt", "latex", "html", "epub"] {
             assert!(kind_of(shipped).is_ok(), "{shipped} is not shipped");
         }
     }
@@ -695,6 +702,7 @@ mod tests {
             "odt" => "odt",
             "latex" => "tex",
             "html" => "html",
+            "epub" => "epub",
             _ => "",
         };
         for kind in KINDS {

@@ -68,6 +68,7 @@
   "export.kind.odt": "LibreOffice 文件（.odt）",
   "export.kind.latex": "LaTeX 文件（.tex）",
   "export.kind.html": "HTML 文件（.html）",
+  "export.kind.epub": "EPUB 電子書（.epub）",
   "export.target": "儲存至",
   "export.choose": "選擇…",
   "export.configLabel": "轉換設定",

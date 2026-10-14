@@ -204,8 +204,8 @@ ask (held by the recorder: a whole restore is one `show` and none of the write v
 (`src/ui/export/export_dialog.ts`) with a tab per kind the app ships, the target the file is written
 to, and the **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
-kinds are Rust's (`src-tauri/src/export.rs: KINDS`) and there are four of them so far, **docx**,
-**odt**, **latex** and **html**: each is a name, the extension its
+kinds are Rust's (`src-tauri/src/export.rs: KINDS`) and there are five of them so far, **docx**,
+**odt**, **latex**, **html** and **epub**: each is a name, the extension its
 output is written under, whether pandoc is needed at all (PDF will say no), and the bytes of a
 pandoc *defaults file* — `src-tauri/assets/export/export.<kind>.yaml`, written into
 `<app data>/export/` the first time that kind is used and **never overwritten again**, which is what

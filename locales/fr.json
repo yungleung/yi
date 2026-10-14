@@ -68,6 +68,7 @@
   "export.kind.odt": "Document LibreOffice (.odt)",
   "export.kind.latex": "Document LaTeX (.tex)",
   "export.kind.html": "Document HTML (.html)",
+  "export.kind.epub": "Livre EPUB (.epub)",
   "export.target": "Enregistrer sous",
   "export.choose": "Choisir…",
   "export.configLabel": "Réglages de conversion",
