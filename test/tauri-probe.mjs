@@ -65,6 +65,8 @@ const fixturesRoot = fileURLToPath(new URL('./fixtures/workspace', import.meta.u
 const probePaths = { checkout: fileURLToPath(new URL('..', import.meta.url)) };
 /** Where a run keeps the config it found, so a run that dies can be tidied up after. */
 const configSnapshot = join(tmpdir(), 'yi-probe-config.json');
+/** And the session it found, for the same reason — see `openTheSession`. */
+const sessionSnapshot = join(tmpdir(), 'yi-probe-session.json');
 const documentArgument = withDoc || withFixture ? positional[0] : null;
 const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
@@ -598,6 +600,74 @@ async function restoreSession(previous) {
   }
 }
 
+/**
+ * Makes the app's *live* session the one its file now holds — the half `restoreSession` cannot do.
+ *
+ * `restoreSession` puts the *file* back, and the app only reads that file at a start: the session
+ * the probes left in memory is the one still on screen, with its current document and its stack. A
+ * probe that then opens the note that session already holds is handed nothing — the session answers
+ * *already open*, the editor keeps whatever the harness loaded as the starting document, and a probe
+ * that exports "the document on screen" exports the wrong one (measured: `export-pandoc-arguments`
+ * ran twice in a row exported the demo document's text while `session.current()` named its own note).
+ * So the file is read back the way a start reads it (`documentSession.load`), which is what the next
+ * probe should be looking at: the reader's own documents, or none — and never the last probe's.
+ */
+async function reloadSession() {
+  await call(
+    `(async () => {
+       try {
+         const { documentSession } = await window.__t.app('/src/services/session.ts');
+         await documentSession.load();
+       } catch (error) {
+         // A page whose helpers are gone has no session to read; the file is what matters.
+       }
+       return 'session read';
+     })()`,
+    8000
+  );
+}
+
+/**
+ * Puts back the session a run that died left behind, and keeps this run's own copy of what it
+ * found — the config's arrangement (`openTheConfig`), for the documents.
+ *
+ * A probe loads documents into a dev app that is the maintainer's, and the harness puts the session
+ * file back once the probe has reported. A run that dies first leaves the probe's documents in the
+ * file, and every later run then reads *that* as the reader's session and puts it back — measured
+ * after a sweep this harness killed: the file named a versioning probe's note, the app restored it
+ * at every start, and the reader's own session was gone.
+ */
+async function openTheSession() {
+  let left = null;
+  try {
+    left = readFileSync(sessionSnapshot, 'utf8');
+  } catch {
+    left = null;
+  }
+  if (left !== null) {
+    console.error(
+      'a run died before it could put the session back: writing back the session from before that ' +
+        'run, then measuring with it (' +
+        sessionSnapshot +
+        ')'
+    );
+    await writeSessionText(left);
+    // …and the app reads it, so the live session is the one that was put back rather than the
+    // documents the killed run left on screen.
+    await reloadSession();
+  }
+  const found = await readSessionText();
+  if (found !== null) {
+    writeFileSync(sessionSnapshot, found);
+  }
+  return found;
+}
+
+/** The run is over and the session is back: nothing is left for the next run to tidy up. */
+function forgetTheSession() {
+  rmSync(sessionSnapshot, { force: true });
+}
+
 // A probe that needs the workspace open gets it here, once the language is settled (that reloads
 // the page, and the workspace is set through it). The config itself was read up top, and goes back
 // once the probe has reported, whatever the probe did with it. The session is read up here for the
@@ -605,7 +675,7 @@ async function restoreSession(previous) {
 if (withWorkspace) {
   await useFixtureWorkspace();
 }
-const previousSession = await readSessionText();
+const previousSession = await openTheSession();
 
 /**
  * A probe's own verdict, as the harness reads it: a probe returns `{ checks, failed }`,
@@ -638,6 +708,8 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
 await restoreConfig(previousConfig);
 forgetTheConfig();
 await restoreSession(previousSession);
+await reloadSession();
+forgetTheSession();
 await restoreLanguage(languageBeforeProbing);
 await releaseTheOpener();
 if (reply.success) {

@@ -786,6 +786,24 @@ elements) unless it says otherwise.
   and the two keys the fixture library does not hold warn instead of failing — the answer the reader
   is told. What is still unmeasured is a *locator* and a *suppressed author* against a key the library
   does hold, which is the roadmap item below.
+- **The session a probe leaves behind, and the one the app kept.** Closed in the harness.
+  `restoreSession` puts the session *file* back, and the app reads that file only at a start: the
+  session the probes left in *memory* stayed the one on screen, so a probe that opened a note the
+  session already held was handed nothing — measured, `export-pandoc-arguments.js` run twice in a row
+  exported the *demo document's* text while `session.current()` named its own note, and the probes
+  that come and go in sweeps (`select-across-blocks`, `select-in-code-block`, `document-stack*`) fail
+  and pass for the same kind of reason. Two things changed. The app is **told to read the session
+  that was just put back** (`reloadSession` → `documentSession.load`, which asks nothing: a restore is
+  not an open), so the next probe drives the reader's session and never the last probe's — measured
+  the same way: a probe that opens its own note left `live: <the probe's note>` before, `live: null`
+  after. And the session a run *finds* is written to a note beside the config's own
+  (`<tmpdir>/yi-probe-session.json`, the arrangement `openTheConfig` already had): a note still there
+  means the run that wrote it died, and its session goes back into the app — file *and* live — before
+  the next run measures anything. Measured with a note planted by hand: the next run printed the line,
+  the app answered `live: "marker-doc"` — the session from before the killed run — and the note was
+  gone once the run finished. What that protects against was real: the reader's own `session.json` had
+  been holding a *versioning probe's* note as the document to open (and the app restored it at every
+  start), which is the pollution the note now prevents; that one file was cleared by hand, once.
 
 ## Open, in the order to take them
 

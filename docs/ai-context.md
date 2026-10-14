@@ -565,7 +565,11 @@ harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and 
 session half too, for **every** run: it reads `load_session` up front and writes it back through
 `save_session` once the probe has reported, waiting out the app's own 800 ms session debounce first —
 because a probe loads documents into the maintainer's app, and one that types into them leaves its
-copy in the session the reader's next start restores. A fixture is
+copy in the session the reader's next start restores. The app is then told to read that session back
+(`reloadSession` → `documentSession.load`), because the file is the *next start's* copy and the live
+session is the one the *next probe* drives — and the session the run found is written to a note
+(`<tmpdir>/yi-probe-session.json`, the config's own arrangement) so a run that dies mid-probe has its
+documents put back rather than left as the reader's. A fixture is
 disposable *as a fixture* — `npm run fixtures` refreshes it — while the reader's own notes are not,
 and a probe that writes belongs in a folder of its own under `$HOME`.
 
