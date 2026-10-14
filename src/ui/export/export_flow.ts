@@ -2,7 +2,9 @@
  * Exporting the note on screen: the question, the pre-process, the run, and the news.
  *
  * The order is the whole module, and it is the order Zettlr uses: ask how and where, prepare the
- * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as), run it,
+ * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
+ * as the file it names, and a citation as the words it reads as for the hands that are not pandoc's),
+ * run it,
  * and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing* is
  * Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
  * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
@@ -36,21 +38,32 @@ import { registerCommand } from '../markdown/commands/registry';
 import { exportDialog } from './export_dialog';
 import { exportSource } from './preprocess';
 
+/** The hand pandoc is: the one whose kinds let citeproc render the citations. */
+const PANDOC_HAND = 'pandoc';
+
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {
   /** The text on screen: the editor's own, which is never older than the session's copy of it. */
   text(): string;
 }
 
-/** Registers the File menu's *Export*. */
+/** Registers the File menu's *Export* submenu: one command, and the kind travels as its payload. */
 export function registerExportCommand(host: ExportHost): void {
-  registerCommand({ id: 'file:export', run: () => void exportNote(host.text()) });
+  registerCommand({
+    id: 'file:export',
+    run: (payload) => void exportNote(host.text(), typeof payload === 'string' ? payload : null)
+  });
 }
 
-/** Asks how the text goes out, prepares it if the reader answers, and says what happened. */
-export async function exportNote(text: string): Promise<void> {
+/**
+ * Asks how the text goes out, prepares it if the reader answers, and says what happened.
+ *
+ * `asked` is the kind the menu item names, or null when nothing named one — a command run without a
+ * payload exports the first kind, which is what the app did before the menu had a submenu.
+ */
+export async function exportNote(text: string, asked: string | null = null): Promise<void> {
   const { pandoc, kinds } = await exportKinds();
-  const first = kinds[0];
+  const first = kinds.find((kind) => kind.kind === asked) ?? kinds[0];
   if (first === undefined) {
     return;
   }
@@ -60,7 +73,7 @@ export async function exportNote(text: string): Promise<void> {
   // extension to it, because the *kind* is what the card knows and this is what it is asked with.
   const baseTarget = await join(folder, noteName(note?.path ?? null, note?.title ?? null));
 
-  const answer = await exportDialog.ask({ kinds, pandoc, baseTarget });
+  const answer = await exportDialog.ask({ kind: first, pandoc, baseTarget });
   if (answer === null) {
     return;
   }
@@ -78,7 +91,18 @@ export async function exportNote(text: string): Promise<void> {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: (url) => fetchedPicture(url, unfetched)
+      fetchRemote: (url) => fetchedPicture(url, unfetched),
+      // Pandoc's citeproc renders citations for every hand that goes through it; the app's own hands
+      // have none, so for those the app writes the words it already knows — the same words the page
+      // shows — and lists the works they name under them.
+      citations:
+        answer.hand === PANDOC_HAND
+          ? null
+          : {
+              render: (source) => bibliographyManager.format(source),
+              references: (sources) => bibliographyManager.referenceList(sources),
+              title: t('export.references')
+            }
     });
     const outcome = await runExport({
       kind: answer.kind,

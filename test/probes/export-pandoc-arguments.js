@@ -78,8 +78,9 @@
     const veil = card();
     return veil !== null && !veil.classList.contains('hidden');
   };
-  const askForExport = async () => {
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+  /** Asks for the export the way its File menu item does: the event carries the kind. */
+  const askForExport = async (kind) => {
+    await invoke('plugin:event|emit', { event: 'export', payload: kind });
     return await until(() => open(), 60);
   };
   /** Opens the probe's note and waits for it, bounded — see `export-docx.js` for why. */
@@ -130,7 +131,7 @@
     const { kinds } = await api.exportKinds();
     const config = kinds[0].config_path;
 
-    check('the app asks for the export card', await askForExport(), { open: open() });
+    check('the app asks for the export card', await askForExport('docx'), { open: open() });
     // A hint from an earlier export waits in the corner until the next press, and a programmatic
     // click is not one: this run's hint is what the last check reads, so the corner is cleared.
     // A hint from an earlier run waits in the corner until the next press, and a programmatic
@@ -221,8 +222,7 @@
     // opens with its own heading says that name twice), and this is that decision seen from outside.
     const i18n = await t.app('/src/services/i18n.ts');
     const epubTarget = `${folder}/out.epub`;
-    await askForExport();
-    document.querySelector('[data-export-kind="epub"]').click();
+    await askForExport('epub');
     await sleep(150);
     document.querySelector('[data-export-target]').value = epubTarget;
     document.querySelector('[data-export-run]').click();

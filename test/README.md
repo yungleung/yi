@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
-| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone |
+| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the hands that have no citeproc behind them: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and ninety-nine of them (`probe:all` runs 171 and skips 28, each skip for the reason its
+two hundred and one of them (`probe:all` runs 173 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -179,18 +179,21 @@ git one is): the kind's own defaults file, the output, the folders a relative de
 against, the library and the CSL style the citations came from, the heading the appended list gets,
 and the note — which is the text *after* the export's pre-process, so a wikilink arrives as the
 words it renders as, an image's destination as the absolute path the app resolved it to, and a
-fence's body untouched; `export-docx` — the File menu's item from end to end: the card, its tab, the
-target field, the settings button asking the system to *reveal* the file, the real pandoc writing a
-Word file where the reader asked with the note's picture inside it (`word/media/`, read out of the
-zip's own entry names), the hint that says so, and Escape writing nothing at all; `export-refused` —
+fence's body untouched; `export-kinds` — one item per kind in the File menu's *Export* submenu: every
+kind the app ships opens the card it names, about that kind, under the note's own name
+(`note.processed.md` for the one kind whose output would otherwise be the note itself);
+`export-docx` — the File menu's *Export* item for the docx, end to end: the card, the target field,
+the settings button asking the system to *reveal* the file, the real pandoc writing a Word file where
+the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
+names), the hint that says so, and Escape writing nothing at all; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
-`export-odt` — the second kind: pressing its tab moves the choice and the target's extension with it,
-the configuration file it names is that kind's own, and what comes out is a valid ODF (`mimetype`
-first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which is a row, an
-asset and a tab label;
-`export-latex` — the third, and the one where the *file the document refers to* is the test: the tab
-makes the target a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
+`export-odt` — the second kind: the menu's odt item opens its card and the target's extension is that
+kind's own, the configuration file it names is that kind's own, and what comes out is a valid ODF
+(`mimetype` first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which
+is a row, an asset and a menu item;
+`export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
+target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
 resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}` and its `\bibitem`;
 `export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
@@ -201,12 +204,23 @@ thing that leaves the page), and the citations become a headed `References` list
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts;
-`export-pdf` — the sixth, and the one kind with a *choice*: the menu item offers two hands (pandoc
-with a TeX engine, or the app's own `markdown2pdf`), each hand shows the settings it reads and hides
-the other's, and both write a real `%PDF-` — the second with no pandoc and no TeX suite at all;
-`export-markdown` — the seventh: the note as every other export is handed it, written as
-`note.processed.md` (never over the note), with the wikilink rendered, the citation resolved and the
-reference list appended, and the note's own headings left at their own levels;
+`export-pdf` — the sixth, and the one kind with a *choice*: its card offers two hands (pandoc with a
+TeX engine, or the app's own `markdown2pdf`), each hand shows the settings it reads and hides the
+other's, and the pandoc hand writes a real `%PDF-` through the engine its defaults file names — the
+one probe that always outruns the bridge's five seconds, because a single TeX run is four of them
+(the harness says so and reads the result out of the page's stash; there is nothing to split, since
+the overrun *is* one export);
+`export-pdf-own` — the sixth kind's other hand, and a probe of its own for that reason: the theme,
+the page size and the orientation it offers, a real `%PDF-` with no pandoc and no TeX suite at all,
+and the page read back out of the file through its fonts' `ToUnicode` maps — the citation as the
+words it reads as, the works it names listed under them, the wikilink as its own words, none of the
+marks a key left unresolved would draw, and a landscape Letter `MediaBox` (792 × 612) for the page
+the card was asked for;
+`export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
+asked for it and none is needed): the note as every other export is handed it, written as
+`note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
+reads as, the works it names appended under the app's own heading, and the note's own headings left
+at their own levels;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left

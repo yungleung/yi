@@ -1,8 +1,10 @@
 /**
- * The seventh kind: the note **as every other export is handed it** — each wikilink written as the
- * words it renders as (the app's pre-process), each citation resolved and its reference list
- * appended (pandoc's citeproc, over the library and style the settings name) — kept as a file of its
- * own for a reader who wants to hand the text to something else.
+ * The seventh kind, and the one conversion that is *entirely* the app's: the note as every other
+ * export is handed it — each wikilink written as the words it renders as, each citation as the words
+ * it reads as in the page, the works they name listed under them — kept as a file of its own for a
+ * reader who wants to hand the text to something else. No pandoc is asked for it and none is needed
+ * (`KINDS` gives it the app's own hand alone), which is what makes the pre-process the *whole*
+ * conversion rather than one step ahead of one.
  *
  * Two things are worth pinning beyond the text: the *name* it is written under is
  * `note.processed.md`, not `note.md` (the default target is the note's own folder and its own name,
@@ -10,8 +12,9 @@
  * headings keep their own levels — the family's `shift-heading-level-by: 1` is for a *document* whose
  * title sits above its first heading, and would come back here with every heading one deeper.
  *
- * @covers src-tauri/src/export.rs (KINDS' name_suffix), src/ui/export/export_flow.ts (the card's
- *   target from the note's own path), test/../assets/export/export.markdown.yaml
+ * @covers src-tauri/src/export.rs (KINDS' name_suffix, the own hand), src/ui/export/export_flow.ts
+ *   (the card's target from the note's own path, the citations the own hand renders itself),
+ *   src/ui/export/preprocess.ts (the citation rule and the reference list)
  */
 (async () => {
   const t = window.__t;
@@ -98,10 +101,9 @@
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'markdown' });
     await until(() => open(), 60);
     const veil = card();
-    veil.querySelector('[data-export-kind="markdown"]').click();
     await sleep(150);
     check(
       'the processed markdown is written under the note’s own name with .processed, never over it',
@@ -133,7 +135,9 @@
     );
     check(
       'and the note’s own headings keep their levels',
-      processed.includes('\n# Going out\n'),
+      // The heading is the note's *first* line, so it is pinned by what it is rather than by what
+      // precedes it — and the family's `shift-heading-level-by: 1` would have made this an `##`.
+      /^# Going out$/m.test(processed) && !/^#{2,} Going out$/m.test(processed),
       { heading: /^#+ Going out/m.exec(processed)?.[0] ?? null }
     );
   } finally {

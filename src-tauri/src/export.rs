@@ -1,16 +1,24 @@
 //! Turning the note on screen into a file another program can read.
 //!
-//! The conversion is pandoc's, and so are its parameters: each kind of export is a YAML *defaults
-//! file* in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy
-//! this build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing
-//! here parses it — what it says is pandoc's business, and a key it does not know is answered by
-//! pandoc's own complaint. A file that is already there is never overwritten, so an edit stands.
+//! There are three **hands** that may do it, and a kind says which of them it has:
+//!
+//! - `pandoc`, the one most kinds have. Its parameters are a YAML *defaults file* in the app's data
+//!   folder (`<data>/export/export.<kind>.yaml`), written there from the copy this build ships the
+//!   first time that kind is used, and handed to pandoc as `--defaults`. Nothing here parses it —
+//!   what it says is pandoc's business, and a key it does not know is answered by pandoc's own
+//!   complaint. A file that is already there is never overwritten, so an edit stands.
+//! - `markdown2pdf`, the app's own renderer, which only PDF has and which no machine needs a pandoc
+//!   or a TeX suite for ([`export_with_markdown2pdf`]).
+//! - `own`, the app writing the file itself ([`export_own_text`]) — the processed markdown's whole
+//!   conversion, because the pre-process every kind shares (`ui/export/preprocess.ts`) *is* what that
+//!   kind is asked for. It ships no defaults file, since there is no pandoc left to hand one to.
 //!
 //! What *is* the app's business:
 //!
 //! - **which kinds exist** ([`KINDS`]): one row per kind — the name, the extension its output is
-//!   written under, whether pandoc is needed for it at all, and the defaults file's bytes, compiled
-//!   in. A kind is added by adding a row and its asset; nothing else in the app lists kinds.
+//!   written under, the hands it may be written by, whether pandoc is needed for it at all, and the
+//!   defaults file's bytes, compiled in. A kind is added by adding a row (and an asset, when it has
+//!   a pandoc hand); nothing else in the app lists kinds.
 //! - **which pandoc may be run** ([`find_pandoc`]): never `PATH` alone, because an app started from
 //!   Finder inherits no shell's `PATH` — the known places are searched first, and `YI_PANDOC`, or
 //!   [`export_use_pandoc`] for a probe (which cannot change the environment of the app it drives),
@@ -159,11 +167,15 @@ pub const KINDS: &[ExportKind] = &[
         extension: "md",
         // Not the note's own name: `note.md` beside `note.md` is the note.
         name_suffix: ".processed",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
+        // The app's own hand, and the one kind that has no pandoc hand at all: this conversion *is*
+        // the pre-process — the wikilinks written as the words they render as, the citations as
+        // theirs, the reference list appended — and asking pandoc to re-serialize the note afterwards
+        // would be a second conversion of a text that is already the answer.
+        hands: &[OWN_HAND],
+        needs_pandoc: false,
         takes_a_title: false,
         needs_a_language: false,
-        defaults: include_str!("../assets/export/export.markdown.yaml"),
+        defaults: "",
     },
 ];
 
@@ -171,6 +183,9 @@ pub const KINDS: &[ExportKind] = &[
 const PANDOC_HAND: &str = "pandoc";
 /// The app's own PDF renderer, the `markdown2pdf` crate.
 const MARKDOWN2PDF_HAND: &str = "markdown2pdf";
+/// The app writing the file itself, and the only thing it has to do for it: the pre-processed text
+/// *is* the output.
+const OWN_HAND: &str = "own";
 
 /// The themes the card offers, of the six the crate bundles: the four a document wants. Its `default`
 /// and `github` are left out because a document exported from a notes app is none of those things.
@@ -465,27 +480,34 @@ pub fn export_use_curl(curl: Option<String>) -> Result<(), String> {
 pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
     let dir = export_dir(&app)?;
     let (pandoc, _source) = find_pandoc();
-    let kinds = KINDS
-        .iter()
-        .map(|kind| {
-            let path = dir.join(config_file_name(kind.kind));
-            ExportKindInfo {
-                kind: kind.kind.to_string(),
-                extension: kind.extension.to_string(),
-                name_suffix: kind.name_suffix.to_string(),
-                hands: kind.hands.iter().map(|hand| hand.to_string()).collect(),
-                needs_pandoc: kind.needs_pandoc,
-                takes_a_title: kind.takes_a_title,
-                needs_a_language: kind.needs_a_language,
-                config_exists: path.exists(),
-                config_path: path.to_string_lossy().into_owned(),
-            }
-        })
-        .collect();
+    let kinds = KINDS.iter().map(|kind| kind_info(&dir, kind)).collect();
     Ok(ExportKinds {
         pandoc: pandoc.map(|found| found.to_string_lossy().into_owned()),
         kinds,
     })
+}
+
+/// One kind as the window reads it: the facts off its row, and the reader's own copy of its defaults
+/// file — which a kind whose conversion is the app's *own* has none of.
+///
+/// The empty path is the honest answer for such a kind rather than a path that will never be made:
+/// the window asks for it to name the file and to reveal it, and `export_config_path` refuses to
+/// write one, so a named path would be a promise the app does not keep.
+fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
+    let config = (!kind.defaults.is_empty()).then(|| dir.join(config_file_name(kind.kind)));
+    ExportKindInfo {
+        kind: kind.kind.to_string(),
+        extension: kind.extension.to_string(),
+        name_suffix: kind.name_suffix.to_string(),
+        hands: kind.hands.iter().map(|hand| hand.to_string()).collect(),
+        needs_pandoc: kind.needs_pandoc,
+        takes_a_title: kind.takes_a_title,
+        needs_a_language: kind.needs_a_language,
+        config_exists: config.as_deref().is_some_and(Path::exists),
+        config_path: config
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+    }
 }
 
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
@@ -703,8 +725,22 @@ pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<Expor
     let hand = hand_of(kind, request.hand.as_deref())?;
     match hand {
         PANDOC_HAND => export_with_pandoc(&app, kind, &request),
-        _ => export_with_markdown2pdf(kind, &request),
+        MARKDOWN2PDF_HAND => export_with_markdown2pdf(kind, &request),
+        _ => export_own_text(&request),
     }
+}
+
+/// The app writing the file itself: the text it was handed is the answer.
+///
+/// The pre-process is what every kind shares (`ui/export/preprocess.ts`), and for the kinds that are
+/// *markdown* it is also the whole conversion: the note, with its wikilinks written as the words they
+/// render as, its citations as the words *they* render as, and the works they cite listed under them.
+/// There is nothing left for pandoc or a crate to do, and re-serializing the note through one would
+/// be a second conversion of a text that is already the answer.
+fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
+    crate::files::write_atomically(Path::new(&request.output_path), &request.text)
+        .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
+    Ok(ExportOutcome { warnings: Vec::new() })
 }
 
 /// The hand asked for, or the kind's first — and a name no hand of this kind answers to is refused
@@ -874,6 +910,11 @@ fn pandoc_arguments(
 #[tauri::command]
 pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
+    if kind.defaults.is_empty() {
+        // A kind whose conversion is the app's own has no configuration to read — and a file made of
+        // nothing would be a file a reader could edit with no effect.
+        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+    }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
 }
@@ -918,7 +959,7 @@ mod tests {
             "markdown" => "md",
             _ => "",
         };
-        for kind in KINDS {
+        for kind in KINDS.iter().filter(|kind| !kind.defaults.is_empty()) {
             assert!(
                 kind.defaults.contains("reader: markdown"),
                 "{} defaults do not name markdown as the reader",
@@ -935,6 +976,16 @@ mod tests {
                 produced_by(writer),
                 kind.extension,
                 "{} is written under the wrong extension",
+                kind.kind
+            );
+        }
+        // The other side of the same fact: the defaults file *is* the pandoc hand's input, so a kind
+        // that ships none is a kind pandoc is never run for — and one that offered the hand anyway
+        // would be handed an empty `--defaults`, which is a file pandoc cannot read.
+        for kind in KINDS.iter().filter(|kind| kind.defaults.is_empty()) {
+            assert!(
+                !kind.hands.contains(&PANDOC_HAND),
+                "{} ships no defaults file but offers the hand that reads one",
                 kind.kind
             );
         }

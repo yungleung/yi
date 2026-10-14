@@ -1,11 +1,12 @@
 /**
  * The export a reader asks for, from the File menu to a Word file on the disk.
  *
- * This is the wire end to end: the native menu's `export` event runs the command, the command opens
- * the card, the card's tab and field say what would be written, pressing *Export* runs the real
- * pandoc against the app's own defaults file, and what appears where the reader asked for it is a
- * docx (`PK`, the zip every Word file is). Escape, the other way out, writes nothing at all — not
- * even the configuration file, which is why the first half asks for it before it is made.
+ * This is the wire end to end: the File menu's *Export* item for the docx (the event it emits carries
+ * the kind, `export-kinds.js` walks them all) runs the command, the command opens the card for
+ * that kind, the card's field says what would be written, pressing *Export* runs the real pandoc
+ * against the app's own defaults file, and what appears where the reader asked for it is a docx
+ * (`PK`, the zip every Word file is). Escape, the other way out, writes nothing at all — not even the
+ * configuration file, which is why the first half asks for it before it is made.
  *
  * What pandoc is *asked* is the subject of the probe beside this one
  * (`export-pandoc-arguments.js`), which uses a pandoc that only records.
@@ -17,6 +18,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
+  const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -60,6 +62,8 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.docx`;
+  /** The note's own path without an extension: what every kind's target is built out of. */
+  const baseTarget = `${folder}/note`;
   const elsewhere = `${folder}/never.docx`;
   const checkout = window.__probePaths.checkout;
   const note = [
@@ -86,9 +90,9 @@
     };
   };
 
-  /** Asks the app to export, the way the File menu does: the event the native item emits. */
+  /** Asks the app to export, the way the File menu does: the event the item for the docx emits. */
   const askForExport = async () => {
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'docx' });
     return await until(() => open(), 60);
   };
   /**
@@ -145,14 +149,10 @@
       open: open()
     });
     const veil = card();
-    const kinds = [...(veil?.querySelectorAll('[data-export-kind]') ?? [])];
     check(
-      'one item per kind the app ships, and the docx is the one on show',
-      kinds.map((kind) => kind.dataset.exportKind).join(',') ===
-        'docx,odt,latex,html,epub,pdf,markdown' &&
-        kinds[0].closest('li')?.classList.contains('menu-active') === true &&
-        kinds[1].closest('li')?.classList.contains('menu-active') === false,
-      kinds.map((kind) => kind.dataset.exportKind)
+      'the card is about the kind the menu item named, and the docx is the one the menu knows',
+      veil?.dataset.exportKind === 'docx',
+      { kind: veil?.dataset.exportKind ?? null }
     );
     check(
       'the target starts in the note’s own folder, named after the note',
@@ -171,7 +171,6 @@
     // are read, and none of them hanging outside it. What a screenshot would be looked at for.
     const cardBox = box(veil.querySelector('[data-export-card]'));
     const rows = [
-      '[data-export-kinds]',
       '[data-export-target]',
       '[data-export-config]',
       '[data-export-status]',

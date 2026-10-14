@@ -510,7 +510,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.
     for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<[AppEventName, CommandId]>) {
-      void eventManager.on(event, () => runCommand(command));
+      // The payload travels: the Export submenu's items are one event whose payload is the kind.
+      void eventManager.on(event, (event: any) => runCommand(command, event?.payload ?? null));
     }
   }
 

@@ -108,26 +108,24 @@
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'odt' });
     await until(() => open(), 60);
 
     // --- choosing the kind ---------------------------------------------------------------------
 
     const veil = card();
-    const tabs = [...veil.querySelectorAll('[data-export-kind]')];
-    const odt = tabs.find((tab) => tab.dataset.exportKind === 'odt') ?? null;
     const field = veil.querySelector('[data-export-target]');
-    const docxTarget = field.value;
-    odt?.click();
-    await sleep(150);
     check(
-      'pressing the odt tab moves the choice, and the target’s extension with it',
-      odt !== null &&
-        odt.closest('li')?.classList.contains('menu-active') === true &&
-        tabs[0].closest('li')?.classList.contains('menu-active') === false &&
-        docxTarget.endsWith('/note.docx') &&
+      'the menu’s odt item opens the card for the LibreOffice kind, and the target’s extension with it',
+      card().dataset.exportKind === 'odt' &&
         field.value === target,
-      { docxTarget, chosen: field.value }
+      {
+        kind: card().dataset.exportKind,
+        dialogs: document.querySelectorAll('[data-export-dialog]').length,
+        heading: document.querySelector('[data-export-card] p')?.textContent ?? null,
+        chosen: field.value,
+        target
+      }
     );
     const status = veil.querySelector('[data-export-status]')?.textContent ?? '';
     check('and the card still says what will write it', status.includes('pandoc:'), status);
@@ -161,9 +159,8 @@
 
     // --- the kind's own configuration ----------------------------------------------------------
 
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'odt' });
     await until(() => open(), 60);
-    card().querySelector('[data-export-kind="odt"]')?.click();
     await sleep(150);
     const { kinds } = await api.exportKinds();
     const odtConfig = kinds.find((kind) => kind.kind === 'odt')?.config_path ?? '';

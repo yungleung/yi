@@ -63,7 +63,8 @@ export interface AppEvents {
   select_all: null;
   find: null;
   replace: null;
-  export: null;
+  /** The kind the Export submenu's own item names — the event *is* the choice of kind. */
+  export: string | null;
   documentation: null;
   report_issue: null;
   check_for_updates: null;

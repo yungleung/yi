@@ -1,12 +1,20 @@
 /**
  * The sixth kind, and the one kind with a *choice*: a PDF can be written by pandoc and a TeX engine,
- * or by the app's own renderer (`markdown2pdf`), which needs neither. This probe drives both hands
- * through the card: the menu item, the hand it offers (only PDF has two), the settings each hand
- * reads — a defaults file for pandoc, a theme, a page size and an orientation for the app's own — and
- * the file that comes out, which in both cases is a PDF (`%PDF-`, and no TeX engine in the app's own
- * path at all: `cargo tree` shows printpdf).
+ * or by the app's own renderer (`markdown2pdf`), which needs neither. This is the pandoc hand's half:
+ * the menu item, the hands the card offers (only PDF has two, and pandoc is the one it opens on), the
+ * settings each hand reads — a defaults file for pandoc, a theme, a page size and an orientation for
+ * the app's own — and the page the TeX engine writes.
  *
- * @covers src-tauri/src/export.rs (run_export's two hands, export_with_markdown2pdf),
+ * The other hand is `export-pdf-own.js`, and it is a probe of its own because the bridge gives one
+ * script five seconds: two real renderers in one script outrun that, and a probe still running when
+ * the bridge gives up keeps driving the page the *next* probe is measuring.
+ *
+ * This half outruns those five seconds on its own — measured, a single `xelatex` run is ~4 s here and
+ * the card's setup ~1 s — and there is nothing left to split it into, because the overrun *is* one
+ * export. The harness says so when it happens (`recovered after the bridge timed out`, reading the
+ * result out of the page's stash), which is what that recovery is for.
+ *
+ * @covers src-tauri/src/export.rs (run_export's two hands, export_with_pandoc),
  *   src/ui/export/export_dialog.ts (the menu, the hand, the kind's own options)
  */
 (async () => {
@@ -48,7 +56,6 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  const ownTarget = `${folder}/own.pdf`;
   const note = '# Going out\n\nA short paragraph, and a citation [@smith2020].\n';
 
   const card = () => document.querySelector('[data-export-dialog]');
@@ -75,7 +82,7 @@
     await sleep(200);
   };
   const askForExport = async () => {
-    await invoke('plugin:event|emit', { event: 'export', payload: null });
+    await invoke('plugin:event|emit', { event: 'export', payload: 'pdf' });
     await until(() => open(), 60);
     return card();
   };
@@ -101,7 +108,6 @@
     // --- the kind, and the hand it offers --------------------------------------------------------
 
     let veil = await askForExport();
-    veil.querySelector('[data-export-kind="pdf"]').click();
     await sleep(150);
     const hand = veil.querySelector('[data-export-hand]');
     check(
@@ -135,51 +141,6 @@
       { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
     );
 
-    // --- the app's own hand ----------------------------------------------------------------------
-
-    veil = await askForExport();
-    veil.querySelector('[data-export-kind="pdf"]').click();
-    await sleep(150);
-    const own = veil.querySelector('[data-export-hand]');
-    own.value = 'markdown2pdf';
-    own.dispatchEvent(new Event('change', { bubbles: true }));
-    await sleep(150);
-    const theme = veil.querySelector('[data-export-theme]');
-    const size = veil.querySelector('[data-export-size]');
-    const orientation = veil.querySelector('[data-export-orientation]');
-    check(
-      'choosing the app’s own hand offers its own settings, and takes the other hand’s away',
-      veil.querySelector('[data-export-own]')?.classList.contains('hidden') === false &&
-        veil.querySelector('[data-export-config]')?.closest('div')?.classList.contains('hidden') === true &&
-        [...(theme?.options ?? [])].map((option) => option.value).join(',') ===
-          'academic,minimal,compact,modern' &&
-        [...(size?.options ?? [])].map((option) => option.value).join(',') === 'A4,Letter,Legal,A3,A5' &&
-        [...(orientation?.options ?? [])].map((option) => option.value).join(',') === 'portrait,landscape',
-      {
-        themes: [...(theme?.options ?? [])].map((option) => option.value),
-        sizes: [...(size?.options ?? [])].map((option) => option.value),
-        orientations: [...(orientation?.options ?? [])].map((option) => option.value)
-      }
-    );
-    theme.value = 'modern';
-    theme.dispatchEvent(new Event('change', { bubbles: true }));
-    size.value = 'Letter';
-    size.dispatchEvent(new Event('change', { bubbles: true }));
-    orientation.value = 'landscape';
-    orientation.dispatchEvent(new Event('change', { bubbles: true }));
-    await sleep(150);
-    veil.querySelector('[data-export-target]').value = ownTarget;
-    veil.querySelector('[data-export-run]').click();
-    const owned = await until(async () => (await bytesOf(ownTarget)) !== null);
-    const ownPdf = await bytesOf(ownTarget);
-    check(
-      'and it writes a PDF too — no pandoc, no TeX suite, in a landscape Letter page',
-      owned &&
-        ownPdf !== null &&
-        String.fromCharCode(...ownPdf.slice(0, 5)) === '%PDF-' &&
-        ownPdf.length > 1000,
-      { owned, size: ownPdf?.length ?? 0, target: ownTarget }
-    );
   } finally {
     try {
       await files.deleteEntry(folder);
