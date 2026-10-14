@@ -18,6 +18,8 @@
  * @covers src/ui/markdown/completion_card.ts
  * @fixture test/fixtures/workspace/ — the notes the list offers: documents with a frontmatter id
  * and documents without one, which is what the two acceptances are told apart by
+ * @needs-workspace — the list *is* the workspace the app has open, so the app has to be on those
+ * notes (`--with-workspace`), not on whatever folder the reader's own app happens to be showing
  */
 (async () => {
   const t = window.__t;

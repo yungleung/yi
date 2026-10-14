@@ -15,6 +15,8 @@
  *
  * @covers src/ui/settings/general_settings.ts, src/services/session.ts
  * @covers src/services/session_rules.ts
+ * @needs-workspace — the note its stack question is asked about is the fixtures' own
+ *   `default-document.md`, read out of whatever folder the app has open (`--with-workspace`)
  */
 (async () => {
   const t = window.__t;

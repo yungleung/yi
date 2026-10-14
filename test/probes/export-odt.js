@@ -52,7 +52,10 @@
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
-  const folder = `${home}/yi-probe-export-odt`;
+  // A folder of this run's own — see `export-docx.js` for why: the live session is not reset
+  // between runs, so a note opened twice under one name is one the session already holds.
+  const folderName = `yi-probe-export-odt-${Date.now().toString(36)}`;
+  const folder = `${home}/${folderName}`;
   const checkout = window.__probePaths.checkout;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.odt`;
@@ -68,15 +71,23 @@
     const veil = card();
     return veil !== null && !veil.classList.contains('hidden');
   };
+  /** Opens the probe's note and waits for it, bounded — see `export-docx.js` for why. */
   const show = async (path, content) => {
     const pending = session.documentSession.openFile({ path, content });
-    await sleep(150);
-    const prompt = document.querySelector('[data-prompt]');
-    if (prompt !== null && !prompt.classList.contains('hidden')) {
-      prompt.querySelector('[data-prompt-no]')?.click();
+    let opened = false;
+    void pending.then(() => {
+      opened = true;
+    });
+    for (let attempt = 0; attempt < 40 && !opened; attempt += 1) {
+      const prompt = document.querySelector('[data-prompt]');
+      if (prompt !== null && !prompt.classList.contains('hidden')) {
+        prompt.querySelector('[data-prompt-no]')?.click();
+        break;
+      }
+      await sleep(50);
     }
-    await pending;
-    await sleep(250);
+    await Promise.race([pending, sleep(2000)]);
+    await sleep(200);
   };
 
   const before = await invoke('get_config');
@@ -86,11 +97,16 @@
     } catch {
       // A folder a run the bridge cut off left behind.
     }
-    await files.createEntry(home, 'yi-probe-export-odt', false);
+    await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
     await show(notePath, note);
+    check(
+      'the note the probe opened is the document on screen',
+      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
+    );
 
     await invoke('plugin:event|emit', { event: 'export', payload: null });
     await until(() => open(), 60);

@@ -50,7 +50,10 @@
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
-  const folder = `${home}/yi-probe-export-arguments`;
+  // A folder of this run's own — see `export-docx.js` for why: the live session is not reset
+  // between runs, so a note opened twice under one name is one the session already holds.
+  const folderName = `yi-probe-export-arguments-${Date.now().toString(36)}`;
+  const folder = `${home}/${folderName}`;
   const recorder = `${home}/yi-probe-fake-pandoc`;
   const notePath = `${folder}/note.md`;
   const otherPath = `${folder}/other.md`;
@@ -79,14 +82,22 @@
     await invoke('plugin:event|emit', { event: 'export', payload: null });
     return await until(() => open(), 60);
   };
+  /** Opens the probe's note and waits for it, bounded — see `export-docx.js` for why. */
   const show = async (path, content) => {
     const pending = session.documentSession.openFile({ path, content });
-    await sleep(150);
-    const prompt = document.querySelector('[data-prompt]');
-    if (prompt !== null && !prompt.classList.contains('hidden')) {
-      prompt.querySelector('[data-prompt-no]')?.click();
+    let opened = false;
+    void pending.then(() => {
+      opened = true;
+    });
+    for (let attempt = 0; attempt < 40 && !opened; attempt += 1) {
+      const prompt = document.querySelector('[data-prompt]');
+      if (prompt !== null && !prompt.classList.contains('hidden')) {
+        prompt.querySelector('[data-prompt-no]')?.click();
+        break;
+      }
+      await sleep(50);
     }
-    await pending;
+    await Promise.race([pending, sleep(2000)]);
     await sleep(200);
   };
 
@@ -99,7 +110,7 @@
         // A folder a run the bridge cut off left behind.
       }
     }
-    await files.createEntry(home, 'yi-probe-export-arguments', false);
+    await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'note.md', true);
     await files.createEntry(folder, 'other.md', true);
     await files.writeTextAtomically(otherPath, '---\ntitle: The Other Note\n---\n\n# other\n');
@@ -109,6 +120,11 @@
     // rely on — the fixtures' own — and puts the reader's back in `finally`.
     await configManager.update({ bibliography_file: library });
     await show(notePath, note);
+    check(
+      'the note the probe opened is the document on screen',
+      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
+    );
 
     await api.pointAtPandoc(`${window.__probePaths.checkout}test/probes/fake-pandoc.sh`);
     const { kinds } = await api.exportKinds();
