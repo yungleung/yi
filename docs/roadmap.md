@@ -903,51 +903,68 @@ elements) unless it says otherwise.
   each kind's *own* options under it: the conversion settings file for a pandoc hand, the
   theme/page/orientation for the app's own, and a hand selector for the one kind that has two. When
   the machine has no pandoc, the card opens a PDF on the hand that does not need one.
-  **The next reading of that ask was wrong in three ways, and the corrections are the shape it has
-  now.** A menu *inside* the card is not a submenu: with one card holding every kind's own options it
-  was overstaffed, and what was asked for is the File menu's *Export* with **one item per kind**
-  (`src-tauri/src/menu.rs`, built from `KINDS`, so a kind added there appears in the menu without
-  this file changing), the item's own kind travelling with the event it emits — so the kind is chosen
-  *before* any card is drawn and the card is about that one kind, its heading naming it. The same
-  turn settled a smaller thing the split exposed: a hand chosen in one PDF card no longer decides what
-  the next one opens on, because the hand is the kind's own first runnable one — measured, the
-  leftover hand made a card open on the app's own renderer rather than pandoc, while any card for a
-  single-hand kind cleared it again, so it was a memory nothing could rely on *and* it made two probes
-  depend on the order they ran in.
-  **And the app's own hand was not getting the notes the pre-process makes**: the crate has no
-  citeproc behind it, so its PDFs printed `[@smith2020]` where pandoc's printed `(Smith, 2020)`. That
-  is what the narrow fix to the *kind's* configuration would have missed and what the general rule
-  answers (below): the hands that are not pandoc render their own citations. Measured on the page
-  itself, since it can be: `export-pdf-own.js` reads the app's PDF back through its fonts' `ToUnicode`
-  maps, and the page now says `A citation (Smith, 2020) and a link an alias.` with `References` and
-  the work's own entry under it, drawing none of `[`, `@` or `]` — the marks a key left as written
-  would leave.
-- **The processed markdown, `markdown`**: the note **as every other export is handed it** — each
-  wikilink written as the words it renders as, each citation as the words it reads as with the works
-  it names listed under them (the pre-process, with the third rule the app's own hands needed) — kept
-  as a file of its own. What it is **not** is a pandoc export, which is the other correction of the
-  same turn: the pre-process *is* this conversion, so asking pandoc to re-serialize the note
-  afterwards would be a second conversion of a text that is already the answer. `KINDS` therefore
-  gives the kind the app's own hand (`own`) and nothing else — no pandoc is asked for it, none is
-  needed, and it ships **no defaults file at all** (the asset that was there went with the hand that
-  read it; a card whose hand is the app's own shows no conversion-settings row, and asking for one
-  refuses rather than making a file of nothing). Measured: `# Going out` stays an `h1` (the family's
-  `shift-heading-level-by: 1` is for a document whose title sits above its first heading, and would
-  re-level every heading of a *note*), `[[other|an alias]]` comes out `an alias`, `[@smith2020]`
-  comes out `(Smith, 2020)` over a `## References` heading and its entry — `bibliography.format` for
-  the citation and `referenceList` for the list, the app's own words rather than citeproc's — and the
-  file is written as `note.processed.md`, never as `note.md`, because the default target is the note's
-  own folder and name and an export that writes over the note it is exporting is not one anybody means
-  (`ExportKind::name_suffix` is the one fact that says so).
+  **The next reading of that ask kept the menu and lost the hand.** A menu *inside* the card is not a
+  submenu: with one card holding every kind's own options it was overstaffed, and what was asked for
+  is the File menu's *Export* with **one item per kind** (`src-tauri/src/menu.rs`, built from `KINDS`,
+  so a kind added there appears in the menu without this file changing), the item's own kind
+  travelling with the event it emits — so the kind is chosen *before* any card is drawn and the card
+  is about that one kind, its heading naming it. That is the shape the menu still has. The card also
+  stopped opening on the hand the *last* card was answered with, which was a memory nothing could
+  rely on (any card for a single-hand kind cleared it) and one that made two probes depend on the
+  order they ran in. What did **not** last is the second hand: the crate could not draw the notes some
+  readers write — measured in the entry below — so the app's own renderer left the app, and with it
+  the two-hand machinery: the `hands` row fact, the hand selector, the theme/page/orientation
+  options, and the app-side citation rendering the crate's lack of citeproc had called for. Every kind
+  the app ships is written by pandoc, which is the simplest thing that has ever been true here.
+- **Plain markdown, `markdown`** (called *Processed Markdown* until the reader renamed it): the note
+  **as every other export is handed it** — each wikilink written as the words it renders as (the
+  pre-process), each citation resolved and its reference list appended (citeproc over the settings'
+  library and style) — kept as a file of its own for a reader who wants to hand the text to something
+  else. It was the app's own hand for one round, on the reading that the pre-process *is* this
+  conversion; the round after put pandoc back, and that is what it is now: `KINDS` gives it an asset
+  of Yi's own (`export.markdown.yaml`, in the shape of the epub one) and pandoc writes the note back
+  out as markdown. Measured: `# Going out` stays an `h1` (the family's `shift-heading-level-by: 1` is
+  for a *document* whose title sits above its first heading and would re-level every heading of a
+  *note*, so this file leaves it out), `[[other|an alias]]` comes out `an alias`, `[@smith2020]` comes
+  out `(Smith, 2020)` over a `References` heading and its entry, and the file is written as
+  `note.processed.md` — never as `note.md`, because the default target is the note's own folder and
+  name and an export that writes over the note it is exporting is not one anybody means
+  (`ExportKind::name_suffix` is the one fact that says so). The `.processed` in that name is the one
+  word left from the old label; the suffix is what keeps the export off the note, and renaming it is a
+  one-line question for the reader.
+- **The crate could not draw its own notes, so the app stopped drawing.** The reader's report was
+  that *PDF export can not process CJK characters*, and it is true of the hand that was supposed to
+  make a PDF without a TeX suite: measured with a scratch example against the crate's own API, a note
+  whose heading is `# 你好，世界` and whose body holds `这是一个测试。` came out with **no** heading on the
+  page at all and the body's CJK as glyph codes no font declares (`A note with CJK: … And latin after
+  it.`, read back through the page's own `ToUnicode` maps — the instrument the round before had used
+  to see the citation rule working). So `markdown2pdf` is gone from the app: the dependency and its
+  whole tree (704 lines of `Cargo.lock`), the `export_with_markdown2pdf` function, the theme/page/
+  orientation options and the request fields behind them, the `own` hand and `export_own_text` (with
+  the crate gone, nothing the app ships is *not* pandoc's), and the pre-process's third rule, the
+  citation rendering and `bibliography.referenceList` that only the app's own hands needed. What is
+  left is one hand for every kind. **The same measurement says what the remaining hand needs**: with
+  the shipped `export.pdf.yaml`, which names no font, XeTeX warns *"Missing character: There is no 一
+  (U+4E00) in font [lmroman10-regular]"* for every CJK character and draws none of them — and with
+  `CJKmainfont: "Songti SC"` added under `variables:` the same note comes out saying `你好，世界` with
+  its Latin text untouched. That repair is in the asset's own header now, where the reader who needs it
+  is already editing.
 
 ## Open, in the order to take them
 
-- **A PDF page's own options for the pandoc hand.** The app's own hand takes a theme, a page size and
-  an orientation; the pandoc hand's page comes from `variables.papersize` in its defaults file, which
-  is one more thing a reader may edit and one fewer thing the card offers. If the card should offer
-  both (a size and an orientation for *either* hand), the pandoc side becomes a `--variable
-  papersize=` and a `geometry` variable, and the card's two hands then look the same — worth deciding
-  once the app's own hand has been used for real.
+- **A PDF page's own options on the card.** A PDF's page size and orientation live in its defaults
+  file (`variables.papersize`, and a `geometry` variable beside it), which is a thing a reader may
+  edit and a thing the card does not offer — the card offers only the file. Whether it *should* offer
+  a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
+  file says) is the decision, and the answer depends on how often a reader wants a page that is not
+  the one they set up once.
+- **A PDF of a note that is not written in Latin.** Measured both ways: the shipped
+  `export.pdf.yaml` names no font, so XeTeX draws the note with its own Latin Modern and warns
+  *"Missing character"* for every CJK character, leaving none of them on the page; adding
+  `CJKmainfont: "Songti SC"` under `variables:` puts them there (the asset's header carries that,
+  and the measurement). What is *not* decided is whether the app should offer the font at all — a
+  card row over a list it cannot know, a setting, or a shipped default that names a font the
+  reader's machine may not have — and the file is the honest answer until a reader asks twice.
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
@@ -960,11 +977,7 @@ elements) unless it says otherwise.
   are unmeasured: whether the page number lands where citeproc's own syntax expects it, and whether
   the suppressed author leaves the parentheses pandoc would. Two lines in a probe with the fixture
   library answer it, and `suppress-bibliography` is the third question for a reader who wants the
-  keys resolved and no list. Since the app renders the *app* hands' citations itself now — the same
-  rule the page shows (`bibliography.format`) — those two forms are worth measuring on both sides at
-  once: citeproc's answer and the app's answer to the same citation are two different renderers'
-  opinions, and a probe that reads the app's own PDF (`export-pdf-own.js` reads the page back
-  through its fonts' `ToUnicode` maps) can hold them apart.
+  keys resolved and no list.
 - **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
   types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
   to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc

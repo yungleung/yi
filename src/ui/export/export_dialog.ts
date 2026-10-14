@@ -1,14 +1,12 @@
 /**
- * The card that asks how a note goes out: where, and by which hand.
+ * The card that asks how a note goes out: where.
  *
  * It is about **one kind**, and that kind was chosen before the card was drawn: the File menu's
  * *Export* is a submenu with an item per kind (`src-tauri/src/menu.rs`), and the item's own kind
- * travels with the event that opens this. So the card asks the two things left — where the file
- * goes, and which hand writes it — and shows what only *that* kind has: the hands it offers (the
- * one kind with two), the configuration file a pandoc hand reads, and the app's own renderer's
- * theme, page size and orientation. Every fact on it comes from the app rather than from this module
- * (`api/export.ts: exportKinds`), so a kind added to the Rust side appears in the menu and here
- * without a line of this file changing.
+ * travels with the event that opens this. So the card asks the one thing left — where the file goes
+ * — and names what writes it: the kind's own defaults file, which is the reader's to edit. Every
+ * fact on it comes from the app rather than from this module (`api/export.ts: exportKinds`), so a
+ * kind added to the Rust side appears in the menu and here without a line of this file changing.
  *
  * The target is a real field, and that is deliberate — the app's questions take a native sheet for
  * a reader and a card for a probe (`ui/prompt.ts` is the same pair), because a probe cannot drive a
@@ -41,24 +39,11 @@ export interface ExportQuestion {
   baseTarget: string;
 }
 
-/** The reader's answer: which kind, where the file goes, and which hand with which settings. */
+/** The reader's answer: which kind, and where the file goes. */
 export interface ExportAnswer {
   kind: string;
   outputPath: string;
-  hand: string;
-  theme: string;
-  pageSize: string;
-  orientation: string;
 }
-
-/** The bundled themes the card offers, of the ones the app's own renderer ships. */
-const THEMES = ['academic', 'minimal', 'compact', 'modern'];
-/** The page sizes it knows by name, and the two ways a page can lie. */
-const PAGE_SIZES = ['A4', 'Letter', 'Legal', 'A3', 'A5'];
-const ORIENTATIONS = ['portrait', 'landscape'];
-/** The three hands by name: the one every kind has, the app's own renderer, and the app writing it. */
-const PANDOC_HAND = 'pandoc';
-const MARKDOWN2PDF = 'markdown2pdf';
 
 /** The label a kind is offered under, or its own name when the catalogues have none. */
 function kindLabel(kind: string): string {
@@ -88,39 +73,15 @@ function kindLabel(kind: string): string {
   return kind;
 }
 
-/** The label a hand is offered under: its own name, which is what the app calls it in the request. */
-function handLabel(hand: string): string {
-  if (hand === PANDOC_HAND) {
-    return t('export.hand.pandoc');
-  }
-  if (hand === MARKDOWN2PDF) {
-    return t('export.hand.markdown2pdf');
-  }
-  // The app's own hand has no label of its own because it is never *offered*: it is the only hand a
-  // kind with it has, so the hand row is hidden and the status line says what it is instead
-  // (`export.ownHand`). Its own name is the honest answer if that ever stops being true.
-  return hand;
-}
-
 export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly heading: HTMLParagraphElement;
-  private readonly handLabel: HTMLSpanElement;
-  private readonly hand: HTMLSelectElement;
-  private readonly handRow: HTMLElement;
-  private readonly themeLabel: HTMLSpanElement;
-  private readonly theme: HTMLSelectElement;
-  private readonly sizeLabel: HTMLSpanElement;
-  private readonly size: HTMLSelectElement;
-  private readonly orientationLabel: HTMLSpanElement;
-  private readonly orientation: HTMLSelectElement;
-  private readonly ownOptions: HTMLElement;
   private readonly targetLabel: HTMLLabelElement;
   private readonly target: HTMLInputElement;
   private readonly choose: HTMLButtonElement;
   private readonly configLabel: HTMLSpanElement;
   private readonly configPath: HTMLSpanElement;
   private readonly openConfig: HTMLButtonElement;
-  /** The whole configuration row, hidden while a hand that does not read it is the one chosen. */
+  /** The configuration row: the kind's own defaults file, which every export of it reads. */
   private readonly configRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   private readonly form: HTMLFormElement;
@@ -139,31 +100,6 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.heading = document.createElement('p');
     this.heading.className = 'mb-2 text-sm font-semibold';
     this.heading.textContent = t('export.title');
-
-    this.handLabel = this.caption(t('export.hand'));
-    this.hand = this.chooser('export-hand', []);
-    this.handRow = this.row(this.handLabel, this.hand);
-    this.themeLabel = this.caption(t('export.theme'));
-    this.theme = this.chooser('export-theme', THEMES);
-    this.sizeLabel = this.caption(t('export.pageSize'));
-    this.size = this.chooser('export-size', PAGE_SIZES);
-    this.orientationLabel = this.caption(t('export.orientation'));
-    this.orientation = this.chooser(
-      'export-orientation',
-      ORIENTATIONS.map((value) => ({
-        value,
-        label: value === 'portrait' ? t('export.portrait') : t('export.landscape')
-      }))
-    );
-    // The app's own hand's own settings: shown only while that hand is the one chosen.
-    this.ownOptions = document.createElement('div');
-    this.ownOptions.className = 'mt-2 grid grid-cols-3 gap-2';
-    this.ownOptions.setAttribute('data-export-own', 'true');
-    this.ownOptions.append(
-      this.row(this.themeLabel, this.theme),
-      this.row(this.sizeLabel, this.size),
-      this.row(this.orientationLabel, this.orientation)
-    );
 
     this.target = document.createElement('input');
     this.target.type = 'text';
@@ -211,41 +147,11 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     );
     this.run = this.button('export-run', t('export.run'), 'btn btn-primary btn-sm', null, 'submit');
     this.form.append(
-      this.handRow,
-      this.ownOptions,
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
       this.status,
       this.actions()
     );
-  }
-
-  /** A small caption above a control, the shape every row of this card uses. */
-  private caption(text: string): HTMLSpanElement {
-    const caption = document.createElement('span');
-    caption.className = 'text-xs opacity-70';
-    caption.textContent = text;
-    return caption;
-  }
-
-  /** A `select` filled with the values it is given, each showing either its own name or a label. */
-  private chooser(
-    name: string,
-    values: (string | { value: string; label: string })[]
-  ): HTMLSelectElement {
-    const select = document.createElement('select');
-    select.className = 'select select-sm w-full';
-    select.setAttribute(`data-${name}`, 'true');
-    select.replaceChildren(
-      ...values.map((value) => {
-        const option = document.createElement('option');
-        option.value = typeof value === 'string' ? value : value.value;
-        option.textContent = typeof value === 'string' ? value : value.label;
-        return option;
-      })
-    );
-    select.addEventListener('change', () => this.show());
-    return select;
   }
 
   /** Escape writes nothing at all: no file, and not even the configuration file. */
@@ -257,13 +163,6 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   async ask(question: ExportQuestion): Promise<ExportAnswer | null> {
     this.question = question;
     this.edited = false;
-    // The card is a *question*, and the same question asked twice is asked the same way: the hand it
-    // opens on is the kind's own — the first one that can run on this machine — and not the hand the
-    // last card happened to be answered with. Measured: a pdf card left on the app's own renderer
-    // made the *next* pdf card open on it rather than on pandoc, while any card for a single-hand
-    // kind cleared it again — a memory nothing could rely on, and one that made two probes depend on
-    // the order they ran in.
-    this.hand.value = '';
     // The kind is the menu's answer, not the card's question: the card is *about* one kind, and the
     // heading says which — the reader picked it in the File menu, one item per kind.
     this.heading.textContent = `${t('export.title')} — ${kindLabel(question.kind.kind)}`;
@@ -280,40 +179,13 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     return await answered;
   }
 
-  /** Shows the kind's own options, its target, and what would write it. */
+  /** Shows the kind's own target, its settings file, and what would write it. */
   private show(): void {
     const info = this.question?.kind ?? null;
     if (!info) {
       return;
     }
-    // The hands this kind has, rebuilt for it: a hand chosen for another kind is not one this kind
-    // answers to (the request refuses it, and the card must not offer it in the first place).
-    const chosen = this.hand.value;
-    this.hand.replaceChildren(
-      ...info.hands.map((name) => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = handLabel(name);
-        return option;
-      })
-    );
     const pandoc = this.question?.pandoc ?? null;
-    if (info.hands.includes(chosen)) {
-      // Rebuilding the options must not drop the reader's own choice: `show` runs again on the
-      // change itself, and a select that reset itself would take the theme and the page back with it.
-      this.hand.value = chosen;
-    } else if (info.hands.includes(MARKDOWN2PDF) && pandoc === null) {
-      // No pandoc on this machine, and this kind has a hand that does not need one: choose it,
-      // rather than opening on a hand that cannot run.
-      this.hand.value = MARKDOWN2PDF;
-    }
-    // Two different questions, and a kind can answer yes to neither: the app's own renderer brings
-    // *its* settings (a theme, a page, an orientation), and only a pandoc hand reads a defaults file.
-    const crate = this.hand.value === MARKDOWN2PDF;
-    const pandocHand = this.hand.value === PANDOC_HAND;
-    this.handRow.classList.toggle('hidden', info.hands.length < 2);
-    this.ownOptions.classList.toggle('hidden', !crate);
-    this.configRowElement.classList.toggle('hidden', !pandocHand);
     // The target is the note's own path, the kind's own name suffix and its extension — unless the
     // reader has written in the field, in which case what they typed is theirs.
     if (!this.edited) {
@@ -324,13 +196,10 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.configPath.textContent = info.config_exists
       ? info.config_path
       : t('export.configNew', { path: info.config_path });
-    this.status.textContent = !pandocHand
-      ? t('export.ownHand')
-      : pandoc === null
-        ? t('export.noPandoc')
-        : t('export.pandoc', { path: pandoc });
+    this.status.textContent =
+      pandoc === null ? t('export.noPandoc') : t('export.pandoc', { path: pandoc });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
-    this.run.disabled = pandocHand && pandoc === null;
+    this.run.disabled = pandoc === null;
   }
 
   /** The system's own sheet, for a reader who would rather not type a path. */
@@ -375,14 +244,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.status.textContent = t('export.noTarget');
       return;
     }
-    this.settle({
-      kind,
-      outputPath,
-      hand: this.hand.value,
-      theme: this.theme.value,
-      pageSize: this.size.value,
-      orientation: this.orientation.value
-    });
+    this.settle({ kind, outputPath });
   }
 
   private row(label: HTMLElement, control: HTMLElement, ...rest: HTMLElement[]): HTMLElement {

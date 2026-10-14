@@ -215,40 +215,6 @@ export class BibliographyManager {
     }
   }
 
-  /**
-   * The same entries for *all* the works a list of citations names — one per work, in the style's own
-   * order — which is the reference list an export appends when the app is the one doing the
-   * conversion (`ui/export/preprocess.ts`), rather than pandoc's citeproc.
-   *
-   * The entries are text, not the card's markup: what they are written into is markdown. A work cited
-   * by two different citations is one entry.
-   */
-  referenceList(values: string[]): string[] {
-    if (!bibliography) {
-      return [];
-    }
-    const ids: string[] = [];
-    for (const value of values) {
-      for (const id of referenceIds(value, (candidate) => this.holds(candidate))) {
-        if (!ids.includes(id)) {
-          ids.push(id);
-        }
-      }
-    }
-    if (ids.length === 0) {
-      return [];
-    }
-    try {
-      return bibliography
-        .format('bibliography', { entry: ids, style: this.configuredStyle() })
-        .split('\n')
-        .map((entry) => entry.trim())
-        .filter((entry) => entry !== '');
-    } catch {
-      return [];
-    }
-  }
-
   /** Whether the loaded library holds `id` — read off the same data `entries()` offers. */
   private holds(id: string): boolean {
     return this.entries().some((entry) => entry.key === id);

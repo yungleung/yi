@@ -3,9 +3,8 @@
  *
  * The order is the whole module, and it is the order Zettlr uses: ask how and where, prepare the
  * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
- * as the file it names, and a citation as the words it reads as for the hands that are not pandoc's),
- * run it,
- * and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing* is
+ * as the file it names), run it, and then say what happened. The *asking* is the card's
+ * (`export_dialog.ts`) and the *doing* is
  * Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
  * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
  * and a message for a failure, which waits for them (`services/hints.ts`, `services/messages.ts`).
@@ -37,9 +36,6 @@ import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
 import { exportDialog } from './export_dialog';
 import { exportSource } from './preprocess';
-
-/** The hand pandoc is: the one whose kinds let citeproc render the citations. */
-const PANDOC_HAND = 'pandoc';
 
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {
@@ -91,18 +87,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: (url) => fetchedPicture(url, unfetched),
-      // Pandoc's citeproc renders citations for every hand that goes through it; the app's own hands
-      // have none, so for those the app writes the words it already knows — the same words the page
-      // shows — and lists the works they name under them.
-      citations:
-        answer.hand === PANDOC_HAND
-          ? null
-          : {
-              render: (source) => bibliographyManager.format(source),
-              references: (sources) => bibliographyManager.referenceList(sources),
-              title: t('export.references')
-            }
+      fetchRemote: (url) => fetchedPicture(url, unfetched)
     });
     const outcome = await runExport({
       kind: answer.kind,
@@ -117,11 +102,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       // uses them (a book's title page and its required language, a page's `<title>`), and a kind
       // whose body already opens with the note's own heading takes neither.
       title: documentTitle(text, note?.path ?? null),
-      language: readFrontmatterLang(text) ?? language(),
-      hand: answer.hand,
-      theme: answer.theme,
-      page_size: answer.pageSize,
-      orientation: answer.orientation
+      language: readFrontmatterLang(text) ?? language()
     });
     showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about

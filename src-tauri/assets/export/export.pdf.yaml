@@ -14,10 +14,21 @@
 # so a working web picture became `…/png.jpg` and a 404 (measured; `export.docx.yaml` has the long
 # version). Left out, pandoc uses the path exactly as it was written.
 #
-# This is the **pandoc hand** of Yi's PDF export, and the engine below is the one it runs: a machine
-# without the named engine fails with the engine's own sentence, which is what the reader is shown.
-# The card's other hand is Yi's own renderer, `markdown2pdf` — no TeX suite at all, one of four
-# bundled themes and a page size and orientation; that hand does not read this file.
+# The engine below is the one this kind runs: a machine without it fails with the engine's own
+# sentence, which is what the reader is shown.
+#
+# **A note written in characters this file's font has none of comes out without them.** Nothing here
+# names a font, so XeTeX uses its own (Latin Modern) — and measured, a note with `你好，世界` in it
+# makes XeTeX warn *"Missing character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for
+# every one of them, with the page holding none of the characters. The repair is a font that has them,
+# as a variable for the template to set up: measured here, adding
+#
+#     variables:
+#       CJKmainfont: "Songti SC"   # any font the reader's machine has; "Hiragino Sans GB", "Noto
+#                                  # Sans CJK SC" are others
+#
+# puts `你好，世界` on the page, with the Latin text untouched. `mainfont:` is the same idea for a
+# note whose *whole* body is not Latin.
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the

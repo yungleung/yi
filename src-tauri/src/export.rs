@@ -1,24 +1,16 @@
 //! Turning the note on screen into a file another program can read.
 //!
-//! There are three **hands** that may do it, and a kind says which of them it has:
-//!
-//! - `pandoc`, the one most kinds have. Its parameters are a YAML *defaults file* in the app's data
-//!   folder (`<data>/export/export.<kind>.yaml`), written there from the copy this build ships the
-//!   first time that kind is used, and handed to pandoc as `--defaults`. Nothing here parses it —
-//!   what it says is pandoc's business, and a key it does not know is answered by pandoc's own
-//!   complaint. A file that is already there is never overwritten, so an edit stands.
-//! - `markdown2pdf`, the app's own renderer, which only PDF has and which no machine needs a pandoc
-//!   or a TeX suite for ([`export_with_markdown2pdf`]).
-//! - `own`, the app writing the file itself ([`export_own_text`]) — the processed markdown's whole
-//!   conversion, because the pre-process every kind shares (`ui/export/preprocess.ts`) *is* what that
-//!   kind is asked for. It ships no defaults file, since there is no pandoc left to hand one to.
+//! The conversion is pandoc's, and so are its parameters: each kind of export is a YAML *defaults
+//! file* in the app's data folder (`<data>/export/export.<kind>.yaml`), written there from the copy
+//! this build ships the first time that kind is used, and handed to pandoc as `--defaults`. Nothing
+//! here parses it — what it says is pandoc's business, and a key it does not know is answered by
+//! pandoc's own complaint. A file that is already there is never overwritten, so an edit stands.
 //!
 //! What *is* the app's business:
 //!
 //! - **which kinds exist** ([`KINDS`]): one row per kind — the name, the extension its output is
-//!   written under, the hands it may be written by, whether pandoc is needed for it at all, and the
-//!   defaults file's bytes, compiled in. A kind is added by adding a row (and an asset, when it has
-//!   a pandoc hand); nothing else in the app lists kinds.
+//!   written under, and the defaults file's bytes, compiled in. A kind is added by adding a row and
+//!   its asset; nothing else in the app lists kinds.
 //! - **which pandoc may be run** ([`find_pandoc`]): never `PATH` alone, because an app started from
 //!   Finder inherits no shell's `PATH` — the known places are searched first, and `YI_PANDOC`, or
 //!   [`export_use_pandoc`] for a probe (which cannot change the environment of the app it drives),
@@ -64,14 +56,6 @@ pub struct ExportKind {
     /// extension is markdown's own, because the default target is the note's folder and the note's
     /// name: an export that writes over the document it is exporting is not one anybody means.
     pub name_suffix: &'static str,
-    /// The hands that can write this kind, in the order the card offers them — `pandoc` for every
-    /// kind but PDF, which has two: pandoc with a TeX engine, and the app's own renderer
-    /// (`markdown2pdf`), for the machine that has no TeX suite. A hand is named here, checked there,
-    /// and a name no hand answers to is refused rather than quietly replaced by another.
-    pub hands: &'static [&'static str],
-    /// Whether the conversion is pandoc's at all. PDF will say no: it is the one kind the app can
-    /// also write itself, and the reader chooses which hand does it.
-    pub needs_pandoc: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -95,8 +79,6 @@ pub const KINDS: &[ExportKind] = &[
         kind: "docx",
         extension: "docx",
         name_suffix: "",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
         takes_a_title: false,
         needs_a_language: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
@@ -107,8 +89,6 @@ pub const KINDS: &[ExportKind] = &[
         kind: "odt",
         extension: "odt",
         name_suffix: "",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
         takes_a_title: false,
         needs_a_language: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
@@ -119,8 +99,6 @@ pub const KINDS: &[ExportKind] = &[
         // a `.tex`, and `every_shipped_kind...` below is where those two facts are held together.
         extension: "tex",
         name_suffix: "",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
         takes_a_title: false,
         needs_a_language: false,
         defaults: include_str!("../assets/export/export.latex.yaml"),
@@ -129,8 +107,6 @@ pub const KINDS: &[ExportKind] = &[
         kind: "html",
         extension: "html",
         name_suffix: "",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
         // The page's `<title>` is the reader's tab, not a line of the document: nothing in the body
         // says it, so it comes from the note.
         takes_a_title: true,
@@ -141,8 +117,6 @@ pub const KINDS: &[ExportKind] = &[
         kind: "epub",
         extension: "epub",
         name_suffix: "",
-        hands: &[PANDOC_HAND],
-        needs_pandoc: true,
         // A book has a title page and a required `<dc:title>`, and a required `<dc:language>`
         // (measured: without one pandoc writes `C`, and the title page reads UNTITLED).
         takes_a_title: true,
@@ -153,11 +127,10 @@ pub const KINDS: &[ExportKind] = &[
         kind: "pdf",
         extension: "pdf",
         name_suffix: "",
-        // The one kind with a choice: pandoc with the TeX engine the reader's config names (their
-        // Zettlr defaults file says `xelatex`), or the app's own renderer — which needs no TeX suite
-        // at all, and is what a machine without one can still make a PDF with.
-        hands: &[PANDOC_HAND, MARKDOWN2PDF_HAND],
-        needs_pandoc: true,
+        // The TeX engine the reader's config names does the work (their defaults file says
+        // `xelatex`): this is the kind that needs a TeX suite on the machine, and the one whose
+        // defaults file is worth editing for a page size — or for a font that can draw the
+        // characters the note is written in (see the asset's own header).
         takes_a_title: false,
         needs_a_language: false,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
@@ -167,47 +140,22 @@ pub const KINDS: &[ExportKind] = &[
         extension: "md",
         // Not the note's own name: `note.md` beside `note.md` is the note.
         name_suffix: ".processed",
-        // The app's own hand, and the one kind that has no pandoc hand at all: this conversion *is*
-        // the pre-process — the wikilinks written as the words they render as, the citations as
-        // theirs, the reference list appended — and asking pandoc to re-serialize the note afterwards
-        // would be a second conversion of a text that is already the answer.
-        hands: &[OWN_HAND],
-        needs_pandoc: false,
         takes_a_title: false,
         needs_a_language: false,
-        defaults: "",
+        // Yi's own file, as the epub one is: the note as every other export is handed it, and pandoc
+        // writing it back out as markdown rather than styling it into another document.
+        defaults: include_str!("../assets/export/export.markdown.yaml"),
     },
 ];
-
-/// The hand every kind has, and the one only a PDF has: pandoc with a TeX engine.
-const PANDOC_HAND: &str = "pandoc";
-/// The app's own PDF renderer, the `markdown2pdf` crate.
-const MARKDOWN2PDF_HAND: &str = "markdown2pdf";
-/// The app writing the file itself, and the only thing it has to do for it: the pre-processed text
-/// *is* the output.
-const OWN_HAND: &str = "own";
-
-/// The themes the card offers, of the six the crate bundles: the four a document wants. Its `default`
-/// and `github` are left out because a document exported from a notes app is none of those things.
-const THEMES: &[&str] = &["academic", "minimal", "compact", "modern"];
-/// The theme used when the reader has not chosen one: the quietest of the four.
-const DEFAULT_THEME: &str = "minimal";
-/// The page sizes the card offers, which are the ones the crate knows by name.
-const PAGE_SIZES: &[&str] = &["A4", "Letter", "Legal", "A3", "A5"];
-const DEFAULT_PAGE_SIZE: &str = "A4";
-const ORIENTATIONS: &[&str] = &["portrait", "landscape"];
-const DEFAULT_ORIENTATION: &str = "portrait";
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
 #[derive(Debug, Serialize, Clone)]
 pub struct ExportKindInfo {
     pub kind: String,
     pub extension: String,
-    /// What the output's name adds to the note's own, and the hands that can write this kind — the
-    /// window's whole picture of *how* an export of it can go.
+    /// What the output's name adds to the note's own (`note.processed.md` for the one kind whose
+    /// extension is markdown's own).
     pub name_suffix: String,
-    pub hands: Vec<String>,
-    pub needs_pandoc: bool,
     /// Whether the window should hand this kind the note's own name, and a language.
     pub takes_a_title: bool,
     pub needs_a_language: bool,
@@ -272,18 +220,6 @@ pub struct ExportRequest {
     /// language the app is speaking. Used by the kinds that must declare one (`needs_a_language`).
     #[serde(default)]
     pub language: Option<String>,
-    /// Which hand writes it, of the kind's own (`ExportKind::hands`). Null asks for the first.
-    #[serde(default)]
-    pub hand: Option<String>,
-    /// The app's own hand's own settings, when that is the hand: a bundled theme's name, a page size
-    /// the crate knows, and which way the page lies. Ignored by pandoc, whose page comes from its
-    /// defaults file.
-    #[serde(default)]
-    pub theme: Option<String>,
-    #[serde(default)]
-    pub page_size: Option<String>,
-    #[serde(default)]
-    pub orientation: Option<String>,
 }
 
 /// A CSL style as the window can hand it over: the name it is known by, and its own text.
@@ -487,26 +423,18 @@ pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
     })
 }
 
-/// One kind as the window reads it: the facts off its row, and the reader's own copy of its defaults
-/// file — which a kind whose conversion is the app's *own* has none of.
-///
-/// The empty path is the honest answer for such a kind rather than a path that will never be made:
-/// the window asks for it to name the file and to reveal it, and `export_config_path` refuses to
-/// write one, so a named path would be a promise the app does not keep.
+/// One kind as the window reads it: the facts off its row, and where the reader's own copy of its
+/// defaults file is — there whether or not it exists yet.
 fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
-    let config = (!kind.defaults.is_empty()).then(|| dir.join(config_file_name(kind.kind)));
+    let config = dir.join(config_file_name(kind.kind));
     ExportKindInfo {
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
         name_suffix: kind.name_suffix.to_string(),
-        hands: kind.hands.iter().map(|hand| hand.to_string()).collect(),
-        needs_pandoc: kind.needs_pandoc,
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
-        config_exists: config.as_deref().is_some_and(Path::exists),
-        config_path: config
-            .map(|path| path.to_string_lossy().into_owned())
-            .unwrap_or_default(),
+        config_exists: config.exists(),
+        config_path: config.to_string_lossy().into_owned(),
     }
 }
 
@@ -718,50 +646,15 @@ pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, 
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// Exports the note: the kind the reader chose, written by the hand they chose.
+/// Exports the note: the kind the reader chose, in pandoc's own hands.
 #[tauri::command]
 pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
-    let hand = hand_of(kind, request.hand.as_deref())?;
-    match hand {
-        PANDOC_HAND => export_with_pandoc(&app, kind, &request),
-        MARKDOWN2PDF_HAND => export_with_markdown2pdf(kind, &request),
-        _ => export_own_text(&request),
-    }
+    export_with_pandoc(&app, kind, &request)
 }
 
-/// The app writing the file itself: the text it was handed is the answer.
-///
-/// The pre-process is what every kind shares (`ui/export/preprocess.ts`), and for the kinds that are
-/// *markdown* it is also the whole conversion: the note, with its wikilinks written as the words they
-/// render as, its citations as the words *they* render as, and the works they cite listed under them.
-/// There is nothing left for pandoc or a crate to do, and re-serializing the note through one would
-/// be a second conversion of a text that is already the answer.
-fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
-    crate::files::write_atomically(Path::new(&request.output_path), &request.text)
-        .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
-    Ok(ExportOutcome { warnings: Vec::new() })
-}
-
-/// The hand asked for, or the kind's first — and a name no hand of this kind answers to is refused
-/// rather than answered by another: a reader who asked for one renderer must not be handed the
-/// other's output (the shape `find_git`'s env seam has, and for the same reason).
-fn hand_of(kind: &ExportKind, asked: Option<&str>) -> Result<&'static str, String> {
-    let asked = asked.map(str::trim).filter(|hand| !hand.is_empty());
-    let hand = match asked {
-        Some(hand) => kind
-            .hands
-            .iter()
-            .find(|known| **known == hand)
-            .copied()
-            .ok_or_else(|| format!("Yi cannot export {} with {hand}.", kind.kind))?,
-        None => kind.hands[0],
-    };
-    Ok(hand)
-}
-
-/// The hand every kind but PDF has: pandoc, the kind's own defaults file, and the note written out
-/// for it to read.
+/// The whole of an export: pandoc, the kind's own defaults file, and the note written out for it to
+/// read.
 fn export_with_pandoc(
     app: &tauri::AppHandle,
     kind: &ExportKind,
@@ -789,46 +682,6 @@ fn export_with_pandoc(
     let _ = fs::remove_file(&note);
     let _ = fs::remove_dir_all(remote_dir(&dir));
     result
-}
-
-/// The app's own hand, which only a PDF has: the `markdown2pdf` crate renders the document with its
-/// own typesetting, so a machine with no TeX suite can still write a PDF. The style is one of the
-/// four bundled themes, and the page is a size and an orientation over that theme — all three of them
-/// the reader's to choose, and each one checked here against the list the crate knows.
-fn export_with_markdown2pdf(
-    kind: &ExportKind,
-    request: &ExportRequest,
-) -> Result<ExportOutcome, String> {
-    let known = |asked: Option<&String>, allowed: &[&str], fallback: &str| {
-        asked
-            .map(String::as_str)
-            .map(str::trim)
-            .filter(|value| allowed.contains(value))
-            .unwrap_or(fallback)
-            .to_string()
-    };
-    let theme = known(request.theme.as_ref(), THEMES, DEFAULT_THEME);
-    let size = known(request.page_size.as_ref(), PAGE_SIZES, DEFAULT_PAGE_SIZE);
-    let orientation = known(
-        request.orientation.as_ref(),
-        ORIENTATIONS,
-        DEFAULT_ORIENTATION,
-    );
-    let page = format!("[page]\nsize = \"{size}\"\norientation = \"{orientation}\"\n");
-    let style = markdown2pdf::config::load_config_strict_with_overrides(
-        markdown2pdf::config::ConfigSource::Theme(&theme),
-        None,
-        Some(&page),
-    )
-    .map_err(|error| format!("Yi cannot style a {} with the {theme} theme: {error}", kind.kind))?;
-    markdown2pdf::parse_into_file_with_style(
-        request.text.clone(),
-        &request.output_path,
-        style,
-        None,
-    )
-    .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
-    Ok(ExportOutcome { warnings: Vec::new() })
 }
 
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
@@ -910,11 +763,6 @@ fn pandoc_arguments(
 #[tauri::command]
 pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
-    if kind.defaults.is_empty() {
-        // A kind whose conversion is the app's own has no configuration to read — and a file made of
-        // nothing would be a file a reader could edit with no effect.
-        return Err(format!("Yi has no configuration file for {}.", kind.kind));
-    }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
 }
@@ -959,7 +807,7 @@ mod tests {
             "markdown" => "md",
             _ => "",
         };
-        for kind in KINDS.iter().filter(|kind| !kind.defaults.is_empty()) {
+        for kind in KINDS {
             assert!(
                 kind.defaults.contains("reader: markdown"),
                 "{} defaults do not name markdown as the reader",
@@ -976,16 +824,6 @@ mod tests {
                 produced_by(writer),
                 kind.extension,
                 "{} is written under the wrong extension",
-                kind.kind
-            );
-        }
-        // The other side of the same fact: the defaults file *is* the pandoc hand's input, so a kind
-        // that ships none is a kind pandoc is never run for — and one that offered the hand anyway
-        // would be handed an empty `--defaults`, which is a file pandoc cannot read.
-        for kind in KINDS.iter().filter(|kind| kind.defaults.is_empty()) {
-            assert!(
-                !kind.hands.contains(&PANDOC_HAND),
-                "{} ships no defaults file but offers the hand that reads one",
                 kind.kind
             );
         }
@@ -1064,10 +902,6 @@ mod tests {
             references: Some("References".to_string()),
             title: Some("Going out".to_string()),
             language: Some("en-GB".to_string()),
-            hand: None,
-            theme: None,
-            page_size: None,
-            orientation: None,
         }
     }
 
@@ -1182,47 +1016,11 @@ mod tests {
     }
 
     #[test]
-    fn a_hand_a_kind_does_not_have_is_refused_rather_than_answered_by_another() {
-        // The window offers the hands a row declares, and this is the other half of that: a name no
-        // hand of this kind answers to never quietly becomes the other hand's output.
-        let pdf = kind_of("pdf").unwrap();
-        let docx = kind_of("docx").unwrap();
-
-        assert_eq!(hand_of(pdf, None).unwrap(), PANDOC_HAND);
-        assert_eq!(hand_of(pdf, Some(MARKDOWN2PDF_HAND)).unwrap(), MARKDOWN2PDF_HAND);
-        assert_eq!(hand_of(pdf, Some("  ")).unwrap(), PANDOC_HAND);
-        assert_eq!(hand_of(docx, Some(PANDOC_HAND)).unwrap(), PANDOC_HAND);
-
-        let refused = hand_of(docx, Some(MARKDOWN2PDF_HAND)).unwrap_err();
-        assert!(refused.contains("markdown2pdf"), "{refused}");
-        assert!(hand_of(pdf, Some("some-other-renderer")).is_err());
-
-        // And the kind whose output would otherwise be the note itself names it otherwise.
+    fn the_kind_whose_output_would_be_the_note_itself_names_it_otherwise() {
+        // The one row whose extension is markdown's own: its target is the note's own folder and the
+        // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
-    }
-
-    #[test]
-    fn the_apps_own_hand_writes_a_pdf_with_no_pandoc_in_the_path() {
-        // The hand a machine with no TeX suite has, and the one thing worth pinning is that it
-        // renders at all from the text an export hands it: no pandoc, no engine, the crate's own
-        // typesetting (`cargo tree` shows printpdf and rustybuzz, not a TeX tool), and the file the
-        // reader asked for.
-        let dir = scratch("markdown2pdf");
-        let out = dir.join("out.pdf");
-        let mut request = request_in(&dir);
-        request.kind = "pdf".to_string();
-        request.text = "# Going out\n\nA paragraph, and a | table | row.\n".to_string();
-        request.output_path = out.to_string_lossy().into_owned();
-        request.theme = Some("academic".to_string());
-        request.page_size = Some("Letter".to_string());
-        request.orientation = Some("landscape".to_string());
-
-        let outcome = export_with_markdown2pdf(kind_of("pdf").unwrap(), &request).unwrap();
-        assert!(outcome.warnings.is_empty());
-        let written = fs::read(&out).unwrap();
-        assert!(written.starts_with(b"%PDF-"), "{:?}", &written[..8.min(written.len())]);
-        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -1,21 +1,15 @@
 /**
- * The sixth kind, and the one kind with a *choice*: a PDF can be written by pandoc and a TeX engine,
- * or by the app's own renderer (`markdown2pdf`), which needs neither. This is the pandoc hand's half:
- * the menu item, the hands the card offers (only PDF has two, and pandoc is the one it opens on), the
- * settings each hand reads — a defaults file for pandoc, a theme, a page size and an orientation for
- * the app's own — and the page the TeX engine writes.
+ * The sixth kind: the menu item for a PDF, the card it opens (the kind, its own target, the settings
+ * file it would be written with), and the page that comes out — a real PDF through the TeX engine the
+ * file names, which is the part worth proving here and the slowest thing in the export family.
  *
- * The other hand is `export-pdf-own.js`, and it is a probe of its own because the bridge gives one
- * script five seconds: two real renderers in one script outrun that, and a probe still running when
- * the bridge gives up keeps driving the page the *next* probe is measuring.
+ * It outruns the bridge's five seconds on its own — measured, a single `xelatex` run is ~4 s here and
+ * the card's setup ~1 s — and there is nothing to split it into, because the overrun *is* one export.
+ * The harness says so when it happens (`recovered after the bridge timed out`, reading the result out
+ * of the page's stash), which is what that recovery is for.
  *
- * This half outruns those five seconds on its own — measured, a single `xelatex` run is ~4 s here and
- * the card's setup ~1 s — and there is nothing left to split it into, because the overrun *is* one
- * export. The harness says so when it happens (`recovered after the bridge timed out`, reading the
- * result out of the page's stash), which is what that recovery is for.
- *
- * @covers src-tauri/src/export.rs (run_export's two hands, export_with_pandoc),
- *   src/ui/export/export_dialog.ts (the kind's hands, and the options each of them brings)
+ * @covers src-tauri/src/export.rs (run_export, export_with_pandoc, the pdf asset),
+ *   src/ui/export/export_dialog.ts (a card that is about one kind)
  */
 (async () => {
   const t = window.__t;
@@ -105,38 +99,39 @@
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
-    // --- the kind, and the hand it offers --------------------------------------------------------
+    // --- the kind, and what would write it -------------------------------------------------------
 
-    let veil = await askForExport();
+    const veil = await askForExport();
     await sleep(150);
-    const hand = veil.querySelector('[data-export-hand]');
     check(
-      'a PDF is offered a hand, and the hand it starts on is pandoc',
-      hand !== null &&
-        [...hand.options].map((option) => option.value).join(',') === 'pandoc,markdown2pdf' &&
-        hand.value === 'pandoc' &&
+      'the pdf card is about the pdf kind, and its target is the note’s own name with a .pdf',
+      veil.dataset.exportKind === 'pdf' &&
         veil.querySelector('[data-export-target]').value === target,
-      { hands: hand === null ? null : [...hand.options].map((option) => option.value), hand: hand?.value }
+      {
+        kind: veil.dataset.exportKind ?? null,
+        target: veil.querySelector('[data-export-target]')?.value ?? null
+      }
     );
     check(
-      'with the settings that hand reads — the conversion settings file — and not the other hand’s',
-      veil.querySelector('[data-export-config]')?.closest('div')?.classList.contains('hidden') === false &&
-        veil.querySelector('[data-export-own]')?.classList.contains('hidden') === true,
+      'and the settings it would be written with are the kind’s own file, named on the card',
+      veil.querySelector('[data-export-config]')?.closest('div')?.classList.contains('hidden') ===
+        false &&
+        (veil.querySelector('[data-export-config]')?.textContent ?? '').endsWith(
+          '/export/export.pdf.yaml'
+        ),
       {
-        hand: hand?.value ?? null,
         configRow: veil.querySelector('[data-export-config]')?.closest('div')?.className ?? null,
-        config: veil.querySelector('[data-export-config]')?.textContent,
-        ownRow: veil.querySelector('[data-export-own]')?.className ?? null
+        config: veil.querySelector('[data-export-config]')?.textContent
       }
     );
 
-    // --- the pandoc hand -------------------------------------------------------------------------
+    // --- the export itself -----------------------------------------------------------------------
 
     veil.querySelector('[data-export-run]').click();
     const wrote = await until(async () => (await bytesOf(target)) !== null);
     const pdf = await bytesOf(target);
     check(
-      'the pandoc hand writes a PDF, through the TeX engine its file names',
+      'and a real PDF comes out, through the TeX engine the settings file names',
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
       { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
     );
