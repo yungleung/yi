@@ -66,6 +66,7 @@
   "export.title": "Exportieren",
   "export.kind.docx": "Word-Dokument (.docx)",
   "export.kind.odt": "LibreOffice-Dokument (.odt)",
+  "export.kind.latex": "LaTeX-Dokument (.tex)",
   "export.target": "Speichern unter",
   "export.choose": "Auswählen…",
   "export.configLabel": "Konvertierungseinstellungen",

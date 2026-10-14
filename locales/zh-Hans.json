@@ -66,6 +66,7 @@
   "export.title": "导出",
   "export.kind.docx": "Word 文档（.docx）",
   "export.kind.odt": "LibreOffice 文档（.odt）",
+  "export.kind.latex": "LaTeX 文档（.tex）",
   "export.target": "保存到",
   "export.choose": "选择…",
   "export.configLabel": "转换设置",

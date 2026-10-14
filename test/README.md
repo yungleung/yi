@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and ninety-four of them (`probe:all` runs 166 and skips 28, each skip for the reason its
+a hundred and ninety-five of them (`probe:all` runs 167 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -189,6 +189,10 @@ pandoc whose own sentence reaches the reader as a message while nothing of the n
 the configuration file it names is that kind's own, and what comes out is a valid ODF (`mimetype`
 first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which is a row, an
 asset and a tab label;
+`export-latex` — the third, and the one where the *file the document refers to* is the test: the tab
+makes the target a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
+named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
+resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}` and its `\bibitem`;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left

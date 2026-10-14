@@ -786,6 +786,21 @@ elements) unless it says otherwise.
   and the two keys the fixture library does not hold warn instead of failing — the answer the reader
   is told. What is still unmeasured is a *locator* and a *suppressed author* against a key the library
   does hold, which is the roadmap item below.
+- **The third kind is `latex`**, and it is the one where "a kind is a row and an asset" had to be
+  *checked* rather than assumed: pandoc's `latex` writer writes a `.tex`, so the row's extension and
+  the asset's writer are the first pair that do not coincide, and the drift test now holds the two
+  facts together with pandoc's names written down once (docx→docx, odt→odt, latex→tex). Two things
+  came out of measuring it. Zettlr's file is a *whole* document only because of `title-prefix`, which
+  pandoc reads as asking for one — the same file without that line is a bare fragment
+  (`\section{…}` and no `\documentclass`), which is a `.tex` nobody can compile; Yi's copy says
+  `standalone: true` outright, so a reader who trims the file still gets a document. And the
+  destinations the pre-process writes are right for LaTeX *because* of what was measured for the
+  pictures: pandoc decodes what markdown needed escaped and escapes what LaTeX needs — a picture
+  named `a b#c%.png` comes out `\includegraphics[keepaspectratio,alt={shot}]{a b\#c\%.png}`, whose
+  un-escaped path is the file the app resolved, absolute, because `self-contained: false` (Zettlr's)
+  means the pictures are *referred to* rather than carried. `export-latex.js` holds both, and the
+  reference list too: `(Smith, 2020)` in the text, `\section*{References}` and the `\bibitem` in the
+  page's CSL style.
 - **The session a probe leaves behind, and the one the app kept.** Closed in the harness.
   `restoreSession` puts the session *file* back, and the app reads that file only at a start: the
   session the probes left in *memory* stayed the one on screen, so a probe that opened a note the
@@ -807,14 +822,12 @@ elements) unless it says otherwise.
 
 ## Open, in the order to take them
 
-- **The kinds that are left: latex, html, epub.** `docx` and `odt` are in, and the shape of a kind is
-  settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label — so what
-  each one still needs is its own pass over what pandoc actually writes: a LaTeX file whose
-  `\includegraphics` paths resolve (our `--resource-path` and the pre-process' absolute destinations
-  are the same rule, but `latex` is the writer where a path with a space is most likely to bite), an
-  html export that is one file (its `self-contained` is the key that matters, and pandoc's modern
-  spelling for it is `embed-resources`), and an epub that validates (`epubcheck`, and a cover the
-  reader may want to name).
+- **The kinds that are left: html and epub.** `docx`, `odt` and `latex` are in, and the shape of a
+  kind is settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label —
+  so what each one still needs is its own pass over what pandoc actually writes: an html export that
+  is one file (its `self-contained` is the key that matters, and pandoc's modern spelling for it is
+  `embed-resources` — and it is the writer where a *remote* picture is a link unless the app has
+  fetched it), and an epub that validates (`epubcheck`, and a cover the reader may want to name).
 - **A citation's locator and its suppressed author, against a key the library holds.** The demo
   document's forms all reach citeproc (measured through the odt export), but the two entries the
   fixture library has are cited there without a locator, so `[@smith2020, p. 45]` and `-@smith2020`

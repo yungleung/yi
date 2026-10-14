@@ -66,6 +66,7 @@
   "export.title": "Export",
   "export.kind.docx": "Word document (.docx)",
   "export.kind.odt": "LibreOffice document (.odt)",
+  "export.kind.latex": "LaTeX document (.tex)",
   "export.target": "Save to",
   "export.choose": "Choose…",
   "export.configLabel": "Conversion settings",

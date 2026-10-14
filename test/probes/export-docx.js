@@ -148,7 +148,7 @@
     const tabs = [...(veil?.querySelectorAll('[data-export-tab]') ?? [])];
     check(
       'one tab per kind the app ships, and the docx is the one on show',
-      tabs.map((tab) => tab.dataset.exportTab).join(',') === 'docx,odt' &&
+      tabs.map((tab) => tab.dataset.exportTab).join(',') === 'docx,odt,latex' &&
         tabs[0].classList.contains('tab-active') &&
         !tabs[1].classList.contains('tab-active'),
       tabs.map((tab) => tab.dataset.exportTab)
