@@ -65,6 +65,7 @@
   "session.saveFailed": "Impossible d’enregistrer {title} : {message}",
   "export.title": "Exporter",
   "export.kind.docx": "Document Word (.docx)",
+  "export.kind.odt": "Document LibreOffice (.odt)",
   "export.target": "Enregistrer sous",
   "export.choose": "Choisir…",
   "export.configLabel": "Réglages de conversion",

@@ -773,17 +773,37 @@ elements) unless it says otherwise.
   `Citeproc: citation 2014 not found` in a card, because its citations are not in the fixture library.
   A fetched picture is re-fetched rather than remembered, and the run's copies are deleted with the
   note written for pandoc.
+  **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export.rs` — plus the
+  asset `src-tauri/assets/export/export.odt.yaml` (Zettlr's own LibreOffice defaults, less the same
+  one key), a tab label in the catalogues and not one line of dialog code that knows what `odt` is.
+  Measured through the app with the real pandoc, on the demo document: the file is a valid ODF
+  (`unzip -t` silent, `mimetype` its first and stored entry), the picture the document names *on the
+  web* is inside it (`Pictures/4.png`, 1811 bytes — the size the server answers with), and its
+  citations come out as `(Smith, 2020)` over a References list reading `Jones, M. (2019). …` and
+  `Smith, J. (2020). …` — the style the page shows. The demo document is also the first thing that
+  put the app's citation *forms* through citeproc at all: its `[@Abel2024, p. 45]`, `[-@Abel2024]`,
+  `[see @Abel2024; also @2014, ch. 3]`, `@Abel2024 [p. 33]` and `-@Abel2024` all arrive as citations,
+  and the two keys the fixture library does not hold warn instead of failing — the answer the reader
+  is told. What is still unmeasured is a *locator* and a *suppressed author* against a key the library
+  does hold, which is the roadmap item below.
 
 ## Open, in the order to take them
 
-- **The rest of the export kinds.** The machinery is already generic: a kind is a row in
-  `src-tauri/src/export.rs: KINDS` (name, extension, whether pandoc is needed, and the asset's own
-  bytes) plus the YAML it names, and the card reads the list from the app — no module in the webview
-  knows a kind by name except the one that gives its tab a label. So `export.odt.yaml`,
-  `export.latex.yaml`, `export.html.yaml` and `export.epub.yaml` are Zettlr's defaults for those
-  kinds (`writer`, plus `standalone`/`self-contained` where the format has a document of its own),
-  and each one wants its own pass over what pandoc actually writes: an odt that opens, an epub that
-  validates, a LaTeX file whose `\includegraphics` paths resolve.
+- **The kinds that are left: latex, html, epub.** `docx` and `odt` are in, and the shape of a kind is
+  settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label — so what
+  each one still needs is its own pass over what pandoc actually writes: a LaTeX file whose
+  `\includegraphics` paths resolve (our `--resource-path` and the pre-process' absolute destinations
+  are the same rule, but `latex` is the writer where a path with a space is most likely to bite), an
+  html export that is one file (its `self-contained` is the key that matters, and pandoc's modern
+  spelling for it is `embed-resources`), and an epub that validates (`epubcheck`, and a cover the
+  reader may want to name).
+- **A citation's locator and its suppressed author, against a key the library holds.** The demo
+  document's forms all reach citeproc (measured through the odt export), but the two entries the
+  fixture library has are cited there without a locator, so `[@smith2020, p. 45]` and `-@smith2020`
+  are unmeasured: whether the page number lands where citeproc's own syntax expects it, and whether
+  the suppressed author leaves the parentheses pandoc would. Two lines in a probe with the fixture
+  library answer it, and `suppress-bibliography` is the third question for a reader who wants the
+  keys resolved and no list.
 - **PDF, which has two hands.** It is the one kind that may be written *without* pandoc, and
   `KINDS[].needs_pandoc` already carries the answer the card reads (its status line says which hand
   a kind would use, and the button refuses when that hand is missing). So the tab has to offer both:
@@ -792,12 +812,6 @@ elements) unless it says otherwise.
   decision: `window.print()` in the webview prints the *chrome as well as the page* unless the
   stylesheet is told not to, and it computes page breaks from the viewport, while a Rust-side render
   needs an engine the app would then have to ship.
-- **The citation *forms* the editor writes and citeproc does not read.** With the library handed over
-  (`--bibliography`), `[@key]` and `@key` resolve. What is untested is the rest of the app's own
-  citation syntax — a locator (`[@key, p. 45]`), several keys in one bracket, a narrative citation
-  with the author outside it — against citeproc's parser, and `suppress-bibliography` for a reader
-  who wants the keys resolved but no list. A probe over each form is the way in, and the fixtures'
-  library has two entries to write them with.
 - **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
   types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
   to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc
