@@ -204,8 +204,8 @@ ask (held by the recorder: a whole restore is one `show` and none of the write v
 (`src/ui/export/export_dialog.ts`) with a tab per kind the app ships, the target the file is written
 to, and the **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
-kinds are Rust's (`src-tauri/src/export.rs: KINDS`) and there are three of them so far, **docx**,
-**odt** and **latex**: each is a name, the extension its
+kinds are Rust's (`src-tauri/src/export.rs: KINDS`) and there are four of them so far, **docx**,
+**odt**, **latex** and **html**: each is a name, the extension its
 output is written under, whether pandoc is needed at all (PDF will say no), and the bytes of a
 pandoc *defaults file* — `src-tauri/assets/export/export.<kind>.yaml`, written into
 `<app data>/export/` the first time that kind is used and **never overwritten again**, which is what
@@ -565,9 +565,12 @@ harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and 
 session half too, for **every** run: it reads `load_session` up front and writes it back through
 `save_session` once the probe has reported, waiting out the app's own 800 ms session debounce first —
 because a probe loads documents into the maintainer's app, and one that types into them leaves its
-copy in the session the reader's next start restores. The app is then told to read that session back
-(`reloadSession` → `documentSession.load`), because the file is the *next start's* copy and the live
-session is the one the *next probe* drives — and the session the run found is written to a note
+copy in the session the reader's next start restores. The app is then left holding **no** documents
+at all (`emptyTheAppSession`: the empty session is written, the app reads it, and the reader's own
+goes back into the file afterwards) — because the live session is the one the *next probe* drives,
+and a live session that holds a document turns the harness's own starting document into an *already
+open* question: measured, a prompt card was up at the start of every run and `typed-text` failed 27
+of its checks. The session the run found is written to a note
 (`<tmpdir>/yi-probe-session.json`, the config's own arrangement) so a run that dies mid-probe has its
 documents put back rather than left as the reader's. A fixture is
 disposable *as a fixture* — `npm run fixtures` refreshes it — while the reader's own notes are not,

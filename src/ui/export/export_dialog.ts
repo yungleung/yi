@@ -50,6 +50,9 @@ function kindLabel(kind: string): string {
   if (kind === 'latex') {
     return t('export.kind.latex');
   }
+  if (kind === 'html') {
+    return t('export.kind.html');
+  }
   // A kind with no label of its own is shown by its name: an untranslated tab is better than none,
   // and this is the same fallback `i18n.ts` gives a key no catalogue holds.
   return kind;

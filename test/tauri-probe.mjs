@@ -628,6 +628,23 @@ async function reloadSession() {
 }
 
 /**
+ * Leaves the app with **no** documents open, and the file with the reader's.
+ *
+ * A probe drives a document of its own: the harness hands it a starting document and the probe loads
+ * whatever it needs. A live session that still holds a document therefore fights all of that — the
+ * starting document arrives as *already open*, which is a question, and a question card over the
+ * page is a probe that measures nothing (measured: a card was up at the start of *every* run once
+ * the session was restored into the app rather than cleared, and `typed-text` failed 27 of its
+ * checks). So the *empty* session is written and the app is told to read it, and then the reader's
+ * own session goes back into the file — which the app does not read again until its next start,
+ * where the reader's documents are exactly what it should find.
+ */
+async function emptyTheAppSession() {
+  await writeSessionText(EMPTY_SESSION);
+  await reloadSession();
+}
+
+/**
  * Puts back the session a run that died left behind, and keeps this run's own copy of what it
  * found — the config's arrangement (`openTheConfig`), for the documents.
  *
@@ -652,9 +669,6 @@ async function openTheSession() {
         ')'
     );
     await writeSessionText(left);
-    // …and the app reads it, so the live session is the one that was put back rather than the
-    // documents the killed run left on screen.
-    await reloadSession();
   }
   const found = await readSessionText();
   if (found !== null) {
@@ -707,8 +721,9 @@ if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.er
 }
 await restoreConfig(previousConfig);
 forgetTheConfig();
+// The app is left holding no documents, and the file the reader's own: `emptyTheAppSession`.
+await emptyTheAppSession();
 await restoreSession(previousSession);
-await reloadSession();
 forgetTheSession();
 await restoreLanguage(languageBeforeProbing);
 await releaseTheOpener();

@@ -67,6 +67,7 @@
   "export.kind.docx": "Word 文書（.docx）",
   "export.kind.odt": "LibreOffice 文書（.odt）",
   "export.kind.latex": "LaTeX 文書（.tex）",
+  "export.kind.html": "HTML 文書（.html）",
   "export.target": "保存先",
   "export.choose": "選択…",
   "export.configLabel": "変換の設定",

@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and ninety-five of them (`probe:all` runs 167 and skips 28, each skip for the reason its
+a hundred and ninety-six of them (`probe:all` runs 168 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -193,6 +193,10 @@ asset and a tab label;
 makes the target a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
 resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}` and its `\bibitem`;
+`export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
+picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
+heading is shifted the way the file says, the math is marked for MathJax (a CDN script, the one
+thing that leaves the page), and the citations become a headed `References` list;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left
@@ -234,10 +238,11 @@ live index; the newest probes carry a header naming what they cover:
 - **The fixture is a test's, never the reader's.** A dev app holds the maintainer's config (their
   workspace, bibliography and layout) and their session (the documents they had open).
   `--with-workspace` snapshots and restores the config for you, and the harness snapshots and
-  restores the **session** for every run (`test/tauri-probe.mjs`) — the file, and the app's own
-  reading of it, so the session the *next* probe drives is the reader's and not the last probe's —
-  and a run that dies leaves a note the next one puts back. A probe does not have to do any of that,
-  and a probe that writes works in a folder of its own under `$HOME`, never in the reader's notes.
+  restores the **session** for every run (`test/tauri-probe.mjs`): the reader's own goes back into
+  the file, the app is left holding **no** documents (a probe drives a document of its own, and a
+  live session that holds one turns the harness's starting document into a question), and a run that
+  dies leaves a note the next one puts back. A probe does not have to do any of that, and a probe
+  that writes works in a folder of its own under `$HOME`, never in the reader's notes.
 - A probe header may declare what it needs: `@needs-workspace` (the app pointed at the
   fixtures: run with `--with-workspace`), `@needs-source-workspace` (the maintainer's own
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it

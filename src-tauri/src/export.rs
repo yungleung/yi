@@ -82,6 +82,12 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
+    ExportKind {
+        kind: "html",
+        extension: "html",
+        needs_pandoc: true,
+        defaults: include_str!("../assets/export/export.html.yaml"),
+    },
 ];
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
@@ -688,6 +694,7 @@ mod tests {
             "docx" => "docx",
             "odt" => "odt",
             "latex" => "tex",
+            "html" => "html",
             _ => "",
         };
         for kind in KINDS {

@@ -801,6 +801,21 @@ elements) unless it says otherwise.
   means the pictures are *referred to* rather than carried. `export-latex.js` holds both, and the
   reference list too: `(Smith, 2020)` in the text, `\section*{References}` and the `\bibitem` in the
   page's CSL style.
+- **The fourth kind is `html`**, the one whose promise is *one file*, and `self-contained: true`
+  (Zettlr's) is what keeps it: measured, the note's picture comes out as
+  `src="data:image/png;base64,…"` and the stylesheet as a `<style>` in the head, so the page can be
+  moved or mailed as it stands. It composes with the work three turns back in a way worth naming: a
+  picture the note names *on the web* ends up carried in the page too, because the **app** fetched it
+  for the run and pandoc inlined the file it was handed — on a pandoc that cannot fetch anything
+  itself. The exception is MathJax: a script is inlined only when pandoc can fetch it, so on this
+  machine every html export of a note with math warns that it could not fetch the CDN URL and leaves
+  the `<script src="https://cdn.jsdelivr.net/…">` in place — the page renders its math when it is
+  opened with a network and shows the reader's own TeX when it is not. That is Zettlr's arrangement
+  (their `html-math-method`, and the URL is pandoc's own default), the asset's header says so and
+  names the alternative (`method: mathml`, no script at all), and the warning reaches the reader as a
+  message rather than being swallowed. `export-html.js` holds the page: the heading shifted the way
+  the file says, the picture carried, the math marked, and the citations as `(Smith, 2020)` over a
+  `References` heading and its entry.
 - **The session a probe leaves behind, and the one the app kept.** Closed in the harness.
   `restoreSession` puts the session *file* back, and the app reads that file only at a start: the
   session the probes left in *memory* stayed the one on screen, so a probe that opened a note the
@@ -819,15 +834,27 @@ elements) unless it says otherwise.
   gone once the run finished. What that protects against was real: the reader's own `session.json` had
   been holding a *versioning probe's* note as the document to open (and the app restored it at every
   start), which is the pollution the note now prevents; that one file was cleared by hand, once.
+  **And the first fix was wrong**, which the next sweep caught: telling the app to read the session
+  that had just been *restored* left the reader's own document in the live session, and the harness's
+  starting document then arrived as *already open* — a question, which left a prompt card over the
+  page for the whole run. Measured: a card up at the start of *every* run, and `typed-text` failing
+  **27** of its checks, with `paste-blocks`, `undo-run-taken-back`, `inline-math-source`,
+  `fence-open-typing` and `display-math-source` failing by name too. What the app should be left
+  holding is **nothing** (`emptyTheAppSession`: the empty session is written, the app reads it, and
+  the reader's own goes back into the file afterwards, which the app does not read again until its
+  next start) — the file is the reader's, the *live* session is a probe's, and those are two different
+  things. All six probes pass again, and the suite with the fourth kind in it is **167/168** — the one
+  failure is `a4-page.js`, the probe this document already lists as failing only inside a sweep and
+  passing by name (checked again here: it passes).
 
 ## Open, in the order to take them
 
-- **The kinds that are left: html and epub.** `docx`, `odt` and `latex` are in, and the shape of a
-  kind is settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label —
-  so what each one still needs is its own pass over what pandoc actually writes: an html export that
-  is one file (its `self-contained` is the key that matters, and pandoc's modern spelling for it is
-  `embed-resources` — and it is the writer where a *remote* picture is a link unless the app has
-  fetched it), and an epub that validates (`epubcheck`, and a cover the reader may want to name).
+- **The kind that is left: epub.** `docx`, `odt`, `latex` and `html` are in, and the shape of a kind
+  is settled — a row in `src-tauri/src/export.rs: KINDS`, the YAML it names, and a tab label — so
+  what epub still needs is its own pass over what pandoc actually writes: a file that validates
+  (`epubcheck`, which the machine may not have), a cover the reader may want to name, and the
+  metadata (title, author, language) a book's own front matter takes from the note's frontmatter
+  rather than from a defaults file.
 - **A citation's locator and its suppressed author, against a key the library holds.** The demo
   document's forms all reach citeproc (measured through the odt export), but the two entries the
   fixture library has are cited there without a locator, so `[@smith2020, p. 45]` and `-@smith2020`

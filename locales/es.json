@@ -67,6 +67,7 @@
   "export.kind.docx": "Documento de Word (.docx)",
   "export.kind.odt": "Documento de LibreOffice (.odt)",
   "export.kind.latex": "Documento de LaTeX (.tex)",
+  "export.kind.html": "Documento HTML (.html)",
   "export.target": "Guardar en",
   "export.choose": "Elegir…",
   "export.configLabel": "Ajustes de conversión",
