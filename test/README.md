@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and eighty-nine of them (`probe:all` runs 166 and skips 23, each skip for the reason its
+a hundred and ninety-four of them (`probe:all` runs 166 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
