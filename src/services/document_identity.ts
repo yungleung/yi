@@ -39,6 +39,21 @@ export function readFrontmatterId(content: string): string | null {
 }
 
 /**
+ * The `lang` the frontmatter gives, or null — the language the *note* is written in, which is not
+ * the language the app is speaking. An export hands pandoc the app's own language when the note is
+ * silent (`ui/export/export_flow.ts`), so a note that says one has to be read here rather than
+ * overruled there.
+ */
+export function readFrontmatterLang(content: string): string | null {
+  const frontmatter = readFrontmatterBlock(content);
+  if (!frontmatter) {
+    return null;
+  }
+  const match = frontmatter.match(/^\s*lang:\s*(.+?)\s*$/m);
+  return match ? unquote(match[1]) : null;
+}
+
+/**
  * The first fourteen digits at the *top* of the document — an id written without a key of its
  * own. Whole runs only (a longer number is not an id), and only before the first blank line.
  *

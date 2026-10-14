@@ -80,6 +80,7 @@
   "export.cancel": "Cancel",
   "export.run": "Export",
   "export.done": "Exported to {file}",
+  "export.pictureNotFetched": "The picture at {url} could not be fetched, so the document names it instead.",
   "export.references": "References",
   "version.title": "Version this workspace with Git?",
   "version.consent": "Yi can keep a version of the note you are writing — but only when you ask for one. The versions stay in a git repository on this machine, and nothing is ever pushed anywhere.",

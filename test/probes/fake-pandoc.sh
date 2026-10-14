@@ -10,8 +10,11 @@
 # It is committed rather than written by the probe, because a probe can make files and folders
 # through the app but cannot set the executable bit on one.
 #
-# An output path with `refuse` in it is the pandoc that will not write: a sentence on stderr and a
-# non-zero status, which is what the app has to turn into a message for the reader.
+# An output *named* `refuse…` is the pandoc that will not write: a sentence on stderr and a non-zero
+# status, which is what the app has to turn into a message for the reader. The name and not the whole
+# path, because the path holds the folder a probe made — measured the hard way: a probe whose folder
+# was called `yi-probe-export-refused-…` had every export refused, including the ones meant to write
+# (`export-refused.js`'s picture).
 
 log="${HOME}/yi-probe-fake-pandoc"
 mkdir -p "$log" 2>/dev/null
@@ -42,8 +45,8 @@ done
 
 [ -n "$note" ] && cp "$note" "$log/input.md" 2>/dev/null
 
-case "$output" in
-  *refuse*)
+case "$(basename "$output")" in
+  refuse*)
     echo "the fake pandoc refuses to write $output" >&2
     exit 1
     ;;

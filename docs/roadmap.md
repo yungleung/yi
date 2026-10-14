@@ -773,6 +773,15 @@ elements) unless it says otherwise.
   `Citeproc: citation 2014 not found` in a card, because its citations are not in the fixture library.
   A fetched picture is re-fetched rather than remembered, and the run's copies are deleted with the
   note written for pandoc.
+  **And when the app's *own* fetch fails** — which is what a reader sees as a missing picture, and
+  what one did: a book whose fetch had failed carried the picture's *description*, and the only word
+  about it came from pandoc, blaming itself ("compiled without HTTP support") for a failure that was
+  the app's. The window now says it in its own words, naming the URL (`export.pictureNotFetched`, in
+  all eight catalogues, one message for up to four of them) and the download is retried once, because
+  a fetch that fails once is likelier to be a network that blinked than a picture that is not there.
+  Measured both ways: with a curl that cannot run, the reader gets the app's sentence with the URL and
+  the prepared note keeps the URL as written; with the real curl, the same note's picture is in the
+  book (`EPUB/media/file0.png`, 1811 bytes — the server's own length). `export-refused.js` holds it.
   **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export.rs` — plus the
   asset `src-tauri/assets/export/export.odt.yaml` (Zettlr's own LibreOffice defaults, less the same
   one key), a tab label in the catalogues and not one line of dialog code that knows what `odt` is.
@@ -839,6 +848,17 @@ elements) unless it says otherwise.
   - What is *not* proved: `epubcheck` is not on this machine, so the book's validity is structural
     (the container, the parts, the metadata) and read by hand. A machine with `epubcheck` could hold
     the next epub to a validator, which is the roadmap item below.
+  - **A book must declare a title and a language, and the note's own is the first answer.** Measured:
+    with neither, pandoc's title page reads UNTITLED and `dc:language` is the machine locale's `C` —
+    and a reader who exported the demo document saw exactly that page. So a kind's row now says
+    whether it **carries its own name** (a book's title page and its `<dc:title>`, a page's
+    `<title>`: epub and html) and whether it **must declare a language** (epub: `dc:language` is
+    required of one); the window hands the note's own name (frontmatter title, else its first
+    heading, else its file's name) and language (the frontmatter's `lang:`, else the language the app
+    is speaking) over for *every* kind, and the row decides. Measured the other way round, which is
+    what settled it: given a title in the metadata, a docx and an odt of a note that opens with its
+    own `#` heading say that name **twice** (a Title paragraph and the heading), and `lang` in a
+    LaTeX run picks a hyphenation package by language — so those three take neither.
 - **The session a probe leaves behind, and the one the app kept.** Closed in the harness.
   `restoreSession` puts the session *file* back, and the app reads that file only at a start: the
   session the probes left in *memory* stayed the one on screen, so a probe that opened a note the

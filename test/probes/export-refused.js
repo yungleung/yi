@@ -55,7 +55,9 @@
   const recorder = `${home}/yi-probe-fake-pandoc`;
   const notePath = `${folder}/note.md`;
   const refusedTarget = `${folder}/refuse.docx`;
-  const note = '# A note that will not go out\n\nA [[other]] too.\n';
+  const pictureTarget = `${folder}/picture.docx`;
+  const url = 'https://placehold.co/200x80/png';
+  const note = `# A note that will not go out\n\nA [[other]] too, and a picture from the web: ![shot](${url}).\n`;
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -148,7 +150,54 @@
       scratch.endsWith('.md') && !(await exists(scratch)),
       { scratch, stillThere: await exists(scratch) }
     );
+
+    // --- a picture the app cannot fetch ----------------------------------------------------------
+
+    // The third way an export is not quite what the reader asked for: the *app's* own fetch fails.
+    // Before this, the only word about it came from pandoc — which blames itself ("pandoc was
+    // compiled without HTTP support") for a failure that was the app's, and leaves the reader
+    // looking at a document that names a picture instead of showing it. The app says it now, in its
+    // own words and with the URL: measured, a book whose fetch failed carried the picture's
+    // *description* and nothing said which URL was missing.
+    await api.pointAtCurl('/definitely/not/curl');
+    for (const close of [...document.querySelectorAll('[data-message-close]')]) {
+      close.click();
+    }
+    await sleep(200);
+    await askForExport();
+    document.querySelector('[data-export-target]').value = pictureTarget;
+    document.querySelector('[data-export-run]').click();
+    const warned = await until(() =>
+      [...document.querySelectorAll('[data-message-text]')].some((text) =>
+        (text.textContent ?? '').includes(url)
+      )
+    );
+    const said = [...document.querySelectorAll('[data-message-text]')]
+      .map((text) => text.textContent ?? '')
+      .find((text) => text.includes(url));
+    // The app's sentence, in whatever language it is speaking: asked of the catalogue rather than
+    // spelled here, because the reader's message is the app's own words and this machine may not be
+    // speaking English.
+    const i18n = await t.app('/src/services/i18n.ts');
+    const expected = i18n.t('export.pictureNotFetched', { url });
+    check(
+      'a picture the app could not fetch is said by the app, with its URL',
+      warned && said === expected,
+      {
+        said: said ?? null,
+        expected: expected,
+        messages: [...document.querySelectorAll('[data-message-text]')].map((text) => text.textContent)
+      }
+    );
+    check(
+      'and the file it wrote is one the note’s picture is not in',
+      // The *prepared* note still holds the URL — the app did not pretend to have the picture — so
+      // the document is whatever pandoc could make of a picture it cannot fetch itself.
+      (await exists(pictureTarget)) && (await readText(`${recorder}/input.md`)).includes(url),
+      { target: pictureTarget, kept: (await readText(`${recorder}/input.md`)).includes(url) }
+    );
   } finally {
+    await api.pointAtCurl(null);
     await api.pointAtPandoc(null);
     for (const close of [...document.querySelectorAll('[data-message-close]')]) {
       close.click();

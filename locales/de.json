@@ -80,6 +80,7 @@
   "export.cancel": "Abbrechen",
   "export.run": "Exportieren",
   "export.done": "Nach {file} exportiert",
+  "export.pictureNotFetched": "Das Bild unter {url} konnte nicht geladen werden; das Dokument nennt es stattdessen.",
   "export.references": "Literaturverzeichnis",
   "version.title": "Diesen Arbeitsbereich mit Git versionieren?",
   "version.consent": "Yi kann eine Version der Notiz behalten, an der du gerade schreibst — aber nur, wenn du es verlangst. Die Versionen bleiben in einem Git-Repository auf diesem Rechner, und nichts wird irgendwohin übertragen.",

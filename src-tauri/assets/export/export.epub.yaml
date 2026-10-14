@@ -21,6 +21,14 @@
 #   en-GB`. So this file says nothing about metadata, and a note's own answer stands. A note with no
 #   `title:` makes a book called UNTITLED, which is the honest name for it.
 #
+#   What the note does *not* say, the app fills in on the command line — because an EPUB has to
+#   declare both a title and a language, and a book whose title page reads UNTITLED and whose
+#   `dc:language` is the machine locale's `C` is one a reader cannot shelve and a validator cannot
+#   pass: the note's own name (its frontmatter title, else its first heading, else its file's name)
+#   and a language (the frontmatter's `lang:`, else the language the app is speaking). The kinds
+#   that write the title as *body* content take neither — measured: given one, a docx of a note that
+#   opens with its own `#` heading says that name **twice**.
+#
 # Keys a reader may add, which pandoc reads and this file leaves alone:
 #
 # - `epub-cover-image: cover.png` — a cover, the one part of a book no note can draw.

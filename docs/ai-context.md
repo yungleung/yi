@@ -213,8 +213,13 @@ makes a reader's edit theirs (the docx one is Zettlr's own defaults file, less o
 `default-image-extension: .jpg` is applied by pandoc to a URL whose path has no extension, turning a
 working web image into a 404 — measured — so it is left out and the header says so). The
 window is told the list (`src/api/export.ts: exportKinds`) and knows no kind by name except the one
-that labels its tab, so a new kind is a row and an asset and nothing else. Three facts about a run:
-every kind shares one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own reading
+that labels its tab, so a new kind is a row and an asset and nothing else. A row also says whether
+its kind **carries its own name** (a book's title page and its
+`<dc:title>`, a page's `<title>`) and whether it **must declare a language**: the window hands over
+the note's own name and language whatever the kind is, and the row decides whether they are used —
+measured, a docx whose body already opens with the note's own heading says that name *twice* if it is
+given one, and a `lang` in a LaTeX run picks a hyphenation package by language. And every kind shares
+one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own reading
 of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
 image's destination written as the file the app resolves it to (absolute and encoded, through
 `workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so

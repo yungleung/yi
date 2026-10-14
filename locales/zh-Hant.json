@@ -80,6 +80,7 @@
   "export.cancel": "取消",
   "export.run": "匯出",
   "export.done": "已匯出至 {file}",
+  "export.pictureNotFetched": "無法取得 {url} 的圖片，文件中只留下了它的名字。",
   "export.references": "參考文獻",
   "version.title": "用 Git 為這個工作區保留版本？",
   "version.consent": "Yi 可以在你要求時，為正在寫的筆記保留一個版本——只有你要求時才會。版本保存在本機的 git 倉庫裡，不會推送到任何地方。",

@@ -80,6 +80,7 @@
   "export.cancel": "キャンセル",
   "export.run": "エクスポート",
   "export.done": "{file} に書き出しました",
+  "export.pictureNotFetched": "{url} の画像を取得できなかったため、文書にはその名前だけが残りました。",
   "export.references": "参考文献",
   "version.title": "このワークスペースを Git で記録しますか？",
   "version.consent": "Yi は、あなたが求めたときにだけ、書いているノートのバージョンを残します。バージョンはこのマシンの git リポジトリに置かれ、どこかへ送られることはありません。",
