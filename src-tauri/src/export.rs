@@ -74,6 +74,14 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
+    ExportKind {
+        kind: "latex",
+        // The one kind whose output is *not* named after its writer: pandoc's `latex` writer writes
+        // a `.tex`, and `every_shipped_kind...` below is where those two facts are held together.
+        extension: "tex",
+        needs_pandoc: true,
+        defaults: include_str!("../assets/export/export.latex.yaml"),
+    },
 ];
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
@@ -668,10 +676,20 @@ mod tests {
     }
 
     #[test]
-    fn every_shipped_defaults_file_names_what_it_reads_and_writes() {
+    fn every_shipped_kind_names_the_reader_and_writer_pandoc_is_given_and_the_file_that_comes_out() {
         // The asset is pandoc's own input, so the one thing worth holding it to is that it still
         // says which reader and writer it is for: a defaults file that lost its `writer` would
         // export the reader's note as pandoc's own default format, silently.
+        //
+        // The *extension* is the app's own fact and cannot be read off the file — `latex` writes a
+        // `.tex`, and docx and odt happen to be named after their writers — so pandoc's names are
+        // written down once, here, which is what keeps a row and its asset from drifting apart.
+        let produced_by = |writer: &str| match writer {
+            "docx" => "docx",
+            "odt" => "odt",
+            "latex" => "tex",
+            _ => "",
+        };
         for kind in KINDS {
             assert!(
                 kind.defaults.contains("reader: markdown"),
@@ -684,7 +702,13 @@ mod tests {
                 .find_map(|line| line.strip_prefix("writer: "))
                 .map(str::trim)
                 .unwrap_or("");
-            assert_eq!(writer, kind.extension, "{} defaults", kind.kind);
+            assert_eq!(writer, kind.kind, "{} defaults name another writer", kind.kind);
+            assert_eq!(
+                produced_by(writer),
+                kind.extension,
+                "{} is written under the wrong extension",
+                kind.kind
+            );
         }
     }
 
