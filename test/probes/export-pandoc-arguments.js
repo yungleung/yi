@@ -222,7 +222,7 @@
     const i18n = await t.app('/src/services/i18n.ts');
     const epubTarget = `${folder}/out.epub`;
     await askForExport();
-    document.querySelector('[data-export-tab="epub"]').click();
+    document.querySelector('[data-export-kind="epub"]').click();
     await sleep(150);
     document.querySelector('[data-export-target]').value = epubTarget;
     document.querySelector('[data-export-run]').click();

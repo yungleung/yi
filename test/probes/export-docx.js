@@ -145,13 +145,14 @@
       open: open()
     });
     const veil = card();
-    const tabs = [...(veil?.querySelectorAll('[data-export-tab]') ?? [])];
+    const kinds = [...(veil?.querySelectorAll('[data-export-kind]') ?? [])];
     check(
-      'one tab per kind the app ships, and the docx is the one on show',
-      tabs.map((tab) => tab.dataset.exportTab).join(',') === 'docx,odt,latex,html,epub' &&
-        tabs[0].classList.contains('tab-active') &&
-        !tabs[1].classList.contains('tab-active'),
-      tabs.map((tab) => tab.dataset.exportTab)
+      'one item per kind the app ships, and the docx is the one on show',
+      kinds.map((kind) => kind.dataset.exportKind).join(',') ===
+        'docx,odt,latex,html,epub,pdf,markdown' &&
+        kinds[0].closest('li')?.classList.contains('menu-active') === true &&
+        kinds[1].closest('li')?.classList.contains('menu-active') === false,
+      kinds.map((kind) => kind.dataset.exportKind)
     );
     check(
       'the target starts in the note’s own folder, named after the note',
@@ -170,7 +171,7 @@
     // are read, and none of them hanging outside it. What a screenshot would be looked at for.
     const cardBox = box(veil.querySelector('[data-export-card]'));
     const rows = [
-      '[data-export-tabs]',
+      '[data-export-kinds]',
       '[data-export-target]',
       '[data-export-config]',
       '[data-export-status]',

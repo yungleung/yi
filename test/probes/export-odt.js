@@ -114,8 +114,8 @@
     // --- choosing the kind ---------------------------------------------------------------------
 
     const veil = card();
-    const tabs = [...veil.querySelectorAll('[data-export-tab]')];
-    const odt = tabs.find((tab) => tab.dataset.exportTab === 'odt') ?? null;
+    const tabs = [...veil.querySelectorAll('[data-export-kind]')];
+    const odt = tabs.find((tab) => tab.dataset.exportKind === 'odt') ?? null;
     const field = veil.querySelector('[data-export-target]');
     const docxTarget = field.value;
     odt?.click();
@@ -123,8 +123,8 @@
     check(
       'pressing the odt tab moves the choice, and the target’s extension with it',
       odt !== null &&
-        odt.classList.contains('tab-active') &&
-        !tabs[0].classList.contains('tab-active') &&
+        odt.closest('li')?.classList.contains('menu-active') === true &&
+        tabs[0].closest('li')?.classList.contains('menu-active') === false &&
         docxTarget.endsWith('/note.docx') &&
         field.value === target,
       { docxTarget, chosen: field.value }
@@ -163,7 +163,7 @@
 
     await invoke('plugin:event|emit', { event: 'export', payload: null });
     await until(() => open(), 60);
-    card().querySelector('[data-export-tab="odt"]')?.click();
+    card().querySelector('[data-export-kind="odt"]')?.click();
     await sleep(150);
     const { kinds } = await api.exportKinds();
     const odtConfig = kinds.find((kind) => kind.kind === 'odt')?.config_path ?? '';

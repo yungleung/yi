@@ -122,13 +122,13 @@
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
     const docxTarget = field.value;
-    const latex = veil.querySelector('[data-export-tab="latex"]');
+    const latex = veil.querySelector('[data-export-kind="latex"]');
     latex?.click();
     await sleep(150);
     check(
       'pressing the latex tab moves the choice, and the target becomes a .tex',
       latex !== null &&
-        latex.classList.contains('tab-active') &&
+        latex.closest('li')?.classList.contains('menu-active') === true &&
         docxTarget.endsWith('/note.docx') &&
         field.value === target,
       { docxTarget, chosen: field.value }

@@ -177,13 +177,13 @@
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
     const docxTarget = field.value;
-    const epub = veil.querySelector('[data-export-tab="epub"]');
+    const epub = veil.querySelector('[data-export-kind="epub"]');
     epub?.click();
     await sleep(150);
     check(
       'pressing the epub tab moves the choice, and the target becomes a .epub',
       epub !== null &&
-        epub.classList.contains('tab-active') &&
+        epub.closest('li')?.classList.contains('menu-active') === true &&
         docxTarget.endsWith('/note.docx') &&
         field.value === target,
       { docxTarget, chosen: field.value }

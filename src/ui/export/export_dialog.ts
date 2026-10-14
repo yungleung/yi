@@ -24,20 +24,36 @@ import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { QuestionCard } from '../floating/question_card';
 
-/** What the card is asked with: the kinds to offer, and the target to start on. */
+/** What the card is asked with: the kinds to offer, and the note's own path without an extension. */
 export interface ExportQuestion {
   kinds: ExportKindInfo[];
   /** The pandoc the app would run, or null when this machine has none. */
   pandoc: string | null;
-  /** The path to write to before the reader changes anything. */
-  defaultTarget: string;
+  /**
+   * The note's own path with no extension (`/notes/a note`): the card builds a target out of it and
+   * the chosen kind's own name suffix and extension, which is how the markdown kind's output can be
+   * `a note.processed.md` rather than the note itself.
+   */
+  baseTarget: string;
 }
 
-/** The reader's answer: which kind, and where the file goes. */
+/** The reader's answer: which kind, where the file goes, and which hand with which settings. */
 export interface ExportAnswer {
   kind: string;
   outputPath: string;
+  hand: string;
+  theme: string;
+  pageSize: string;
+  orientation: string;
 }
+
+/** The bundled themes the card offers, of the ones the app's own renderer ships. */
+const THEMES = ['academic', 'minimal', 'compact', 'modern'];
+/** The page sizes it knows by name, and the two ways a page can lie. */
+const PAGE_SIZES = ['A4', 'Letter', 'Legal', 'A3', 'A5'];
+const ORIENTATIONS = ['portrait', 'landscape'];
+/** The hand only a PDF has, and that the app can run with no pandoc at all. */
+const MARKDOWN2PDF = 'markdown2pdf';
 
 /** The label a kind is offered under, or its own name when the catalogues have none. */
 function kindLabel(kind: string): string {
@@ -56,20 +72,43 @@ function kindLabel(kind: string): string {
   if (kind === 'epub') {
     return t('export.kind.epub');
   }
-  // A kind with no label of its own is shown by its name: an untranslated tab is better than none,
+  if (kind === 'pdf') {
+    return t('export.kind.pdf');
+  }
+  if (kind === 'markdown') {
+    return t('export.kind.markdown');
+  }
+  // A kind with no label of its own is shown by its name: an untranslated item is better than none,
   // and this is the same fallback `i18n.ts` gives a key no catalogue holds.
   return kind;
 }
 
+/** The label a hand is offered under: its own name, which is what the app calls it in the request. */
+function handLabel(hand: string): string {
+  return hand === MARKDOWN2PDF ? t('export.hand.markdown2pdf') : t('export.hand.pandoc');
+}
+
 export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly heading: HTMLParagraphElement;
-  private readonly tabs: HTMLDivElement;
+  private readonly kinds: HTMLUListElement;
+  private readonly handLabel: HTMLSpanElement;
+  private readonly hand: HTMLSelectElement;
+  private readonly handRow: HTMLElement;
+  private readonly themeLabel: HTMLSpanElement;
+  private readonly theme: HTMLSelectElement;
+  private readonly sizeLabel: HTMLSpanElement;
+  private readonly size: HTMLSelectElement;
+  private readonly orientationLabel: HTMLSpanElement;
+  private readonly orientation: HTMLSelectElement;
+  private readonly ownOptions: HTMLElement;
   private readonly targetLabel: HTMLLabelElement;
   private readonly target: HTMLInputElement;
   private readonly choose: HTMLButtonElement;
   private readonly configLabel: HTMLSpanElement;
   private readonly configPath: HTMLSpanElement;
   private readonly openConfig: HTMLButtonElement;
+  /** The whole configuration row, hidden while a hand that does not read it is the one chosen. */
+  private readonly configRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   private readonly form: HTMLFormElement;
   private readonly run: HTMLButtonElement;
@@ -90,10 +129,37 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.heading.className = 'mb-2 text-sm font-semibold';
     this.heading.textContent = t('export.title');
 
-    this.tabs = document.createElement('div');
-    this.tabs.className = 'tabs tabs-box tabs-sm mb-3';
-    this.tabs.setAttribute('role', 'tablist');
-    this.tabs.setAttribute('data-export-tabs', 'true');
+    // The kinds are a *menu*, not tabs: a kind is not a view of the same options — it is a different
+    // question, with options of its own below it (a PDF has two hands, and one of them has a theme,
+    // a page size and an orientation; a docx has a defaults file and nothing else).
+    this.kinds = document.createElement('ul');
+    this.kinds.className = 'menu menu-horizontal menu-sm mb-2 w-full px-0';
+    this.kinds.setAttribute('data-export-kinds', 'true');
+
+    this.handLabel = this.caption(t('export.hand'));
+    this.hand = this.chooser('export-hand', []);
+    this.handRow = this.row(this.handLabel, this.hand);
+    this.themeLabel = this.caption(t('export.theme'));
+    this.theme = this.chooser('export-theme', THEMES);
+    this.sizeLabel = this.caption(t('export.pageSize'));
+    this.size = this.chooser('export-size', PAGE_SIZES);
+    this.orientationLabel = this.caption(t('export.orientation'));
+    this.orientation = this.chooser(
+      'export-orientation',
+      ORIENTATIONS.map((value) => ({
+        value,
+        label: value === 'portrait' ? t('export.portrait') : t('export.landscape')
+      }))
+    );
+    // The app's own hand's own settings: shown only while that hand is the one chosen.
+    this.ownOptions = document.createElement('div');
+    this.ownOptions.className = 'mt-2 grid grid-cols-3 gap-2';
+    this.ownOptions.setAttribute('data-export-own', 'true');
+    this.ownOptions.append(
+      this.row(this.themeLabel, this.theme),
+      this.row(this.sizeLabel, this.size),
+      this.row(this.orientationLabel, this.orientation)
+    );
 
     this.target = document.createElement('input');
     this.target.type = 'text';
@@ -127,6 +193,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
+    // Built *after* the three things it holds: a row made before its own children exist is an empty
+    // one (measured the hard way — the card's configuration row was nowhere in the page).
+    this.configRowElement = this.configRow();
 
     this.form = document.createElement('form');
     this.form.addEventListener('submit', (event) => {
@@ -138,11 +207,41 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     );
     this.run = this.button('export-run', t('export.run'), 'btn btn-primary btn-sm', null, 'submit');
     this.form.append(
+      this.handRow,
+      this.ownOptions,
       this.row(this.targetLabel, this.target, this.choose),
-      this.configRow(),
+      this.configRowElement,
       this.status,
       this.actions()
     );
+  }
+
+  /** A small caption above a control, the shape every row of this card uses. */
+  private caption(text: string): HTMLSpanElement {
+    const caption = document.createElement('span');
+    caption.className = 'text-xs opacity-70';
+    caption.textContent = text;
+    return caption;
+  }
+
+  /** A `select` filled with the values it is given, each showing either its own name or a label. */
+  private chooser(
+    name: string,
+    values: (string | { value: string; label: string })[]
+  ): HTMLSelectElement {
+    const select = document.createElement('select');
+    select.className = 'select select-sm w-full';
+    select.setAttribute(`data-${name}`, 'true');
+    select.replaceChildren(
+      ...values.map((value) => {
+        const option = document.createElement('option');
+        option.value = typeof value === 'string' ? value : value.value;
+        option.textContent = typeof value === 'string' ? value : value.label;
+        return option;
+      })
+    );
+    select.addEventListener('change', () => this.show(this.selected));
+    return select;
   }
 
   /** Escape writes nothing at all: no file, and not even the configuration file. */
@@ -154,36 +253,35 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   async ask(question: ExportQuestion): Promise<ExportAnswer | null> {
     this.question = question;
     this.edited = false;
-    this.buildTabs(question.kinds);
-    this.target.value = question.defaultTarget;
+    this.buildKinds(question.kinds);
     const answered = this.askWith(() =>
-      this.card.append(this.heading, this.tabs, this.form)
+      this.card.append(this.heading, this.kinds, this.form)
     );
+    this.show(question.kinds[0]?.kind ?? '');
     // The caret goes to the path, selected up to its extension: the folder is the part a reader
     // most often wants to change, and the name is the part the app got right.
-    this.show(question.kinds[0]?.kind ?? '');
     this.target.focus();
     this.target.setSelectionRange(0, this.target.value.replace(/\.[^./\\]*$/, '').length);
     return await answered;
   }
 
-  /** The tabs: one per kind, each remembering the kind it stands for. */
-  private buildTabs(kinds: ExportKindInfo[]): void {
-    this.tabs.replaceChildren(
+  /** The menu: one item per kind, each remembering the kind it stands for. */
+  private buildKinds(kinds: ExportKindInfo[]): void {
+    this.kinds.replaceChildren(
       ...kinds.map((info) => {
-        const tab = document.createElement('button');
-        tab.type = 'button';
-        tab.className = 'tab';
-        tab.setAttribute('role', 'tab');
-        tab.setAttribute('data-export-tab', info.kind);
-        tab.textContent = kindLabel(info.kind);
-        tab.addEventListener('click', () => this.show(info.kind));
-        return tab;
+        const item = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('data-export-kind', info.kind);
+        button.textContent = kindLabel(info.kind);
+        button.addEventListener('click', () => this.show(info.kind));
+        item.appendChild(button);
+        return item;
       })
     );
   }
 
-  /** Shows a kind: its tab, its extension, its configuration file, and what would run it. */
+  /** Shows a kind: its item, its own options, its target, and what would write it. */
   private show(kind: string): void {
     const info = this.question?.kinds.find((known) => known.kind === kind) ?? null;
     if (!info) {
@@ -191,44 +289,67 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
     const before = this.selected;
     this.selected = kind;
-    for (const tab of this.tabs.querySelectorAll<HTMLElement>('[data-export-tab]')) {
-      const mine = tab.dataset.exportTab === kind;
-      tab.classList.toggle('tab-active', mine);
-      tab.setAttribute('aria-selected', mine ? 'true' : 'false');
+    for (const item of this.kinds.querySelectorAll<HTMLElement>('[data-export-kind]')) {
+      item.closest('li')?.classList.toggle('menu-active', item.dataset.exportKind === kind);
     }
-    this.retarget(info, before);
+    // The hands this kind has, rebuilt for it: a hand chosen for another kind is not one this kind
+    // answers to (the request refuses it, and the card must not offer it in the first place).
+    const chosen = this.hand.value;
+    this.hand.replaceChildren(
+      ...info.hands.map((name) => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = handLabel(name);
+        return option;
+      })
+    );
+    const pandoc = this.question?.pandoc ?? null;
+    if (info.hands.includes(chosen)) {
+      // Rebuilding the options must not drop the reader's own choice: `show` runs again on the
+      // change itself, and a select that reset itself would take the theme and the page back with it.
+      this.hand.value = chosen;
+    } else if (info.hands.includes(MARKDOWN2PDF) && pandoc === null) {
+      // No pandoc on this machine, and this kind has a hand that does not need one: choose it,
+      // rather than opening on a hand that cannot run.
+      this.hand.value = MARKDOWN2PDF;
+    }
+    const own = this.hand.value === MARKDOWN2PDF;
+    this.handRow.classList.toggle('hidden', info.hands.length < 2);
+    this.ownOptions.classList.toggle('hidden', !own);
+    this.configRowElement.classList.toggle('hidden', own);
+    this.target.value = this.targetFor(info, before);
     // A file the reader has not been given yet is a place as much as a file: the first export (or
     // the button below) writes the shipped defaults there, and an edited file is never rewritten.
     this.configPath.textContent = info.config_exists
       ? info.config_path
       : t('export.configNew', { path: info.config_path });
-    const pandoc = this.question?.pandoc ?? null;
     this.status.textContent =
-      info.needs_pandoc && pandoc === null
-        ? t('export.noPandoc')
-        : info.needs_pandoc
-          ? t('export.pandoc', { path: pandoc ?? '' })
-          : '';
+      own
+        ? t('export.ownHand')
+        : pandoc === null
+          ? t('export.noPandoc')
+          : t('export.pandoc', { path: pandoc });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
-    this.run.disabled = info.needs_pandoc && pandoc === null;
+    this.run.disabled = !own && info.needs_pandoc && pandoc === null;
   }
 
   /**
-   * Points the target at the kind on show: the note's own name under the new extension when the
-   * reader has not written in the field, and — when they have — only the extension they were just
-   * looking at, so that a path they chose keeps its name.
+   * The target for the kind on show: the note's own path, the kind's own name suffix (the markdown
+   * kind's output is `a note.processed.md`, because `a note.md` is the note), and its extension —
+   * unless the reader has written in the field, in which case only the *extension* they were looking
+   * at is replaced, so a path they chose keeps its name.
    */
-  private retarget(info: ExportKindInfo, before: string): void {
+  private targetFor(info: ExportKindInfo, before: string): string {
     const extension = `.${info.extension}`;
     if (!this.edited) {
-      this.target.value = this.target.value.replace(/\.[^./\\]*$/, '') + extension;
-      return;
+      return `${this.question?.baseTarget ?? ''}${info.name_suffix}${extension}`;
     }
     const previous = this.question?.kinds.find((known) => known.kind === before) ?? null;
-    const was = previous ? `.${previous.extension}` : null;
-    if (was !== null && was !== extension && this.target.value.endsWith(was)) {
-      this.target.value = this.target.value.slice(0, -was.length) + extension;
+    const was = previous ? `.${previous.extension}` : '';
+    if (was !== '' && was !== extension && this.target.value.endsWith(was)) {
+      return this.target.value.slice(0, -was.length) + extension;
     }
+    return this.target.value;
   }
 
   /** The system's own sheet, for a reader who would rather not type a path. */
@@ -271,7 +392,14 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.status.textContent = t('export.noTarget');
       return;
     }
-    this.settle({ kind: this.selected, outputPath });
+    this.settle({
+      kind: this.selected,
+      outputPath,
+      hand: this.hand.value,
+      theme: this.theme.value,
+      pageSize: this.size.value,
+      orientation: this.orientation.value
+    });
   }
 
   private row(label: HTMLElement, control: HTMLElement, ...rest: HTMLElement[]): HTMLElement {

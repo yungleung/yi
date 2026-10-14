@@ -116,13 +116,13 @@
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
     const docxTarget = field.value;
-    const html = veil.querySelector('[data-export-tab="html"]');
+    const html = veil.querySelector('[data-export-kind="html"]');
     html?.click();
     await sleep(150);
     check(
       'pressing the html tab moves the choice, and the target becomes a .html',
       html !== null &&
-        html.classList.contains('tab-active') &&
+        html.closest('li')?.classList.contains('menu-active') === true &&
         docxTarget.endsWith('/note.docx') &&
         field.value === target,
       { docxTarget, chosen: field.value }

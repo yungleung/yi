@@ -56,9 +56,11 @@ export async function exportNote(text: string): Promise<void> {
   }
   const note = documentSession.current();
   const folder = await targetFolder(note?.path ?? null);
-  const target = await join(folder, `${noteName(note?.path ?? null, note?.title ?? null)}.${first.extension}`);
+  // The note's own path with no extension: the card adds the chosen kind's name suffix and
+  // extension to it, because the *kind* is what the card knows and this is what it is asked with.
+  const baseTarget = await join(folder, noteName(note?.path ?? null, note?.title ?? null));
 
-  const answer = await exportDialog.ask({ kinds, pandoc, defaultTarget: target });
+  const answer = await exportDialog.ask({ kinds, pandoc, baseTarget });
   if (answer === null) {
     return;
   }
@@ -91,7 +93,11 @@ export async function exportNote(text: string): Promise<void> {
       // uses them (a book's title page and its required language, a page's `<title>`), and a kind
       // whose body already opens with the note's own heading takes neither.
       title: documentTitle(text, note?.path ?? null),
-      language: readFrontmatterLang(text) ?? language()
+      language: readFrontmatterLang(text) ?? language(),
+      hand: answer.hand,
+      theme: answer.theme,
+      page_size: answer.pageSize,
+      orientation: answer.orientation
     });
     showHint(t('export.done', { file: fileName(answer.outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about

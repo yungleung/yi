@@ -1,0 +1,63 @@
+# ZETTLR DEFAULTS FILE
+# ====================
+# Conversion: Markdown --> PDF (requires TeX suite to be installed)
+# More info: https://pandoc.org/MANUAL.html
+#
+# Yi's copy of that file, as its `export.docx.yaml` is: it is written into the app's data folder the
+# first time an export of this kind needs it, and every export then hands it to pandoc unchanged
+# (`--defaults`), so a key below is pandoc's own and the manual above says what it means. A file that
+# is already there is never overwritten — an edited one is the reader's. Zettlr's own comments are
+# kept where they are, because they say what the values mean.
+#
+# Zettlr's `default-image-extension: .jpg` is the one key left out, here and in every kind's file:
+# pandoc applies it to an image destination whose path has no extension — a URL as well as a file —
+# so a working web picture became `…/png.jpg` and a 404 (measured; `export.docx.yaml` has the long
+# version). Left out, pandoc uses the path exactly as it was written.
+#
+# This is the **pandoc hand** of Yi's PDF export, and the engine below is the one it runs: a machine
+# without the named engine fails with the engine's own sentence, which is what the reader is shown.
+# The card's other hand is Yi's own renderer, `markdown2pdf` — no TeX suite at all, one of four
+# bundled themes and a page size and orientation; that hand does not read this file.
+#
+# Two things the app adds on the command line, as for every kind: the bibliography the citations were
+# formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the
+# keys and appends the reference list.
+reader: markdown
+writer: pdf
+self-contained: true
+variables:
+  # Sets the size of the document's pages.
+  papersize: a4 # Possible values: a0-a6, b0-b6, c0-c6,b0j, letter, executive, legal
+  # Further variables are documented here: https://pandoc.org/MANUAL.html#variables-for-latex
+metadata-files: []
+include-before-body: []
+include-after-body: []
+include-in-header: []
+bibliography: []
+filters:
+- type: citeproc
+top-level-division: default
+pdf-engine: xelatex # Change this if you want to use a different engine, e.g. pdflatex
+dpi: 72
+toc: false # Include a table of contents?
+toc-depth: 2 # 2 means to only include headings level 1 and 2 in the ToC
+number-sections: false
+number-offset:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+shift-heading-level-by: 1
+section-divs: true
+identifier-prefix: ''
+title-prefix: ''
+eol: lf
+strip-comments: false
+indented-code-classes: []
+ascii: false
+highlight-style: pygments
+tab-stop: 4
+preserve-tabs: false
+fail-if-warnings: false

@@ -13,6 +13,10 @@ import { invoke } from '@tauri-apps/api/core';
 export interface ExportKindInfo {
   kind: string;
   extension: string;
+  /** What the output's name adds to the note's own (the markdown kind's `.processed`). */
+  name_suffix: string;
+  /** The hands that can write this kind, in the order the card offers them. */
+  hands: string[];
   /** Whether the conversion is pandoc's; PDF will answer no, since the app can write it itself. */
   needs_pandoc: boolean;
   /** Whether the kind carries its own name, so the window hands it the note's. */
@@ -55,6 +59,11 @@ export interface ExportRequest {
    * them, and the kinds whose body already says the name ignore them. */
   title: string | null;
   language: string | null;
+  /** Which hand writes it, of the kind's own, and the app's own hand's own settings. */
+  hand: string | null;
+  theme: string | null;
+  page_size: string | null;
+  orientation: string | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

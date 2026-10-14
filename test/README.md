@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-a hundred and ninety-seven of them (`probe:all` runs 169 and skips 28, each skip for the reason its
+a hundred and ninety-nine of them (`probe:all` runs 171 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -201,6 +201,12 @@ thing that leaves the page), and the citations become a headed `References` list
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts;
+`export-pdf` — the sixth, and the one kind with a *choice*: the menu item offers two hands (pandoc
+with a TeX engine, or the app's own `markdown2pdf`), each hand shows the settings it reads and hides
+the other's, and both write a real `%PDF-` — the second with no pandoc and no TeX suite at all;
+`export-markdown` — the seventh: the note as every other export is handed it, written as
+`note.processed.md` (never over the note), with the wikilink rendered, the citation resolved and the
+reference list appended, and the note's own headings left at their own levels;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left

@@ -890,8 +890,46 @@ elements) unless it says otherwise.
   failure is `a4-page.js`, the probe this document already lists as failing only inside a sweep and
   passing by name (checked again here: it passes).
 
+- **PDF, the kind with two hands, and the card that lets a kind have its own options.** Landed: a
+  PDF can be written by **pandoc and a TeX engine** (Zettlr's own defaults file, `pdf-engine:
+  xelatex`, `papersize: a4` — measured: a real 20 KB `%PDF-` through the installed XeTeX) or by **the
+  app's own renderer**, the `markdown2pdf` crate, which needs neither pandoc nor a TeX suite (measured:
+  a real PDF from a Rust test *and* through the card; `cargo tree` shows printpdf and rustybuzz, no
+  TeX tool). A kind's row now names its **hands** (`hands`), the request names the one asked for, and
+  a hand a kind does not have is *refused* rather than answered by another — the shape `find_git`'s
+  env seam has. The app's own hand takes a **theme** (the four the reader asked for: academic,
+  minimal, compact, modern), a **page size** and an **orientation**, each checked against the list the
+  crate knows before it is used. The card became a **menu of kinds** (daisyUI's `menu`, not tabs, as
+  asked) with each kind's *own* options under it: the conversion settings file for a pandoc hand, the
+  theme/page/orientation for the app's own, and a hand selector for the one kind that has two. When
+  the machine has no pandoc, the card opens a PDF on the hand that does not need one.
+- **The processed markdown, `markdown`**: the note **as every other export is handed it** — each
+  wikilink written as the words it renders as (the pre-process), each citation resolved and its
+  reference list appended (citeproc over the settings' library and style) — kept as a file of its own.
+  Measured: `# Going out` stays an `h1` (the family's `shift-heading-level-by: 1` is for a document
+  whose title sits above its first heading, and would re-level every heading of a *note*),
+  `[[other|an alias]]` comes out `an alias`, `[@smith2020]` comes out `(Smith, 2020)` over a
+  `# References` heading and its entry, and the file is written as `note.processed.md` — never as
+  `note.md`, because the default target is the note's own folder and name, and an export that writes
+  over the note it is exporting is not one anybody means (`ExportKind::name_suffix` is the one fact
+  that says so).
+
 ## Open, in the order to take them
 
+- **The app's own hand does not resolve citations.** `markdown2pdf` knows nothing of citeproc: the
+  text it is handed still carries `[@key]`, so its PDFs print the *keys* where the pandoc hand prints
+  `(Smith, 2020)` and appends a reference list. The fix is the app's own rewriting — the editor
+  already has the words (citation-js formats both the in-text form and the reference entries) and the
+  parser already knows where a citation *is*, exactly as the wikilink pre-process does — so this is
+  one more rule in `ui/export/preprocess.ts` and a switch the kind's row turns on for the hand that
+  needs it. Until then the card says which hand is which, and the asset's header says what it does
+  not do.
+- **A PDF page's own options for the pandoc hand.** The app's own hand takes a theme, a page size and
+  an orientation; the pandoc hand's page comes from `variables.papersize` in its defaults file, which
+  is one more thing a reader may edit and one fewer thing the card offers. If the card should offer
+  both (a size and an orientation for *either* hand), the pandoc side becomes a `--variable
+  papersize=` and a `geometry` variable, and the card's two hands then look the same — worth deciding
+  once the app's own hand has been used for real.
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
