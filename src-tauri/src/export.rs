@@ -67,6 +67,14 @@ pub struct ExportKind {
     /// so the app writes that text out itself ([`export_own_text`]) and there is no pandoc to hand a
     /// defaults file to.
     pub needs_pandoc: bool,
+    /// Whether this kind's output is **typeset with fonts the settings file names**: the PDF, whose
+    /// page XeTeX draws, and the LaTeX document, which the reader compiles with their own engine.
+    ///
+    /// It is what the card's font hint keys off, and nothing else is: a note written in a script no
+    /// font in that file can draw is a page — or a `.tex` — with the words' places kept and the words
+    /// gone (measured), while a docx, a page of HTML or a book carries the characters as characters
+    /// and whatever opens it picks a font of its own.
+    pub needs_a_font: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -95,6 +103,7 @@ pub const KINDS: &[ExportKind] = &[
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.docx.yaml"),
     },
     ExportKind {
@@ -104,6 +113,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -115,6 +125,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
@@ -126,6 +137,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
     ExportKind {
@@ -137,6 +149,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: true,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
     },
     ExportKind {
@@ -151,6 +164,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
     },
     ExportKind {
@@ -163,6 +177,7 @@ pub const KINDS: &[ExportKind] = &[
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
         needs_pandoc: false,
+        needs_a_font: false,
         defaults: "",
     },
 ];
@@ -816,6 +831,75 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// What a kind's conversion settings name, as the window reads it: whether the kind's output is
+/// typeset with those fonts at all, whether a font is named for the document as a whole, and whether
+/// one is named for CJK.
+///
+/// The characters are the *window's* half of the question (`ui/export/font_hint.ts`): a formula is not
+/// a paragraph — `$x \le y$` draws with the maths font where a bare `≤` does not — so the rule needs
+/// the parse, and the parse lives in the webview. What this side owns is the file: its bytes, the
+/// shipped copy when the reader has not written one yet, and the one word to look for in it.
+///
+/// A **comment does not count**. The shipped files' headers talk about fonts at length — they explain
+/// what happens without one — and a copy of them must not read as a reader who has chosen (measured the
+/// hard way: the app once stepped aside for its own documentation and the characters stayed missing).
+#[tauri::command]
+pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFonts, String> {
+    let kind = kind_of(&kind)?;
+    let (mainfont, cjk_mainfont) = if kind.needs_pandoc {
+        named_fonts(&settings_text(&app, kind)?)
+    } else {
+        (false, false)
+    };
+    Ok(NamedFonts {
+        needs_a_font: kind.needs_a_font,
+        mainfont,
+        cjk_mainfont,
+    })
+}
+
+/// What a kind's conversion settings name, as the window is told it.
+#[derive(Debug, Serialize, Clone)]
+pub struct NamedFonts {
+    /// Whether the kind's output is typeset with the fonts its settings name (see `ExportKind`).
+    pub needs_a_font: bool,
+    /// Whether a font is named for the document as a whole: it answers for anything it has.
+    pub mainfont: bool,
+    /// Whether a font is named for CJK — which reaches CJK punctuation, kana and Han, and not Hangul.
+    pub cjk_mainfont: bool,
+}
+
+/// The settings a kind would be run with, as their own text: the reader's copy when it has been
+/// written, and the copy this build ships when it has not — what the app *would* write on the first
+/// export, which is what the reader is looking at either way.
+fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result<String, String> {
+    let dir = export_dir(app)?;
+    let path = dir.join(config_file_name(kind.kind));
+    Ok(fs::read_to_string(&path).unwrap_or_else(|_| kind.defaults.to_string()))
+}
+
+/// Whether each of the two variables that answer for a script is named by a font in `settings`,
+/// comment lines not counted. Returns `(mainfont, CJKmainfont)`.
+fn named_fonts(settings: &str) -> (bool, bool) {
+    let mut main = false;
+    let mut cjk = false;
+    for line in settings.lines() {
+        if line.trim_start().starts_with('#') {
+            continue;
+        }
+        let text = line.to_lowercase();
+        if !text.contains("mainfont") {
+            continue;
+        }
+        if text.contains("cjkmainfont") {
+            cjk = true;
+        } else {
+            main = true;
+        }
+    }
+    (main, cjk)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1072,6 +1156,26 @@ mod tests {
         // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    #[test]
+    fn a_file_names_a_font_when_a_line_that_is_not_a_comment_says_so() {
+        // The two variables, and the two spellings that look like one of them without being it.
+        assert_eq!(named_fonts("variables:\n  CJKmainfont: \"Songti SC\"\n"), (false, true));
+        assert_eq!(named_fonts("variables:\n  mainfont: \"Arial Unicode MS\"\n"), (true, false));
+        assert_eq!(named_fonts("variables:\n  sansfont: X\n  monofont: Y\n"), (false, false));
+
+        // A **comment** names nothing: the shipped files' headers talk about fonts at length — they
+        // explain what happens without one and how to add it — and reading that as a reader who has
+        // chosen is the mistake that once left the characters missing.
+        assert_eq!(
+            named_fonts("# add `mainfont: \"Arial Unicode MS\"` for other scripts\nreader: markdown\n"),
+            (false, false)
+        );
+        assert_eq!(
+            named_fonts("variables:\n  # mainfont: \"X\"\n  CJKmainfont: \"Songti SC\"\n"),
+            (false, true)
+        );
     }
 
     #[test]

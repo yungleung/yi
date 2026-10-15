@@ -10,6 +10,11 @@
  * a *whole* document (`\documentclass` and `\begin{document}`: `export.latex.yaml` says
  * `standalone: true` outright, because Zettlr's file is one only through a side effect of
  * `title-prefix` — measured), and that the citations became a reference list in the page's style.
+ * The third has no counterpart in the other kinds: a `.tex` of a note the TeX suite has no font for
+ * is one the reader's compile loses the characters of, so the document has to carry the font that
+ * sets them — `CJKmainfont` in this file (measured: with it the `.tex` holds `\usepackage{xeCJK}`
+ * and `\setCJKmainfont[]{…}` and xelatex compiles its CJK with no *"Missing character"* warnings;
+ * without it, the `.tex` holds no font setup at all).
  *
  * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts,
  *   src/ui/export/preprocess.ts (the destination the writer is handed)
@@ -58,6 +63,8 @@
     '# Going out',
     '',
     `A picture: ![shot](${picture}), and a citation [@smith2020].`,
+    '',
+    'And 简体中文 beside it.',
     ''
   ].join('\n');
 
@@ -143,6 +150,14 @@
       'with the note’s heading as a section of it',
       tex.includes('\\section{Going out}'),
       { section: tex.includes('\\section{Going out}') }
+    );
+    check(
+      'and the font a note in CJK is set with, so the reader’s own LaTeX can compile it',
+      tex.includes('\\usepackage{xeCJK}') && /\\setCJKmainfont\[\]\{[^}]*\}/.test(tex),
+      {
+        package: tex.includes('\\usepackage{xeCJK}'),
+        font: /\\setCJKmainfont\[\]\{[^}]*\}/.exec(tex)?.[0] ?? null
+      }
     );
 
     // The picture: the path pandoc wrote down, un-escaped, is the file the app found.

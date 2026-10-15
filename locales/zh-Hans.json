@@ -78,6 +78,7 @@
   "export.configNew": "首次导出时写入这里：{path}",
   "export.revealConfig": "在文件夹中显示",
   "export.noPandoc": "本机未找到 pandoc，无法进行这种导出。",
+  "export.fontHint": "转换设置中的字体无法显示这些字符：{characters} —— 请在那里指定字体（`mainfont:` 适用于任何文字系统）。",
   "export.pandoc": "pandoc：{path}",
   "export.noTarget": "请输入要写入的文件路径。",
   "export.cancel": "取消",

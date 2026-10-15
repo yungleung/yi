@@ -29,6 +29,7 @@ methodology; this file is the index and the conventions.
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
 | `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list |
+| `check-export-font.mjs` | The card's font hint (`ui/export/font_hint.ts`): which characters of a note no font its settings name can draw — the covered set written down **character by character**, because the blocks are irregular (measured: `ə` draws and `ʃ ɐ ʰ` do not; `← ↑ → ↓` draw and `↔` does not; `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not; `♪` draws and `♭ ✓ ☺ ★ ☆` do not; `Δ Ω` draw and `α β γ` do not), `CJKmainfont` answering for CJK punctuation, kana and Han and **not** Hangul, `mainfont` for anything its font has — and that a character inside `$…$` is left alone, because a formula is set with the maths font |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
@@ -62,7 +63,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and one of them (`probe:all` runs 173 and skips 28, each skip for the reason its
+two hundred and two of them (`probe:all` runs 174 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -204,6 +205,12 @@ thing that leaves the page), and the citations become a headed `References` list
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts;
+`export-font-hint` — the card's font hint: a note written in a script the settings name no font for is
+said so in the app's own words, with the characters it is written in and the settings file beside it
+(Korean says it, Chinese does not — the shipped `CJKmainfont` is for Han and kana — a docx never does,
+because what opens that file picks a font itself; and the measured irregularity holds too: a bare `≤`
+is named where `√ ∞ ± × ÷` beside it draw, and the same character inside `$…$` is not, because pandoc
+sets a formula with the maths font);
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the

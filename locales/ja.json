@@ -78,6 +78,7 @@
   "export.configNew": "最初のエクスポートでここに作成されます: {path}",
   "export.revealConfig": "フォルダに表示",
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
+  "export.fontHint": "変換設定のフォントにはこれらの文字がありません: {characters} — そこにフォントを指定してください（`mainfont:` はどの文字体系にも使えます）。",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "書き出すファイルのパスを入力してください。",
   "export.cancel": "キャンセル",

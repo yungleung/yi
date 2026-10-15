@@ -78,6 +78,7 @@
   "export.configNew": "Written there on your first export: {path}",
   "export.revealConfig": "Reveal in folder",
   "export.noPandoc": "pandoc was not found on this machine, so this kind of export cannot run.",
+  "export.fontHint": "No font in the conversion settings draws these characters: {characters} — name one there (`mainfont:` covers any script).",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Type the path the file should be written to.",
   "export.cancel": "Cancel",

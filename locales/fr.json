@@ -78,6 +78,7 @@
   "export.configNew": "Créé là au premier export : {path}",
   "export.revealConfig": "Afficher dans le dossier",
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
+  "export.fontHint": "Aucune police des réglages de conversion ne dessine ces caractères : {characters} — nommez-en une (`mainfont:` couvre toute écriture).",
   "export.pandoc": "pandoc : {path}",
   "export.noTarget": "Indiquez le chemin du fichier à écrire.",
   "export.cancel": "Annuler",

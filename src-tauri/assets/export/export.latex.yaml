@@ -29,11 +29,22 @@
 # file's: the bibliography the citations were formatted from (Settings → Citation) and the CSL style
 # it formats them in, so citeproc resolves the keys and appends the reference list. A reader who
 # wants none of that can set `filters: []` here, or clear the bibliography in the settings.
+#
+# A note written in CJK is set with a font *this file* names, as `export.pdf.yaml` does it and for the
+# same measured reason: with none named, pandoc's template emits no font setup, and the reader who
+# compiles the document gets XeTeX's *"Missing character: There is no 一 (U+4E00)…"* for every CJK
+# character in it. Measured: the same `.tex` with `variables: CJKmainfont` carries
+# `\usepackage{xeCJK}` and `\setCJKmainfont[]{…}`, and xelatex then compiles it with none of those
+# warnings. The font has to be one the **compiling** machine has — the reader's, not the app's — and a
+# note in a script outside CJK, or in Hangul (which `CJKmainfont` does not reach, measured), needs
+# `mainfont:` instead: `export.pdf.yaml`'s header has the long version of that.
 reader: markdown
 writer: latex
 self-contained: false
 standalone: true
-variables: {}
+variables:
+  # The typeface for CJK, and the reader's to change: see the note above.
+  CJKmainfont: "Songti SC"
 metadata-files: []
 include-before-body: []
 include-after-body: []

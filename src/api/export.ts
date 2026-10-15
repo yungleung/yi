@@ -94,6 +94,25 @@ export async function exportConfigPath(kind: string): Promise<string> {
 }
 
 /**
+ * What a kind's conversion settings name: whether the kind's output is typeset with those fonts, and
+ * whether a font is named for the document as a whole or for CJK — the facts the card's font hint is
+ * built from (`ui/export/font_hint.ts`, which owns the characters).
+ */
+export interface NamedFonts {
+  needs_a_font: boolean;
+  mainfont: boolean;
+  cjk_mainfont: boolean;
+}
+
+/**
+ * What the kind's conversion settings name, read from the reader's own file — or from the copy this
+ * build ships, when they have not exported that kind yet, which is what the app would write.
+ */
+export async function namedFonts(kind: string): Promise<NamedFonts> {
+  return await invoke<NamedFonts>('export_named_fonts', { kind });
+}
+
+/**
  * Points the app at another pandoc — `YI_PANDOC`, as a call, for a probe that cannot change the
  * environment of the app it drives. `null` puts it back to looking for one.
  */
