@@ -199,6 +199,12 @@ stack on their behalf); and **no git write happens at all** — the reader's sta
 work stays staged, `git status` shows the modification, and a version is still only made when they
 ask (held by the recorder: a whole restore is one `show` and none of the write verbs).
 
+The settings file itself is the reader's, and the card hands it to them as such: *Reveal in folder*
+always, and *Replace with the shipped file* only when their copy is **not** the one this build ships
+(`ExportKindInfo::config_is_shipped` — the bytes, compared) — behind the app's own question, which says
+what is replaced, because a copy that differs may be an edit or an older build's file and the two cannot
+be told apart from here. Escape leaves the file exactly as it was.
+
 **A note goes out through pandoc**, one kind at a time. The File menu's *Export* is a **submenu**,
 one item per kind (`src-tauri/src/menu.rs`, built from `src-tauri/src/export.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the

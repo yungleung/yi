@@ -77,6 +77,8 @@
   "export.configLabel": "轉換設定",
   "export.configNew": "首次匯出時寫入這裡：{path}",
   "export.revealConfig": "在資料夾中顯示",
+  "export.replaceConfig": "取代為隨附的檔案",
+  "export.replaceQuestion": "用此版本隨附的內容取代 {path} 嗎？你對它的修改將會遺失。",
   "export.noPandoc": "在這台機器上找不到 pandoc，因此無法進行這種匯出。",
   "export.fontHint": "轉換設定中的字型無法顯示這些字元：{characters} —— 請在那裡指定字型（`mainfont:` 適用於任何文字系統）。",
   "export.pandoc": "pandoc：{path}",

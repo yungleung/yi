@@ -63,7 +63,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and two of them (`probe:all` runs 174 and skips 28, each skip for the reason its
+two hundred and three of them (`probe:all` runs 175 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -211,6 +211,10 @@ said so in the app's own words, with the characters it is written in and the set
 because what opens that file picks a font itself; and the measured irregularity holds too: a bare `≤`
 is named where `√ ∞ ± × ÷` beside it draw, and the same character inside `$…$` is not, because pandoc
 sets a formula with the maths font);
+`export-config-replace` — the settings row's second button: a copy that is already the file this build
+ships is not offered for replacement, one that differs is, the cautious answer leaves it exactly as it
+was, and agreeing writes the shipped bytes back (the first half of the measurement above: a shipped file
+that changes reaches nobody who already has one, and this is the reader's way to ask for it);
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the

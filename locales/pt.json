@@ -77,6 +77,8 @@
   "export.configLabel": "Configurações de conversão",
   "export.configNew": "Criado ali na sua primeira exportação: {path}",
   "export.revealConfig": "Mostrar na pasta",
+  "export.replaceConfig": "Substituir pelo arquivo incluído",
+  "export.replaceQuestion": "Substituir a sua cópia de {path} pela incluída nesta versão? O que alterou perde-se.",
   "export.noPandoc": "O pandoc não foi encontrado nesta máquina, então este tipo de exportação não pode rodar.",
   "export.fontHint": "Nenhuma fonte nas configurações de conversão desenha estes caracteres: {characters} — indique uma lá (`mainfont:` cobre qualquer escrita).",
   "export.pandoc": "pandoc: {path}",
