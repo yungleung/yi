@@ -1300,24 +1300,27 @@ One thing deliberately *not* in this list, because it is not a residue but a vis
 waiting on a decision: the shape of a fast path for raw blocks — a local write into the
 highlighted span, re-highlighted when a burst stops — at the end of "Measure before deciding".
 
-**The build draws the scripts itself now, and the reader cannot choose those faces yet.** The
+**The build draws the scripts itself now, and a reader may name a face for any one of them.** The
 round that shipped the faces (a serif set: `Noto Serif` for Greek and Cyrillic, `Noto Serif` per
 script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Noto Naskh Arabic` for Arabic, and
 `Noto Serif CJK SC` for Han, kana and Hangul — 25 MB, OFL, under `src-tauri/assets/fonts/`) answers
 the item the last handoff left: a page in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
 Armenian or Georgian is drawn with no line added to the settings file, which `export-pdf-scripts.js`
 proves by writing the *shipped* file back, exporting, and reading the page back one font at a time
-(`lib.js: pdfText`) while the file's own `/BaseFont` names say the faces were this build's. Two
-residues are deliberate, and each has a measured shape:
+(`lib.js: pdfText`) while the file's own `/BaseFont` names say the faces were this build's.
 
-- **A script's face is the app's to choose, not the reader's.** `mainfont:` in the settings file is
-  the document's own font and is *not* what draws Greek, Hebrew, Arabic and the rest — those are the
-  shipped faces, whatever the file says (the header's own comment states it, and the hint is quiet
-  about them because it knows they draw). `CJKmainfont:` is the one handover: Han and kana are drawn
-  with the name the file gives. Choosing a different Hebrew or Arabic face today means editing the
-  header the app rewrites, which is not an interface; the shape it wants is a per-script line in the
-  settings file that the header reads the way it reads `CJKmainfont:`, and the hint telling the
-  reader when their face is the one being used.
+  The round after it built the other half of that promise: **a face for one script, named by the
+  reader**. `yi-<script>-font:` in the settings file (`yi-hebrew-font: "Frank Ruehl"`, one of nine; Han
+  and kana answer to `CJKmainfont`, pandoc's own key) is turned by `export_fonts::write_header` into
+  `\newfontfamily\yi<Script>{the name}` in place of the shipped file's line, with `SLOTS` holding the
+  three facts — the script, the key, the shipped file — so a script cannot gain a way of being named
+  without the header learning it. Measured: `export-pdf-font.js` writes two such lines into the
+  reader's copy, and the page carries their CJK face and their Hebrew face while the shipped Hebrew face
+  is **absent** from it, and a script nobody named still carries the build's own. The hint steps aside
+  for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
+  named `mainfont`, since a coverage cannot be read out of a name.
+
+Two residues are deliberate, and each has a measured shape:
 - **What the Arabic face's `ToUnicode` map gives back is lossy for three letters.** Measured, one
   page: `Noto Naskh Arabic` names the final and medial forms of beh, yeh and ta-marbuta by the
   dotless bases their shapes are built from (`ب`→`ٮ`, `ي`→`ى`, `ة`→`ه`), so text copied out of such

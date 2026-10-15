@@ -225,11 +225,13 @@ drew it). It fails if the app ever stops handing the reader's file to pandoc as 
 `%PDF-` through the TeX engine that file names — one of the three probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
 result out of the page's stash; there is nothing to split, since the overrun *is* one export);
-`export-pdf-font` — the same kind with a CJK font the *reader* names: `CJKmainfont: "Songti SC"` written
-into their own settings file for one export, and the page's own `/BaseFont` entries read back to say
-which face drew what — Han and kana with the reader's font, Hangul with the face this build ships
-(measured: `Songti SC` draws the first two and has no Hangul at all, which is why a Korean note survives
-that line), and the third TeX-run probe;
+`export-pdf-font` — the same kind with faces of the *reader's* own named in their settings file for one
+export: `CJKmainfont: "Songti SC"` for Han and kana and `yi-hebrew-font: "Arial Unicode MS"` for one
+script, with the page's own `/BaseFont` entries read back to say which face drew what — their CJK face
+on Han and kana, their Hebrew face on Hebrew *and the shipped Hebrew face absent from the page*, the
+face this build ships on Hangul (measured: `Songti SC` draws Han and kana and has no Hangul at all,
+which is why a Korean note survives that line) and on a script the file named nothing for; the third
+TeX-run probe;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it

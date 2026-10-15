@@ -130,6 +130,15 @@ export interface NamedFonts {
    */
   shipped: [number, number][];
   /**
+   * The scripts the settings file names a face of its own for — its `yi-<script>-font` lines, as
+   * `Hebrew`, `Thai`, … (`CJKmainfont` is not one of them: Han and kana are `cjk_mainfont` above).
+   *
+   * A script named there is drawn with **that** face, so the card's hint is as quiet about it as about
+   * a named `mainfont`: the reader's font is taken to hold what they chose it for, and the app cannot
+   * read a coverage out of a name.
+   */
+  named_scripts: string[];
+  /**
    * The widest font this machine is known to have, or null — a name for the card to *give* a reader
    * whose settings cannot draw their note's characters. It is a name to type into the file, never a
    * choice the app makes: the reader may write any other line, and the card says so.

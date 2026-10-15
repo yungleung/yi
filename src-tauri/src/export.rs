@@ -765,9 +765,9 @@ fn export_with_pandoc(
     let header = kind
         .ships_fonts
         .then(|| {
-            let (_, cjk) = named_fonts(&settings_text(app, kind)?);
+            let settings = settings_text(app, kind)?;
             let faces = crate::export_fonts::fonts_dir(app)?;
-            crate::export_fonts::write_header(&dir, &faces, cjk.as_deref())
+            crate::export_fonts::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
     let note = write_note(&dir, &request.text)?;
@@ -975,6 +975,18 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
                     .collect()
             })
             .unwrap_or_default(),
+        // The scripts the file names a face for itself: those are drawn with *that* face, so the hint
+        // has the same reason to stay quiet about them as about a named `mainfont` — the reader's font
+        // is taken to hold what they chose it for.
+        named_scripts: kind
+            .ships_fonts
+            .then(|| {
+                crate::export_fonts::reader_scripts(&settings)
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect()
+            })
+            .unwrap_or_default(),
         suggested_font: suggested_font().map(str::to_string),
     })
 }
@@ -997,6 +1009,9 @@ pub struct NamedFonts {
     /// named, a page draws ten scripts (see `export_fonts`), and reporting those characters as lost
     /// would be the hint telling the reader to fix something that is not broken.
     pub shipped: Vec<[u32; 2]>,
+    /// The scripts the settings file names a face of its own for, as the header spells them
+    /// (`Hebrew`, `Thai`, …; empty for a kind whose page the shipped faces do not draw).
+    pub named_scripts: Vec<String>,
     /// The widest font this machine is known to have, for the card to **name** when a note is written
     /// in characters those settings cannot draw — a name to type, not a choice the app makes: the
     /// reader still writes the line, and may write any other.
@@ -1012,35 +1027,14 @@ fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result<String, St
     Ok(fs::read_to_string(&path).unwrap_or_else(|_| kind.defaults.to_string()))
 }
 
-/// The two variables that answer for a script, as the fonts `settings` names them with — `(mainfont,
-/// CJKmainfont)`, each absent when the file names none. Comment lines do not count: the shipped files'
-/// headers talk about fonts at length, and a copy of one must not read as a reader who has chosen.
-///
-/// The CJK name is not only a yes or no — the header that wires in this build's faces hands Han and
-/// kana to *that* name (`export_fonts::write_header`), so what a file names is what a page draws.
+/// The document's own font and Han's, as `settings` names them — `(mainfont, CJKmainfont)`, each absent
+/// when the file names none. The reading itself is `export_fonts::named`, which is also what the header
+/// reads the per-script lines with, so which key names a font has one home.
 fn named_fonts(settings: &str) -> (Option<String>, Option<String>) {
-    let mut main = None;
-    let mut cjk = None;
-    for line in settings.lines() {
-        if line.trim_start().starts_with('#') {
-            continue;
-        }
-        let text = line.to_lowercase();
-        if !text.contains("mainfont") {
-            continue;
-        }
-        let Some((_, value)) = line.split_once(':') else {
-            continue;
-        };
-        let value = value.split('#').next().unwrap_or("").trim().trim_matches('"').trim();
-        let value = (!value.is_empty()).then(|| value.to_string());
-        if text.contains("cjkmainfont") {
-            cjk = value;
-        } else {
-            main = value;
-        }
-    }
-    (main, cjk)
+    (
+        crate::export_fonts::named(settings, "mainfont"),
+        crate::export_fonts::named(settings, "CJKmainfont"),
+    )
 }
 
 #[cfg(test)]

@@ -39,6 +39,40 @@ pub const FACES: &[&str] = &[
 /// Han and kana, drawn with a `CJKmainfont` when the settings file names one.
 pub const HAN_FACE: &str = "NotoSerifCJKsc-Regular.otf";
 
+/// A script the header defines a face for.
+#[derive(Debug)]
+pub struct Slot {
+    /// The script, spelled the way the header names the family (`\yiGreek`) and the way the settings
+    /// file's line for it is spelled in lower case (`yi-greek-font`).
+    pub script: &'static str,
+    /// The settings file's key for a face of the reader's own, or none where the key is pandoc's.
+    pub key: Option<&'static str>,
+    /// The face this build ships for the script, when the file names none.
+    pub file: &'static str,
+}
+
+/// Every script the header draws, in the order it defines them.
+///
+/// Han and kana are the one slot with no `yi-<script>-font` line of its own: `CJKmainfont` is pandoc's
+/// own key, it is what a reader writes for Han, and the header hands the name over (measured:
+/// `export-pdf-font.js` reads a page back and finds the reader's face on it).
+pub const SLOTS: &[Slot] = &[
+    Slot { script: "Greek", key: Some("yi-greek-font"), file: "NotoSerif-Regular.ttf" },
+    Slot { script: "Cyrillic", key: Some("yi-cyrillic-font"), file: "NotoSerif-Regular.ttf" },
+    Slot { script: "Hebrew", key: Some("yi-hebrew-font"), file: "NotoSerifHebrew-Regular.ttf" },
+    Slot { script: "Arabic", key: Some("yi-arabic-font"), file: "NotoNaskhArabic-Regular.ttf" },
+    Slot {
+        script: "Devanagari",
+        key: Some("yi-devanagari-font"),
+        file: "NotoSerifDevanagari-Regular.ttf",
+    },
+    Slot { script: "Thai", key: Some("yi-thai-font"), file: "NotoSerifThai-Regular.ttf" },
+    Slot { script: "Armenian", key: Some("yi-armenian-font"), file: "NotoSerifArmenian-Regular.ttf" },
+    Slot { script: "Georgian", key: Some("yi-georgian-font"), file: "NotoSerifGeorgian-Regular.ttf" },
+    Slot { script: "Hangul", key: Some("yi-hangul-font"), file: "NotoSerifCJKsc-Regular.otf" },
+    Slot { script: "Han", key: Some("CJKmainfont"), file: HAN_FACE },
+];
+
 /// The file the header is written as, in the export folder, for pandoc to `--include-in-header`.
 pub const HEADER_FILE: &str = "pdf-fonts.tex";
 
@@ -77,26 +111,77 @@ fn holds_faces(dir: &Path) -> bool {
     FACES.iter().all(|face| dir.join(face).is_file())
 }
 
-/// Writes the header into `dir`, naming the faces in `fonts`, and answers with its path.
+/// Writes the header into `dir`, one face per script, and answers with its path.
 ///
-/// `han` is the CJK font the reader's settings file names, if it names one: Han and kana are then
-/// drawn with it, by the name the reader chose. Hangul is not theirs to choose this way — the header
-/// says why.
-pub fn write_header(dir: &Path, fonts: &Path, han: Option<&str>) -> Result<PathBuf, String> {
-    let han = match han {
-        Some(name) => format!("\\newfontfamily\\yiHan{{{name}}}"),
-        // The braces around the face's name are written `{{ }}` so that they survive the format: an
-        // unbraced name is not a file fontspec can look up (`[Path={…}]Noto…otf` was measured to fail
-        // the whole export, "cannot be found").
-        None => format!("\\newfontfamily\\yiHan[Path={{{}}}]{{{HAN_FACE}}}", folder(fonts)),
-    };
+/// A script is drawn with the face `settings` names for it — `yi-<script>-font`, or `CJKmainfont` for
+/// Han and kana — and with the face this build ships when the file names none. That is the whole of
+/// what this file's reader is offered: a face of their own for any one script, by the name their
+/// machine knows it by, or the build's face.
+pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf, String> {
+    let mut faces = String::new();
+    for slot in SLOTS {
+        // The braces around a name are written `{{ }}` so that they survive the format: an unbraced name
+        // is not a file fontspec can look up (`[Path={…}]Noto…otf` was measured to fail the whole
+        // export with "cannot be found").
+        let line = match slot.key.and_then(|key| named(settings, key)) {
+            Some(name) => format!("\\newfontfamily\\yi{}{{{name}}}", slot.script),
+            None => format!(
+                "\\newfontfamily\\yi{}[Path={{{}}}]{{{}}}",
+                slot.script,
+                folder(fonts),
+                slot.file
+            ),
+        };
+        faces.push_str(&line);
+        faces.push('\n');
+    }
     let text = HEADER_ASSET
         .replace("@@FONTS@@", &format!("{{{}}}", folder(fonts)))
-        .replace("@@HAN@@", &han);
+        .replace("@@FACES@@", faces.trim_end());
     let path = dir.join(HEADER_FILE);
     crate::files::write_atomically(&path, &text)
         .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
     Ok(path)
+}
+
+/// The font a settings file names for `key`, comment lines not counted.
+///
+/// A **comment does not count**: the shipped files' headers talk about fonts at length — they explain
+/// what happens without one, and they show the per-script lines by name — and reading one of those
+/// lines as a reader who has chosen is the mistake that once left the characters missing.
+pub fn named(settings: &str, key: &str) -> Option<String> {
+    for line in settings.lines() {
+        if line.trim_start().starts_with('#') {
+            continue;
+        }
+        let Some((name, value)) = line.split_once(':') else {
+            continue;
+        };
+        if !name.trim().eq_ignore_ascii_case(key) {
+            continue;
+        }
+        let value = value.split('#').next().unwrap_or("").trim().trim_matches('"').trim();
+        if !value.is_empty() {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+/// The scripts whose face the settings file names itself: its `yi-<script>-font` lines.
+///
+/// Han is not among them even when the file names it — its key is pandoc's `CJKmainfont`, which the
+/// window is told about separately (`NamedFonts.cjk_mainfont`), and one fact with two homes is how the
+/// two drift apart.
+pub fn reader_scripts(settings: &str) -> Vec<&'static str> {
+    SLOTS
+        .iter()
+        .filter(|slot| {
+            slot.key
+                .is_some_and(|key| key.starts_with("yi-") && named(settings, key).is_some())
+        })
+        .map(|slot| slot.script)
+        .collect()
 }
 
 /// The faces' folder as fontspec wants it written: **with** a separator on the end.
@@ -314,32 +399,55 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts")
     }
 
-    /// The header is written from this build's asset and both holes are filled: one still saying
-    /// `@@FONTS@@` is a header XeTeX cannot read, and it is written for every export.
+    /// The header is written from this build's asset and the hole is filled: one face per script, every
+    /// line one fontspec can look up, and the reader's own names in the lines that asked for them.
     #[test]
-    fn the_header_names_the_folder_and_a_han_face() {
+    fn the_header_gives_every_script_a_face() {
         let dir = std::env::temp_dir().join("yi-header-test");
         std::fs::create_dir_all(&dir).unwrap();
-        let path = write_header(&dir, Path::new("/faces"), None).unwrap();
+        let path = write_header(&dir, Path::new("/faces"), "reader: markdown\n").unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         assert!(!text.contains("@@"), "a hole is left in the header");
-        // The folder ends in a separator: without one fontspec finds no face at all (measured).
-        assert!(text.contains("[Path={/faces/}]"), "the faces' folder is not named");
-        // And the face is named *in braces*: `[Path={…}]Noto…otf` is not a name fontspec can look up,
-        // and a page with the Hangul line alone still says it is one, so this asks for the Han line
-        // itself rather than for a shape somewhere in the file.
-        let typed = text
-            .lines()
-            .find(|line| line.starts_with("\\newfontfamily\\yiHan["))
-            .expect("no Han face from this build");
-        assert_eq!(typed, format!("\\newfontfamily\\yiHan[Path={{/faces/}}]{{{HAN_FACE}}}"));
         assert!(text.contains("\\setTransitionTo{BasicLatin}{\\normalfont}"));
+        // The folder ends in a separator and the face's name is in braces: `[Path={…}]Noto…otf` is not a
+        // name the lookup can find, and both were measured to stop the whole export.
+        for slot in SLOTS {
+            let expected = format!(
+                "\\newfontfamily\\yi{}[Path={{/faces/}}]{{{}}}",
+                slot.script, slot.file
+            );
+            assert!(
+                text.lines().any(|line| line == expected),
+                "no face of this build's for {}: {expected}",
+                slot.script
+            );
+        }
 
-        // A file that names a CJK font is handed that font, by name — not this build's face.
-        let named = write_header(&dir, Path::new("/faces"), Some("Songti SC")).unwrap();
-        let text = std::fs::read_to_string(named).unwrap();
-        assert!(text.contains("\\newfontfamily\\yiHan{Songti SC}"), "the reader's name went unused");
-        assert!(!text.contains("\\yiHan[Path"), "the shipped Han face is named as well");
+        // A file that names a face for two scripts — one of them Han, whose key is pandoc's own — is
+        // handed exactly those two by name, and every other script by this build's path.
+        let asked = "variables:\n  yi-hebrew-font: \"Frank Ruehl\"\n  CJKmainfont: \"Songti SC\"\n";
+        let path = write_header(&dir, Path::new("/faces"), asked).unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.contains("\\newfontfamily\\yiHebrew{Frank Ruehl}"), "Hebrew went unnamed");
+        assert!(text.contains("\\newfontfamily\\yiHan{Songti SC}"), "Han went unnamed");
+        assert!(
+            text.contains("\\newfontfamily\\yiThai[Path={/faces/}]{NotoSerifThai-Regular.ttf}"),
+            "a script nobody named lost this build's face"
+        );
+    }
+
+    /// The settings file's per-script lines, a comment counting for nothing: the shipped file's own
+    /// header shows every one of them by name, and a copy of it must not read as a reader who chose.
+    #[test]
+    fn a_script_line_names_a_face_and_a_comment_does_not() {
+        let file = "variables:\n  yi-thai-font: \"Sarabun\" # mine\n  # yi-hebrew-font: \"Frank Ruehl\"\n  CJKmainfont: \"Songti SC\"\n";
+        assert_eq!(named(file, "yi-thai-font").as_deref(), Some("Sarabun"));
+        assert_eq!(named(file, "yi-hebrew-font"), None);
+        assert_eq!(named(file, "YI-THAI-FONT").as_deref(), Some("Sarabun"));
+        assert_eq!(reader_scripts(file), vec!["Thai"]);
+        // A file that names nothing of its own answers with nothing, and the shipped file is one.
+        let pdf = crate::export::KINDS.iter().find(|kind| kind.kind == "pdf").unwrap();
+        assert!(reader_scripts(pdf.defaults).is_empty());
     }
 
     /// What the faces draw, in the shape the window asks about: the scripts this build claims are

@@ -1,16 +1,19 @@
 /**
- * A CJK font the reader names, and the page it is drawn with — Han and kana with it, Hangul with the
- * face this build ships.
+ * The fonts the reader names, and the page they draw — Han and kana with `CJKmainfont`, Hebrew with
+ * `yi-hebrew-font`, and Hangul with the face this build ships.
  *
- * `export-pdf-scripts.js` is the other half of this: a note in ten scripts, drawn with nothing named
- * in the settings file at all. What that leaves out is the reader who *does* name one — the header the
- * app writes hands Han and kana to the name the file gives (`export_fonts::write_header`), and this is
- * that handover working on a real page: the file's line is added to the reader's own copy, the export
- * runs, and the PDF's own `/BaseFont` entries say which face drew what.
+ * `export-pdf-scripts.js` is the other half of this: a note in ten scripts, drawn with nothing named in
+ * the settings file at all. What that leaves out is the reader who *does* name one — the header the app
+ * writes gives a script the name the file gives it (`export_fonts::write_header`, one line per script:
+ * `yi-hebrew-font`, `yi-thai-font`, … and `CJKmainfont` for Han and kana) — and this is that handover
+ * working on a real page: two of the file's lines are added to the reader's own copy, the export runs,
+ * and the PDF's own `/BaseFont` entries say which face drew what. The sharp half is what is *absent*:
+ * the shipped Hebrew face must be gone from that page, or naming one of your own would be a promise the
+ * app does not keep.
  *
- * Measured here, and the reason Hangul is not handed over as well: the macOS `Songti SC` draws Han and
- * kana and **has no Hangul** — a Korean note that named it lost every syllable — so the build's own
- * face draws Hangul whatever the file says.
+ * Measured here, and the reason Hangul is shipped at all: the macOS `Songti SC` draws Han and kana and
+ * **has no Hangul** — a Korean note that named it lost every syllable — so a file that names a face for
+ * Han alone still gets Hangul from this build's face.
  *
  * It also fails when the app stops handing the reader's file to pandoc as it stands, which is the thing
  * that makes the file the reader's.
@@ -54,11 +57,15 @@
   // document's own face and the shipped Hangul face alone.
   const cjk = ['简体中文', '日本語'];
   const hangul = '한국어';
+  const hebrew = 'עברית';
+  const greek = 'Ελληνικά';
   const latin = 'And latin after it.';
-  const note = `# Going out\n\n${cjk.join(' ')} ${hangul} ${latin}\n`;
+  const note = `# Going out\n\n${cjk.join(' ')} ${hangul} ${hebrew} ${greek} ${latin}\n`;
   /** The font the reader names, and how its own name appears in the PDF once it has drawn anything. */
   const named = 'Songti SC';
   const namedFace = 'STSongti';
+  const namedHebrew = 'Arial Unicode MS';
+  const namedHebrewFace = 'ArialUnicodeMS';
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -104,11 +111,19 @@
     const settings = await bytesOf(config).then((bytes) =>
       bytes === null ? '' : new TextDecoder().decode(bytes)
     );
-    const withFont = settings.replace('\nvariables:\n', `\nvariables:\n  CJKmainfont: "${named}"\n`);
+    const withFont = settings.replace(
+      '\nvariables:\n',
+      `\nvariables:\n  CJKmainfont: "${named}"\n  yi-hebrew-font: "${namedHebrew}"\n`
+    );
     check(
-      'the line the reader writes goes into their own settings file, where pandoc reads it',
-      withFont !== settings && withFont.includes(`CJKmainfont: "${named}"`),
-      { path: shipped, line: withFont.split('\n').find((line) => line.includes(named)) }
+      'the lines the reader writes go into their own settings file, where pandoc reads them',
+      withFont !== settings &&
+        withFont.includes(`CJKmainfont: "${named}"`) &&
+        withFont.includes(`yi-hebrew-font: "${namedHebrew}"`),
+      {
+        path: shipped,
+        lines: withFont.split('\n').filter((line) => line.includes(named) || line.includes(namedHebrew))
+      }
     );
     await files.writeTextAtomically(config, withFont);
 
@@ -126,9 +141,13 @@
     );
 
     const page = bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
-    const missing = [...cjk.join(''), hangul].filter((character) => !page.includes(character));
+    // Each script's *characters*, one by one: the page is written right to left where the script is, so
+    // a Hebrew word reads back reversed, and what is pinned is that every character is on it.
+    const missing = [...cjk.join(''), ...[hangul, hebrew, greek].join('')].filter(
+      (character) => !page.includes(character) && character !== ' '
+    );
     check(
-      'and the characters of Han, kana and Hangul are on the page, each drawn by a font that has it',
+      'and the characters of Han, kana, Hangul, Hebrew and Greek are all on the page',
       missing.length === 0,
       { missing, page: page.slice(0, 120) }
     );
@@ -142,13 +161,24 @@
     // Hangul with the one the build ships.
     const drawn = bytes === null ? [] : await t.pdfFonts(bytes);
     check(
-      'Han and kana are drawn with the font the file names, and not with a face of the build’s',
+      'Han and kana are drawn with the font the file names for CJK, and not with a face of the build’s',
       drawn.some((name) => name.includes(namedFace)),
       { drawn: drawn.slice(0, 12) }
     );
     check(
       'and Hangul with the face this build ships, which is why a Korean note survives that line',
       drawn.some((name) => name.includes('NotoSerifCJKsc')),
+      { drawn: drawn.slice(0, 12) }
+    );
+    check(
+      'Hebrew is drawn with the face the file names for *that* script, with this build’s Hebrew face absent',
+      drawn.some((name) => name.includes(namedHebrewFace)) &&
+        !drawn.some((name) => name.includes('NotoSerifHebrew')),
+      { drawn: drawn.slice(0, 12) }
+    );
+    check(
+      'and a script the file names nothing for still gets this build’s own face',
+      drawn.some((name) => name.includes('NotoSerif-Regular')),
       { drawn: drawn.slice(0, 12) }
     );
   } finally {

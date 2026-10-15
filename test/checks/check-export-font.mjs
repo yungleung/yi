@@ -71,10 +71,20 @@ const SHIPPED_RANGES = [
 ];
 
 /** The shipped pdf file as the app reads it, and the shapes a reader's own file can take. */
-const shipped = { needs_a_font: true, mainfont: false, cjk_mainfont: false, shipped: SHIPPED_RANGES };
-const wide = { needs_a_font: true, mainfont: true, cjk_mainfont: false, shipped: SHIPPED_RANGES };
-const namedCjk = { needs_a_font: true, mainfont: false, cjk_mainfont: true, shipped: SHIPPED_RANGES };
-const plain = { needs_a_font: false, mainfont: false, cjk_mainfont: false, shipped: [] };
+const shaped = (over) => ({
+  needs_a_font: true,
+  mainfont: false,
+  cjk_mainfont: false,
+  shipped: SHIPPED_RANGES,
+  named_scripts: [],
+  ...over
+});
+const shipped = shaped({});
+const wide = shaped({ mainfont: true });
+const namedCjk = shaped({ cjk_mainfont: true });
+const plain = shaped({ needs_a_font: false, shipped: [] });
+/** A file that names a face of its own for one script: `yi-hebrew-font: "Frank Ruehl"`. */
+const namedHebrew = shaped({ named_scripts: ['Hebrew'] });
 
 /** A script with no face of its own, and the symbols every face this build ships is measured to miss. */
 const UNCOVERED = ['ʃ', 'ɐ', 'ʰ', '↔', '⇒', '⇐', '≤', '≥', '≠', '≈', '∑', '∏', '✓', '☺', '⚠', '♭',
@@ -128,6 +138,15 @@ const UNCOVERED = ['ʃ', 'ɐ', 'ʰ', '↔', '⇒', '⇐', '≤', '≥', '≠', '
   check('Han past the face’s own blocks is reported', uncoveredCharacters('𠀀𪛖', shipped), ['𠀀', '𪛖']);
   check('and not once a CJK font is named', uncoveredCharacters('𠀀𪛖', namedCjk), []);
   check('nor is a script with no face of its own, once a font is named for the document', uncoveredCharacters('தமிழ் ሰላም', wide), []);
+}
+
+{
+  // A face named for *one* script — `yi-hebrew-font:` — is that script's answer, and nobody else's: the
+  // characters of another script are still the shipped faces' business, and one no face covers is still
+  // reported.
+  check('a script whose face the file names is the file’s business', uncoveredCharacters('עברית', namedHebrew), []);
+  check('and what no face covers is still reported beside it', uncoveredCharacters('עברית தமிழ்', namedHebrew), ['த', 'ம', 'ி', 'ழ', '்']);
+  check('while the shipped faces still answer for the scripts nobody named', uncoveredCharacters('Ελληνικά 한국어', namedHebrew), []);
 }
 
 {

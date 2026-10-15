@@ -244,15 +244,20 @@ Arabic, Devanagari, Thai, Armenian, Georgian, Han, kana and Hangul all draw, wit
 face so the page can be searched and copied from (`export-pdf-scripts.js` reads such a page back, and
 reads the page's `/BaseFont` names to say they were *this build's* faces).
 
-**What the reader's file names still wins**, in two ways and no more, and the header's own comment says
-so: `mainfont` is the document's own font — `\normalfont`, so Latin and every block no shipped face
-answers for is set in it, and a script *no* face is shipped for (Tamil, Ethiopic, …) is its business
-alone; `CJKmainfont` is handed Han and kana **by the name the file gives** (the header is written from
-the same file pandoc is about to be handed: `named_fonts`, which reads the names themselves). Hangul is
-not handed over even then, which is the one deliberate exception: the fonts a platform has for Han very
-often have none of it — measured, the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean
-note that named it lost every syllable — and `export-pdf-font.js` is that page: the reader's face draws
-Han and kana, the shipped face draws Hangul. The **latex** kind ships no header and says
+**What the reader's file names still wins**, and the header's own comment says how: `mainfont` is the
+document's own font — `\normalfont`, so Latin and every block no shipped face answers for is set in it,
+and a script *no* face is shipped for (Tamil, Ethiopic, …) is its business alone; `yi-<script>-font`
+names a face of their own for **one** script, by the name their machine knows it by (`yi-hebrew-font:
+"Frank Ruehl"`, and the slot list is `export_fonts::SLOTS` — one fact, holding the script, the key and
+the shipped file together); `CJKmainfont` is Han and kana's, pandoc's own key. The header is written
+from the same file pandoc is about to be handed, and each line it finds becomes
+`\newfontfamily\yi<Script>{the name}` instead of the shipped file's — measured: with a Hebrew line
+named, the page carries the reader's face and **not** the shipped Hebrew face
+(`export-pdf-font.js` reads the page's own `/BaseFont` entries), while a script nobody named still gets
+the shipped face. Hangul is why a face is shipped at all: the fonts a platform has for Han very often
+have none of it — measured, the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean note
+set in it lost every syllable — so the shipped face draws Hangul whenever the file names none for it.
+The **latex** kind ships no header and says
 `needs_a_font` for the same reason: a `.tex` is compiled on the reader's own machine, where a path into
 this app's bundle is a path that will not exist.
 What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
