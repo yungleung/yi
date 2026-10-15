@@ -475,10 +475,12 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         .needs_pandoc
         .then(|| dir.join(config_file_name(kind.kind)));
     let config_exists = config.as_deref().is_some_and(Path::exists);
+    // The file is the one this build ships — byte for byte, or not written at all, in which case the
+    // shipped bytes are what an export would use.
     let config_is_shipped = config
         .as_deref()
-        .and_then(|path| fs::read(path).ok())
-        .is_some_and(|bytes| bytes == kind.defaults.as_bytes());
+        .map(|path| fs::read(path).map(|bytes| bytes == kind.defaults.as_bytes()).unwrap_or(true))
+        .unwrap_or(false);
     ExportKindInfo {
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
@@ -863,6 +865,37 @@ pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// The widest font this platform is known to have, as the name XeTeX answers to and the file that
+/// being there is what says so — the one line the card can name when a note is written in characters
+/// the settings cannot draw.
+///
+/// **Measured on macOS**: `Arial Unicode MS` draws Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
+/// Armenian, Georgian, Hangul, Han and kana, and keeps a `ToUnicode` map while it does
+/// (`export-pdf-font.js` reads such a page back), which is why it is the one named here. The other
+/// platforms have no entry yet **on purpose**: they must be verified by drawing the scripts first, for
+/// two measured reasons — XeTeX answers to a font's own name, and `PingFang SC`, `SF Hebrew` and `Noto
+/// Sans Georgian` each exist as files that name answers to nothing, while a name the lookup cannot
+/// find fails the whole export rather than falling back. A machine whose platform is not here is told
+/// nothing and the file's header carries the recipe instead.
+#[cfg(target_os = "macos")]
+const WIDEST_FONT: Option<(&str, &str)> = Some(("/Library/Fonts/Arial Unicode.ttf", "Arial Unicode MS"));
+#[cfg(not(target_os = "macos"))]
+const WIDEST_FONT: Option<(&str, &str)> = None;
+
+/// The name of that font, or none when the machine does not have it.
+fn suggested_font_in(
+    known: Option<(&'static str, &'static str)>,
+    exists: impl Fn(&str) -> bool,
+) -> Option<&'static str> {
+    let (file, name) = known?;
+    exists(file).then_some(name)
+}
+
+/// The font the card names on this machine, if any.
+fn suggested_font() -> Option<&'static str> {
+    suggested_font_in(WIDEST_FONT, |file| Path::new(file).exists())
+}
+
 /// What a kind's conversion settings name, as the window reads it: whether the kind's output is
 /// typeset with those fonts at all, whether a font is named for the document as a whole, and whether
 /// one is named for CJK.
@@ -878,15 +911,18 @@ pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<Stri
 #[tauri::command]
 pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFonts, String> {
     let kind = kind_of(&kind)?;
-    let (mainfont, cjk_mainfont) = if kind.needs_pandoc {
-        named_fonts(&settings_text(&app, kind)?)
+    let settings = if kind.needs_pandoc {
+        settings_text(&app, kind)?
     } else {
-        (false, false)
+        String::new()
     };
+    let (mainfont, cjk_mainfont) = named_fonts(&settings);
     Ok(NamedFonts {
         needs_a_font: kind.needs_a_font,
         mainfont,
         cjk_mainfont,
+        cjk_covers_hangul: cjk_covers_hangul(kind, &settings),
+        suggested_font: suggested_font().map(str::to_string),
     })
 }
 
@@ -897,8 +933,51 @@ pub struct NamedFonts {
     pub needs_a_font: bool,
     /// Whether a font is named for the document as a whole: it answers for anything it has.
     pub mainfont: bool,
-    /// Whether a font is named for CJK — which reaches CJK punctuation, kana and Han, and not Hangul.
+    /// Whether a font is named for CJK — which xeCJK routes **CJK punctuation, kana, Han and Hangul**
+    /// to (measured: with both variables named, a Korean note's Hangul was set with the *CJK* font and
+    /// lost with it).
     pub cjk_mainfont: bool,
+    /// Whether that CJK font is one the app knows has Hangul.
+    ///
+    /// True only for a file the **reader** has made their own, where their font is taken to hold what
+    /// they chose it for. False for the one this build ships, whose font is measured not to have
+    /// Hangul — and false, therefore, for a reader who has never touched it, which is the case the
+    /// card's hint exists for.
+    pub cjk_covers_hangul: bool,
+    /// The widest font this machine is known to have, for the card to **name** when a note is written
+    /// in characters those settings cannot draw — a name to type, not a choice the app makes: the
+    /// reader still writes the line, and may write any other.
+    pub suggested_font: Option<String>,
+}
+
+/// The CJK font this build's own file names, read off that file — so the default and what the app says
+/// about it cannot drift apart.
+fn shipped_cjk_font(kind: &ExportKind) -> Option<&str> {
+    kind.defaults
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .find_map(|line| line.trim().strip_prefix("CJKmainfont:"))
+        .map(|value| value.trim().trim_matches('"'))
+}
+
+/// Whether the CJK font a settings file names is one the app knows has Hangul.
+///
+/// It knows exactly one font: the one its own file names, which is measured **not** to have Hangul
+/// (`Songti SC`), so a file that still names that one — the reader's copy of an older build included —
+/// answers no. Any other name is the reader's own, and is taken to hold what they chose it for.
+fn cjk_covers_hangul(kind: &ExportKind, settings: &str) -> bool {
+    let (_, cjk) = named_fonts(settings);
+    if !cjk {
+        return false;
+    }
+    match shipped_cjk_font(kind) {
+        Some(ours) => !settings.lines().any(|line| {
+            !line.trim_start().starts_with('#')
+                && line.trim().starts_with("CJKmainfont:")
+                && line.contains(ours)
+        }),
+        None => true,
+    }
 }
 
 /// The settings a kind would be run with, as their own text: the reader's copy when it has been
@@ -1001,9 +1080,10 @@ mod tests {
         let dir = scratch("config-is-shipped");
         let kind = &KINDS[0];
 
-        // No file yet: nothing to replace, and the card offers nothing.
+        // No file yet: the shipped bytes are what an export would use, and there is nothing to
+        // replace — the card asks `config_exists` as well, so nothing is offered.
         assert!(!kind_info(&dir, kind).config_exists);
-        assert!(!kind_info(&dir, kind).config_is_shipped);
+        assert!(kind_info(&dir, kind).config_is_shipped);
 
         // The copy this build wrote is that one, byte for byte: nothing to replace.
         ensure_defaults_in(&dir, kind).unwrap();
@@ -1210,6 +1290,41 @@ mod tests {
         // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    #[test]
+    fn the_cjk_font_the_build_ships_is_known_to_have_no_hangul() {
+        let kind = kind_of("pdf").unwrap();
+        let ours = shipped_cjk_font(kind).expect("the pdf file names a CJK font");
+        assert!(kind.defaults.contains(&format!("CJKmainfont: \"{ours}\"")), "{ours}");
+
+        // The file this build ships — and a reader's copy of an older one, which is the same line —
+        // names a font the app has measured: no Hangul in it.
+        assert!(!cjk_covers_hangul(kind, &format!("variables:\n  CJKmainfont: \"{ours}\"\n")));
+        // A reader who names their own is taken to hold what they chose it for.
+        assert!(cjk_covers_hangul(kind, "variables:\n  CJKmainfont: \"AppleGothic\"\n"));
+        // And a file that names no CJK font at all answers for no Hangul either: `mainfont` is not what
+        // sets it.
+        assert!(!cjk_covers_hangul(kind, "variables:\n  mainfont: \"Arial Unicode MS\"\n"));
+    }
+
+    #[test]
+    fn the_font_the_card_names_is_one_the_machine_is_known_to_have() {
+        // A platform with an entry, and the file is there: that is the name the card names.
+        assert_eq!(
+            suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |file| file == "/here/font.ttf"),
+            Some("A Wide Font")
+        );
+        // The file is not there, or the platform has no entry: the card names nothing at all, and the
+        // file's own header is where the reader finds the recipe instead.
+        assert_eq!(suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |_| false), None);
+        assert_eq!(suggested_font_in(None, |_| true), None);
+        // And what this machine's own entry answers, whatever it is: the name is one of the pair, never
+        // a guess.
+        if let Some(name) = suggested_font() {
+            let (_, named) = WIDEST_FONT.expect("a suggested font comes from an entry");
+            assert_eq!(name, named);
+        }
     }
 
     #[test]

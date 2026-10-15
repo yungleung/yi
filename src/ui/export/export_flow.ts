@@ -74,11 +74,13 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   // kind's conversion settings name no font for. The app reads the *file* (`api/export.ts:
   // namedFonts`) and the window walks the *parse* (`font_hint.ts`), because a formula is not a
   // paragraph — `$\le$` draws where a bare `≤` does not.
+  const fonts = await namedFonts(first.kind);
   const answer = await exportDialog.ask({
     kind: first,
     pandoc,
     baseTarget,
-    uncovered: uncoveredCharacters(text, await namedFonts(first.kind))
+    uncovered: uncoveredCharacters(text, fonts),
+    suggestedFont: fonts.suggested_font
   });
   if (answer === null) {
     return;

@@ -15,10 +15,13 @@
  *   ([`DRAWN_RANGES`]) plus the characters measured outside them ([`DRAWN`]), and everything else is
  *   a character the default page loses.
  * - **what the settings name.** `mainfont` answers for anything the font it names has; `CJKmainfont`
- *   answers for CJK punctuation, kana and Han (extensions included) and **not** for Hangul — measured,
- *   and the reason a Korean note with only that variable named loses its Hangul. Which of the two a
- *   file names is the app's to read (the file's own bytes, comments not counted:
- *   `src-tauri/src/export.rs: named_fonts`), and it arrives here as the booleans in [`NamedFonts`].
+ *   is what xeCJK routes **CJK punctuation, kana, Han and Hangul** to — measured: with both variables
+ *   named, a Korean note's Hangul was set with the *CJK* font and lost with it, so `mainfont` cannot
+ *   answer for Hangul while a CJK font is named. Whether that font has Hangul is not something the app
+ *   can read out of a name; it knows only what the file *it ships* holds (`NamedFonts.cjk_covers_hangul`
+ *   — measured: the shipped `Songti SC` has none), and takes the reader's own font to hold what they
+ *   chose it for. Which of the two variables a file names is the app's to read (the file's own bytes,
+ *   comments not counted: `src-tauri/src/export.rs: named_fonts`).
  *
  * **A formula is not a paragraph.** `$x \le y$` and `$\sum_i a_i$` draw: pandoc sets those with Latin
  * Modern *Math*, which has what the text font lacks (measured — the same `≤` and `∑` are missing from
@@ -50,12 +53,16 @@ const DRAWN_RANGES: readonly (readonly [number, number])[] = [
  */
 const DRAWN = 'ə←↑→↓√∞±×÷♪';
 
-/** The ranges `CJKmainfont` reaches, measured one page each: Hangul is deliberately absent. */
+/**
+ * The ranges xeCJK routes to `CJKmainfont`, measured one page each — Hangul among them: with both
+ * variables named, a Korean note's Hangul went to the *CJK* font (and was lost with `Songti SC`).
+ */
 const CJK_MAIN_FONT_RANGES: readonly (readonly [number, number])[] = [
   [0x3000, 0x303f], // CJK punctuation: 、。「」
   [0x3040, 0x30ff], // hiragana and katakana
   [0x3400, 0x4dbf], // unified ideographs, extension A
   [0x4e00, 0x9fff], // unified ideographs
+  [0xac00, 0xd7af], // hangul syllables, which the CJK font is asked for and `mainfont` cannot save
   [0xf900, 0xfaff], // compatibility ideographs
   [0x20000, 0x2fa1f] // extensions B to F
 ];
@@ -63,6 +70,19 @@ const CJK_MAIN_FONT_RANGES: readonly (readonly [number, number])[] = [
 /** Whether a code point is inside one of `ranges`. */
 function within(point: number, ranges: readonly (readonly [number, number])[]): boolean {
   return ranges.some(([first, last]) => point >= first && point <= last);
+}
+
+/** Whether xeCJK routes this character to the CJK font (Han, kana, CJK punctuation, Hangul). */
+function reachedByCjkFont(point: number): boolean {
+  return within(point, CJK_MAIN_FONT_RANGES);
+}
+
+/**
+ * Whether the character is a Hangul syllable — the one routed range a CJK font may or may not hold, and
+ * the reason `cjk_covers_hangul` is asked about: the shipped `Songti SC` has none of them (measured).
+ */
+function isHangul(point: number): boolean {
+  return point >= 0xac00 && point <= 0xd7af;
 }
 
 /** Whether the TeX suite's own font was measured to draw this character. */
@@ -77,9 +97,8 @@ function latinModernDraws(character: string): boolean {
  * character a formula holds.
  */
 export function uncoveredCharacters(text: string, fonts: NamedFonts): string[] {
-  if (!fonts.needs_a_font || fonts.mainfont) {
-    // A kind that carries the characters as characters needs no font named, and `mainfont` is a font
-    // for the whole document: the reader who named one answered for everything it has.
+  if (!fonts.needs_a_font) {
+    // A kind whose output carries the characters as characters needs no font named at all.
     return [];
   }
   const tree = parseMarkdown(text) as unknown as Walkable;
@@ -97,8 +116,20 @@ export function uncoveredCharacters(text: string, fonts: NamedFonts): string[] {
     if (uncovered.includes(character) || inMaths(at) || latinModernDraws(character)) {
       continue;
     }
-    if (fonts.cjk_mainfont && within(character.codePointAt(0) ?? 0, CJK_MAIN_FONT_RANGES)) {
-      continue;
+    const point = character.codePointAt(0) ?? 0;
+    if (reachedByCjkFont(point)) {
+      // A CJK character is the CJK variable's business *where a CJK font is named*, and nobody else's:
+      // with one named, `mainfont` cannot answer for a Hangul character (measured) and Hangul is
+      // answered for only where the app knows that font has it — the reader's own, never the shipped
+      // one. A file that names no CJK font leaves the whole range to the document's font, as any other
+      // script (measured: `mainfont` alone draws Han, kana and Hangul).
+      const answeredByCjk =
+        fonts.cjk_mainfont && (!isHangul(point) || fonts.cjk_covers_hangul);
+      if (answeredByCjk || (!fonts.cjk_mainfont && fonts.mainfont)) {
+        continue;
+      }
+    } else if (fonts.mainfont) {
+      continue; // Any other script: the font named for the document answers for what it has.
     }
     uncovered.push(character);
   }

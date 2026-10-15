@@ -81,6 +81,7 @@
   "export.replaceQuestion": "Ihre Kopie von {path} durch die in diesem Build mitgelieferte ersetzen? Was Sie darin geändert haben, geht verloren.",
   "export.noPandoc": "Auf diesem Rechner wurde pandoc nicht gefunden, daher kann diese Art des Exports nicht laufen.",
   "export.fontHint": "Keine Schrift in den Konvertierungseinstellungen zeigt diese Zeichen: {characters} — nennen Sie dort eine (`mainfont:` deckt jedes Schriftsystem ab).",
+  "export.fontHintFont": "Keine Schrift in den Konvertierungseinstellungen zeigt diese Zeichen: {characters} — fügen Sie dort `mainfont: \"{font}\"` und `CJKmainfont: \"{font}\"` hinzu; diese Schrift deckt auf dieser Maschine am meisten ab, und beide Zeilen sind nötig, weil Hangul über `CJKmainfont` gesetzt wird.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Gib den Pfad an, in den die Datei geschrieben werden soll.",
   "export.cancel": "Abbrechen",

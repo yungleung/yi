@@ -1030,6 +1030,29 @@ elements) unless it says otherwise.
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
+- **The recipe for the scripts the shipped font does not cover, and the measurement that corrected it.**
+  The reader asked how that gap would be closed without the app choosing fonts; what landed is the recipe
+  and the proof. `export.pdf.yaml`'s header now carries it per OS — Hangul needs a *CJK* font that has it
+  (`AppleGothic`/`Apple SD Gothic Neo` on macOS, `Malgun Gothic` on Windows, `Noto Sans KR` on Linux);
+  Greek, Cyrillic, Hebrew, Arabic, Indic, Thai, Armenian and Georgian need `mainfont`; and a note with
+  both needs both lines naming one wide font — and the card's hint names that font and both lines when a
+  note needs them (`suggested_font`, a name to type rather than a choice the app makes), which is the
+  piece of "the app should not choose fonts" that survives contact with a reader who has never opened a
+  YAML file.
+  **And writing the proof is what showed the advice was wrong.** `export-pdf-scripts.js` follows the
+  card's line and reads the page back, and on its first run the probe hung — because the line it wrote
+  produced a file pandoc would not parse (it had replaced the first *textual* occurrence of
+  `variables:`, which is in the header's own comment). Fixed, it passed, and then the *other* probes
+  began failing: the same insertion mistake left two `mainfont:` lines in the app's own copy, which is
+  invalid YAML, so every pdf export failed until it was written back by hand. Two things came out of
+  that: the harness now backs the reader's **export settings files** up and restores them exactly as it
+  already did the config and the session (a page reload in the middle of a probe takes the probe's own
+  restore with it — the reader's files are the harness's to put back), and the recipe itself was
+  measured properly, which is where those three findings came from: `mainfont` alone does **not** save
+  Hangul while a CJK font is named, and the shipped `Songti SC` is what the Hangul is handed. The rule
+  in `font_hint.ts` was corrected with it — Hangul is routed by xeCJK to the CJK font, so it is a CJK
+  character that a CJK font answers for only where the app knows that font has it, and it knows exactly
+  one font: the one its own file ships, which has none.
 - **A shipped file that changes does not reach a reader who already has one — and now the reader can
   ask for it.** `ensure_defaults_in` writes a kind's file once and never again, which is what makes an
   edit the reader's; so the `CJKmainfont` line added to `export.latex.yaml` (and the pdf rounds before

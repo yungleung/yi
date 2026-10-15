@@ -230,15 +230,22 @@ in Latin**, which is a fact of the *file* and not of the app: `export.pdf.yaml` 
 `CJKmainfont: "Songti SC"` under `variables:`, measured to draw Han and kana with a `ToUnicode` map a
 reader can search and copy by (`export-pdf-font.js` reads such a page back; without a font named, XeTeX
 draws the space the words took and none of the words, and the app shows the reader its warning for each
-character). That default covers CJK and nothing else — no Hangul, no Greek, Cyrillic, Hebrew, Arabic,
-Devanagari, Thai, Armenian or Georgian — and a reader who needs one names it in the same file, which is
-theirs and which the app never rewrites. The **latex** kind names the same font in `export.latex.yaml`
+character). What the two variables reach is **measured, not assumed**: `CJKmainfont` is what xeCJK
+routes CJK punctuation, kana, Han **and Hangul** to (with both variables named, a Korean note's Hangul
+was set with the CJK font and lost with it), and `mainfont` is what every other script is set with —
+and what cannot answer for Hangul while a CJK font is named. So the default covers Han and kana and
+nothing else, the file's own header carries the recipe for the rest (Hangul: a CJK font that has it;
+Greek/Cyrillic/Hebrew/Arabic/Indic/Thai/Armenian/Georgian: `mainfont`; both at once: both lines naming
+one wide font, measured), and the reader's file is theirs — the app never rewrites it. The **latex** kind names the same font in `export.latex.yaml`
 and for the same measured reason: without it the `.tex` carries no font setup at all, and the reader
 who compiles it gets XeTeX's *"Missing character"* for every CJK character in the document.
 What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
 is typeset with those fonts (`needs_a_font`: the pdf and the latex) has its card drawn with the
 characters no font in its settings can draw — and it says so in the app's own words, with the settings
-file and its *Reveal in folder* button already beside it. The two halves come from the two places that
+file and its *Reveal in folder* button already beside it — and it *names the font to add*, in both
+lines, because that is what the measurements say works: the widest font the machine is known to have
+(`export_named_fonts` → `suggested_font`, a name to type and not a choice the app makes). The two halves
+come from the two places that
 hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
 copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing
 because a shipped header talks about fonts at length), and **the note**, which the window walks out of

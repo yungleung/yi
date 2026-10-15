@@ -19,7 +19,8 @@
  * `export-pdf.js` already spends them on the Latin half (see its header).
  *
  * @covers src-tauri/assets/export/export.pdf.yaml (the font it names),
- *   src-tauri/src/export.rs (the reader's file is what pandoc is handed)
+ *   src-tauri/src/export.rs (the reader's file is what pandoc is handed), test/probes/lib.js
+ *   (pdfText, the page read back)
  */
 (async () => {
   const t = window.__t;
@@ -46,96 +47,6 @@
       await sleep(100);
     }
     return false;
-  };
-
-  /**
-   * Every stream of the file that inflates, as its bytes read one byte to one character: the object
-   * streams, the fonts' tables and the page. A stream that is not deflate is not one this reads, and
-   * the walk resumes after each `endstream` so a stream's own contents cannot be mistaken for the
-   * next one's.
-   */
-  const inflated = async (bytes) => {
-    const latin = new TextDecoder('latin1').decode(bytes);
-    const streams = [];
-    let index = 0;
-    for (;;) {
-      const at = latin.indexOf('stream', index);
-      if (at < 0) {
-        return streams;
-      }
-      let from = at + 'stream'.length;
-      if (latin[from] === '\r') from += 1;
-      if (latin[from] === '\n') from += 1;
-      const end = latin.indexOf('endstream', from);
-      if (end < 0) {
-        return streams;
-      }
-      let stop = end;
-      while (stop > from && (latin[stop - 1] === '\n' || latin[stop - 1] === '\r')) stop -= 1;
-      index = end + 'endstream'.length;
-      try {
-        const stream = new Blob([bytes.slice(from, stop)])
-          .stream()
-          .pipeThrough(new DecompressionStream('deflate'));
-        streams.push(new TextDecoder('latin1').decode(await new Response(stream).arrayBuffer()));
-      } catch {
-        // Not deflate (a font's own tables are not), so nothing here reads it.
-      }
-    }
-  };
-
-  /** A `ToUnicode` map's target, which is written as hex of UTF-16 code units (`utf-16be`). */
-  const fromHex = (hex) =>
-    new TextDecoder('utf-16be').decode(
-      Uint8Array.from(hex.match(/../g) ?? [], (pair) => parseInt(pair, 16))
-    );
-
-  /**
-   * What the page draws, rebuilt from the file: each font's `ToUnicode` map says which character a
-   * drawn code stands for, and the page's own text operators say which codes it draws. XeTeX draws
-   * runs of them `<hex> Tj`, arrays `[<hex>] TJ` and — for the characters its font has directly — as
-   * `(plain) Tj`, so all three are read. A code no map names is a character the page cannot draw,
-   * and it is left out rather than guessed at: what is asserted is what is *on* the page.
-   */
-  const pageText = async (bytes) => {
-    const streams = await inflated(bytes);
-    const chars = new Map();
-    for (const text of streams) {
-      for (const block of text.match(/beginbfchar[\s\S]*?endbfchar/g) ?? []) {
-        for (const [, code, to] of block.matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) {
-          chars.set(parseInt(code, 16), fromHex(to));
-        }
-      }
-      for (const block of text.match(/beginbfrange[\s\S]*?endbfrange/g) ?? []) {
-        for (const [, lo, hi, to] of block.matchAll(
-          /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g
-        )) {
-          const first = parseInt(lo, 16);
-          const base = parseInt(to, 16);
-          for (let code = first; code <= parseInt(hi, 16); code += 1) {
-            chars.set(code, String.fromCharCode(base + code - first));
-          }
-        }
-      }
-    }
-    const decode = (hex) =>
-      (hex.replace(/\s+/g, '').match(/..../g) ?? [])
-        .map((code) => chars.get(parseInt(code, 16)) ?? '')
-        .join('');
-    const drawn = (streams.find((text) => text.includes('BT')) ?? '').matchAll(
-      /<([0-9A-Fa-f\s]+)>\s*Tj|\(((?:\\.|[^()\\])*)\)\s*Tj|\[([^\]]*)\]\s*TJ/g
-    );
-    return [...drawn]
-      .map(([, hex, plain, array]) => {
-        if (hex !== undefined) {
-          return decode(hex);
-        }
-        if (plain !== undefined) {
-          return plain.replace(/\\(.)/g, '$1');
-        }
-        return [...array.matchAll(/<([0-9A-Fa-f\s]+)>/g)].map((run) => decode(run[1])).join('');
-      })
-      .join('');
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
@@ -203,7 +114,7 @@
       { written, size: bytes?.length ?? 0 }
     );
 
-    const page = bytes === null ? '' : await pageText(bytes);
+    const page = bytes === null ? '' : await t.pdfText(bytes);
     // XeTeX positions words rather than drawing the spaces between them, so the page is compared
     // character by character rather than as a substring: what is pinned is that the *characters* are
     // there, not where the spaces fell.

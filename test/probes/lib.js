@@ -225,6 +225,92 @@ window.__t = (() => {
     return layout();
   };
 
+
+  /**
+   * What a PDF's page says, rebuilt from the file: a font's `ToUnicode` map names the character a
+   * drawn code stands for, and the page's own text operators say which codes it draws — `<hex> Tj`,
+   * `[<hex>] TJ` and, for characters the font holds directly, `(plain) Tj`. A code no map names is a
+   * character the page cannot draw and is left out rather than guessed at, so what comes back is what
+   * is *on* the page.
+   *
+   * The streams are read one byte to one character (`latin1`), and one that is not deflate — a font's
+   * own tables are not — is skipped. This is what `export-pdf-font.js` and `export-pdf-scripts.js`
+   * read a page with, and it is here because two probes need the same instrument, not because every
+   * probe does.
+   */
+  const pdfText = async (bytes) => {
+    const latin = new TextDecoder('latin1').decode(bytes);
+    const streams = [];
+    let index = 0;
+    for (;;) {
+      const at = latin.indexOf('stream', index);
+      if (at < 0) {
+        break;
+      }
+      let from = at + 'stream'.length;
+      if (latin[from] === '\r') from += 1;
+      if (latin[from] === '\n') from += 1;
+      const end = latin.indexOf('endstream', from);
+      if (end < 0) {
+        break;
+      }
+      let stop = end;
+      while (stop > from && (latin[stop - 1] === '\n' || latin[stop - 1] === '\r')) stop -= 1;
+      index = end + 'endstream'.length;
+      try {
+        const stream = new Blob([bytes.slice(from, stop)])
+          .stream()
+          .pipeThrough(new DecompressionStream('deflate'));
+        streams.push(new TextDecoder('latin1').decode(await new Response(stream).arrayBuffer()));
+      } catch {
+        // Not deflate, so nothing here reads it.
+      }
+    }
+    const chars = new Map();
+    for (const text of streams) {
+      for (const block of text.match(/beginbfchar[\s\S]*?endbfchar/g) ?? []) {
+        for (const [, code, to] of block.matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) {
+          chars.set(parseInt(code, 16), fromHex(to));
+        }
+      }
+      for (const block of text.match(/beginbfrange[\s\S]*?endbfrange/g) ?? []) {
+        for (const [, lo, hi, to] of block.matchAll(
+          /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g
+        )) {
+          const first = parseInt(lo, 16);
+          const base = parseInt(to, 16);
+          for (let code = first; code <= parseInt(hi, 16); code += 1) {
+            chars.set(code, String.fromCharCode(base + code - first));
+          }
+        }
+      }
+    }
+    const decode = (hex) =>
+      (hex.replace(/\s+/g, '').match(/..../g) ?? [])
+        .map((code) => chars.get(parseInt(code, 16)) ?? '')
+        .join('');
+    const drawn = (streams.find((text) => text.includes('BT')) ?? '').matchAll(
+      /<([0-9A-Fa-f\s]+)>\s*Tj|\(((?:\\.|[^()\\])*)\)\s*Tj|\[([^\]]*)\]\s*TJ/g
+    );
+    return [...drawn]
+      .map(([, hex, plain, array]) => {
+        if (hex !== undefined) {
+          return decode(hex);
+        }
+        if (plain !== undefined) {
+          return plain.replace(/\\(.)/g, '$1');
+        }
+        return [...array.matchAll(/<([0-9A-Fa-f\s]+)>/g)].map((run) => decode(run[1])).join('');
+      })
+      .join('');
+  };
+
+  /** A `ToUnicode` map's target, which is written as hex of UTF-16 code units (`utf-16be`). */
+  const fromHex = (hex) =>
+    new TextDecoder('utf-16be').decode(
+      Uint8Array.from(hex.match(/../g) ?? [], (pair) => parseInt(pair, 16))
+    );
+
   return {
     prose,
     scroller,
@@ -245,7 +331,8 @@ window.__t = (() => {
     app,
     sleep,
     layout,
-    useLayout
+    useLayout,
+    pdfText
   };
 })();
 'helpers installed';

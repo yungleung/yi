@@ -81,6 +81,7 @@
   "export.replaceQuestion": "{path} をこのビルド同梱の内容に置き換えますか？変更した内容は失われます。",
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
   "export.fontHint": "変換設定のフォントにはこれらの文字がありません: {characters} — そこにフォントを指定してください（`mainfont:` はどの文字体系にも使えます）。",
+  "export.fontHintFont": "変換設定のフォントにはこれらの文字がありません: {characters} — そこに `mainfont: \"{font}\"` と `CJKmainfont: \"{font}\"` を追加してください。このフォントはこのマシンで最も広い範囲をカバーし、ハングルは `CJKmainfont` 側で組まれるため両方が必要です。",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "書き出すファイルのパスを入力してください。",
   "export.cancel": "キャンセル",

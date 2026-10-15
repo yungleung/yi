@@ -81,6 +81,7 @@
   "export.replaceQuestion": "Replace your copy of {path} with the one this build ships? Anything you changed in it is lost.",
   "export.noPandoc": "pandoc was not found on this machine, so this kind of export cannot run.",
   "export.fontHint": "No font in the conversion settings draws these characters: {characters} — name one there (`mainfont:` covers any script).",
+  "export.fontHintFont": "No font in the conversion settings draws these characters: {characters} — add `mainfont: \"{font}\"` and `CJKmainfont: \"{font}\"` there; that font is the widest this machine is known to have, and both lines are needed because the CJK one is what Hangul is set with.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Type the path the file should be written to.",
   "export.cancel": "Cancel",

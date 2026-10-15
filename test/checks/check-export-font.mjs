@@ -38,10 +38,11 @@ const check = (name, actual, expected) => {
   if (a !== e) failures.push(`${name}\n  expected ${e}\n  actual   ${a}`);
 };
 
-/** The shipped pdf file, as the app reads it, and one that names a font for the whole document. */
-const shipped = { needs_a_font: true, mainfont: false, cjk_mainfont: true };
-const wide = { needs_a_font: true, mainfont: true, cjk_mainfont: false };
-const plain = { needs_a_font: false, mainfont: false, cjk_mainfont: false };
+/** The shipped pdf file as the app reads it, and the shapes a reader's own file can take. */
+const shipped = { needs_a_font: true, mainfont: false, cjk_mainfont: true, cjk_covers_hangul: false };
+const wide = { needs_a_font: true, mainfont: true, cjk_mainfont: false, cjk_covers_hangul: false };
+const bothWide = { needs_a_font: true, mainfont: true, cjk_mainfont: true, cjk_covers_hangul: true };
+const plain = { needs_a_font: false, mainfont: false, cjk_mainfont: false, cjk_covers_hangul: false };
 
 {
   // What Latin Modern was measured to hold: nothing to say about any of it.

@@ -18,7 +18,7 @@
  * (`≤`, where `√ ∞ ± × ÷` beside it draw), and the same character inside `$…$` is not reported at all,
  * because pandoc sets a formula with the maths font.
  *
- * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font),
+ * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font, suggested_font),
  *   src/ui/export/font_hint.ts (the characters, over the parse),
  *   src/ui/export/export_flow.ts (the characters the card is asked with),
  *   src/ui/export/export_dialog.ts (the hint)
@@ -27,6 +27,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
+  const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -96,6 +97,14 @@
       'a note in a script the settings name no font for is said so, with the characters it is written in',
       (koreanHint ?? '').includes('한') && (koreanHint ?? '').includes('국'),
       { hint: koreanHint }
+    );
+    const suggested = (await api.namedFonts('pdf')).suggested_font;
+    check(
+      'and it names the widest font this machine is known to have, for the reader to type — in both lines',
+      suggested === null ||
+        ((koreanHint ?? '').includes(`mainfont: "${suggested}"`) &&
+          (koreanHint ?? '').includes(`CJKmainfont: "${suggested}"`)),
+      { suggested, hint: koreanHint }
     );
     check(
       'and the card still names the settings file that answers for it, with the button that reveals it',

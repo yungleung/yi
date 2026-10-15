@@ -63,7 +63,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and three of them (`probe:all` runs 175 and skips 28, each skip for the reason its
+two hundred and four of them (`probe:all` runs 176 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -215,6 +215,10 @@ sets a formula with the maths font);
 ships is not offered for replacement, one that differs is, the cautious answer leaves it exactly as it
 was, and agreeing writes the shipped bytes back (the first half of the measurement above: a shipped file
 that changes reaches nobody who already has one, and this is the reader's way to ask for it);
+`export-pdf-scripts` — the line the card gives, followed: the font the app names is written into the
+reader's own settings file for one export and the page read back, every script the shipped default has
+none of on it (the other TeX-run probe, and the one that fails if the app ever stops handing that file
+to pandoc as it stands);
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
@@ -321,6 +325,15 @@ live index; the newest probes carry a header naming what they cover:
   `document.hasFocus()` false), and a sweep on such a page measured 5 007 ms for *every* probe,
   each one recovered, with the same four failing. Restarting `npm run tauri dev` clears the second,
   and `frontmost` is worth a look whenever a cluster of frame-dependent probes fails.
+- **A run that died mid-probe leaves the *config* — and the reader's export settings — where the probe
+  put them, and the next run puts them back.** The harness reads both before a run and writes them back
+  after, and neither happens when the run is gone before the probe reports. Measured this round, the
+  hard way: a page reload while `export-pdf-scripts.js` was running took its own restore with it and
+  left two `mainfont:` lines in the maintainer's `export.pdf.yaml` — which is invalid YAML, so every
+  pdf export after it failed until the file was written back by hand. So the export settings files the
+  app names (`export_kinds` → `config_path`) are read and written down beside the config's note
+  (`<tmpdir>/yi-probe-export-settings.json`), and a note left behind means a run died: its files go
+  back before the next run measures.
 - **A run that died mid-probe leaves the *config* where the probe put it — and the next run puts it
   back.** The harness reads the config before a run and writes it back after (`--with-workspace` does
   it for the workspace and the bibliography; a probe that points the app at a folder of its own

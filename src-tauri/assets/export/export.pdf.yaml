@@ -24,17 +24,38 @@
 # character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each, and the app shows those
 # lines to the reader).
 #
-# **These fonts are the reader's**, and this file is only where they start: `CJKmainfont` is the one
-# below, and it is the *default* — `Songti SC` is on every machine this was measured on, it draws Han
-# and kana, and its pages keep a `ToUnicode` map, so what a reader copies out of the PDF is the text
-# they wrote (`export-pdf-font.js` reads one back). Two things it does **not** do, both measured:
-# it has no **Hangul**, so a Korean note needs `mainfont:` with a font that has it; and it covers CJK
-# only, so a note in Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian or Georgian needs a
-# font named for *those* — `mainfont: "Arial Unicode MS"` is the one measured to draw all of them (and
-# it sets the whole document in itself, Latin text included).
+# **These fonts are the reader's**, and this file is only where they start. `CJKmainfont` below is the
+# default — `Songti SC` — and what the two variables reach was measured, one page each, rather than
+# assumed:
+#
+# - `CJKmainfont` is what xeCJK routes **CJK punctuation, kana, Han and Hangul** to. `Songti SC` draws
+#   the first three and **has no Hangul**, so a Korean note loses it — measured: with both variables
+#   named, the Hangul was set with the *CJK* font and came out missing.
+# - `mainfont` is what every other script is set with: Greek, Cyrillic, Hebrew, Arabic, Devanagari
+#   (and the other Indic scripts), Thai, Armenian, Georgian. It answers for anything the font it names
+#   has, and it does **not** answer for Hangul while a CJK font is named.
+#
+# So the recipe depends on what your note is written in, and the app names the widest font it knows for
+# your machine in its hint when a note needs one — **the card's line is the one to follow first**. For
+# the rest:
+#
+# - **Han, kana, Chinese or Japanese**: nothing to add; the default covers it.
+# - **Hangul**: a CJK font that has it — macOS `AppleGothic` or `Apple SD Gothic Neo`, Windows `Malgun
+#   Gothic`, Linux `Noto Sans KR`.
+# - **Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian, Georgian**: `mainfont:` with a font
+#   that has them. macOS `Arial Unicode MS` — *measured* here to draw every script in this list and keep
+#   a `ToUnicode` map, so what is copied out of the page is the text that went in; Windows `Segoe UI`
+#   (Greek, Cyrillic, Hebrew, Arabic), `Nirmala UI` (Indic), `Leelawadee UI` (Thai); Linux the `Noto`
+#   face for the script, or `DejaVu Sans` / `FreeSerif` as the widest fallbacks. (Not measured here —
+#   no Windows or Linux machine — and a name that is not there is not a smaller problem than a missing
+#   character: XeTeX stops the whole export with *"The font … cannot be found"*.)
+# - **Both at once** (a note in Hangul *and* something outside CJK): both lines, and the same font may
+#   serve for both — *measured*: `mainfont` and `CJKmainfont` both naming `Arial Unicode MS` draws Han,
+#   kana, Hangul, Greek and Devanagari on one page. It also sets the document's own text in that font,
+#   which is the price of one font for everything.
 #
 #     variables:
-#       mainfont: "Arial Unicode MS"   # the whole document, any script that font has
+#       mainfont: "…"                  # the font your machine has, from the list above
 #       CJKmainfont: "Songti SC"       # CJK only — the default, and it is already set below
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were

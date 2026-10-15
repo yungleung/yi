@@ -48,6 +48,11 @@ export interface ExportQuestion {
    * places and loses the words. Empty for a kind whose output carries the characters as characters.
    */
   uncovered: string[];
+  /**
+   * The widest font this machine is known to have, or null — what the hint names for the reader to
+   * type into the file. A name, not a decision: nothing here writes it for them.
+   */
+  suggestedFont: string | null;
 }
 
 /** The reader's answer: where the file goes. */
@@ -249,11 +254,17 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // A note written in characters no font in that file can draw: said here, before the reader
     // exports, because the run would come back with the words missing rather than with an error.
     const uncovered = this.question?.uncovered ?? [];
+    const suggested = this.question?.suggestedFont ?? null;
     this.fontHint.classList.toggle('hidden', uncovered.length === 0);
     this.fontHint.textContent =
       uncovered.length === 0
         ? ''
-        : t('export.fontHint', { characters: shownCharacters(uncovered) });
+        : suggested === null
+          ? t('export.fontHint', { characters: shownCharacters(uncovered) })
+          : t('export.fontHintFont', {
+              characters: shownCharacters(uncovered),
+              font: suggested
+            });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
     this.run.disabled = info.needs_pandoc && pandoc === null;
   }

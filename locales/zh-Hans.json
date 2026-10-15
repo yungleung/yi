@@ -81,6 +81,7 @@
   "export.replaceQuestion": "用此版本随附的内容替换 {path} 吗？你对它的修改将会丢失。",
   "export.noPandoc": "本机未找到 pandoc，无法进行这种导出。",
   "export.fontHint": "转换设置中的字体无法显示这些字符：{characters} —— 请在那里指定字体（`mainfont:` 适用于任何文字系统）。",
+  "export.fontHintFont": "转换设置中的字体无法显示这些字符：{characters} —— 请在那里加上 `mainfont: \"{font}\"` 和 `CJKmainfont: \"{font}\"`；该字体是本机已知覆盖最广的字体，而两行都需要，因为谚文是由 `CJKmainfont` 那一行排版的。",
   "export.pandoc": "pandoc：{path}",
   "export.noTarget": "请输入要写入的文件路径。",
   "export.cancel": "取消",

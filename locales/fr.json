@@ -81,6 +81,7 @@
   "export.replaceQuestion": "Remplacer votre copie de {path} par celle fournie avec cette version ? Vos modifications seront perdues.",
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
   "export.fontHint": "Aucune police des réglages de conversion ne dessine ces caractères : {characters} — nommez-en une (`mainfont:` couvre toute écriture).",
+  "export.fontHintFont": "Aucune police des réglages de conversion ne dessine ces caractères : {characters} — ajoutez-y `mainfont: \"{font}\"` et `CJKmainfont: \"{font}\"` ; cette police est la plus complète connue sur cette machine, et les deux lignes sont nécessaires car le hangul est composé par `CJKmainfont`.",
   "export.pandoc": "pandoc : {path}",
   "export.noTarget": "Indiquez le chemin du fichier à écrire.",
   "export.cancel": "Annuler",

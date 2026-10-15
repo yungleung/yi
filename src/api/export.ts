@@ -118,6 +118,18 @@ export interface NamedFonts {
   needs_a_font: boolean;
   mainfont: boolean;
   cjk_mainfont: boolean;
+  /**
+   * Whether that CJK font is one the app knows has Hangul — true only for a file the reader made their
+   * own, since their font is taken to hold what they chose it for; false for the shipped one, whose
+   * font is measured not to have it.
+   */
+  cjk_covers_hangul: boolean;
+  /**
+   * The widest font this machine is known to have, or null — a name for the card to *give* a reader
+   * whose settings cannot draw their note's characters. It is a name to type into the file, never a
+   * choice the app makes: the reader may write any other line, and the card says so.
+   */
+  suggested_font: string | null;
 }
 
 /**

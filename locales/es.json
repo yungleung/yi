@@ -81,6 +81,7 @@
   "export.replaceQuestion": "¿Reemplazar tu copia de {path} por la incluida en esta versión? Lo que hayas cambiado se perderá.",
   "export.noPandoc": "No se encontró pandoc en esta máquina, así que este tipo de exportación no puede ejecutarse.",
   "export.fontHint": "Ninguna fuente de los ajustes de conversión dibuja estos caracteres: {characters} — indica una allí (`mainfont:` cubre cualquier escritura).",
+  "export.fontHintFont": "Ninguna fuente de los ajustes de conversión dibuja estos caracteres: {characters} — añade allí `mainfont: \"{font}\"` y `CJKmainfont: \"{font}\"`; esa fuente es la más completa que se conoce en esta máquina, y hacen falta las dos líneas porque el hangul se compone con `CJKmainfont`.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Escribe la ruta del archivo que se va a escribir.",
   "export.cancel": "Cancelar",
