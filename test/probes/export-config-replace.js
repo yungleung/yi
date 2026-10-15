@@ -12,7 +12,11 @@
  * What this probe holds, in the order it happens: nothing to press while the two are the same; the
  * button appears when they are not; *no* (the cautious answer) leaves the file exactly as it was; *yes*
  * writes the shipped bytes and takes the button away. The file is the app's own, so the probe reads it
- * first and puts it back whatever happens (nothing else does that for a kind's settings file).
+ * first and puts it back whatever happens (nothing else does that for a kind's settings file) — and it
+ * **puts the app's copy into the shipped state before it starts**, through the app's own command for
+ * it, because a copy written by an earlier build is a copy that differs: measured the hard way, on a
+ * machine whose `export.pdf.yaml` still named the `CJKmainfont` of two builds ago, where this probe
+ * read "offered for replacement" as a bug in the app when it was the data folder's state all along.
  *
  * And it holds where the button goes: beside *Reveal in folder* on one line, so the button coming and
  * going leaves the file's own line and everything under it exactly where it was.
@@ -98,6 +102,10 @@
 
   const before = await invoke('get_config');
   const configBefore = await readText(config);
+  // The copy the app *ships*, put in place first: the two checks that start from "already the shipped
+  // file" are about the button and not about what this machine's data folder happens to hold.
+  await invoke('export_restore_config', { kind: 'pdf' });
+  const shippedBefore = await readText(config);
   try {
     try {
       await files.deleteEntry(folder);
@@ -120,7 +128,7 @@
     await closeCard();
 
     // An edit (or an older build's copy) is one of the two things that is offered.
-    const edited = `${configBefore}\n# a line the probe wrote\n`;
+    const edited = `${shippedBefore}\n# a line the probe wrote\n`;
     await files.writeTextAtomically(config, edited);
     await openTheCard();
     check('a copy that differs is', offered(), { offered: offered() });
@@ -159,9 +167,9 @@
     await sleep(300);
     check(
       'and agreeing puts the shipped file back, byte for byte',
-      (await readText(config)) === configBefore && !offered(),
+      (await readText(config)) === shippedBefore && !offered(),
       {
-        shipped: (await readText(config)) === configBefore,
+        shipped: (await readText(config)) === shippedBefore,
         stillOffered: offered()
       }
     );

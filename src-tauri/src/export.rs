@@ -75,6 +75,15 @@ pub struct ExportKind {
     /// gone (measured), while a docx, a page of HTML or a book carries the characters as characters
     /// and whatever opens it picks a font of its own.
     pub needs_a_font: bool,
+    /// Whether this kind's page is drawn **by a font this build ships**, wired into the export by a
+    /// header of its own (`export_fonts`): the PDF, and only the PDF.
+    ///
+    /// A note in a script no font on the machine draws comes out with the space its words took and
+    /// none of the words (measured), and naming a font is the reader's line to write — which is still
+    /// there to write. What this buys is that ten scripts draw with no line added at all. The LaTeX
+    /// kind says no: it is a `.tex` the reader compiles on their own machine, where a path into this
+    /// app's bundle is a path that will not exist.
+    pub ships_fonts: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -105,6 +114,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.docx.yaml"),
+        ships_fonts: false,
     },
     ExportKind {
         kind: "odt",
@@ -115,6 +125,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
+        ships_fonts: false,
     },
     ExportKind {
         kind: "latex",
@@ -127,6 +138,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
+        ships_fonts: false,
     },
     ExportKind {
         kind: "html",
@@ -139,6 +151,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
+        ships_fonts: false,
     },
     ExportKind {
         kind: "epub",
@@ -151,6 +164,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
+        ships_fonts: false,
     },
     ExportKind {
         kind: "pdf",
@@ -166,6 +180,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
+        ships_fonts: true,
     },
     ExportKind {
         kind: "markdown",
@@ -179,6 +194,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_pandoc: false,
         needs_a_font: false,
         defaults: "",
+        ships_fonts: false,
     },
 ];
 
@@ -475,10 +491,12 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         .needs_pandoc
         .then(|| dir.join(config_file_name(kind.kind)));
     let config_exists = config.as_deref().is_some_and(Path::exists);
+    // The file is the one this build ships — byte for byte, or not written at all, in which case the
+    // shipped bytes are what an export would use.
     let config_is_shipped = config
         .as_deref()
-        .and_then(|path| fs::read(path).ok())
-        .is_some_and(|bytes| bytes == kind.defaults.as_bytes());
+        .map(|path| fs::read(path).map(|bytes| bytes == kind.defaults.as_bytes()).unwrap_or(true))
+        .unwrap_or(false);
     ExportKindInfo {
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
@@ -739,15 +757,30 @@ fn export_with_pandoc(
         .ok_or_else(|| "This machine has no pandoc to run.".to_string())?;
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
+    // The faces this build ships, for the kinds whose page is drawn by them: the header names them by
+    // absolute path, so it is written per export rather than once — an app that has been replaced
+    // since the last export would leave a header pointing into a bundle that is gone. Han and kana
+    // follow a `CJKmainfont` the file names, so the name is read from the file pandoc is about to be
+    // handed, and not from a file of the app's own.
+    let header = kind
+        .ships_fonts
+        .then(|| {
+            let (_, cjk) = named_fonts(&settings_text(app, kind)?);
+            let faces = crate::export_fonts::fonts_dir(app)?;
+            crate::export_fonts::write_header(&dir, &faces, cjk.as_deref())
+        })
+        .transpose()?;
     let note = write_note(&dir, &request.text)?;
-    let result = pandoc_arguments(&dir, &defaults, &note, request, kind).and_then(|arguments| {
-        run_pandoc(
-            &pandoc,
-            &arguments,
-            request.source_dir.as_deref().map(Path::new),
-        )
-        .map(|warnings| ExportOutcome { warnings })
-    });
+    let result = pandoc_arguments(&dir, &defaults, &note, request, kind, header.as_deref()).and_then(
+        |arguments| {
+            run_pandoc(
+                &pandoc,
+                &arguments,
+                request.source_dir.as_deref().map(Path::new),
+            )
+            .map(|warnings| ExportOutcome { warnings })
+        },
+    );
     // The note's copy under the app's data folder is a thing of this call, whatever pandoc said —
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.
@@ -758,13 +791,18 @@ fn export_with_pandoc(
 
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
 /// folders a relative destination is resolved against, the library and the style the citations came
-/// from, and the note itself.
+/// from, the header that wires in the fonts this build ships (`export_fonts`), and the note itself.
+///
+/// The header goes on the command line rather than into the reader's defaults file: pandoc *adds* a
+/// `--include-in-header` to whatever that file lists (measured), so the reader's own file is still
+/// handed over untouched, and its own `include-in-header` entries are still included.
 fn pandoc_arguments(
     dir: &Path,
     defaults: &Path,
     note: &Path,
     request: &ExportRequest,
     kind: &ExportKind,
+    header: Option<&Path>,
 ) -> Result<Vec<OsString>, String> {
     let mut arguments: Vec<OsString> = vec![
         OsString::from("--defaults"),
@@ -772,6 +810,10 @@ fn pandoc_arguments(
         OsString::from("--output"),
         OsString::from(&request.output_path),
     ];
+    if let Some(header) = header {
+        arguments.push(OsString::from("--include-in-header"));
+        arguments.push(header.as_os_str().to_os_string());
+    }
     if !request.resource_paths.is_empty() {
         let paths: Vec<PathBuf> = request.resource_paths.iter().map(PathBuf::from).collect();
         let joined = std::env::join_paths(&paths)
@@ -863,6 +905,37 @@ pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// The widest font this platform is known to have, as the name XeTeX answers to and the file that
+/// being there is what says so — the one line the card can name when a note is written in characters
+/// the settings cannot draw.
+///
+/// **Measured on macOS**: `Arial Unicode MS` draws Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
+/// Armenian, Georgian, Hangul, Han and kana, and keeps a `ToUnicode` map while it does
+/// (`export-pdf-font.js` reads such a page back), which is why it is the one named here. The other
+/// platforms have no entry yet **on purpose**: they must be verified by drawing the scripts first, for
+/// two measured reasons — XeTeX answers to a font's own name, and `PingFang SC`, `SF Hebrew` and `Noto
+/// Sans Georgian` each exist as files that name answers to nothing, while a name the lookup cannot
+/// find fails the whole export rather than falling back. A machine whose platform is not here is told
+/// nothing and the file's header carries the recipe instead.
+#[cfg(target_os = "macos")]
+const WIDEST_FONT: Option<(&str, &str)> = Some(("/Library/Fonts/Arial Unicode.ttf", "Arial Unicode MS"));
+#[cfg(not(target_os = "macos"))]
+const WIDEST_FONT: Option<(&str, &str)> = None;
+
+/// The name of that font, or none when the machine does not have it.
+fn suggested_font_in(
+    known: Option<(&'static str, &'static str)>,
+    exists: impl Fn(&str) -> bool,
+) -> Option<&'static str> {
+    let (file, name) = known?;
+    exists(file).then_some(name)
+}
+
+/// The font the card names on this machine, if any.
+fn suggested_font() -> Option<&'static str> {
+    suggested_font_in(WIDEST_FONT, |file| Path::new(file).exists())
+}
+
 /// What a kind's conversion settings name, as the window reads it: whether the kind's output is
 /// typeset with those fonts at all, whether a font is named for the document as a whole, and whether
 /// one is named for CJK.
@@ -878,15 +951,31 @@ pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<Stri
 #[tauri::command]
 pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFonts, String> {
     let kind = kind_of(&kind)?;
-    let (mainfont, cjk_mainfont) = if kind.needs_pandoc {
-        named_fonts(&settings_text(&app, kind)?)
+    let settings = if kind.needs_pandoc {
+        settings_text(&app, kind)?
     } else {
-        (false, false)
+        String::new()
     };
+    let (mainfont, cjk_mainfont) = named_fonts(&settings);
     Ok(NamedFonts {
         needs_a_font: kind.needs_a_font,
-        mainfont,
-        cjk_mainfont,
+        mainfont: mainfont.is_some(),
+        cjk_mainfont: cjk_mainfont.is_some(),
+        // What this build's own faces draw, for the kind whose page they draw: the window asks the
+        // fonts, not a list of code points kept beside them (`export_fonts::coverage`), so a face
+        // swapped for another cannot leave the card quiet about a page that lost a character.
+        shipped: kind
+            .ships_fonts
+            .then(|| crate::export_fonts::fonts_dir(&app))
+            .transpose()?
+            .map(|faces| {
+                crate::export_fonts::coverage(&faces)
+                    .iter()
+                    .map(|[first, last]| [*first, *last])
+                    .collect()
+            })
+            .unwrap_or_default(),
+        suggested_font: suggested_font().map(str::to_string),
     })
 }
 
@@ -897,8 +986,21 @@ pub struct NamedFonts {
     pub needs_a_font: bool,
     /// Whether a font is named for the document as a whole: it answers for anything it has.
     pub mainfont: bool,
-    /// Whether a font is named for CJK — which reaches CJK punctuation, kana and Han, and not Hangul.
+    /// Whether a font is named for CJK — which xeCJK routes **CJK punctuation, kana, Han and Hangul**
+    /// to (measured: with both variables named, a Korean note's Hangul was set with the *CJK* font and
+    /// lost with it).
     pub cjk_mainfont: bool,
+    /// The code points the faces **this build ships** draw, as `[first, last]` ranges — empty for a
+    /// kind whose page they do not draw.
+    ///
+    /// It is what makes the card's hint quiet about a note this build can already set: with nothing
+    /// named, a page draws ten scripts (see `export_fonts`), and reporting those characters as lost
+    /// would be the hint telling the reader to fix something that is not broken.
+    pub shipped: Vec<[u32; 2]>,
+    /// The widest font this machine is known to have, for the card to **name** when a note is written
+    /// in characters those settings cannot draw — a name to type, not a choice the app makes: the
+    /// reader still writes the line, and may write any other.
+    pub suggested_font: Option<String>,
 }
 
 /// The settings a kind would be run with, as their own text: the reader's copy when it has been
@@ -910,11 +1012,15 @@ fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result<String, St
     Ok(fs::read_to_string(&path).unwrap_or_else(|_| kind.defaults.to_string()))
 }
 
-/// Whether each of the two variables that answer for a script is named by a font in `settings`,
-/// comment lines not counted. Returns `(mainfont, CJKmainfont)`.
-fn named_fonts(settings: &str) -> (bool, bool) {
-    let mut main = false;
-    let mut cjk = false;
+/// The two variables that answer for a script, as the fonts `settings` names them with — `(mainfont,
+/// CJKmainfont)`, each absent when the file names none. Comment lines do not count: the shipped files'
+/// headers talk about fonts at length, and a copy of one must not read as a reader who has chosen.
+///
+/// The CJK name is not only a yes or no — the header that wires in this build's faces hands Han and
+/// kana to *that* name (`export_fonts::write_header`), so what a file names is what a page draws.
+fn named_fonts(settings: &str) -> (Option<String>, Option<String>) {
+    let mut main = None;
+    let mut cjk = None;
     for line in settings.lines() {
         if line.trim_start().starts_with('#') {
             continue;
@@ -923,10 +1029,15 @@ fn named_fonts(settings: &str) -> (bool, bool) {
         if !text.contains("mainfont") {
             continue;
         }
+        let Some((_, value)) = line.split_once(':') else {
+            continue;
+        };
+        let value = value.split('#').next().unwrap_or("").trim().trim_matches('"').trim();
+        let value = (!value.is_empty()).then(|| value.to_string());
         if text.contains("cjkmainfont") {
-            cjk = true;
+            cjk = value;
         } else {
-            main = true;
+            main = value;
         }
     }
     (main, cjk)
@@ -1001,9 +1112,10 @@ mod tests {
         let dir = scratch("config-is-shipped");
         let kind = &KINDS[0];
 
-        // No file yet: nothing to replace, and the card offers nothing.
+        // No file yet: the shipped bytes are what an export would use, and there is nothing to
+        // replace — the card asks `config_exists` as well, so nothing is offered.
         assert!(!kind_info(&dir, kind).config_exists);
-        assert!(!kind_info(&dir, kind).config_is_shipped);
+        assert!(kind_info(&dir, kind).config_is_shipped);
 
         // The copy this build wrote is that one, byte for byte: nothing to replace.
         ensure_defaults_in(&dir, kind).unwrap();
@@ -1105,11 +1217,50 @@ mod tests {
             &dir.join("note-1.md"),
             request,
             kind,
+            None,
         )
         .unwrap()
         .iter()
         .map(|argument| argument.to_string_lossy().into_owned())
         .collect()
+    }
+
+    /// The shipped faces draw a PDF page and nothing else — the LaTeX kind is compiled on the reader's
+    /// own machine, where this app's bundle is not — and the header reaches pandoc as one more
+    /// argument, beside the settings file rather than instead of anything in it.
+    #[test]
+    fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
+        let shipping: Vec<&str> = KINDS
+            .iter()
+            .filter(|kind| kind.ships_fonts)
+            .map(|kind| kind.kind)
+            .collect();
+        assert_eq!(shipping, vec!["pdf"]);
+
+        let dir = scratch("header");
+        let request = request_in(&dir);
+        let header = dir.join("pdf-fonts.tex");
+        let name = "pdf".to_string();
+        let arguments = pandoc_arguments(
+            &dir,
+            &dir.join("export.pdf.yaml"),
+            &dir.join("note-1.md"),
+            &ExportRequest { kind: name, ..request },
+            kind_of("pdf").unwrap(),
+            Some(&header),
+        )
+        .unwrap()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<String>>();
+        let at = arguments
+            .iter()
+            .position(|argument| argument == "--include-in-header")
+            .expect("the header is not in the arguments");
+        assert_eq!(arguments[at + 1], header.to_string_lossy());
+        // And nothing stands in for the settings file: it is still named, as it always was.
+        assert!(arguments.contains(&dir.join("export.pdf.yaml").to_string_lossy().into_owned()));
+        let _ = fs::remove_dir_all(&dir);
     }
 
     /// A folder of this test's own, made and taken away again.
@@ -1212,23 +1363,70 @@ mod tests {
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
     }
 
+    /// What a settings file names, as the names themselves: the header that wires in the shipped faces
+    /// draws Han and kana with the CJK name, so a yes-or-no would not be enough to hand it over.
+    #[test]
+    fn a_file_names_its_fonts_and_a_comment_names_nothing() {
+        let (main, cjk) = named_fonts(
+            "variables:\n  mainfont: \"Arial Unicode MS\"\n  CJKmainfont: \"Songti SC\" # mine\n",
+        );
+        assert_eq!(main.as_deref(), Some("Arial Unicode MS"));
+        assert_eq!(cjk.as_deref(), Some("Songti SC"));
+
+        // The file this build ships talks about both variables in its header, and names neither: the
+        // shipped faces are what draw Han, kana and Hangul until a reader writes a line of their own.
+        let pdf = KINDS.iter().find(|kind| kind.kind == "pdf").unwrap();
+        assert_eq!(named_fonts(pdf.defaults), (None, None));
+
+        // A reader's copy of an *older* build's file still names one, and that name is still honored.
+        let (_, cjk) = named_fonts("variables:\n  CJKmainfont: \"Songti SC\"\n");
+        assert_eq!(cjk.as_deref(), Some("Songti SC"));
+    }
+
+    #[test]
+    fn the_font_the_card_names_is_one_the_machine_is_known_to_have() {
+        // A platform with an entry, and the file is there: that is the name the card names.
+        assert_eq!(
+            suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |file| file == "/here/font.ttf"),
+            Some("A Wide Font")
+        );
+        // The file is not there, or the platform has no entry: the card names nothing at all, and the
+        // file's own header is where the reader finds the recipe instead.
+        assert_eq!(suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |_| false), None);
+        assert_eq!(suggested_font_in(None, |_| true), None);
+        // And what this machine's own entry answers, whatever it is: the name is one of the pair, never
+        // a guess.
+        if let Some(name) = suggested_font() {
+            let (_, named) = WIDEST_FONT.expect("a suggested font comes from an entry");
+            assert_eq!(name, named);
+        }
+    }
+
     #[test]
     fn a_file_names_a_font_when_a_line_that_is_not_a_comment_says_so() {
-        // The two variables, and the two spellings that look like one of them without being it.
-        assert_eq!(named_fonts("variables:\n  CJKmainfont: \"Songti SC\"\n"), (false, true));
-        assert_eq!(named_fonts("variables:\n  mainfont: \"Arial Unicode MS\"\n"), (true, false));
-        assert_eq!(named_fonts("variables:\n  sansfont: X\n  monofont: Y\n"), (false, false));
+        // The two variables, as the names themselves — the CJK one is handed to the header that draws
+        // Han and kana, so a yes-or-no would not do — and the two spellings that look like one of them
+        // without being it.
+        assert_eq!(
+            named_fonts("variables:\n  CJKmainfont: \"Songti SC\"\n"),
+            (None, Some("Songti SC".to_string()))
+        );
+        assert_eq!(
+            named_fonts("variables:\n  mainfont: \"Arial Unicode MS\"\n"),
+            (Some("Arial Unicode MS".to_string()), None)
+        );
+        assert_eq!(named_fonts("variables:\n  sansfont: X\n  monofont: Y\n"), (None, None));
 
         // A **comment** names nothing: the shipped files' headers talk about fonts at length — they
         // explain what happens without one and how to add it — and reading that as a reader who has
         // chosen is the mistake that once left the characters missing.
         assert_eq!(
             named_fonts("# add `mainfont: \"Arial Unicode MS\"` for other scripts\nreader: markdown\n"),
-            (false, false)
+            (None, None)
         );
         assert_eq!(
             named_fonts("variables:\n  # mainfont: \"X\"\n  CJKmainfont: \"Songti SC\"\n"),
-            (false, true)
+            (None, Some("Songti SC".to_string()))
         );
     }
 

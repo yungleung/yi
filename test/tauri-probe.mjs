@@ -229,7 +229,7 @@ async function helpersReady() {
   // an older lib.js would fail a probe on a helper that is not there yet.
   const reply = await call(
     'typeof window.__t === "object" && typeof window.__t.blocks === "function"' +
-      ' && typeof window.__t.app === "function"',
+      ' && typeof window.__t.app === "function" && typeof window.__t.pdfText === "function"',
     8000
   );
   return reply.success && reply.data === true;
@@ -677,6 +677,87 @@ async function openTheSession() {
   return found;
 }
 
+/**
+ * The reader's own **export settings files**, which a probe may edit: `export-pdf-scripts.js` writes the
+ * font line the card gives into the copy the app reads, and puts it back — but a page reload or an app
+ * restart in the middle of a run takes that promise with it (measured: a reload while that probe was
+ * running left two `mainfont:` lines in the maintainer's own `export.pdf.yaml`). They are the reader's
+ * files like the config and the session are, so they are backed up the same way: the app names its paths
+ * (`export_kinds`), everything of the shape `export.<kind>.yaml` is read and written down before the
+ * probe runs, and a note left behind means a run died and its files go back before this one measures.
+ */
+const exportSettingsSnapshot = join(tmpdir(), 'yi-probe-export-settings.json');
+
+/** The paths the app itself names for the files it writes. */
+async function exportSettingsPaths() {
+  const reply = await call(
+    `(async () => {
+       const kinds = await window.__TAURI_INTERNALS__.invoke('export_kinds');
+       return JSON.stringify(
+         kinds.kinds.map((kind) => kind.config_path).filter((path) => typeof path === 'string' && path !== '')
+       );
+     })()`,
+    15000
+  );
+  if (!reply.success) {
+    return [];
+  }
+  try {
+    return JSON.parse(String(reply.data));
+  } catch {
+    return [];
+  }
+}
+
+/** Puts the files a run that died left behind back, and keeps this run's own copy of what it finds. */
+async function openTheExportSettings() {
+  let left = null;
+  try {
+    left = JSON.parse(readFileSync(exportSettingsSnapshot, 'utf8'));
+  } catch {
+    left = null;
+  }
+  if (left !== null) {
+    console.error(
+      'a run died before it could put the export settings back: writing them back, then measuring (' +
+        exportSettingsSnapshot +
+        ')'
+    );
+    await restoreTheExportSettings(left);
+  }
+  const found = {};
+  for (const path of await exportSettingsPaths()) {
+    try {
+      found[path] = readFileSync(path, 'utf8');
+    } catch {
+      // A file that is not there is not one a probe can have changed.
+    }
+  }
+  if (Object.keys(found).length > 0) {
+    writeFileSync(exportSettingsSnapshot, JSON.stringify(found));
+  }
+  return found;
+}
+
+/** The run is over and the files are back: nothing is left for the next run to tidy up. */
+function forgetTheExportSettings() {
+  rmSync(exportSettingsSnapshot, { force: true });
+}
+
+/** Writes each file back as it was read — the reader's own edit, restored exactly. */
+async function restoreTheExportSettings(previous) {
+  if (!previous) {
+    return;
+  }
+  for (const [path, text] of Object.entries(previous)) {
+    try {
+      writeFileSync(path, text);
+    } catch (error) {
+      console.error(`could not put ${path} back: ${error}`);
+    }
+  }
+}
+
 /** The run is over and the session is back: nothing is left for the next run to tidy up. */
 function forgetTheSession() {
   rmSync(sessionSnapshot, { force: true });
@@ -690,6 +771,9 @@ if (withWorkspace) {
   await useFixtureWorkspace();
 }
 const previousSession = await openTheSession();
+// After the session, before the probe: a probe may edit the reader's export settings, and this run is
+// never the one that leaves them changed.
+const previousExportSettings = await openTheExportSettings();
 
 /**
  * A probe's own verdict, as the harness reads it: a probe returns `{ checks, failed }`,
@@ -725,6 +809,8 @@ forgetTheConfig();
 await emptyTheAppSession();
 await restoreSession(previousSession);
 forgetTheSession();
+await restoreTheExportSettings(previousExportSettings);
+forgetTheExportSettings();
 await restoreLanguage(languageBeforeProbing);
 await releaseTheOpener();
 if (reply.success) {

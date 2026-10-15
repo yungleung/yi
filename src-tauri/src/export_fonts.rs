@@ -1,0 +1,379 @@
+//! The faces this build ships, and the LaTeX header that wires them into a PDF export.
+//!
+//! XeTeX has no font fallback: a character outside the current font is reported *missing character*
+//! and drawn as nothing, so a note written in a script no font on the machine answers for exports
+//! with the space its words took and none of the words. Measured: `你好，世界` came out as blank space
+//! until a font was named, and naming one is still the reader's line to write. What this module does
+//! is start the page already able to draw all of these, by shipping a face per script and a header
+//! that hands XeTeX the right one per Unicode block.
+//!
+//! Three facts live here and nowhere else: where the faces are (the folder the bundler installs them
+//! into, or the crate's own `assets/fonts` in a development run); the header itself, written into the
+//! export folder before every PDF export with the folder and the Han face substituted into it — every
+//! time, because it names the faces by absolute path and an app that has moved would leave a header
+//! pointing at a folder that is no longer there; and what those faces draw, read out of the fonts
+//! themselves, which is what lets the window say what a page will lose.
+//!
+//! May import: `std`, `tauri` (for the resource path) and the crate's `files` for the atomic write.
+//! Upholds: the header is written from the asset this build ships, naming the fonts this build ships,
+//! so a page that draws a script is evidence about this build.
+
+use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+use tauri::Manager;
+
+/// The faces, as the files they are in `assets/fonts`. Every name here is also a name the header
+/// reaches for, and the coverage below is read from these files and no others.
+pub const FACES: &[&str] = &[
+    "NotoSerif-Regular.ttf",           // Greek, Cyrillic, Coptic, Glagolitic
+    "NotoSerifHebrew-Regular.ttf",     // Hebrew
+    "NotoNaskhArabic-Regular.ttf",     // Arabic
+    "NotoSerifDevanagari-Regular.ttf", // Devanagari
+    "NotoSerifThai-Regular.ttf",       // Thai
+    "NotoSerifArmenian-Regular.ttf",   // Armenian
+    "NotoSerifGeorgian-Regular.ttf",   // Georgian
+    "NotoSerifCJKsc-Regular.otf",      // Han, kana, Hangul
+];
+
+/// The one face whose script is also the one a machine usually has a font for under another name:
+/// Han and kana, drawn with a `CJKmainfont` when the settings file names one.
+pub const HAN_FACE: &str = "NotoSerifCJKsc-Regular.otf";
+
+/// The file the header is written as, in the export folder, for pandoc to `--include-in-header`.
+pub const HEADER_FILE: &str = "pdf-fonts.tex";
+
+/// The header this build ships, with two holes in it: `@@FONTS@@` for the folder the faces are in,
+/// and `@@HAN@@` for the line that makes the Han and kana face.
+const HEADER_ASSET: &str = include_str!("../assets/export/pdf-fonts.tex");
+
+/// Where the faces are on this machine.
+///
+/// The bundler installs them into the app's resource folder, and `tauri-build` also puts them in the
+/// target folder of a development run, which is where the resource path points there. A run whose
+/// resource folder holds none of them is a run of this crate rather than of a bundle — `cargo test`,
+/// or an editor — and then the crate's own `assets/fonts` is what it has, which is the folder the
+/// bundler copies from.
+pub fn fonts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let installed = app
+        .path()
+        .resolve("assets/fonts", tauri::path::BaseDirectory::Resource)
+        .map_err(|error| format!("Yi cannot find its own fonts folder: {error}"))?;
+    if holds_faces(&installed) {
+        return Ok(installed);
+    }
+    let beside_the_crate = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts");
+    if holds_faces(&beside_the_crate) {
+        return Ok(beside_the_crate);
+    }
+    Err(format!(
+        "Yi cannot find the fonts it ships: nothing in {} or {}.",
+        installed.display(),
+        beside_the_crate.display()
+    ))
+}
+
+/// Whether every face is really in this folder.
+fn holds_faces(dir: &Path) -> bool {
+    FACES.iter().all(|face| dir.join(face).is_file())
+}
+
+/// Writes the header into `dir`, naming the faces in `fonts`, and answers with its path.
+///
+/// `han` is the CJK font the reader's settings file names, if it names one: Han and kana are then
+/// drawn with it, by the name the reader chose. Hangul is not theirs to choose this way — the header
+/// says why.
+pub fn write_header(dir: &Path, fonts: &Path, han: Option<&str>) -> Result<PathBuf, String> {
+    let han = match han {
+        Some(name) => format!("\\newfontfamily\\yiHan{{{name}}}"),
+        // The braces around the face's name are written `{{ }}` so that they survive the format: an
+        // unbraced name is not a file fontspec can look up (`[Path={…}]Noto…otf` was measured to fail
+        // the whole export, "cannot be found").
+        None => format!("\\newfontfamily\\yiHan[Path={{{}}}]{{{HAN_FACE}}}", folder(fonts)),
+    };
+    let text = HEADER_ASSET
+        .replace("@@FONTS@@", &format!("{{{}}}", folder(fonts)))
+        .replace("@@HAN@@", &han);
+    let path = dir.join(HEADER_FILE);
+    crate::files::write_atomically(&path, &text)
+        .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+    Ok(path)
+}
+
+/// The faces' folder as fontspec wants it written: **with** a separator on the end.
+///
+/// Measured, and worth the sentence: `Path=` names a folder, and one written without its last
+/// separator finds nothing at all — every face of the header came back *"The font … cannot be found"*,
+/// which stops the whole export rather than falling back to anything.
+fn folder(fonts: &Path) -> String {
+    let mut text = fonts.display().to_string();
+    if !text.ends_with('/') && !text.ends_with('\\') {
+        text.push('/');
+    }
+    text
+}
+
+/// The code points the shipped faces draw, as `[first, last]` ranges, sorted and coalesced.
+///
+/// Read from the fonts' own `cmap` tables, so a face swapped for another cannot leave the window
+/// claiming coverage the page does not have. The Han face is the one exception, and it is trimmed to
+/// the blocks the header routes to it: that face also carries Latin, punctuation, and a repertoire of
+/// symbols and arrows, and none of those reach it through the header — the several hundred code points
+/// Noto CJK holds around `≤`, `→` and `★` are drawn with the document's own font on a page, which is
+/// measured not to have them, so a hint reading that face's whole cmap would say nothing about them.
+///
+/// Read once per run and remembered: it is 25 MB of font files, and every export of a note asks.
+pub fn coverage(fonts: &Path) -> &'static [[u32; 2]] {
+    static COVERAGE: OnceLock<Vec<[u32; 2]>> = OnceLock::new();
+    COVERAGE
+        .get_or_init(|| {
+            let mut points: Vec<(u32, u32)> = Vec::new();
+            for face in FACES {
+                let han = *face == HAN_FACE;
+                points.extend(
+                    cmap_ranges(&fonts.join(face))
+                        .into_iter()
+                        .filter(|(first, last)| !han || routed_to_han(*first, *last)),
+                );
+            }
+            points.sort_unstable();
+            let mut merged: Vec<[u32; 2]> = Vec::new();
+            for (first, last) in points {
+                match merged.last_mut() {
+                    Some(open) if first <= open[1].saturating_add(1) => open[1] = open[1].max(last),
+                    _ => merged.push([first, last]),
+                }
+            }
+            merged
+        })
+        .as_slice()
+}
+
+/// The blocks the header routes to the Han and kana face, as the ranges they cover: CJK punctuation,
+/// kana, Bopomofo, the unified and compatibility ideographs with their extensions, radicals, strokes,
+/// enclosed letters, halfwidth and fullwidth forms, and the Hangul blocks.
+const HAN_BLOCKS: &[(u32, u32)] = &[
+    (0x1100, 0x11ff),   // Hangul jamo
+    (0x2e80, 0x2eff),   // CJK radicals supplement
+    (0x2f00, 0x2fdf),   // Kangxi radicals
+    (0x2ff0, 0x2fff),   // ideographic description characters
+    (0x3000, 0x303f),   // CJK symbols and punctuation
+    (0x3040, 0x30ff),   // hiragana, katakana
+    (0x3100, 0x312f),   // Bopomofo
+    (0x3130, 0x318f),   // Hangul compatibility jamo
+    (0x3190, 0x319f),   // Kanbun
+    (0x31a0, 0x31bf),   // Bopomofo extended
+    (0x31c0, 0x31ef),   // CJK strokes
+    (0x31f0, 0x31ff),   // katakana phonetic extensions
+    (0x3200, 0x32ff),   // enclosed CJK letters and months
+    (0x3400, 0x4dbf),   // unified ideographs, extension A
+    (0x4e00, 0x9fff),   // unified ideographs
+    (0xa960, 0xa97f),   // Hangul jamo extended A
+    (0xac00, 0xd7af),   // Hangul syllables
+    (0xd7b0, 0xd7ff),   // Hangul jamo extended B
+    (0xf900, 0xfaff),   // CJK compatibility ideographs
+    (0xff00, 0xffef),   // halfwidth and fullwidth forms
+    (0x1aff0, 0x1afff), // kana extended B
+    (0x1b000, 0x1b16f), // kana supplement, kana extended A, small kana extension
+    (0x1f200, 0x1f2ff), // enclosed ideographic supplement
+    (0x20000, 0x3ffff), // unified ideographs, extensions B to H
+];
+
+/// Whether a range read out of a font touches one of the blocks the header routes to that face.
+fn routed_to_han(first: u32, last: u32) -> bool {
+    HAN_BLOCKS.iter().any(|(lo, hi)| first <= *hi && *lo <= last)
+}
+
+/// The code points one font file maps, as a sorted list of ranges — its `cmap` table, read directly:
+/// `otfinfo -u` answers with glyph *names*, and a name is not a code point.
+fn cmap_ranges(path: &Path) -> Vec<(u32, u32)> {
+    let Ok(data) = std::fs::read(path) else {
+        return Vec::new();
+    };
+    let Some(cmap) = table(&data, b"cmap") else {
+        return Vec::new();
+    };
+    let Some(count) = be16(cmap, 2) else {
+        return Vec::new();
+    };
+    let mut points: Vec<u32> = Vec::new();
+    for index in 0..count as usize {
+        let at = 4 + index * 8;
+        let (Some(platform), Some(offset)) = (be16(cmap, at), be32(cmap, at + 4)) else {
+            continue;
+        };
+        // 3 is Windows, whose subtables hold real code points; the macOS one (1) is at best a
+        // duplicate of them and at worst a legacy encoding of its own.
+        if platform != 3 {
+            continue;
+        }
+        let offset = offset as usize;
+        match be16(cmap, offset) {
+            Some(4) => points.extend(format_four(cmap, offset)),
+            Some(12) | Some(13) => points.extend(format_twelve(cmap, offset)),
+            _ => {}
+        }
+    }
+    points.sort_unstable();
+    points.dedup();
+    let mut ranges: Vec<(u32, u32)> = Vec::new();
+    for point in points {
+        match ranges.last_mut() {
+            Some(open) if point == open.1 + 1 => open.1 = point,
+            _ => ranges.push((point, point)),
+        }
+    }
+    ranges
+}
+
+/// The subtable that maps single code points through segments — format 4, the one nearly every font
+/// has, and the only one that reaches the Latin blocks.
+fn format_four(cmap: &[u8], at: usize) -> Vec<u32> {
+    let mut out = Vec::new();
+    let Some(segments) = be16(cmap, at + 6).map(|value| value as usize / 2) else {
+        return out;
+    };
+    let ends = at + 14;
+    let starts = ends + segments * 2 + 2; // one reserved word between the two
+    let deltas = starts + segments * 2;
+    let offsets = deltas + segments * 2;
+    for segment in 0..segments {
+        let (Some(end), Some(start), Some(delta), Some(offset)) = (
+            be16(cmap, ends + segment * 2),
+            be16(cmap, starts + segment * 2),
+            be16(cmap, deltas + segment * 2),
+            be16(cmap, offsets + segment * 2),
+        ) else {
+            continue;
+        };
+        if start > end || end == 0xffff {
+            continue;
+        }
+        for point in start..=end {
+            let glyph = if offset == 0 {
+                point.wrapping_add(delta)
+            } else {
+                let address = offsets + segment * 2 + offset as usize + (point - start) as usize * 2;
+                match be16(cmap, address) {
+                    None | Some(0) => continue,
+                    Some(glyph) => glyph,
+                }
+            };
+            if glyph != 0 {
+                out.push(point as u32);
+            }
+        }
+    }
+    out
+}
+
+/// The subtable that maps whole groups of code points — format 12, which is how a face with Han in it
+/// reaches past the segments format 4 can hold.
+fn format_twelve(cmap: &[u8], at: usize) -> Vec<u32> {
+    let mut out = Vec::new();
+    let Some(groups) = be32(cmap, at + 12) else {
+        return out;
+    };
+    for group in 0..groups as usize {
+        let entry = at + 16 + group * 12;
+        let (Some(first), Some(last)) = (be32(cmap, entry), be32(cmap, entry + 4)) else {
+            continue;
+        };
+        out.extend(first..=last);
+    }
+    out
+}
+
+/// The table named `tag`, from the directory at the head of a font file.
+fn table<'a>(data: &'a [u8], tag: &[u8; 4]) -> Option<&'a [u8]> {
+    let count = be16(data, 4)? as usize;
+    for index in 0..count {
+        let at = 12 + index * 16;
+        if data.get(at..at + 4)? != tag {
+            continue;
+        }
+        let offset = be32(data, at + 8)? as usize;
+        let length = be32(data, at + 12)? as usize;
+        return data.get(offset..offset + length);
+    }
+    None
+}
+
+fn be16(data: &[u8], at: usize) -> Option<u16> {
+    Some(u16::from_be_bytes(data.get(at..at + 2)?.try_into().ok()?))
+}
+
+fn be32(data: &[u8], at: usize) -> Option<u32> {
+    Some(u32::from_be_bytes(data.get(at..at + 4)?.try_into().ok()?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fonts() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts")
+    }
+
+    /// The header is written from this build's asset and both holes are filled: one still saying
+    /// `@@FONTS@@` is a header XeTeX cannot read, and it is written for every export.
+    #[test]
+    fn the_header_names_the_folder_and_a_han_face() {
+        let dir = std::env::temp_dir().join("yi-header-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = write_header(&dir, Path::new("/faces"), None).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(!text.contains("@@"), "a hole is left in the header");
+        // The folder ends in a separator: without one fontspec finds no face at all (measured).
+        assert!(text.contains("[Path={/faces/}]"), "the faces' folder is not named");
+        // And the face is named *in braces*: `[Path={…}]Noto…otf` is not a name fontspec can look up,
+        // and a page with the Hangul line alone still says it is one, so this asks for the Han line
+        // itself rather than for a shape somewhere in the file.
+        let typed = text
+            .lines()
+            .find(|line| line.starts_with("\\newfontfamily\\yiHan["))
+            .expect("no Han face from this build");
+        assert_eq!(typed, format!("\\newfontfamily\\yiHan[Path={{/faces/}}]{{{HAN_FACE}}}"));
+        assert!(text.contains("\\setTransitionTo{BasicLatin}{\\normalfont}"));
+
+        // A file that names a CJK font is handed that font, by name — not this build's face.
+        let named = write_header(&dir, Path::new("/faces"), Some("Songti SC")).unwrap();
+        let text = std::fs::read_to_string(named).unwrap();
+        assert!(text.contains("\\newfontfamily\\yiHan{Songti SC}"), "the reader's name went unused");
+        assert!(!text.contains("\\yiHan[Path"), "the shipped Han face is named as well");
+    }
+
+    /// What the faces draw, in the shape the window asks about: the scripts this build claims are
+    /// drawn with no reader action, and — just as much the point — the ones it does not.
+    #[test]
+    fn the_shipped_faces_draw_the_scripts_they_are_for() {
+        let covered =
+            |point: u32| coverage(&fonts()).iter().any(|[lo, hi]| (*lo..=*hi).contains(&point));
+        for (script, point) in [
+            ("Hebrew", 0x05d0),
+            ("Arabic", 0x0644),
+            ("Devanagari", 0x0915),
+            ("Thai", 0x0e01),
+            ("Armenian", 0x0531),
+            ("Georgian", 0x10d0),
+            ("Greek", 0x03a9),
+            ("Cyrillic", 0x0416),
+            ("Han", 0x4e00),
+            ("kana", 0x3042),
+            ("Hangul", 0xac00),
+        ] {
+            assert!(covered(point), "{script} is shipped and not claimed: U+{point:04X}");
+        }
+        // Scripts with no face of their own, and the symbol blocks the Han face holds but the header
+        // does not route to it: claimed, they would be characters the window stayed quiet about and
+        // the page lost.
+        for (what, point) in [
+            ("Tamil", 0x0b95),
+            ("Ethiopic", 0x1200),
+            ("less-or-equal", 0x2264),
+            ("a star", 0x2605),
+            ("an arrow", 0x2192),
+        ] {
+            assert!(!covered(point), "{what} is claimed and is not drawn: U+{point:04X}");
+        }
+    }
+}

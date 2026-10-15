@@ -1,0 +1,133 @@
+% Every script this build ships a face for, wired up so that a note in one of them draws with no
+% reader action at all.
+%
+% **Not the reader's file.** Yi writes this one into its export folder before each PDF export, with the
+% two holes below — each written between double at-signs, and both of them in the face definitions
+% under the package line — filled in: the folder the faces were installed in, and the face Han and kana
+% are drawn with. It goes to pandoc with `--include-in-header`: added to, not instead of, whatever the
+% reader's own settings file lists there. The reader's file is never edited, so a change of build
+% cannot reach into it; and nothing here is meant to be edited by hand, either.
+%
+% **A font the reader names still wins**, except where a face is shipped *because* the fonts a
+% platform has usually lack the script: Hangul. `mainfont` is the document's own font and
+% `\normalfont` below is that font, so it is what every Latin character and every unhooked block is
+% set in; `CJKmainfont`, when the file names one, is the face the second hole becomes.
+%
+% **Why classes at all.** XeTeX has no font fallback: a character outside the current font is
+% reported missing and drawn as nothing. `ucharclasses` gives each Unicode block a character class
+% and XeTeX an interchartoks hook for entering one, so entering a script's block can set that
+% script's face. Only *entering* hooks are written: a "leaving" hook is written per class **pair**,
+% so two classes that both write one each overwrite the other's entering hook (measured — that is
+% how the first version lost Greek after Cyrillic).
+%
+% **Blocks, not groups.** `ucharclasses` has informal groups (`Latin`, `CJK`, `Arabics`, …) but no
+% group at all for Hebrew, Thai or Armenian, and a hook written for a block the package did not load
+% is a hook that silently does nothing. So every block is named.
+\ifdefined\XeTeXinterchartoks
+\usepackage{ucharclasses}
+% Break lines between CJK characters, which TeX does not do on its own: without this a Han
+% paragraph runs off the page as one line, measured both ways.
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt
+\newfontfamily\yiGreekCyrillic[Path=@@FONTS@@]{NotoSerif-Regular.ttf}
+\newfontfamily\yiHebrew[Path=@@FONTS@@]{NotoSerifHebrew-Regular.ttf}
+\newfontfamily\yiArabic[Path=@@FONTS@@]{NotoNaskhArabic-Regular.ttf}
+\newfontfamily\yiDevanagari[Path=@@FONTS@@]{NotoSerifDevanagari-Regular.ttf}
+\newfontfamily\yiThai[Path=@@FONTS@@]{NotoSerifThai-Regular.ttf}
+\newfontfamily\yiArmenian[Path=@@FONTS@@]{NotoSerifArmenian-Regular.ttf}
+\newfontfamily\yiGeorgian[Path=@@FONTS@@]{NotoSerifGeorgian-Regular.ttf}
+\newfontfamily\yiHangul[Path=@@FONTS@@]{NotoSerifCJKsc-Regular.otf}
+@@HAN@@
+% The document's own text: `\normalfont` is the file's own font (or the engine's), here as
+% everywhere, so a reader who names `mainfont` keeps it.
+\setTransitionTo{BasicLatin}{\normalfont}
+\setTransitionTo{LatinSupplement}{\normalfont}
+\setTransitionTo{LatinExtendedA}{\normalfont}
+\setTransitionTo{LatinExtendedB}{\normalfont}
+\setTransitionTo{LatinExtendedC}{\normalfont}
+\setTransitionTo{LatinExtendedD}{\normalfont}
+\setTransitionTo{LatinExtendedE}{\normalfont}
+\setTransitionTo{LatinExtendedF}{\normalfont}
+\setTransitionTo{LatinExtendedG}{\normalfont}
+\setTransitionTo{LatinExtendedAdditional}{\normalfont}
+% Greek and Cyrillic: one face, the one that has both.
+\setTransitionTo{GreekAndCoptic}{\yiGreekCyrillic}
+\setTransitionTo{GreekExtended}{\yiGreekCyrillic}
+\setTransitionTo{Coptic}{\yiGreekCyrillic}
+\setTransitionTo{CopticEpactNumbers}{\yiGreekCyrillic}
+\setTransitionTo{Cyrillic}{\yiGreekCyrillic}
+\setTransitionTo{CyrillicSupplement}{\yiGreekCyrillic}
+\setTransitionTo{CyrillicExtendedA}{\yiGreekCyrillic}
+\setTransitionTo{CyrillicExtendedB}{\yiGreekCyrillic}
+\setTransitionTo{CyrillicExtendedC}{\yiGreekCyrillic}
+\setTransitionTo{CyrillicExtendedD}{\yiGreekCyrillic}
+\setTransitionTo{Glagolitic}{\yiGreekCyrillic}
+\setTransitionTo{GlagoliticSupplement}{\yiGreekCyrillic}
+\setTransitionTo{Hebrew}{\yiHebrew}
+% The block the Hebrew face is asked for beyond the Hebrew block itself: it is where the Hebrew
+% presentation forms live (measured: the face holds `U+FB1D`–`U+FB4F`), and it is one block with Latin
+% and Armenian ligature code points in it as well — a corner of the text few notes use, and the price of
+% the block being one class rather than three.
+\setTransitionTo{AlphabeticPresentationForms}{\yiHebrew}
+\setTransitionTo{Arabic}{\yiArabic}
+\setTransitionTo{ArabicSupplement}{\yiArabic}
+\setTransitionTo{ArabicExtendedA}{\yiArabic}
+\setTransitionTo{ArabicExtendedB}{\yiArabic}
+\setTransitionTo{ArabicExtendedC}{\yiArabic}
+\setTransitionTo{ArabicPresentationFormsA}{\yiArabic}
+\setTransitionTo{ArabicPresentationFormsB}{\yiArabic}
+\setTransitionTo{ArabicMathematicalAlphabeticSymbols}{\yiArabic}
+\setTransitionTo{DevanagariPreMarks}{\yiDevanagari}
+\setTransitionTo{DevanagariMarks}{\yiDevanagari}
+\setTransitionTo{DevanagariPostMarks}{\yiDevanagari}
+\setTransitionTo{DevanagariDanDa}{\yiDevanagari}
+\setTransitionTo{DevanagariPostDanDa}{\yiDevanagari}
+\setTransitionTo{DevanagariExtended}{\yiDevanagari}
+\setTransitionTo{DevanagariExtendedA}{\yiDevanagari}
+\setTransitionTo{Thai}{\yiThai}
+\setTransitionTo{Armenian}{\yiArmenian}
+\setTransitionTo{Georgian}{\yiGeorgian}
+\setTransitionTo{GeorgianSupplement}{\yiGeorgian}
+\setTransitionTo{GeorgianExtended}{\yiGeorgian}
+% Hangul, always this build's own face: the fonts a platform has for Han very often have none of it
+% (measured: the macOS `Songti SC` draws Han and kana and no Hangul), which is half the reason a face
+% is shipped at all. A `CJKmainfont` in the file does not reach it.
+\setTransitionTo{HangulSyllables}{\yiHangul}
+\setTransitionTo{HangulJamo}{\yiHangul}
+\setTransitionTo{HangulJamoExtendedA}{\yiHangul}
+\setTransitionTo{HangulJamoExtendedB}{\yiHangul}
+\setTransitionTo{HangulCompatibilityJamo}{\yiHangul}
+% Han, kana and CJK punctuation: the second hole — this build's face, or the one the file names for CJK.
+\setTransitionTo{CJKUnifiedIdeographs}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionA}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionB}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionC}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionD}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionE}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionF}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionG}{\yiHan}
+\setTransitionTo{CJKUnifiedIdeographsExtensionH}{\yiHan}
+\setTransitionTo{CJKCompatibility}{\yiHan}
+\setTransitionTo{CJKCompatibilityForms}{\yiHan}
+\setTransitionTo{CJKCompatibilityIdeographs}{\yiHan}
+\setTransitionTo{CJKCompatibilityIdeographsSupplement}{\yiHan}
+\setTransitionTo{CJKRadicalsSupplement}{\yiHan}
+\setTransitionTo{CJKStrokes}{\yiHan}
+\setTransitionTo{KangxiRadicals}{\yiHan}
+\setTransitionTo{CJKSymbolsAndPunctuation}{\yiHan}
+\setTransitionTo{IdeographicSymbolsAndPunctuation}{\yiHan}
+\setTransitionTo{IdeographicDescriptionCharacters}{\yiHan}
+\setTransitionTo{EnclosedCJKLettersAndMonths}{\yiHan}
+\setTransitionTo{EnclosedIdeographicSupplement}{\yiHan}
+\setTransitionTo{Bopomofo}{\yiHan}
+\setTransitionTo{BopomofoExtended}{\yiHan}
+\setTransitionTo{Hiragana}{\yiHan}
+\setTransitionTo{Katakana}{\yiHan}
+\setTransitionTo{KatakanaPhoneticExtensions}{\yiHan}
+\setTransitionTo{KanaSupplement}{\yiHan}
+\setTransitionTo{KanaExtendedA}{\yiHan}
+\setTransitionTo{KanaExtendedB}{\yiHan}
+\setTransitionTo{SmallKanaExtension}{\yiHan}
+\setTransitionTo{Kanbun}{\yiHan}
+\setTransitionTo{HalfwidthAndFullwidthForms}{\yiHan}
+\fi
