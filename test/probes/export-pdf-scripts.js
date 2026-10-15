@@ -78,10 +78,12 @@
     'ქართული'
   ];
   const latin = 'And latin after it.';
-  // The last line asks for **bold** in one of those scripts: a shipped face has one weight, so this is
-  // the line that says whether the weight a note asks for survives the export.
+  // The last line asks for **bold** in two of those scripts, one of each kind the build can answer with:
+  // Hebrew, whose face ships a real bold, and Hangul, whose face ships one weight and is emboldened
+  // instead — that pair is what says a *note's* bold survives either way.
   const bold = `**${scripts[5]}**`;
-  const note = `# Going out\n\n${scripts.join(' ')} ${latin}\n\n${bold}\n`;
+  const emboldened = `**${scripts[2]}**`;
+  const note = `# Going out\n\n${scripts.join(' ')} ${latin}\n\n${bold} ${emboldened}\n`;
   /** The faces the header names, as they appear in the PDF's own font names. */
   const faces = [
     'NotoSerifCJKsc',
@@ -194,16 +196,29 @@
       { absent, drawn: drawn.slice(0, 14) }
     );
 
-    // And the bold run above is *bold*: one weight is shipped per face, so `**…**` in a shipped script
-    // is drawn by stroking the glyphs as well as filling them (`2 Tr`), which is the only place the page
-    // says anything about weight — the text is the same, and so is the font's name. Measured without it:
-    // LaTeX substitutes the regular face with *"Font shape …/bx/n undefined"* and a heading comes out at
-    // the weight of the text around it.
+    // And the two bold runs above are *bold*, by the two answers this build has. The Hebrew one is a
+    // real bold face, so the page carries it by name. The Hangul one has no bold face to carry — the Han
+    // face's is 25.5 MB, measured, against 1.75 MB for every other face's styles together — so it is XeTeX's emboldening:
+    // the glyphs stroked as well as filled (`2 Tr` and a line width), which is the only place a page
+    // says anything about weight, since the text and the font's name both stay the same. Measured
+    // without either: LaTeX substitutes the regular face with *"Font shape …/bx/n undefined"* and the
+    // weight a heading asked for is gone.
     const commands = bytes === null ? '' : await t.pdfContent(bytes);
     check(
-      'and a bold run in a shipped script keeps its weight, stroked as well as filled',
-      commands.includes('2 Tr') && /\d[\d.]*\s+w/.test(commands),
-      { stroked: (commands.match(/2 Tr/g) ?? []).length, widths: (commands.match(/\d[\d.]*\s+w/g) ?? []).slice(0, 3) }
+      'a bold run in a script this build has a bold face for is drawn with that face',
+      drawn.some((name) => name.includes('NotoSerifHebrew-Bold')),
+      { drawn: drawn.slice(0, 16) }
+    );
+    check(
+      'and one in a script it has none for is emboldened instead, stroked and with no second face',
+      commands.includes('2 Tr') &&
+        /\d[\d.]*\s+w/.test(commands) &&
+        !drawn.some((name) => name.includes('CJKsc-Bold')),
+      {
+        stroked: (commands.match(/2 Tr/g) ?? []).length,
+        widths: (commands.match(/\d[\d.]*\s+w/g) ?? []).slice(0, 3),
+        drawn: drawn.slice(0, 16)
+      }
     );
   } finally {
     // The reader's own file is put back exactly as it was found — and taken away again when there was

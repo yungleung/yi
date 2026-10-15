@@ -26,12 +26,20 @@ use tauri::Manager;
 /// reaches for, and the coverage below is read from these files and no others.
 pub const FACES: &[&str] = &[
     "NotoSerif-Regular.ttf",           // Greek, Cyrillic, Coptic, Glagolitic
+    "NotoSerif-Bold.ttf",              // … and the bold and italic a note may ask for
+    "NotoSerif-Italic.ttf",
     "NotoSerifHebrew-Regular.ttf",     // Hebrew
+    "NotoSerifHebrew-Bold.ttf",
     "Amiri-Regular.ttf",               // Arabic
+    "Amiri-Bold.ttf",
     "NotoSerifDevanagari-Regular.ttf", // Devanagari
+    "NotoSerifDevanagari-Bold.ttf",
     "NotoSerifThai-Regular.ttf",       // Thai
+    "NotoSerifThai-Bold.ttf",
     "NotoSerifArmenian-Regular.ttf",   // Armenian
+    "NotoSerifArmenian-Bold.ttf",
     "NotoSerifGeorgian-Regular.ttf",   // Georgian
+    "NotoSerifGeorgian-Bold.ttf",
     "NotoSerifCJKsc-Regular.otf",      // Han, kana, Hangul
 ];
 
@@ -49,6 +57,11 @@ pub struct Slot {
     pub key: Option<&'static str>,
     /// The face this build ships for the script, when the file names none.
     pub file: &'static str,
+    /// The faces this build ships for the *styles* a note may ask of it, as fontspec's key for the style
+    /// and the file: `("BoldFont", …)`. Empty where this build ships no such face — measured, `bold` in
+    /// Han or Hangul is XeTeX's own emboldening instead (see [`FAKE_BOLD`]), because the Han face's real
+    /// bold is 25.5 MB, which is one note's heading worth of weight against another whole face.
+    pub styles: &'static [(&'static str, &'static str)],
 }
 
 /// Every script the header draws, in the order it defines them.
@@ -57,20 +70,66 @@ pub struct Slot {
 /// own key, it is what a reader writes for Han, and the header hands the name over (measured:
 /// `export-pdf-font.js` reads a page back and finds the reader's face on it).
 pub const SLOTS: &[Slot] = &[
-    Slot { script: "Greek", key: Some("yi-greek-font"), file: "NotoSerif-Regular.ttf" },
-    Slot { script: "Cyrillic", key: Some("yi-cyrillic-font"), file: "NotoSerif-Regular.ttf" },
-    Slot { script: "Hebrew", key: Some("yi-hebrew-font"), file: "NotoSerifHebrew-Regular.ttf" },
-    Slot { script: "Arabic", key: Some("yi-arabic-font"), file: "Amiri-Regular.ttf" },
+    Slot {
+        script: "Greek",
+        key: Some("yi-greek-font"),
+        file: "NotoSerif-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerif-Bold.ttf"), ("ItalicFont", "NotoSerif-Italic.ttf")],
+    },
+    Slot {
+        script: "Cyrillic",
+        key: Some("yi-cyrillic-font"),
+        file: "NotoSerif-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerif-Bold.ttf"), ("ItalicFont", "NotoSerif-Italic.ttf")],
+    },
+    Slot {
+        script: "Hebrew",
+        key: Some("yi-hebrew-font"),
+        file: "NotoSerifHebrew-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerifHebrew-Bold.ttf")],
+    },
+    Slot {
+        script: "Arabic",
+        key: Some("yi-arabic-font"),
+        file: "Amiri-Regular.ttf",
+        styles: &[("BoldFont", "Amiri-Bold.ttf")],
+    },
     Slot {
         script: "Devanagari",
         key: Some("yi-devanagari-font"),
         file: "NotoSerifDevanagari-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerifDevanagari-Bold.ttf")],
     },
-    Slot { script: "Thai", key: Some("yi-thai-font"), file: "NotoSerifThai-Regular.ttf" },
-    Slot { script: "Armenian", key: Some("yi-armenian-font"), file: "NotoSerifArmenian-Regular.ttf" },
-    Slot { script: "Georgian", key: Some("yi-georgian-font"), file: "NotoSerifGeorgian-Regular.ttf" },
-    Slot { script: "Hangul", key: Some("yi-hangul-font"), file: "NotoSerifCJKsc-Regular.otf" },
-    Slot { script: "Han", key: Some("CJKmainfont"), file: HAN_FACE },
+    Slot {
+        script: "Thai",
+        key: Some("yi-thai-font"),
+        file: "NotoSerifThai-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerifThai-Bold.ttf")],
+    },
+    Slot {
+        script: "Armenian",
+        key: Some("yi-armenian-font"),
+        file: "NotoSerifArmenian-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerifArmenian-Bold.ttf")],
+    },
+    Slot {
+        script: "Georgian",
+        key: Some("yi-georgian-font"),
+        file: "NotoSerifGeorgian-Regular.ttf",
+        styles: &[("BoldFont", "NotoSerifGeorgian-Bold.ttf")],
+    },
+    Slot {
+        script: "Hangul",
+        key: Some("yi-hangul-font"),
+        file: "NotoSerifCJKsc-Regular.otf",
+        styles: &[],
+    },
+    Slot {
+        script: "Han",
+        key: Some("CJKmainfont"),
+        file: HAN_FACE,
+        styles: &[],
+    },
 ];
 
 /// The file the header is written as, in the export folder, for pandoc to `--include-in-header`.
@@ -126,10 +185,10 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
         let line = match slot.key.and_then(|key| named(settings, key)) {
             Some(name) => format!("\\newfontfamily\\yi{}{{{name}}}", slot.script),
             None => format!(
-                "\\newfontfamily\\yi{}[Path={{{}}},AutoFakeBold={}]{{{}}}",
+                "\\newfontfamily\\yi{}[Path={{{}}}{}]{{{}}}",
                 slot.script,
                 folder(fonts),
-                FAKE_BOLD,
+                style_options(slot),
                 slot.file
             ),
         };
@@ -145,14 +204,32 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
     Ok(path)
 }
 
-/// The factor a shipped face is emboldened by when the note asks for bold, and there is no bold face
-/// to hand: **one weight of each face is what this build ships**, and LaTeX otherwise substitutes the
-/// regular one *with a warning* — measured: `**bold**` and a `## heading` in Hebrew or in Han came out
-/// at the same weight as the text around them (`Font shape …/bx/n undefined`, defaults substituted),
-/// which for a note whose headings are its structure is the weight lost. 1.5 is XeTeX's stroke-widening
-/// (measured: the same Hebrew line is drawn 342.6pt wide where the plain one is 299.7pt), and it is
-/// applied **only to this build's own faces** — a face the reader names is left alone, so their font's
-/// real bold is the one used.
+/// A shipped face's options past `Path`: the styles this build has faces for, or — where it has none —
+/// the emboldening that stands in for them.
+///
+/// **One or the other, never both**: `AutoFakeBold` beside a `BoldFont` makes fontspec embolden the
+/// *regular* face and ignore the bold one (measured: the family's bold series came out as
+/// `…-Regular.ttf` with `embolden=1.5` in the log, and the page held no bold face at all).
+fn style_options(slot: &Slot) -> String {
+    if slot.styles.is_empty() {
+        return format!(",AutoFakeBold={FAKE_BOLD}");
+    }
+    slot.styles
+        .iter()
+        .map(|(key, file)| format!(",{key}={file}"))
+        .collect()
+}
+
+/// The factor a shipped face is emboldened by, for the slots that have **no bold face to hand** (see
+/// [`Slot::styles`]): the Han and Hangul face, whose real bold is 25.5 MB — as much again as every
+/// other shipped face together — against one heading's worth of weight.
+///
+/// LaTeX otherwise substitutes the regular face *with a warning*: measured, `**bold**` and a
+/// `## heading` in a shipped script came out with the same ink and the same width as the text around
+/// them (`Font shape …/bx/n undefined`, defaults substituted), which for a note whose headings are its
+/// structure is the weight lost. 1.5 is XeTeX's stroke-widening (measured: the same line drawn
+/// 299.7pt wide plain comes out 342.6pt), and it is applied **only to this build's own faces** — a face
+/// the reader names is left alone, so their font's real bold is the one used.
 const FAKE_BOLD: &str = "1.5";
 
 /// The font a settings file names for `key`, comment lines not counted.
@@ -424,8 +501,10 @@ mod tests {
         // name the lookup can find, and both were measured to stop the whole export.
         for slot in SLOTS {
             let expected = format!(
-                "\\newfontfamily\\yi{}[Path={{/faces/}},AutoFakeBold={}]{{{}}}",
-                slot.script, FAKE_BOLD, slot.file
+                "\\newfontfamily\\yi{}[Path={{/faces/}}{}]{{{}}}",
+                slot.script,
+                style_options(slot),
+                slot.file
             );
             assert!(
                 text.lines().any(|line| line == expected),
@@ -446,11 +525,14 @@ mod tests {
         assert!(!text.contains("\\yiHebrew{Frank Ruehl}[") && !text.contains("Frank Ruehl]"));
         assert!(
             text.contains(&format!(
-                "\\newfontfamily\\yiThai[Path={{/faces/}},AutoFakeBold={}]{{NotoSerifThai-Regular.ttf}}",
-                FAKE_BOLD
+                "\\newfontfamily\\yiThai[Path={{/faces/}},BoldFont=NotoSerifThai-Bold.ttf]{{NotoSerifThai-Regular.ttf}}"
             )),
             "a script nobody named lost this build's face"
         );
+        // A face this build ships with a real bold is given it, and *no* emboldening: fontspec would
+        // embolden the regular and drop the bold face if both were there (measured).
+        assert!(!text.contains("AutoFakeBold=1.5,BoldFont"), "both ways of bolding a face at once");
+        assert!(text.contains("\\yiHangul[Path={/faces/},AutoFakeBold=1.5]"), "no emboldening for Hangul");
     }
 
     /// The settings file's per-script lines, a comment counting for nothing: the shipped file's own

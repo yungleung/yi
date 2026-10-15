@@ -1320,18 +1320,23 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
   named `mainfont`, since a coverage cannot be read out of a name.
 
-  **Bold is emboldened, not shipped, and italic is left alone.** One weight of each face is what the
-  build ships, so a `**bold**` run or a `## heading` in a shipped script was drawn by LaTeX's fallback —
-  the regular face, with *"Font shape …/bx/n undefined"* in the log and the weight the note asked for
-  gone (measured, one page: the same Hebrew line came out with the same ink and the same width whether
-  it was written bold or not). It is now emboldened by XeTeX (`AutoFakeBold=1.5`, on this build's faces
-  only — a face the reader names keeps its own bold, which is why the option is not on that line), and
-  the page says so: `export-pdf-scripts.js` checks that the bold run is *stroked* as well as filled
-  (`2 Tr`), since the text and the font's name both stay the same. **Italic is the residue**: these
-  scripts have no italic and a slanted Hebrew or Arabic is not a thing they have, so `*emphasis*` in one
-  of them still falls back to the regular face. What would fix bold properly is shipping the real bold
-  faces — the seven script faces' are small enough to weigh, the Han face's is another 24 MB, which is
-  why the faked one is the default — and those sizes are not measured yet.
+  **Bold was a fallback and is now faces, with one measured exception.** One weight of each face
+  shipped, so a `**bold**` run or a `## heading` in a shipped script was drawn by LaTeX's fallback: the
+  regular face, *"Font shape …/bx/n undefined"* in the log, the weight the note asked for gone
+  (measured, one page — the same Hebrew line came out with the same ink and the same width whether it
+  was written bold or not). The real bold faces ship now, for all seven script faces, plus the core
+  face's italic, because the numbers were small: **1.75 MB** for all of them against the 26 MB the
+  faces already cost. The **Han and Hangul** face is the exception, and its number is the reason — its
+  bold is **25.5 MB** (measured by asking the upstream URL for its length), as much again as every
+  other face together for one heading's worth of weight — so those two are emboldened by XeTeX
+  (`AutoFakeBold=1.5`). A face the *reader* names is never emboldened, so their own bold is the one
+  used; a slot with a real style gets no `AutoFakeBold`, because giving both makes fontspec embolden the
+  *regular* and drop the bold face (measured). The page says which path was taken:
+  `export-pdf-scripts.js` holds a bold run of each — Hebrew drawn by `NotoSerifHebrew-Bold`, Hangul
+  stroked as well as filled (`2 Tr`) with no second face on the page. **Italic stays a residue where
+  there is no italic to ship**: Greek and Cyrillic have one and got it; Hebrew, Arabic, Devanagari,
+  Thai, Armenian and Georgian have none in these families, and a slanted Hebrew or Arabic is not a
+  thing those scripts have.
 
 Two residues are deliberate, and each has a measured shape:
 - **The Arabic face was the wrong one, and it was measured out rather than argued.** The first cut
