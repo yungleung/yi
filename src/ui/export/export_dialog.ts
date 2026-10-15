@@ -38,6 +38,12 @@ export interface ExportQuestion {
    * `a note.processed.md` rather than the note itself.
    */
   baseTarget: string;
+  /**
+   * The characters of the note that no font its conversion settings name can draw, each once — the
+   * hint below says so, because the conversion does nothing about it: the page keeps the words'
+   * places and loses the words. Empty for a kind whose output carries the characters as characters.
+   */
+  uncovered: string[];
 }
 
 /** The reader's answer: where the file goes. */
@@ -73,6 +79,11 @@ function kindLabel(kind: string): string {
   return kind;
 }
 
+/** Up to eight of the characters a note needs a font for, and an ellipsis when there are more. */
+function shownCharacters(characters: string[]): string {
+  return characters.slice(0, 8).join('') + (characters.length > 8 ? '…' : '');
+}
+
 export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly heading: HTMLParagraphElement;
   private readonly targetLabel: HTMLLabelElement;
@@ -84,6 +95,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   /** The configuration row: the kind's own defaults file, which every export of it reads. */
   private readonly configRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
+  /** The line that says the note is written in characters the settings name no font for. */
+  private readonly fontHint: HTMLParagraphElement;
   private readonly form: HTMLFormElement;
   private readonly run: HTMLButtonElement;
   private readonly cancel: HTMLButtonElement;
@@ -133,6 +146,13 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
+
+    // The hint under it, with the file that answers for it already on the card above: what it says is
+    // the app's own words, what it names is the reader's file, and the button beside that file is how
+    // they get to it.
+    this.fontHint = document.createElement('p');
+    this.fontHint.className = 'mt-1 hidden text-xs opacity-70';
+    this.fontHint.setAttribute('data-export-font-hint', 'true');
     // Built *after* the three things it holds: a row made before its own children exist is an empty
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
@@ -150,6 +170,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
       this.status,
+      this.fontHint,
       this.actions()
     );
   }
@@ -205,6 +226,14 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       : pandoc === null
         ? t('export.noPandoc')
         : t('export.pandoc', { path: pandoc });
+    // A note written in characters no font in that file can draw: said here, before the reader
+    // exports, because the run would come back with the words missing rather than with an error.
+    const uncovered = this.question?.uncovered ?? [];
+    this.fontHint.classList.toggle('hidden', uncovered.length === 0);
+    this.fontHint.textContent =
+      uncovered.length === 0
+        ? ''
+        : t('export.fontHint', { characters: shownCharacters(uncovered) });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
     this.run.disabled = info.needs_pandoc && pandoc === null;
   }

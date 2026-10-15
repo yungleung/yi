@@ -21,7 +21,12 @@
 
 import { join } from '@tauri-apps/api/path';
 import { exists } from '@tauri-apps/plugin-fs';
-import { exportFetchImage, exportKinds, runExport } from '../../api/export';
+import {
+  exportFetchImage,
+  exportKinds,
+  runExport,
+  uncoveredCharacters
+} from '../../api/export';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -69,7 +74,14 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   // extension to it, because the *kind* is what the card knows and this is what it is asked with.
   const baseTarget = await join(folder, noteName(note?.path ?? null, note?.title ?? null));
 
-  const answer = await exportDialog.ask({ kind: first, pandoc, baseTarget });
+  // What the card needs to know before it is drawn: whether this note is written in characters the
+  // kind's conversion settings name no font for (see `api/export.ts: uncoveredCharacters`).
+  const answer = await exportDialog.ask({
+    kind: first,
+    pandoc,
+    baseTarget,
+    uncovered: await uncoveredCharacters(first.kind, text)
+  });
   if (answer === null) {
     return;
   }

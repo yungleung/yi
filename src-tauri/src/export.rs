@@ -67,6 +67,14 @@ pub struct ExportKind {
     /// so the app writes that text out itself ([`export_own_text`]) and there is no pandoc to hand a
     /// defaults file to.
     pub needs_pandoc: bool,
+    /// Whether this kind's output is **typeset with fonts the settings file names**: the PDF, whose
+    /// page XeTeX draws, and the LaTeX document, which the reader compiles with their own engine.
+    ///
+    /// It is what the card's font hint keys off, and nothing else is: a note written in a script no
+    /// font in that file can draw is a page — or a `.tex` — with the words' places kept and the words
+    /// gone (measured), while a docx, a page of HTML or a book carries the characters as characters
+    /// and whatever opens it picks a font of its own.
+    pub needs_a_font: bool,
     /// Whether the kind draws its **own name** from the note rather than saying it in its body: a
     /// book's title page and its `<dc:title>`, a page's `<title>`.
     ///
@@ -95,6 +103,7 @@ pub const KINDS: &[ExportKind] = &[
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.docx.yaml"),
     },
     ExportKind {
@@ -104,6 +113,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
     },
     ExportKind {
@@ -115,6 +125,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
     },
     ExportKind {
@@ -126,6 +137,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
     },
     ExportKind {
@@ -137,6 +149,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: true,
         needs_pandoc: true,
+        needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
     },
     ExportKind {
@@ -151,6 +164,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         needs_pandoc: true,
+        needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
     },
     ExportKind {
@@ -163,6 +177,7 @@ pub const KINDS: &[ExportKind] = &[
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
         needs_pandoc: false,
+        needs_a_font: false,
         defaults: "",
     },
 ];
@@ -816,6 +831,119 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// The characters a note is written in that no font its conversion settings name can draw, each
+/// once, in the order they appear.
+///
+/// The card asks this before it is drawn, and says so in the app's own words — with the settings file
+/// it names already on the card beside it, and the button that reveals it. What the answer is *for*:
+/// the kinds whose output is typeset with the fonts that file names ([`ExportKind::needs_a_font`]).
+/// A docx, a page of HTML or a book carries the characters as characters, and whatever opens it picks
+/// a font of its own, so those answer with nothing whatever the note is written in.
+///
+/// It reports the *characters* rather than a verdict because that is the half the app can know. What
+/// a font holds is not: a name the machine does not have fails the whole export (measured: `PingFang
+/// SC`, `SF Hebrew`, `Noto Sans Georgian`), and a font that draws a script with no `ToUnicode` map
+/// gives a page nothing can be searched or copied from (`Hiragino Sans GB`, `Apple SD Gothic Neo`) —
+/// so the app names the characters and leaves the font to the reader, which is whose line it is.
+#[tauri::command]
+pub fn export_uncovered_characters(
+    app: tauri::AppHandle,
+    kind: String,
+    text: String,
+) -> Result<Vec<String>, String> {
+    let kind = kind_of(&kind)?;
+    if !kind.needs_a_font {
+        return Ok(Vec::new());
+    }
+    Ok(uncovered_characters(&settings_text(&app, kind)?, &text))
+}
+
+/// The settings a kind would be run with, as their own text: the reader's copy when it has been
+/// written, and the copy this build ships when it has not — what the app *would* write on the first
+/// export, which is what the reader is looking at either way.
+fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result<String, String> {
+    let dir = export_dir(app)?;
+    let path = dir.join(config_file_name(kind.kind));
+    Ok(fs::read_to_string(&path).unwrap_or_else(|_| kind.defaults.to_string()))
+}
+
+/// Whether each of the two variables that answer for a script is named by a font in `settings`.
+///
+/// A **comment does not count**: the shipped file's own headers talk about fonts at length — they
+/// explain what happens without one — and a copy of them must not read as a reader who has chosen
+/// (measured the hard way: the app once stepped aside for its own documentation and the characters
+/// stayed missing). Returns `(mainfont, CJKmainfont)`.
+fn named_fonts(settings: &str) -> (bool, bool) {
+    let mut main = false;
+    let mut cjk = false;
+    for line in settings.lines() {
+        if line.trim_start().starts_with('#') {
+            continue;
+        }
+        let text = line.to_lowercase();
+        if !text.contains("mainfont") {
+            continue;
+        }
+        if text.contains("cjkmainfont") {
+            cjk = true;
+        } else {
+            main = true;
+        }
+    }
+    (main, cjk)
+}
+
+/// Whether the TeX suite's own font has none of this character — the ranges a *Latin* note is written
+/// in as well as its script (accents, Vietnamese, an em dash, an arrow, `™`) being the ones it has.
+fn beyond_latin(character: char) -> bool {
+    let point = character as u32;
+    point > 0x024F
+        && !matches!(
+            point,
+            0x0250..=0x036F   // Latin extended B and IPA, spacing modifiers, combining marks
+                | 0x1E00..=0x1EFF // Latin extended additional (Vietnamese)
+                | 0x2000..=0x2BFF // punctuation, symbols, arrows, maths, shapes — TeX has these
+                | 0x2C60..=0x2C7F // Latin extended C
+                | 0xA720..=0xA7FF // Latin extended D
+                | 0xFB00..=0xFB4F // Latin ligatures
+        )
+}
+
+/// Whether `CJKmainfont` is the variable that reaches this character.
+///
+/// Measured, one page each: CJK punctuation, kana and Han (extensions included) are set with it, and
+/// **Hangul is not** — a Korean note whose file names only `CJKmainfont: "Songti SC"` loses its
+/// Hangul, which is why it needs `mainfont:` like any other script outside CJK.
+fn reaches_cjk_font(character: char) -> bool {
+    matches!(
+        character as u32,
+        0x3000..=0x303F      // CJK punctuation: 、。「」
+            | 0x3040..=0x30FF // hiragana and katakana
+            | 0x3400..=0x4DBF // unified ideographs, extension A
+            | 0x4E00..=0x9FFF // unified ideographs
+            | 0xF900..=0xFAFF // compatibility ideographs
+            | 0x20000..=0x2FA1F // extensions B to F
+    )
+}
+
+/// The characters of `text` that neither variable answers for: every character the TeX suite's own
+/// font has none of, unless `mainfont` is named (a font the reader chose answers for anything it
+/// has) or `CJKmainfont` is named and reaches it ([`reaches_cjk_font`]).
+fn uncovered_characters(settings: &str, text: &str) -> Vec<String> {
+    let (main, cjk) = named_fonts(settings);
+    let mut uncovered: Vec<String> = Vec::new();
+    for character in text.chars() {
+        if !beyond_latin(character) || main || (cjk && reaches_cjk_font(character)) {
+            continue;
+        }
+        let character = character.to_string();
+        if !uncovered.contains(&character) {
+            uncovered.push(character);
+        }
+    }
+    uncovered
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1072,6 +1200,38 @@ mod tests {
         // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    #[test]
+    fn a_note_needs_no_font_when_a_variable_that_answers_for_it_is_named() {
+        // The shipped file, as it stands: `CJKmainfont` alone.
+        let shipped = "variables:\n  CJKmainfont: \"Songti SC\"\n";
+        let latin = uncovered_characters(shipped, "A note with café, naïve, “quotes”, — and ¼.");
+        assert!(latin.is_empty(), "{latin:?} is read as needing a font");
+
+        // CJK punctuation, kana and Han are what that variable is for — measured, one page each.
+        let cjk = uncovered_characters(shipped, "简体中文、日本語。「」");
+        assert!(cjk.is_empty(), "{cjk:?} is read as needing a font");
+
+        // Hangul is *not*, which is the trap: a Korean note with only `CJKmainfont` named loses it.
+        assert_eq!(uncovered_characters(shipped, "한국어"), vec!["한", "국", "어"]);
+
+        // And every other script beside CJK is outside it too.
+        for text in ["Русский", "Ελληνικά", "עברית", "हिन्दी", "ภาษาไทย", "Հայերեն", "ქართული"] {
+            assert!(!uncovered_characters(shipped, text).is_empty(), "{text} is read as covered");
+        }
+
+        // `mainfont` answers for anything the font it names has: with one, nothing is left over.
+        let with_main = "variables:\n  mainfont: \"Arial Unicode MS\"\n";
+        assert!(uncovered_characters(with_main, "한국어 Русский 简体中文").is_empty());
+
+        // A **comment** names nothing: the shipped files' headers talk about fonts at length, and
+        // reading one as a choice is the mistake that once left the characters missing.
+        let commented = "# add `mainfont: \"Arial Unicode MS\"` for other scripts\nreader: markdown\n";
+        assert_eq!(uncovered_characters(commented, "한국어"), vec!["한", "국", "어"]);
+
+        // Each character is named once, in the order it appears.
+        assert_eq!(uncovered_characters(commented, "어어한"), vec!["어", "한"]);
     }
 
     #[test]

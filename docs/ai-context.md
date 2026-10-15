@@ -226,7 +226,17 @@ reader can search and copy by (`export-pdf-font.js` reads such a page back; with
 draws the space the words took and none of the words, and the app shows the reader its warning for each
 character). That default covers CJK and nothing else — no Hangul, no Greek, Cyrillic, Hebrew, Arabic,
 Devanagari, Thai, Armenian or Georgian — and a reader who needs one names it in the same file, which is
-theirs and which the app never rewrites. The window is told the list (`src/api/export.ts: exportKinds`) and knows no
+theirs and which the app never rewrites. The **latex** kind names the same font in `export.latex.yaml`
+and for the same measured reason: without it the `.tex` carries no font setup at all, and the reader
+who compiles it gets XeTeX's *"Missing character"* for every CJK character in the document.
+What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
+is typeset with those fonts (`needs_a_font`: the pdf and the latex) is asked
+`export_uncovered_characters` before its card is drawn — the characters of the note no font in the
+settings names can draw (`export.rs`), the shipped file's headers counting for nothing because a
+comment names no font — and the card says so in the app's own words, with the settings file and its
+*Reveal in folder* button already beside it (`export-font-hint.js` holds both halves: Korean said,
+Chinese not).
+The window is told the list (`src/api/export.ts: exportKinds`) and knows no
 kind by name except the one that labels its menu item, so a new kind is a row and an asset and
 nothing else. A row also says whether
 its kind **carries its own name** (a book's title page and its

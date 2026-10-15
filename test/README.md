@@ -62,7 +62,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and one of them (`probe:all` runs 173 and skips 28, each skip for the reason its
+two hundred and two of them (`probe:all` runs 174 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -204,6 +204,10 @@ thing that leaves the page), and the citations become a headed `References` list
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts;
+`export-font-hint` — the card's font hint: a note written in a script the settings name no font for is
+said so in the app's own words, with the characters it is written in and the settings file beside it
+(Korean says it, Chinese does not — the shipped `CJKmainfont` is for Han and kana — and a docx never
+does, because what opens that file picks a font itself);
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the

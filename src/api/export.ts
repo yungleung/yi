@@ -94,6 +94,16 @@ export async function exportConfigPath(kind: string): Promise<string> {
 }
 
 /**
+ * The characters of `text` that no font the kind's conversion settings name can draw, each once, in
+ * the order they appear — what the card's hint says before the reader exports, because the conversion
+ * itself does nothing about it: the page keeps the words' places and loses the words. A kind whose
+ * output carries the characters as characters answers with none, whatever the note is written in.
+ */
+export async function uncoveredCharacters(kind: string, text: string): Promise<string[]> {
+  return await invoke<string[]>('export_uncovered_characters', { kind, text });
+}
+
+/**
  * Points the app at another pandoc — `YI_PANDOC`, as a call, for a probe that cannot change the
  * environment of the app it drives. `null` puts it back to looking for one.
  */

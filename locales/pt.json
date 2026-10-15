@@ -78,6 +78,7 @@
   "export.configNew": "Criado ali na sua primeira exportação: {path}",
   "export.revealConfig": "Mostrar na pasta",
   "export.noPandoc": "O pandoc não foi encontrado nesta máquina, então este tipo de exportação não pode rodar.",
+  "export.fontHint": "Nenhuma fonte nas configurações de conversão desenha estes caracteres: {characters} — indique uma lá (`mainfont:` cobre qualquer escrita).",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Escreva o caminho do arquivo a ser gravado.",
   "export.cancel": "Cancelar",

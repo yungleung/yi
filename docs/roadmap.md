@@ -989,6 +989,21 @@ elements) unless it says otherwise.
   the three answers before this one is worth remembering: the app naming a CJK font (which silently
   lost Korean), then one wide font (which did draw every script, but only on a machine that has one —
   macOS), and now the file, which is what the yaml-on-disk design was for all along.
+- **And the app says it, and the `.tex` carries it.** The half the file alone could not do is the
+  *saying*: the flow asks `export_uncovered_characters` before the card is drawn, and the card's hint
+  names the characters a note is written in that no font its settings names can draw — with the
+  settings file and its *Reveal in folder* button already beside it (`export-font-hint.js`: a Korean
+  note says so, a Chinese one does not, a docx never does). The rule is measured rather than guessed:
+  `CJKmainfont` sets CJK punctuation, kana and Han and **not** Hangul; `mainfont` answers for anything
+  the font it names has; and a **comment** names nothing — the shipped files' headers talk about fonts
+  at length, and reading one as a choice is the mistake that once left the characters missing. It is a
+  hint and not a decision because the app cannot know what a font holds: a name the machine lacks fails
+  the whole export, and a font that draws a script with no `ToUnicode` map gives a page nothing can be
+  searched or copied from.
+  The **latex** kind was the same gap in another file, closed the same way: `export.latex.yaml` carries
+  `CJKmainfont: "Songti SC"` too, so a `.tex` of a CJK note holds `\usepackage{xeCJK}` and
+  `\setCJKmainfont[]{…}` and the reader's own xelatex compiles it with no *"Missing character"*
+  warnings (measured both ways — with the line, and without it).
 
 ## Open, in the order to take them
 
@@ -998,18 +1013,27 @@ elements) unless it says otherwise.
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **The scripts the shipped font does not cover.** The default draws Han and kana; a note written in
-  **Hangul**, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian or Georgian still comes out
-  with the space its words took and none of the words until the reader names a font for it — measured,
-  one page each, and the file's header names the two variables that fix it. Whether that is enough is
-  the question this leaves: it is a *working* answer for a reader who reads their yaml, and nothing at
-  all for one who does not. The three ways to answer it for them were measured in the round before
-  this one — a per-OS list of wide fonts (macOS has one; Windows has none by default), a per-script
-  list *per OS* (each name resolved, each script covered, each page extractable — the `Hiragino` and
-  `Apple SD Gothic Neo` rows are why that is three checks and not one), and shipping the fonts and
-  naming them by path (the only one where working everywhere is a property of the app; tens of
-  megabytes and an OFL notice to carry). A **LaTeX export** of such a note is still unheld too: its
-  `.tex` names no font either, so it will not compile its own characters for whoever opens it.
+- **A shipped file that changes does not reach a reader who already has one.** `ensure_defaults_in`
+  writes a kind's file once and never again — that is what makes an edit the reader's — so the
+  `CJKmainfont` line added to `export.latex.yaml` (and the two pdf rounds before it) only arrives for
+  a reader who has never exported that kind. This round it bit visibly: the latex probe failed against
+  the app's own copy of the file until that copy was rewritten, and both times that was done by hand
+  from here, on the grounds that the copy was byte-identical to the old asset. What a *reader* would
+  see is a file that never learns, and the decision this leaves is whether the app should notice that
+  an unedited copy differs from the shipped one and offer to replace it (its own question, like every
+  other overwrite in this app) — the checks that would make that safe are the same ones this round used
+  by hand: compare the bytes, and never touch a file with an edit in it.
+- **The scripts the shipped font does not cover.** The card now *says* when a note is written in
+  characters its settings name no font for (the entry above), and the file's header names the two
+  variables that fix it; what is still missing is the font itself — **Hangul**, Greek, Cyrillic,
+  Hebrew, Arabic, Devanagari, Thai, Armenian and Georgian all stay missing from the page until the
+  reader names one. The three ways to answer it for them were measured in the round before that one —
+  a per-OS list of wide fonts (macOS has one; Windows has none by default), a per-script list *per OS*
+  (each name resolved, each script covered, each page extractable — the `Hiragino` and `Apple SD Gothic
+  Neo` rows are why that is three checks and not one), and shipping the fonts (the only one where
+  working everywhere is a property of the app; tens of megabytes and an OFL notice to carry, and a
+  *path* cannot be named through `mainfont` — measured: it fails to build — so that route needs a
+  preamble file the app writes).
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
