@@ -30,16 +30,17 @@
  * arguments — which is what keeps this a rule about text, testable in Node, and what lets a caller
  * with no workspace (or no file system) write the targets and the destinations themselves.
  *
- * May import: the parser pipeline, the wikilink rule and the path rule. Upholds: one fact about
- * markdown syntax has one home, and the document text stays the only source of truth — this reads
- * the text and answers a new text, it never edits the note.
+ * May import: the parser pipeline, the wikilink rule, the path rule and the span walk the hint beside
+ * it asks the same parse for. Upholds: one fact about markdown syntax has one home, and the document
+ * text stays the only source of truth — this reads the text and answers a new text, it never edits the
+ * note.
  */
 
-import type { Position } from 'unist';
-import type { AstCitation, AstImage, AstNode, AstWikilink } from '../markdown/ast';
+import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
 import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
+import { spansOfType, type Walkable } from './node_spans';
 
 /** The title of the document a wikilink names, or null when nothing in the workspace answers. */
 export type TitleLookup = (target: string) => Promise<string | null>;
@@ -226,42 +227,6 @@ function encodedPath(path: string): string {
     .join('/');
 }
 
-/** One node of the parse, and where it stands in the text it was parsed from. */
-interface Span {
-  start: number;
-  end: number;
-  node: PositionedNode;
-}
-
-/**
- * A node of a parse, and where it stands. mdast sets a position on every node it builds from a
- * token, but the custom constructs the editor's plugins add declare only what a *component* reads
- * (`plugins/remark-wikilink`, `plugins/remark-citation`), so the position is asked for here —
- * which is what a reader that rewrites the text needs and a renderer never does.
- */
-type PositionedNode = AstNode & { position?: Position };
-
-/**
- * Every node of one type, in the order they are written, by their document offsets. A node the
- * parser gave no position is skipped: it cannot be pointed at in the text, so there is nowhere to
- * write its answer.
- */
-function spansOfType(tree: Walkable, type: AstNode['type']): Span[] {
-  const spans: Span[] = [];
-  visit(tree, (node) => {
-    if (node.type !== type) {
-      return;
-    }
-    const start = node.position?.start.offset;
-    const end = node.position?.end.offset;
-    if (start === undefined || end === undefined) {
-      return;
-    }
-    spans.push({ start, end, node });
-  });
-  return spans;
-}
-
 /** `text` with the rewrites made, from the end back, so none of them moves another's span. */
 function applyRewrites(text: string, rewrites: Rewrite[]): string {
   let rewritten = text;
@@ -269,17 +234,4 @@ function applyRewrites(text: string, rewrites: Rewrite[]): string {
     rewritten = rewritten.slice(0, rewrite.start) + rewrite.text + rewritten.slice(rewrite.end);
   }
   return rewritten;
-}
-
-/** A node of a parse, as much of it as walking needs. */
-interface Walkable {
-  children?: Walkable[];
-}
-
-/** Every node of a parse, parents before children. */
-function visit(node: Walkable, at: (node: PositionedNode) => void): void {
-  at(node as unknown as PositionedNode);
-  for (const child of node.children ?? []) {
-    visit(child, at);
-  }
 }

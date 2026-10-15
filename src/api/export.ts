@@ -94,13 +94,22 @@ export async function exportConfigPath(kind: string): Promise<string> {
 }
 
 /**
- * The characters of `text` that no font the kind's conversion settings name can draw, each once, in
- * the order they appear — what the card's hint says before the reader exports, because the conversion
- * itself does nothing about it: the page keeps the words' places and loses the words. A kind whose
- * output carries the characters as characters answers with none, whatever the note is written in.
+ * What a kind's conversion settings name: whether the kind's output is typeset with those fonts, and
+ * whether a font is named for the document as a whole or for CJK — the facts the card's font hint is
+ * built from (`ui/export/font_hint.ts`, which owns the characters).
  */
-export async function uncoveredCharacters(kind: string, text: string): Promise<string[]> {
-  return await invoke<string[]>('export_uncovered_characters', { kind, text });
+export interface NamedFonts {
+  needs_a_font: boolean;
+  mainfont: boolean;
+  cjk_mainfont: boolean;
+}
+
+/**
+ * What the kind's conversion settings name, read from the reader's own file — or from the copy this
+ * build ships, when they have not exported that kind yet, which is what the app would write.
+ */
+export async function namedFonts(kind: string): Promise<NamedFonts> {
+  return await invoke<NamedFonts>('export_named_fonts', { kind });
 }
 
 /**

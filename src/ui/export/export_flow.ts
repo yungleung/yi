@@ -21,12 +21,7 @@
 
 import { join } from '@tauri-apps/api/path';
 import { exists } from '@tauri-apps/plugin-fs';
-import {
-  exportFetchImage,
-  exportKinds,
-  runExport,
-  uncoveredCharacters
-} from '../../api/export';
+import { exportFetchImage, exportKinds, namedFonts, runExport } from '../../api/export';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -40,6 +35,7 @@ import { fileName, parentFolder } from '../../services/workspace_folders';
 import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
 import { exportDialog } from './export_dialog';
+import { uncoveredCharacters } from './font_hint';
 import { exportSource } from './preprocess';
 
 /** What the export needs from the editor that owns the note on screen. */
@@ -75,12 +71,14 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   const baseTarget = await join(folder, noteName(note?.path ?? null, note?.title ?? null));
 
   // What the card needs to know before it is drawn: whether this note is written in characters the
-  // kind's conversion settings name no font for (see `api/export.ts: uncoveredCharacters`).
+  // kind's conversion settings name no font for. The app reads the *file* (`api/export.ts:
+  // namedFonts`) and the window walks the *parse* (`font_hint.ts`), because a formula is not a
+  // paragraph — `$\le$` draws where a bare `≤` does not.
   const answer = await exportDialog.ask({
     kind: first,
     pandoc,
     baseTarget,
-    uncovered: await uncoveredCharacters(first.kind, text)
+    uncovered: uncoveredCharacters(text, await namedFonts(first.kind))
   });
   if (answer === null) {
     return;

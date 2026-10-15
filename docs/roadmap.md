@@ -1004,6 +1004,23 @@ elements) unless it says otherwise.
   `CJKmainfont: "Songti SC"` too, so a `.tex` of a CJK note holds `\usepackage{xeCJK}` and
   `\setCJKmainfont[]{…}` and the reader's own xelatex compiles it with no *"Missing character"*
   warnings (measured both ways — with the line, and without it).
+- **And the rule behind that hint was too confident, which a question about it turned up.** "How do you
+  determine which characters will not be drawn" is answered by a range table — and measuring the table
+  against the font showed the ranges were wrong in the direction that *keeps quiet*: Latin Modern's
+  blocks are irregular, and everything the first version called covered in the arrow, maths and symbol
+  blocks is a mixture. Measured, one page each: `ə` draws and `ʃ`, `ɐ`, `ʰ` do not; `← ↑ → ↓` draw and
+  `↔ ⇒ ⇐` do not; `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not; `♪` draws and `♭ ✓ ☺ ★ ☆` do not; `Δ Ω`
+  draw and `α β γ` do not. So a note with `x ≤ y` written as *text* was losing its `≤` with no hint at
+  all. Two things came out of it, and both are the shape the rule has now. The covered set is written
+  down **character by character** — the ranges measured whole (Latin and its extensions, combining
+  marks, Vietnamese, general punctuation, currency, letterlike) plus the characters measured on their
+  own outside them — so it errs by *hinting* where it is unsure, which is the safe way. And **a formula
+  is not a paragraph**: `$x \le y$` and `$\sum_i a_i$` draw, because pandoc sets them with Latin Modern
+  *Math* (measured: the same `≤` and `∑` are missing from a paragraph and present in a formula), so the
+  rule walks the **parse** and leaves the maths spans alone. That moved it: the app now answers *what
+  the settings name* (`export_named_fonts`, over the file's bytes) and the window answers *which
+  characters*, over the parse (`ui/export/font_hint.ts`, held by `check-export-font.mjs`; the span walk
+  both it and the pre-process use is `ui/export/node_spans.ts`).
 
 ## Open, in the order to take them
 

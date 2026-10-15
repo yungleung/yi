@@ -7,13 +7,19 @@
  * the app saying it *before* the reader exports, in its own words, with the settings file it names
  * already on the card beside it and the button that reveals that file.
  *
- * The pair below is the rule (`export.rs: uncovered_characters`): the shipped file names
+ * The first pair is the rule's file half (`export.rs: export_named_fonts`): the shipped file names
  * `CJKmainfont: "Songti SC"`, which is measured to set Han and kana — so a note in Chinese gets no
  * hint at all — and to leave Hangul to `mainfont`, so a Korean note does. Kinds whose output carries
  * the characters as characters (a docx, a page, a book) are never hinted at whatever the note is
  * written in, which is the third check.
  *
- * @covers src-tauri/src/export.rs (export_uncovered_characters, needs_a_font),
+ * The last pair is the rule's other half (`ui/export/font_hint.ts`): what the default font was
+ * measured to *miss* is reported even though it sits inside a block a range table would call covered
+ * (`≤`, where `√ ∞ ± × ÷` beside it draw), and the same character inside `$…$` is not reported at all,
+ * because pandoc sets a formula with the maths font.
+ *
+ * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font),
+ *   src/ui/export/font_hint.ts (the characters, over the parse),
  *   src/ui/export/export_flow.ts (the characters the card is asked with),
  *   src/ui/export/export_dialog.ts (the hint)
  */
@@ -122,6 +128,33 @@
     await askFor('pdf');
     check(
       'a note in the script the settings do name a font for gets no hint at all',
+      hint() === null,
+      { hint: hint() }
+    );
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(200);
+
+    // A character the default font was measured to miss — `≤`, where `√ ∞ ± × ÷` beside it draw — is
+    // reported when it is written as text...
+    const operatorPath = `${folder}/operator.md`;
+    await files.writeTextAtomically(operatorPath, '# Going out\n\nLet x ≤ y hold.\n');
+    await show(operatorPath, '# Going out\n\nLet x ≤ y hold.\n');
+    await askFor('pdf');
+    check(
+      'a character the default font misses is said so even inside a block that mostly draws',
+      (hint() ?? '').includes('≤'),
+      { hint: hint() }
+    );
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(200);
+
+    // ...and not when the same one is a formula, which the maths font draws.
+    const mathsPath = `${folder}/maths.md`;
+    await files.writeTextAtomically(mathsPath, '# Going out\n\nLet $x \\le y$ hold.\n');
+    await show(mathsPath, '# Going out\n\nLet $x \\le y$ hold.\n');
+    await askFor('pdf');
+    check(
+      'and the same character inside a formula is not, because the maths font has it',
       hint() === null,
       { hint: hint() }
     );

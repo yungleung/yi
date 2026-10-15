@@ -230,12 +230,17 @@ theirs and which the app never rewrites. The **latex** kind names the same font 
 and for the same measured reason: without it the `.tex` carries no font setup at all, and the reader
 who compiles it gets XeTeX's *"Missing character"* for every CJK character in the document.
 What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
-is typeset with those fonts (`needs_a_font`: the pdf and the latex) is asked
-`export_uncovered_characters` before its card is drawn — the characters of the note no font in the
-settings names can draw (`export.rs`), the shipped file's headers counting for nothing because a
-comment names no font — and the card says so in the app's own words, with the settings file and its
-*Reveal in folder* button already beside it (`export-font-hint.js` holds both halves: Korean said,
-Chinese not).
+is typeset with those fonts (`needs_a_font`: the pdf and the latex) has its card drawn with the
+characters no font in its settings can draw — and it says so in the app's own words, with the settings
+file and its *Reveal in folder* button already beside it. The two halves come from the two places that
+hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
+copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing
+because a shipped header talks about fonts at length), and **the note**, which the window walks out of
+the *parse* (`ui/export/font_hint.ts`), because a formula is not a paragraph: `$\le$` draws with the
+maths font where a bare `≤` does not. What the TeX suite's own font holds is written down character by
+character there, not by blocks, because the blocks are irregular — measured: `ə` draws and `ʃ ɐ ʰ` do
+not, `← ↑ → ↓` draw and `↔` does not, `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not, `♪` draws and
+`♭ ✓ ☺ ★ ☆` do not, `Δ Ω` draw and `α β γ` do not.
 The window is told the list (`src/api/export.ts: exportKinds`) and knows no
 kind by name except the one that labels its menu item, so a new kind is a row and an asset and
 nothing else. A row also says whether
