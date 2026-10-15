@@ -62,6 +62,14 @@
 # *measured* to draw all of these scripts and keep a `ToUnicode` map, so what is copied out of a page
 # is the text that went in. A platform with no entry is named nothing rather than guessed at.
 #
+# **And that leaves a reader on another platform a procedure instead of a name**, which is the honest
+# half of the same rule: a font is named only where the drawing was measured, so what is left to say is
+# where this machine's own fonts are written down — Font Book on macOS, *Settings → Personalisation →
+# Fonts* on Windows, `fc-list : family` on Linux (or the font folder the desktop shows) — and what to
+# look for in it: a face that has the script the note is in, a "Noto" one for that script or a system
+# font for the region, or one wide font for everything. The one thing not to write is a name the
+# machine does not have: that stops the export rather than falling back to anything.
+#
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the
 # keys and appends the reference list.

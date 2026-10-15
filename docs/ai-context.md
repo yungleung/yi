@@ -280,8 +280,11 @@ works: the widest font the machine is known to have
 (`export_named_fonts` → `suggested_font`, a name to type and not a choice the app makes) — which is now
 what the hint says only about a script **no face is shipped for**, since everything else draws already
 (what the faces cover arrives as `NamedFonts.shipped`, read out of the fonts' own `cmap` tables so a
-face swapped for another cannot leave the card quiet about a page that lost a character). The two halves
-come from the two places that
+face swapped for another cannot leave the card quiet about a page that lost a character). A platform the
+app has no entry for is named **nothing** rather than guessed at (`WIDEST_FONT` carries macOS alone,
+because that is the only one the drawing was measured on), and the shipped file's header says the
+procedure for those readers instead: where this machine's fonts are listed, and what to look for in
+them. The two halves come from the two places that
 hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
 copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing
 because a shipped header talks about fonts at length), and **the note**, which the window walks out of
