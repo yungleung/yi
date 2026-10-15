@@ -78,26 +78,20 @@
     'ქართული'
   ];
   const latin = 'And latin after it.';
-  const note = `# Going out\n\n${scripts.join(' ')} ${latin}\n`;
+  // The last line asks for **bold** in one of those scripts: a shipped face has one weight, so this is
+  // the line that says whether the weight a note asks for survives the export.
+  const bold = `**${scripts[5]}**`;
+  const note = `# Going out\n\n${scripts.join(' ')} ${latin}\n\n${bold}\n`;
   /** The faces the header names, as they appear in the PDF's own font names. */
   const faces = [
     'NotoSerifCJKsc',
     'NotoSerifHebrew',
-    'NotoNaskhArabic',
+    'Amiri',
     'NotoSerifDevanagari',
     'NotoSerifThai',
     'NotoSerifArmenian',
     'NotoSerifGeorgian'
   ];
-  /**
-   * What a face's `ToUnicode` map gives back for a letter — measured, one page of Arabic: the shipped
-   * Naskh face names the final and medial forms of beh, yeh and ta-marbuta by the *dotless* bases their
-   * shapes are built from (`ب`→`ٮ`, `ي`→`ى`, `ة`→`ه`). The glyphs are drawn either way; it is what a
-   * copy out of that page carries, so the check below takes either spelling and the page's own font
-   * names are what say the script was drawn at all.
-   */
-  const readBackAs = { ب: 'ٮ', ي: 'ى', ة: 'ه' };
-
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
     const veil = card();
@@ -170,14 +164,18 @@
     // between them, so each script is compared character by character rather than as a substring.
     const page = bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
     const missing = scripts.filter((script) =>
-      [...script].some(
-        (character) =>
-          !page.includes(character) && !page.includes(readBackAs[character] ?? character)
-      )
+      [...script].some((character) => !page.includes(character))
     );
     check(
       'and every script it ships a face for is on the page, no line added to the file',
-      missing.length === 0 && page.includes('简体中文') && page.includes('日本語'),
+      // The Arabic word too, letter for letter and the right way round for a page read out of the
+      // file: RTL text is written in visual order, so what is pinned is its mirror — a face whose map
+      // names the dotless bases (Noto Naskh Arabic does; see NOTICE.md) fails this and passed the
+      // per-character check above.
+      missing.length === 0 &&
+        page.includes('简体中文') &&
+        page.includes('日本語') &&
+        page.includes([...'العربية'].reverse().join('')),
       { missing, page: page.slice(0, 120) }
     );
     check(
@@ -194,6 +192,18 @@
       'and it was drawn with the faces this build ships, not with the machine’s',
       absent.length === 0,
       { absent, drawn: drawn.slice(0, 14) }
+    );
+
+    // And the bold run above is *bold*: one weight is shipped per face, so `**…**` in a shipped script
+    // is drawn by stroking the glyphs as well as filling them (`2 Tr`), which is the only place the page
+    // says anything about weight — the text is the same, and so is the font's name. Measured without it:
+    // LaTeX substitutes the regular face with *"Font shape …/bx/n undefined"* and a heading comes out at
+    // the weight of the text around it.
+    const commands = bytes === null ? '' : await t.pdfContent(bytes);
+    check(
+      'and a bold run in a shipped script keeps its weight, stroked as well as filled',
+      commands.includes('2 Tr') && /\d[\d.]*\s+w/.test(commands),
+      { stroked: (commands.match(/2 Tr/g) ?? []).length, widths: (commands.match(/\d[\d.]*\s+w/g) ?? []).slice(0, 3) }
     );
   } finally {
     // The reader's own file is put back exactly as it was found — and taken away again when there was
