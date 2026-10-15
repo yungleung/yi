@@ -37,15 +37,20 @@
 #   answers for. It is the line for a script *no* face is shipped for — Tamil, Ethiopic, Mongolian,
 #   Tibetan and the rest — and the app's hint names the widest font this machine is known to have when
 #   a note needs one. It does **not** take over the scripts listed above; those are drawn with the
-#   shipped faces whatever this file says.
-# - `CJKmainfont:` is handed to Han and kana, by the name written here — so it is a name this machine
-#   must know. A name the font lookup cannot find stops the whole export with the engine's own
+#   shipped faces (or the ones named below) whatever this file says.
+# - `yi-<script>-font:` names a face of your own for **one** of them, by the name this machine knows it
+#   by: `yi-hebrew-font: "Frank Ruehl"`, `yi-thai-font: "Sarabun"`, `yi-greek-font: "…"` — one line per
+#   script, and the scripts that have one are `greek`, `cyrillic`, `hebrew`, `arabic`, `devanagari`,
+#   `thai`, `armenian`, `georgian` and `hangul`. Han and kana answer to `CJKmainfont` instead, which is
+#   pandoc's own key; a script you name nothing for is drawn with the face this build ships.
+# - `CJKmainfont:` is handed to Han and kana, by the name written here. A name the font lookup cannot
+#   find — here or in a `yi-<script>-font:` line — stops the whole export with the engine's own
 #   sentence (*"The font … cannot be found"*), rather than falling back to anything.
 #
-# **Hangul is the exception to the second**: it is drawn with the face this build ships even when
-# `CJKmainfont:` names another, because the fonts a platform has for Han very often have none of it —
-# measured: the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean note that named it
-# lost every syllable.
+# **Hangul is why it is worth shipping a face at all**: `yi-hangul-font:` names one for it in the same
+# way, and if this file names none it is drawn with the face this build ships — which is the point,
+# because the fonts a platform has for Han very often have none of it (measured: the macOS `Songti SC`
+# draws Han and kana and no Hangul, and a Korean note set in it lost every syllable).
 #
 # **The limits, measured.** The shipped Han face holds the unified ideographs (`U+4E00`–`U+9FFF`) and
 # extension A in full, and only a few code points of extensions B to H — 2057 of extension B's 42,720,
@@ -69,7 +74,9 @@ variables:
   # The two fonts this file may name, and what each reaches: see the note above. Neither is needed for
   # the scripts this build draws itself.
   # mainfont: "…"                  # the document's own font, and the answer for any script with no face
-  # CJKmainfont: "Songti SC"       # Han and kana, by name — a font of this machine's; Hangul is not its
+  # yi-hebrew-font: "Frank Ruehl"  # one script at a time: greek, cyrillic, hebrew, arabic, devanagari,
+  #                                # thai, armenian, georgian, hangul — by a name this machine knows
+  # CJKmainfont: "Songti SC"       # Han and kana, pandoc's own key for them
   # Further variables are documented here: https://pandoc.org/MANUAL.html#variables-for-latex
 metadata-files: []
 include-before-body: []

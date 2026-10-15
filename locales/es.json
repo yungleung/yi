@@ -80,7 +80,7 @@
   "export.replaceConfig": "Reemplazar por el archivo incluido",
   "export.replaceQuestion": "¿Reemplazar tu copia de {path} por la incluida en esta versión? Lo que hayas cambiado se perderá.",
   "export.noPandoc": "No se encontró pandoc en esta máquina, así que este tipo de exportación no puede ejecutarse.",
-  "export.fontHint": "Estos caracteres no tienen fuente en esta exportación: {characters} — indica una en los ajustes de conversión (`mainfont:` cubre cualquier escritura, `CJKmainfont:` el han y el kana).",
+  "export.fontHint": "Estos caracteres no tienen fuente en esta exportación: {characters} — indica una en los ajustes de conversión (`mainfont:` para cualquier escritura, `yi-<script>-font:` para una de las incluidas, `CJKmainfont:` para el han y el kana).",
   "export.fontHintFont": "Estos caracteres no tienen fuente en esta exportación: {characters} — añade `mainfont: \"{font}\"` en los ajustes de conversión; esa fuente es la más completa que se conoce en esta máquina.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Escribe la ruta del archivo que se va a escribir.",

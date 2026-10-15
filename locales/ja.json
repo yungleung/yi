@@ -80,7 +80,7 @@
   "export.replaceConfig": "同梱のファイルに置き換え",
   "export.replaceQuestion": "{path} をこのビルド同梱の内容に置き換えますか？変更した内容は失われます。",
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
-  "export.fontHint": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定でフォントを指定してください（`mainfont:` はどの文字体系にも、`CJKmainfont:` は漢字とかなに使えます）。",
+  "export.fontHint": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定でフォントを指定してください（`mainfont:` はどの文字体系にも、`yi-<script>-font:` は同梱の文字体系の一つに、`CJKmainfont:` は漢字とかなに使えます）。",
   "export.fontHintFont": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定に `mainfont: \"{font}\"` を追加してください。このフォントはこのマシンで最も広い範囲をカバーします。",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "書き出すファイルのパスを入力してください。",

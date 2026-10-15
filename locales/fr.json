@@ -80,7 +80,7 @@
   "export.replaceConfig": "Remplacer par le fichier fourni",
   "export.replaceQuestion": "Remplacer votre copie de {path} par celle fournie avec cette version ? Vos modifications seront perdues.",
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
-  "export.fontHint": "Ces caractères n'ont aucune police dans cet export : {characters} — nommez-en une dans les réglages de conversion (`mainfont:` couvre toute écriture, `CJKmainfont:` le han et le kana).",
+  "export.fontHint": "Ces caractères n'ont aucune police dans cet export : {characters} — nommez-en une dans les réglages de conversion (`mainfont:` pour toute écriture, `yi-<script>-font:` pour l'une de celles fournies, `CJKmainfont:` pour le han et le kana).",
   "export.fontHintFont": "Ces caractères n'ont aucune police dans cet export : {characters} — ajoutez `mainfont: \"{font}\"` dans les réglages de conversion ; cette police est la plus complète connue sur cette machine.",
   "export.pandoc": "pandoc : {path}",
   "export.noTarget": "Indiquez le chemin du fichier à écrire.",

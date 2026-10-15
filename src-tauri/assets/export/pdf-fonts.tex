@@ -2,16 +2,18 @@
 % reader action at all.
 %
 % **Not the reader's file.** Yi writes this one into its export folder before each PDF export, with the
-% two holes below — each written between double at-signs, and both of them in the face definitions
-% under the package line — filled in: the folder the faces were installed in, and the face Han and kana
-% are drawn with. It goes to pandoc with `--include-in-header`: added to, not instead of, whatever the
-% reader's own settings file lists there. The reader's file is never edited, so a change of build
-% cannot reach into it; and nothing here is meant to be edited by hand, either.
+% hole below — written between double at-signs, where the faces are defined — filled in with one face
+% per script, by this build's path or by a name the reader's settings file gave. It goes to pandoc with
+% `--include-in-header`: added to, not instead of, whatever the reader's own settings file lists there.
+% The reader's file is never edited, so a change of build cannot reach into it; and nothing here is
+% meant to be edited by hand, either — a face of your own is a line in the settings file, not a change
+% to this one.
 %
-% **A font the reader names still wins**, except where a face is shipped *because* the fonts a
-% platform has usually lack the script: Hangul. `mainfont` is the document's own font and
-% `\normalfont` below is that font, so it is what every Latin character and every unhooked block is
-% set in; `CJKmainfont`, when the file names one, is the face the second hole becomes.
+% **A font the reader names wins**, and there are two ways to name one: `mainfont`, the document's own
+% font — `\normalfont` below is that font, so it is what every Latin character and every block no face
+% is defined for is set in — and, for one script at a time, the settings file's `yi-<script>-font`
+% line (Han and kana answer to `CJKmainfont`, which is pandoc's own key). A script nobody names is
+% drawn with the face this build ships, so a note in one of them needs no line at all.
 %
 % **Why classes at all.** XeTeX has no font fallback: a character outside the current font is
 % reported missing and drawn as nothing. `ucharclasses` gives each Unicode block a character class
@@ -29,15 +31,11 @@
 % paragraph runs off the page as one line, measured both ways.
 \XeTeXlinebreaklocale "zh"
 \XeTeXlinebreakskip = 0pt plus 1pt
-\newfontfamily\yiGreekCyrillic[Path=@@FONTS@@]{NotoSerif-Regular.ttf}
-\newfontfamily\yiHebrew[Path=@@FONTS@@]{NotoSerifHebrew-Regular.ttf}
-\newfontfamily\yiArabic[Path=@@FONTS@@]{NotoNaskhArabic-Regular.ttf}
-\newfontfamily\yiDevanagari[Path=@@FONTS@@]{NotoSerifDevanagari-Regular.ttf}
-\newfontfamily\yiThai[Path=@@FONTS@@]{NotoSerifThai-Regular.ttf}
-\newfontfamily\yiArmenian[Path=@@FONTS@@]{NotoSerifArmenian-Regular.ttf}
-\newfontfamily\yiGeorgian[Path=@@FONTS@@]{NotoSerifGeorgian-Regular.ttf}
-\newfontfamily\yiHangul[Path=@@FONTS@@]{NotoSerifCJKsc-Regular.otf}
-@@HAN@@
+% One face per script, in the order the header draws them: this build's own face by file, or — where
+% the settings file names one for that script — the reader's, by name. `export_fonts::write_header`
+% writes this block, so the list of scripts and the settings file's keys for them are one fact, in
+% that module, and the routing below is the other.
+@@FACES@@
 % The document's own text: `\normalfont` is the file's own font (or the engine's), here as
 % everywhere, so a reader who names `mainfont` keeps it.
 \setTransitionTo{BasicLatin}{\normalfont}
@@ -51,18 +49,18 @@
 \setTransitionTo{LatinExtendedG}{\normalfont}
 \setTransitionTo{LatinExtendedAdditional}{\normalfont}
 % Greek and Cyrillic: one face, the one that has both.
-\setTransitionTo{GreekAndCoptic}{\yiGreekCyrillic}
-\setTransitionTo{GreekExtended}{\yiGreekCyrillic}
-\setTransitionTo{Coptic}{\yiGreekCyrillic}
-\setTransitionTo{CopticEpactNumbers}{\yiGreekCyrillic}
-\setTransitionTo{Cyrillic}{\yiGreekCyrillic}
-\setTransitionTo{CyrillicSupplement}{\yiGreekCyrillic}
-\setTransitionTo{CyrillicExtendedA}{\yiGreekCyrillic}
-\setTransitionTo{CyrillicExtendedB}{\yiGreekCyrillic}
-\setTransitionTo{CyrillicExtendedC}{\yiGreekCyrillic}
-\setTransitionTo{CyrillicExtendedD}{\yiGreekCyrillic}
-\setTransitionTo{Glagolitic}{\yiGreekCyrillic}
-\setTransitionTo{GlagoliticSupplement}{\yiGreekCyrillic}
+\setTransitionTo{GreekAndCoptic}{\yiGreek}
+\setTransitionTo{GreekExtended}{\yiGreek}
+\setTransitionTo{Coptic}{\yiGreek}
+\setTransitionTo{CopticEpactNumbers}{\yiGreek}
+\setTransitionTo{Cyrillic}{\yiCyrillic}
+\setTransitionTo{CyrillicSupplement}{\yiCyrillic}
+\setTransitionTo{CyrillicExtendedA}{\yiCyrillic}
+\setTransitionTo{CyrillicExtendedB}{\yiCyrillic}
+\setTransitionTo{CyrillicExtendedC}{\yiCyrillic}
+\setTransitionTo{CyrillicExtendedD}{\yiCyrillic}
+\setTransitionTo{Glagolitic}{\yiCyrillic}
+\setTransitionTo{GlagoliticSupplement}{\yiCyrillic}
 \setTransitionTo{Hebrew}{\yiHebrew}
 % The block the Hebrew face is asked for beyond the Hebrew block itself: it is where the Hebrew
 % presentation forms live (measured: the face holds `U+FB1D`–`U+FB4F`), and it is one block with Latin
@@ -89,9 +87,10 @@
 \setTransitionTo{Georgian}{\yiGeorgian}
 \setTransitionTo{GeorgianSupplement}{\yiGeorgian}
 \setTransitionTo{GeorgianExtended}{\yiGeorgian}
-% Hangul, always this build's own face: the fonts a platform has for Han very often have none of it
-% (measured: the macOS `Songti SC` draws Han and kana and no Hangul), which is half the reason a face
-% is shipped at all. A `CJKmainfont` in the file does not reach it.
+% Hangul: this build's own face unless the file names one for it, which is half the reason a face is
+% shipped at all — the fonts a platform has for Han very often have none of it (measured: the macOS
+% `Songti SC` draws Han and kana and no Hangul, and a Korean note that named it lost every syllable).
+% A `CJKmainfont` — Han's own line — does not reach here, and neither does a `mainfont`.
 \setTransitionTo{HangulSyllables}{\yiHangul}
 \setTransitionTo{HangulJamo}{\yiHangul}
 \setTransitionTo{HangulJamoExtendedA}{\yiHangul}

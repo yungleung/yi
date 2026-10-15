@@ -23,6 +23,9 @@
  *   font it names has, and `CJKmainfont` for Han and kana: the export draws those with the name the
  *   file gives (`export_fonts::write_header`). Which of the two a file names is the app's to read (the
  *   file's own bytes, comments not counted: `src-tauri/src/export.rs: named_fonts`).
+ *   A file may also name a face for **one script at a time** (`yi-<script>-font:`), which is the third
+ *   thing the hint steps aside for: `NamedFonts.named_scripts` says which, and the ranges below say
+ *   what that script's characters are.
  *
  * **A formula is not a paragraph.** `$x \le y$` and `$\sum_i a_i$` draw: pandoc sets those with Latin
  * Modern *Math*, which has what the text font lacks (measured — the same `≤` and `∑` are missing from
@@ -109,6 +112,57 @@ const HANGUL_RANGES: readonly (readonly [number, number])[] = [
 ];
 
 /**
+ * The blocks each shipped script's face draws, so that a `yi-<script>-font:` line can be honored: a
+ * character of a script whose face the reader named is theirs, and the hint says nothing about it.
+ *
+ * The names are the header's own (`export_fonts::SLOTS`), and these ranges are the blocks its routing
+ * hands to that face. Hangul is here as well — a script the build ships a face for and a reader may
+ * still name one for.
+ */
+const SCRIPT_RANGES: Readonly<Record<string, readonly (readonly [number, number])[]>> = {
+  Greek: [
+    [0x0370, 0x03ff], // Greek and Coptic
+    [0x1f00, 0x1fff] // Greek extended
+  ],
+  Cyrillic: [
+    [0x0400, 0x052f], // Cyrillic and its supplement
+    [0x1c80, 0x1c8f], // Cyrillic extended C
+    [0x2de0, 0x2dff], // Cyrillic extended A
+    [0xa640, 0xa69f] // Cyrillic extended B
+  ],
+  Hebrew: [
+    [0x0590, 0x05ff], // Hebrew
+    [0xfb1d, 0xfb4f] // its presentation forms, which the shipped face draws
+  ],
+  Arabic: [
+    [0x0600, 0x06ff], // Arabic
+    [0x0750, 0x077f], // supplement
+    [0x0870, 0x08ff], // extended A and B
+    [0xfb50, 0xfdff], // presentation forms A
+    [0xfe70, 0xfeff], // presentation forms B
+    [0x1ee00, 0x1eeff] // mathematical alphabetic symbols
+  ],
+  Devanagari: [
+    [0x0900, 0x097f], // Devanagari
+    [0xa8e0, 0xa8ff], // extended
+    [0x11b00, 0x11b5f] // extended A
+  ],
+  Thai: [[0x0e00, 0x0e7f]],
+  Armenian: [[0x0530, 0x058f]],
+  Georgian: [
+    [0x10a0, 0x10ff], // Georgian
+    [0x1c90, 0x1cbf], // extended
+    [0x2d00, 0x2d2f] // supplement
+  ],
+  Hangul: HANGUL_RANGES
+};
+
+/** Whether the settings file names a face for the script this character belongs to. */
+function scriptOfReader(point: number, fonts: NamedFonts): boolean {
+  return fonts.named_scripts.some((script) => within(point, SCRIPT_RANGES[script] ?? []));
+}
+
+/**
  * The characters of `text` that nothing named in the settings can draw, each once, in the order they
  * appear — empty for a kind whose output carries the characters as characters, and empty for a
  * character a formula holds.
@@ -135,6 +189,7 @@ export function uncoveredCharacters(text: string, fonts: NamedFonts): string[] {
       uncovered.includes(character) ||
       inMaths(at) ||
       latinModernDraws(character) ||
+      scriptOfReader(point, fonts) ||
       shippedDraws(point, fonts)
     ) {
       continue;
