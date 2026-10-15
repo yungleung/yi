@@ -345,8 +345,10 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private configRow(): HTMLElement {
     const group = document.createElement('div');
     group.className = 'mt-3 flex flex-col gap-1';
+    // The two actions share a row: the second is offered only sometimes, and a row keeps the file's
+    // own line — and everything under it — exactly where it was whichever way that goes.
     const buttons = document.createElement('div');
-    buttons.className = 'flex flex-col items-start';
+    buttons.className = 'flex items-center gap-3';
     buttons.append(this.openConfig, this.replaceConfig);
     group.append(this.configLabel, this.configPath, buttons);
     return group;

@@ -14,6 +14,9 @@
  * writes the shipped bytes and takes the button away. The file is the app's own, so the probe reads it
  * first and puts it back whatever happens (nothing else does that for a kind's settings file).
  *
+ * And it holds where the button goes: beside *Reveal in folder* on one line, so the button coming and
+ * going leaves the file's own line and everything under it exactly where it was.
+ *
  * @covers src-tauri/src/export.rs (KindInfo::config_is_shipped, export_restore_config),
  *   src/ui/export/export_dialog.ts (replaceConfiguration)
  */
@@ -121,6 +124,22 @@
     await files.writeTextAtomically(config, edited);
     await openTheCard();
     check('a copy that differs is', offered(), { offered: offered() });
+    {
+      const box = (selector) => card().querySelector(selector)?.getBoundingClientRect() ?? null;
+      const reveal = box('[data-export-open-config]');
+      const replace = box('[data-export-replace-config]');
+      check(
+        'and it stands beside the reveal button on one line, not under it',
+        reveal !== null &&
+          replace !== null &&
+          Math.abs(reveal.top - replace.top) < 1 &&
+          replace.left >= reveal.right,
+        {
+          reveal: reveal === null ? null : [Math.round(reveal.left), Math.round(reveal.top)],
+          replace: replace === null ? null : [Math.round(replace.left), Math.round(replace.top)]
+        }
+      );
+    }
 
     // *No* — the cautious answer — writes nothing at all.
     replaceButton()?.click();
