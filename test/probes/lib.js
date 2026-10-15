@@ -264,6 +264,23 @@ window.__t = (() => {
   };
 
   /**
+   * A page's own drawing commands, inflated: what a probe needs when the *text* is not the question.
+   * Fake bold is one — a face with a single weight is emboldened by being stroked as well as filled
+   * (`2 Tr` and a line width), so neither the text nor the font names say anything about it and these
+   * operators say all of it.
+   */
+  const pdfContent = async (bytes) => {
+    const commands = [];
+    for (const stream of pdfStreams(bytes)) {
+      const text = await inflateText(bytes, stream.range);
+      if (text !== null && (text.includes('Tj') || text.includes('TJ'))) {
+        commands.push(text);
+      }
+    }
+    return commands.join('\n');
+  };
+
+  /**
    * The fonts a PDF draws with, as the names in its own `/BaseFont` entries: which face set a page is
    * *evidence about*. A page is read back as text by `pdfText`, and text alone cannot say whether the
    * characters came from the faces a build ships or from whichever font the machine happened to have —
@@ -445,7 +462,8 @@ window.__t = (() => {
     layout,
     useLayout,
     pdfText,
-    pdfFonts
+    pdfFonts,
+    pdfContent
   };
 })();
 'helpers installed';

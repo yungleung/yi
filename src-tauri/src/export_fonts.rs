@@ -27,7 +27,7 @@ use tauri::Manager;
 pub const FACES: &[&str] = &[
     "NotoSerif-Regular.ttf",           // Greek, Cyrillic, Coptic, Glagolitic
     "NotoSerifHebrew-Regular.ttf",     // Hebrew
-    "NotoNaskhArabic-Regular.ttf",     // Arabic
+    "Amiri-Regular.ttf",               // Arabic
     "NotoSerifDevanagari-Regular.ttf", // Devanagari
     "NotoSerifThai-Regular.ttf",       // Thai
     "NotoSerifArmenian-Regular.ttf",   // Armenian
@@ -60,7 +60,7 @@ pub const SLOTS: &[Slot] = &[
     Slot { script: "Greek", key: Some("yi-greek-font"), file: "NotoSerif-Regular.ttf" },
     Slot { script: "Cyrillic", key: Some("yi-cyrillic-font"), file: "NotoSerif-Regular.ttf" },
     Slot { script: "Hebrew", key: Some("yi-hebrew-font"), file: "NotoSerifHebrew-Regular.ttf" },
-    Slot { script: "Arabic", key: Some("yi-arabic-font"), file: "NotoNaskhArabic-Regular.ttf" },
+    Slot { script: "Arabic", key: Some("yi-arabic-font"), file: "Amiri-Regular.ttf" },
     Slot {
         script: "Devanagari",
         key: Some("yi-devanagari-font"),
@@ -126,9 +126,10 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
         let line = match slot.key.and_then(|key| named(settings, key)) {
             Some(name) => format!("\\newfontfamily\\yi{}{{{name}}}", slot.script),
             None => format!(
-                "\\newfontfamily\\yi{}[Path={{{}}}]{{{}}}",
+                "\\newfontfamily\\yi{}[Path={{{}}},AutoFakeBold={}]{{{}}}",
                 slot.script,
                 folder(fonts),
+                FAKE_BOLD,
                 slot.file
             ),
         };
@@ -143,6 +144,16 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
         .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
     Ok(path)
 }
+
+/// The factor a shipped face is emboldened by when the note asks for bold, and there is no bold face
+/// to hand: **one weight of each face is what this build ships**, and LaTeX otherwise substitutes the
+/// regular one *with a warning* — measured: `**bold**` and a `## heading` in Hebrew or in Han came out
+/// at the same weight as the text around them (`Font shape …/bx/n undefined`, defaults substituted),
+/// which for a note whose headings are its structure is the weight lost. 1.5 is XeTeX's stroke-widening
+/// (measured: the same Hebrew line is drawn 342.6pt wide where the plain one is 299.7pt), and it is
+/// applied **only to this build's own faces** — a face the reader names is left alone, so their font's
+/// real bold is the one used.
+const FAKE_BOLD: &str = "1.5";
 
 /// The font a settings file names for `key`, comment lines not counted.
 ///
@@ -413,8 +424,8 @@ mod tests {
         // name the lookup can find, and both were measured to stop the whole export.
         for slot in SLOTS {
             let expected = format!(
-                "\\newfontfamily\\yi{}[Path={{/faces/}}]{{{}}}",
-                slot.script, slot.file
+                "\\newfontfamily\\yi{}[Path={{/faces/}},AutoFakeBold={}]{{{}}}",
+                slot.script, FAKE_BOLD, slot.file
             );
             assert!(
                 text.lines().any(|line| line == expected),
@@ -430,8 +441,14 @@ mod tests {
         let text = std::fs::read_to_string(path).unwrap();
         assert!(text.contains("\\newfontfamily\\yiHebrew{Frank Ruehl}"), "Hebrew went unnamed");
         assert!(text.contains("\\newfontfamily\\yiHan{Songti SC}"), "Han went unnamed");
+        // A named face is left alone, with no emboldening of ours on top of it: its own bold is the one
+        // the note should get, and a faked one would take its place.
+        assert!(!text.contains("\\yiHebrew{Frank Ruehl}[") && !text.contains("Frank Ruehl]"));
         assert!(
-            text.contains("\\newfontfamily\\yiThai[Path={/faces/}]{NotoSerifThai-Regular.ttf}"),
+            text.contains(&format!(
+                "\\newfontfamily\\yiThai[Path={{/faces/}},AutoFakeBold={}]{{NotoSerifThai-Regular.ttf}}",
+                FAKE_BOLD
+            )),
             "a script nobody named lost this build's face"
         );
     }

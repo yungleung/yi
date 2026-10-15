@@ -85,6 +85,12 @@ const namedCjk = shaped({ cjk_mainfont: true });
 const plain = shaped({ needs_a_font: false, shipped: [] });
 /** A file that names a face of its own for one script: `yi-hebrew-font: "Frank Ruehl"`. */
 const namedHebrew = shaped({ named_scripts: ['Hebrew'] });
+/**
+ * The latex kind's file: it names a CJK font — macOS `Songti SC`, the shipped default — and ships no
+ * faces at all, because a `.tex` is compiled on the reader's own machine and a path into this app's
+ * bundle would not be there.
+ */
+const latex = shaped({ cjk_mainfont: true, shipped: [] });
 
 /** A script with no face of its own, and the symbols every face this build ships is measured to miss. */
 const UNCOVERED = ['ʃ', 'ɐ', 'ʰ', '↔', '⇒', '⇐', '≤', '≥', '≠', '≈', '∑', '∏', '✓', '☺', '⚠', '♭',
@@ -147,6 +153,15 @@ const UNCOVERED = ['ʃ', 'ɐ', 'ʰ', '↔', '⇒', '⇐', '≤', '≥', '≠', '
   check('a script whose face the file names is the file’s business', uncoveredCharacters('עברית', namedHebrew), []);
   check('and what no face covers is still reported beside it', uncoveredCharacters('עברית தமிழ்', namedHebrew), ['த', 'ம', 'ி', 'ழ', '்']);
   check('while the shipped faces still answer for the scripts nobody named', uncoveredCharacters('Ελληνικά 한국어', namedHebrew), []);
+}
+
+{
+  // The one kind the shipped faces cannot reach. Han and kana are the file's `CJKmainfont` and as much
+  // as that font holds is not something a name can say, so it is taken at the reader's word; Hangul is
+  // *not* something a CJK font reaches, and on macOS the shipped `Songti SC` has none of it — which is
+  // the warning that catches a Korean `.tex` before it is compiled with the syllables missing.
+  check('a kind that ships no faces still defers to the file’s CJK font for Han', uncoveredCharacters('简体中文', latex), []);
+  check('and reports Hangul, which that font often has none of', uncoveredCharacters('한국어', latex), ['한', '국', '어']);
 }
 
 {

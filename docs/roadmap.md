@@ -1302,7 +1302,7 @@ highlighted span, re-highlighted when a burst stops — at the end of "Measure b
 
 **The build draws the scripts itself now, and a reader may name a face for any one of them.** The
 round that shipped the faces (a serif set: `Noto Serif` for Greek and Cyrillic, `Noto Serif` per
-script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Noto Naskh Arabic` for Arabic, and
+script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Amiri` for Arabic, and
 `Noto Serif CJK SC` for Han, kana and Hangul — 25 MB, OFL, under `src-tauri/assets/fonts/`) answers
 the item the last handoff left: a page in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
 Armenian or Georgian is drawn with no line added to the settings file, which `export-pdf-scripts.js`
@@ -1320,15 +1320,32 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
   named `mainfont`, since a coverage cannot be read out of a name.
 
+  **Bold is emboldened, not shipped, and italic is left alone.** One weight of each face is what the
+  build ships, so a `**bold**` run or a `## heading` in a shipped script was drawn by LaTeX's fallback —
+  the regular face, with *"Font shape …/bx/n undefined"* in the log and the weight the note asked for
+  gone (measured, one page: the same Hebrew line came out with the same ink and the same width whether
+  it was written bold or not). It is now emboldened by XeTeX (`AutoFakeBold=1.5`, on this build's faces
+  only — a face the reader names keeps its own bold, which is why the option is not on that line), and
+  the page says so: `export-pdf-scripts.js` checks that the bold run is *stroked* as well as filled
+  (`2 Tr`), since the text and the font's name both stay the same. **Italic is the residue**: these
+  scripts have no italic and a slanted Hebrew or Arabic is not a thing they have, so `*emphasis*` in one
+  of them still falls back to the regular face. What would fix bold properly is shipping the real bold
+  faces — the seven script faces' are small enough to weigh, the Han face's is another 24 MB, which is
+  why the faked one is the default — and those sizes are not measured yet.
+
 Two residues are deliberate, and each has a measured shape:
-- **What the Arabic face's `ToUnicode` map gives back is lossy for three letters.** Measured, one
-  page: `Noto Naskh Arabic` names the final and medial forms of beh, yeh and ta-marbuta by the
-  dotless bases their shapes are built from (`ب`→`ٮ`, `ي`→`ى`, `ة`→`ه`), so text copied out of such
-  a page loses those dots — the glyphs are drawn, and it is the map that names them so. Every other
-  shipped face round-trips exactly (the Hebrew page reads back reversed, which is the writing
-  direction and not a loss). A face whose map is exact for Arabic would fix it, and the check in
-  `export-pdf-scripts.js` would go back to comparing the letters themselves rather than folding the
-  three variants.
+- **The Arabic face was the wrong one, and it was measured out rather than argued.** The first cut
+  shipped `Noto Naskh Arabic`, whose `ToUnicode` map names the final and medial forms of beh, yeh and
+  ta-marbuta by the **dotless** bases their shapes are built from — its glyphs are named
+  `uni066E.fina` and the dots are separate marks — so text copied out of a page set in it came back
+  `ٮ`, `ى` and `ه` for `ب`, `ي` and `ة`, and six glyphs of that page had no mapping at all. Noto's
+  sans face and SIL's `Scheherazade New` are built the same way (or, for Scheherazade, do not carry the
+  presentation forms our routing claims at all: 395 of the Arabic ranges' 1282 assigned code points
+  against Amiri's 1233). **`Amiri` is what ships now**: same genre, letter-for-letter read-back
+  (measured, one page, both against the Noto face on the same page), and better coverage than the face
+  it replaced. `export-pdf-scripts.js` compares the letters themselves again — Arabic included, and its
+  mirror, since a page read out of the file holds RTL text in visual order — and the card's hint was
+  never part of this: a coverage is not read out of a map.
 
   One smaller thing the same round turned up, left as it is because it is a decision and not a defect:
   **the latex kind still names `CJKmainfont: "Songti SC"`**, a font only macOS has. That kind cannot use
