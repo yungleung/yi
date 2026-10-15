@@ -34,10 +34,10 @@
 % One face per script, in the order the header draws them: this build's own face by file, or — where
 % the settings file names one for that script — the reader's, by name. `export_fonts::write_header`
 % writes this block, so the list of scripts and the settings file's keys for them are one fact, in
-% that module, and the routing below is the other. A face of *this build's* is emboldened by XeTeX when
-% a note asks for bold (one weight of each is shipped, so there is no bold face to use and LaTeX would
-% otherwise draw the regular one with a warning); a face the reader names is left as it is, and its own
-% bold is the one used.
+% that module, and the routing below is the other. A face of *this build's* brings the bold (or italic)
+% face that goes with it where one is shipped — `export_fonts::SLOTS` names them — and is emboldened by
+% XeTeX where none is, which is the Han and Hangul face, whose real bold is 25.5 MB. A face the reader
+% names is left as it is, and its own bold is the one used.
 @@FACES@@
 % The document's own text: `\normalfont` is the file's own font (or the engine's), here as
 % everywhere, so a reader who names `mainfont` keeps it.

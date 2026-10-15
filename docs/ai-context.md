@@ -260,12 +260,17 @@ set in it lost every syllable — so the shipped face draws Hangul whenever the 
 The **latex** kind ships no header and says
 `needs_a_font` for the same reason: a `.tex` is compiled on the reader's own machine, where a path into
 this app's bundle is a path that will not exist.
-**One weight each**, so a `**bold**` run or a heading is drawn by XeTeX's own emboldening of the shipped
-face (`AutoFakeBold=1.5`) — measured without it: LaTeX substitutes the regular face with *"Font shape
-…/bx/n undefined"* and the weight the note asked for is simply gone. A face the *reader* names is not
-emboldened: their font's own bold is the one used. Italic has no such remedy and falls back to the
-regular face in these scripts, which is written down rather than solved (a slanted Hebrew or Arabic is
-not a thing those scripts have).
+**Every style the build can honestly ship, and emboldening for what it cannot.** `bold` and `italic` in
+a shipped script were LaTeX's fallback — the regular face, with *"Font shape …/bx/n undefined"* in the
+log and the weight the note asked for simply gone — so the real bold faces ship for all seven script
+faces and the core face's italic too (1.75 MB in all; `SLOTS` names them per slot, and a slot with a
+style gets no `AutoFakeBold` — measured: both at once makes fontspec embolden the *regular* and ignore
+the bold face). The **Han and Hangul** face has no bold shipped because its real one is 25.5 MB
+(measured) — one heading's worth of weight against as much again as every other face together — so those
+two are emboldened by XeTeX (`AutoFakeBold=1.5`). A face the *reader* names is never emboldened: their
+font's own bold is the one used. Italic in the scripts that have none (everything but Greek and
+Cyrillic) still falls back to the regular face, written down rather than invented: a slanted Hebrew or
+Arabic is not a thing those scripts have.
 What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
 is typeset with those fonts (`needs_a_font`: the pdf and the latex) has its card drawn with the
 characters no font in its settings can draw — and it says so in the app's own words, with the settings

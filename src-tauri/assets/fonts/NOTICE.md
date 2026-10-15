@@ -20,6 +20,23 @@ below by path.
 | `NotoSerifGeorgian-Regular.ttf` | Georgian | 2.003 | `notofonts/georgian`, release `NotoSerifGeorgian-v2.003` |
 | `NotoSerifCJKsc-Regular.otf` | Han, kana, Hangul | 2.003 | `notofonts/noto-cjk`, `Serif/OTF/SimplifiedChinese` |
 
+And the **styles** a note may ask of those faces — 1.75 MB in all, from the same releases and archives:
+
+| file | what it is for |
+| --- | --- |
+| `NotoSerif-Bold.ttf`, `NotoSerif-Italic.ttf` | Greek and Cyrillic, which have both |
+| `NotoSerifHebrew-Bold.ttf` · `Amiri-Bold.ttf` · `NotoSerifDevanagari-Bold.ttf` | Hebrew, Arabic, Devanagari |
+| `NotoSerifThai-Bold.ttf` · `NotoSerifArmenian-Bold.ttf` · `NotoSerifGeorgian-Bold.ttf` | Thai, Armenian, Georgian |
+
+**No bold is shipped for the Han and Hangul face, and that is a size decision with a number**: its bold
+is 25.5 MB (measured by asking the upstream URL for its length), as much again as every script's face
+put together, for one heading's worth of weight. Those two are emboldened by XeTeX instead
+(`AutoFakeBold`, in `export_fonts.rs`), and a reader who wants a real bold there names a face of their
+own for CJK — their font's own bold is then the one used, since a face the reader names is never
+emboldened by this build. The scripts with no italic face in them (everything but Greek and Cyrillic)
+have none shipped: an italic Hebrew or Arabic is not a thing those scripts have, and a slanted one
+would be an invention.
+
 Each was checked against its own `cmap` before being trusted: every *assigned* code point of the script
 is in it, with one measured exception — the Coptic letters that sit inside the Greek block
 (`U+03E2`–`U+03EF`) are in no face here, since the core Noto Serif has no Coptic. `Noto Serif CJK SC`
