@@ -17,46 +17,45 @@
 # The engine below is the one this kind runs: a machine without it fails with the engine's own
 # sentence, which is what the reader is shown.
 #
-# **A note written in a script this file names no font for comes out without it**, which is why one is
-# named below. Nothing named means XeTeX draws the page with its own Latin Modern, which holds Latin,
-# its punctuation and the symbols a TeX font carries and nothing else: measured, a note written in
-# `你好，世界` came out with the space its words took and none of the words (XeTeX warns *"Missing
-# character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each, and the app shows those
-# lines to the reader).
+# **A page has no font fallback.** A character outside the font in use is reported *missing character*
+# and drawn as nothing: measured, a note written in `你好，世界` came out with the space its words took
+# and none of the words (XeTeX warns *"Missing character: There is no 一 (U+4E00) in font
+# [lmroman10-regular]"* for each, and the app shows those lines to the reader). So **this build draws
+# the scripts itself**: it ships a face per script and writes a header of its own — `pdf-fonts.tex` in
+# this folder, rewritten before every export — that hands XeTeX the right one per Unicode block, by a
+# path into the app's own folders. Nothing has to be added here for:
 #
-# **These fonts are the reader's**, and this file is only where they start. `CJKmainfont` below is the
-# default — `Songti SC` — and what the two variables reach was measured, one page each, rather than
-# assumed:
+#     Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian, Georgian, Han, kana, Hangul.
 #
-# - `CJKmainfont` is what xeCJK routes **CJK punctuation, kana, Han and Hangul** to. `Songti SC` draws
-#   the first three and **has no Hangul**, so a Korean note loses it — measured: with both variables
-#   named, the Hangul was set with the *CJK* font and came out missing.
-# - `mainfont` is what every other script is set with: Greek, Cyrillic, Hebrew, Arabic, Devanagari
-#   (and the other Indic scripts), Thai, Armenian, Georgian. It answers for anything the font it names
-#   has, and it does **not** answer for Hangul while a CJK font is named.
+# *Measured*: one line in each of those, with **no** font named in this file at all, is drawn — every
+# script of them on one page, read back through the fonts' own `ToUnicode` maps
+# (`test/probes/export-pdf-scripts.js` is that page).
 #
-# So the recipe depends on what your note is written in, and the app names the widest font it knows for
-# your machine in its hint when a note needs one — **the card's line is the one to follow first**. For
-# the rest:
+# **What this file names still wins**, in two ways and no more:
 #
-# - **Han, kana, Chinese or Japanese**: nothing to add; the default covers it.
-# - **Hangul**: a CJK font that has it — macOS `AppleGothic` or `Apple SD Gothic Neo`, Windows `Malgun
-#   Gothic`, Linux `Noto Sans KR`.
-# - **Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai, Armenian, Georgian**: `mainfont:` with a font
-#   that has them. macOS `Arial Unicode MS` — *measured* here to draw every script in this list and keep
-#   a `ToUnicode` map, so what is copied out of the page is the text that went in; Windows `Segoe UI`
-#   (Greek, Cyrillic, Hebrew, Arabic), `Nirmala UI` (Indic), `Leelawadee UI` (Thai); Linux the `Noto`
-#   face for the script, or `DejaVu Sans` / `FreeSerif` as the widest fallbacks. (Not measured here —
-#   no Windows or Linux machine — and a name that is not there is not a smaller problem than a missing
-#   character: XeTeX stops the whole export with *"The font … cannot be found"*.)
-# - **Both at once** (a note in Hangul *and* something outside CJK): both lines, and the same font may
-#   serve for both — *measured*: `mainfont` and `CJKmainfont` both naming `Arial Unicode MS` draws Han,
-#   kana, Hangul, Greek and Devanagari on one page. It also sets the document's own text in that font,
-#   which is the price of one font for everything.
+# - `mainfont:` is the document's own font: Latin, its punctuation, and every block no shipped face
+#   answers for. It is the line for a script *no* face is shipped for — Tamil, Ethiopic, Mongolian,
+#   Tibetan and the rest — and the app's hint names the widest font this machine is known to have when
+#   a note needs one. It does **not** take over the scripts listed above; those are drawn with the
+#   shipped faces whatever this file says.
+# - `CJKmainfont:` is handed to Han and kana, by the name written here — so it is a name this machine
+#   must know. A name the font lookup cannot find stops the whole export with the engine's own
+#   sentence (*"The font … cannot be found"*), rather than falling back to anything.
 #
-#     variables:
-#       mainfont: "…"                  # the font your machine has, from the list above
-#       CJKmainfont: "Songti SC"       # CJK only — the default, and it is already set below
+# **Hangul is the exception to the second**: it is drawn with the face this build ships even when
+# `CJKmainfont:` names another, because the fonts a platform has for Han very often have none of it —
+# measured: the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean note that named it
+# lost every syllable.
+#
+# **The limits, measured.** The shipped Han face holds the unified ideographs (`U+4E00`–`U+9FFF`) and
+# extension A in full, and only a few code points of extensions B to H — 2057 of extension B's 42,720,
+# for one — so a note using those rare characters wants a `CJKmainfont:` that has them. Every other
+# face holds its script's assigned code points: measured, no gap but the Coptic letters that sit in the
+# Greek block (`U+03E2`–`U+03EF`), which no face here has.
+#
+# The one font named in the card's hint, on a machine that has it, is macOS `Arial Unicode MS` —
+# *measured* to draw all of these scripts and keep a `ToUnicode` map, so what is copied out of a page
+# is the text that went in. A platform with no entry is named nothing rather than guessed at.
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the
@@ -67,9 +66,10 @@ self-contained: true
 variables:
   # Sets the size of the document's pages.
   papersize: a4 # Possible values: a0-a6, b0-b6, c0-c6,b0j, letter, executive, legal
-  # The typeface for CJK, and the reader's to change: see the note above for what it does and does not
-  # cover.
-  CJKmainfont: "Songti SC"
+  # The two fonts this file may name, and what each reaches: see the note above. Neither is needed for
+  # the scripts this build draws itself.
+  # mainfont: "…"                  # the document's own font, and the answer for any script with no face
+  # CJKmainfont: "Songti SC"       # Han and kana, by name — a font of this machine's; Hangul is not its
   # Further variables are documented here: https://pandoc.org/MANUAL.html#variables-for-latex
 metadata-files: []
 include-before-body: []

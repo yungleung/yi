@@ -7,11 +7,12 @@
  * the app saying it *before* the reader exports, in its own words, with the settings file it names
  * already on the card beside it and the button that reveals that file.
  *
- * The first pair is the rule's file half (`export.rs: export_named_fonts`): the shipped file names
- * `CJKmainfont: "Songti SC"`, which is measured to set Han and kana — so a note in Chinese gets no
- * hint at all — and to leave Hangul to `mainfont`, so a Korean note does. Kinds whose output carries
- * the characters as characters (a docx, a page, a book) are never hinted at whatever the note is
- * written in, which is the third check.
+ * **This build ships a face per script**, wired into the page by a header of its own
+ * (`export-pdf-scripts.js` is the page that proves it), so the hint has gone quiet about every script
+ * it ships: a Chinese note, a Korean note and one in Greek all get nothing to fix. What is left for it
+ * is what no face covers — Tamil, Ethiopic and the rest, whose line is `mainfont:` — and the characters
+ * the TeX suite's own font was measured to miss. Kinds whose output carries the characters as characters
+ * (a docx, a page, a book) are never hinted at whatever the note is written in.
  *
  * The last pair is the rule's other half (`ui/export/font_hint.ts`): what the default font was
  * measured to *miss* is reported even though it sits inside a block a range table would call covered
@@ -86,35 +87,16 @@
     await files.createEntry(folder, 'note.md', true);
     await t.openWorkspace(folder);
 
-    // Korean. The shipped file names `CJKmainfont`, which does not reach Hangul (measured), so the
-    // card says the characters need a font and names them.
+    // Korean, and Chinese, and Greek: faces are shipped for all three, so a note in any of them has
+    // nothing to fix and the card says nothing.
     const koreanPath = `${folder}/korean.md`;
     await files.writeTextAtomically(koreanPath, '# Going out\n\n한국어 and latin after it.\n');
     await show(koreanPath, '# Going out\n\n한국어 and latin after it.\n');
     await askFor('pdf');
-    const koreanHint = hint();
     check(
-      'a note in a script the settings name no font for is said so, with the characters it is written in',
-      (koreanHint ?? '').includes('한') && (koreanHint ?? '').includes('국'),
-      { hint: koreanHint }
-    );
-    const suggested = (await api.namedFonts('pdf')).suggested_font;
-    check(
-      'and it names the widest font this machine is known to have, for the reader to type — in both lines',
-      suggested === null ||
-        ((koreanHint ?? '').includes(`mainfont: "${suggested}"`) &&
-          (koreanHint ?? '').includes(`CJKmainfont: "${suggested}"`)),
-      { suggested, hint: koreanHint }
-    );
-    check(
-      'and the card still names the settings file that answers for it, with the button that reveals it',
-      (card().querySelector('[data-export-config]')?.textContent ?? '').endsWith(
-        '/export/export.pdf.yaml'
-      ) && card().querySelector('[data-export-open-config]') !== null,
-      {
-        config: card().querySelector('[data-export-config]')?.textContent ?? null,
-        button: card().querySelector('[data-export-open-config]') !== null
-      }
+      'a note in a script this build ships a face for gets no hint at all, Hangul included',
+      hint() === null,
+      { hint: hint() }
     );
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await sleep(200);
@@ -139,6 +121,37 @@
       'a note in the script the settings do name a font for gets no hint at all',
       hint() === null,
       { hint: hint() }
+    );
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(200);
+
+    // Tamil: no face is shipped for it, so the card says which characters need one and names the widest
+    // font this machine is known to have, in the line that answers for it.
+    const tamilPath = `${folder}/tamil.md`;
+    await files.writeTextAtomically(tamilPath, '# Going out\n\nதமிழ் and latin after it.\n');
+    await show(tamilPath, '# Going out\n\nதமிழ் and latin after it.\n');
+    await askFor('pdf');
+    const tamilHint = hint();
+    check(
+      'a note in a script with no face of its own is said so, with the characters it is written in',
+      (tamilHint ?? '').includes('த') && (tamilHint ?? '').includes('ழ'),
+      { hint: tamilHint }
+    );
+    const suggested = (await api.namedFonts('pdf')).suggested_font;
+    check(
+      'and it names the widest font this machine is known to have, for the reader to type',
+      suggested === null || (tamilHint ?? '').includes(`mainfont: "${suggested}"`),
+      { suggested, hint: tamilHint }
+    );
+    check(
+      'and the card still names the settings file that answers for it, with the button that reveals it',
+      (card().querySelector('[data-export-config]')?.textContent ?? '').endsWith(
+        '/export/export.pdf.yaml'
+      ) && card().querySelector('[data-export-open-config]') !== null,
+      {
+        config: card().querySelector('[data-export-config]')?.textContent ?? null,
+        button: card().querySelector('[data-export-open-config]') !== null
+      }
     );
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await sleep(200);

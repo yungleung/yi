@@ -1,32 +1,39 @@
 /**
- * The line the card tells a reader to add, added — and the page it makes.
+ * Ten scripts and the page they are drawn on, with nothing added to the settings file at all.
  *
- * The shipped `export.pdf.yaml` names `CJKmainfont: "Songti SC"`, which is measured to set Han and
- * kana and nothing else, so a note in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
- * Armenian or Georgian comes out with the space its words took and none of the words until a font is
- * named for it. The app's answer is to *say* which lines to add (`export-font-hint.js` holds the hint,
- * and names the widest font this machine is known to have — in **both** variables, because xeCJK sets
- * Hangul with `CJKmainfont` and `mainfont` cannot answer for it, measured). This is that advice
- * followed, and the proof it is good: the font comes *from the app* —
- * `namedFonts(kind).suggested_font`, the very name the card showed — it is written into the reader's
- * own settings file for the length of one export, and the page is read back through its fonts'
- * `ToUnicode` maps (`lib.js: pdfText`), every script on it.
+ * A page has no font fallback: XeTeX draws it with the font in force and reports every character that
+ * font lacks as *missing character*, which is why a note in `你好，世界` once came out with the space
+ * its words took and none of the words. The app's answer used to be a line for the reader to write —
+ * the card named the widest font the machine had, and `export-pdf-font.js` is that line working. This
+ * is the other answer: the build ships a face per script and a header of its own
+ * (`src-tauri/src/export_fonts.rs` writes `assets/export/pdf-fonts.tex` into the export folder), and a
+ * note in any of these comes out drawn with the shipped file exactly as it ships.
+ *
+ * Three things are pinned here, and the first is the one that makes the other two mean anything:
+ *
+ * 1. **the file names no font** — the copy under the app's data folder is put back to the shipped bytes
+ *    before the export, so what draws the page is the build and not an earlier round's recipe;
+ * 2. **every script is on the page**, read back through the fonts' own `ToUnicode` maps (`lib.js:
+ *    pdfText`, one map per font, chosen by the `/Fn Tf` in force) — a page that drew the words with
+ *    no map to name them by would be a page nobody could search or copy from;
+ * 3. **the faces that drew it are this build's**, named in the PDF's own `/BaseFont` entries: a green
+ *    page whose fonts were the platform's would pass (2) and prove nothing about what is shipped.
  *
  * It also fails when the app stops handing the reader's file to pandoc as it stands, which is the thing
- * that makes the file the reader's: a line written into it that pandoc never sees proves nothing.
+ * that makes the file the reader's.
  *
- * A machine the app has no font for (see `WIDEST_FONT` in `src-tauri/src/export.rs`, measured only on
- * macOS so far) has nothing to follow, and this says so rather than passing quietly; the settings
- * file's own header carries the per-OS recipe for that machine.
+ * It is a probe of its own because a real TeX run is ~4 s of the five the bridge gives a script, and
+ * `export-pdf.js` already spends them on the Latin half (see its header).
  *
- * @covers src-tauri/src/export.rs (suggested_font — the name the card gives),
- *   src-tauri/assets/export/export.pdf.yaml (the line the reader adds), test/probes/lib.js (pdfText)
+ * @covers src-tauri/assets/export/pdf-fonts.tex (the header),
+ *   src-tauri/src/export_fonts.rs (the faces, the header written per export, what they cover),
+ *   src-tauri/src/export.rs (the header reaches pandoc), src-tauri/assets/export/export.pdf.yaml
+ *   (names no font, and still draws), test/probes/lib.js (pdfText)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
-  const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -55,11 +62,41 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  // A line each of the scripts the default has none of, and one of Latin to show the page still says
-  // what it always did around them.
-  const scripts = ['한국어', 'Ελληνικά', 'العربية', 'हिन्दी', 'ภาษาไทย'];
+  // A line each of the scripts a face is shipped for, and one of Latin to show the page still says what
+  // it always did around them.
+  const scripts = [
+    '简体中文',
+    '日本語',
+    '한국어',
+    'Ελληνικά',
+    'Русский',
+    'עברית',
+    'العربية',
+    'हिन्दी',
+    'ภาษาไทย',
+    'Հայերեն',
+    'ქართული'
+  ];
   const latin = 'And latin after it.';
   const note = `# Going out\n\n${scripts.join(' ')} ${latin}\n`;
+  /** The faces the header names, as they appear in the PDF's own font names. */
+  const faces = [
+    'NotoSerifCJKsc',
+    'NotoSerifHebrew',
+    'NotoNaskhArabic',
+    'NotoSerifDevanagari',
+    'NotoSerifThai',
+    'NotoSerifArmenian',
+    'NotoSerifGeorgian'
+  ];
+  /**
+   * What a face's `ToUnicode` map gives back for a letter — measured, one page of Arabic: the shipped
+   * Naskh face names the final and medial forms of beh, yeh and ta-marbuta by the *dotless* bases their
+   * shapes are built from (`ب`→`ٮ`, `ي`→`ى`, `ة`→`ه`). The glyphs are drawn either way; it is what a
+   * copy out of that page carries, so the check below takes either spelling and the page's own font
+   * names are what say the script was drawn at all.
+   */
+  const readBackAs = { ب: 'ٮ', ي: 'ى', ة: 'ه' };
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -86,11 +123,8 @@
   };
 
   const before = await invoke('get_config');
-  const settings = (await api.exportKinds()).kinds.find((kind) => kind.kind === 'pdf').config_path;
-  const shipped = await bytesOf(settings).then((bytes) =>
-    bytes === null ? null : new TextDecoder().decode(bytes)
-  );
-  const suggested = (await api.namedFonts('pdf')).suggested_font;
+  const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+  const wasThere = await bytesOf(config);
   try {
     try {
       await files.deleteEntry(folder);
@@ -101,30 +135,23 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
-    check(
-      'this machine has a font the app can name — the line the card gives a reader',
-      suggested !== null && shipped !== null,
-      { suggested }
-    );
-    if (suggested === null || shipped === null) {
-      return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
-    }
 
-    // The reader's own file, with the two lines the card names added where a reader would add them.
-    // Anchored to the *lines* the file really holds — the header's comments mention both of these, and
-    // replacing the first textual occurrence of one edits a comment instead (measured: that is how this
-    // probe corrupted the app's own copy).
-    const withFont = shipped
-      .replace('\nvariables:\n', `\nvariables:\n  mainfont: "${suggested}"\n`)
-      .replace('\n  CJKmainfont: "Songti SC"', `\n  CJKmainfont: "${suggested}"`);
-    check(
-      'and both lines the card gives go into the copy of the settings file the reader owns',
-      withFont !== shipped &&
-        withFont.includes(`mainfont: "${suggested}"`) &&
-        withFont.includes(`CJKmainfont: "${suggested}"`),
-      { lines: withFont.split('\n').filter((line) => line.includes(suggested)) }
+    // The shipped file, as a fresh install has it: the app's own copy is written there on the first
+    // export of a kind, and what it holds is what the reader starts from.
+    const shipped = await invoke('export_restore_config', { kind: 'pdf' });
+    const settingsText = await bytesOf(config).then((bytes) =>
+      bytes === null ? '' : new TextDecoder().decode(bytes)
     );
-    await files.writeTextAtomically(settings, withFont);
+    check(
+      'the settings file the export runs with names no font at all',
+      !settingsText
+        .split('\n')
+        .some((line) => !line.trimStart().startsWith('#') && line.includes('ont:')),
+      {
+        path: shipped,
+        named: settingsText.split('\n').filter((line) => /^\s+\w*[Ff]ont:/.test(line))
+      }
+    );
 
     await show(notePath, note);
     await invoke('plugin:event|emit', { event: 'export', payload: 'pdf' });
@@ -134,32 +161,51 @@
     const written = await until(async () => (await bytesOf(target)) !== null);
     const bytes = await bytesOf(target);
     check(
-      'the export still writes a PDF, so the line reached pandoc',
+      'the export writes a PDF, so the file reached pandoc as it stands',
       written && bytes !== null && String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-',
       { written, size: bytes?.length ?? 0 }
     );
 
-    const page = bytes === null ? '' : await t.pdfText(bytes);
-    const normalized = page.normalize('NFKC');
+    // The page, read back one font at a time. XeTeX positions words rather than drawing the spaces
+    // between them, so each script is compared character by character rather than as a substring.
+    const page = bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
     const missing = scripts.filter((script) =>
-      [...script].some((character) => !normalized.includes(character))
+      [...script].some(
+        (character) =>
+          !page.includes(character) && !page.includes(readBackAs[character] ?? character)
+      )
     );
     check(
-      'and every script the note is written in is on the page, one line of the card’s advice later',
-      missing.length === 0,
-      { missing, page: page.slice(0, 140) }
+      'and every script it ships a face for is on the page, no line added to the file',
+      missing.length === 0 && page.includes('简体中文') && page.includes('日本語'),
+      { missing, page: page.slice(0, 120) }
     );
     check(
       'with the Latin beside them drawn as it always was',
-      [...latin].every(
-        (character) => normalized.includes(character) || character === ' '
-      ),
-      { page: page.slice(0, 140) }
+      [...latin].every((character) => page.includes(character) || character === ' '),
+      { page: page.slice(0, 120) }
+    );
+
+    // And the faces that drew it are this build's, read out of the file's own font names: a page drawn
+    // with the platform's fonts would answer the two checks above and say nothing about what is shipped.
+    const drawn = bytes === null ? [] : await t.pdfFonts(bytes);
+    const absent = faces.filter((face) => !drawn.some((name) => name.includes(face)));
+    check(
+      'and it was drawn with the faces this build ships, not with the machine’s',
+      absent.length === 0,
+      { absent, drawn: drawn.slice(0, 14) }
     );
   } finally {
-    // The settings file is the app's own and nothing else puts it back.
-    if (shipped !== null) {
-      await files.writeTextAtomically(settings, shipped);
+    // The reader's own file is put back exactly as it was found — and taken away again when there was
+    // none, so a run leaves the app as it found it.
+    if (wasThere !== null) {
+      await files.writeTextAtomically(config, new TextDecoder().decode(wasThere));
+    } else {
+      try {
+        await files.deleteEntry(config);
+      } catch {
+        // Nothing to remove.
+      }
     }
     try {
       await files.deleteEntry(folder);

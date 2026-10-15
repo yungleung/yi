@@ -227,11 +227,72 @@ window.__t = (() => {
 
 
   /**
+   * Every stream in a PDF, by the byte offset it starts at — what `pdfText` and `pdfFonts` both read a
+   * file through. The bytes are found by the `stream` keyword rather than through the file's own
+   * cross-reference table: what a probe wants is the text inside them, and the table's own offsets are
+   * not needed to find that.
+   */
+  const pdfStreams = (bytes) => {
+    const latin = new TextDecoder('latin1').decode(bytes);
+    const out = [];
+    for (const match of latin.matchAll(/stream\r?\n/g)) {
+      if (latin.slice(Math.max(0, match.index - 3), match.index) === 'end') {
+        continue;
+      }
+      const from = match.index + match[0].length;
+      const end = latin.indexOf('endstream', from);
+      if (end < 0) {
+        break;
+      }
+      let stop = end;
+      while (stop > from && (latin[stop - 1] === '\n' || latin[stop - 1] === '\r')) stop -= 1;
+      out.push({ at: match.index, range: [from, stop] });
+    }
+    return out;
+  };
+
+  /** One stream's bytes, inflated — or null when they are not deflate (a font's own tables are not). */
+  const inflateText = async (bytes, [from, stop]) => {
+    try {
+      const stream = new Blob([bytes.slice(from, stop)])
+        .stream()
+        .pipeThrough(new DecompressionStream('deflate'));
+      return new TextDecoder('latin1').decode(await new Response(stream).arrayBuffer());
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * The fonts a PDF draws with, as the names in its own `/BaseFont` entries: which face set a page is
+   * *evidence about*. A page is read back as text by `pdfText`, and text alone cannot say whether the
+   * characters came from the faces a build ships or from whichever font the machine happened to have —
+   * measured, the names are inside a compressed object stream, so the file's raw bytes do not hold them
+   * and the streams have to be inflated first.
+   */
+  const pdfFonts = async (bytes) => {
+    const names = new Set();
+    for (const stream of pdfStreams(bytes)) {
+      const text = await inflateText(bytes, stream.range);
+      for (const [, name] of (text ?? '').matchAll(/\/BaseFont\s*\/([A-Za-z0-9+\-]+)/g)) {
+        names.add(name);
+      }
+    }
+    return [...names];
+  };
+
+  /**
    * What a PDF's page says, rebuilt from the file: a font's `ToUnicode` map names the character a
    * drawn code stands for, and the page's own text operators say which codes it draws — `<hex> Tj`,
-   * `[<hex>] TJ` and, for characters the font holds directly, `(plain) Tj`. A code no map names is a
-   * character the page cannot draw and is left out rather than guessed at, so what comes back is what
-   * is *on* the page.
+   * `[<hex>] TJ` and, for characters the font holds directly, `(plain) Tj`. A code the font in force
+   * has no map for stands for no character — a ligature, the word space of another face — and is left
+   * out rather than guessed at, so what comes back is what is *on* the page.
+   *
+   * **One map per font, chosen by the `/Fn Tf` in force**, and not one map merged out of all of them:
+   * a page carrying several subset fonts has several code spaces, and the same code means different
+   * characters in each — merging them is what turned Cyrillic `и` into Greek `ν` on a page that had
+   * Greek too. The page's objects are read out of the file, its compressed ones included, because the
+   * only place the mapping from `/F5` to a font's map is written down is that page dictionary.
    *
    * The streams are read one byte to one character (`latin1`), and one that is not deflate — a font's
    * own tables are not — is skipped. This is what `export-pdf-font.js` and `export-pdf-scripts.js`
@@ -240,69 +301,120 @@ window.__t = (() => {
    */
   const pdfText = async (bytes) => {
     const latin = new TextDecoder('latin1').decode(bytes);
-    const streams = [];
-    let index = 0;
-    for (;;) {
-      const at = latin.indexOf('stream', index);
-      if (at < 0) {
-        break;
+
+    const streams = pdfStreams(bytes);
+    const inflate = (range) => inflateText(bytes, range);
+
+    /** The objects of the file, and where each one's own bytes are — a stream is inside them. */
+    const objects = new Map();
+    const parts = [...latin.matchAll(/(\d+)\s+0\s+obj([\s\S]*?)endobj/g)].map((match) => ({
+      number: Number(match[1]),
+      start: match.index,
+      end: match.index + match[0].length,
+      body: match[2]
+    }));
+    for (const part of parts) {
+      objects.set(part.number, part);
+    }
+    /** What the stream inside an object says, inflated, or null when it has none. */
+    const streamOf = async (part) => {
+      const stream = streams.find(({ at }) => at > part.start && at < part.end);
+      return stream === undefined ? null : inflate(stream.range);
+    };
+    // XeTeX packs most objects into object streams, page dictionaries among them: unpack those too.
+    for (const part of parts) {
+      const count = /\/N\s+(\d+)/.exec(part.body);
+      const first = /\/First\s+(\d+)/.exec(part.body);
+      if (!part.body.includes('/ObjStm') || count === null || first === null) {
+        continue;
       }
-      let from = at + 'stream'.length;
-      if (latin[from] === '\r') from += 1;
-      if (latin[from] === '\n') from += 1;
-      const end = latin.indexOf('endstream', from);
-      if (end < 0) {
-        break;
+      const packed = await streamOf(part);
+      if (packed === null) {
+        continue;
       }
-      let stop = end;
-      while (stop > from && (latin[stop - 1] === '\n' || latin[stop - 1] === '\r')) stop -= 1;
-      index = end + 'endstream'.length;
-      try {
-        const stream = new Blob([bytes.slice(from, stop)])
-          .stream()
-          .pipeThrough(new DecompressionStream('deflate'));
-        streams.push(new TextDecoder('latin1').decode(await new Response(stream).arrayBuffer()));
-      } catch {
-        // Not deflate, so nothing here reads it.
+      const head = packed.slice(0, Number(first[1])).trim().split(/\s+/).map(Number);
+      for (let pair = 0; pair + 1 < head.length; pair += 2) {
+        const from = Number(first[1]) + head[pair + 1];
+        const to = pair + 3 < head.length ? Number(first[1]) + head[pair + 3] : packed.length;
+        objects.set(head[pair], { number: head[pair], start: -1, end: -1, body: packed.slice(from, to) });
       }
     }
-    const chars = new Map();
-    for (const text of streams) {
-      for (const block of text.match(/beginbfchar[\s\S]*?endbfchar/g) ?? []) {
+
+    /** The object a `/5 0 R` names, or the token itself when it names none. */
+    const resolve = (token) => {
+      const reference = /^\s*(\d+)\s+0\s+R\s*$/.exec(token ?? '');
+      return reference === null ? (token ?? '') : (objects.get(Number(reference[1]))?.body ?? '');
+    };
+
+    /** A font's code → character table, out of its own `ToUnicode` map. */
+    const mapOf = async (font) => {
+      const table = new Map();
+      const at = /\/ToUnicode\s+(\d+)\s+0\s+R/.exec(font);
+      const part = at === null ? undefined : objects.get(Number(at[1]));
+      const map = part === undefined ? null : await streamOf(part);
+      if (map === null) {
+        return table;
+      }
+      for (const block of map.match(/beginbfchar[\s\S]*?endbfchar/g) ?? []) {
         for (const [, code, to] of block.matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) {
-          chars.set(parseInt(code, 16), fromHex(to));
+          table.set(parseInt(code, 16), fromHex(to));
         }
       }
-      for (const block of text.match(/beginbfrange[\s\S]*?endbfrange/g) ?? []) {
+      for (const block of map.match(/beginbfrange[\s\S]*?endbfrange/g) ?? []) {
         for (const [, lo, hi, to] of block.matchAll(
           /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g
         )) {
           const first = parseInt(lo, 16);
           const base = parseInt(to, 16);
           for (let code = first; code <= parseInt(hi, 16); code += 1) {
-            chars.set(code, String.fromCharCode(base + code - first));
+            table.set(code, fromHex((base + code - first).toString(16).padStart(4, '0')));
+          }
+        }
+      }
+      return table;
+    };
+
+    let out = '';
+    // The pages come out of `objects`, not out of `parts`: a page dictionary is usually *inside* an
+    // object stream, which is why unpacking comes first here as well as there.
+    for (const page of [...objects.values()].filter((part) => /\/Type\s*\/Page[^s]/.test(part.body))) {
+      const fonts = new Map();
+      const resources = resolve(/\/Resources\s*(<<[\s\S]*?>>|\d+\s+0\s+R)/.exec(page.body)?.[1]);
+      const dictionary = resolve(/\/Font\s*(<<[\s\S]*?>>|\d+\s+0\s+R)/.exec(resources)?.[1]);
+      for (const [, name, reference] of dictionary.matchAll(/(\/F\d+)\s+(\d+\s+0\s+R)/g)) {
+        fonts.set(name, await mapOf(resolve(reference)));
+      }
+      const contents = /\/Contents\s*(\d+\s+0\s+R|\[[\s\S]*?\])/.exec(page.body)?.[1] ?? '';
+      for (const reference of contents.match(/\d+\s+0\s+R/g) ?? []) {
+        const part = objects.get(Number(reference.split(/\s/)[0]));
+        const text = part === undefined ? null : await streamOf(part);
+        if (text === null) {
+          continue;
+        }
+        // The font a run is set in, and the runs themselves, in the order the page writes them.
+        let chars = new Map();
+        for (const match of text.matchAll(
+          /(\/F\d+)\s+[\d.]+\s+Tf|(\[[^\]]*\]|\([^)]*\)|<[0-9A-Fa-f\s]*>)\s*(?:TJ|Tj)/g
+        )) {
+          if (match[1] !== undefined) {
+            chars = fonts.get(match[1]) ?? chars;
+            continue;
+          }
+          const argument = match[2] ?? '';
+          for (const [, hex] of argument.matchAll(/<([0-9A-Fa-f\s]+)>/g)) {
+            for (const code of hex.replace(/\s+/g, '').match(/..../g) ?? []) {
+              out += chars.get(parseInt(code, 16)) ?? '';
+            }
+          }
+          for (const [, plain] of argument.matchAll(/\(((?:\\.|[^()\\])*)\)/g)) {
+            for (const byte of new TextEncoder().encode(plain.replace(/\\(.)/g, '$1'))) {
+              out += chars.get(byte) ?? '';
+            }
           }
         }
       }
     }
-    const decode = (hex) =>
-      (hex.replace(/\s+/g, '').match(/..../g) ?? [])
-        .map((code) => chars.get(parseInt(code, 16)) ?? '')
-        .join('');
-    const drawn = (streams.find((text) => text.includes('BT')) ?? '').matchAll(
-      /<([0-9A-Fa-f\s]+)>\s*Tj|\(((?:\\.|[^()\\])*)\)\s*Tj|\[([^\]]*)\]\s*TJ/g
-    );
-    return [...drawn]
-      .map(([, hex, plain, array]) => {
-        if (hex !== undefined) {
-          return decode(hex);
-        }
-        if (plain !== undefined) {
-          return plain.replace(/\\(.)/g, '$1');
-        }
-        return [...array.matchAll(/<([0-9A-Fa-f\s]+)>/g)].map((run) => decode(run[1])).join('');
-      })
-      .join('');
+    return out;
   };
 
   /** A `ToUnicode` map's target, which is written as hex of UTF-16 code units (`utf-16be`). */
@@ -332,7 +444,8 @@ window.__t = (() => {
     sleep,
     layout,
     useLayout,
-    pdfText
+    pdfText,
+    pdfFonts
   };
 })();
 'helpers installed';

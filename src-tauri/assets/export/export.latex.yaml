@@ -30,14 +30,18 @@
 # it formats them in, so citeproc resolves the keys and appends the reference list. A reader who
 # wants none of that can set `filters: []` here, or clear the bibliography in the settings.
 #
-# A note written in CJK is set with a font *this file* names, as `export.pdf.yaml` does it and for the
-# same measured reason: with none named, pandoc's template emits no font setup, and the reader who
-# compiles the document gets XeTeX's *"Missing character: There is no 一 (U+4E00)…"* for every CJK
-# character in it. Measured: the same `.tex` with `variables: CJKmainfont` carries
-# `\usepackage{xeCJK}` and `\setCJKmainfont[]{…}`, and xelatex then compiles it with none of those
-# warnings. The font has to be one the **compiling** machine has — the reader's, not the app's — and a
-# note in a script outside CJK, or in Hangul (which `CJKmainfont` does not reach, measured), needs
-# `mainfont:` instead: `export.pdf.yaml`'s header has the long version of that.
+# A note written in CJK is set with a font *this file* names: with none named, pandoc's template emits
+# no font setup at all, and the reader who compiles the document gets XeTeX's *"Missing character:
+# There is no 一 (U+4E00)…"* for every CJK character in it. Measured: the same `.tex` with
+# `variables: CJKmainfont` carries `\usepackage{xeCJK}` and `\setCJKmainfont[]{…}`, and xelatex then
+# compiles it with none of those warnings.
+#
+# **This is the one kind the app's own faces cannot reach**: it is a `.tex` compiled on the reader's
+# machine, where a path into this app's bundle is a path that does not exist. So the font named here
+# has to be one the *compiling* machine has, and — `CJKmainfont` being xeCJK's, which reaches CJK
+# punctuation, kana and Han and, measured, no Hangul at all — a note in Hangul or in a script outside
+# CJK wants `mainfont:` with a font that has it. `export.pdf.yaml` ships faces for all of those; this
+# kind ships a name and says so.
 reader: markdown
 writer: latex
 self-contained: false

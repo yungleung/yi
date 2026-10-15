@@ -1,26 +1,22 @@
 /**
- * The sixth kind, and a note it could not draw until the file named a font: a PDF written in CJK.
+ * A CJK font the reader names, and the page it is drawn with — Han and kana with it, Hangul with the
+ * face this build ships.
  *
- * XeTeX draws a page with the font its defaults file names, and the TeX suite's own font holds Latin,
- * its punctuation and the symbols a TeX font carries — nothing else. Measured, a note written in
- * `你好，世界` came out with the space its words took and none of the words (XeTeX warns *"Missing
- * character: There is no 一 (U+4E00) in font [lmroman10-regular]"* for each, and the app shows those
- * lines as a message). So `export.pdf.yaml` names one — `CJKmainfont: "Songti SC"` — and this is that
- * working: the page read back out of the file through its fonts' `ToUnicode` maps, the same instrument
- * a reader's text extraction is built from, with the characters *on* it.
+ * `export-pdf-scripts.js` is the other half of this: a note in ten scripts, drawn with nothing named
+ * in the settings file at all. What that leaves out is the reader who *does* name one — the header the
+ * app writes hands Han and kana to the name the file gives (`export_fonts::write_header`), and this is
+ * that handover working on a real page: the file's line is added to the reader's own copy, the export
+ * runs, and the PDF's own `/BaseFont` entries say which face drew what.
  *
- * Readable as well as drawn is why that font: a page can carry a script with no map to name it by,
- * which is a page nobody can search or copy from. Measured with this same note, `Songti SC` keeps the
- * map and `Hiragino Sans GB` does not. What the default does *not* cover — Hangul, and every script
- * outside CJK — is in the file's own header, where the reader who needs one adds it: the fonts are the
- * reader's, and the file is theirs to edit.
+ * Measured here, and the reason Hangul is not handed over as well: the macOS `Songti SC` draws Han and
+ * kana and **has no Hangul** — a Korean note that named it lost every syllable — so the build's own
+ * face draws Hangul whatever the file says.
  *
- * It is a probe of its own because a real TeX run is ~4 s of the five the bridge gives a script, and
- * `export-pdf.js` already spends them on the Latin half (see its header).
+ * It also fails when the app stops handing the reader's file to pandoc as it stands, which is the thing
+ * that makes the file the reader's.
  *
- * @covers src-tauri/assets/export/export.pdf.yaml (the font it names),
- *   src-tauri/src/export.rs (the reader's file is what pandoc is handed), test/probes/lib.js
- *   (pdfText, the page read back)
+ * @covers src-tauri/assets/export/pdf-fonts.tex (the two ways Han is set),
+ *   src-tauri/src/export_fonts.rs (the name handed over), src-tauri/src/export.rs (the file read for it)
  */
 (async () => {
   const t = window.__t;
@@ -54,11 +50,15 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  // The two scripts the shipped default is for — Han and kana — and a line of Latin, because a font
-  // named for CJK must leave the Latin text in the document's own face.
-  const samples = ['简体中文', '日本語'];
+  // Han, kana and Hangul, with a line of Latin: a CJK font named for the first two must leave both the
+  // document's own face and the shipped Hangul face alone.
+  const cjk = ['简体中文', '日本語'];
+  const hangul = '한국어';
   const latin = 'And latin after it.';
-  const note = `# Going out\n\n${samples.join(' ')} ${latin}\n`;
+  const note = `# Going out\n\n${cjk.join(' ')} ${hangul} ${latin}\n`;
+  /** The font the reader names, and how its own name appears in the PDF once it has drawn anything. */
+  const named = 'Songti SC';
+  const namedFace = 'STSongti';
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -85,6 +85,8 @@
   };
 
   const before = await invoke('get_config');
+  const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+  const wasThere = await bytesOf(config);
   try {
     try {
       await files.deleteEntry(folder);
@@ -95,13 +97,22 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
-    await show(notePath, note);
-    check(
-      'the note the probe opened is the document on screen',
-      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
-      { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
-    );
 
+    // The reader's own file, with the one line a reader would add — anchored to the `variables:` line
+    // the file really holds, since the header above it mentions both variables by name.
+    const shipped = await invoke('export_restore_config', { kind: 'pdf' });
+    const settings = await bytesOf(config).then((bytes) =>
+      bytes === null ? '' : new TextDecoder().decode(bytes)
+    );
+    const withFont = settings.replace('\nvariables:\n', `\nvariables:\n  CJKmainfont: "${named}"\n`);
+    check(
+      'the line the reader writes goes into their own settings file, where pandoc reads it',
+      withFont !== settings && withFont.includes(`CJKmainfont: "${named}"`),
+      { path: shipped, line: withFont.split('\n').find((line) => line.includes(named)) }
+    );
+    await files.writeTextAtomically(config, withFont);
+
+    await show(notePath, note);
     await invoke('plugin:event|emit', { event: 'export', payload: 'pdf' });
     await until(() => open(), 60);
     card().querySelector('[data-export-target]').value = target;
@@ -109,30 +120,47 @@
     const written = await until(async () => (await bytesOf(target)) !== null);
     const bytes = await bytesOf(target);
     check(
-      'a PDF of a note written in CJK is written where the reader asked',
+      'the export still writes a PDF, so the line reached pandoc',
       written && bytes !== null && String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-',
       { written, size: bytes?.length ?? 0 }
     );
 
-    const page = bytes === null ? '' : await t.pdfText(bytes);
-    // XeTeX positions words rather than drawing the spaces between them, so the page is compared
-    // character by character rather than as a substring: what is pinned is that the *characters* are
-    // there, not where the spaces fell.
-    const normalized = page.normalize('NFKC');
-    const missing = samples.filter((sample) =>
-      [...sample].some((character) => !normalized.includes(character))
-    );
+    const page = bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
+    const missing = [...cjk.join(''), hangul].filter((character) => !page.includes(character));
     check(
-      'the characters the note is written in are on the page, Han and kana both',
+      'and the characters of Han, kana and Hangul are on the page, each drawn by a font that has it',
       missing.length === 0,
-      { missing, page: page.slice(0, 140) }
+      { missing, page: page.slice(0, 120) }
     );
     check(
-      'and the Latin beside them is drawn as it always was, in the document’s own face',
-      [...latin].every((character) => normalized.includes(character) || character === ' '),
-      { page: page.slice(0, 140) }
+      'with the Latin beside them drawn in the document’s own face',
+      [...latin].every((character) => page.includes(character) || character === ' '),
+      { page: page.slice(0, 120) }
+    );
+
+    // Which face drew what, out of the file's own font names: Han and kana with the reader's font, and
+    // Hangul with the one the build ships.
+    const drawn = bytes === null ? [] : await t.pdfFonts(bytes);
+    check(
+      'Han and kana are drawn with the font the file names, and not with a face of the build’s',
+      drawn.some((name) => name.includes(namedFace)),
+      { drawn: drawn.slice(0, 12) }
+    );
+    check(
+      'and Hangul with the face this build ships, which is why a Korean note survives that line',
+      drawn.some((name) => name.includes('NotoSerifCJKsc')),
+      { drawn: drawn.slice(0, 12) }
     );
   } finally {
+    if (wasThere !== null) {
+      await files.writeTextAtomically(config, new TextDecoder().decode(wasThere));
+    } else {
+      try {
+        await files.deleteEntry(config);
+      } catch {
+        // Nothing to remove.
+      }
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

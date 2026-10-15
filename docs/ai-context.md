@@ -225,26 +225,46 @@ Yi's own, written in that shape). **One kind is not pandoc's at all**: `markdown
 false`) *is* the pre-process — the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
 is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that
-needs more than pandoc — a TeX engine, named in its file, and a **font for a note that is not written
-in Latin**, which is a fact of the *file* and not of the app: `export.pdf.yaml` ships with
-`CJKmainfont: "Songti SC"` under `variables:`, measured to draw Han and kana with a `ToUnicode` map a
-reader can search and copy by (`export-pdf-font.js` reads such a page back; without a font named, XeTeX
-draws the space the words took and none of the words, and the app shows the reader its warning for each
-character). What the two variables reach is **measured, not assumed**: `CJKmainfont` is what xeCJK
-routes CJK punctuation, kana, Han **and Hangul** to (with both variables named, a Korean note's Hangul
-was set with the CJK font and lost with it), and `mainfont` is what every other script is set with —
-and what cannot answer for Hangul while a CJK font is named. So the default covers Han and kana and
-nothing else, the file's own header carries the recipe for the rest (Hangul: a CJK font that has it;
-Greek/Cyrillic/Hebrew/Arabic/Indic/Thai/Armenian/Georgian: `mainfont`; both at once: both lines naming
-one wide font, measured), and the reader's file is theirs — the app never rewrites it. The **latex** kind names the same font in `export.latex.yaml`
-and for the same measured reason: without it the `.tex` carries no font setup at all, and the reader
-who compiles it gets XeTeX's *"Missing character"* for every CJK character in the document.
+needs more than pandoc — a TeX engine, named in its file, **and a face for every script the note may be
+written in**, because a page has no font fallback: a character outside the font in force is reported
+*missing character* and drawn as nothing (measured: `你好，世界` came out as the space its words took and
+none of the words). **This build draws those scripts itself.** It ships eight faces under
+`src-tauri/assets/fonts/` (`bundle.resources` in `tauri.conf.json`, so `tauri-build` also puts them in
+the target folder a development run resolves as its resource directory) — one per script, OFL, with the
+licence beside them — and `src-tauri/src/export_fonts.rs` writes a header of its own,
+`assets/export/pdf-fonts.tex`, into `<app data>/export/pdf-fonts.tex` before **every** PDF export (it
+names the faces by absolute path, so a moved app would otherwise leave a header pointing at a bundle
+that is gone) and hands it to pandoc as `--include-in-header`, which pandoc *adds* to whatever the
+reader's file lists there (measured) — the reader's file is never edited and its own header entries are
+still included. The header gives each Unicode block a `ucharclasses` character class and writes only
+*entering* hooks for it: a leaving hook is written per class **pair**, so two of them overwrite each
+other's entering hook (measured — that is how the first version lost Greek after Cyrillic). Measured,
+one line of each on one page with **no** font named in the settings file: Greek, Cyrillic, Hebrew,
+Arabic, Devanagari, Thai, Armenian, Georgian, Han, kana and Hangul all draw, with a `ToUnicode` map per
+face so the page can be searched and copied from (`export-pdf-scripts.js` reads such a page back, and
+reads the page's `/BaseFont` names to say they were *this build's* faces).
+
+**What the reader's file names still wins**, in two ways and no more, and the header's own comment says
+so: `mainfont` is the document's own font — `\normalfont`, so Latin and every block no shipped face
+answers for is set in it, and a script *no* face is shipped for (Tamil, Ethiopic, …) is its business
+alone; `CJKmainfont` is handed Han and kana **by the name the file gives** (the header is written from
+the same file pandoc is about to be handed: `named_fonts`, which reads the names themselves). Hangul is
+not handed over even then, which is the one deliberate exception: the fonts a platform has for Han very
+often have none of it — measured, the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean
+note that named it lost every syllable — and `export-pdf-font.js` is that page: the reader's face draws
+Han and kana, the shipped face draws Hangul. The **latex** kind ships no header and says
+`needs_a_font` for the same reason: a `.tex` is compiled on the reader's own machine, where a path into
+this app's bundle is a path that will not exist.
 What the app *does* do about any of this is **say it before the reader exports**: a kind whose output
 is typeset with those fonts (`needs_a_font`: the pdf and the latex) has its card drawn with the
 characters no font in its settings can draw — and it says so in the app's own words, with the settings
-file and its *Reveal in folder* button already beside it — and it *names the font to add*, in both
-lines, because that is what the measurements say works: the widest font the machine is known to have
-(`export_named_fonts` → `suggested_font`, a name to type and not a choice the app makes). The two halves
+file and its *Reveal in folder* button already beside it — and it *names the font to add*, in the line
+for it (`mainfont:`, or `CJKmainfont:` for Han and kana), because that is what the measurements say
+works: the widest font the machine is known to have
+(`export_named_fonts` → `suggested_font`, a name to type and not a choice the app makes) — which is now
+what the hint says only about a script **no face is shipped for**, since everything else draws already
+(what the faces cover arrives as `NamedFonts.shipped`, read out of the fonts' own `cmap` tables so a
+face swapped for another cannot leave the card quiet about a page that lost a character). The two halves
 come from the two places that
 hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
 copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing

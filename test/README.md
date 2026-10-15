@@ -205,28 +205,31 @@ thing that leaves the page), and the citations become a headed `References` list
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts;
-`export-font-hint` — the card's font hint: a note written in a script the settings name no font for is
-said so in the app's own words, with the characters it is written in and the settings file beside it
-(Korean says it, Chinese does not — the shipped `CJKmainfont` is for Han and kana — a docx never does,
-because what opens that file picks a font itself; and the measured irregularity holds too: a bare `≤`
-is named where `√ ∞ ± × ÷` beside it draw, and the same character inside `$…$` is not, because pandoc
-sets a formula with the maths font);
+`export-font-hint` — the card's font hint: a note written in characters this export cannot draw is said
+so in the app's own words, with the characters it is written in and the settings file beside it. This
+build ships a face per script, so Chinese, Korean and Greek are quiet and stay quiet; what is left is a
+script with no face (Tamil, named as `mainfont: "…"` — the widest font the machine is known to have) and
+the characters the TeX suite's own font was measured to miss (a bare `≤` is named where `√ ∞ ± × ÷`
+beside it draw, and the same character inside `$…$` is not, because pandoc sets a formula with the maths
+font). A docx never says it, because what opens that file picks a font itself;
 `export-config-replace` — the settings row's second button: a copy that is already the file this build
 ships is not offered for replacement, one that differs is, the cautious answer leaves it exactly as it
 was, and agreeing writes the shipped bytes back (the first half of the measurement above: a shipped file
 that changes reaches nobody who already has one, and this is the reader's way to ask for it);
-`export-pdf-scripts` — the line the card gives, followed: the font the app names is written into the
-reader's own settings file for one export and the page read back, every script the shipped default has
-none of on it (the other TeX-run probe, and the one that fails if the app ever stops handing that file
-to pandoc as it stands);
+`export-pdf-scripts` — the ten scripts this build ships a face for, with **nothing** added to the
+settings file: the shipped copy is put back, the export runs, and the page is read back one font at a
+time (`lib.js: pdfText`) — every script on it, and drawn by the faces this build ships rather than by
+whatever the machine happens to have (`lib.js: pdfFonts`, since text alone cannot say *which* font
+drew it). It fails if the app ever stops handing the reader's file to pandoc as it stands;
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
-`%PDF-` through the TeX engine that file names — one of the two probes that always outrun the
+`%PDF-` through the TeX engine that file names — one of the three probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
 result out of the page's stash; there is nothing to split, since the overrun *is* one export);
-`export-pdf-font` — the same kind with a note it could not draw until its file named a font: a page of
-Han and kana, read back out of the PDF through its fonts' `ToUnicode` maps, *on* the page and
-searchable — which is `CJKmainfont: "Songti SC"`, the default the shipped `export.pdf.yaml` carries and
-the reader may change, and the other TeX-run probe;
+`export-pdf-font` — the same kind with a CJK font the *reader* names: `CJKmainfont: "Songti SC"` written
+into their own settings file for one export, and the page's own `/BaseFont` entries read back to say
+which face drew what — Han and kana with the reader's font, Hangul with the face this build ships
+(measured: `Songti SC` draws the first two and has no Hangul at all, which is why a Korean note survives
+that line), and the third TeX-run probe;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it

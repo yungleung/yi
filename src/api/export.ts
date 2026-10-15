@@ -117,13 +117,18 @@ export async function restoreExportConfig(kind: string): Promise<string> {
 export interface NamedFonts {
   needs_a_font: boolean;
   mainfont: boolean;
+  /**
+   * Whether a font is named for CJK. Han and kana are drawn with it, by the name the file gives — the
+   * export's own header hands that name to the page (`src-tauri/src/export_fonts.rs`). Hangul is not
+   * reached this way: it is drawn with the face this build ships, whatever the file names.
+   */
   cjk_mainfont: boolean;
   /**
-   * Whether that CJK font is one the app knows has Hangul — true only for a file the reader made their
-   * own, since their font is taken to hold what they chose it for; false for the shipped one, whose
-   * font is measured not to have it.
+   * The code points the faces **this build ships** draw, as `[first, last]` ranges, read out of the
+   * fonts themselves — empty for a kind whose page they do not draw. A character in here is one the
+   * card stays quiet about: the export draws it with no line added to the settings file.
    */
-  cjk_covers_hangul: boolean;
+  shipped: [number, number][];
   /**
    * The widest font this machine is known to have, or null — a name for the card to *give* a reader
    * whose settings cannot draw their note's characters. It is a name to type into the file, never a

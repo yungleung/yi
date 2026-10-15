@@ -2,6 +2,7 @@ mod i18n;
 mod menu;
 mod files;
 mod export;
+mod export_fonts;
 mod session;
 mod stats;
 mod settings;

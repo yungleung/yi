@@ -1300,6 +1300,42 @@ One thing deliberately *not* in this list, because it is not a residue but a vis
 waiting on a decision: the shape of a fast path for raw blocks — a local write into the
 highlighted span, re-highlighted when a burst stops — at the end of "Measure before deciding".
 
+**The build draws the scripts itself now, and the reader cannot choose those faces yet.** The
+round that shipped the faces (a serif set: `Noto Serif` for Greek and Cyrillic, `Noto Serif` per
+script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Noto Naskh Arabic` for Arabic, and
+`Noto Serif CJK SC` for Han, kana and Hangul — 25 MB, OFL, under `src-tauri/assets/fonts/`) answers
+the item the last handoff left: a page in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
+Armenian or Georgian is drawn with no line added to the settings file, which `export-pdf-scripts.js`
+proves by writing the *shipped* file back, exporting, and reading the page back one font at a time
+(`lib.js: pdfText`) while the file's own `/BaseFont` names say the faces were this build's. Two
+residues are deliberate, and each has a measured shape:
+
+- **A script's face is the app's to choose, not the reader's.** `mainfont:` in the settings file is
+  the document's own font and is *not* what draws Greek, Hebrew, Arabic and the rest — those are the
+  shipped faces, whatever the file says (the header's own comment states it, and the hint is quiet
+  about them because it knows they draw). `CJKmainfont:` is the one handover: Han and kana are drawn
+  with the name the file gives. Choosing a different Hebrew or Arabic face today means editing the
+  header the app rewrites, which is not an interface; the shape it wants is a per-script line in the
+  settings file that the header reads the way it reads `CJKmainfont:`, and the hint telling the
+  reader when their face is the one being used.
+- **What the Arabic face's `ToUnicode` map gives back is lossy for three letters.** Measured, one
+  page: `Noto Naskh Arabic` names the final and medial forms of beh, yeh and ta-marbuta by the
+  dotless bases their shapes are built from (`ب`→`ٮ`, `ي`→`ى`, `ة`→`ه`), so text copied out of such
+  a page loses those dots — the glyphs are drawn, and it is the map that names them so. Every other
+  shipped face round-trips exactly (the Hebrew page reads back reversed, which is the writing
+  direction and not a loss). A face whose map is exact for Arabic would fix it, and the check in
+  `export-pdf-scripts.js` would go back to comparing the letters themselves rather than folding the
+  three variants.
+
+  One smaller thing the same round turned up, left as it is because it is a decision and not a defect:
+  **the latex kind still names `CJKmainfont: "Songti SC"`**, a font only macOS has. That kind cannot use
+  the shipped faces — its output is a `.tex` compiled on the reader's own machine, so a font name in
+  its file is the only way a font gets there — and a reader on another platform exporting a CJK note
+  gets XeTeX's *"The font … cannot be found"* instead of a document. The card's hint catches it only
+  once the line is gone (then it reports the CJK characters and names the widest font their machine
+  has). A platform-neutral default — naming no font, with the hint doing the telling — is the
+  alternative, and it trades that error for one line the reader has to add.
+
 ## Where a code block's keystroke goes
 
 Measured across P28 and P29, in `docs/superpowers/plans/2026-09-25-keystroke-parts.md` and
