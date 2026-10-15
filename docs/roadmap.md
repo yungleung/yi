@@ -1030,16 +1030,19 @@ elements) unless it says otherwise.
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **A shipped file that changes does not reach a reader who already has one.** `ensure_defaults_in`
-  writes a kind's file once and never again — that is what makes an edit the reader's — so the
-  `CJKmainfont` line added to `export.latex.yaml` (and the two pdf rounds before it) only arrives for
-  a reader who has never exported that kind. This round it bit visibly: the latex probe failed against
-  the app's own copy of the file until that copy was rewritten, and both times that was done by hand
-  from here, on the grounds that the copy was byte-identical to the old asset. What a *reader* would
-  see is a file that never learns, and the decision this leaves is whether the app should notice that
-  an unedited copy differs from the shipped one and offer to replace it (its own question, like every
-  other overwrite in this app) — the checks that would make that safe are the same ones this round used
-  by hand: compare the bytes, and never touch a file with an edit in it.
+- **A shipped file that changes does not reach a reader who already has one — and now the reader can
+  ask for it.** `ensure_defaults_in` writes a kind's file once and never again, which is what makes an
+  edit the reader's; so the `CJKmainfont` line added to `export.latex.yaml` (and the pdf rounds before
+  it) reaches only a reader who has never exported that kind. What landed is the reader's own way to fix
+  that: the card's settings row grew a second button, *Replace with the shipped file*, shown **only when
+  their copy is not the one this build ships** (the bytes compared, `config_is_shipped`) and behind the
+  app's own question — which says what it replaces, because a copy that differs may be an edit or an
+  older build's file and the two cannot be told apart here. Escape and an answer of no write nothing
+  (`export-config-replace.js` holds all four states). What this deliberately does **not** do is notice
+  on its own: the version I first floated — fingerprint a copy the app writes and offer on a mismatch —
+  would need a marker in every shipped file, would treat older copies as possibly-edited anyway, and
+  ends with the reader deciding regardless. If a future round wants the app to *suggest* it, that
+  fingerprint is the mechanism and this is the decision it would reopen.
 - **The scripts the shipped font does not cover.** The card now *says* when a note is written in
   characters its settings name no font for (the entry above), and the file's header names the two
   variables that fix it; what is still missing is the font itself — **Hangul**, Greek, Cyrillic,

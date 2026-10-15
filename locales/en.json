@@ -77,6 +77,8 @@
   "export.configLabel": "Conversion settings",
   "export.configNew": "Written there on your first export: {path}",
   "export.revealConfig": "Reveal in folder",
+  "export.replaceConfig": "Replace with the shipped file",
+  "export.replaceQuestion": "Replace your copy of {path} with the one this build ships? Anything you changed in it is lost.",
   "export.noPandoc": "pandoc was not found on this machine, so this kind of export cannot run.",
   "export.fontHint": "No font in the conversion settings draws these characters: {characters} — name one there (`mainfont:` covers any script).",
   "export.pandoc": "pandoc: {path}",

@@ -77,6 +77,8 @@
   "export.configLabel": "変換の設定",
   "export.configNew": "最初のエクスポートでここに作成されます: {path}",
   "export.revealConfig": "フォルダに表示",
+  "export.replaceConfig": "同梱のファイルに置き換え",
+  "export.replaceQuestion": "{path} をこのビルド同梱の内容に置き換えますか？変更した内容は失われます。",
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
   "export.fontHint": "変換設定のフォントにはこれらの文字がありません: {characters} — そこにフォントを指定してください（`mainfont:` はどの文字体系にも使えます）。",
   "export.pandoc": "pandoc: {path}",

@@ -13,7 +13,10 @@
  * a reader and a card for a probe (`ui/prompt.ts` is the same pair), because a probe cannot drive a
  * sheet. Here the reader gets both: they may type a path or pick one.
  *
- * Escape is the answer that writes nothing (no output, no configuration file): the cautious one.
+ * Escape is the answer that writes nothing (no output, no configuration file): the cautious one — and
+ * the settings file is the reader's, so the card hands it back to them: *Reveal in folder*, and
+ * *Replace with the shipped file* only when their copy is not that one, behind the app's own question
+ * (which says what it replaces, because a copy that differs may be an edit or an older build's).
  *
  * May import: the question card, the export seam and the catalogue. Upholds: one question, one
  * answer — a kind and a path, or nothing — so the flow cannot export something nobody asked for.
@@ -21,9 +24,10 @@
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { exportConfigPath, type ExportKindInfo } from '../../api/export';
+import { exportConfigPath, restoreExportConfig, type ExportKindInfo } from '../../api/export';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
+import { prompt } from '../prompt';
 import { QuestionCard } from '../floating/question_card';
 
 /** What the card is asked with: the kind the menu named, and the note's own path without an extension. */
@@ -92,6 +96,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly configLabel: HTMLSpanElement;
   private readonly configPath: HTMLSpanElement;
   private readonly openConfig: HTMLButtonElement;
+  /** The button that puts the shipped file back — shown only when the reader's copy is not it. */
+  private readonly replaceConfig: HTMLButtonElement;
   /** The configuration row: the kind's own defaults file, which every export of it reads. */
   private readonly configRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
@@ -141,6 +147,12 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       t('export.revealConfig'),
       'btn btn-ghost btn-xs px-0',
       () => void this.revealConfiguration()
+    );
+    this.replaceConfig = this.button(
+      'export-replace-config',
+      t('export.replaceConfig'),
+      'btn btn-ghost btn-xs px-0',
+      () => void this.replaceConfiguration()
     );
 
     this.status = document.createElement('p');
@@ -215,6 +227,14 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // A kind the app writes itself has no defaults file: the row is taken away rather than naming a
     // path that will never be written.
     this.configRowElement.classList.toggle('hidden', !info.needs_pandoc);
+    // The button that puts the shipped file back is offered only when the reader's copy is *not* it:
+    // a copy that already holds what the build ships has nothing to replace. A copy that differs may
+    // be the reader's edit or an older build's copy, and the question behind the button says which
+    // file it replaces rather than this card claiming to know.
+    this.replaceConfig.classList.toggle(
+      'hidden',
+      !info.config_exists || info.config_is_shipped
+    );
     // A file the reader has not been given yet is a place as much as a file: the first export (or
     // the button below) writes the shipped defaults there, and an edited file is never rewritten.
     this.configPath.textContent = info.config_exists
@@ -272,6 +292,36 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
   }
 
+  /**
+   * Puts the copy this build ships back over the reader's own, after asking.
+   *
+   * The question is the app's own (`ui/prompt.ts`): the reader sees a native sheet, a probe a card,
+   * and the same words either way — including what is lost. Escape, or an answer of no, leaves the
+   * file exactly as it was; the button then goes away, because the copy is the shipped one again.
+   */
+  private async replaceConfiguration(): Promise<void> {
+    const info = this.question?.kind ?? null;
+    if (!info) {
+      return;
+    }
+    const agreed = await prompt.ask({
+      title: t('export.configLabel'),
+      message: t('export.replaceQuestion', { path: info.config_path }),
+      yes: t('export.replaceConfig'),
+      no: t('export.cancel')
+    });
+    if (!agreed) {
+      return;
+    }
+    try {
+      const path = await restoreExportConfig(info.kind);
+      this.configPath.textContent = path;
+      this.replaceConfig.classList.add('hidden');
+    } catch (error) {
+      notify('Export configuration', error);
+    }
+  }
+
   /** The answer: only a path with something in it, since an empty one names no file. */
   private export(): void {
     const outputPath = this.target.value.trim();
@@ -295,7 +345,12 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private configRow(): HTMLElement {
     const group = document.createElement('div');
     group.className = 'mt-3 flex flex-col gap-1';
-    group.append(this.configLabel, this.configPath, this.openConfig);
+    // The two actions share a row: the second is offered only sometimes, and a row keeps the file's
+    // own line — and everything under it — exactly where it was whichever way that goes.
+    const buttons = document.createElement('div');
+    buttons.className = 'flex items-center gap-3';
+    buttons.append(this.openConfig, this.replaceConfig);
+    group.append(this.configLabel, this.configPath, buttons);
     return group;
   }
 

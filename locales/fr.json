@@ -77,6 +77,8 @@
   "export.configLabel": "Réglages de conversion",
   "export.configNew": "Créé là au premier export : {path}",
   "export.revealConfig": "Afficher dans le dossier",
+  "export.replaceConfig": "Remplacer par le fichier fourni",
+  "export.replaceQuestion": "Remplacer votre copie de {path} par celle fournie avec cette version ? Vos modifications seront perdues.",
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
   "export.fontHint": "Aucune police des réglages de conversion ne dessine ces caractères : {characters} — nommez-en une (`mainfont:` couvre toute écriture).",
   "export.pandoc": "pandoc : {path}",

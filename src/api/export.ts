@@ -28,6 +28,13 @@ export interface ExportKindInfo {
   config_path: string;
   /** Whether that copy has been written yet. */
   config_exists: boolean;
+  /**
+   * Whether that copy is the one this build ships, byte for byte — the card offers to replace it only
+   * when it is not, so a reader is never invited to replace a file with what it already holds. A copy
+   * that differs may be edited or written by an older build; the two cannot be told apart, so the card
+   * says what the button does and lets the reader answer.
+   */
+  config_is_shipped: boolean;
 }
 
 /** The kinds, and the pandoc the app would run — null when the machine has none. */
@@ -91,6 +98,15 @@ export async function exportFetchImage(url: string): Promise<string> {
  */
 export async function exportConfigPath(kind: string): Promise<string> {
   return await invoke<string>('export_config_path', { kind });
+}
+
+/**
+ * Writes the copy this build ships over the reader's own — what the card's *Replace with the shipped
+ * file* button does, and only after the app's own question. Escape, or an answer of no, leaves the file
+ * exactly as it was.
+ */
+export async function restoreExportConfig(kind: string): Promise<string> {
+  return await invoke<string>('export_restore_config', { kind });
 }
 
 /**

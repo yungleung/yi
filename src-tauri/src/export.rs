@@ -201,6 +201,13 @@ pub struct ExportKindInfo {
     /// Whether that copy has been written yet. A missing one is made by the first export or by
     /// opening it for editing; a query never writes.
     pub config_exists: bool,
+    /// Whether that copy is **the one this build ships**, byte for byte — so the card can offer to
+    /// replace it only when there is something to replace ([`export_restore_config`]).
+    ///
+    /// A copy that differs may have been edited by the reader or written by an older build; the two
+    /// cannot be told apart from here, and the card does not try: it says what the button does and
+    /// lets the reader answer.
+    pub config_is_shipped: bool,
 }
 
 /// What the export dialog is built from: the kinds, and the pandoc the app would run.
@@ -467,6 +474,11 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
     let config = kind
         .needs_pandoc
         .then(|| dir.join(config_file_name(kind.kind)));
+    let config_exists = config.as_deref().is_some_and(Path::exists);
+    let config_is_shipped = config
+        .as_deref()
+        .and_then(|path| fs::read(path).ok())
+        .is_some_and(|bytes| bytes == kind.defaults.as_bytes());
     ExportKindInfo {
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
@@ -474,7 +486,8 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         needs_pandoc: kind.needs_pandoc,
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
-        config_exists: config.as_deref().is_some_and(Path::exists),
+        config_exists,
+        config_is_shipped,
         config_path: config
             .map(|path| path.to_string_lossy().into_owned())
             .unwrap_or_default(),
@@ -831,6 +844,25 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// Writes the copy this build ships over the reader's own, because the reader asked for it.
+///
+/// The card offers the button only when the two differ ([`ExportKindInfo::config_is_shipped`]) and
+/// only after the app's own question, which says what is replaced — so a copy that *is* the shipped one
+/// is never offered, and a file is never changed under a reader who has not agreed to it. That is the
+/// one thing a file the reader may have edited must never suffer, and why this is a command with a
+/// question in front of it rather than anything the app does by itself.
+#[tauri::command]
+pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<String, String> {
+    let kind = kind_of(&kind)?;
+    if !kind.needs_pandoc {
+        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+    }
+    let path = export_dir(&app)?.join(config_file_name(kind.kind));
+    crate::files::write_atomically(&path, kind.defaults)
+        .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
 /// What a kind's conversion settings name, as the window reads it: whether the kind's output is
 /// typeset with those fonts at all, whether a font is named for the document as a whole, and whether
 /// one is named for CJK.
@@ -962,6 +994,28 @@ mod tests {
                 kind.kind
             );
         }
+    }
+
+    #[test]
+    fn a_copy_the_build_ships_is_known_to_be_that_one() {
+        let dir = scratch("config-is-shipped");
+        let kind = &KINDS[0];
+
+        // No file yet: nothing to replace, and the card offers nothing.
+        assert!(!kind_info(&dir, kind).config_exists);
+        assert!(!kind_info(&dir, kind).config_is_shipped);
+
+        // The copy this build wrote is that one, byte for byte: nothing to replace.
+        ensure_defaults_in(&dir, kind).unwrap();
+        assert!(kind_info(&dir, kind).config_exists);
+        assert!(kind_info(&dir, kind).config_is_shipped);
+
+        // An edit changes that — and so would a copy written by an older build, which is why the card
+        // says what the button does rather than claiming to know which of the two it is looking at.
+        fs::write(dir.join("export.docx.yaml"), "# edited\n").unwrap();
+        assert!(kind_info(&dir, kind).config_exists);
+        assert!(!kind_info(&dir, kind).config_is_shipped);
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
