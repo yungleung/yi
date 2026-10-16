@@ -1099,12 +1099,29 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
-  `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
-  of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
-  validator found when it is not — so that the two things nobody has looked at (an EPUB 3 with a
-  `nav.xhtml` *and* a `toc.ncx`, an accessibility `schema:*` metadata set pandoc writes itself) are
-  held by something other than this app's own reading of its own output.
+- **An EPUB held to a validator — and it found two real defects on its first run.** W3C's `epubcheck`
+  (v5.4.0, ~33 MB, Java 11+ — this machine has OpenJDK 25) was fetched into
+  `~/.cache/yi-tools/epubcheck/epubcheck-5.4.0/` (the release zip, extracted whole: the jar needs the
+  `lib/` beside it) and run by hand over a book built **the way the app builds one** — `pandoc
+  --defaults src-tauri/assets/export/export.epub.yaml -M title=… -M lang=…`. Verbatim:
+
+      ERROR(RSC-005): …/EPUB/text/ch001.xhtml(13,51): Duplicate ID "going-out"
+      ERROR(RSC-005): …/EPUB/text/ch001.xhtml(15,40): Duplicate ID "going-out"
+      Messages: 0 fatals / 2 errors / 0 warnings / 0 infos
+
+  The chapter that case makes — a note whose first heading *is* the title the app passes — is
+  `<section id="going-out" class="level1 unnumbered"><h1>Going out</h1><section id="going-out"
+  class="level2">…</section></section>`: two sections, one id. It is not the title *page*: measured,
+  `--epub-title-page=false` leaves both errors. And the title cannot simply be dropped — measured, a
+  book built without `-M title` fails differently (`element "metadata" incomplete; missing required
+  element "dc:title"`, and an empty nav anchor beside it), which is the `UNTITLED` state the shipped
+  file's header talks about.
+  **What is left is the fix and then the check**: something in the app's own epub path has to stop
+  pandoc nesting a second section with the heading's id — the candidates to measure first are the
+  shipped `section-divs: true`, `identifier-prefix: ''` and the `title-prefix: ''` beside it — and
+  once a book validates clean, `test/checks/check-epub-valid.mjs` is the shape the item wanted: run
+  `pandoc` over a fixture with the shipped defaults, run `epubcheck` over what comes out, and **skip
+  when either tool is absent** so `npm run check` stays green on a machine that has neither.
 - **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
   is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
   locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out
@@ -1160,7 +1177,16 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   changing the language reloads the window, and the harness restores the language after every run on
   purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
   a seam the harness does not have.
-- **What a *click* costs under a pane, and the suite's noisy tail.** The probes that sat on the 5 s
+- **What a *click* costs under a pane, and the suite's noisy tail. Closed**, and by the same
+  measurement the rest of the entry is about: with the harness bringing the window forward itself
+  (`session::focus_window`), a **whole `probe:all` run came out 177/177 with 28 skipped** — every
+  probe that the item named as flaky or over budget included. `a4-page` failing three checks *only
+  inside a sweep* was the throttled window and not the probes before it, so the bisect the entry had
+  asked for was not needed: the sweep is what proved it, which is the measurement the item wanted.
+  What remains of the *noisy tail* is only the note it leaves in `test/README.md`: an occluded window
+  costs a probe two or three times what its own sleeps say, which is why the harness now takes that
+  step itself instead of leaving it to whoever types the command.
+ The probes that sat on the 5 s
   budget are split (see *Closed*), and what is left is the other half of the same subject: a wider
   pane is not always kinder. At a 1200 px window
   `description-list.js`'s "typing after three widgets" clicked the end of its line in the A4
