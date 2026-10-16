@@ -89,6 +89,7 @@
   "export.noPandoc": "No se encontró pandoc en esta máquina, así que este tipo de exportación no puede ejecutarse.",
   "export.fontHint": "Estos caracteres no tienen fuente en esta exportación: {characters} — indica una en los ajustes de conversión (`mainfont:` para cualquier escritura, `yi-<script>-font:` para una de las incluidas, `CJKmainfont:` para el han y el kana).",
   "export.fontHintFont": "Estos caracteres no tienen fuente en esta exportación: {characters} — añade `mainfont: \"{font}\"` en los ajustes de conversión; esa fuente es la más completa que se conoce en esta máquina.",
+  "export.notPictures": "Estos destinos no son imágenes, así que la exportación los lleva como los archivos que son: {destinations}",
   "export.unknownFont": "Esta máquina no tiene ninguna fuente llamada {fonts}: una exportación se detiene ante un nombre que no encuentra, en vez de recurrir a otra.",
   "export.pandoc": "pandoc: {path}",
   "export.noSuchKind": "Yi no tiene exportación para {kind}.",

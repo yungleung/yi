@@ -89,6 +89,7 @@
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
   "export.fontHint": "Ces caractères n'ont aucune police dans cet export : {characters} — nommez-en une dans les réglages de conversion (`mainfont:` pour toute écriture, `yi-<script>-font:` pour l'une de celles fournies, `CJKmainfont:` pour le han et le kana).",
   "export.fontHintFont": "Ces caractères n'ont aucune police dans cet export : {characters} — ajoutez `mainfont: \"{font}\"` dans les réglages de conversion ; cette police est la plus complète connue sur cette machine.",
+  "export.notPictures": "Ces destinations ne désignent pas d’image : l’export les reprend comme les fichiers qu’elles sont : {destinations}",
   "export.unknownFont": "Cette machine n'a aucune police nommée {fonts} : un export s'arrête sur un nom qu'elle ne trouve pas, au lieu de se rabattre sur une autre.",
   "export.pandoc": "pandoc : {path}",
   "export.noSuchKind": "Yi n'a pas d'exportation pour {kind}.",
