@@ -50,6 +50,7 @@ pub fn run() {
             export::export_config_path,
             export::export_restore_config,
             export::export_named_fonts,
+            export::export_font_for,
             export::export_fetch_image,
             export::export_use_pandoc,
             export::export_use_curl,

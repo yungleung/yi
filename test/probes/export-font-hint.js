@@ -25,7 +25,8 @@
  * (`≤`, where `√ ∞ ± × ÷` beside it draw), and the same character inside `$…$` is not reported at all,
  * because pandoc sets a formula with the maths font.
  *
- * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font, suggested_font),
+ * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font, export_font_for),
+ *   src-tauri/src/system_fonts.rs (the names this machine has, and what it draws),
  *   src/ui/export/font_hint.ts (the characters, over the parse),
  *   src/ui/export/export_flow.ts (the characters the card is asked with),
  *   src/ui/export/export_dialog.ts (the hint)
@@ -158,12 +159,38 @@
       (tamilHint ?? '').includes('த') && (tamilHint ?? '').includes('ழ'),
       { hint: tamilHint }
     );
-    const suggested = (await api.namedFonts('pdf')).suggested_font;
+    // And the name it gives is one **this machine really has**, checked by the app itself: read out of
+    // the hint and written into the settings file, where the card's own unknown-font line is what says
+    // whether the machine answers to it — a suggestion the machine does not have is the very failure
+    // that line exists for, so the two hold each other.
+    const suggested = /`mainfont: "([^"]+)"`/.exec(tamilHint ?? '')?.[1] ?? null;
     check(
-      'and it names the widest font this machine is known to have, for the reader to type',
-      suggested === null || (tamilHint ?? '').includes(`mainfont: "${suggested}"`),
+      'and it names a font for the reader to type, out of this machine’s own',
+      suggested !== null,
       { suggested, hint: tamilHint }
     );
+    if (suggested !== null) {
+      const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+      const settings = await readText(config);
+      try {
+        await files.writeTextAtomically(
+          config,
+          (settings ?? '').replace('\nvariables:\n', `\nvariables:\n  mainfont: "${suggested}"\n`)
+        );
+        await askFor('pdf');
+        check(
+          'and this machine answers to that name, so an export will not stop on it',
+          unknown() === null && hint() === null,
+          { suggested, unknown: unknown(), hint: hint() }
+        );
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await sleep(200);
+      } finally {
+        if (settings !== null) {
+          await files.writeTextAtomically(config, settings);
+        }
+      }
+    }
     check(
       'and the card still names the settings file that answers for it, with the button that reveals it',
       (card().querySelector('[data-export-config]')?.textContent ?? '').endsWith(
@@ -225,7 +252,8 @@
 
       // And a name it *does* have is not: the same line, with a font the app itself names for this
       // machine. A machine the app knows no font for skips this half rather than passing quietly.
-      const real = (await api.namedFonts('pdf')).suggested_font;
+      // A name this machine has, asked for directly: Greek, which every machine has a face for.
+      const real = await api.exportFontFor([0x03a9]);
       if (real === null) {
         check('and a name the machine does have is not said (skipped: no known font here)', true, {
           real

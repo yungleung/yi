@@ -215,7 +215,11 @@ build ships a face per script, so Chinese, Korean and Greek are quiet and stay q
 script with no face (Tamil, named as `mainfont: "…"` — the widest font the machine is known to have) and
 the characters the TeX suite's own font was measured to miss (a bare `≤` is named where `√ ∞ ± × ÷`
 beside it draw, and the same character inside `$…$` is not, because pandoc sets a formula with the maths
-font). A docx never says it, because what opens that file picks a font itself. And the other thing the
+font). A docx never says it, because what opens that file picks a font itself. The name it gives a reader
+for those characters comes from **this machine** (`system_fonts::covering`, out of the fonts' `cmap`s),
+and the probe holds the app to its own suggestion: it reads the name out of the hint and writes it into
+the settings file, where the card's unknown-font line must stay quiet — a suggestion the machine does
+not answer to is the very failure that line exists for. And the other thing the
 settings file can get wrong is in the same probe: a font name this machine has none of — a run that never
 happens, where the hint is about a run that loses characters quietly — said in its own line on the card
 by the name the reader wrote, and *not* said when the name is one this machine's fonts answer to;

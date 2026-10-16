@@ -8,6 +8,8 @@
 //! May import: `std`. Upholds: every byte read is bounds-checked and every absence is `None`/empty —
 //! a font file is data from outside this program, and a broken one must not take the app with it.
 
+use std::path::Path;
+
 /// The offsets of the *tables directories* in a font file: a plain TTF/OTF has one at 0, a TrueType
 /// collection (`ttcf`) has one per face, and a `.ttc` is what a good deal of what a machine has looks
 /// like on macOS.
@@ -211,6 +213,72 @@ fn be32(data: &[u8], at: usize) -> Option<u32> {
     Some(u32::from_be_bytes(data.get(at..at + 4)?.try_into().ok()?))
 }
 
+/// The tables named in `tags` (plus the headers a caller needs to find them), read out of the file at
+/// `path` into a **compact image**: the head and the table directories as they are, then each wanted
+/// table's bytes, with the directory entry pointing at where they really are. Every reader above works
+/// on it unchanged.
+///
+/// **This is what makes reading a machine's fonts affordable.** They are 543 MB in 367 files (measured),
+/// and the question asked of one of them is about a `cmap` of a few hundred KB. Laying the buffer out
+/// the way the *file* is instead was measured wrong: a collection's tables are spread over the whole of
+/// it (Songti's `cmap` is the last thing in a 66 MB file), so the buffer was the whole file while the
+/// bytes actually read were a few KB.
+pub fn read_tables(path: &Path, tags: &[&[u8; 4]]) -> Option<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut head = Vec::new();
+    file.by_ref().take(4096).read_to_end(&mut head).ok()?;
+    let mut image = head.clone();
+
+    // Reads a range of the file, or of the head it has already read.
+    let range = |file: &mut std::fs::File, head: &[u8], at: usize, length: usize| -> Option<Vec<u8>> {
+        if at + length <= head.len() {
+            return Some(head[at..at + length].to_vec());
+        }
+        let mut bytes = vec![0u8; length];
+        file.seek(SeekFrom::Start(at as u64)).ok()?;
+        file.read_exact(&mut bytes).ok()?;
+        Some(bytes)
+    };
+
+    let mut copied: Vec<(usize, usize, usize)> = Vec::new(); // file offset, length, where it went
+    for directory in faces(&head) {
+        let count = be16(&head, directory + 4)? as usize;
+        let end = directory + 12 + count * 16;
+        // A directory past the head is padded up to where it really is — they sit near the start of a
+        // file in practice, and a far one costs its own offset in zeroes rather than a wrong answer.
+        if end > image.len() {
+            let bytes = range(&mut file, &head, image.len(), end - image.len())?;
+            image.extend_from_slice(&bytes);
+        }
+        for index in 0..count {
+            let at = directory + 12 + index * 16;
+            let entry = range(&mut file, &head, at, 16)?;
+            let tag: [u8; 4] = entry[..4].try_into().ok()?;
+            if !tags.iter().any(|wanted| wanted.as_slice() == &tag[..]) {
+                continue;
+            }
+            let offset = be32(&entry, 8)? as usize;
+            let length = be32(&entry, 12)? as usize;
+            let at_in_image = match copied.iter().find(|(was, size, _)| *was == offset && *size == length)
+            {
+                Some((_, _, went)) => *went,
+                None => {
+                    let bytes = range(&mut file, &head, offset, length)?;
+                    let went = image.len();
+                    image.extend_from_slice(&bytes);
+                    copied.push((offset, length, went));
+                    went
+                }
+            };
+            // The directory says where the table is *now*.
+            image[at + 8..at + 12].copy_from_slice(&(at_in_image as u32).to_be_bytes());
+        }
+    }
+    (!copied.is_empty()).then_some(image)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -248,5 +316,43 @@ mod tests {
         assert!(table(b"not a font at all", 0, b"cmap").is_none());
         assert!(family_names(b"\x00\x01\x00\x00garbage", 0).is_empty());
         assert!(cmap_ranges(b"\x00\x01\x00\x00garbage", 0).is_empty());
+    }
+
+    /// Reading a file's tables *selectively* gives what reading the whole file gives — which is the
+    /// whole point: a machine's fonts are 543 MB, and the question is about a few KB of one of them.
+    #[test]
+    fn reading_the_tables_it_is_asked_for_answers_the_same_as_reading_the_file() {
+        for path in [
+            Path::new("/System/Library/Fonts/Supplemental/Songti.ttc").to_path_buf(),
+            Path::new("/System/Library/Fonts/Supplemental/Arial Unicode.ttf").to_path_buf(),
+        ] {
+            let Ok(whole) = std::fs::read(&path) else {
+                continue;
+            };
+            let Some(part) = read_tables(&path, &[b"cmap", b"name"]) else {
+                panic!("no tables read from {}", path.display());
+            };
+            assert!(
+                part.len() * 4 < whole.len(),
+                "{}: read {} of {} bytes — that is not selective",
+                path.display(),
+                part.len(),
+                whole.len()
+            );
+            for directory in faces(&whole) {
+                assert_eq!(
+                    family_names(&part, directory),
+                    family_names(&whole, directory),
+                    "{}",
+                    path.display()
+                );
+                assert_eq!(
+                    cmap_ranges(&part, directory),
+                    cmap_ranges(&whole, directory),
+                    "{}",
+                    path.display()
+                );
+            }
+        }
     }
 }
