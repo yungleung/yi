@@ -14,6 +14,12 @@
  * the TeX suite's own font was measured to miss. Kinds whose output carries the characters as characters
  * (a docx, a page, a book) are never hinted at whatever the note is written in.
  *
+ * **And the other thing a settings file can get wrong**: a font name this machine has none of. That is
+ * not a lost character, it is a run that never happens — XeTeX stops the whole export with *"The font …
+ * cannot be found"* rather than falling back — so the card says it as its own line, while the reader is
+ * looking at the file the name is written in. The last pair here writes a name nothing answers to, and
+ * then a name something does, into the reader's own copy for the length of the check.
+ *
  * The last pair is the rule's other half (`ui/export/font_hint.ts`): what the default font was
  * measured to *miss* is reported even though it sits inside a block a range table would call covered
  * (`≤`, where `√ ∞ ± × ÷` beside it draw), and the same character inside `$…$` is not reported at all,
@@ -47,6 +53,21 @@
     return line === null || line === undefined || line.classList.contains('hidden')
       ? null
       : line.textContent;
+  };
+  /** The line for a font name this machine has none of, or null while it is hidden. */
+  const unknown = () => {
+    const line = card()?.querySelector('[data-export-unknown-fonts]');
+    return line === null || line === undefined || line.classList.contains('hidden')
+      ? null
+      : line.textContent;
+  };
+  const readText = async (path) => {
+    try {
+      const read = await invoke('plugin:fs|read_text_file', { path });
+      return new TextDecoder().decode(read instanceof ArrayBuffer ? read : Uint8Array.from(read));
+    } catch {
+      return null;
+    }
   };
   /** Opens a note and waits for it, bounded — see `export-docx.js` for why. */
   const show = async (path, content) => {
@@ -182,6 +203,52 @@
     );
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await sleep(200);
+
+    // A name this machine has no font for. Written into the reader's own copy for the length of these two
+    // checks, and put back afterwards — nothing else puts that file back.
+    const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+    const settings = await readText(config);
+    try {
+      const bogus = 'Yi No Such Font 12345';
+      await files.writeTextAtomically(
+        config,
+        (settings ?? '').replace('\nvariables:\n', `\nvariables:\n  yi-thai-font: "${bogus}"\n`)
+      );
+      await askFor('pdf');
+      check(
+        'a font name this machine has none of is said on the card, by the name the reader wrote',
+        (unknown() ?? '').includes(bogus),
+        { unknown: unknown() }
+      );
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await sleep(200);
+
+      // And a name it *does* have is not: the same line, with a font the app itself names for this
+      // machine. A machine the app knows no font for skips this half rather than passing quietly.
+      const real = (await api.namedFonts('pdf')).suggested_font;
+      if (real === null) {
+        check('and a name the machine does have is not said (skipped: no known font here)', true, {
+          real
+        });
+      } else {
+        await files.writeTextAtomically(
+          config,
+          (settings ?? '').replace('\nvariables:\n', `\nvariables:\n  yi-thai-font: "${real}"\n`)
+        );
+        await askFor('pdf');
+        check(
+          'and a name the machine does have is not',
+          unknown() === null,
+          { real, unknown: unknown() }
+        );
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await sleep(200);
+      }
+    } finally {
+      if (settings !== null) {
+        await files.writeTextAtomically(config, settings);
+      }
+    }
   } finally {
     try {
       await files.deleteEntry(folder);

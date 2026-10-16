@@ -82,6 +82,7 @@
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
   "export.fontHint": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定でフォントを指定してください（`mainfont:` はどの文字体系にも、`yi-<script>-font:` は同梱の文字体系の一つに、`CJKmainfont:` は漢字とかなに使えます）。",
   "export.fontHintFont": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定に `mainfont: \"{font}\"` を追加してください。このフォントはこのマシンで最も広い範囲をカバーします。",
+  "export.unknownFont": "このマシンには {fonts} というフォントがありません —— 見つからない名前があると、書き出しは代替せずに停止します。",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "書き出すファイルのパスを入力してください。",
   "export.cancel": "キャンセル",

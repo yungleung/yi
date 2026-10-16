@@ -80,7 +80,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     pandoc,
     baseTarget,
     uncovered: uncoveredCharacters(text, fonts),
-    suggestedFont: fonts.suggested_font
+    suggestedFont: fonts.suggested_font,
+    unknownFonts: fonts.unknown_fonts
   });
   if (answer === null) {
     return;

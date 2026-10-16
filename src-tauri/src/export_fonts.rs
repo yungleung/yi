@@ -272,6 +272,30 @@ pub fn reader_scripts(settings: &str) -> Vec<&'static str> {
         .collect()
 }
 
+/// Every font a settings file names, whatever the key it names it with — `mainfont`, `CJKmainfont`, and
+/// the `yi-<script>-font` lines — each once, in the order the keys are read.
+///
+/// This is the list the app checks against the machine (`system_fonts::has_family`): a name that is not
+/// there is not a smaller problem than a missing character, and the card can say so before the export
+/// stops with the engine's own sentence.
+pub fn named_values(settings: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let keys = ["mainfont", "CJKmainfont"].into_iter().chain(
+        SLOTS
+            .iter()
+            .filter_map(|slot| slot.key)
+            .filter(|key| key.starts_with("yi-")),
+    );
+    for key in keys {
+        if let Some(name) = named(settings, key) {
+            if !out.iter().any(|seen| seen.eq_ignore_ascii_case(&name)) {
+                out.push(name);
+            }
+        }
+    }
+    out
+}
+
 /// The faces' folder as fontspec wants it written: **with** a separator on the end.
 ///
 /// Measured, and worth the sentence: `Path=` names a folder, and one written without its last
@@ -302,11 +326,17 @@ pub fn coverage(fonts: &Path) -> &'static [[u32; 2]] {
             let mut points: Vec<(u32, u32)> = Vec::new();
             for face in FACES {
                 let han = *face == HAN_FACE;
-                points.extend(
-                    cmap_ranges(&fonts.join(face))
-                        .into_iter()
-                        .filter(|(first, last)| !han || routed_to_han(*first, *last)),
-                );
+                // Every face is read through the same parser the machine's own fonts go through
+                // (`font_file`), and all of a file's faces — one, for these.
+                let Ok(data) = std::fs::read(fonts.join(face)) else {
+                    continue;
+                };
+                let ranges: Vec<(u32, u32)> = crate::font_file::faces(&data)
+                    .into_iter()
+                    .flat_map(|at| crate::font_file::cmap_ranges(&data, at))
+                    .filter(|(first, last)| !han || routed_to_han(*first, *last))
+                    .collect();
+                points.extend(ranges);
             }
             points.sort_unstable();
             let mut merged: Vec<[u32; 2]> = Vec::new();
@@ -354,129 +384,6 @@ const HAN_BLOCKS: &[(u32, u32)] = &[
 /// Whether a range read out of a font touches one of the blocks the header routes to that face.
 fn routed_to_han(first: u32, last: u32) -> bool {
     HAN_BLOCKS.iter().any(|(lo, hi)| first <= *hi && *lo <= last)
-}
-
-/// The code points one font file maps, as a sorted list of ranges — its `cmap` table, read directly:
-/// `otfinfo -u` answers with glyph *names*, and a name is not a code point.
-fn cmap_ranges(path: &Path) -> Vec<(u32, u32)> {
-    let Ok(data) = std::fs::read(path) else {
-        return Vec::new();
-    };
-    let Some(cmap) = table(&data, b"cmap") else {
-        return Vec::new();
-    };
-    let Some(count) = be16(cmap, 2) else {
-        return Vec::new();
-    };
-    let mut points: Vec<u32> = Vec::new();
-    for index in 0..count as usize {
-        let at = 4 + index * 8;
-        let (Some(platform), Some(offset)) = (be16(cmap, at), be32(cmap, at + 4)) else {
-            continue;
-        };
-        // 3 is Windows, whose subtables hold real code points; the macOS one (1) is at best a
-        // duplicate of them and at worst a legacy encoding of its own.
-        if platform != 3 {
-            continue;
-        }
-        let offset = offset as usize;
-        match be16(cmap, offset) {
-            Some(4) => points.extend(format_four(cmap, offset)),
-            Some(12) | Some(13) => points.extend(format_twelve(cmap, offset)),
-            _ => {}
-        }
-    }
-    points.sort_unstable();
-    points.dedup();
-    let mut ranges: Vec<(u32, u32)> = Vec::new();
-    for point in points {
-        match ranges.last_mut() {
-            Some(open) if point == open.1 + 1 => open.1 = point,
-            _ => ranges.push((point, point)),
-        }
-    }
-    ranges
-}
-
-/// The subtable that maps single code points through segments — format 4, the one nearly every font
-/// has, and the only one that reaches the Latin blocks.
-fn format_four(cmap: &[u8], at: usize) -> Vec<u32> {
-    let mut out = Vec::new();
-    let Some(segments) = be16(cmap, at + 6).map(|value| value as usize / 2) else {
-        return out;
-    };
-    let ends = at + 14;
-    let starts = ends + segments * 2 + 2; // one reserved word between the two
-    let deltas = starts + segments * 2;
-    let offsets = deltas + segments * 2;
-    for segment in 0..segments {
-        let (Some(end), Some(start), Some(delta), Some(offset)) = (
-            be16(cmap, ends + segment * 2),
-            be16(cmap, starts + segment * 2),
-            be16(cmap, deltas + segment * 2),
-            be16(cmap, offsets + segment * 2),
-        ) else {
-            continue;
-        };
-        if start > end || end == 0xffff {
-            continue;
-        }
-        for point in start..=end {
-            let glyph = if offset == 0 {
-                point.wrapping_add(delta)
-            } else {
-                let address = offsets + segment * 2 + offset as usize + (point - start) as usize * 2;
-                match be16(cmap, address) {
-                    None | Some(0) => continue,
-                    Some(glyph) => glyph,
-                }
-            };
-            if glyph != 0 {
-                out.push(point as u32);
-            }
-        }
-    }
-    out
-}
-
-/// The subtable that maps whole groups of code points — format 12, which is how a face with Han in it
-/// reaches past the segments format 4 can hold.
-fn format_twelve(cmap: &[u8], at: usize) -> Vec<u32> {
-    let mut out = Vec::new();
-    let Some(groups) = be32(cmap, at + 12) else {
-        return out;
-    };
-    for group in 0..groups as usize {
-        let entry = at + 16 + group * 12;
-        let (Some(first), Some(last)) = (be32(cmap, entry), be32(cmap, entry + 4)) else {
-            continue;
-        };
-        out.extend(first..=last);
-    }
-    out
-}
-
-/// The table named `tag`, from the directory at the head of a font file.
-fn table<'a>(data: &'a [u8], tag: &[u8; 4]) -> Option<&'a [u8]> {
-    let count = be16(data, 4)? as usize;
-    for index in 0..count {
-        let at = 12 + index * 16;
-        if data.get(at..at + 4)? != tag {
-            continue;
-        }
-        let offset = be32(data, at + 8)? as usize;
-        let length = be32(data, at + 12)? as usize;
-        return data.get(offset..offset + length);
-    }
-    None
-}
-
-fn be16(data: &[u8], at: usize) -> Option<u16> {
-    Some(u16::from_be_bytes(data.get(at..at + 2)?.try_into().ok()?))
-}
-
-fn be32(data: &[u8], at: usize) -> Option<u32> {
-    Some(u32::from_be_bytes(data.get(at..at + 4)?.try_into().ok()?))
 }
 
 #[cfg(test)]
@@ -555,6 +462,23 @@ mod tests {
             assert_eq!(named(kind.defaults, "mainfont"), None, "{}", kind.kind);
             assert_eq!(named(kind.defaults, "CJKmainfont"), None, "{}", kind.kind);
         }
+    }
+
+    /// Every name the file writes, whichever key it writes it with, each once — the list the app checks
+    /// against the machine's own fonts, so a name it misses is a run that stops with the engine's
+    /// sentence instead of a line on the card.
+    #[test]
+    fn every_name_a_file_writes_is_collected_once() {
+        let file = "variables:\n  mainfont: \"A Wide Font\"\n  CJKmainfont: \"A Han Font\"\n  yi-hebrew-font: \"A Hebrew Font\"\n  yi-thai-font: \"A Wide Font\"\n  # yi-greek-font: \"A Commented Font\"\n  reader: markdown\n";
+        assert_eq!(
+            named_values(file),
+            vec![
+                "A Wide Font".to_string(),
+                "A Han Font".to_string(),
+                "A Hebrew Font".to_string()
+            ]
+        );
+        assert!(named_values("reader: markdown\n").is_empty());
     }
 
     /// What the faces draw, in the shape the window asks about: the scripts this build claims are
