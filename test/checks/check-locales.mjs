@@ -56,12 +56,29 @@ const sources = [];
     }
   }
 })('src');
+// And the backend's own sentences: a Rust module that hands a reader a message uses a key like any view
+// does (`i18n::now`), so the walk reaches `src-tauri/src` as well — `target/` is beside it, not under it.
+(function walk(directory) {
+  for (const entry of readdirSync(directory)) {
+    const path = join(directory, entry);
+    if (statSync(path).isDirectory()) {
+      walk(path);
+    } else if (path.endsWith('.ts') || path.endsWith('.rs')) {
+      sources.push(path);
+    }
+  }
+})('src-tauri/src');
 
 const used = new Map();
 for (const file of sources) {
+  // `i18n.rs` *holds* the catalogues — its own strings are the languages themselves, not uses of a key.
+  if (file.endsWith('i18n.rs')) {
+    continue;
+  }
   const source = readFileSync(file, 'utf8');
-  // `t('area.key')`, `t("area.key")` and Rust's `t(language, "area.key", &[…])` are one call.
-  for (const match of source.matchAll(/\bt\(\s*(?:"|')([a-z][\w.]*)(?:"|')/g)) {
+  // `t('area.key')`, `t("area.key")` and Rust's `t(language, "area.key", &[…])` are one call — and
+  // Rust's `now("area.key", &[…])` is the same one where no config is at hand (`i18n::now`).
+  for (const match of source.matchAll(/\b(?:t|now)\(\s*(?:"|')([a-z][\w.]*)(?:"|')/g)) {
     used.set(match[1], file);
   }
 }

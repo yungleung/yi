@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tauri::{Emitter, Manager};
 
+use crate::i18n;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
   pub workspace: Option<String>,
@@ -132,7 +134,11 @@ fn load_from_disk(app_handle: &tauri::AppHandle) -> anyhow::Result<AppConfig> {
 /// The config as it stands on disk, or the defaults when it cannot be read: a caller that only
 /// wants to know which language to speak should not have to answer for a broken file.
 pub fn load_config(app_handle: &tauri::AppHandle) -> AppConfig {
-  load_from_disk(app_handle).unwrap_or_default()
+  let cfg = load_from_disk(app_handle).unwrap_or_default();
+  // The one place the config is *read*, and so the one place the backend's own sentences learn what
+  // language to speak (`i18n::now`): everything a command writes afterwards is in the reader's language.
+  i18n::remember(&i18n::language_for(&cfg));
+  cfg
 }
 
 fn save_to_disk(app_handle: &tauri::AppHandle, cfg: &AppConfig) -> anyhow::Result<()> {
@@ -160,6 +166,9 @@ pub fn set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
       CURRENT_CONFIG_VERSION, cfg.config_version
     ));
   }
+  // And where it is *written*: a reader who changes the language hears the next sentence in it rather
+  // than after a restart.
+  i18n::remember(&i18n::language_for(&cfg));
   let previous = load_from_disk(&app).unwrap_or_default();
   save_to_disk(&app, &cfg).map_err(|e| e.to_string())
     .map(|_| {

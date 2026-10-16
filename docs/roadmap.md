@@ -1138,12 +1138,20 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   picker already returns the path), or a pair of commands of the app's own for the two calls the
   webview makes; the probe is `new-markdown.js`, which makes its workspace in the home directory
   for exactly this reason.
-- **The backend still answers in English.** A failed write, a name the file system refuses, a
-  folder it cannot read: those sentences are written where they happen (`src-tauri/src/files.rs`,
-  and inside Tauri's own plugins), and they reach the reader in a toast beside translated chrome.
-  The catalogues are already in the binary and `i18n::t` already reads them, so this is a pass over
-  the Rust messages and a decision about the plugin ones — worth doing before a reader meets a
-  mixed-language window.
+- **The backend still answers in English — half of it now speaks the reader's language.** The mechanism
+  landed: `i18n::remember` keeps the language the config asks for (set where the config is *read* — the
+  menu's own `load_config` at startup — and where it is *written*, so a change tells the next sentence),
+  and `i18n::now` is `t` for a caller with no config, which is what a command has. The **export path's
+  sentences** go through it now: ten keys, in all eight catalogues, held by `check-locales.mjs` (which
+  reads the Rust tree as well as the webview's, so a message that uses a key is a use of it) and by a
+  unit test that sets the language and reads the sentence back. **What is left is the sweep of the other
+  modules** — `files.rs` (a name the file system refuses, a folder that cannot be moved into itself,
+  ~13 sites) and `versioning.rs` (a git that is not there) — which is the same mechanical pass, and a
+  decision about the **Tauri plugins'** own messages, which are not this app's to translate.
+  One thing the round turned up that is worth keeping: the end-to-end sentence cannot be *probed* here —
+  changing the language reloads the window, and the harness restores the language after every run on
+  purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
+  a seam the harness does not have.
 - **What a *click* costs under a pane, and the suite's noisy tail.** The probes that sat on the 5 s
   budget are split (see *Closed*), and what is left is the other half of the same subject: a wider
   pane is not always kinder. At a 1200 px window

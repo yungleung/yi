@@ -422,6 +422,14 @@ because a label is read where it is drawn and the session brings the document, t
 view back. `check-locales.mjs` holds the two readers to one set of keys, and the probe harness puts
 the app in English before a probe — a probe asserts behaviour, and its expectations are English —
 then puts the reader's choice back.
+**Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
+cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
+met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with
+the language the app is speaking (`i18n::remember`, set where the config is read and where it is
+written — the menu's `load_config` at startup is the first of those). Held by a unit test that sets the
+language and reads the sentence back, and by `check-locales.mjs`, which walks `src-tauri/src` as well as
+the webview's tree so a message that uses a key counts as a use of it. The **Tauri plugins' own**
+messages are English and not this app's to translate.
 
 Typing is not a command, so **what a bracket writes and the two lists that open as the author
 types** live in the editor's key path: `syntax/brackets.ts` says what a `[` (or `(`, `{`, a quote)
