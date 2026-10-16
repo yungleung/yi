@@ -905,37 +905,6 @@ pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<Stri
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// The widest font this platform is known to have, as the name XeTeX answers to and the file that
-/// being there is what says so — the one line the card can name when a note is written in characters
-/// the settings cannot draw.
-///
-/// **Measured on macOS**: `Arial Unicode MS` draws Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
-/// Armenian, Georgian, Hangul, Han and kana, and keeps a `ToUnicode` map while it does
-/// (`export-pdf-font.js` reads such a page back), which is why it is the one named here. The other
-/// platforms have no entry yet **on purpose**: they must be verified by drawing the scripts first, for
-/// two measured reasons — XeTeX answers to a font's own name, and `PingFang SC`, `SF Hebrew` and `Noto
-/// Sans Georgian` each exist as files that name answers to nothing, while a name the lookup cannot
-/// find fails the whole export rather than falling back. A machine whose platform is not here is told
-/// nothing and the file's header carries the recipe instead.
-#[cfg(target_os = "macos")]
-const WIDEST_FONT: Option<(&str, &str)> = Some(("/Library/Fonts/Arial Unicode.ttf", "Arial Unicode MS"));
-#[cfg(not(target_os = "macos"))]
-const WIDEST_FONT: Option<(&str, &str)> = None;
-
-/// The name of that font, or none when the machine does not have it.
-fn suggested_font_in(
-    known: Option<(&'static str, &'static str)>,
-    exists: impl Fn(&str) -> bool,
-) -> Option<&'static str> {
-    let (file, name) = known?;
-    exists(file).then_some(name)
-}
-
-/// The font the card names on this machine, if any.
-fn suggested_font() -> Option<&'static str> {
-    suggested_font_in(WIDEST_FONT, |file| Path::new(file).exists())
-}
-
 /// What a kind's conversion settings name, as the window reads it: whether the kind's output is
 /// typeset with those fonts at all, whether a font is named for the document as a whole, and whether
 /// one is named for CJK.
@@ -998,7 +967,6 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
         } else {
             Vec::new()
         },
-        suggested_font: suggested_font().map(str::to_string),
     })
 }
 
@@ -1026,10 +994,18 @@ pub struct NamedFonts {
     /// The fonts the settings file names that this machine does not have, each once — empty when every
     /// name it writes is one the machine answers to, and for a kind that names no font at all.
     pub unknown_fonts: Vec<String>,
-    /// The widest font this machine is known to have, for the card to **name** when a note is written
-    /// in characters those settings cannot draw — a name to type, not a choice the app makes: the
-    /// reader still writes the line, and may write any other.
-    pub suggested_font: Option<String>,
+}
+
+/// The family name of a font **this machine has** that draws every one of `points`, or none.
+///
+/// The window asks this when the card's hint has characters no font in the settings file can draw, and
+/// what it gets back is a name the reader can type — checked against the font's own `cmap`, not guessed
+/// from its name (measured: the macOS `Songti SC` draws Han and kana and no Hangul at all). There is no
+/// list of platform names here on purpose: a machine answers for itself, which is the only answer that
+/// holds on a machine nobody here has measured.
+#[tauri::command]
+pub fn export_font_for(points: Vec<u32>) -> Option<String> {
+    crate::system_fonts::covering(&points)
 }
 
 /// The settings a kind would be run with, as their own text: the reader's copy when it has been
@@ -1389,25 +1365,6 @@ mod tests {
         // A reader's copy of an *older* build's file still names one, and that name is still honored.
         let (_, cjk) = named_fonts("variables:\n  CJKmainfont: \"Songti SC\"\n");
         assert_eq!(cjk.as_deref(), Some("Songti SC"));
-    }
-
-    #[test]
-    fn the_font_the_card_names_is_one_the_machine_is_known_to_have() {
-        // A platform with an entry, and the file is there: that is the name the card names.
-        assert_eq!(
-            suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |file| file == "/here/font.ttf"),
-            Some("A Wide Font")
-        );
-        // The file is not there, or the platform has no entry: the card names nothing at all, and the
-        // file's own header is where the reader finds the recipe instead.
-        assert_eq!(suggested_font_in(Some(("/here/font.ttf", "A Wide Font")), |_| false), None);
-        assert_eq!(suggested_font_in(None, |_| true), None);
-        // And what this machine's own entry answers, whatever it is: the name is one of the pair, never
-        // a guess.
-        if let Some(name) = suggested_font() {
-            let (_, named) = WIDEST_FONT.expect("a suggested font comes from an entry");
-            assert_eq!(name, named);
-        }
     }
 
     #[test]

@@ -21,7 +21,13 @@
 
 import { join } from '@tauri-apps/api/path';
 import { exists } from '@tauri-apps/plugin-fs';
-import { exportFetchImage, exportKinds, namedFonts, runExport } from '../../api/export';
+import {
+  exportFetchImage,
+  exportFontFor,
+  exportKinds,
+  namedFonts,
+  runExport
+} from '../../api/export';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -75,12 +81,23 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   // namedFonts`) and the window walks the *parse* (`font_hint.ts`), because a formula is not a
   // paragraph — `$\le$` draws where a bare `≤` does not.
   const fonts = await namedFonts(first.kind);
+  // And when those settings cannot draw something, the *name* to write is this machine's to answer —
+  // `system_fonts::covering` reads the machine's own fonts' `cmap`s for it — so the hint can name one
+  // instead of telling the reader to go and find out what their machine has. Asked only in that case:
+  // it is the one question here that reads font files.
+  const uncovered = uncoveredCharacters(text, fonts);
+  const suggestedFont =
+    uncovered.length === 0
+      ? null
+      : await exportFontFor([
+          ...new Set(uncovered.map((character) => character.codePointAt(0) ?? 0))
+        ]);
   const answer = await exportDialog.ask({
     kind: first,
     pandoc,
     baseTarget,
-    uncovered: uncoveredCharacters(text, fonts),
-    suggestedFont: fonts.suggested_font,
+    uncovered,
+    suggestedFont,
     unknownFonts: fonts.unknown_fonts
   });
   if (answer === null) {

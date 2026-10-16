@@ -287,10 +287,15 @@ works: the widest font the machine is known to have
 what the hint says only about a script **no face is shipped for**, since everything else draws already
 (what the faces cover arrives as `NamedFonts.shipped`, read out of the fonts' own `cmap` tables so a
 face swapped for another cannot leave the card quiet about a page that lost a character). A platform the
-app has no entry for is named **nothing** rather than guessed at (`WIDEST_FONT` carries macOS alone,
-because that is the only one the drawing was measured on), and the shipped file's header says the
+app has no entry for is named **nothing** rather than guessed at, and the shipped file's header says the
 procedure for those readers instead: where this machine's fonts are listed, and what to look for in
-them.
+them. **The name itself is the machine's to answer, and it is asked in the same breath**: when the hint
+has characters nothing in the settings can draw, the window asks `export_font_for` for a family *this*
+machine has that draws every one of them (`system_fonts::covering`), read out of the fonts' own `cmap`s
+— not out of a list of platform names, because a name is not a coverage and the macOS `Songti SC` is the
+proof (Han and kana, no Hangul). The card then names it for the reader to type, and the probe checks the
+app's own claim: the name it gives, written into the settings file, must not raise the unknown-font line
+beside it.
 **And a name the machine does not have is said before the run, not by the engine after it**:
 `system_fonts` reads the fonts this machine has — the family names in the platform's own folders, read
 through the same table parser the shipped faces go through (`font_file`) and cached for the run

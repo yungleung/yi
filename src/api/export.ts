@@ -144,12 +144,6 @@ export interface NamedFonts {
    * looking at the file — a typo is otherwise a wall of engine output at the end of the run.
    */
   unknown_fonts: string[];
-  /**
-   * The widest font this machine is known to have, or null — a name for the card to *give* a reader
-   * whose settings cannot draw their note's characters. It is a name to type into the file, never a
-   * choice the app makes: the reader may write any other line, and the card says so.
-   */
-  suggested_font: string | null;
 }
 
 /**
@@ -158,6 +152,20 @@ export interface NamedFonts {
  */
 export async function namedFonts(kind: string): Promise<NamedFonts> {
   return await invoke<NamedFonts>('export_named_fonts', { kind });
+}
+
+/**
+ * The family name of a font **this machine has** that draws every one of these code points, or null —
+ * asked only when the card has characters no font in the settings file can draw, so that the hint can
+ * *name* one instead of telling a reader to go and find out what their machine has.
+ *
+ * The answer is checked against the font's own `cmap` (`system_fonts::covering`) rather than guessed
+ * from a list of platform names: measured, the macOS `Songti SC` draws Han and kana and no Hangul at
+ * all, which is exactly the trap a name-matching list falls into. It is a name to **type**, never a
+ * choice the app makes — the reader writes the line, and may write any other.
+ */
+export async function exportFontFor(points: number[]): Promise<string | null> {
+  return await invoke<string | null>('export_font_for', { points });
 }
 
 /**

@@ -1348,13 +1348,17 @@ scripts itself now*); what is still open out of it is one gap and two decisions:
   of the fonts *this* machine has (`system_fonts`, through the same table parser as its own faces,
   cached per run — 674 names in 783 ms of a dev build, measured) and says so on the card for every name
   the settings file writes that nothing answers to, which is the failure that used to arrive as the
-  engine's *"The font … cannot be found"* after the run. **What is left is the other direction**: naming
-  a font *for* a reader whose note is in characters no shipped face covers — Tamil, Ethiopic, or the
-  latex kind — which needs the machine's fonts' `cmap`s, not their names, and the reader reported the
-  shape for it: match a candidate per script and tell them which one, instead of a wall of engine
-  output. `font_file::cmap_ranges` already reads a `cmap`, so the work is reading it *selectively* (a
-  `.ttc` here is 66 MB, and the whole set is 543 MB: the number to design against) and picking the
-  candidate rather than scanning everything.
+  engine's *"The font … cannot be found"* after the run. **And the other direction landed with it**: a
+  reader whose note is in characters no shipped face covers — Tamil, Ethiopic, or anything in the latex
+  kind — is now *named* a font, out of this machine's own (`system_fonts::covering`, over the fonts'
+  `cmap`s rather than over their names, which is the reader's own point: a name is not a coverage).
+  The numbers it is built on, all measured here: **543 MB of font files in 661 files**; the family list
+  read selectively in **195 ms** and cached; the coverage pass — every file's `cmap`, read only when a
+  note has characters nothing else can draw — **1.1 s of a debug build, once per run**. Two things are
+  deliberately not done: the fit is the **first** face that draws every character rather than the
+  prettiest one (a reader who cares names their own), and the coverage pass is not narrowed by the
+  `OS/2` unicode-range bits, which are the cheap way to skip a font that cannot have the script at all
+  — that is the next thing to measure if 1.1 s ever shows on a reader's card.
 
 ## Where a code block's keystroke goes
 
