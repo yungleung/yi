@@ -374,6 +374,13 @@ pub struct ExportRequest {
     /// `None` for *the settings file's own*, the same answer an untouched card gives.
     #[serde(default)]
     pub landscape: Option<bool>,
+    /// Whether the reader asked for the citations to be **resolved with no list at the end** — the
+    /// card's own checkbox. Pandoc is told in *metadata* (`suppress-bibliography`), which is measured:
+    /// the same word under `variables:` leaves the list exactly where it was, while a file's own
+    /// `metadata:` block and this record both take it away. It means nothing without a bibliography, so
+    /// it is passed only when there is one.
+    #[serde(default)]
+    pub suppress_references: bool,
     /// The language the note is written in, as the app knows it: the frontmatter's `lang:`, else the
     /// language the app is speaking. Used by the kinds that must declare one (`needs_a_language`).
     #[serde(default)]
@@ -950,6 +957,13 @@ fn pandoc_arguments(
             arguments.push(OsString::from("--metadata"));
             arguments.push(OsString::from(format!("reference-section-title={title}")));
         }
+        // And whether the reader wants that list at all: `suppress-bibliography` is *metadata* —
+        // measured, the same word under `variables:` leaves the list exactly where it was — so it is
+        // asked for beside the list's own name rather than as a variable.
+        if request.suppress_references {
+            arguments.push(OsString::from("--metadata"));
+            arguments.push(OsString::from("suppress-bibliography=true"));
+        }
     }
     if let Some(style) = &request.csl {
         arguments.push(OsString::from("--csl"));
@@ -1328,6 +1342,7 @@ mod tests {
             language: Some("en-GB".to_string()),
             paper: None,
             landscape: None,
+            suppress_references: false,
         }
     }
 
@@ -1580,6 +1595,47 @@ mod tests {
         )
         .expect_err("a size that is not in the list was passed on");
         assert!(refusal.contains("tabloid"), "{refusal}");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A reader who wants the keys resolved and *no list* asks for it in metadata: measured, the same
+    /// word under `variables:` leaves the list exactly where it was, and a defaults file's own
+    /// `metadata:` block — or this record — takes it away. A kind with no bibliography has no list to
+    /// suppress, so nothing is said at all.
+    #[test]
+    fn a_list_the_reader_does_not_want_is_suppressed_in_metadata() {
+        let dir = scratch("suppress");
+        fs::write(dir.join("library.bib"), "@article{smith2020}\n").unwrap();
+        let asked = named_arguments(
+            &dir,
+            &ExportRequest {
+                suppress_references: true,
+                ..request_in(&dir)
+            },
+        );
+        let at = asked
+            .iter()
+            .position(|argument| argument == "suppress-bibliography=true")
+            .expect("the list the reader asked away was not suppressed");
+        assert_eq!(asked[at - 1], "--metadata");
+        assert!(!asked.iter().any(|argument| argument.starts_with("suppress-bibliography=")
+            && argument != "suppress-bibliography=true"));
+
+        // Not asked: nothing said.
+        assert!(!named_arguments(&dir, &request_in(&dir))
+            .iter()
+            .any(|argument| argument.starts_with("suppress-bibliography=")));
+        // Asked, but with no library: nothing to suppress.
+        assert!(!named_arguments(
+            &dir,
+            &ExportRequest {
+                suppress_references: true,
+                bibliography: None,
+                ..request_in(&dir)
+            }
+        )
+        .iter()
+        .any(|argument| argument.starts_with("suppress-bibliography=")));
         let _ = fs::remove_dir_all(&dir);
     }
 
