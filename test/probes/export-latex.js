@@ -10,11 +10,14 @@
  * a *whole* document (`\documentclass` and `\begin{document}`: `export.latex.yaml` says
  * `standalone: true` outright, because Zettlr's file is one only through a side effect of
  * `title-prefix` — measured), and that the citations became a reference list in the page's style.
- * The third has no counterpart in the other kinds: a `.tex` of a note the TeX suite has no font for
- * is one the reader's compile loses the characters of, so the document has to carry the font that
- * sets them — `CJKmainfont` in this file (measured: with it the `.tex` holds `\usepackage{xeCJK}`
- * and `\setCJKmainfont[]{…}` and xelatex compiles its CJK with no *"Missing character"* warnings;
- * without it, the `.tex` holds no font setup at all).
+ * The third has no counterpart in the other kinds: a `.tex` of a note the TeX suite has no font for is
+ * one the reader's compile loses the characters of, and the font can only come from **this file** — it
+ * is compiled on their machine, so the app's own faces cannot reach it, and a name written here has to
+ * be one *that* machine has. So the file ships **no** name, and the card's hint is what tells a reader
+ * their note needs one (a wrong name fails the compile; no name is a page the card warned about). Both
+ * halves are held here: the `.tex` of a CJK note carries no font setup as the file comes, and carries
+ * `\usepackage{xeCJK}` and the name for the length of one export where a reader has written one —
+ * measured before this, and again by the second export below.
  *
  * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts,
  *   src/ui/export/preprocess.ts (the destination the writer is handed)
@@ -93,6 +96,13 @@
   };
 
   const before = await invoke('get_config');
+  // This kind's settings file is read twice below — the bytes this build ships, and the same bytes with a
+  // line a reader wrote — and the copy in the app's data folder was written once, by whatever build the
+  // reader first exported this kind with. So it is the *shipped* file the two exports run against, and
+  // the reader's own copy goes back at the end.
+  const settings = (await invoke('export_config_path', { kind: 'latex' })) ?? '';
+  const settingsBefore = await readText(settings).catch(() => null);
+  await invoke('export_restore_config', { kind: 'latex' });
   try {
     try {
       await files.deleteEntry(folder);
@@ -152,13 +162,55 @@
       { section: tex.includes('\\section{Going out}') }
     );
     check(
-      'and the font a note in CJK is set with, so the reader’s own LaTeX can compile it',
-      tex.includes('\\usepackage{xeCJK}') && /\\setCJKmainfont\[\]\{[^}]*\}/.test(tex),
-      {
-        package: tex.includes('\\usepackage{xeCJK}'),
-        font: /\\setCJKmainfont\[\]\{[^}]*\}/.exec(tex)?.[0] ?? null
-      }
+      'and no font setup of its own: this file names none, so the compile is not stopped by a name the reader’s machine may not have',
+      !tex.includes('\\usepackage{xeCJK}') && !tex.includes('\\setCJKmainfont'),
+      { package: tex.includes('\\usepackage{xeCJK}'), fonts: tex.includes('\\setCJKmainfont') }
     );
+
+    // The other half, for the reader the card tells to name one: their line, written over the shipped
+    // file for the length of one export. The name is only a value in a file this probe is about to hand
+    // pandoc — nothing is compiled here, so whether a machine has it is the reader's business, not this
+    // probe's, and what is held is that the line reaches the document.
+    const shipped = await readText(settings);
+    try {
+      // The shape the file ships: `variables: {}`, an empty map, because comments under a bare
+      // `variables:` leave it null and pandoc refuses the file (measured, "Expecting MapVal").
+      // Anchored on the *line*, newlines and all: the header's own comment mentions `variables: {}` too,
+      // and replacing that occurrence writes a comment into the file pandoc is handed (measured, on this
+      // very probe — it is the mistake the roadmap's font entry warns about).
+      const written = shipped.replace(
+        '\nvariables: {}\n',
+        '\nvariables:\n  CJKmainfont: "A reader\'s font"\n'
+      );
+      check(
+        'the reader’s line goes into their own settings file, where pandoc reads it',
+        written !== shipped,
+        { line: written.split('\n').filter((line) => line.includes('CJKmainfont')) }
+      );
+      await files.writeTextAtomically(settings, written);
+      // The card closes with a successful export, so the second one asks for it again.
+      await invoke('plugin:event|emit', { event: 'export', payload: 'latex' });
+      await until(() => open(), 60);
+      // And it fills its own target in as it draws — measured here, where the first export's target
+      // happens to be the one the card would choose and so a race would never show.
+      await sleep(250);
+      const targetNamed = `${folder}/named.tex`;
+      card().querySelector('[data-export-target]').value = targetNamed;
+      card().querySelector('[data-export-run]').click();
+      const namedWritten = await until(() => exists(targetNamed));
+      const named = namedWritten ? await readText(targetNamed) : '';
+      check(
+        'a reader who names one gets it: xeCJK and that name are in the document',
+        named.includes('\\usepackage{xeCJK}') &&
+          /\\setCJKmainfont\[\]\{A reader's font\}/.test(named),
+        {
+          package: named.includes('\\usepackage{xeCJK}'),
+          font: /\\setCJKmainfont\[\]\{[^}]*\}/.exec(named)?.[0] ?? null
+        }
+      );
+    } finally {
+      await files.writeTextAtomically(settings, shipped);
+    }
 
     // The picture: the path pandoc wrote down, un-escaped, is the file the app found.
     // `\pandocbounded{\includegraphics[keepaspectratio,alt={shot}]{the path}}` — the first brace
@@ -187,11 +239,23 @@
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(
       'and the reader is told which file it wrote',
-      (hint?.textContent ?? '').includes('note.tex'),
+      // The *last* export this probe ran is the reader's own line, so that is the name the card owes.
+      (hint?.textContent ?? '').includes('named.tex'),
       hint?.textContent ?? null
     );
   } finally {
     await configManager.save(before);
+    // The reader's own copy of this kind's settings file, exactly as this run found it — no other part
+    // of the app puts that back, and the run wrote the shipped bytes over it.
+    if (settingsBefore === null) {
+      try {
+        await files.deleteEntry(settings);
+      } catch {
+        // Nothing to remove.
+      }
+    } else {
+      await files.writeTextAtomically(settings, settingsBefore);
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

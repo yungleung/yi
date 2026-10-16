@@ -544,9 +544,17 @@ mod tests {
         assert_eq!(named(file, "yi-hebrew-font"), None);
         assert_eq!(named(file, "YI-THAI-FONT").as_deref(), Some("Sarabun"));
         assert_eq!(reader_scripts(file), vec!["Thai"]);
-        // A file that names nothing of its own answers with nothing, and the shipped file is one.
-        let pdf = crate::export::KINDS.iter().find(|kind| kind.kind == "pdf").unwrap();
-        assert!(reader_scripts(pdf.defaults).is_empty());
+        // A file that names nothing of its own answers with nothing, and both files this build ships are
+        // ones: their headers talk about the variables and name neither — the latex file on purpose, so
+        // that no reader's compile is stopped by a name their machine may not have.
+        for kind in crate::export::KINDS
+            .iter()
+            .filter(|kind| kind.kind == "pdf" || kind.kind == "latex")
+        {
+            assert!(reader_scripts(kind.defaults).is_empty(), "{}", kind.kind);
+            assert_eq!(named(kind.defaults, "mainfont"), None, "{}", kind.kind);
+            assert_eq!(named(kind.defaults, "CJKmainfont"), None, "{}", kind.kind);
+        }
     }
 
     /// What the faces draw, in the shape the window asks about: the scripts this build claims are

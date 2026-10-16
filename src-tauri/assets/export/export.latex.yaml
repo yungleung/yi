@@ -30,25 +30,40 @@
 # it formats them in, so citeproc resolves the keys and appends the reference list. A reader who
 # wants none of that can set `filters: []` here, or clear the bibliography in the settings.
 #
-# A note written in CJK is set with a font *this file* names: with none named, pandoc's template emits
-# no font setup at all, and the reader who compiles the document gets XeTeX's *"Missing character:
-# There is no 一 (U+4E00)…"* for every CJK character in it. Measured: the same `.tex` with
-# `variables: CJKmainfont` carries `\usepackage{xeCJK}` and `\setCJKmainfont[]{…}`, and xelatex then
-# compiles it with none of those warnings.
+# **This file names no font, and that is deliberate.** A `.tex` is compiled on the reader's own machine,
+# so the app's own faces cannot reach it (a path into this app's bundle would not exist there) and the
+# only way a font gets in is a name written *here*. A name that machine does not have is worse than no
+# name at all: with none, the card says before the export which characters need a font and names the
+# widest one *this* machine is known to have (`mainfont:`, or `CJKmainfont:` for Han and kana); with a
+# wrong one, the compile stops with *"The font … cannot be found"* and a reader who never opened this
+# file has nothing to go on. Measured: the same `.tex` **with** `variables: CJKmainfont` carries
+# `\usepackage{xeCJK}` and `\setCJKmainfont[]{…}`, and xelatex compiles its CJK with no *"Missing
+# character"* warnings — so naming one works, it is just the reader's to do.
 #
-# **This is the one kind the app's own faces cannot reach**: it is a `.tex` compiled on the reader's
-# machine, where a path into this app's bundle is a path that does not exist. So the font named here
-# has to be one the *compiling* machine has, and — `CJKmainfont` being xeCJK's, which reaches CJK
-# punctuation, kana and Han and, measured, no Hangul at all — a note in Hangul or in a script outside
-# CJK wants `mainfont:` with a font that has it. `export.pdf.yaml` ships faces for all of those; this
-# kind ships a name and says so.
+# What a name here has to be is a font of the **compiling** machine — and that is why the default is
+# none: the name this file used to ship was macOS `Songti SC`, which a Mac may not have at all. On the
+# machine this file was written on it sits in Apple's own `Supplemental` tree, which is both where
+# macOS parks fonts it has not installed yet and where Microsoft Office puts some of its own; the
+# reader who reported it had it from Word. And `CJKmainfont` is xeCJK's, which reaches CJK punctuation,
+# kana and Han and, measured, **no Hangul at all**: a note in Hangul, or in a script outside CJK, wants
+# `mainfont:` with a font that has it.
+#
+# To name one, replace the empty `variables: {}` below with the line you want — `variables:` on its own
+#
+#     variables:
+#       CJKmainfont: "…"
+#
+# — or write it in place (`variables: {CJKmainfont: "…"}`); they are the same file to pandoc. What it
+# may **not** be is `variables:` with nothing under it: measured, comments alone leave that key null and
+# pandoc refuses the whole file (*"Error in $: Expecting MapVal"*), which is why the shape below is `{}`.
 reader: markdown
 writer: latex
 self-contained: false
 standalone: true
-variables:
-  # The typeface for CJK, and the reader's to change: see the note above.
-  CJKmainfont: "Songti SC"
+variables: {}
+# The two this file may name, for the reader who edits the line above:
+#   CJKmainfont: "…"     Han and kana — xeCJK's own variable, and it does not reach Hangul
+#   mainfont: "…"        the document's own font, and the answer for any other script
 metadata-files: []
 include-before-body: []
 include-after-body: []

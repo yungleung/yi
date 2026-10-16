@@ -1329,14 +1329,18 @@ scripts itself now*); what is still open out of it is one gap and two decisions:
   Arabic, Devanagari, Thai, Armenian and Georgian have none in these families, so `*emphasis*` in those
   still falls back to the regular face — a LaTeX warning in the log and the emphasis gone. Nothing in
   code fixes it: it is a font that has an italic, or it is this.
-- **The latex kind still names `CJKmainfont: "Songti SC"`**, a font only macOS has. That kind cannot use
-  the shipped faces — its output is a `.tex` compiled on the reader's own machine, where a path into
-  this app's bundle does not exist — so a name in its file is the only way a font gets there. A reader
-  on another platform therefore gets XeTeX's *"The font … cannot be found"* rather than a document, and
-  the card's hint catches only the other gap: once the line is gone it reports the CJK characters and
-  names the widest font that machine is known to have. A platform-neutral default — naming no font, with
-  the hint doing the telling — trades that error for one line the reader adds, and it is the reader's
-  call, which is why the line is still there.
+- **The latex kind's default was `CJKmainfont: "Songti SC"`, and the reader pointed out what was wrong
+  with it: a Mac may not have that font.** Theirs came from Microsoft Office, and on the machine this was
+  written on it sits in Apple's `Supplemental` tree — where macOS parks fonts it has not installed yet
+  *and* where Office puts some of its own — so "macOS has `Songti SC`" was never a fact to build a
+  default on. That kind cannot use the shipped faces (its `.tex` is compiled on the reader's own
+  machine, so a path into this app's bundle would not be there) and a name is the only way a font gets
+  into it; so **the file now names none**: naming nothing leaves the card's hint to say which characters
+  need a font and to name the widest one *this* machine is known to have, while naming one that machine
+  lacks stops the compile with *"The font … cannot be found"* — a reader who never opened the file is
+  better served by the warning than by the failure. `export-latex.js` holds both halves: no font setup
+  in the `.tex` as the file comes, and `\usepackage{xeCJK}` with the reader's own name in it for the
+  length of one export.
 - **A face is named by the card on macOS alone**, deliberately: that is the only platform the drawing was
   measured on (`WIDEST_FONT`, and a name that is not there fails an export rather than falling back).
   Windows and Linux readers get the procedure in the shipped file's header instead — where their fonts
