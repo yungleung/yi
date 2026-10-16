@@ -1344,7 +1344,17 @@ scripts itself now*); what is still open out of it is one gap and two decisions:
 - **A face is named by the card on macOS alone**, deliberately: that is the only platform the drawing was
   measured on (`WIDEST_FONT`, and a name that is not there fails an export rather than falling back).
   Windows and Linux readers get the procedure in the shipped file's header instead — where their fonts
-  are listed, and what to look for in them. Naming a font there waits on a machine to measure it on.
+  are listed, and what to look for in them. **Half of this landed**: the app now reads the family names
+  of the fonts *this* machine has (`system_fonts`, through the same table parser as its own faces,
+  cached per run — 674 names in 783 ms of a dev build, measured) and says so on the card for every name
+  the settings file writes that nothing answers to, which is the failure that used to arrive as the
+  engine's *"The font … cannot be found"* after the run. **What is left is the other direction**: naming
+  a font *for* a reader whose note is in characters no shipped face covers — Tamil, Ethiopic, or the
+  latex kind — which needs the machine's fonts' `cmap`s, not their names, and the reader reported the
+  shape for it: match a candidate per script and tell them which one, instead of a wall of engine
+  output. `font_file::cmap_ranges` already reads a `cmap`, so the work is reading it *selectively* (a
+  `.ttc` here is 66 MB, and the whole set is 543 MB: the number to design against) and picking the
+  candidate rather than scanning everything.
 
 ## Where a code block's keystroke goes
 

@@ -82,6 +82,7 @@
   "export.noPandoc": "pandoc was not found on this machine, so this kind of export cannot run.",
   "export.fontHint": "These characters have no font in this export: {characters} — name one in the conversion settings (`mainfont:` for any script, `yi-<script>-font:` for one of the scripts this build draws, `CJKmainfont:` for Han and kana).",
   "export.fontHintFont": "These characters have no font in this export: {characters} — add `mainfont: \"{font}\"` to the conversion settings; that font is the widest this machine is known to have.",
+  "export.unknownFont": "This machine has no font called {fonts} — an export stops on a name it cannot find, rather than falling back to another.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Type the path the file should be written to.",
   "export.cancel": "Cancel",

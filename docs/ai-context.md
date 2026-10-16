@@ -290,7 +290,15 @@ face swapped for another cannot leave the card quiet about a page that lost a ch
 app has no entry for is named **nothing** rather than guessed at (`WIDEST_FONT` carries macOS alone,
 because that is the only one the drawing was measured on), and the shipped file's header says the
 procedure for those readers instead: where this machine's fonts are listed, and what to look for in
-them. The two halves come from the two places that
+them.
+**And a name the machine does not have is said before the run, not by the engine after it**:
+`system_fonts` reads the fonts this machine has — the family names in the platform's own folders, read
+through the same table parser the shipped faces go through (`font_file`) and cached for the run
+(measured here: 674 families, 783 ms in a dev build, once) — and the card says so in its own line for
+every name the settings file writes that nothing answers to. That is a *name* question and not a
+coverage one: `system_fonts` deliberately says nothing about what a font can draw, because the macOS
+`Songti SC` draws Han and kana and no Hangul at all, and no name reveals that.
+The two halves come from the two places that
 hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
 copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing
 because a shipped header talks about fonts at length), and **the note**, which the window walks out of

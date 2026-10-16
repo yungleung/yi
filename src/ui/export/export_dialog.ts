@@ -53,6 +53,13 @@ export interface ExportQuestion {
    * type into the file. A name, not a decision: nothing here writes it for them.
    */
   suggestedFont: string | null;
+  /**
+   * The names the settings file writes that this machine has no font for. One of those does not lose a
+   * character, it stops the export (XeTeX's *"The font … cannot be found"*), so it is said as its own
+   * line rather than folded into the hint above — and it is the *name* the reader wrote, which is what
+   * they have to look at.
+   */
+  unknownFonts: string[];
 }
 
 /** The reader's answer: where the file goes. */
@@ -108,6 +115,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly status: HTMLParagraphElement;
   /** The line that says the note is written in characters the settings name no font for. */
   private readonly fontHint: HTMLParagraphElement;
+  /** The line for a font name this machine has none of — see `ExportQuestion.unknownFonts`. */
+  private readonly unknownFonts: HTMLParagraphElement;
   private readonly form: HTMLFormElement;
   private readonly run: HTMLButtonElement;
   private readonly cancel: HTMLButtonElement;
@@ -170,6 +179,12 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.fontHint = document.createElement('p');
     this.fontHint.className = 'mt-1 hidden text-xs opacity-70';
     this.fontHint.setAttribute('data-export-font-hint', 'true');
+    // And the other thing the file can get wrong, said separately because it is a different failure: a
+    // name the reader wrote that this machine has no font for stops the export outright, where the hint
+    // above is about characters a run would lose quietly.
+    this.unknownFonts = document.createElement('p');
+    this.unknownFonts.className = 'mt-1 hidden text-xs text-error';
+    this.unknownFonts.setAttribute('data-export-unknown-fonts', 'true');
     // Built *after* the three things it holds: a row made before its own children exist is an empty
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
@@ -188,6 +203,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.configRowElement,
       this.status,
       this.fontHint,
+      this.unknownFonts,
       this.actions()
     );
   }
@@ -255,6 +271,10 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // exports, because the run would come back with the words missing rather than with an error.
     const uncovered = this.question?.uncovered ?? [];
     const suggested = this.question?.suggestedFont ?? null;
+    const unknown = this.question?.unknownFonts ?? [];
+    this.unknownFonts.classList.toggle('hidden', unknown.length === 0);
+    this.unknownFonts.textContent =
+      unknown.length === 0 ? '' : t('export.unknownFont', { fonts: unknown.join(', ') });
     this.fontHint.classList.toggle('hidden', uncovered.length === 0);
     this.fontHint.textContent =
       uncovered.length === 0

@@ -215,7 +215,10 @@ build ships a face per script, so Chinese, Korean and Greek are quiet and stay q
 script with no face (Tamil, named as `mainfont: "…"` — the widest font the machine is known to have) and
 the characters the TeX suite's own font was measured to miss (a bare `≤` is named where `√ ∞ ± × ÷`
 beside it draw, and the same character inside `$…$` is not, because pandoc sets a formula with the maths
-font). A docx never says it, because what opens that file picks a font itself;
+font). A docx never says it, because what opens that file picks a font itself. And the other thing the
+settings file can get wrong is in the same probe: a font name this machine has none of — a run that never
+happens, where the hint is about a run that loses characters quietly — said in its own line on the card
+by the name the reader wrote, and *not* said when the name is one this machine's fonts answer to;
 `export-config-replace` — the settings row's second button: a copy that is already the file this build
 ships is not offered for replacement, one that differs is, the cautious answer leaves it exactly as it
 was, and agreeing writes the shipped bytes back (the first half of the measurement above: a shipped file

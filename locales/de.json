@@ -82,6 +82,7 @@
   "export.noPandoc": "Auf diesem Rechner wurde pandoc nicht gefunden, daher kann diese Art des Exports nicht laufen.",
   "export.fontHint": "Für diese Zeichen hat dieser Export keine Schrift: {characters} — nennen Sie eine in den Konvertierungseinstellungen (`mainfont:` für jedes Schriftsystem, `yi-<script>-font:` für eines der mitgelieferten, `CJKmainfont:` für Han und Kana).",
   "export.fontHintFont": "Für diese Zeichen hat dieser Export keine Schrift: {characters} — fügen Sie `mainfont: \"{font}\"` in den Konvertierungseinstellungen hinzu; diese Schrift deckt auf dieser Maschine am meisten ab.",
+  "export.unknownFont": "Diese Maschine hat keine Schrift namens {fonts} — ein Export bricht bei einem Namen ab, den sie nicht findet, statt auf eine andere auszuweichen.",
   "export.pandoc": "pandoc: {path}",
   "export.noTarget": "Gib den Pfad an, in den die Datei geschrieben werden soll.",
   "export.cancel": "Abbrechen",

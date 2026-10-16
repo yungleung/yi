@@ -3,6 +3,8 @@ mod menu;
 mod files;
 mod export;
 mod export_fonts;
+mod font_file;
+mod system_fonts;
 mod session;
 mod stats;
 mod settings;

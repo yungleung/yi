@@ -987,6 +987,17 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
                     .collect()
             })
             .unwrap_or_default(),
+        // The names this file writes that no font on this machine answers to. XeTeX stops the whole
+        // export on one of those — *"The font … cannot be found"* rather than a fallback — so the card
+        // says it while the reader is still looking at the file's name on the card.
+        unknown_fonts: if kind.needs_a_font {
+            crate::export_fonts::named_values(&settings)
+                .into_iter()
+                .filter(|name| !crate::system_fonts::has_family(name))
+                .collect()
+        } else {
+            Vec::new()
+        },
         suggested_font: suggested_font().map(str::to_string),
     })
 }
@@ -1012,6 +1023,9 @@ pub struct NamedFonts {
     /// The scripts the settings file names a face of its own for, as the header spells them
     /// (`Hebrew`, `Thai`, …; empty for a kind whose page the shipped faces do not draw).
     pub named_scripts: Vec<String>,
+    /// The fonts the settings file names that this machine does not have, each once — empty when every
+    /// name it writes is one the machine answers to, and for a kind that names no font at all.
+    pub unknown_fonts: Vec<String>,
     /// The widest font this machine is known to have, for the card to **name** when a note is written
     /// in characters those settings cannot draw — a name to type, not a choice the app makes: the
     /// reader still writes the line, and may write any other.

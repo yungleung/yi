@@ -139,6 +139,12 @@ export interface NamedFonts {
    */
   named_scripts: string[];
   /**
+   * The fonts the settings file names that **this machine does not have**, each once. XeTeX stops the
+   * whole export on one of those rather than falling back, so the card says it while the reader is
+   * looking at the file — a typo is otherwise a wall of engine output at the end of the run.
+   */
+  unknown_fonts: string[];
+  /**
    * The widest font this machine is known to have, or null — a name for the card to *give* a reader
    * whose settings cannot draw their note's characters. It is a name to type into the file, never a
    * choice the app makes: the reader may write any other line, and the card says so.
