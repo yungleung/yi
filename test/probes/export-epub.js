@@ -51,55 +51,6 @@
     return false;
   };
 
-  /**
-   * One entry of the zip, by name — the book read the way a reader's own software reads it: the
-   * central directory holds every entry's name, offset and size, the local header says where that
-   * entry's data begins, and the page inflates it with `DecompressionStream`.
-   */
-  const entryOf = async (bytes, name) => {
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    const latin = new TextDecoder('latin1');
-    let at = -1;
-    for (let index = bytes.length - 22; index >= 0; index -= 1) {
-      if (view.getUint32(index, true) === 0x06054b50) {
-        at = index;
-        break;
-      }
-    }
-    if (at < 0) {
-      return null;
-    }
-    const count = view.getUint16(at + 10, true);
-    let cursor = view.getUint32(at + 16, true);
-    for (let index = 0; index < count; index += 1) {
-      if (view.getUint32(cursor, true) !== 0x02014b50) {
-        return null;
-      }
-      const method = view.getUint16(cursor + 10, true);
-      const size = view.getUint32(cursor + 20, true);
-      const nameLength = view.getUint16(cursor + 28, true);
-      const extraLength = view.getUint16(cursor + 30, true);
-      const commentLength = view.getUint16(cursor + 32, true);
-      const localOffset = view.getUint32(cursor + 42, true);
-      const entryName = latin.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
-      if (entryName === name) {
-        const start =
-          localOffset +
-          30 +
-          view.getUint16(localOffset + 26, true) +
-          view.getUint16(localOffset + 28, true);
-        const data = bytes.subarray(start, start + size);
-        if (method === 0) {
-          return latin.decode(data);
-        }
-        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-        return await new Response(stream).text();
-      }
-      cursor += 46 + nameLength + extraLength + commentLength;
-    }
-    return null;
-  };
-
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const checkout = window.__probePaths.checkout;
   // A folder of this run's own — see `export-docx.js` for why: the live session is not reset
@@ -193,7 +144,7 @@
       check('Export writes an EPUB where the reader asked', false, { written });
     } else {
       const names = new TextDecoder('latin1').decode(bytes);
-      const mimetype = await entryOf(bytes, 'mimetype');
+      const mimetype = await t.zipEntry(bytes, 'mimetype');
       check(
         'Export writes an EPUB: a container whose first entry is the stored mimetype',
         written && mimetype === 'application/epub+zip' && bytes[30] === 0x6d,
@@ -207,7 +158,7 @@
           names.includes('EPUB/text/ch001.xhtml'),
         { entries: names.match(/EPUB\/[a-zA-Z0-9_./-]+/g)?.slice(0, 8) ?? [] }
       );
-      const opf = (await entryOf(bytes, 'EPUB/content.opf')) ?? '';
+      const opf = (await t.zipEntry(bytes, 'EPUB/content.opf')) ?? '';
       check(
         'and the note’s own frontmatter as the book’s name, author and language',
         opf.includes('<dc:title id="epub-title-1">The Book of Going Out</dc:title>') &&
@@ -219,7 +170,7 @@
           language: /<dc:language>[^<]*/.exec(opf)?.[0] ?? null
         }
       );
-      const chapter = (await entryOf(bytes, 'EPUB/text/ch001.xhtml')) ?? '';
+      const chapter = (await t.zipEntry(bytes, 'EPUB/text/ch001.xhtml')) ?? '';
       check(
         'the picture the app fetched from the web is carried in the book, not linked',
         names.includes('EPUB/media/') && chapter.includes('../media/'),
