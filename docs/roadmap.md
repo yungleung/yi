@@ -1154,15 +1154,39 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   And a reader who already has a copy of the file keeps the old one — a shipped file that changes reaches
   nobody who already has it, and the card's *replace* button is how they ask for this one
   (`export-config-replace.js`).
+- **A PDF page's own options on the card.** The card now offers a **size** and an **orientation** for
+  the one kind whose engine lays a page out, and the answer is the *geometry* channel rather than the
+  `papersize` variable the item sketched — measured five ways with pandoc 3.12 and the shipped
+  `export.pdf.yaml` (whose `variables.papersize` is `a4`):
+
+  - the file alone → A4 (595.28 x 841.89 pt);
+  - `--variable papersize=letter` **on top of it** → letter, but the two values are *concatenated* into
+    the class's own option list (`Unused global option(s): [a4letterpaper]` in the LaTeX log), so the
+    page is right by luck and the reader is shown a warning about a name nobody wrote;
+  - `--variable geometry=letterpaper` → letter, no warning;
+  - `--variable geometry=landscape` → A4 landscape;
+  - `--variable geometry=portrait` over a *reader's* file that says `geometry: landscape` → portrait.
+
+  So both answers are `geometry` options: they are appended after whatever the file lists and take the
+  page with them, which is what "over whatever the file says" has to mean for a reader who asked for
+  this page, once. `PAPER_SIZES` (`export.rs`) is the list — the one the file's own comment carries,
+  `geometry`'s own names, JIS B being the one with no `paper` after it — and a size that is not on it is
+  *refused* rather than handed to LaTeX, the way the markdown2pdf round refused a theme. The kind's own
+  row says which kinds take one (`takes_a_page_size`: the pdf, and nothing else — a docx or a book
+  carries its text and leaves the page to whatever shows it), the request carries the reader's answer as
+  `paper` + `landscape`, and **both fields open on *the settings file's own***: a reader who never
+  touches them exports exactly what they did before, and a reader who wants a page that is not the one
+  they set up once does not have to edit — and then un-edit — the file for it. `export-pdf-page.js` is
+  the proof through the running app, and it is the two exports that matter: nothing chosen comes out A4
+  portrait, letter + landscape comes out 792 x 612 points (the page's own `/MediaBox`, read out of the
+  file's streams — `lib.js: pdfPageSize`), the sizes on the card are the app's own list, another kind is
+  offered no page row at all, and the reader's settings file is byte for byte what it was.
+  `export-pandoc-arguments.js` holds the app's *hand* for it: no geometry option at all for an untouched
+  card, and `geometry=letterpaper` then `geometry=landscape` for a reader who chose them. The file's own
+  `papersize` comment now says which of its two ways in is which.
 
 ## Open, in the order to take them
 
-- **A PDF page's own options on the card.** A PDF's page size and orientation live in its defaults
-  file (`variables.papersize`, and a `geometry` variable beside it), which is a thing a reader may
-  edit and a thing the card does not offer — the card offers only the file. Whether it *should* offer
-  a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
-  file says) is the decision, and the answer depends on how often a reader wants a page that is not
-  the one they set up once.
 - **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
   is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
   locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out
