@@ -108,6 +108,11 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
+    // The book is built with the file **this build ships**, put there by the app's own command: a
+    // reader's copy may be older — measured, one was, and it hid a change to the book's own shape for
+    // two rounds of work — and a book made with it says nothing about the file a fresh install gets.
+    // The harness puts the reader's copy back when the run is over (`restoreTheExportSettings`).
+    await invoke('export_restore_config', { kind: 'epub' });
     // The web picture is the app's fetch, stood in for by a curl that only records and answers with
     // a real PNG — so this needs no network, and what is proved is the book, not the internet.
     await api.pointAtCurl(`${checkout}test/probes/fake-curl.sh`);
@@ -170,7 +175,18 @@
           language: /<dc:language>[^<]*/.exec(opf)?.[0] ?? null
         }
       );
-      const chapter = (await t.zipEntry(bytes, 'EPUB/text/ch001.xhtml')) ?? '';
+      // Every page of the book, joined: the note is one chapter and the reference list is another —
+      // with the shipped `shift-heading-level-by: 0` a note's own `#` heading is where a chapter starts,
+      // and so is the list pandoc appends under the heading the app asks for. Which file is which is
+      // pandoc's business; what a reader sees is the book (`export-citations.js` reads it the same way).
+      const pages = t
+        .zipNames(bytes)
+        .filter((name) => name.endsWith('.xhtml') && !name.includes('nav'));
+      const texts = [];
+      for (const page of pages) {
+        texts.push((await t.zipEntry(bytes, page)) ?? '');
+      }
+      const chapter = texts.join('\n');
       check(
         'the picture the app fetched from the web is carried in the book, not linked',
         names.includes('EPUB/media/') && chapter.includes('../media/'),
@@ -187,7 +203,8 @@
         {
           citation: chapter.includes('(Smith, 2020)'),
           heading: chapter.includes('References'),
-          entry: chapter.includes('Smith, J. (2020)')
+          entry: chapter.includes('Smith, J. (2020)'),
+          pages
         }
       );
     }
