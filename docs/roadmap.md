@@ -1151,6 +1151,15 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   is its name (the reported case), prose before that heading, a `##` section under it, a `##` section
   repeating the name, a note with no `#` heading whose sections say other words, a note with no headings
   at all, and a note whose frontmatter names it.
+  **And the shift changed one shape nobody saw for a round**: with a note's own `#` heading now where a
+  chapter starts, the *reference list* pandoc appends is one too — it is a level-1 heading under the
+  title the app asks for, so a book with citations comes out as `ch001.xhtml` (the note) and
+  `ch002.xhtml` (`References`), measured. That is good book structure and stays. What hid it was the
+  *fixture*: `export-epub.js` read `ch001.xhtml` alone, and built its book with the **reader's** copy of
+  the settings file, which on this machine was still the older `shift-heading-level-by: 1` — a book no
+  fresh install would get. It puts the shipped file there through the app's own command first now (as
+  `export-pdf-scripts.js` and `export-pdf-page.js` already did) and reads every page of the book (as
+  `export-citations.js` already did), which is what a reader's software sees.
   And a reader who already has a copy of the file keeps the old one — a shipped file that changes reaches
   nobody who already has it, and the card's *replace* button is how they ask for this one
   (`export-config-replace.js`).
@@ -1203,11 +1212,32 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
 
 ## Open, in the order to take them
 
-- **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
-  types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
-  to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc
-  needs a rasteriser for that), and whether a `data:` URL that is not an image should be refused with
-  a sentence of ours rather than pandoc's, are the questions there.
+- **A picture that is an SVG, a webp, or a URL behind a login.** Measured with pandoc 3.12, one note
+  each, and the answer splits in two.
+  **A URL behind a login is answered already**: the app's own fetch fails (`export_fetch_image`), the
+  reader is told the URL in the app's own words (`export_flow.ts: fetchedPicture`) and pandoc is left
+  the address to warn about if it wants to.
+  **A destination that is not a picture at all is the silent one, and the app says it now.** A
+  `data:` URL of something that is not an image is carried into a docx as `word/media/rId10.txt` with
+  *no warning at all*, and a pdf is left to pandoc's own complaint about the file it made of it
+  (`Cannot load file`, `Jpeg Invalid marker used`, naming a temporary path the reader has never seen).
+  The app reads the *note*, not the machine, for this one — a `data:` URL is the only destination whose
+  kind is written down in the text — so `ui/export/picture_hint.ts` is a rule about the note
+  (`check-picture-hint.mjs` holds it, `export-picture-hint.js` holds the line on the card), and the card
+  names the destination before the export runs. It does **not** refuse it and does not edit it: the
+  file is written, and the reader is told which destination is no picture — the way the font hint names
+  the characters a page would lose rather than deleting them.
+  **A picture of a kind this export cannot use is still open**, and the measurements say what it looks
+  like: an SVG is converted where the machine has a rasteriser (measured: a docx gets a
+  `word/media/rId13.png` beside the raw `.svg`, and a pdf of one is a real 5.5 KB page), and where it
+  has none pandoc warns (`Could not convert image figure.svg: "conversion from SVG failed"`) and carries
+  the vector alone. A **webp** is carried in silently by every kind — `word/media/rId10.webp`, no
+  warning — and it is not one of the five types this app's fetch takes down from the web
+  (`export.rs: image_extension`), so a web webp is reported as a picture the app could not fetch while a
+  *local* one is embedded where a reader may see nothing. **The decision this leaves**: whether the app
+  should turn such a picture into one the export can use — it has the machinery, the webview's own
+  canvas (`ui/image/image_flow.ts: encode` already turns pixels into a `.png` for a pasted picture) —
+  or goes on saying what it cannot do and leaving the note's bytes alone. Nothing of that half is done.
 - **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
   new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
   the one an inserted image is written with — and the asset protocol that *serves* a rendered image

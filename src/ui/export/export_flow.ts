@@ -43,6 +43,7 @@ import { registerCommand } from '../markdown/commands/registry';
 import { bodyWithItsName } from './book_body';
 import { exportDialog } from './export_dialog';
 import { uncoveredCharacters } from './font_hint';
+import { destinationsThatNameNoImage } from './picture_hint';
 import { exportSource } from './preprocess';
 
 /** What the export needs from the editor that owns the note on screen. */
@@ -93,13 +94,17 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       : await exportFontFor([
           ...new Set(uncovered.map((character) => character.codePointAt(0) ?? 0))
         ]);
+  // And the other thing the note itself can say that no conversion can honour: a destination that is
+  // not a picture. A `data:` URL is the one whose kind the note writes down, so it is the one the app
+  // can be sure of (`picture_hint.ts`); the card says which, before anything is written.
   const answer = await exportDialog.ask({
     kind: first,
     pandoc,
     baseTarget,
     uncovered,
     suggestedFont,
-    unknownFonts: fonts.unknown_fonts
+    unknownFonts: fonts.unknown_fonts,
+    notPictures: destinationsThatNameNoImage(text)
   });
   if (answer === null) {
     return;

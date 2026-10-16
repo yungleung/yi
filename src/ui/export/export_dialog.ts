@@ -60,6 +60,12 @@ export interface ExportQuestion {
    * they have to look at.
    */
   unknownFonts: string[];
+  /**
+   * The note's image destinations that name no image at all — a `data:` URL of something that is not
+   * one (`picture_hint.ts`). The export does not stop over them: it carries them into the file as the
+   * files they are, which is a picture the reader should know about before it is written.
+   */
+  notPictures: string[];
 }
 
 /** The reader's answer: where the file goes. */
@@ -133,6 +139,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly fontHint: HTMLParagraphElement;
   /** The line for a font name this machine has none of — see `ExportQuestion.unknownFonts`. */
   private readonly unknownFonts: HTMLParagraphElement;
+  /** The line for a destination that is not a picture — see `ExportQuestion.notPictures`. */
+  private readonly notPictures: HTMLParagraphElement;
   private readonly form: HTMLFormElement;
   private readonly run: HTMLButtonElement;
   private readonly cancel: HTMLButtonElement;
@@ -226,6 +234,12 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.unknownFonts = document.createElement('p');
     this.unknownFonts.className = 'mt-1 hidden text-xs text-error';
     this.unknownFonts.setAttribute('data-export-unknown-fonts', 'true');
+    // And the third thing the note itself can get wrong: an image destination that names no image. The
+    // export is written either way — the file is carried in as the file it is — so it is a quiet line
+    // beside the others rather than a refusal.
+    this.notPictures = document.createElement('p');
+    this.notPictures.className = 'mt-1 hidden text-xs opacity-70';
+    this.notPictures.setAttribute('data-export-not-pictures', 'true');
     // Built *after* the three things it holds: a row made before its own children exist is an empty
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
@@ -249,6 +263,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.status,
       this.fontHint,
       this.unknownFonts,
+      this.notPictures,
       this.actions()
     );
   }
@@ -352,6 +367,15 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
               characters: shownCharacters(uncovered),
               font: suggested
             });
+    // A picture that is not one: said here, before the export, because the file that comes out has the
+    // destination carried into it as a file — measured, pandoc says nothing about it for a docx, and
+    // complains about a temporary path for a pdf.
+    const notPictures = this.question?.notPictures ?? [];
+    this.notPictures.classList.toggle('hidden', notPictures.length === 0);
+    this.notPictures.textContent =
+      notPictures.length === 0
+        ? ''
+        : t('export.notPictures', { destinations: notPictures.slice(0, 4).join(', ') });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
     this.run.disabled = info.needs_pandoc && pandoc === null;
   }

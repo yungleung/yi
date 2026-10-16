@@ -256,6 +256,9 @@ on Han and kana, their Hebrew face on Hebrew *and the shipped Hebrew face absent
 face this build ships on Hangul (measured: `Songti SC` draws Han and kana and has no Hangul at all,
 which is why a Korean note survives that line) and on a script the file named nothing for; the third
 TeX-run probe;
+`export-picture-hint` — the card's other hint about a *note*: a destination that is a `data:` URL of
+something which is not an image is named on it, and a picture's own `data:` URL leaves it quiet — read
+out of the parse by `ui/export/picture_hint.ts`, and drawn before any export is asked for;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
