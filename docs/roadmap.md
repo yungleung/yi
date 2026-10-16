@@ -1175,9 +1175,15 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   background window's timers, so every `t.sleep(...)` a probe takes can cost a second of wall clock.
   Measured while the versioning probes were written — the same probe, in the same state, took
   **2257 ms** with the app's window in front and **5008 ms** behind the terminal, where one `git
-  init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
-  and a probe that only sometimes finishes is read as too long whatever the window was doing;
-  `test/README.md` says so where probes are written.
+  init` through the app's own command measured 6.7 s. **And that half is fixed**: the harness brings
+  the window forward itself before every run (`session::focus_window`, a command the app answers, so
+  it is the app's own window and not a script's guess), where it used to be a step the person typing
+  the command had to remember — invisible in the result and easy to miss. Measured with it in place:
+  `display-math-source` (5006 ms and 3000 ms of its own sleeps when it was written), `a4-page` and
+  `description-list` all pass on their own, and the first of them no longer comes near the bridge's
+  budget. **What is left is the sweep itself**: `a4-page` failing three checks *inside* a sweep is
+  still unexplained, and the bisect the item asked for — the probes before it, then it — needs a full
+  `probe:all` run (about fifteen minutes) to start from.
 - **A page-wide rebuild no longer takes the caret off the page.** Closed in
   `virtual_block_renderer.ts: refresh`. `fence-exit.js`'s display-formula case read `"N"` back where
   the file's four blocks should be, three runs of three, and the formula was not the reason: a run

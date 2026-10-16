@@ -340,14 +340,26 @@ async function restoreLanguage(previous) {
 
 /** Runs the probe, installing the helpers again if the page lost them. */
 async function runProbe() {
-  // The seams a probe can leave set on the app itself go back before the probe runs:
-  // `versioning_use_git`, `export_use_pandoc` and `export_use_curl` are globals in the Rust process,
-  // which a page reload does not clear.
+  // The window comes forward first, and the app does it: the system throttles a background window's
+  // timers, so a probe's own sleeps cost two or three times what they say (measured: the same probe in
+  // the same state, 2257 ms with the window in front and 5008 ms behind a terminal), and a probe that
+  // only sometimes finishes inside the bridge's budget is read as too slow whatever the window was
+  // doing. It used to be the person typing the command who brought the app forward — which is a step
+  // that is invisible in the result and easy to forget.
+  //
+  // Then the seams a probe can leave set on the app itself go back: `versioning_use_git`,
+  // `export_use_pandoc` and `export_use_curl` are globals in the Rust process, which a page reload does
+  // not clear.
   // The page's own stash is *not* cleared here — a run's frames say which run made them
   // (`test/probe_stash.mjs`), and a clear sent in another script raced the probe it was meant
   // to tidy up after.
   await call(
     `(async () => {
+       try {
+         await window.__TAURI_INTERNALS__.invoke('focus_window');
+       } catch (error) {
+         // A build without the focus seam (or one that refused) still runs the probe.
+       }
        try {
          await window.__TAURI_INTERNALS__.invoke('versioning_use_git', { git: null });
        } catch (error) {

@@ -41,6 +41,7 @@ pub fn run() {
             files::list_folder_files, 
             session::load_session,
             session::save_session,
+            session::focus_window,
             settings::get_config,
             settings::set_config,
             settings::get_current_config_version,
