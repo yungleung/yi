@@ -33,9 +33,10 @@
 #
 # - `epub-cover-image: cover.png` — a cover, the one part of a book no note can draw.
 # - `epub-metadata: file.xml` — extra Dublin Core records, for a publisher's own fields.
-# - `epub-chapter-level: 2` — which heading level starts a chapter. With `shift-heading-level-by: 1`
-#   below, a note's own `#` title is not a chapter and its `##` sections are; measured, a note-sized
-#   book comes out as one chapter file, which is what it is.
+# - `epub-chapter-level: 2` — which heading level starts a chapter. This file leaves pandoc's default
+#   (1) in force: with `shift-heading-level-by: 0` below, a note's own `#` heading is where a chapter
+#   starts and its `##` sections stay inside it — measured, a note with one `#` heading comes out as
+#   one chapter file, which is what it is.
 # - `css: [style.css]` — a stylesheet to carry in the book; empty, as below, leaves pandoc its own.
 # - `toc: true` — a visible contents page. Without it the book still has its navigation document,
 #   built from the headings (measured: `nav.xhtml` and `toc.ncx`), which is what a reader's own
@@ -45,6 +46,22 @@
 # formatted from and the CSL style they were formatted in (measured: `(Smith, 2020)` in the text,
 # a `References` heading and its entry in the book), and the heading's own word in the reader's
 # language.
+#
+# **`shift-heading-level-by` is 0 below, not the 1 the kinds beside this one carry**, and it is the one
+# number here that was measured rather than inherited. The family's 1 is for a *document* whose title
+# sits above its first heading; an EPUB writer makes a root heading of its own whenever the first chunk
+# of the body has none, and fills it with the book's own name — so a note's `#` heading, shifted down to
+# level 2, stood *inside* a section of the writer's own making that said the same words, and both
+# sections claimed the same id. Measured with pandoc 3.12 and epubcheck 5.4.0 over a note saying
+# `# Going out` handed `-M title="Going out"` — which is the app's own naming, a note being named by its
+# first heading — the book was reported as `Duplicate ID "going-out"` twice. With the shift at 0 a note
+# that opens with its own `#` heading *is* the body's first section, and a root heading of the writer's
+# own is made only for a note that has none — where it is wanted, and where no heading of the note can
+# claim its id. `test/checks/check-epub-valid.mjs` builds exactly that book and asks epubcheck about it.
+# The other keys measured as candidates are not fixes: `section-divs: false` leaves both ids as they
+# are; a non-empty `identifier-prefix` prefixes them both and, on pandoc 3.12, leaves the navigation
+# document pointing at the unprefixed anchors (six validator errors instead of two); `title-prefix`
+# touches the HTML `<title>` alone.
 reader: markdown
 writer: epub
 variables: {}
@@ -69,7 +86,7 @@ number-offset:
 - 0
 - 0
 - 0
-shift-heading-level-by: 1
+shift-heading-level-by: 0
 section-divs: true
 identifier-prefix: ''
 title-prefix: ''
