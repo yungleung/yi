@@ -196,7 +196,11 @@ is a row, an asset and a menu item;
 `export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
 target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
-resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}` and its `\bibitem`;
+resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}` and its `\bibitem`, and
+the kind's own font rule in both of its halves: a `.tex` of a CJK note carries **no** font setup as the
+file comes (naming a font the reader's machine may not have would fail their compile where the card's
+hint merely warns), and carries `\usepackage{xeCJK}` with the name for the length of one export where
+the reader has written one into their own copy;
 `export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
 picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
 heading is shifted the way the file says, the math is marked for MathJax (a CDN script, the one

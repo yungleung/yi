@@ -257,9 +257,15 @@ named, the page carries the reader's face and **not** the shipped Hebrew face
 the shipped face. Hangul is why a face is shipped at all: the fonts a platform has for Han very often
 have none of it — measured, the macOS `Songti SC` draws Han and kana and no Hangul, and a Korean note
 set in it lost every syllable — so the shipped face draws Hangul whenever the file names none for it.
-The **latex** kind ships no header and says
-`needs_a_font` for the same reason: a `.tex` is compiled on the reader's own machine, where a path into
-this app's bundle is a path that will not exist.
+The **latex** kind ships no header and says `needs_a_font` for the same reason: a `.tex` is compiled on
+the reader's own machine, where a path into this app's bundle will not exist — so a *name* in its file is
+the only way a font gets in, and that file **names none**: a name the reader's machine does not have
+stops their compile outright, where naming nothing leaves the card's hint to say which characters need
+one (`mainfont:`, or `CJKmainfont:` for Han and kana) and which font this machine is known to have. The
+name it used to ship was macOS `Songti SC`, and a Mac may be without it — the reader who reported the
+problem had it from Microsoft Office, not the system, and on the machine this was written on the file
+sits in Apple's `Supplemental` tree, which is both where macOS parks fonts it has not installed yet and
+where Office puts some of its own.
 **Every style the build can honestly ship, and emboldening for what it cannot.** `bold` and `italic` in
 a shipped script were LaTeX's fallback — the regular face, with *"Font shape …/bx/n undefined"* in the
 log and the weight the note asked for simply gone — so the real bold faces ship for all seven script
