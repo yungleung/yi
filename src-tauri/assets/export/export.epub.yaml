@@ -45,7 +45,9 @@
 # What the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from and the CSL style they were formatted in (measured: `(Smith, 2020)` in the text,
 # a `References` heading and its entry in the book), and the heading's own word in the reader's
-# language.
+# language. The card's *No reference list* box adds one more: `suppress-bibliography` as **metadata**,
+# which is where pandoc reads it — a `variables:` line of the same name leaves the list exactly where it
+# was (measured), and that is what every export did before the card had the box.
 #
 # **`shift-heading-level-by` is 0 below, not the 1 the kinds beside this one carry**, and it is the one
 # number here that was measured rather than inherited. The family's 1 is for a *document* whose title

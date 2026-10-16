@@ -1184,21 +1184,25 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   `export-pandoc-arguments.js` holds the app's *hand* for it: no geometry option at all for an untouched
   card, and `geometry=letterpaper` then `geometry=landscape` for a reader who chose them. The file's own
   `papersize` comment now says which of its two ways in is which.
+- **A citation's locator, its suppressed author and its list — and now the list can be asked away.** The
+  three forms were measured when the probe was written (the locator lands where citeproc's grammar
+  expects it, a suppressed author leaves the year with no name, the list is appended under the heading
+  the app asks for), and `suppress-bibliography` was measured to be **metadata, not a variable** — a
+  `variables:` line leaves the list exactly where it was, which is the mistake that probe's first run
+  made. What was left was that nothing in the app said so, and the answer is the card's own box rather
+  than a sentence in every settings file: **No reference list**, unticked every time the card is drawn —
+  so a reader who never touches it appends the list they always did, which is the same shape the page
+  fields above took. The kinds pandoc writes are told in metadata (`--metadata
+  suppress-bibliography=true`, passed only when there is a library for it to mean anything), and the
+  app's own hand — the markdown kind — simply writes no list: nothing to list is what the pre-process
+  already reads as *no heading and no entry*. Measured through the running app: `export-citations.js`
+  reads a book made by the box (the citations in the text, no `References`, no entry) beside the same
+  book asked for in the *file's* `metadata:` block, which still works, and `export-markdown.js` holds
+  the app's own hand doing it. The Rust side holds the word itself: `suppress-bibliography` reaches
+  pandoc as metadata and never as a variable, and a note with no library is told nothing.
 
 ## Open, in the order to take them
 
-- **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
-  is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
-  locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out
-  `(Smith, 2020, p. 45)` — a suppressed author leaves a parenthetical with the year and no name
-  (`(2020)`), and the reference list is appended under the heading the app asks for, in the page's own
-  style (APA, which sentence-cases a title: the probe compares words rather than the fixture's
-  capitalisation, which is its own small measurement). **And the third question has a sharp answer**:
-  `suppress-bibliography` is *metadata*, not a variable — the probe's first run put it under `variables:`
-  and the list stayed exactly where it was — so a reader who wants the keys resolved and no list writes a
-  `metadata:` block in their settings file. Nothing in the app says so, which is the one thing this
-  leaves open: the card's settings row is where a reader would look for it, and a checkbox is a decision
-  rather than a measurement.
 - **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
   types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
   to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc

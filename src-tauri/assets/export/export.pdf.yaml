@@ -72,7 +72,9 @@
 #
 # Two things the app adds on the command line, as for every kind: the bibliography the citations were
 # formatted from (Settings → Citation) and the CSL style it formats them in, so citeproc resolves the
-# keys and appends the reference list.
+# keys and appends the reference list. A third arrives when the card's *No reference list* box is ticked:
+# `suppress-bibliography` as **metadata**, which is where pandoc reads it — the same name under
+# `variables:` leaves the list exactly where it was (measured).
 reader: markdown
 writer: pdf
 self-contained: true
