@@ -164,14 +164,21 @@ mod tests {
   #[test]
   fn a_sentence_is_written_in_the_language_the_config_asked_for() {
     remember("zh-Hans");
-    assert_eq!(now("export.noPandoc", &[]), "本机没有可运行的 pandoc。");
+    // Against `t` for the same language rather than against a copied string: what this holds is that
+    // `now` speaks what `t` speaks for the remembered language, and a copy of the text here is a second
+    // home for it — this test failed once for exactly that, when the key it names was deduplicated and
+    // its own copy stayed behind.
+    for key in ["export.noPandoc", "files.nameEmpty", "versioning.gitUnusable"] {
+      assert_eq!(now(key, &[]), t("zh-Hans", key, &[]), "{key}");
+    }
     assert_eq!(
       now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")]),
-      "Yi 无法写入 /tmp/x：no such file"
+      t("zh-Hans", "export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
     );
+    assert_ne!(now("export.noPandoc", &[]), t("en", "export.noPandoc", &[]));
     // A language the app does not speak falls back to English rather than to a blank.
     remember("kl-Greenlandic");
-    assert_eq!(now("export.noPandoc", &[]), "This machine has no pandoc to run.");
+    assert_eq!(now("export.noPandoc", &[]), t(DEFAULT_LANGUAGE, "export.noPandoc", &[]));
     // And every catalogue really does answer for these keys, one by one: a key that only English has
     // would leave a reader in the other seven languages looking at the key itself.
     for language in LANGUAGES {
