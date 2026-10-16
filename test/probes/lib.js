@@ -374,6 +374,27 @@ window.__t = (() => {
   };
 
   /**
+   * A page's own size, in the points its `/MediaBox` carries: `width` and `height`, or null when the
+   * file has neither. Measured, the box is inside a *compressed* object stream — a page's raw bytes
+   * hold `/MediaBox` nowhere, the same reason `pdfFonts` inflates first — so this walks the streams
+   * the way the helpers above do. A4 is 595.28 x 841.89 points, letter 612 x 792, and a page turned
+   * on its side has the two swapped.
+   */
+  const pdfPageSize = async (bytes) => {
+    for (const stream of pdfStreams(bytes)) {
+      const text = await inflateText(bytes, stream.range);
+      const match = (text ?? '').match(
+        /\/MediaBox\s*\[\s*[\d.-]+\s+[\d.-]+\s+([\d.]+)\s+([\d.]+)\s*\]/
+      );
+      if (match !== null) {
+        const round = (value) => Math.round(Number(value) * 100) / 100;
+        return { width: round(match[1]), height: round(match[2]) };
+      }
+    }
+    return null;
+  };
+
+  /**
    * What a PDF's page says, rebuilt from the file: a font's `ToUnicode` map names the character a
    * drawn code stands for, and the page's own text operators say which codes it draws — `<hex> Tj`,
    * `[<hex>] TJ` and, for characters the font holds directly, `(plain) Tj`. A code the font in force
@@ -539,6 +560,7 @@ window.__t = (() => {
     pdfText,
     pdfFonts,
     pdfContent,
+    pdfPageSize,
     zipEntry,
     zipNames
   };

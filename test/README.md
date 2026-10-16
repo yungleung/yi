@@ -245,6 +245,10 @@ drew it). It fails if the app ever stops handing the reader's file to pandoc as 
 `%PDF-` through the TeX engine that file names — one of the three probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
 result out of the page's stash; there is nothing to split, since the overrun *is* one export);
+`export-pdf-page` — the page the card offers for that kind: both fields open on the settings file's own
+and come out A4 portrait, letter + landscape comes out 792 x 612 points read from the page's own
+`/MediaBox`, another kind is offered no page row at all, and the reader's settings file is untouched
+(two TeX runs, so it outruns the bridge exactly as `export-pdf` does);
 `export-pdf-font` — the same kind with faces of the *reader's* own named in their settings file for one
 export: `CJKmainfont: "Songti SC"` for Han and kana and `yi-hebrew-font: "Arial Unicode MS"` for one
 script, with the page's own `/BaseFont` entries read back to say which face drew what — their CJK face
