@@ -29,6 +29,13 @@ export interface ExportKindInfo {
    * note writes none: the EPUB, which the window hands a body of its own (`ui/export/book_body.ts`).
    */
   names_its_body: boolean;
+  /** Whether the card offers a page size and an orientation for this kind. */
+  takes_a_page_size: boolean;
+  /**
+   * The sizes the card offers, in order, each with the words a reader reads and the value that
+   * travels back — one of these, or nothing at all for *the settings file's own*.
+   */
+  paper_sizes: { label: string; value: string }[];
   /** Where the reader's copy of the defaults file is. */
   config_path: string;
   /** Whether that copy has been written yet. */
@@ -72,6 +79,11 @@ export interface ExportRequest {
    * them, and the kinds whose body already says the name ignore them. */
   title: string | null;
   language: string | null;
+  /** The page the reader asked for, for a kind that takes one: one of the kind's own sizes, or null
+   * for whatever the settings file says. */
+  paper: string | null;
+  /** Which way up that page goes: true landscape, false portrait, null for the settings file's own. */
+  landscape: boolean | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

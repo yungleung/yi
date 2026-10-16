@@ -65,6 +65,11 @@ export interface ExportQuestion {
 /** The reader's answer: where the file goes. */
 export interface ExportAnswer {
   outputPath: string;
+  /** The page the reader asked for, for a kind the card offers one for: a size of the kind's own, or
+   * null for whatever the settings file says. */
+  paper: string | null;
+  /** Which way up that page goes: true landscape, false portrait, null for the settings file's own. */
+  landscape: boolean | null;
 }
 
 /** The label a kind is offered under, or its own name when the catalogues have none. */
@@ -112,6 +117,12 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly replaceConfig: HTMLButtonElement;
   /** The configuration row: the kind's own defaults file, which every export of it reads. */
   private readonly configRowElement: HTMLElement;
+  /** The page size and orientation, for a kind whose engine lays out the page — the PDF. */
+  private readonly paperLabel: HTMLLabelElement;
+  private readonly paper: HTMLSelectElement;
+  private readonly orientationLabel: HTMLLabelElement;
+  private readonly orientation: HTMLSelectElement;
+  private readonly pageRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   /** The line that says the note is written in characters the settings name no font for. */
   private readonly fontHint: HTMLParagraphElement;
@@ -169,6 +180,22 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       () => void this.replaceConfiguration()
     );
 
+    // The page, for a kind the app may tell what page to lay out. Both answers start at *the settings
+    // file's own* — the page the reader set up there, and what an export that asks nothing gets — so
+    // nothing here changes what an export did before the card had these two fields.
+    this.paperLabel = document.createElement('label');
+    this.paperLabel.className = 'label-text text-xs';
+    this.paperLabel.textContent = t('export.paper');
+    this.paper = document.createElement('select');
+    this.paper.className = 'select select-bordered select-sm';
+    this.paper.setAttribute('data-export-paper', 'true');
+    this.orientationLabel = document.createElement('label');
+    this.orientationLabel.className = 'label-text text-xs';
+    this.orientationLabel.textContent = t('export.orientation');
+    this.orientation = document.createElement('select');
+    this.orientation.className = 'select select-bordered select-sm';
+    this.orientation.setAttribute('data-export-orientation', 'true');
+
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
@@ -188,6 +215,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // Built *after* the three things it holds: a row made before its own children exist is an empty
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
+    this.pageRowElement = this.pageRow();
 
     this.form = document.createElement('form');
     this.form.addEventListener('submit', (event) => {
@@ -201,6 +229,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.form.append(
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
+      this.pageRowElement,
       this.status,
       this.fontHint,
       this.unknownFonts,
@@ -261,6 +290,25 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.configPath.textContent = info.config_exists
       ? info.config_path
       : t('export.configNew', { path: info.config_path });
+    // The page, for the one kind whose engine lays one out: the sizes are the app's own (`export.rs:
+    // PAPER_SIZES`), and both fields open on *the settings file's own* every time the card does, the
+    // way the target opens on the note's own name.
+    this.pageRowElement.classList.toggle('hidden', !info.takes_a_page_size);
+    if (info.takes_a_page_size) {
+      const choice = (label: string, value: string): HTMLOptionElement => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+      };
+      const own = t('export.paperOwn');
+      this.paper.replaceChildren(choice(own, ''), ...info.paper_sizes.map((size) => choice(size.label, size.value)));
+      this.orientation.replaceChildren(
+        choice(own, ''),
+        choice(t('export.portrait'), 'portrait'),
+        choice(t('export.landscape'), 'landscape')
+      );
+    }
     // What would write it: pandoc, or the app itself for the kind that needs none.
     this.status.textContent = !info.needs_pandoc
       ? t('export.ownHand')
@@ -360,7 +408,14 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.status.textContent = t('export.noTarget');
       return;
     }
-    this.settle({ outputPath });
+    // Nothing chosen is *the settings file's own* — `null` rather than a value, so the app passes no
+    // geometry option at all and the page is the one the reader set up.
+    const orientation = this.orientation.value;
+    this.settle({
+      outputPath,
+      paper: this.paper.value === '' ? null : this.paper.value,
+      landscape: orientation === '' ? null : orientation === 'landscape'
+    });
   }
 
   private row(label: HTMLElement, control: HTMLElement, ...rest: HTMLElement[]): HTMLElement {
@@ -382,6 +437,14 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     buttons.className = 'flex items-center gap-3';
     buttons.append(this.openConfig, this.replaceConfig);
     group.append(this.configLabel, this.configPath, buttons);
+    return group;
+  }
+
+  /** The page row: a size and an orientation side by side, for the kind that takes them. */
+  private pageRow(): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'mt-3 flex gap-3';
+    group.append(this.row(this.paperLabel, this.paper), this.row(this.orientationLabel, this.orientation));
     return group;
   }
 
