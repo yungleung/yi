@@ -341,6 +341,12 @@ the style the page showed), and the note — held by `test/probes/export-pandoc-
 a pandoc that only records
 (`test/probes/fake-pandoc.sh`); `export_use_pandoc` is the seam that points the app at it, put back
 by the harness like the git one.
+What citeproc makes of the syntax *around* a key is measured by `test/probes/export-citations.js`,
+through an EPUB because a book is a zip and its pages can be read back: `[@key, p. 45]` carries the page
+number where the style puts it (`(Smith, 2020, p. 45)` in APA), `-@key` leaves a parenthetical with the
+year and no name, and the list is appended under the heading the app asks for. **`suppress-bibliography`
+is metadata, not a variable** — a `variables:` line leaves the list exactly where it was (measured) —
+so a reader who wants the keys resolved and no list writes a `metadata:` block in their settings file.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

@@ -1105,13 +1105,18 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   validator found when it is not — so that the two things nobody has looked at (an EPUB 3 with a
   `nav.xhtml` *and* a `toc.ncx`, an accessibility `schema:*` metadata set pandoc writes itself) are
   held by something other than this app's own reading of its own output.
-- **A citation's locator and its suppressed author, against a key the library holds.** The demo
-  document's forms all reach citeproc (measured through the odt export), but the two entries the
-  fixture library has are cited there without a locator, so `[@smith2020, p. 45]` and `-@smith2020`
-  are unmeasured: whether the page number lands where citeproc's own syntax expects it, and whether
-  the suppressed author leaves the parentheses pandoc would. Two lines in a probe with the fixture
-  library answer it, and `suppress-bibliography` is the third question for a reader who wants the
-  keys resolved and no list.
+- **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
+  is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
+  locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out
+  `(Smith, 2020, p. 45)` — a suppressed author leaves a parenthetical with the year and no name
+  (`(2020)`), and the reference list is appended under the heading the app asks for, in the page's own
+  style (APA, which sentence-cases a title: the probe compares words rather than the fixture's
+  capitalisation, which is its own small measurement). **And the third question has a sharp answer**:
+  `suppress-bibliography` is *metadata*, not a variable — the probe's first run put it under `variables:`
+  and the list stayed exactly where it was — so a reader who wants the keys resolved and no list writes a
+  `metadata:` block in their settings file. Nothing in the app says so, which is the one thing this
+  leaves open: the card's settings row is where a reader would look for it, and a checkbox is a decision
+  rather than a measurement.
 - **A picture that is an SVG, a webp, or a URL behind a login.** `image_extension` names the five
   types a Word file can hold (png, jpeg, gif, bmp, tiff); anything else is *not* fetched and is left
   to pandoc, which then warns that it could not fetch it. Whether an SVG should be converted (pandoc

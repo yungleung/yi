@@ -227,6 +227,81 @@ window.__t = (() => {
 
 
   /**
+   * One entry of a zip, by name — an EPUB and a docx and an odt are all zips, and the only way to read
+   * what is *inside* one: the central directory holds every entry's name, offset and size, the local
+   * header says where that entry's data begins, and the page inflates it with `DecompressionStream`.
+   */
+  const zipEntry = async (bytes, name) => {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const latin = new TextDecoder('latin1');
+    let at = -1;
+    for (let index = bytes.length - 22; index >= 0; index -= 1) {
+      if (view.getUint32(index, true) === 0x06054b50) {
+        at = index;
+        break;
+      }
+    }
+    if (at < 0) {
+      return null;
+    }
+    const count = view.getUint16(at + 10, true);
+    let cursor = view.getUint32(at + 16, true);
+    for (let index = 0; index < count; index += 1) {
+      if (view.getUint32(cursor, true) !== 0x02014b50) {
+        return null;
+      }
+      const method = view.getUint16(cursor + 10, true);
+      const size = view.getUint32(cursor + 20, true);
+      const nameLength = view.getUint16(cursor + 28, true);
+      const extraLength = view.getUint16(cursor + 30, true);
+      const commentLength = view.getUint16(cursor + 32, true);
+      const localOffset = view.getUint32(cursor + 42, true);
+      const entry = latin.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
+      if (entry === name) {
+        const start =
+          localOffset +
+          30 +
+          view.getUint16(localOffset + 26, true) +
+          view.getUint16(localOffset + 28, true);
+        const data = bytes.subarray(start, start + size);
+        if (method === 0) {
+          return latin.decode(data);
+        }
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return await new Response(stream).text();
+      }
+      cursor += 46 + nameLength + extraLength + commentLength;
+    }
+    return null;
+  };
+
+  /** Every entry name in a zip, in the order the central directory holds them. */
+  const zipNames = (bytes) => {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const latin = new TextDecoder('latin1');
+    for (let index = bytes.length - 22; index >= 0; index -= 1) {
+      if (view.getUint32(index, true) !== 0x06054b50) {
+        continue;
+      }
+      const count = view.getUint16(index + 10, true);
+      let cursor = view.getUint32(index + 16, true);
+      const names = [];
+      for (let entry = 0; entry < count; entry += 1) {
+        if (view.getUint32(cursor, true) !== 0x02014b50) {
+          break;
+        }
+        const nameLength = view.getUint16(cursor + 28, true);
+        const extraLength = view.getUint16(cursor + 30, true);
+        const commentLength = view.getUint16(cursor + 32, true);
+        names.push(latin.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength)));
+        cursor += 46 + nameLength + extraLength + commentLength;
+      }
+      return names;
+    }
+    return [];
+  };
+
+  /**
    * Every stream in a PDF, by the byte offset it starts at — what `pdfText` and `pdfFonts` both read a
    * file through. The bytes are found by the `stream` keyword rather than through the file's own
    * cross-reference table: what a probe wants is the text inside them, and the table's own offsets are
@@ -463,7 +538,9 @@ window.__t = (() => {
     useLayout,
     pdfText,
     pdfFonts,
-    pdfContent
+    pdfContent,
+    zipEntry,
+    zipNames
   };
 })();
 'helpers installed';

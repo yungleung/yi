@@ -63,7 +63,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and four of them (`probe:all` runs 176 and skips 28, each skip for the reason its
+two hundred and five of them (`probe:all` runs 177 and skips 28, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -201,6 +201,13 @@ the kind's own font rule in both of its halves: a `.tex` of a CJK note carries *
 file comes (naming a font the reader's machine may not have would fail their compile where the card's
 hint merely warns), and carries `\usepackage{xeCJK}` with the name for the length of one export where
 the reader has written one into their own copy;
+`export-citations` — the three citation forms nobody had asked citeproc about, read through an EPUB
+because a book is a zip and `lib.js: zipEntry` inflates its pages: a locator lands where citeproc's
+grammar expects it (`(Smith, 2020, p. 45)`), a suppressed author leaves a parenthetical with the year and
+no name (`(2020)`), the reference list is appended under the heading the app asks for, and
+**`suppress-bibliography` is metadata and not a variable** — measured: a `variables:` line leaves the
+list exactly where it was, and the file's own `metadata:` block is what resolves the keys and appends
+nothing;
 `export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
 picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
 heading is shifted the way the file says, the math is marked for MathJax (a CDN script, the one
