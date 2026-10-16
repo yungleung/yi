@@ -14,6 +14,11 @@
  * shows what the app does with its own scratch: the note it wrote under the app's data folder is
  * deleted again, whatever pandoc said — the refusing hand of that is `export-refused.js`.
  *
+ * The last of those is what one kind's *body* is: a book is handed the note's name written where its
+ * level-1 heading belongs, when the note keeps that heading in its frontmatter title
+ * (`ui/export/book_body.ts` — the heading the writer makes from the title is not part of the document
+ * pandoc makes identifiers unique in), and every other kind is handed the note's own text.
+ *
  * @covers src-tauri/src/export.rs (run_pandoc, write_note, export_through_pandoc),
  *   src/ui/export/preprocess.ts
  */
@@ -247,6 +252,46 @@
         epubCall.includes('title=Going out') &&
         epubCall.includes(`lang=${i18n.language()}`),
       { epub: epubCall, language: i18n.language() }
+    );
+
+    // --- what a book's *body* is, seen from the app's own hand -----------------------------------
+
+    // A note may keep its level-1 heading in its frontmatter `title:` rather than write one into the
+    // body, and pandoc's EPUB writer then makes a heading of its own out of the book's name *outside* the
+    // document pandoc makes identifiers unique in (measured: a note whose `## Going out` repeats the
+    // name came out of epubcheck with `Duplicate ID "going-out"` twice). So a book is handed a body
+    // with the name written where that heading belongs (`ui/export/book_body.ts`), and no other
+    // kind is: a docx of the same note is the note's own text, because its body must not say the
+    // name a second time.
+    const bookPath = `${folder}/book.md`;
+    const bookTarget = `${folder}/book.epub`;
+    const bookNote = '---\ntitle: The Book of Going Out\n---\n\n## Going out\n\nSome text.\n';
+    await files.createEntry(folder, 'book.md', true);
+    await files.writeTextAtomically(bookPath, bookNote);
+    await show(bookPath, bookNote);
+    await askForExport('epub');
+    await sleep(150);
+    document.querySelector('[data-export-target]').value = bookTarget;
+    document.querySelector('[data-export-run]').click();
+    await until(() => exists(bookTarget));
+    const bookHanded = await readText(`${recorder}/input.md`);
+    check(
+      'a book is handed the note’s name where its level-1 heading belongs',
+      bookHanded ===
+        '---\ntitle: The Book of Going Out\n---\n# The Book of Going Out\n\n## Going out\n\nSome text.\n',
+      bookHanded.split('\n').slice(0, 5)
+    );
+
+    const bookDocx = `${folder}/book.docx`;
+    await askForExport('docx');
+    await sleep(150);
+    document.querySelector('[data-export-target]').value = bookDocx;
+    document.querySelector('[data-export-run]').click();
+    await until(() => exists(bookDocx));
+    check(
+      'and no other kind is: a docx of the same note is the note’s own text',
+      (await readText(`${recorder}/input.md`)) === bookNote,
+      (await readText(`${recorder}/input.md`)).split('\n').slice(0, 5)
     );
   } finally {
     await api.pointAtPandoc(null);

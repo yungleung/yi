@@ -24,6 +24,11 @@ export interface ExportKindInfo {
   takes_a_title: boolean;
   /** Whether the kind must declare a language, so the window hands it one. */
   needs_a_language: boolean;
+  /**
+   * Whether the kind's body keeps the note's own level-1 heading, its name standing in it when the
+   * note writes none: the EPUB, which the window hands a body of its own (`ui/export/book_body.ts`).
+   */
+  names_its_body: boolean;
   /** Where the reader's copy of the defaults file is. */
   config_path: string;
   /** Whether that copy has been written yet. */

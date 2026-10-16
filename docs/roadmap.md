@@ -845,9 +845,10 @@ elements) unless it says otherwise.
     the `mimetype` (first and stored, `application/epub+zip`), the note's frontmatter as the title,
     author and language, the picture the app *fetched from the web* carried in `EPUB/media/`, and the
     `References` section are all asserted values rather than things taken on trust.
-  - What is *not* proved: `epubcheck` is not on this machine, so the book's validity is structural
-    (the container, the parts, the metadata) and read by hand. A machine with `epubcheck` could hold
-    the next epub to a validator, which is the roadmap item below.
+  - What the probe does not prove, and what does now: the book's validity is a validator's answer, not
+    a structural reading. `epubcheck` 5.4.0 was fetched (see the closed item at the end of this
+    section) and `test/checks/check-epub-valid.mjs` builds a book of the shape that had failed and
+    asks the validator about it — so a regression is a failing check rather than a page read by hand.
   - **A book must declare a title and a language, and the note's own is the first answer.** Measured:
     with neither, pandoc's title page reads UNTITLED and `dc:language` is the machine locale's `C` —
     and a reader who exported the demo document saw exactly that page. So a kind's row now says
@@ -1090,6 +1091,69 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   it replaced. `export-pdf-scripts.js` compares the letters themselves again — Arabic included, and its
   mirror, since a page read out of the file holds RTL text in visual order — and the card's hint was
   never part of this: a coverage is not read out of a map.
+- **An EPUB held to a validator — two defects, one key, and the key was the shift.** W3C's `epubcheck`
+  (v5.4.0, ~33 MB, Java 11+ — this machine has OpenJDK 25) sits at
+  `~/.cache/yi-tools/epubcheck/epubcheck-5.4.0/` (the release zip, extracted whole: the jar needs the
+  `lib/` beside it), and it found two real errors in a book built **the way the app builds one**. The
+  whole of the fix is one key of the shipped `export.epub.yaml`: **`shift-heading-level-by: 0`**, where
+  the four kinds beside it carry `1`. That 1 is the family's shape, for a document whose title sits
+  above its first heading — and the EPUB writer makes a heading of its own, level 1 and filled with the
+  book's own name, whenever the first chunk of the body has none. So a note's own `#` heading, shifted
+  down to level 2, stood *inside* a section the writer had made of the same words, and both claimed
+  `going-out` on one page — which is the app's own naming shape, a note being named by its first heading
+  and handed over as the book's name. With the shift at 0 a note that opens with its own `#` heading *is*
+  the body's first section, and a heading of the writer's own is made only for a note that has none —
+  where it is wanted, and where no heading of the note can claim its id. The book the report was about
+  now says, verbatim:
+
+      Validating using EPUB version 3.4 rules.
+      No errors or warnings detected.
+      Messages: 0 fatals / 0 errors / 0 warnings / 0 infos
+
+  Every other candidate was measured by hand with those two tools, and none of them is the fix:
+  `section-divs: false` leaves both ids as they are (they move onto the `<h1>` and the `<h2>`, and still
+  repeat); a non-empty `identifier-prefix` prefixes *both* ids — `yi-going-out` twice — and on pandoc
+  3.12 leaves `nav.xhtml` and `toc.ncx` pointing at the unprefixed anchors, which is six errors instead
+  of two (`RSC-012`, *Fragment identifier is not defined*); `title-prefix` touches the HTML `<title>`
+  alone; `epub-title-page=false` leaves both errors, and the heading the writer makes from the title is
+  then the only place the book's name appears in the body; and `epub-chapter-level=2` splits that
+  heading into a chapter file of its own — quiet to the validator, but the nav entry for the note's
+  section then points at that empty chapter, so it is no fix either.
+  **The other half of the defect was the note's own level-1 heading, and where a note keeps it.** A note
+  may keep that heading in its frontmatter `title:` rather than write one into the body — a `## section`
+  under such a note is a section of the note, not of nothing — and the heading the writer makes from the
+  title is then the note's own level-1 heading in every way but one: it is made *outside* the document
+  pandoc makes identifiers unique in, so a section of the note that repeats the name is a second element
+  with the same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
+  `-M title="Going out"` and the shipped defaults with `shift-heading-level-by: 0`, is reported as
+  `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
+  `ui/export/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
+  frontmatter when it has not, one line of a name that came from a heading), the kind's own row says it
+  (`export.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
+  the name would say it twice), and the window hands the book that body (`export_flow.ts`). The note's
+  `## Going out` then takes the id pandoc gives the second of two headings saying the same thing, and
+  the book's structure is the one a reader would draw: the name as the level-1 section, the note's own
+  sections inside it, no repeated id. Measured, one book each, clean: the frontmatter title with a
+  section that repeats it, with one that does not, a note with no `#` heading whose name is its file's,
+  and a note with no headings at all; and the *reported* shape — a note that opens with its own `#`
+  heading as its name — is the same book, the name written by the note instead of by the app.
+  **What the check holds**: `test/checks/check-epub-valid.mjs` builds that book — the note's text out of
+  the app's own rule (bundled, not retyped), the *shipped* defaults file, the name as the book's title —
+  and asks `epubcheck` about it, and it **skips with a line naming what is missing** on a machine with no
+  `pandoc`, no `java` or no jar (`YI_EPUBCHECK` names one anywhere else), so `npm run check` stays green
+  without any of them. Both halves are held: with `shift-heading-level-by: 1` back in the file, or with
+  the note handed over as it stands so the rule never runs, it fails, twice, on `Duplicate ID
+  "going-out"` — measured four ways (the rule with either shift, and no rule with either). What the app
+  *does* with that rule is a probe: `export-pandoc-arguments.js` reads the note the app wrote for pandoc
+  and finds the name written in at the level-1 heading for the book, and finds a docx of the same note
+  handed the note's own text.
+  **Shapes measured clean** with the shipped file and the rule, one book each: a note whose first heading
+  is its name (the reported case), prose before that heading, a `##` section under it, a `##` section
+  repeating the name, a note with no `#` heading whose sections say other words, a note with no headings
+  at all, and a note whose frontmatter names it.
+  And a reader who already has a copy of the file keeps the old one — a shipped file that changes reaches
+  nobody who already has it, and the card's *replace* button is how they ask for this one
+  (`export-config-replace.js`).
 
 ## Open, in the order to take them
 
@@ -1099,29 +1163,6 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **An EPUB held to a validator — and it found two real defects on its first run.** W3C's `epubcheck`
-  (v5.4.0, ~33 MB, Java 11+ — this machine has OpenJDK 25) was fetched into
-  `~/.cache/yi-tools/epubcheck/epubcheck-5.4.0/` (the release zip, extracted whole: the jar needs the
-  `lib/` beside it) and run by hand over a book built **the way the app builds one** — `pandoc
-  --defaults src-tauri/assets/export/export.epub.yaml -M title=… -M lang=…`. Verbatim:
-
-      ERROR(RSC-005): …/EPUB/text/ch001.xhtml(13,51): Duplicate ID "going-out"
-      ERROR(RSC-005): …/EPUB/text/ch001.xhtml(15,40): Duplicate ID "going-out"
-      Messages: 0 fatals / 2 errors / 0 warnings / 0 infos
-
-  The chapter that case makes — a note whose first heading *is* the title the app passes — is
-  `<section id="going-out" class="level1 unnumbered"><h1>Going out</h1><section id="going-out"
-  class="level2">…</section></section>`: two sections, one id. It is not the title *page*: measured,
-  `--epub-title-page=false` leaves both errors. And the title cannot simply be dropped — measured, a
-  book built without `-M title` fails differently (`element "metadata" incomplete; missing required
-  element "dc:title"`, and an empty nav anchor beside it), which is the `UNTITLED` state the shipped
-  file's header talks about.
-  **What is left is the fix and then the check**: something in the app's own epub path has to stop
-  pandoc nesting a second section with the heading's id — the candidates to measure first are the
-  shipped `section-divs: true`, `identifier-prefix: ''` and the `title-prefix: ''` beside it — and
-  once a book validates clean, `test/checks/check-epub-valid.mjs` is the shape the item wanted: run
-  `pandoc` over a fixture with the shipped defaults, run `epubcheck` over what comes out, and **skip
-  when either tool is absent** so `npm run check` stays green on a machine that has neither.
 - **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
   is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
   locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out

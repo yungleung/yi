@@ -97,6 +97,17 @@ pub struct ExportKind {
     /// give, and `lang` in a LaTeX run pulls in a hyphenation package chosen by language, which is
     /// not something to do unasked.
     pub needs_a_language: bool,
+    /// Whether what the kind is handed is a body of the window's making rather than the note's own
+    /// text: a **book keeps the note's own level-1 heading**, the note's name standing in it when the
+    /// note writes none (`ui/export/book_body.ts`).
+    ///
+    /// A note may keep that heading in its frontmatter `title:` — and pandoc's EPUB writer then makes
+    /// a heading of its own, level 1, out of the book's name and nests the note inside it, *outside* the
+    /// document pandoc makes identifiers unique in: measured, a note whose `## Going out` repeats the name came
+    /// out with `Duplicate ID "going-out"` twice (`check-epub-valid.mjs`). Writing the name into the
+    /// note's copy is what puts the two in one id-space. Every other kind's body is the note's own
+    /// text, and a docx or an odt that opened with a heading of that name would say it twice.
+    pub names_its_body: bool,
     /// The defaults file this build ships, as its own bytes: what a reader's copy starts as.
     pub defaults: &'static str,
 }
@@ -109,6 +120,7 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        names_its_body: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         needs_pandoc: true,
@@ -122,6 +134,7 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        names_its_body: false,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
@@ -135,6 +148,7 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: "",
         takes_a_title: false,
         needs_a_language: false,
+        names_its_body: false,
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
@@ -148,6 +162,7 @@ pub const KINDS: &[ExportKind] = &[
         // says it, so it comes from the note.
         takes_a_title: true,
         needs_a_language: false,
+        names_its_body: false,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
@@ -161,6 +176,8 @@ pub const KINDS: &[ExportKind] = &[
         // (measured: without one pandoc writes `C`, and the title page reads UNTITLED).
         takes_a_title: true,
         needs_a_language: true,
+        // And it is the one kind whose body the window writes: see `names_its_body`.
+        names_its_body: true,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
@@ -177,6 +194,7 @@ pub const KINDS: &[ExportKind] = &[
         // written in Latin adds one (`variables: CJKmainfont`, or `mainfont` for any script).
         takes_a_title: false,
         needs_a_language: false,
+        names_its_body: false,
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
@@ -189,6 +207,7 @@ pub const KINDS: &[ExportKind] = &[
         name_suffix: ".processed",
         takes_a_title: false,
         needs_a_language: false,
+        names_its_body: false,
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
         needs_pandoc: false,
@@ -212,6 +231,9 @@ pub struct ExportKindInfo {
     /// Whether the window should hand this kind the note's own name, and a language.
     pub takes_a_title: bool,
     pub needs_a_language: bool,
+    /// Whether the window writes this kind's body rather than handing over the note's own text: the
+    /// body keeps the note's own level-1 heading, its name standing in it when the note writes none.
+    pub names_its_body: bool,
     /// Where the reader's copy of the defaults file is — there whether or not it exists yet.
     pub config_path: String,
     /// Whether that copy has been written yet. A missing one is made by the first export or by
@@ -504,6 +526,7 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         needs_pandoc: kind.needs_pandoc,
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
+        names_its_body: kind.names_its_body,
         config_exists,
         config_is_shipped,
         config_path: config
@@ -1337,6 +1360,18 @@ mod tests {
         assert!(!epub.iter().any(|argument| argument.starts_with("title=")), "{epub:?}");
         assert!(!epub.iter().any(|argument| argument.starts_with("lang=")), "{epub:?}");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// One kind's body is not the note's own text: a book's keeps the note's own level-1 heading, and
+    /// the window writes the note's name into it when the note writes none (`ui/export/book_body.ts`).
+    #[test]
+    fn only_a_book_is_handed_a_body_of_the_windows_making() {
+        let writing: Vec<&str> = KINDS
+            .iter()
+            .filter(|kind| kind.names_its_body)
+            .map(|kind| kind.kind)
+            .collect();
+        assert_eq!(writing, vec!["epub"]);
     }
 
     #[test]

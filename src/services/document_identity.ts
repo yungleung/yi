@@ -12,10 +12,25 @@
  * pattern, so a document is the same document to all of them.
  */
 
+/**
+ * The frontmatter block: `---`, its lines, `---` — the one shape every reader of it agrees on, so a
+ * caller that wants the text under it and one that wants to write *there* read the same pattern.
+ */
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/;
+
 /** The frontmatter block's own text, or null when the document has none. */
 export function readFrontmatterBlock(content: string): string | null {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const match = content.match(FRONTMATTER);
   return match ? match[1] : null;
+}
+
+/**
+ * Where the frontmatter stops — the offset just past its closing `---`, or 0 when the document has
+ * none. What a caller writes *under* it needs the cut, where reading a key out of it wants the text.
+ */
+export function frontmatterEnd(content: string): number {
+  const match = content.match(FRONTMATTER);
+  return match === null ? 0 : (match.index ?? 0) + match[0].length;
 }
 
 /** The `title` the frontmatter gives, or null. */

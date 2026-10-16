@@ -40,6 +40,7 @@ import { bibliographyPath, homeFolderPath, imageFolderPath } from '../../service
 import { fileName, parentFolder } from '../../services/workspace_folders';
 import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
+import { bodyWithItsName } from './book_body';
 import { exportDialog } from './export_dialog';
 import { uncoveredCharacters } from './font_hint';
 import { exportSource } from './preprocess';
@@ -130,19 +131,24 @@ export async function exportNote(text: string, asked: string | null = null): Pro
             title: t('export.references')
           }
     });
+    // What the note is *called*, and the language it is in. The kind's own row decides whether it
+    // uses them (a book's title page and its required language, a page's `<title>`), and a kind
+    // whose body already opens with the note's own heading takes neither.
+    const title = documentTitle(text, note?.path ?? null);
+    // And what one kind is *handed* rather than told: a book's body keeps the note's own level-1
+    // heading, the note's name standing in it when the note writes none (`book_body.ts`). Every
+    // other kind's body is the note's own text.
+    const body = first.names_its_body ? bodyWithItsName(prepared, title) : prepared;
     const outcome = await runExport({
       kind: first.kind,
-      text: prepared,
+      text: body,
       output_path: outputPath,
       resource_paths: await resourcePaths(folder),
       source_dir: note?.path ? parentFolder(note.path) : null,
       bibliography: await bibliographyPath(),
       csl: bibliographyManager.cslForExport(),
       references: t('export.references'),
-      // What the note is *called*, and the language it is in. The kind's own row decides whether it
-      // uses them (a book's title page and its required language, a page's `<title>`), and a kind
-      // whose body already opens with the note's own heading takes neither.
-      title: documentTitle(text, note?.path ?? null),
+      title,
       language: readFrontmatterLang(text) ?? language()
     });
     showHint(t('export.done', { file: fileName(outputPath) }), null);

@@ -221,8 +221,15 @@ output is written under, whether pandoc writes it at all, and the bytes of a pan
 makes a reader's edit theirs (the docx one is Zettlr's own defaults file, less one key: their
 `default-image-extension: .jpg` is applied by pandoc to a URL whose path has no extension, turning a
 working web image into a 404 — measured — so it is left out and the header says so; the epub one is
-Yi's own, written in that shape). **One kind is not pandoc's at all**: `markdown` (`needs_pandoc:
-false`) *is* the pre-process — the app writes the text it prepared (`export_own_text`) — so it ships
+Yi's own, written in that shape). A row also says what the *window* owes a kind's **body**: a book's
+keeps the note's own level-1 heading, the note's name standing in it when the note keeps that heading in
+its frontmatter `title:` (`src/ui/export/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
+would otherwise make a heading of its own, level 1, out of the book's name *outside* the document pandoc
+makes identifiers unique in, and a section of the note that repeats the name is then the same id twice,
+which epubcheck reports and `test/checks/check-epub-valid.mjs` fails on — while every other kind is
+handed the note's own text, since a docx whose body opened with a heading of that name would say it
+twice. **One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
+the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
 is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that
 needs more than pandoc — a TeX engine, named in its file, **and a face for every script the note may be
