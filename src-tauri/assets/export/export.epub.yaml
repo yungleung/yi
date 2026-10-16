@@ -49,19 +49,18 @@
 #
 # **`shift-heading-level-by` is 0 below, not the 1 the kinds beside this one carry**, and it is the one
 # number here that was measured rather than inherited. The family's 1 is for a *document* whose title
-# sits above its first heading; an EPUB writer makes a root heading of its own whenever the first chunk
-# of the body has none, and fills it with the book's own name — so a note's `#` heading, shifted down to
-# level 2, stood *inside* a section of the writer's own making that said the same words, and both
-# sections claimed the same id. Measured with pandoc 3.12 and epubcheck 5.4.0 over a note saying
-# `# Going out` handed `-M title="Going out"` — which is the app's own naming, a note being named by its
-# first heading — the book was reported as `Duplicate ID "going-out"` twice. With the shift at 0 a note
-# that opens with its own `#` heading *is* the body's first section, and a root heading of the writer's
-# own is made only for a note that has none — where it is wanted, and where no heading of the note can
-# claim its id. `test/checks/check-epub-valid.mjs` builds exactly that book and asks epubcheck about it.
-# The other keys measured as candidates are not fixes: `section-divs: false` leaves both ids as they
-# are; a non-empty `identifier-prefix` prefixes them both and, on pandoc 3.12, leaves the navigation
-# document pointing at the unprefixed anchors (six validator errors instead of two); `title-prefix`
-# touches the HTML `<title>` alone.
+# sits above its first heading; an EPUB writer makes a root heading of its own whenever the body's first
+# chunk has none, and fills it with the book's own name. With the shift at 1 a note's own `#` heading was
+# pushed down to level 2 and stood *inside* a section of the writer's making that said the same words —
+# both claimed `going-out`: measured with pandoc 3.12 and epubcheck 5.4.0, `Duplicate ID "going-out"`
+# twice. With the shift at 0 a note that opens with its own `#` heading *is* the body's first section,
+# and that is what the app arranges for every note it exports: the window writes the note's name as that
+# heading when the note keeps it in its frontmatter `title:` instead of writing one
+# (`ui/export/book_body.ts`). `test/checks/check-epub-valid.mjs` builds exactly that book and asks
+# epubcheck about it, and it fails with either half missing. The other keys measured as candidates are
+# not fixes: `section-divs: false` leaves both ids as they are; a non-empty `identifier-prefix` prefixes
+# them both and, on pandoc 3.12, leaves the navigation document pointing at the unprefixed anchors (six
+# validator errors instead of two); `title-prefix` touches the HTML `<title>` alone.
 reader: markdown
 writer: epub
 variables: {}

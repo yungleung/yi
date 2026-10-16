@@ -1119,15 +1119,38 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   the book's name appears in the body; and `epub-chapter-level=2` splits the writer's heading into a
   chapter file of its own — quiet to the validator, but the nav entry for the note's section then points
   at that empty chapter, so it is no fix either.
-  **What the check holds**: `test/checks/check-epub-valid.mjs` runs `pandoc` over a note of the reported
-  shape with the *shipped* defaults and then `epubcheck` over what comes out, and it **skips with a line
-  naming what is missing** on a machine with no `pandoc`, no `java` or no jar (`YI_EPUBCHECK` names one
-  anywhere else), so `npm run check` stays green without any of them; with `shift-heading-level-by: 1`
-  back in the file it fails, twice, on `Duplicate ID "going-out"`.
-  **Shapes measured clean** with the shipped file now, one book each: a note whose first heading is its
-  name (the reported case), prose before that heading, a `##` section under it, a `##` section repeating
-  the name, a note with no `#` heading whose sections say other words, a note with no headings at all,
-  and a note whose frontmatter names it. One shape is not clean, and it is the open item below.
+  **The other half of the defect was the note's own level-1 heading, and where a note keeps it.** A note
+  may keep that heading in its frontmatter `title:` rather than write one into the body — a `## section`
+  under such a note is a section of the note, not of nothing — and the writer's root heading is then the
+  note's own level-1 heading in every way but one: it is made *outside* the document pandoc makes
+  identifiers unique in, so a section of the note that repeats the name is a second element with the
+  same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
+  `-M title="Going out"` and the shipped defaults with `shift-heading-level-by: 0`, is reported as
+  `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
+  `ui/export/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
+  frontmatter when it has not, one line of a name that came from a heading), the kind's own row says it
+  (`export.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
+  the name would say it twice), and the window hands the book that body (`export_flow.ts`). The note's
+  `## Going out` then takes the id pandoc gives the second of two headings saying the same thing, and
+  the book's structure is the one a reader would draw: the name as the level-1 section, the note's own
+  sections inside it, no repeated id. Measured, one book each, clean: the frontmatter title with a
+  section that repeats it, with one that does not, a note with no `#` heading whose name is its file's,
+  and a note with no headings at all; and the *reported* shape — a note that opens with its own `#`
+  heading as its name — is the same book, the name written by the note instead of by the app.
+  **What the check holds**: `test/checks/check-epub-valid.mjs` builds that book — the note's text out of
+  the app's own rule (bundled, not retyped), the *shipped* defaults file, the name as the book's title —
+  and asks `epubcheck` about it, and it **skips with a line naming what is missing** on a machine with no
+  `pandoc`, no `java` or no jar (`YI_EPUBCHECK` names one anywhere else), so `npm run check` stays green
+  without any of them. Both halves are held: with `shift-heading-level-by: 1` back in the file, or with
+  the note handed over as it stands so the rule never runs, it fails, twice, on `Duplicate ID
+  "going-out"` — measured four ways (the rule with either shift, and no rule with either). What the app
+  *does* with that rule is a probe: `export-pandoc-arguments.js` reads the note the app wrote for pandoc
+  and finds the name written in at the level-1 heading for the book, and finds a docx of the same note
+  handed the note's own text.
+  **Shapes measured clean** with the shipped file and the rule, one book each: a note whose first heading
+  is its name (the reported case), prose before that heading, a `##` section under it, a `##` section
+  repeating the name, a note with no `#` heading whose sections say other words, a note with no headings
+  at all, and a note whose frontmatter names it.
   And a reader who already has a copy of the file keeps the old one — a shipped file that changes reaches
   nobody who already has it, and the card's *replace* button is how they ask for this one
   (`export-config-replace.js`).
@@ -1140,21 +1163,6 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **A book whose note repeats its name in a level-2 heading.** The writer's root heading is made for any
-  note that does not *open* at level 1, and its id is the id those words make — so a `##` heading saying
-  what the book is called is a second element with that id on the same page. Measured, still failing
-  with `shift-heading-level-by: 0`: a note saying `## Going out` handed `-M title="Going out"` —
-  `Duplicate ID "going-out"`, twice. The app reaches it for a note with no `#` heading of its own whose
-  *name* comes from its frontmatter title or its file's stem and is repeated by a `##` heading (`Going
-  out.md` holding `## Going out`, or a note whose frontmatter says `title: Going out` and whose first
-  section says the same). Every shape the app's naming makes *from the first heading* is clean now,
-  which is why the item above is closed and this is one of its own. The candidates: a filter the app
-  hands pandoc that gives the note's own copy of those words an id of its own — the writer's heading is
-  not in the document a filter sees, so the note's heading has to step aside — or an answer taken per
-  note, and the shift that would make a note's first heading level 1 is `1 - level`: measured, a
-  negative shift turns a `#` heading that follows a promoted one into a *paragraph* (`## A section` and
-  then `# B heading`, shifted by `-1`, comes out with `B heading` as prose), so that is a decision
-  rather than a setting.
 - **A citation's locator, its suppressed author and its list — asked, and answered.** `export-citations`
   is the probe (through an EPUB, because a book is a zip and `lib.js: zipEntry` reads its pages): the
   locator lands where citeproc's grammar expects it — measured, `[@smith2020, p. 45]` comes out
