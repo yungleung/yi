@@ -7,12 +7,12 @@
  * writes the name where the note's level-1 heading belongs (`ui/export/book_body.ts`, the kind's own
  * `names_its_body`), and the note goes to pandoc with the shipped defaults file and that name as the
  * book's title. Measured with pandoc 3.12 and epubcheck 5.4.0, both halves of that book have to be
- * right, and each of them alone is not enough — the EPUB writer makes a root heading out of the
+ * right, and each of them alone is not enough — the EPUB writer makes a heading of its own out of the
  * book's own name whenever the body's first chunk has no level-1 heading of its own, and that
  * heading is not part of the document pandoc makes identifiers unique in, so:
  *
  * - with `shift-heading-level-by: 1`, the family's shape, the name written into the note is shifted
- *   down to level 2 and the writer makes its own root heading above it — `Duplicate ID "going-out"`;
+ *   down to level 2 and the writer makes its own heading above it — `Duplicate ID "going-out"`;
  * - with the note handed over as it stands (no name written in), the writer's heading and the note's
  *   `## Going out` are two elements with that id on one page — the same two errors.
  *

@@ -102,8 +102,8 @@ pub struct ExportKind {
     /// note writes none (`ui/export/book_body.ts`).
     ///
     /// A note may keep that heading in its frontmatter `title:` — and pandoc's EPUB writer then makes
-    /// a root heading of the book's own name and nests the note inside it, *outside* the document
-    /// pandoc makes identifiers unique in: measured, a note whose `## Going out` repeats the name came
+    /// a heading of its own, level 1, out of the book's name and nests the note inside it, *outside* the
+    /// document pandoc makes identifiers unique in: measured, a note whose `## Going out` repeats the name came
     /// out with `Duplicate ID "going-out"` twice (`check-epub-valid.mjs`). Writing the name into the
     /// note's copy is what puts the two in one id-space. Every other kind's body is the note's own
     /// text, and a docx or an odt that opened with a heading of that name would say it twice.

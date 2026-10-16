@@ -49,8 +49,8 @@
 #
 # **`shift-heading-level-by` is 0 below, not the 1 the kinds beside this one carry**, and it is the one
 # number here that was measured rather than inherited. The family's 1 is for a *document* whose title
-# sits above its first heading; an EPUB writer makes a root heading of its own whenever the body's first
-# chunk has none, and fills it with the book's own name. With the shift at 1 a note's own `#` heading was
+# sits above its first heading; an EPUB writer makes a heading of its own whenever the body's first chunk
+# has none — level 1, filled with the book's own name. With the shift at 1 a note's own `#` heading was
 # pushed down to level 2 and stood *inside* a section of the writer's making that said the same words —
 # both claimed `going-out`: measured with pandoc 3.12 and epubcheck 5.4.0, `Duplicate ID "going-out"`
 # twice. With the shift at 0 a note that opens with its own `#` heading *is* the body's first section,

@@ -1097,12 +1097,12 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   `lib/` beside it), and it found two real errors in a book built **the way the app builds one**. The
   whole of the fix is one key of the shipped `export.epub.yaml`: **`shift-heading-level-by: 0`**, where
   the four kinds beside it carry `1`. That 1 is the family's shape, for a document whose title sits
-  above its first heading — and the EPUB writer makes a root heading of its own, filled with the book's
-  own name, whenever the first chunk of the body has none. So a note's own `#` heading, shifted down to
-  level 2, stood *inside* a section the writer had made of the same words, and both claimed `going-out`
-  on one page — which is the app's own naming shape, a note being named by its first heading and handed
-  over as the book's name. With the shift at 0 a note that opens with its own `#` heading *is* the
-  body's first section, and a root heading of the writer's own is made only for a note that has none —
+  above its first heading — and the EPUB writer makes a heading of its own, level 1 and filled with the
+  book's own name, whenever the first chunk of the body has none. So a note's own `#` heading, shifted
+  down to level 2, stood *inside* a section the writer had made of the same words, and both claimed
+  `going-out` on one page — which is the app's own naming shape, a note being named by its first heading
+  and handed over as the book's name. With the shift at 0 a note that opens with its own `#` heading *is*
+  the body's first section, and a heading of the writer's own is made only for a note that has none —
   where it is wanted, and where no heading of the note can claim its id. The book the report was about
   now says, verbatim:
 
@@ -1115,16 +1115,16 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   repeat); a non-empty `identifier-prefix` prefixes *both* ids — `yi-going-out` twice — and on pandoc
   3.12 leaves `nav.xhtml` and `toc.ncx` pointing at the unprefixed anchors, which is six errors instead
   of two (`RSC-012`, *Fragment identifier is not defined*); `title-prefix` touches the HTML `<title>`
-  alone; `epub-title-page=false` leaves both errors, and the writer's root heading is then the only place
-  the book's name appears in the body; and `epub-chapter-level=2` splits the writer's heading into a
-  chapter file of its own — quiet to the validator, but the nav entry for the note's section then points
-  at that empty chapter, so it is no fix either.
+  alone; `epub-title-page=false` leaves both errors, and the heading the writer makes from the title is
+  then the only place the book's name appears in the body; and `epub-chapter-level=2` splits that
+  heading into a chapter file of its own — quiet to the validator, but the nav entry for the note's
+  section then points at that empty chapter, so it is no fix either.
   **The other half of the defect was the note's own level-1 heading, and where a note keeps it.** A note
   may keep that heading in its frontmatter `title:` rather than write one into the body — a `## section`
-  under such a note is a section of the note, not of nothing — and the writer's root heading is then the
-  note's own level-1 heading in every way but one: it is made *outside* the document pandoc makes
-  identifiers unique in, so a section of the note that repeats the name is a second element with the
-  same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
+  under such a note is a section of the note, not of nothing — and the heading the writer makes from the
+  title is then the note's own level-1 heading in every way but one: it is made *outside* the document
+  pandoc makes identifiers unique in, so a section of the note that repeats the name is a second element
+  with the same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
   `-M title="Going out"` and the shipped defaults with `shift-heading-level-by: 0`, is reported as
   `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
   `ui/export/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the

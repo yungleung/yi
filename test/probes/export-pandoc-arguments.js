@@ -16,8 +16,8 @@
  *
  * The last of those is what one kind's *body* is: a book is handed the note's name written where its
  * level-1 heading belongs, when the note keeps that heading in its frontmatter title
- * (`ui/export/book_body.ts` — the writer's own root heading is not part of the document pandoc makes
- * identifiers unique in), and every other kind is handed the note's own text.
+ * (`ui/export/book_body.ts` — the heading the writer makes from the title is not part of the document
+ * pandoc makes identifiers unique in), and every other kind is handed the note's own text.
  *
  * @covers src-tauri/src/export.rs (run_pandoc, write_note, export_through_pandoc),
  *   src/ui/export/preprocess.ts
@@ -257,7 +257,7 @@
     // --- what a book's *body* is, seen from the app's own hand -----------------------------------
 
     // A note may keep its level-1 heading in its frontmatter `title:` rather than write one into the
-    // body, and pandoc's EPUB writer then makes a root heading of the book's own name *outside* the
+    // body, and pandoc's EPUB writer then makes a heading of its own out of the book's name *outside* the
     // document pandoc makes identifiers unique in (measured: a note whose `## Going out` repeats the
     // name came out of epubcheck with `Duplicate ID "going-out"` twice). So a book is handed a body
     // with the name written where that heading belongs (`ui/export/book_body.ts`), and no other
