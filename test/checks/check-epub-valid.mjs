@@ -2,15 +2,22 @@
  * The book the app writes, held to W3C's validator.
  *
  * An EPUB is a container with rules no converter has to know, and one of them is that an id is used
- * once in the document it stands in. The book built here is the shape the app's own naming makes of a
- * note: a note whose first heading is what the note is called, handed over as the *book's* name too
- * (`--metadata title=…`, which the window does for every kind that carries its own name). Measured
- * with pandoc 3.12 and epubcheck 5.4.0, the EPUB writer gives the first chunk of the body the book's
- * name as a heading of its own whenever the note's own first heading is not a level-1 one, so a
- * shipped `shift-heading-level-by: 1` — the family's shape, for a title above a document's first
- * heading — nested the note's `#` heading inside the writer's copy of the same words, and both
- * sections claimed `going-out`. The shipped file shifts by 0 now, and this is what says so: with
- * `shift-heading-level-by: 1` back in the file, epubcheck reports
+ * once in the document it stands in. The book built here is the one the app builds for a note whose
+ * level-1 heading is its frontmatter `title:` and whose first section repeats that name: the window
+ * writes the name where the note's level-1 heading belongs (`ui/export/book_body.ts`, the kind's own
+ * `names_its_body`), and the note goes to pandoc with the shipped defaults file and that name as the
+ * book's title. Measured with pandoc 3.12 and epubcheck 5.4.0, both halves of that book have to be
+ * right, and each of them alone is not enough — the EPUB writer makes a root heading out of the
+ * book's own name whenever the body's first chunk has no level-1 heading of its own, and that
+ * heading is not part of the document pandoc makes identifiers unique in, so:
+ *
+ * - with `shift-heading-level-by: 1`, the family's shape, the name written into the note is shifted
+ *   down to level 2 and the writer makes its own root heading above it — `Duplicate ID "going-out"`;
+ * - with the note handed over as it stands (no name written in), the writer's heading and the note's
+ *   `## Going out` are two elements with that id on one page — the same two errors.
+ *
+ * This is what says both are gone: with `shift-heading-level-by: 1` back in the file, or with the
+ * name left out of the body, epubcheck reports
  *
  *     ERROR(RSC-005): …/EPUB/text/ch001.xhtml(13,51): Duplicate ID "going-out"
  *
@@ -31,6 +38,7 @@ import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rolldown } from 'rolldown';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const defaults = join(root, 'src-tauri/assets/export/export.epub.yaml');
@@ -75,17 +83,42 @@ if (missing.length > 0) {
 }
 
 /**
- * The note this holds: the app's own naming shape, three lines of it — a `#` heading that says what
- * the note is called, and the text under it. It is written rather than committed because the *shape*
- * is the fixture, and a file in `test/fixtures/` would be a second place to read it from.
+ * The note this holds, and the name the app would take from it: a note whose title is its frontmatter
+ * (`documentTitle`: the frontmatter title, else the first `#` heading, else the file's name) and whose
+ * first section repeats it. Written rather than committed because the *shape* is the fixture, and a
+ * file in `test/fixtures/` would be a second place to read it from.
  */
-const note = '# Going out\n\nSome text.\n';
+const note = '---\ntitle: Going out\n---\n\n## Going out\n\nSome text.\n';
+const name = 'Going out';
+
+// The text a book is handed, from the app's own rule — so what pandoc is asked about is the app's
+// answer and not this check's idea of it.
+const bundle = await rolldown({
+  input: join(root, 'src/ui/export/book_body.ts'),
+  logLevel: 'silent',
+  platform: 'node'
+});
+const { output } = await bundle.generate({ format: 'esm' });
+await bundle.close();
+const bundleDirectory = mkdtempSync(join(tmpdir(), 'yi-epub-valid-rule-'));
+const ruleFile = join(bundleDirectory, 'book_body.mjs');
+writeFileSync(ruleFile, output.find((chunk) => chunk.type === 'chunk').code);
+const { bodyWithItsName } = await import(ruleFile);
+
 const directory = mkdtempSync(join(tmpdir(), 'yi-epub-valid-'));
 const notePath = join(directory, 'note.md');
 const bookPath = join(directory, 'book.epub');
-writeFileSync(notePath, note);
 
 const failures = [];
+
+const handed = bodyWithItsName(note, name);
+if (!handed.startsWith('---\ntitle: Going out\n---\n# Going out\n')) {
+  failures.push(
+    `the app's rule did not write the note's name where its level-1 heading belongs\n` +
+      `  ${JSON.stringify(handed)}`
+  );
+}
+writeFileSync(notePath, handed);
 
 // The app's own command line for a book: the kind's defaults file, the note's name and the language
 // the app speaks, and the note. The window sends both whatever the kind is and the *kind* decides
