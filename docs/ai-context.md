@@ -228,7 +228,13 @@ would otherwise make a heading of its own, level 1, out of the book's name *outs
 makes identifiers unique in, and a section of the note that repeats the name is then the same id twice,
 which epubcheck reports and `test/checks/check-epub-valid.mjs` fails on — while every other kind is
 handed the note's own text, since a docx whose body opened with a heading of that name would say it
-twice. **One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
+twice. A row can also say that the **card may set the page** (`takes_a_page_size`: the PDF, whose
+engine lays one out, and nothing else): the card offers a size from `PAPER_SIZES` and an orientation,
+both opening on *the settings file's own* so an untouched card asks for nothing, and the answer travels
+as `geometry` options — **not** as a `papersize` variable, which pandoc *concatenates* with the one the
+reader's file sets (`a4letterpaper`, and a LaTeX warning about an unused global option) while geometry's
+options take the page with them (measured; `export-pdf-page.js` reads the page's own `MediaBox` back).
+**One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
 the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
 is pandoc's, so a machine without pandoc is told so and offered no run button; **pdf** is the one that

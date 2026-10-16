@@ -108,9 +108,61 @@ pub struct ExportKind {
     /// note's copy is what puts the two in one id-space. Every other kind's body is the note's own
     /// text, and a docx or an odt that opened with a heading of that name would say it twice.
     pub names_its_body: bool,
+    /// Whether the card may tell this kind **what page to lay out**, in a size and an orientation: the
+    /// PDF, whose page XeTeX draws. Every other kind's page is the reader's own to set in the defaults
+    /// file, or is not a page at all — a docx, a book or a web page carries the text and relies on
+    /// whatever shows it.
+    pub takes_a_page_size: bool,
     /// The defaults file this build ships, as its own bytes: what a reader's copy starts as.
     pub defaults: &'static str,
 }
+
+/// One page size as the card offers it: the words on it, and the `geometry` option behind them.
+#[derive(Debug, Serialize, Clone)]
+pub struct PaperSize {
+    /// What a reader reads: `A4`, `B0 JIS`, `Letter`.
+    pub label: String,
+    /// The option that means it, which is what travels back and is passed to pandoc.
+    pub value: String,
+}
+
+/// The page sizes a reader may choose — the list the pdf defaults file's own comment carries, which is
+/// `geometry`'s own: the ISO A, B and C series, JIS B (the one without `paper` after it), letter,
+/// executive and legal.
+///
+/// A size reaches the page as a `geometry` option and **not** as a `papersize` variable, and that is
+/// measured: a `papersize` on the command line is *concatenated* with the one the reader's file sets —
+/// `a4letterpaper`, a LaTeX warning about an unused global option, and a letter page by luck — while
+/// geometry's options are appended after the file's own and take the page with them (measured: a file
+/// saying `papersize: a4` plus `geometry=letterpaper` gives letter, `geometry=landscape` gives A4
+/// landscape, and `geometry=portrait` over a file saying `geometry: landscape` gives portrait).
+pub const PAPER_SIZES: &[(&str, &str)] = &[
+    ("A0", "a0paper"),
+    ("A1", "a1paper"),
+    ("A2", "a2paper"),
+    ("A3", "a3paper"),
+    ("A4", "a4paper"),
+    ("A5", "a5paper"),
+    ("A6", "a6paper"),
+    ("B0", "b0paper"),
+    ("B1", "b1paper"),
+    ("B2", "b2paper"),
+    ("B3", "b3paper"),
+    ("B4", "b4paper"),
+    ("B5", "b5paper"),
+    ("B6", "b6paper"),
+    ("C0", "c0paper"),
+    ("C1", "c1paper"),
+    ("C2", "c2paper"),
+    ("C3", "c3paper"),
+    ("C4", "c4paper"),
+    ("C5", "c5paper"),
+    ("C6", "c6paper"),
+    ("B0 JIS", "b0j"),
+    ("Letter", "letterpaper"),
+    ("Executive", "executivepaper"),
+    ("Legal", "legalpaper"),
+];
 
 /// Every kind of export this build ships, in the order the dialog shows them.
 pub const KINDS: &[ExportKind] = &[
@@ -121,6 +173,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        takes_a_page_size: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
         needs_pandoc: true,
@@ -135,6 +188,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.odt.yaml"),
@@ -149,6 +203,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.latex.yaml"),
@@ -163,6 +218,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: false,
         names_its_body: false,
+        takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.html.yaml"),
@@ -178,6 +234,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_language: true,
         // And it is the one kind whose body the window writes: see `names_its_body`.
         names_its_body: true,
+        takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
         defaults: include_str!("../assets/export/export.epub.yaml"),
@@ -195,6 +252,9 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        // The one kind whose engine draws a page the app can size: see `takes_a_page_size`, and the
+        // one kind the card offers a size and an orientation for.
+        takes_a_page_size: true,
         needs_pandoc: true,
         needs_a_font: true,
         defaults: include_str!("../assets/export/export.pdf.yaml"),
@@ -208,6 +268,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        takes_a_page_size: false,
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
         needs_pandoc: false,
@@ -234,6 +295,11 @@ pub struct ExportKindInfo {
     /// Whether the window writes this kind's body rather than handing over the note's own text: the
     /// body keeps the note's own level-1 heading, its name standing in it when the note writes none.
     pub names_its_body: bool,
+    /// Whether the card offers a **page size and an orientation** for this kind.
+    pub takes_a_page_size: bool,
+    /// The sizes the card offers, in the order it offers them, each with the words a reader reads and
+    /// the option behind them ([`PAPER_SIZES`]). Empty for a kind that takes no page size.
+    pub paper_sizes: Vec<PaperSize>,
     /// Where the reader's copy of the defaults file is — there whether or not it exists yet.
     pub config_path: String,
     /// Whether that copy has been written yet. A missing one is made by the first export or by
@@ -298,6 +364,16 @@ pub struct ExportRequest {
     /// ignored by the kinds whose body already says it.
     #[serde(default)]
     pub title: Option<String>,
+    /// The page the reader asked for in the card, for a kind that takes one (`takes_a_page_size`): one
+    /// of [`PAPER_SIZES`]'s values, or null for *the settings file's own* — which is where the reader
+    /// sets the page they usually want, and what an export that asks nothing gets.
+    #[serde(default)]
+    pub paper: Option<String>,
+    /// Which way up the reader asked for that page: `Some(true)` landscape, `Some(false)` portrait —
+    /// asked for *explicitly*, so it wins over the reader's own file, which may say landscape — and
+    /// `None` for *the settings file's own*, the same answer an untouched card gives.
+    #[serde(default)]
+    pub landscape: Option<bool>,
     /// The language the note is written in, as the app knows it: the frontmatter's `lang:`, else the
     /// language the app is speaking. Used by the kinds that must declare one (`needs_a_language`).
     #[serde(default)]
@@ -527,6 +603,19 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
         names_its_body: kind.names_its_body,
+        takes_a_page_size: kind.takes_a_page_size,
+        paper_sizes: kind
+            .takes_a_page_size
+            .then(|| {
+                PAPER_SIZES
+                    .iter()
+                    .map(|(label, value)| PaperSize {
+                        label: label.to_string(),
+                        value: value.to_string(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
         config_exists,
         config_is_shipped,
         config_path: config
@@ -886,6 +975,33 @@ fn pandoc_arguments(
         arguments.push(OsString::from("--metadata"));
         arguments.push(OsString::from(pair));
     }
+    // The page a reader asked the card for, on the one kind whose engine lays one out
+    // (`takes_a_page_size`). Nothing at all is passed for a reader who left the card's own answer —
+    // *the settings file's own* — where it was: the file is theirs, and the page they set up there is
+    // what an export that asks for nothing gets. See `PAPER_SIZES` for why a size is a `geometry`
+    // option rather than a `papersize` variable.
+    if kind.takes_a_page_size {
+        let paper = request
+            .paper
+            .as_deref()
+            .map(str::trim)
+            .filter(|paper| !paper.is_empty());
+        if let Some(paper) = paper {
+            if !PAPER_SIZES.iter().any(|(_, value)| *value == paper) {
+                return Err(crate::i18n::now("export.unknownPaper", &[("paper", paper)]));
+            }
+            arguments.push(OsString::from("--variable"));
+            arguments.push(OsString::from(format!("geometry={paper}")));
+        }
+        if let Some(landscape) = request.landscape {
+            arguments.push(OsString::from("--variable"));
+            arguments.push(OsString::from(if landscape {
+                "geometry=landscape"
+            } else {
+                "geometry=portrait"
+            }));
+        }
+    }
     arguments.push(note.as_os_str().to_os_string());
     Ok(arguments)
 }
@@ -1210,6 +1326,8 @@ mod tests {
             references: Some("References".to_string()),
             title: Some("Going out".to_string()),
             language: Some("en-GB".to_string()),
+            paper: None,
+            landscape: None,
         }
     }
 
@@ -1372,6 +1490,97 @@ mod tests {
             .map(|kind| kind.kind)
             .collect();
         assert_eq!(writing, vec!["epub"]);
+    }
+
+    /// Only one kind's page is the app's to lay out, and the card is offered the sizes for it alone.
+    #[test]
+    fn only_the_kind_whose_engine_draws_a_page_is_offered_a_size_for_it() {
+        let sizing: Vec<&str> = KINDS
+            .iter()
+            .filter(|kind| kind.takes_a_page_size)
+            .map(|kind| kind.kind)
+            .collect();
+        assert_eq!(sizing, vec!["pdf"]);
+    }
+
+    /// A page a reader asked for is `geometry` options, and nothing at all for *the file's own*: a
+    /// `papersize` on the command line is concatenated with the reader's own file instead of replacing
+    /// it (`a4letterpaper`, a LaTeX warning), where geometry's options are appended after the file's
+    /// and take the page with them — measured, all four of those pages (see `PAPER_SIZES`).
+    #[test]
+    fn a_page_a_reader_asks_for_is_a_geometry_option() {
+        let dir = scratch("paper");
+        let request = request_in(&dir);
+        let pdf = |paper: Option<&str>, landscape: Option<bool>| {
+            let request = ExportRequest {
+                kind: "pdf".to_string(),
+                paper: paper.map(str::to_string),
+                landscape,
+                ..request_in(&dir)
+            };
+            named_arguments_for(&dir, &request, kind_of("pdf").unwrap())
+        };
+
+        // The card's own answer: the settings file's page, and the arguments pandoc was already given.
+        assert!(!pdf(None, None).contains(&"--variable".to_string()));
+
+        assert_eq!(
+            pdf(Some("letterpaper"), None)
+                .iter()
+                .filter(|argument| *argument == "--variable" || argument.starts_with("geometry="))
+                .collect::<Vec<&String>>(),
+            vec!["--variable", "geometry=letterpaper"]
+        );
+        // An orientation of its own is asked for as much as a size is: a file saying landscape has to
+        // be able to be overruled by a reader who wants this one page portrait (measured).
+        assert_eq!(
+            pdf(None, Some(false))
+                .iter()
+                .filter(|argument| argument.starts_with("geometry="))
+                .collect::<Vec<&String>>(),
+            vec!["geometry=portrait"]
+        );
+        assert_eq!(
+            pdf(None, Some(true))
+                .iter()
+                .filter(|argument| argument.starts_with("geometry="))
+                .collect::<Vec<&String>>(),
+            vec!["geometry=landscape"]
+        );
+        assert_eq!(
+            pdf(Some("a4paper"), Some(true))
+                .iter()
+                .filter(|argument| argument.starts_with("geometry="))
+                .collect::<Vec<&String>>(),
+            vec!["geometry=a4paper", "geometry=landscape"]
+        );
+        // A size for a kind whose page is not the app's to lay out is nothing at all.
+        let docx = ExportRequest {
+            paper: Some("letterpaper".to_string()),
+            landscape: Some(true),
+            ..request
+        };
+        assert!(!named_arguments(&dir, &docx)
+            .iter()
+            .any(|argument| argument.starts_with("geometry=")));
+
+        // And a size this build does not know is refused rather than handed to LaTeX.
+        let request = ExportRequest {
+            kind: "pdf".to_string(),
+            paper: Some("tabloid".to_string()),
+            ..request_in(&dir)
+        };
+        let refusal = pandoc_arguments(
+            &dir,
+            &dir.join("export.pdf.yaml"),
+            &dir.join("note-1.md"),
+            &request,
+            kind_of("pdf").unwrap(),
+            None,
+        )
+        .expect_err("a size that is not in the list was passed on");
+        assert!(refusal.contains("tabloid"), "{refusal}");
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

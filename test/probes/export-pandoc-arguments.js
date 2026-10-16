@@ -293,6 +293,49 @@
       (await readText(`${recorder}/input.md`)) === bookNote,
       (await readText(`${recorder}/input.md`)).split('\n').slice(0, 5)
     );
+
+    // --- the page a reader asked for --------------------------------------------------------------
+
+    // The page reaches the engine as `geometry` options and never as a `papersize` variable, and that
+    // is measured: a `papersize` on the command line is *concatenated* with the one the reader's file
+    // sets (`a4letterpaper`, a LaTeX warning about an unused global option, and a letter page by luck),
+    // where geometry's options are appended after the file's own and take the page with them. A reader
+    // who leaves both fields on *the settings file's own* asks for nothing at all, which is what an
+    // export did before the card had them.
+    const pageCall = async (paper, landscape, target) => {
+      await askForExport('pdf');
+      await sleep(150);
+      const pdf = document.querySelector('[data-export-dialog]');
+      if (paper !== '') {
+        pdf.querySelector('[data-export-paper]').value = paper;
+      }
+      if (landscape !== '') {
+        pdf.querySelector('[data-export-orientation]').value = landscape;
+      }
+      pdf.querySelector('[data-export-target]').value = target;
+      pdf.querySelector('[data-export-run]').click();
+      await until(() => exists(target));
+      const log = (await readText(`${recorder}/argv.log`)).trim().split(/\npandoc\n/);
+      return (log.at(-1) ?? '').replace(/^pandoc\n/, '').split('\n');
+    };
+    const page = `${folder}/page.pdf`;
+    const ownPageCall = await pageCall('', '', page);
+    check(
+      'a pdf export that asks for no page passes no geometry option at all',
+      !ownPageCall.some((argument) => argument.startsWith('geometry=')),
+      { call: ownPageCall }
+    );
+    const chosenPageCall = await pageCall('letterpaper', 'landscape', `${folder}/letter.pdf`);
+    check(
+      'and a reader who chose letter, landscape is passed those as geometry options',
+      chosenPageCall.includes('geometry=letterpaper') &&
+        chosenPageCall.includes('geometry=landscape') &&
+        chosenPageCall.indexOf('geometry=letterpaper') < chosenPageCall.indexOf('geometry=landscape'),
+      {
+        paper: chosenPageCall.indexOf('geometry=letterpaper'),
+        landscape: chosenPageCall.indexOf('geometry=landscape')
+      }
+    );
   } finally {
     await api.pointAtPandoc(null);
     for (const stale of [folder, recorder]) {

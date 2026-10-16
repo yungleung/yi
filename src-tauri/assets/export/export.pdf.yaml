@@ -77,7 +77,11 @@ reader: markdown
 writer: pdf
 self-contained: true
 variables:
-  # Sets the size of the document's pages.
+  # Sets the size of the document's pages. The card can also set a page for **one export**: a size and
+  # an orientation, both offered for a PDF and both opening on *this file's own*, so nothing here is
+  # overruled unless a reader asks. What the card's answer becomes is a `geometry` option, not this key —
+  # measured, a `papersize` on the command line is *concatenated* with the one below (`a4letterpaper`,
+  # and a LaTeX warning about an unused global option), while `geometry: letterpaper` takes the page.
   papersize: a4 # Possible values: a0-a6, b0-b6, c0-c6,b0j, letter, executive, legal
   # The two fonts this file may name, and what each reaches: see the note above. Neither is needed for
   # the scripts this build draws itself.
