@@ -1022,6 +1022,75 @@ elements) unless it says otherwise.
   characters*, over the parse (`ui/export/font_hint.ts`, held by `check-export-font.mjs`; the span walk
   both it and the pre-process use is `ui/export/node_spans.ts`).
 
+- **The build draws the scripts itself now, and a reader may name a face for any one of them.** The
+round that shipped the faces (a serif set: `Noto Serif` for Greek and Cyrillic, `Noto Serif` per
+script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Amiri` for Arabic, and
+`Noto Serif CJK SC` for Han, kana and Hangul — 25 MB, OFL, under `src-tauri/assets/fonts/`) answers
+the item the last handoff left: a page in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
+Armenian or Georgian is drawn with no line added to the settings file, which `export-pdf-scripts.js`
+proves by writing the *shipped* file back, exporting, and reading the page back one font at a time
+(`lib.js: pdfText`) while the file's own `/BaseFont` names say the faces were this build's.
+
+  **Two rounds came first, and this stands on both.** The *shipped file* problem: `ensure_defaults_in`
+  writes a kind's file once and never again, which is what makes an edit the reader's — so a better file
+  in a later build reaches only a reader who never exported that kind. The answer is the card's second
+  settings button, *Replace with the shipped file*, offered **only** where the reader's copy is not the
+  bytes this build ships (`config_is_shipped`) and behind the app's own question, because an edit and an
+  older build's copy cannot be told apart from here; what it deliberately does not do is notice on its
+  own, and the fingerprint that would is the mechanism a future round reopens
+  (`export-config-replace.js` holds all four states). And the *recipe with its proof*: the file's header
+  had grown a per-OS list of what to name (Hangul needs a CJK font that has it — `AppleGothic`, `Malgun
+  Gothic`, `Noto Sans KR`; every other script `mainfont:`), and `export-pdf-scripts.js` was written to
+  follow the card's line and read the page back. **Writing the proof is what showed the advice wrong**,
+  and it cost two mistakes of the same shape first: the line it wrote replaced the first *textual*
+  occurrence of `variables:`, which is inside the header's own comment, so pandoc was handed a file it
+  would not parse — and the same insertion left two `mainfont:` lines in the app's own copy, failing
+  every PDF export until it was written back by hand. Out of that came the harness backing the reader's
+  **export settings files** up and restoring them exactly as it already did the config and the session,
+  and the recipe being *measured*: `mainfont` alone does not save Hangul while a CJK font is named, and
+  the font it was handed was the shipped `Songti SC`, which has none of it at all. The reader's report
+  that CJK characters were still missing is what turned the app's answers over — a font on the command
+  line, then one wide font, then the file — and ended with the build shipping faces of its own.
+
+  The round after it built the other half of that promise: **a face for one script, named by the
+  reader**. `yi-<script>-font:` in the settings file (`yi-hebrew-font: "Frank Ruehl"`, one of nine; Han
+  and kana answer to `CJKmainfont`, pandoc's own key) is turned by `export_fonts::write_header` into
+  `\newfontfamily\yi<Script>{the name}` in place of the shipped file's line, with `SLOTS` holding the
+  three facts — the script, the key, the shipped file — so a script cannot gain a way of being named
+  without the header learning it. Measured: `export-pdf-font.js` writes two such lines into the
+  reader's copy, and the page carries their CJK face and their Hebrew face while the shipped Hebrew face
+  is **absent** from it, and a script nobody named still carries the build's own. The hint steps aside
+  for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
+  named `mainfont`, since a coverage cannot be read out of a name.
+
+  **Bold was a fallback and is now faces, with one measured exception.** One weight of each face
+  shipped, so a `**bold**` run or a `## heading` in a shipped script was drawn by LaTeX's fallback: the
+  regular face, *"Font shape …/bx/n undefined"* in the log, the weight the note asked for gone
+  (measured, one page — the same Hebrew line came out with the same ink and the same width whether it
+  was written bold or not). The real bold faces ship now, for all seven script faces, plus the core
+  face's italic, because the numbers were small: **1.75 MB** for all of them against the 26 MB the
+  faces already cost. The **Han and Hangul** face is the exception, and its number is the reason — its
+  bold is **25.5 MB** (measured by asking the upstream URL for its length), as much again as every
+  other face together for one heading's worth of weight — so those two are emboldened by XeTeX
+  (`AutoFakeBold=1.5`). A face the *reader* names is never emboldened, so their own bold is the one
+  used; a slot with a real style gets no `AutoFakeBold`, because giving both makes fontspec embolden the
+  *regular* and drop the bold face (measured). The page says which path was taken:
+  `export-pdf-scripts.js` holds a bold run of each — Hebrew drawn by `NotoSerifHebrew-Bold`, Hangul
+  stroked as well as filled (`2 Tr`) with no second face on the page.
+
+  **And one of those rounds measured the Arabic face back out of the set.** The first cut
+  shipped `Noto Naskh Arabic`, whose `ToUnicode` map names the final and medial forms of beh, yeh and
+  ta-marbuta by the **dotless** bases their shapes are built from — its glyphs are named
+  `uni066E.fina` and the dots are separate marks — so text copied out of a page set in it came back
+  `ٮ`, `ى` and `ه` for `ب`, `ي` and `ة`, and six glyphs of that page had no mapping at all. Noto's
+  sans face and SIL's `Scheherazade New` are built the same way (or, for Scheherazade, do not carry the
+  presentation forms our routing claims at all: 395 of the Arabic ranges' 1282 assigned code points
+  against Amiri's 1233). **`Amiri` is what ships now**: same genre, letter-for-letter read-back
+  (measured, one page, both against the Noto face on the same page), and better coverage than the face
+  it replaced. `export-pdf-scripts.js` compares the letters themselves again — Arabic included, and its
+  mirror, since a page read out of the file holds RTL text in visual order — and the card's hint was
+  never part of this: a coverage is not read out of a map.
+
 ## Open, in the order to take them
 
 - **A PDF page's own options on the card.** A PDF's page size and orientation live in its defaults
@@ -1030,53 +1099,6 @@ elements) unless it says otherwise.
   a size and an orientation (as `--variable papersize=` and a geometry variable, over whatever the
   file says) is the decision, and the answer depends on how often a reader wants a page that is not
   the one they set up once.
-- **The recipe for the scripts the shipped font does not cover, and the measurement that corrected it.**
-  The reader asked how that gap would be closed without the app choosing fonts; what landed is the recipe
-  and the proof. `export.pdf.yaml`'s header now carries it per OS — Hangul needs a *CJK* font that has it
-  (`AppleGothic`/`Apple SD Gothic Neo` on macOS, `Malgun Gothic` on Windows, `Noto Sans KR` on Linux);
-  Greek, Cyrillic, Hebrew, Arabic, Indic, Thai, Armenian and Georgian need `mainfont`; and a note with
-  both needs both lines naming one wide font — and the card's hint names that font and both lines when a
-  note needs them (`suggested_font`, a name to type rather than a choice the app makes), which is the
-  piece of "the app should not choose fonts" that survives contact with a reader who has never opened a
-  YAML file.
-  **And writing the proof is what showed the advice was wrong.** `export-pdf-scripts.js` follows the
-  card's line and reads the page back, and on its first run the probe hung — because the line it wrote
-  produced a file pandoc would not parse (it had replaced the first *textual* occurrence of
-  `variables:`, which is in the header's own comment). Fixed, it passed, and then the *other* probes
-  began failing: the same insertion mistake left two `mainfont:` lines in the app's own copy, which is
-  invalid YAML, so every pdf export failed until it was written back by hand. Two things came out of
-  that: the harness now backs the reader's **export settings files** up and restores them exactly as it
-  already did the config and the session (a page reload in the middle of a probe takes the probe's own
-  restore with it — the reader's files are the harness's to put back), and the recipe itself was
-  measured properly, which is where those three findings came from: `mainfont` alone does **not** save
-  Hangul while a CJK font is named, and the shipped `Songti SC` is what the Hangul is handed. The rule
-  in `font_hint.ts` was corrected with it — Hangul is routed by xeCJK to the CJK font, so it is a CJK
-  character that a CJK font answers for only where the app knows that font has it, and it knows exactly
-  one font: the one its own file ships, which has none.
-- **A shipped file that changes does not reach a reader who already has one — and now the reader can
-  ask for it.** `ensure_defaults_in` writes a kind's file once and never again, which is what makes an
-  edit the reader's; so the `CJKmainfont` line added to `export.latex.yaml` (and the pdf rounds before
-  it) reaches only a reader who has never exported that kind. What landed is the reader's own way to fix
-  that: the card's settings row grew a second button, *Replace with the shipped file*, shown **only when
-  their copy is not the one this build ships** (the bytes compared, `config_is_shipped`) and behind the
-  app's own question — which says what it replaces, because a copy that differs may be an edit or an
-  older build's file and the two cannot be told apart here. Escape and an answer of no write nothing
-  (`export-config-replace.js` holds all four states). What this deliberately does **not** do is notice
-  on its own: the version I first floated — fingerprint a copy the app writes and offer on a mismatch —
-  would need a marker in every shipped file, would treat older copies as possibly-edited anyway, and
-  ends with the reader deciding regardless. If a future round wants the app to *suggest* it, that
-  fingerprint is the mechanism and this is the decision it would reopen.
-- **The scripts the shipped font does not cover.** The card now *says* when a note is written in
-  characters its settings name no font for (the entry above), and the file's header names the two
-  variables that fix it; what is still missing is the font itself — **Hangul**, Greek, Cyrillic,
-  Hebrew, Arabic, Devanagari, Thai, Armenian and Georgian all stay missing from the page until the
-  reader names one. The three ways to answer it for them were measured in the round before that one —
-  a per-OS list of wide fonts (macOS has one; Windows has none by default), a per-script list *per OS*
-  (each name resolved, each script covered, each page extractable — the `Hiragino` and `Apple SD Gothic
-  Neo` rows are why that is three checks and not one), and shipping the fonts (the only one where
-  working everywhere is a property of the app; tens of megabytes and an OFL notice to carry, and a
-  *path* cannot be named through `mainfont` — measured: it fails to build — so that route needs a
-  preamble file the app writes).
 - **An EPUB held to a validator.** `export-epub.js` proves the book's structure by reading it, and no
   `epubcheck` exists on this machine to prove more. The next thing worth doing for the kind is a run
   of `epubcheck` over an export — a probe that skips when the tool is absent, and says what a
@@ -1300,66 +1322,25 @@ One thing deliberately *not* in this list, because it is not a residue but a vis
 waiting on a decision: the shape of a fast path for raw blocks — a local write into the
 highlighted span, re-highlighted when a burst stops — at the end of "Measure before deciding".
 
-**The build draws the scripts itself now, and a reader may name a face for any one of them.** The
-round that shipped the faces (a serif set: `Noto Serif` for Greek and Cyrillic, `Noto Serif` per
-script for Hebrew, Devanagari, Thai, Armenian and Georgian, `Amiri` for Arabic, and
-`Noto Serif CJK SC` for Han, kana and Hangul — 25 MB, OFL, under `src-tauri/assets/fonts/`) answers
-the item the last handoff left: a page in Hangul, Greek, Cyrillic, Hebrew, Arabic, Devanagari, Thai,
-Armenian or Georgian is drawn with no line added to the settings file, which `export-pdf-scripts.js`
-proves by writing the *shipped* file back, exporting, and reading the page back one font at a time
-(`lib.js: pdfText`) while the file's own `/BaseFont` names say the faces were this build's.
+**And what the face rounds left on purpose.** The work itself is in "Closed" (*the build draws the
+scripts itself now*); what is still open out of it is one gap and two decisions:
 
-  The round after it built the other half of that promise: **a face for one script, named by the
-  reader**. `yi-<script>-font:` in the settings file (`yi-hebrew-font: "Frank Ruehl"`, one of nine; Han
-  and kana answer to `CJKmainfont`, pandoc's own key) is turned by `export_fonts::write_header` into
-  `\newfontfamily\yi<Script>{the name}` in place of the shipped file's line, with `SLOTS` holding the
-  three facts — the script, the key, the shipped file — so a script cannot gain a way of being named
-  without the header learning it. Measured: `export-pdf-font.js` writes two such lines into the
-  reader's copy, and the page carries their CJK face and their Hebrew face while the shipped Hebrew face
-  is **absent** from it, and a script nobody named still carries the build's own. The hint steps aside
-  for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
-  named `mainfont`, since a coverage cannot be read out of a name.
-
-  **Bold was a fallback and is now faces, with one measured exception.** One weight of each face
-  shipped, so a `**bold**` run or a `## heading` in a shipped script was drawn by LaTeX's fallback: the
-  regular face, *"Font shape …/bx/n undefined"* in the log, the weight the note asked for gone
-  (measured, one page — the same Hebrew line came out with the same ink and the same width whether it
-  was written bold or not). The real bold faces ship now, for all seven script faces, plus the core
-  face's italic, because the numbers were small: **1.75 MB** for all of them against the 26 MB the
-  faces already cost. The **Han and Hangul** face is the exception, and its number is the reason — its
-  bold is **25.5 MB** (measured by asking the upstream URL for its length), as much again as every
-  other face together for one heading's worth of weight — so those two are emboldened by XeTeX
-  (`AutoFakeBold=1.5`). A face the *reader* names is never emboldened, so their own bold is the one
-  used; a slot with a real style gets no `AutoFakeBold`, because giving both makes fontspec embolden the
-  *regular* and drop the bold face (measured). The page says which path was taken:
-  `export-pdf-scripts.js` holds a bold run of each — Hebrew drawn by `NotoSerifHebrew-Bold`, Hangul
-  stroked as well as filled (`2 Tr`) with no second face on the page. **Italic stays a residue where
-  there is no italic to ship**: Greek and Cyrillic have one and got it; Hebrew, Arabic, Devanagari,
-  Thai, Armenian and Georgian have none in these families, and a slanted Hebrew or Arabic is not a
-  thing those scripts have.
-
-Two residues are deliberate, and each has a measured shape:
-- **The Arabic face was the wrong one, and it was measured out rather than argued.** The first cut
-  shipped `Noto Naskh Arabic`, whose `ToUnicode` map names the final and medial forms of beh, yeh and
-  ta-marbuta by the **dotless** bases their shapes are built from — its glyphs are named
-  `uni066E.fina` and the dots are separate marks — so text copied out of a page set in it came back
-  `ٮ`, `ى` and `ه` for `ب`, `ي` and `ة`, and six glyphs of that page had no mapping at all. Noto's
-  sans face and SIL's `Scheherazade New` are built the same way (or, for Scheherazade, do not carry the
-  presentation forms our routing claims at all: 395 of the Arabic ranges' 1282 assigned code points
-  against Amiri's 1233). **`Amiri` is what ships now**: same genre, letter-for-letter read-back
-  (measured, one page, both against the Noto face on the same page), and better coverage than the face
-  it replaced. `export-pdf-scripts.js` compares the letters themselves again — Arabic included, and its
-  mirror, since a page read out of the file holds RTL text in visual order — and the card's hint was
-  never part of this: a coverage is not read out of a map.
-
-  One smaller thing the same round turned up, left as it is because it is a decision and not a defect:
-  **the latex kind still names `CJKmainfont: "Songti SC"`**, a font only macOS has. That kind cannot use
-  the shipped faces — its output is a `.tex` compiled on the reader's own machine, so a font name in
-  its file is the only way a font gets there — and a reader on another platform exporting a CJK note
-  gets XeTeX's *"The font … cannot be found"* instead of a document. The card's hint catches it only
-  once the line is gone (then it reports the CJK characters and names the widest font their machine
-  has). A platform-neutral default — naming no font, with the hint doing the telling — is the
-  alternative, and it trades that error for one line the reader has to add.
+- **Italic where there is no italic to ship.** Greek and Cyrillic have an italic face and got it; Hebrew,
+  Arabic, Devanagari, Thai, Armenian and Georgian have none in these families, so `*emphasis*` in those
+  still falls back to the regular face — a LaTeX warning in the log and the emphasis gone. Nothing in
+  code fixes it: it is a font that has an italic, or it is this.
+- **The latex kind still names `CJKmainfont: "Songti SC"`**, a font only macOS has. That kind cannot use
+  the shipped faces — its output is a `.tex` compiled on the reader's own machine, where a path into
+  this app's bundle does not exist — so a name in its file is the only way a font gets there. A reader
+  on another platform therefore gets XeTeX's *"The font … cannot be found"* rather than a document, and
+  the card's hint catches only the other gap: once the line is gone it reports the CJK characters and
+  names the widest font that machine is known to have. A platform-neutral default — naming no font, with
+  the hint doing the telling — trades that error for one line the reader adds, and it is the reader's
+  call, which is why the line is still there.
+- **A face is named by the card on macOS alone**, deliberately: that is the only platform the drawing was
+  measured on (`WIDEST_FONT`, and a name that is not there fails an export rather than falling back).
+  Windows and Linux readers get the procedure in the shipped file's header instead — where their fonts
+  are listed, and what to look for in them. Naming a font there waits on a machine to measure it on.
 
 ## Where a code block's keystroke goes
 
