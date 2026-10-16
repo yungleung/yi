@@ -13,15 +13,15 @@ pub fn list_folder_files(folder_path: String) -> Result<Vec<FileInfo>, String> {
     let folder = PathBuf::from(folder_path);
 
     if !folder.exists() {
-        return Err(format!("Folder does not exist: {}", folder.display()));
+        return Err(crate::i18n::now("files.folderMissing", &[("path", &folder.display().to_string())]));
     }
 
     if !folder.is_dir() {
-        return Err(format!("Path is not a directory: {}", folder.display()));
+        return Err(crate::i18n::now("files.notADirectory", &[("path", &folder.display().to_string())]));
     }
 
     let mut entries = fs::read_dir(&folder)
-        .map_err(|err| format!("Failed to read folder {}: {err}", folder.display()))?
+        .map_err(|err| crate::i18n::now("files.readFailed", &[("path", &folder.display().to_string()), ("reason", &err.to_string())]))?
         .filter_map(|entry| {
             entry.ok().and_then(|entry| {
                 let path = entry.path();
@@ -83,13 +83,13 @@ fn is_markdown(name: &str) -> bool {
 fn entry_name(name: &str, is_file: bool) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err("A name cannot be empty.".to_string());
+        return Err(crate::i18n::now("files.nameEmpty", &[]));
     }
     if trimmed.contains(['/', '\\']) {
-        return Err("A name cannot contain a path separator.".to_string());
+        return Err(crate::i18n::now("files.nameSeparator", &[]));
     }
     if trimmed.starts_with('.') {
-        return Err("A name cannot start with a dot: this tree hides hidden entries.".to_string());
+        return Err(crate::i18n::now("files.nameHidden", &[]));
     }
     if !is_file {
         return Ok(trimmed.to_string());
@@ -123,21 +123,21 @@ fn as_path(path: &Path) -> String {
 pub fn rename_entry(path: String, name: String) -> Result<String, String> {
     let source = PathBuf::from(&path);
     if !source.exists() {
-        return Err(format!("There is nothing at {path}."));
+        return Err(crate::i18n::now("files.nothingThere", &[("path", &path)]));
     }
     let parent = source
         .parent()
-        .ok_or_else(|| format!("{path} has no parent folder to rename it in."))?
+        .ok_or_else(|| crate::i18n::now("files.noParent", &[("path", &path)]))?
         .to_path_buf();
     let name = entry_name(&name, source.is_file())?;
     let target = parent.join(&name);
     // A name already taken is a clash — unless it is this very entry under another
     // spelling, which is how a rename fixes capitalisation on a case-insensitive disk.
     if target.exists() && !is_same_entry(&source, &target) {
-        return Err(format!("{name} already exists in this folder."));
+        return Err(crate::i18n::now("files.alreadyThere", &[("name", &name)]));
     }
     fs::rename(&source, &target)
-        .map_err(|err| format!("Failed to rename {}: {err}", as_path(&source)))?;
+        .map_err(|err| crate::i18n::now("files.renameFailed", &[("path", &as_path(&source)), ("reason", &err.to_string())]))?;
     Ok(as_path(&target))
 }
 
@@ -146,17 +146,17 @@ pub fn rename_entry(path: String, name: String) -> Result<String, String> {
 pub fn create_entry(parent: String, name: String, is_file: bool) -> Result<String, String> {
     let folder = PathBuf::from(&parent);
     if !folder.is_dir() {
-        return Err(format!("{parent} is not a folder."));
+        return Err(crate::i18n::now("files.notAFolder", &[("path", &parent)]));
     }
     let name = entry_name(&name, is_file)?;
     let target = folder.join(&name);
     if target.exists() {
-        return Err(format!("{name} already exists in this folder."));
+        return Err(crate::i18n::now("files.alreadyThere", &[("name", &name)]));
     }
     let created = if is_file {
-        fs::write(&target, "").map_err(|err| format!("Failed to create {name}: {err}"))
+        fs::write(&target, "").map_err(|err| crate::i18n::now("files.createFailed", &[("name", &name), ("reason", &err.to_string())]))
     } else {
-        fs::create_dir(&target).map_err(|err| format!("Failed to create {name}: {err}"))
+        fs::create_dir(&target).map_err(|err| crate::i18n::now("files.createFailed", &[("name", &name), ("reason", &err.to_string())]))
     };
     created?;
     Ok(as_path(&target))
@@ -167,14 +167,14 @@ pub fn create_entry(parent: String, name: String, is_file: bool) -> Result<Strin
 pub fn delete_entry(path: String) -> Result<(), String> {
     let target = PathBuf::from(&path);
     if !target.exists() {
-        return Err(format!("There is nothing at {path}."));
+        return Err(crate::i18n::now("files.nothingThere", &[("path", &path)]));
     }
     let removed = if target.is_dir() {
         fs::remove_dir_all(&target)
     } else {
         fs::remove_file(&target)
     };
-    removed.map_err(|err| format!("Failed to delete {}: {err}", as_path(&target)))
+    removed.map_err(|err| crate::i18n::now("files.deleteFailed", &[("path", &as_path(&target)), ("reason", &err.to_string())]))
 }
 
 /// Moves an entry into another folder, keeping its name, and answers its new path.
@@ -182,15 +182,15 @@ pub fn delete_entry(path: String) -> Result<(), String> {
 pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
     let source = PathBuf::from(&path);
     if !source.exists() {
-        return Err(format!("There is nothing at {path}."));
+        return Err(crate::i18n::now("files.nothingThere", &[("path", &path)]));
     }
     let folder = PathBuf::from(&target_dir);
     if !folder.is_dir() {
-        return Err(format!("{target_dir} is not a folder."));
+        return Err(crate::i18n::now("files.notAFolder", &[("path", &target_dir)]));
     }
     let name = source
         .file_name()
-        .ok_or_else(|| format!("{path} has no name to move."))?;
+        .ok_or_else(|| crate::i18n::now("files.noName", &[("path", &path)]))?;
     let target = folder.join(name);
     // Dropped where it already is — onto its own folder, or onto the folder it lives in:
     // nothing to do, and saying so is better than a rename that would only touch the disk.
@@ -211,11 +211,11 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
             .zip(fs::canonicalize(&source).ok())
             .is_some_and(|(folder, source)| folder.starts_with(source));
         if inside {
-            return Err("A folder cannot be moved inside itself.".to_string());
+            return Err(crate::i18n::now("files.intoItself", &[]));
         }
     }
     fs::rename(&source, &target)
-        .map_err(|err| format!("Failed to move {}: {err}", as_path(&source)))?;
+        .map_err(|err| crate::i18n::now("files.moveFailed", &[("path", &as_path(&source)), ("reason", &err.to_string())]))?;
     Ok(as_path(&target))
 }
 

@@ -11,7 +11,7 @@
 //! the two to the same files and the same expectations.
 
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::{OnceLock, RwLock};
 
 use crate::settings::AppConfig;
 
@@ -89,6 +89,35 @@ pub fn is_language(code: &str) -> bool {
   LANGUAGES.contains(&code)
 }
 
+/// The language the app is speaking, for the sentences the backend writes where no configuration is at
+/// hand — a failed write, a name the file system refuses: those happen inside a command, and the reader
+/// meets them in a toast beside translated chrome. Set where the config is read and where it is written
+/// (`settings::load_config`, `settings::set_config`), so it is never stale by more than one save.
+static LANGUAGE: OnceLock<RwLock<String>> = OnceLock::new();
+
+fn spoken() -> &'static RwLock<String> {
+  LANGUAGE.get_or_init(|| RwLock::new(DEFAULT_LANGUAGE.to_string()))
+}
+
+/// Remembers the language a config asks for, so that `now` can speak it.
+pub fn remember(language: &str) {
+  let language = if is_language(language) {
+    language
+  } else {
+    DEFAULT_LANGUAGE
+  };
+  if let Ok(mut spoken) = spoken().write() {
+    *spoken = language.to_string();
+  }
+}
+
+/// The string for `key` in the language the app is speaking — `t`, for a caller with no config: the
+/// sentence a reader sees when a write fails is written where the write fails.
+pub fn now(key: &str, params: &[(&str, &str)]) -> String {
+  let language = spoken().read().map(|held| held.clone()).unwrap_or_default();
+  t(&language, key, params)
+}
+
 /// The language a system locale asks for: `zh-Hant-TW` and `zh-TW` are Traditional Chinese, `zh`
 /// and `zh-CN` are Simplified, and anything else this app does not speak is English. Chinese is
 /// the one place a locale has to be read rather than matched by its first two letters — the script
@@ -125,6 +154,40 @@ pub fn language_for(cfg: &AppConfig) -> String {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  /// The backend's own sentences, in the language the config asks for — the half of this module the
+  /// menu did not already use: a failed write or a name the file system refuses is written deep in a
+  /// command, and `now` is what speaks it there.
+  ///
+  /// This is the one test that sets the process-wide language, and it is safe because no other test
+  /// *reads* it: they all ask `t(language, …)` with the language spelled out.
+  #[test]
+  fn a_sentence_is_written_in_the_language_the_config_asked_for() {
+    remember("zh-Hans");
+    // Against `t` for the same language rather than against a copied string: what this holds is that
+    // `now` speaks what `t` speaks for the remembered language, and a copy of the text here is a second
+    // home for it — this test failed once for exactly that, when the key it names was deduplicated and
+    // its own copy stayed behind.
+    for key in ["export.noPandoc", "files.nameEmpty", "versioning.gitUnusable"] {
+      assert_eq!(now(key, &[]), t("zh-Hans", key, &[]), "{key}");
+    }
+    assert_eq!(
+      now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")]),
+      t("zh-Hans", "export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
+    );
+    assert_ne!(now("export.noPandoc", &[]), t("en", "export.noPandoc", &[]));
+    // A language the app does not speak falls back to English rather than to a blank.
+    remember("kl-Greenlandic");
+    assert_eq!(now("export.noPandoc", &[]), t(DEFAULT_LANGUAGE, "export.noPandoc", &[]));
+    // And every catalogue really does answer for these keys, one by one: a key that only English has
+    // would leave a reader in the other seven languages looking at the key itself.
+    for language in LANGUAGES {
+      for key in ["export.noPandoc", "export.cannotWrite", "export.noSuchKind"] {
+        let text = t(language, key, &[]);
+        assert!(!text.is_empty() && text != *key, "{language} has nothing for {key}");
+      }
+    }
+  }
 
   #[test]
   fn every_language_has_a_catalogue() {

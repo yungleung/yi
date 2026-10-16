@@ -48,6 +48,22 @@ pub fn save_session(app: tauri::AppHandle, session: String) -> Result<(), String
     write(&session_path(&app), &session).map_err(|error| error.to_string())
 }
 
+/// Brings the app's window to the front — the one thing a probe cannot do for itself.
+///
+/// The system **throttles a background window's timers**, so a probe's own `sleep` can cost two or
+/// three times what it says: measured while the versioning probes were written, the same probe in the
+/// same state took **2257 ms** with the window in front and **5008 ms** behind a terminal. A probe that
+/// only sometimes finishes inside the bridge's budget is read as too slow whatever the window was
+/// doing, which is why the harness calls this before every run (`test/tauri-probe.mjs`) rather than
+/// leaving it to whoever types the command.
+#[tauri::command]
+pub fn focus_window(app: tauri::AppHandle) -> Result<(), String> {
+  let window = app
+    .get_webview_window("main")
+    .ok_or_else(|| "the app has no main window".to_string())?;
+  window.set_focus().map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{read, write};

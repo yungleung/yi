@@ -294,7 +294,7 @@ fn kind_of(kind: &str) -> Result<&'static ExportKind, String> {
     KINDS
         .iter()
         .find(|known| known.kind == kind)
-        .ok_or_else(|| format!("Yi has no {kind} export to run."))
+        .ok_or_else(|| crate::i18n::now("export.noSuchKind", &[("kind", kind)]))
 }
 
 /// The name a kind's defaults file has in the export folder: the one fact the app writes down about
@@ -308,7 +308,7 @@ fn export_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
         .map(|data| data.join("export"))
-        .map_err(|error| format!("Yi cannot find its own data folder: {error}"))
+        .map_err(|error| crate::i18n::now("export.noDataFolder", &[("reason", &error.to_string())]))
 }
 
 /// The reader's copy of a kind's defaults file, written from the shipped one when it is not there.
@@ -317,11 +317,11 @@ fn export_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// keeping it on the disk is that an edited one stays edited.
 fn ensure_defaults_in(dir: &Path, kind: &ExportKind) -> Result<PathBuf, String> {
     fs::create_dir_all(dir)
-        .map_err(|error| format!("Yi cannot make {}: {error}", dir.display()))?;
+        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &dir.display().to_string()), ("reason", &error.to_string())]))?;
     let path = dir.join(config_file_name(kind.kind));
     if !path.exists() {
         fs::write(&path, kind.defaults)
-            .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+            .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
     }
     Ok(path)
 }
@@ -353,11 +353,11 @@ fn style_file_name(name: &str) -> String {
 fn ensure_csl_in(dir: &Path, style: &CslStyle) -> Result<PathBuf, String> {
     let styles = dir.join("styles");
     fs::create_dir_all(&styles)
-        .map_err(|error| format!("Yi cannot make {}: {error}", styles.display()))?;
+        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &styles.display().to_string()), ("reason", &error.to_string())]))?;
     let path = styles.join(format!("{}.csl", style_file_name(&style.name)));
     if fs::read_to_string(&path).ok().as_deref() != Some(style.xml.as_str()) {
         fs::write(&path, &style.xml)
-            .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+            .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
     }
     Ok(path)
 }
@@ -449,7 +449,7 @@ pub fn find_curl() -> (Option<PathBuf>, String) {
 #[tauri::command]
 pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
     if !cfg!(debug_assertions) {
-        return Err("Only a debug build can be pointed at another pandoc.".to_string());
+        return Err(crate::i18n::now("export.debugOnly", &[("what", "pandoc")]));
     }
     let mut named = PANDOC_FOR_TESTS
         .lock()
@@ -462,7 +462,7 @@ pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
 #[tauri::command]
 pub fn export_use_curl(curl: Option<String>) -> Result<(), String> {
     if !cfg!(debug_assertions) {
-        return Err("Only a debug build can be pointed at another curl.".to_string());
+        return Err(crate::i18n::now("export.debugOnly", &[("what", "curl")]));
     }
     let mut named = CURL_FOR_TESTS
         .lock()
@@ -517,13 +517,13 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
 fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
     let scratch = dir.join("tmp");
     fs::create_dir_all(&scratch)
-        .map_err(|error| format!("Yi cannot make {}: {error}", scratch.display()))?;
+        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &scratch.display().to_string()), ("reason", &error.to_string())]))?;
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|since| since.as_nanos())
         .unwrap_or(0);
     let path = scratch.join(format!("note-{}-{stamp}.md", std::process::id()));
-    fs::write(&path, text).map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+    fs::write(&path, text).map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
     Ok(path)
 }
 
@@ -667,7 +667,7 @@ fn run_curl(curl: &Path, dir: &Path, url: &str, path: &Path) -> Result<String, S
 
 /// One picture from the web, downloaded into a run's own folder, and where it landed.
 fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String> {
-    fs::create_dir_all(dir).map_err(|error| format!("Yi cannot make {}: {error}", dir.display()))?;
+    fs::create_dir_all(dir).map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &dir.display().to_string()), ("reason", &error.to_string())]))?;
     let name = remote_file_name(url);
     // The name carries the picture's type, and the type is only known once the server has answered —
     // so it is fetched under a name of its own first and named properly afterwards.
@@ -700,7 +700,7 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
     };
     let path = dir.join(format!("{name}.{extension}"));
     fs::rename(&partial, &path)
-        .map_err(|error| format!("Yi cannot name {}: {error}", path.display()))?;
+        .map_err(|error| crate::i18n::now("export.cannotName", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
     Ok(path)
 }
 
@@ -715,7 +715,7 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
 pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
     let curl = find_curl()
         .0
-        .ok_or_else(|| "This machine has no curl to fetch it with.".to_string())?;
+        .ok_or_else(|| crate::i18n::now("export.noCurl", &[]))?;
     let path = download_image(&curl, &remote_dir(&export_dir(&app)?), &url)?;
     Ok(path.to_string_lossy().into_owned())
 }
@@ -739,7 +739,7 @@ pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<Expor
 /// of a text that is already the answer.
 fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
     crate::files::write_atomically(Path::new(&request.output_path), &request.text)
-        .map_err(|error| format!("Yi could not write {}: {error}", request.output_path))?;
+        .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", request.output_path.as_str()), ("reason", &error.to_string())]))?;
     Ok(ExportOutcome { warnings: Vec::new() })
 }
 
@@ -754,7 +754,7 @@ fn export_with_pandoc(
     // reader's text in the app's data folder.
     let pandoc = find_pandoc()
         .0
-        .ok_or_else(|| "This machine has no pandoc to run.".to_string())?;
+        .ok_or_else(|| crate::i18n::now("export.noPandoc", &[]))?;
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     // The faces this build ships, for the kinds whose page is drawn by them: the header names them by
@@ -817,7 +817,7 @@ fn pandoc_arguments(
     if !request.resource_paths.is_empty() {
         let paths: Vec<PathBuf> = request.resource_paths.iter().map(PathBuf::from).collect();
         let joined = std::env::join_paths(&paths)
-            .map_err(|error| format!("Yi cannot search {}: {error}", request.output_path))?;
+            .map_err(|error| crate::i18n::now("export.cannotSearch", &[("path", request.output_path.as_str()), ("reason", &error.to_string())]))?;
         arguments.push(OsString::from("--resource-path"));
         arguments.push(joined);
     }
@@ -880,7 +880,7 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     if !kind.needs_pandoc {
         // A kind whose conversion is the app's own has no configuration to read — and a file made of
         // nothing would be a file a reader could edit with no effect.
-        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
     }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
@@ -897,11 +897,11 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
 pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
     if !kind.needs_pandoc {
-        return Err(format!("Yi has no configuration file for {}.", kind.kind));
+        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
     }
     let path = export_dir(&app)?.join(config_file_name(kind.kind));
     crate::files::write_atomically(&path, kind.defaults)
-        .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+        .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
     Ok(path.to_string_lossy().into_owned())
 }
 

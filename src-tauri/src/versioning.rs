@@ -199,11 +199,11 @@ pub fn find_git() -> (Option<PathBuf>, String) {
 #[tauri::command]
 pub fn versioning_use_git(git: Option<String>) -> Result<(), String> {
     if !cfg!(debug_assertions) {
-        return Err("Only a debug build can be pointed at another git.".to_string());
+        return Err(crate::i18n::now("export.debugOnly", &[("what", "git")]));
     }
     let mut named = GIT_FOR_TESTS
         .lock()
-        .map_err(|_| "The git seam is unusable.".to_string())?;
+        .map_err(|_| crate::i18n::now("versioning.gitUnusable", &[]))?;
     *named = git.filter(|value| !value.trim().is_empty());
     Ok(())
 }

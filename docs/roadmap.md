@@ -1138,12 +1138,28 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   picker already returns the path), or a pair of commands of the app's own for the two calls the
   webview makes; the probe is `new-markdown.js`, which makes its workspace in the home directory
   for exactly this reason.
-- **The backend still answers in English.** A failed write, a name the file system refuses, a
-  folder it cannot read: those sentences are written where they happen (`src-tauri/src/files.rs`,
-  and inside Tauri's own plugins), and they reach the reader in a toast beside translated chrome.
-  The catalogues are already in the binary and `i18n::t` already reads them, so this is a pass over
-  the Rust messages and a decision about the plugin ones — worth doing before a reader meets a
-  mixed-language window.
+- **The backend still answers in English — half of it now speaks the reader's language.** The mechanism
+  landed: `i18n::remember` keeps the language the config asks for (set where the config is *read* — the
+  menu's own `load_config` at startup — and where it is *written*, so a change tells the next sentence),
+  and `i18n::now` is `t` for a caller with no config, which is what a command has. The **export path's
+  sentences** go through it now: ten keys, in all eight catalogues, held by `check-locales.mjs` (which
+  reads the Rust tree as well as the webview's, so a message that uses a key is a use of it) and by a
+  unit test that sets the language and reads the sentence back. **And the sweep landed with it**: the
+  file tree's sixteen refusals (a name the file system refuses, a folder that cannot be moved into
+  itself, a thing that is not there), the versioning kind's git seam, and the settings version guard —
+  eighteen more keys, all eight catalogues, `check-locales.mjs` now reporting *240 keys each, all used*.
+  Two things it turned up. The backend's own `export.noPandoc` collided with a **card** string of the
+  same name, and — `JSON.parse` keeping the last of a repeated key and saying nothing — my second line
+  replaced the card's better sentence with the backend's plainer one, which a probe caught
+  (`export-refused`: the card read "This machine has no pandoc to run." where its own sentence belongs).
+  The duplicate line is gone (the backend now reads the card's string: one fact, one home) and the check
+  **fails on a key written twice** in a file, which is the guard this class of mistake needed. And the
+  decision about the **Tauri plugins'** own messages stands: they are English and not this app's to
+  translate.
+  One thing the round turned up that is worth keeping: the end-to-end sentence cannot be *probed* here —
+  changing the language reloads the window, and the harness restores the language after every run on
+  purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
+  a seam the harness does not have.
 - **What a *click* costs under a pane, and the suite's noisy tail.** The probes that sat on the 5 s
   budget are split (see *Closed*), and what is left is the other half of the same subject: a wider
   pane is not always kinder. At a 1200 px window
@@ -1159,9 +1175,15 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   background window's timers, so every `t.sleep(...)` a probe takes can cost a second of wall clock.
   Measured while the versioning probes were written — the same probe, in the same state, took
   **2257 ms** with the app's window in front and **5008 ms** behind the terminal, where one `git
-  init` through the app's own command measured 6.7 s. The app is brought forward before a timed run,
-  and a probe that only sometimes finishes is read as too long whatever the window was doing;
-  `test/README.md` says so where probes are written.
+  init` through the app's own command measured 6.7 s. **And that half is fixed**: the harness brings
+  the window forward itself before every run (`session::focus_window`, a command the app answers, so
+  it is the app's own window and not a script's guess), where it used to be a step the person typing
+  the command had to remember — invisible in the result and easy to miss. Measured with it in place:
+  `display-math-source` (5006 ms and 3000 ms of its own sleeps when it was written), `a4-page` and
+  `description-list` all pass on their own, and the first of them no longer comes near the bridge's
+  budget. **What is left is the sweep itself**: `a4-page` failing three checks *inside* a sweep is
+  still unexplained, and the bisect the item asked for — the probes before it, then it — needs a full
+  `probe:all` run (about fifteen minutes) to start from.
 - **A page-wide rebuild no longer takes the caret off the page.** Closed in
   `virtual_block_renderer.ts: refresh`. `fence-exit.js`'s display-formula case read `"N"` back where
   the file's four blocks should be, three runs of three, and the formula was not the reason: a run
