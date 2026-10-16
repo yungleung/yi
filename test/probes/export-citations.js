@@ -1,6 +1,7 @@
 /**
  * The citation forms nobody had asked citeproc about: a locator, a suppressed author, and a document
- * that resolves its keys without appending the list.
+ * that resolves its keys without appending the list — asked for in the card, and asked for in the
+ * reader's own settings file.
  *
  * The app's citations reach citeproc with a `--bibliography` and a `--csl` (the library the settings
  * name, the style it names), and what comes out of that was measured through the kinds that carry text
@@ -96,11 +97,15 @@
     await Promise.race([pending, sleep(2000)]);
     await sleep(200);
   };
-  /** Exports to `target` and answers with the chapter's own XHTML, or null when nothing was written. */
-  const exportTo = async (target) => {
+  /** Exports to `target` and answers with the chapter's own XHTML, or null when nothing was written.
+   * The card's *no reference list* box is ticked first when the case is about it. */
+  const exportTo = async (target, { noReferences = false } = {}) => {
     await invoke('plugin:event|emit', { event: 'export', payload: 'epub' });
     await until(() => open(), 60);
     card().querySelector('[data-export-target]').value = target;
+    if (noReferences) {
+      card().querySelector('[data-export-no-references]').checked = true;
+    }
     card().querySelector('[data-export-run]').click();
     const written = await until(async () => (await bytesOf(target)) !== null);
     const bytes = written ? await bytesOf(target) : null;
@@ -174,10 +179,26 @@
       }
     );
 
-    // And the third question: a reader who wants the keys resolved and no list. `suppress-bibliography`
-    // is the only way to say that — and it is **metadata**, not a variable, which is the thing that was
-    // never measured: a `variables:` line leaves the list exactly where it was (measured, this probe's
-    // first run), while the file's own `metadata:` block is what a defaults file is for.
+    // And the third question: a reader who wants the keys resolved and no list. The app's own way to say
+    // it is the card's box — the same book, and the settings file is not touched at all.
+    const byCardBook = await exportTo(`${folder}/no-list.epub`, { noReferences: true });
+    const byCard = byCardBook?.text ?? null;
+    check(
+      'and the card’s own “no reference list” resolves the keys and appends nothing',
+      typeof byCard === 'string' &&
+        byCard.includes('Smith') &&
+        !byCard.toLowerCase().includes(title) &&
+        !byCard.includes('References'),
+      {
+        citations: (byCard ?? '').match(/\([^)]*Smith[^)]*\)/g)?.slice(0, 3) ?? [],
+        list: (byCard ?? '').toLowerCase().includes(title),
+        heading: (byCard ?? '').includes('References')
+      }
+    );
+
+    // A file can say the same thing, and that is where the word comes from: `suppress-bibliography` is
+    // **metadata**, not a variable — a `variables:` line leaves the list exactly where it was (measured,
+    // this probe's first run), while the file's own `metadata:` block is what a defaults file is for.
     const settings = await readText(epubConfig);
     await files.writeTextAtomically(
       epubConfig,
