@@ -1160,7 +1160,16 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   changing the language reloads the window, and the harness restores the language after every run on
   purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
   a seam the harness does not have.
-- **What a *click* costs under a pane, and the suite's noisy tail.** The probes that sat on the 5 s
+- **What a *click* costs under a pane, and the suite's noisy tail. Closed**, and by the same
+  measurement the rest of the entry is about: with the harness bringing the window forward itself
+  (`session::focus_window`), a **whole `probe:all` run came out 177/177 with 28 skipped** — every
+  probe that the item named as flaky or over budget included. `a4-page` failing three checks *only
+  inside a sweep* was the throttled window and not the probes before it, so the bisect the entry had
+  asked for was not needed: the sweep is what proved it, which is the measurement the item wanted.
+  What remains of the *noisy tail* is only the note it leaves in `test/README.md`: an occluded window
+  costs a probe two or three times what its own sleeps say, which is why the harness now takes that
+  step itself instead of leaving it to whoever types the command.
+ The probes that sat on the 5 s
   budget are split (see *Closed*), and what is left is the other half of the same subject: a wider
   pane is not always kinder. At a 1200 px window
   `description-list.js`'s "typing after three widgets" clicked the end of its line in the A4
