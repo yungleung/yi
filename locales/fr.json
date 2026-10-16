@@ -79,6 +79,7 @@
   "export.revealConfig": "Afficher dans le dossier",
   "export.replaceConfig": "Remplacer par le fichier fourni",
   "export.replaceQuestion": "Remplacer votre copie de {path} par celle fournie avec cette version ? Vos modifications seront perdues.",
+  "export.noReferences": "Aucune liste de références",
   "export.paper": "Format du papier",
   "export.paperOwn": "Celui du fichier de réglages",
   "export.orientation": "Orientation",

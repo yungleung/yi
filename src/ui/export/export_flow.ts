@@ -127,7 +127,10 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         ? null
         : {
             render: (source) => bibliographyManager.format(source),
-            references: (sources) => bibliographyManager.referenceList(sources),
+            // A list is what this kind appends when a note cites works — unless the reader asked for
+            // no list, which is nothing to list: the pre-process writes no heading for none.
+            references: (sources) =>
+              answer.suppressReferences ? [] : bibliographyManager.referenceList(sources),
             title: t('export.references')
           }
     });
@@ -153,7 +156,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       // The page the reader chose on the card, for the one kind that takes one: a size of the kind's
       // own, and which way up — or nothing at all, which is the settings file's own page.
       paper: answer.paper,
-      landscape: answer.landscape
+      landscape: answer.landscape,
+      // The citations resolved either way: this is only about the list at the end of the document.
+      suppress_references: answer.suppressReferences
     });
     showHint(t('export.done', { file: fileName(outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about

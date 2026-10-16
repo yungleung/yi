@@ -79,6 +79,7 @@
   "export.revealConfig": "Im Ordner zeigen",
   "export.replaceConfig": "Durch die mitgelieferte Datei ersetzen",
   "export.replaceQuestion": "Ihre Kopie von {path} durch die in diesem Build mitgelieferte ersetzen? Was Sie darin geändert haben, geht verloren.",
+  "export.noReferences": "Keine Literaturliste",
   "export.paper": "Papierformat",
   "export.paperOwn": "Wie in den Einstellungen",
   "export.orientation": "Ausrichtung",

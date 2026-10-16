@@ -79,6 +79,7 @@
   "export.revealConfig": "在資料夾中顯示",
   "export.replaceConfig": "取代為隨附的檔案",
   "export.replaceQuestion": "用此版本隨附的內容取代 {path} 嗎？你對它的修改將會遺失。",
+  "export.noReferences": "不附參考文獻列表",
   "export.paper": "紙張大小",
   "export.paperOwn": "沿用設定檔",
   "export.orientation": "方向",

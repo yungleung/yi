@@ -79,6 +79,7 @@
   "export.revealConfig": "フォルダに表示",
   "export.replaceConfig": "同梱のファイルに置き換え",
   "export.replaceQuestion": "{path} をこのビルド同梱の内容に置き換えますか？変更した内容は失われます。",
+  "export.noReferences": "参考文献一覧を付けない",
   "export.paper": "用紙サイズ",
   "export.paperOwn": "設定ファイルのまま",
   "export.orientation": "向き",

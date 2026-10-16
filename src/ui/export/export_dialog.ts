@@ -70,6 +70,8 @@ export interface ExportAnswer {
   paper: string | null;
   /** Which way up that page goes: true landscape, false portrait, null for the settings file's own. */
   landscape: boolean | null;
+  /** Whether the reader asked for the citations resolved with no reference list at the end. */
+  suppressReferences: boolean;
 }
 
 /** The label a kind is offered under, or its own name when the catalogues have none. */
@@ -123,6 +125,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly orientationLabel: HTMLLabelElement;
   private readonly orientation: HTMLSelectElement;
   private readonly pageRowElement: HTMLElement;
+  /** The ask about the citations: the keys resolved, and no list at the end of the document. */
+  private readonly noReferences: HTMLInputElement;
+  private readonly noReferencesRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   /** The line that says the note is written in characters the settings name no font for. */
   private readonly fontHint: HTMLParagraphElement;
@@ -196,6 +201,15 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.orientation.className = 'select select-bordered select-sm';
     this.orientation.setAttribute('data-export-orientation', 'true');
 
+    // And the ask about the citations: a list is what every kind appends when a note cites works, and
+    // a reader who wants the keys resolved and no list used to have to write that into their settings
+    // file (`suppress-bibliography` is metadata, not a variable — measured). The box is *unticked*
+    // every time the card is drawn, so a reader who never touches it appends exactly what they did.
+    this.noReferences = document.createElement('input');
+    this.noReferences.type = 'checkbox';
+    this.noReferences.className = 'checkbox checkbox-sm';
+    this.noReferences.setAttribute('data-export-no-references', 'true');
+
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
@@ -216,6 +230,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
     this.pageRowElement = this.pageRow();
+    this.noReferencesRowElement = this.checkboxRow(this.noReferences, t('export.noReferences'));
 
     this.form = document.createElement('form');
     this.form.addEventListener('submit', (event) => {
@@ -230,6 +245,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
       this.pageRowElement,
+      this.noReferencesRowElement,
       this.status,
       this.fontHint,
       this.unknownFonts,
@@ -294,6 +310,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // PAPER_SIZES`), and both fields open on *the settings file's own* every time the card does, the
     // way the target opens on the note's own name.
     this.pageRowElement.classList.toggle('hidden', !info.takes_a_page_size);
+    // Unticked every time the card is drawn, like the page fields: the list is what every kind
+    // appends, and this is a reader asking for something else once.
+    this.noReferences.checked = false;
     if (info.takes_a_page_size) {
       const choice = (label: string, value: string): HTMLOptionElement => {
         const option = document.createElement('option');
@@ -414,7 +433,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.settle({
       outputPath,
       paper: this.paper.value === '' ? null : this.paper.value,
-      landscape: orientation === '' ? null : orientation === 'landscape'
+      landscape: orientation === '' ? null : orientation === 'landscape',
+      suppressReferences: this.noReferences.checked
     });
   }
 
@@ -445,6 +465,18 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     const group = document.createElement('div');
     group.className = 'mt-3 flex gap-3';
     group.append(this.row(this.paperLabel, this.paper), this.row(this.orientationLabel, this.orientation));
+    return group;
+  }
+
+  /** A box with its own words beside it, which is how a checkbox is read. */
+  private checkboxRow(box: HTMLInputElement, label: string): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'mt-3 flex items-center gap-2';
+    // The words wrap the box, so pressing them is pressing it.
+    const words = document.createElement('label');
+    words.className = 'label-text flex items-center gap-2 text-xs';
+    words.append(box, document.createTextNode(label));
+    group.append(words);
     return group;
   }
 

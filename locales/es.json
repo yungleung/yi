@@ -79,6 +79,7 @@
   "export.revealConfig": "Mostrar en la carpeta",
   "export.replaceConfig": "Reemplazar por el archivo incluido",
   "export.replaceQuestion": "¿Reemplazar tu copia de {path} por la incluida en esta versión? Lo que hayas cambiado se perderá.",
+  "export.noReferences": "Sin lista de referencias",
   "export.paper": "Tamaño de página",
   "export.paperOwn": "El del archivo de ajustes",
   "export.orientation": "Orientación",

@@ -84,6 +84,10 @@ export interface ExportRequest {
   paper: string | null;
   /** Which way up that page goes: true landscape, false portrait, null for the settings file's own. */
   landscape: boolean | null;
+  /** Whether the reader asked for the citations resolved with **no reference list** at the end — for
+   * the kinds pandoc writes, `suppress-bibliography` in the metadata; for the app's own hand, no list
+   * is written at all. */
+  suppress_references: boolean;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

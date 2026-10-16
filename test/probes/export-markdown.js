@@ -150,6 +150,31 @@
       /^# Going out$/m.test(plain) && !/^#{2,} Going out$/m.test(plain),
       { heading: /^#+ Going out/m.exec(plain)?.[0] ?? null }
     );
+
+    // And a reader may ask for the citations resolved with **no list** — the card's own box. For this
+    // kind that is the app's own code rather than pandoc's metadata: there is nothing to list, so no
+    // heading and no entry are written, and the citations in the text read as they do.
+    await invoke('plugin:event|emit', { event: 'export', payload: 'markdown' });
+    await until(() => open(), 60);
+    const second = card();
+    await sleep(150);
+    const noList = `${folder}/note.no-list.processed.md`;
+    second.querySelector('[data-export-no-references]').checked = true;
+    second.querySelector('[data-export-target]').value = noList;
+    second.querySelector('[data-export-run]').click();
+    const wroteNoList = await until(() => exists(noList));
+    const withoutList = wroteNoList ? await readText(noList) : '';
+    check(
+      'and the card can ask for the citations without their list, which this kind writes itself',
+      withoutList.includes('(Smith, 2020)') &&
+        !withoutList.includes('References') &&
+        !withoutList.includes('Smith, J. (2020)'),
+      {
+        citation: withoutList.includes('(Smith, 2020)'),
+        heading: /^#+ References/m.exec(withoutList)?.[0] ?? null,
+        entry: withoutList.includes('Smith, J. (2020)')
+      }
+    );
   } finally {
     await configManager.save(before);
     try {
