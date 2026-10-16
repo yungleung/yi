@@ -21,6 +21,21 @@ const DEFAULT_LANGUAGE = 'en';
 const failures = [];
 const catalogueOf = (language) => JSON.parse(readFileSync(join('locales', `${language}.json`), 'utf8'));
 
+// A key written **twice** in one file is a key whose second line silently wins: `JSON.parse` keeps the
+// last and says nothing, which is how the backend's own `export.noPandoc` (a second string for a fact
+// the card already had a better one for) replaced the card's sentence without a single test noticing.
+// So the raw text is read as well as parsed, and a repeat is a failure of its own.
+for (const language of LANGUAGES) {
+  const text = readFileSync(join('locales', `${language}.json`), 'utf8');
+  const seen = new Set();
+  for (const match of text.matchAll(/^\s*"([^"]+)":/gm)) {
+    if (seen.has(match[1])) {
+      failures.push(`${language}.json writes ${match[1]} twice`);
+    }
+    seen.add(match[1]);
+  }
+}
+
 const english = catalogueOf(DEFAULT_LANGUAGE);
 const englishKeys = Object.keys(english).sort();
 

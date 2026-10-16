@@ -161,9 +161,9 @@ pub fn get_config(app: tauri::AppHandle) -> Result<AppConfig, String> {
 #[tauri::command]
 pub fn set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
   if cfg.config_version != CURRENT_CONFIG_VERSION {
-    return Err(format!(
-      "Config version mismatch: expected {}, got {}",
-      CURRENT_CONFIG_VERSION, cfg.config_version
+    return Err(crate::i18n::now(
+      "settings.versionMismatch",
+      &[("expected", &CURRENT_CONFIG_VERSION.to_string()), ("got", &cfg.config_version.to_string())]
     ));
   }
   // And where it is *written*: a reader who changes the language hears the next sentence in it rather

@@ -1144,10 +1144,18 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   and `i18n::now` is `t` for a caller with no config, which is what a command has. The **export path's
   sentences** go through it now: ten keys, in all eight catalogues, held by `check-locales.mjs` (which
   reads the Rust tree as well as the webview's, so a message that uses a key is a use of it) and by a
-  unit test that sets the language and reads the sentence back. **What is left is the sweep of the other
-  modules** — `files.rs` (a name the file system refuses, a folder that cannot be moved into itself,
-  ~13 sites) and `versioning.rs` (a git that is not there) — which is the same mechanical pass, and a
-  decision about the **Tauri plugins'** own messages, which are not this app's to translate.
+  unit test that sets the language and reads the sentence back. **And the sweep landed with it**: the
+  file tree's sixteen refusals (a name the file system refuses, a folder that cannot be moved into
+  itself, a thing that is not there), the versioning kind's git seam, and the settings version guard —
+  eighteen more keys, all eight catalogues, `check-locales.mjs` now reporting *240 keys each, all used*.
+  Two things it turned up. The backend's own `export.noPandoc` collided with a **card** string of the
+  same name, and — `JSON.parse` keeping the last of a repeated key and saying nothing — my second line
+  replaced the card's better sentence with the backend's plainer one, which a probe caught
+  (`export-refused`: the card read "This machine has no pandoc to run." where its own sentence belongs).
+  The duplicate line is gone (the backend now reads the card's string: one fact, one home) and the check
+  **fails on a key written twice** in a file, which is the guard this class of mistake needed. And the
+  decision about the **Tauri plugins'** own messages stands: they are English and not this app's to
+  translate.
   One thing the round turned up that is worth keeping: the end-to-end sentence cannot be *probed* here —
   changing the language reloads the window, and the harness restores the language after every run on
   purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
