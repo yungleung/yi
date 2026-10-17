@@ -477,6 +477,9 @@ because a label is read where it is drawn and the session brings the document, t
 view back. `check-locales.mjs` holds the two readers to one set of keys, and the probe harness puts
 the app in English before a probe — a probe asserts behaviour, and its expectations are English —
 then puts the reader's choice back.
+`src-tauri/build.rs` watches `../locales`, because the binary embeds those files at compile time:
+without that line a new key reaches the webview but the menu keeps the old catalogue and shows the
+key itself.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with
@@ -486,7 +489,7 @@ language and reads the sentence back, and by `check-locales.mjs`, which walks `s
 the webview's tree so a message that uses a key counts as a use of it. **Every sentence the backend
 writes for the reader goes through it now** — the file tree's refusals, the export path's, the fonts',
 the versioning seam's, the settings guard's, the external programs' (`app.cannotRun`) and the
-bibliography's — 262 keys in each of the eight catalogues, and a new one is held by the catalogue check
+bibliography's — 264 keys in each of the eight catalogues, and a new one is held by the catalogue check
 (used, and present everywhere) and by the unit test that sets a language and reads a sentence back. What
 stays English is what no reader meets: the **Tauri plugins' own** messages (not this app's to
 translate), the development seams' sentences (a probe's bad call, a fetch error whose only consumer is a
