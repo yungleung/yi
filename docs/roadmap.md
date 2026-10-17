@@ -1422,11 +1422,28 @@ before deciding"; what is left is the "measure before deciding" column below.
   table above measures the *patch alone* (a text node and one height read, 2–4 ms); the app's
   path also measures the block, restores the caret and lets the page lay out again, which is
   where the milliseconds are. So the shape is not worth its visible trade-off and was
-  reverted. What the keystroke in a code block *is* spending 15–30 ms on is still open: not
-  the parse, not the block swap, and not its horizontal overflow container (forcing
-  `overflow-x: visible` by hand took 18 ms to 15). The next measurement is to find it — most
-  likely with the same shape as P21 and P26: measure the parts, in the app, before designing
-  anything.
+  reverted. **And the measurement that was asked for has been taken: the cost is the shape change,
+  not the write.** `test/probes/keystroke-parts.js` now measures it in the app — warm rounds and
+  medians (one cold keystroke is 57 ms where the ninth is 32), inclusive times as well as exclusive
+  (a method's children are inside its own), every geometry read with the frame that asked for it,
+  and the module seams it cannot wrap called in isolation. Medians, same round: a letter in an
+  80-line fenced block is **35–36 ms**, the same letter in a paragraph **6 ms**. Traced in the app
+  with a throwaway `performance.now()` per seam (seven rounds, reverted): `author` 0, `rule` 0–1,
+  `plainRun` 1, `replaceRange` 0–1, **`showSourceAt` 29–33**, `renderChanged` 0–1, `restoreCaret`
+  0–1, `keepScroll` 0, `onChanged` 1–2. Inside `showSourceAt`: the block's parse 4 ms and the
+  rebuild it triggers ~9 (inclusive: `renderChanged` 9, `syncWindow` 7); the rest of the keystroke's
+  reads are 1–2 ms, one `getBoundingClientRect` at `lineBoxAround` — so **no layout is paid inside the
+  keystroke at all**, and stubbing the DOM swap out (`replaceWith` a no-op) leaves it at 35.
+  **Why it runs every keystroke**: a source block's shown range *is the whole block*
+  (`{charStart, charEnd}`, `editing/context.ts: sourceRangeAt`), so a typed character moves the
+  range's end, `setShownRange` reports a change, and the block is built again; `applyEdit` then
+  renders once more, cheaply, because the shape already matches. That also explains both reverts:
+  P24 and P27 each avoided the *write's* rebuild and came back equal, because the rebuild was never
+  the write's — it was the range's. **The shape neither tried** is the fast write *and* a shown
+  range that remembers the *block* rather than absolute ends, so a keystroke that moves no boundary
+  is not a shape change; the visible question that comes with it is when the text is re-highlighted
+  (P27 put that on the burst's timer, and the markup it left stale for a burst was measured there).
+  That is the decision to take, and the numbers are now on its side.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
