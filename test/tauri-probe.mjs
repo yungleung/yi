@@ -832,6 +832,11 @@ async function waitForTheProbe(reply) {
   if (reply.success) {
     return { result: reply.data, steps: null, recovered: false };
   }
+  // A script that threw is already over: there is nothing to wait for, and its own error is the
+  // answer. The bridge's own words for the case this waits on are "Script execution timeout".
+  if (!/timeout/i.test(String(reply.error))) {
+    return { result: null, steps: null, recovered: false };
+  }
   let steps = null;
   // The bridge's budget is five seconds; a probe that needs longer is a probe that should be
   // split. Thirty seconds is enough for the slowest one this app has (a pandoc/LaTeX run) and
