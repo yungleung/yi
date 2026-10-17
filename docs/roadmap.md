@@ -1422,11 +1422,56 @@ before deciding"; what is left is the "measure before deciding" column below.
   table above measures the *patch alone* (a text node and one height read, 2–4 ms); the app's
   path also measures the block, restores the caret and lets the page lay out again, which is
   where the milliseconds are. So the shape is not worth its visible trade-off and was
-  reverted. What the keystroke in a code block *is* spending 15–30 ms on is still open: not
-  the parse, not the block swap, and not its horizontal overflow container (forcing
-  `overflow-x: visible` by hand took 18 ms to 15). The next measurement is to find it — most
-  likely with the same shape as P21 and P26: measure the parts, in the app, before designing
-  anything.
+  reverted. **And the measurement that was asked for has been taken: the cost is the shape change,
+  not the write.** `test/probes/keystroke-parts.js` now measures it in the app — warm rounds and
+  medians (one cold keystroke is 57 ms where the ninth is 32), inclusive times as well as exclusive
+  (a method's children are inside its own), every geometry read with the frame that asked for it,
+  and the module seams it cannot wrap called in isolation. Medians, same round: a letter in an
+  80-line fenced block is **35–36 ms**, the same letter in a paragraph **6 ms**. Traced in the app
+  with a throwaway `performance.now()` per seam (seven rounds, reverted): `author` 0, `rule` 0–1,
+  `plainRun` 1, `replaceRange` 0–1, **`showSourceAt` 29–33**, `renderChanged` 0–1, `restoreCaret`
+  0–1, `keepScroll` 0, `onChanged` 1–2. Inside `showSourceAt`: the block's parse 4 ms and the
+  rebuild it triggers ~9 (inclusive: `renderChanged` 9, `syncWindow` 7); the rest of the keystroke's
+  reads are 1–2 ms, one `getBoundingClientRect` at `lineBoxAround` — so **no layout is paid inside the
+  keystroke at all**, and stubbing the DOM swap out (`replaceWith` a no-op) leaves it at 35.
+  **Why it runs every keystroke**: a source block's shown range *is the whole block*
+  (`{charStart, charEnd}`, `editing/context.ts: sourceRangeAt`), so a typed character moves the
+  range's end, `setShownRange` reports a change, and the block is built again; `applyEdit` then
+  renders once more, cheaply, because the shape already matches. That also explains both reverts:
+  P24 and P27 each avoided the *write's* rebuild and came back equal, because the rebuild was never
+  the write's — it was the range's. **The shape neither tried** is the fast write *and* a shown
+  range that remembers the *block* rather than absolute ends, so a keystroke that moves no boundary
+  is not a shape change; the visible question that comes with it is when the text is re-highlighted
+  (P27 put that on the burst's timer, and the markup it left stale for a burst was measured there).
+  That is the decision to take, and the numbers are now on its side.
+  **The write itself was then built and measured, and it stops at the caret.** `sourceRun`
+  (`editing/source_write.ts`) is the second place the fast path may write: a fenced block's source view
+  holds the document's characters one for one, so the plain rule's own test passes once its span is the
+  block's and not the body's — and the parse and the render go to **0 ms**, the write to **0**, and the
+  height read moves to the burst (`notePatchedBlock` at once, `measureEditedBlock` in the deferred
+  pass). The keystroke is still **30 ms**, and the trace puts **19–26 of it in `placeCaret`'s
+  `scheduleCaret` lap** — the caret being placed inside a 165-element block. Measured: the same
+  keystroke with that placement removed is **6 ms**, and the paragraph then costs **29**, because its
+  next keystroke reads a stale `activeRange`. So the placement cannot be dropped; it has to move the
+  logical caret without asking the native selection to repaint what the app draws itself. `scheduleCaret`
+  is not where the milliseconds are *in its own code* — `onTheLineItNames` is a DOM walk, the range
+  listeners are 0 ms and the span's render is a frame — so the next measurement is the native side of
+  that lap, and that is where the write would be taken up again — if it were taken up at all (see the
+  decision below).
+  **And then it was dropped, on the maintainer's call and on one more measurement: the cost is bounded
+  by the block, and a note's block is usually small.** A keystroke inside fenced blocks of one to eighty
+  lines, seven warm rounds each, this machine (elements in brackets): one line **10 ms** (5), three
+  **12** (9), five **11** (13), ten **11** (23), twenty **16** (43), forty **24** (83), eighty **33**
+  (163) — and the same round's paragraph, the control, **6**. The one-line figure is 10 here against the
+  earlier round's 4–6 for a one-line fence: a different document and a different moment, both far below
+  the 4.7 KB case the 25–34 numbers come from. What that means for the decision is plain: **the fix
+  would only reach blocks big enough to be rare, and it does not reach them without touching the caret
+  for every kind of block.** The write as built takes the 80-line block from 33 to 30 — inside the
+  noise — and the only way measured to make it pay (no caret placement) is 6 ms on that block and 29
+  on a paragraph. So the write is **not taken**, the experiment was dropped rather than shelved, and
+  the cost stays where it is: bounded by the block's size, about 11 ms for the blocks a note usually
+  has. What is kept is the instrument (`keystroke-parts.js`) and the finding, which is what a future
+  round would start from if notes with big code blocks became common.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
