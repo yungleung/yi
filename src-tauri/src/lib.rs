@@ -1,6 +1,7 @@
 mod i18n;
 mod menu;
 mod files;
+mod access;
 mod export;
 mod export_fonts;
 mod font_file;
@@ -39,6 +40,7 @@ pub fn run() {
             files::write_text_atomically,
             stats::get_word_count, 
             files::list_folder_files, 
+            access::grant_folder,
             session::load_session,
             session::save_session,
             session::focus_window,

@@ -38,6 +38,23 @@ export async function createEntry(parent: string, name: string, isFile: boolean)
   return await invoke<string>("create_entry", { parent, name, isFile });
 }
 
+/**
+ * Lets the webview work in the folder a path lives in — read a note, save it, paint its pictures.
+ *
+ * The file plugin and the asset protocol start scoped to the home folder, which is a scope about the
+ * app's own files rather than the reader's: a workspace outside it can be listed and rearranged by the
+ * app's own commands, which carry no scope, while a click on one of its notes cannot open it and *Save*
+ * cannot write it (`src-tauri/src/access.rs` has the measurement). So the window grants the folders it
+ * is about to work in: the config's own — the workspace and the pictures folder — are granted where the
+ * config is read, and this is how a *document's* path is, before it is read or written.
+ *
+ * A path that is not on disk is not an error, and grants nothing: a restored note whose folder is gone
+ * is a note that is gone, and the read that follows says so.
+ */
+export async function grantFolder(path: string): Promise<void> {
+  await invoke("grant_folder", { path });
+}
+
 /** Removes a file, or a folder and everything under it. */
 export async function deleteEntry(path: string): Promise<void> {
   await invoke<void>("delete_entry", { path });

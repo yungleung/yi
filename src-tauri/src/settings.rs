@@ -138,6 +138,10 @@ pub fn load_config(app_handle: &tauri::AppHandle) -> AppConfig {
   // The one place the config is *read*, and so the one place the backend's own sentences learn what
   // language to speak (`i18n::now`): everything a command writes afterwards is in the reader's language.
   i18n::remember(&i18n::language_for(&cfg));
+  // And where the app learns which folder it is working in, so that the webview may read and write
+  // there: the file plugin and the asset protocol are scoped to the home folder to begin with
+  // (`access.rs`).
+  crate::access::grant_folders(app_handle, &cfg);
   cfg
 }
 
@@ -170,6 +174,8 @@ pub fn set_config(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
   // than after a restart.
   i18n::remember(&i18n::language_for(&cfg));
   let previous = load_from_disk(&app).unwrap_or_default();
+  // A new workspace — or a new pictures folder — is a folder the webview may work in from here on.
+  crate::access::grant_folders(&app, &cfg);
   save_to_disk(&app, &cfg).map_err(|e| e.to_string())
     .map(|_| {
       // Anything in the config may be read by the window that is open — the image folder is what
