@@ -315,12 +315,15 @@ live index; the newest probes carry a header naming what they cover:
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it
   the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
   (the editor window must be visible, so `probe:all` skips it).
-- A probe whose subject is written *through the webview* — a new note is written with the file
-  plugin — needs a workspace under `$HOME`, because that is all the plugin is scoped to
-  (`src-tauri/capabilities/default.json`: a folder under `/private/tmp` can be listed, moved and
-  deleted by the app's own Rust commands, but reading or writing it from the page is refused).
-  `new-markdown.js` and `tree-create.js` make their own folder in the home directory, use
-  `plugin:path|resolve_directory` for its path, and remove it in their `finally`.
+- A probe whose subject is written *through the webview* — a note opened, a picture inserted — may work
+  in a folder anywhere the app's own commands can make one: the file plugin and the asset protocol start
+  scoped to `$HOME` (`src-tauri/capabilities/default.json`), and the app grants the folders it is
+  *working in* at run time (`src-tauri/src/access.rs`) — the workspace and the folders the settings name
+  where the config is read, and a document's own before the session reads it. Measured:
+  `workspace-outside-home.js` reads, writes and paints in a folder under `/private/tmp`, while a folder
+  nobody asked about is still refused. `new-markdown.js` and `tree-create.js` still make their folder
+  under `$HOME` with `plugin:path|resolve_directory` and remove it in their `finally`, which is a
+  convention rather than a limit now; a probe that *means* to work outside it says so in its header.
 - A probe **cannot run a command**, and it cannot read inside a dot-named one either: the file
   plugin answers `forbidden path` for `.git/HEAD` and for `exists` on `.git` (measured), so a
   repository is observed through the app's own commands — which is what `versioning-*.js` do — and
