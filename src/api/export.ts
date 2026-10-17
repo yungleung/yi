@@ -29,6 +29,9 @@ export interface ExportKindInfo {
    * note writes none: the EPUB, which the window hands a body of its own (`ui/export/book_body.ts`).
    */
   names_its_body: boolean;
+  /** Whether the kind's output can hold a vector picture as a vector; for the kinds that cannot the
+   * window draws a PNG itself (`ui/export/raster_picture.ts`). */
+  carries_vectors: boolean;
   /** Whether the card offers a page size and an orientation for this kind. */
   takes_a_page_size: boolean;
   /**

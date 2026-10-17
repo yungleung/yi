@@ -43,8 +43,9 @@ import { registerCommand } from '../markdown/commands/registry';
 import { bodyWithItsName } from './book_body';
 import { exportDialog } from './export_dialog';
 import { uncoveredCharacters } from './font_hint';
-import { destinationsThatNameNoImage } from './picture_hint';
+import { destinationsThatNameNoImage, imageDestinations } from './picture_hint';
 import { exportSource } from './preprocess';
+import { forgetRasters, rasterPictures } from './raster_picture';
 
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {
@@ -120,11 +121,18 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // the note: the titles a wikilink renders as, and the file each picture is found at — the same
     // folders the renderer resolves a relative destination against, so what goes into the file is
     // what the reader saw.
+    // A vector picture in a kind whose output cannot hold one is drawn here, before the pre-process
+    // resolves destinations: whether an SVG survives is the *kind's* answer (`carries_vectors`), and a
+    // docx, an odt, a TeX page or its `.tex` get the PNG the webview drew (`raster_picture.ts`).
+    const drawn = first.carries_vectors
+      ? new Map<string, string>()
+      : await rasterPictures(imageDestinations(text), { bases: imageBases(), exists: fileExists });
     const prepared = await exportSource(text, {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
       fetchRemote: (url) => fetchedPicture(url, unfetched),
+      rasterised: (destination) => drawn.get(destination) ?? null,
       // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
       // itself has none, so for it the app renders what it already knows — the words a citation
       // reads as in the page (`bibliography.format`) — and lists the works it names under them.
@@ -183,6 +191,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     }
   } catch (error) {
     notify('Export', error);
+  } finally {
+    // The pictures this run drew are the run's files and nothing else's: pandoc has read them by now.
+    await forgetRasters();
   }
 }
 
