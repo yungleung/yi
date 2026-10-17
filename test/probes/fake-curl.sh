@@ -8,7 +8,9 @@
 #
 # It answers the way curl answers with `--write-out '%{content_type}'`: the type on stdout, the body
 # in the file `--output` named, and a status curl would give for a URL that says no (any URL with
-# `refuse` in it), which is how the app's own refusal is exercised.
+# `refuse` in it), which is how the app's own refusal is exercised. A URL with `svg` or `webp` in it
+# is answered with the picture a probe put in `$log/picture.svg` or `$log/picture.webp`, so a probe
+# can fetch the two formats the app draws or carries by the kind; every other URL gets the PNG.
 
 log="${HOME}/yi-probe-fake-curl"
 mkdir -p "$log" 2>/dev/null
@@ -48,6 +50,19 @@ case "$url" in
 esac
 
 here=$(dirname "$0")
-[ -n "$output" ] && cp "$here/../../src-tauri/icons/32x32.png" "$output" 2>/dev/null
-printf 'image/png'
+case "$url" in
+  *webp*)
+    [ -n "$output" ] && cp "$log/picture.webp" "$output" 2>/dev/null
+    content_type='image/webp'
+    ;;
+  *svg*)
+    [ -n "$output" ] && cp "$log/picture.svg" "$output" 2>/dev/null
+    content_type='image/svg+xml'
+    ;;
+  *)
+    [ -n "$output" ] && cp "$here/../../src-tauri/icons/32x32.png" "$output" 2>/dev/null
+    content_type='image/png'
+    ;;
+esac
+printf '%s' "$content_type"
 exit 0

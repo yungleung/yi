@@ -102,7 +102,7 @@
   "export.noCurl": "This machine has no curl to fetch it with.",
   "export.noFontsFolder": "Yi cannot find its own fonts folder: {reason}",
   "export.noShippedFonts": "Yi cannot find the fonts it ships: nothing in {installed} or {beside}.",
-  "export.pictureType": "{url} is {type}, and a Word file cannot hold that.",
+  "export.pictureType": "{url} is {type}, and an export cannot draw that.",
   "export.pictureNoType": "of no type this app knows",
     "export.noConfiguration": "Yi has no configuration file for {kind}.",
   "app.cannotRun": "Could not run {program}: {reason}",

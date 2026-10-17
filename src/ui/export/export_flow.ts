@@ -43,7 +43,11 @@ import { registerCommand } from '../markdown/commands/registry';
 import { bodyWithItsName } from './book_body';
 import { exportDialog } from './export_dialog';
 import { uncoveredCharacters } from './font_hint';
-import { destinationsThatNameNoImage, imageDestinations } from './picture_hint';
+import {
+  destinationsThatNameNoImage,
+  imageDestinations,
+  isWebDestination
+} from './picture_hint';
 import { exportSource } from './preprocess';
 import { forgetRasters, rasterPictures } from './raster_picture';
 
@@ -121,18 +125,51 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // the note: the titles a wikilink renders as, and the file each picture is found at — the same
     // folders the renderer resolves a relative destination against, so what goes into the file is
     // what the reader saw.
-    // A picture in a kind whose output cannot hold it as it is — an SVG or a webp — is drawn here,
-    // before the pre-process resolves destinations: whether one survives is the *kind's* answer
-    // (`carries_pictures`), and a docx, an odt, a TeX page or its `.tex` get the PNG the webview drew
-    // (`raster_picture.ts`).
+    // A picture on the web is fetched first, once, for the kinds pandoc writes: whether it survives
+    // as it is is the same *kind's* answer as a local one — a page and a book carry an SVG or a webp,
+    // and a Word file, an OpenDocument file, a TeX page and its `.tex` get the PNG the webview draws
+    // (`raster_picture.ts`). Fetching here rather than inside the pre-process is what lets the fetched
+    // file be drawn before it is handed over.
+    const destinations = imageDestinations(text);
+    const fetched = new Map<string, string | null>();
+    // The kind the app writes itself keeps the note's URL: a processed markdown is the reader's own
+    // file, and a copy in this run's folder would be a path that is taken away when the run ends. The
+    // kinds pandoc writes need the file, because pandoc may not be built to fetch one.
+    if (first.needs_pandoc) {
+      for (const destination of destinations) {
+        if (isWebDestination(destination) && !fetched.has(destination)) {
+          fetched.set(destination, await fetchedPicture(destination, unfetched));
+        }
+      }
+    }
+    const pictures = [
+      ...destinations,
+      ...[...fetched.values()].filter((path): path is string => path !== null)
+    ];
     const drawn = first.carries_pictures
       ? new Map<string, string>()
-      : await rasterPictures(imageDestinations(text), { bases: imageBases(), exists: fileExists });
+      : await rasterPictures(pictures, { bases: imageBases(), exists: fileExists });
+    // The note names the URL, so an answer is keyed by the URL as well as by the file it was fetched
+    // to: the pre-process asks about the destination it read from the note.
+    for (const [url, file] of fetched) {
+      const png = file === null ? undefined : drawn.get(file);
+      if (png !== undefined) {
+        drawn.set(url, png);
+      }
+    }
     const prepared = await exportSource(text, {
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
-      fetchRemote: (url) => fetchedPicture(url, unfetched),
+      fetchRemote: async (url) => {
+        if (!first.needs_pandoc) {
+          return null;
+        }
+        if (fetched.has(url)) {
+          return fetched.get(url) ?? null;
+        }
+        return fetchedPicture(url, unfetched);
+      },
       rasterised: (destination) => drawn.get(destination) ?? null,
       // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
       // itself has none, so for it the app renders what it already knows — the words a citation

@@ -108,7 +108,7 @@ export async function runExport(request: ExportRequest): Promise<ExportOutcome> 
 
 /**
  * Fetches a picture from the web for one export, and answers the local file it was written to.
- * A URL that cannot be fetched, or that is not a picture a Word file can hold, throws.
+ * A URL that cannot be fetched, or that is not a picture this app can carry or draw, throws.
  */
 export async function exportFetchImage(url: string): Promise<string> {
   return await invoke<string>('export_fetch_image', { url });

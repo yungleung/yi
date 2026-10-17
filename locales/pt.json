@@ -102,7 +102,7 @@
   "export.noCurl": "Esta máquina não tem curl para o descarregar.",
   "export.noFontsFolder": "Yi não encontra a sua própria pasta de tipos de letra: {reason}",
   "export.noShippedFonts": "Yi não encontra os tipos de letra incluídos: nada em {installed} nem em {beside}.",
-  "export.pictureType": "{url} é {type}, e um arquivo do Word não o pode conter.",
+  "export.pictureType": "{url} é {type}, e uma exportação não consegue desenhá-lo.",
   "export.pictureNoType": "de um tipo que esta aplicação não conhece",
     "export.noConfiguration": "Yi não tem ficheiro de configuração para {kind}.",
   "app.cannotRun": "Não foi possível executar {program}: {reason}",

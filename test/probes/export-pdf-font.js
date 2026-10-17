@@ -130,9 +130,12 @@
     await show(notePath, note);
     await invoke('plugin:event|emit', { event: 'export', payload: 'pdf' });
     await until(() => open(), 60);
+    const hints = t.hintsNow();
     card().querySelector('[data-export-target]').value = target;
     card().querySelector('[data-export-run]').click();
-    const written = await until(async () => (await bytesOf(target)) !== null);
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const bytes = await bytesOf(target);
     check(
       'the export still writes a PDF, so the line reached pandoc',

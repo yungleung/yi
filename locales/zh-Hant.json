@@ -102,7 +102,7 @@
   "export.noCurl": "本機沒有可用來下載的 curl。",
   "export.noFontsFolder": "Yi 找不到自己的字型資料夾: {reason}",
   "export.noShippedFonts": "Yi 找不到隨附的字型: {installed} 和 {beside} 裡都沒有。",
-  "export.pictureType": "{url} 是 {type}，Word 檔案無法容納它。",
+  "export.pictureType": "{url} 是 {type}，匯出無法繪製它。",
   "export.pictureNoType": "本應用程式不認識的類型",
     "export.noConfiguration": "Yi 沒有 {kind} 的設定檔。",
   "app.cannotRun": "無法執行 {program}: {reason}",

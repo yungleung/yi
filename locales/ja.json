@@ -102,7 +102,7 @@
   "export.noCurl": "このマシンには取得に使う curl がありません。",
   "export.noFontsFolder": "Yi は自身のフォントフォルダを見つけられません: {reason}",
   "export.noShippedFonts": "Yi は同梱フォントを見つけられません: {installed} にも {beside} にもありません。",
-  "export.pictureType": "{url} は {type} であり、Word ファイルには収められません。",
+  "export.pictureType": "{url} は {type} であり、エクスポートでは描画できません。",
   "export.pictureNoType": "このアプリが知らない種類",
     "export.noConfiguration": "Yi には {kind} の設定ファイルがありません。",
   "app.cannotRun": "{program} を実行できませんでした: {reason}",

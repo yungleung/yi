@@ -27,8 +27,9 @@
 //!   with HTTP support, and the pandoc this app finds may not have been — measured: the one on the
 //!   machine this was written on answers *"pandoc was compiled without HTTP support"* and puts the
 //!   picture's description in the document instead. The app can see the picture, so it is the app's
-//!   job to hand it over. The download goes through [`run_curl`] — one list in one place, held by a
-//!   probe against a curl that only records, like the git and pandoc ones.
+//!   job to hand it over. An SVG or a webp is kept as itself here and then carried or drawn by the
+//!   kind (`ui/export/export_flow.ts`). The download goes through [`run_curl`] — one list in one
+//!   place, held by a probe against a curl that only records, like the git and pandoc ones.
 //! - **the two things the app knows and pandoc does not**: the library the note's citations were
 //!   formatted from, and the style they were formatted in. Handing citeproc a `--bibliography` is
 //!   what makes it resolve the keys *and append the reference list* the reader asked for; the style
@@ -724,9 +725,11 @@ fn remote_dir(dir: &Path) -> PathBuf {
     tmp_dir(dir).join("remote")
 }
 
-/// The extension a picture's own content type has — for the types a Word file can hold, and for
-/// nothing else. A file named wrongly is a picture Word will not draw, and a page that answered
-/// instead of a picture is not a picture at all.
+/// The extension a picture's own content type has — for the picture types this app can carry or
+/// draw, and for nothing else. The five Word holds are handed over as they are, and an SVG or a webp
+/// is kept as itself here so the window can carry it in a book or draw it for a Word file
+/// (`ui/export/raster_picture.ts`). A file named wrongly is a picture no reader will draw, and a page
+/// that answered instead of a picture is not a picture at all.
 fn image_extension(content_type: &str) -> Option<&'static str> {
     match content_type.split(';').next().unwrap_or("").trim() {
         "image/png" => Some("png"),
@@ -734,6 +737,8 @@ fn image_extension(content_type: &str) -> Option<&'static str> {
         "image/gif" => Some("gif"),
         "image/bmp" => Some("bmp"),
         "image/tiff" => Some("tiff"),
+        "image/svg+xml" => Some("svg"),
+        "image/webp" => Some("webp"),
         _ => None,
     }
 }
@@ -855,13 +860,15 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
     Ok(path)
 }
 
-/// A picture the note names on the web, handed over as a local file for pandoc to embed.
+/// A picture the note names on the web, brought down as a local file for the pre-process to hand
+/// over or, for a kind that cannot carry an SVG or a webp, to draw as a PNG
+/// (`ui/export/export_flow.ts`).
 ///
 /// The app fetches it because pandoc may not be able to: a pandoc built without HTTP support answers
 /// *"Could not fetch resource …"* and puts the picture's description in the document, which is the
-/// hole this fills. A URL that cannot be fetched, or that is not a picture a Word file can hold, is
-/// an error here and the window leaves the destination exactly as the note wrote it — pandoc's own
-/// warning about it reaches the reader either way (`ExportOutcome.warnings`).
+/// hole this fills. A URL that cannot be fetched, or that is not a picture this app can carry or
+/// draw, is an error here and the window leaves the destination exactly as the note wrote it —
+/// pandoc's own warning about it reaches the reader either way (`ExportOutcome.warnings`).
 #[tauri::command]
 pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
     let curl = find_curl()
@@ -1792,9 +1799,11 @@ mod tests {
     fn a_picture_is_named_for_its_own_type_and_never_for_a_path() {
         assert_eq!(image_extension("image/png"), Some("png"));
         assert_eq!(image_extension("image/jpeg"), Some("jpg"));
+        assert_eq!(image_extension("image/svg+xml"), Some("svg"));
+        assert_eq!(image_extension("image/svg+xml; charset=utf-8"), Some("svg"));
+        assert_eq!(image_extension("image/webp"), Some("webp"));
         assert_eq!(image_extension("IMAGE/GIF"), None); // curl reports lower case; anything else is
         assert_eq!(image_extension("image/png; charset=binary"), Some("png"));
-        assert_eq!(image_extension("image/svg+xml"), None);
         assert_eq!(image_extension("text/html"), None);
         assert_eq!(image_extension(""), None);
     }

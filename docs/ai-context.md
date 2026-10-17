@@ -261,8 +261,11 @@ and a Word file, an OpenDocument file, a TeX page or its `.tex` get a PNG the ap
 (`src/ui/export/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
 folder of the app's own that the run removes). Pandoc draws a vector only where the machine happens to
 have a rasteriser, and carries a webp as a file none of a Word file's five types promises; the app draws
-both where the kind needs it. What is left is a picture **on the web** of either format: the app's own
-fetch takes the five types a Word file holds.
+both where the kind needs it. A picture **on the web** follows the same rule: an SVG or a webp is
+fetched into the run's own folder and then treated exactly as a local one, carried where the kind can
+hold it and drawn where it cannot (`image_extension` accepts `image/svg+xml` and `image/webp`;
+`test/probes/export-web-picture-formats.js`). The one exception is processed markdown: the app writes
+that file itself, so it keeps the note's URL rather than a path into a folder the run takes away.
 **One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
 the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind

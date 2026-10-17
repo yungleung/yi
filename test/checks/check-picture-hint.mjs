@@ -24,7 +24,8 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'picture_hint.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { destinationsThatNameNoImage, imageDestinations, namesNoImage } = await import(file);
+const { destinationsThatNameNoImage, imageDestinations, isWebDestination, namesNoImage } =
+  await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -42,6 +43,16 @@ check('and the spaces a reader may write are not the media type', namesNoImage('
 check('a URL is not this rule’s business', namesNoImage('https://example.com/shot.png'), false);
 check('nor is a path', namesNoImage('shot.png'), false);
 check('nor is a data URL that is not written at the start', namesNoImage('x data:text/plain,y'), false);
+
+// What the app fetches, and what it reads from disk.
+check('an http URL is a picture on the web', isWebDestination('http://example.com/shot.png'), true);
+check(
+  'and so is https, with the spaces a reader may leave',
+  isWebDestination('  HTTPS://example.com/a.svg '),
+  true
+);
+check('a file URL is not fetched by the app', isWebDestination('file:///tmp/shot.png'), false);
+check('nor is a local path', isWebDestination('images/shot.png'), false);
 
 // What the note's own images say, read from the parse.
 check(

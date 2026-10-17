@@ -31,9 +31,9 @@
  * with no workspace (or no file system) write the targets and the destinations themselves.
  *
  * May import: the parser pipeline, the wikilink rule, the path rule and the span walk the hint beside
- * it asks the same parse for. Upholds: one fact about markdown syntax has one home, and the document
- * text stays the only source of truth — this reads the text and answers a new text, it never edits the
- * note.
+ * it asks the same parse for, and that hint's web-destination rule. Upholds: one fact about markdown
+ * syntax has one home, and the document text stays the only source of truth — this reads the text and
+ * answers a new text, it never edits the note.
  */
 
 import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
@@ -41,6 +41,7 @@ import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
 import { spansOfType, type Walkable } from './node_spans';
+import { isWebDestination } from './picture_hint';
 
 /** The title of the document a wikilink names, or null when nothing in the workspace answers. */
 export type TitleLookup = (target: string) => Promise<string | null>;
@@ -69,8 +70,9 @@ export interface ExportAnswers {
    */
   fetchRemote: (url: string) => Promise<string | null>;
   /**
-   * The PNG the app drew for a destination this kind cannot carry as a vector, or null. Asked *first*:
-   * a vector is a vector only where the output holds one (`raster_picture.ts`).
+   * The PNG the app drew for a destination this kind cannot carry as it is — an SVG or a webp — or
+   * null. Asked *first*: a picture survives as itself only where the output holds it
+   * (`raster_picture.ts`).
    */
   rasterised?: (destination: string) => string | null;
   /**
@@ -192,7 +194,7 @@ async function remoteFile(
   fetched: Map<string, string | null>
 ): Promise<string | null> {
   const url = destination.trim();
-  if (!/^https?:\/\//i.test(url)) {
+  if (!isWebDestination(url)) {
     return null;
   }
   const known = fetched.get(url);
