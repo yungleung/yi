@@ -132,6 +132,17 @@ export function withRenderFrame<T>(block: MarkdownBlock, build: () => T): T {
   }
 }
 
+/**
+ * The block whose element is being built right now, or null outside a render pass.
+ *
+ * A node component is built deep inside the renderer and has no handle on the block it sits in, and
+ * some of what it draws is the block's *source* rather than its own node — a footnote draws the label
+ * the author typed, which the parse normalises for matching and does not keep (`nodes/footnote.ts`).
+ */
+export function renderingBlock(): MarkdownBlock | null {
+  return renderFrame;
+}
+
 /** Whether this node's own source is the one being shown. */
 export function isShownSource(node: AstNode): boolean {
   const position = (

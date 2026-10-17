@@ -1479,14 +1479,18 @@ before deciding"; what is left is the "measure before deciding" column below.
   free.
 - **The deferred check's parse** (once a burst; 9 ms for that block) is the safety
   net's price, not a defect.
-- **What a drawn footnote label spells.** Measured in the phase above, by
-  `test/probes/footnote-labelled.js`: a marker in the text and a definition's label in the
-  notes run both draw the *identifier*, lowercased — `[^Ab]` draws `[ab]`, the shape a
-  marker has always drawn — while the source at either end spells the author's characters
-  (`[^Ab]`). The two ends therefore agree with each other and disagree with the source
-  until the caret is in it. The decision is the user's: drawing the author's characters at
-  rest would make the drawing agree with the source, and it is the last visible leftover in
-  the footnote neighbourhood.
+- **What a drawn footnote label spells — the author's characters, now.** Measured in the phase above:
+  a marker in the text and a definition's label in the notes run both drew the *identifier*, lowercased
+  — `[^Ab]` drew `[ab]` — while the source at either end spelled `[^Ab]`, so the two ends agreed with
+  each other and disagreed with the source until the caret was in it. Markdown matches labels
+  case-insensitively, so the parse keeps the normalised one and the author's characters are in the
+  *source* alone: `nodes/footnote.ts: authoredLabel` reads them from the block the renderer names
+  (`source_mode.ts: renderingBlock`) at the node's own position. A marker now draws `[Ab]` at rest and
+  `[^Ab]` while the caret is in it, the anchor is still `fn-ab` (`id` stays the parse's normalised
+  name — it is what the jump links to), and the whole footnote family passes unchanged: the label's
+  edge, the container jump, a repeated label, a label in a table cell, the jump and the preview.
+  `test/probes/footnote-labelled.js` holds it from both ends — the drawing, the notes run, the reveal,
+  typing at either end and the jump.
 - **`table-picker-insert.js` stalls the bridge** — closed in P22, and it was never the
   picker. The probe before it, `table-menu-open.js`, opens the table's **native** context
   menu, which blocks the webview until something closes it; it lacked the
