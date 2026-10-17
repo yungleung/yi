@@ -1,19 +1,21 @@
 /**
- * A vector picture, and what each kind of export does with it: the answer depends on the *kind*.
+ * A picture whose format is not one of the five a Word file promises — an SVG and a webp — and what each
+ * kind of export does with it: the answer depends on the *kind*.
  *
- * A page of HTML and a book hold an SVG as an SVG (SVG is one of the EPUB core media types), and the
- * app's own hand leaves the note's destinations as written — while a Word file, an OpenDocument file, a
- * page XeTeX lays out and its `.tex` cannot. Measured with pandoc 3.12: a docx gets a converted PNG
- * *beside* the raw `.svg` where the machine has a rasteriser and the raw vector alone where it has none,
- * so the app draws the PNG itself (`ui/export/raster_picture.ts`) and hands that over.
+ * A page of HTML and a book hold both as they are (SVG and webp are core media types of EPUB 3.4, and a
+ * book of a webp validates clean), and the app's own hand leaves the note's destinations as written —
+ * while a Word file, an OpenDocument file, a page XeTeX lays out and its `.tex` cannot. Measured with
+ * pandoc 3.12: a docx gets a converted PNG *beside* the raw `.svg` where the machine has a rasteriser
+ * and the raw vector alone where it has none, and it carries a webp as a file no reader is promised; so
+ * the app draws the PNG itself (`ui/export/raster_picture.ts`) and hands that over.
  *
- * This is that, through the app: the same note and the same local `figure.svg`, exported twice — the
- * docx's media folder has a PNG the app drew and no vector, the book's has the vector and no PNG — and
- * the PNG is twice the vector's own size (a diagram's hairlines and text are drawn for a vector). What a
- * run draws lives in a folder of the app's own and is gone when the run is over.
+ * This is that, through the app: one note naming a local `figure.svg` and a local `shot.webp`, exported
+ * twice. The docx's media folder has PNGs the app drew and neither format; the book's has both. A vector
+ * is drawn at twice its own size, a webp at its own — and what a run draws lives in a folder of the
+ * app's own and is gone when the run is over.
  *
  * @covers src/ui/export/raster_picture.ts, src/ui/export/export_flow.ts,
- *   src-tauri/src/export.rs (carries_vectors)
+ *   src-tauri/src/export.rs (carries_pictures)
  */
 (async () => {
   const t = window.__t;
@@ -54,17 +56,18 @@
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
-  const folderName = `yi-probe-svg-${Date.now().toString(36)}`;
+  const folderName = `yi-probe-pictures-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const svgPath = `${folder}/figure.svg`;
+  const webpPath = `${folder}/shot.webp`;
   const docxTarget = `${folder}/note.docx`;
   const epubTarget = `${folder}/note.epub`;
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">' +
     '<rect width="120" height="60" fill="#3b82f6"/>' +
     '<circle cx="60" cy="30" r="20" fill="#f59e0b"/></svg>';
-  const note = '# Going out\n\nA diagram: ![figure](figure.svg)\n';
+  const note = '# Going out\n\nA diagram: ![figure](figure.svg), a photo: ![shot](shot.webp)\n';
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -108,17 +111,41 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await files.writeTextAtomically(svgPath, svg);
+    // A webp, as bytes, because the webview *decodes* a webp and does not encode one (a canvas `toBlob`
+    // for the type answers null here, measured) — the drawing half is the app's, not the probe's. Its
+    // own size is what its PNG must keep, and the page is asked for it rather than assumed.
+    const webp = Uint8Array.from(
+      atob('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoCAQIAAUAmJQBOgCHwAP7+4AAAAA=='),
+      (character) => character.charCodeAt(0)
+    );
+    const webpSource = await (async () => {
+      const url = URL.createObjectURL(new Blob([webp], { type: 'image/webp' }));
+      try {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return { width: image.naturalWidth, height: image.naturalHeight };
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })();
+    // The plugin's byte write takes its path in a *header*, so the call is made without the probe's
+    // two-argument helper.
+    await window.__TAURI_INTERNALS__.invoke('plugin:fs|write_file', webp, {
+      headers: { path: encodeURIComponent(webpPath) }
+    });
     await t.openWorkspace(folder);
     await show(notePath, note);
 
-    // --- the kinds that cannot hold a vector ------------------------------------------------------
+    // --- the kinds that cannot hold a picture as it is --------------------------------------------
 
     const wroteDocx = await exportTo('docx', docxTarget);
     const docx = wroteDocx ? await bytesOf(docxTarget) : null;
     const docxMedia = docx === null ? [] : t.zipNames(docx).filter((name) => name.startsWith('word/media/'));
     check(
-      'a docx of a note with an SVG carries a PNG the app drew, and not the vector',
-      docxMedia.some((name) => name.endsWith('.png')) && !docxMedia.some((name) => name.endsWith('.svg')),
+      'a docx of a note with an SVG and a webp carries PNGs the app drew, and neither format',
+      docxMedia.filter((name) => name.endsWith('.png')).length === 2 &&
+        !docxMedia.some((name) => name.endsWith('.svg') || name.endsWith('.webp')),
       { media: docxMedia }
     );
 
@@ -126,23 +153,30 @@
     // a diagram is drawn for a vector, and a PNG at its own size is the one that loses its hairlines.
     // (The docx's copy of the PNG is *pandoc's* re-encoding, at the page's own dpi, so a size read back
     // out of the document is pandoc's answer and not this app's.)
-    const drawn = await rasterPictures(['figure.svg'], {
+    const drawn = await rasterPictures(['figure.svg', 'shot.webp'], {
       bases: { document: folder, images: null },
       exists
     });
-    const drawnPath = drawn.get('figure.svg') ?? null;
-    const pngBytes = drawnPath === null ? null : await bytesOf(drawnPath);
-    const size =
-      pngBytes === null
+    const sizeOf = async (destination) => {
+      const path = drawn.get(destination) ?? null;
+      const bytes = path === null ? null : await bytesOf(path);
+      return bytes === null
         ? null
         : {
-            width: (pngBytes[16] << 24) | (pngBytes[17] << 16) | (pngBytes[18] << 8) | pngBytes[19],
-            height: (pngBytes[20] << 24) | (pngBytes[21] << 16) | (pngBytes[22] << 8) | pngBytes[23]
+            width: (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19],
+            height: (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]
           };
-    check('and it is drawn at twice the vector’s own size', size?.width === 240 && size?.height === 120, {
-      size,
-      drawn: drawnPath
-    });
+    };
+    const vectorSize = await sizeOf('figure.svg');
+    const webpSize = await sizeOf('shot.webp');
+    check(
+      'and a vector is drawn at twice its own size while a webp keeps its pixels',
+      vectorSize?.width === 240 &&
+        vectorSize?.height === 120 &&
+        webpSize?.width === webpSource.width &&
+        webpSize?.height === webpSource.height,
+      { vectorSize, webpSize, webpSource }
+    );
     await forgetRasters();
 
     // --- the kind that can ------------------------------------------------------------------------
@@ -151,8 +185,10 @@
     const epub = wroteEpub ? await bytesOf(epubTarget) : null;
     const epubMedia = epub === null ? [] : t.zipNames(epub).filter((name) => name.startsWith('EPUB/media/'));
     check(
-      'a book carries the SVG itself, because a book holds a vector',
-      epubMedia.some((name) => name.endsWith('.svg')) && !epubMedia.some((name) => name.endsWith('.png')),
+      'a book carries both as they are: an SVG and a webp, and no PNG',
+      epubMedia.some((name) => name.endsWith('.svg')) &&
+        epubMedia.some((name) => name.endsWith('.webp')) &&
+        !epubMedia.some((name) => name.endsWith('.png')),
       { media: epubMedia }
     );
 

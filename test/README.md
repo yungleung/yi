@@ -261,9 +261,10 @@ TeX-run probe;
 `export-picture-hint` — the card's other hint about a *note*: a destination that is a `data:` URL of
 something which is not an image is named on it, and a picture's own `data:` URL leaves it quiet — read
 out of the parse by `ui/export/picture_hint.ts`, and drawn before any export is asked for;
-`export-svg-picture` — a vector picture and the *kind*: one note and one local `figure.svg`, exported as
-a docx (the media folder has a PNG the app drew and no vector; the app's own drawing is 240 x 120 for a
-120 x 60 vector) and as an EPUB (the vector, and no PNG), with the pictures a run drew gone when it ends;
+`export-picture-formats` — a picture whose format a Word file does not promise, and the *kind*: one note
+naming a local `figure.svg` and a local `shot.webp`, exported as a docx (PNGs the app drew and neither
+format — the vector at 240 x 120 for a 120 x 60 vector, the webp at its own size) and as an EPUB (both
+as they are, and no PNG), with the pictures a run drew gone when it ends;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
