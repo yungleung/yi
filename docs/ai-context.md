@@ -41,6 +41,18 @@ so the webview cannot be navigated to a dropped path either. A probe that works 
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
 
+**And the webview may work where the app is working.** The file plugin and the asset protocol that
+serves a rendered picture start scoped to `$HOME` (`capabilities/default.json`, `tauri.conf.json`), which
+is a scope about the app's own files rather than the reader's: outside it a folder could be listed and
+rearranged by the app's own commands — they carry no scope — while a note in it could not be read by the
+page and a picture inserted into it could not be written (measured: *"forbidden path: … maybe it is not
+allowed on the scope for `allow-read-text-file`"*). So `src-tauri/src/access.rs` grants the folders the
+app is *working in* at run time: the config's own — the workspace, the pictures folder, the library's —
+where the config is read (`settings.rs`), and a document's own before the session reads it
+(`api/files.ts: grantFolder`, called from `session.ts: openPath` and from a restore), which is what a
+workspace, or a note, outside `$HOME` needs. Nothing else is granted, and `workspace-outside-home.js`
+holds both halves.
+
 A **first start** has no workspace, and the app now says so rather than waiting to be asked: the
 rule is `services/workspace_setup.ts` (`needsWorkspaceQuestion` over the config's `workspace` and
 its new `workspace_asked`), the card and the flow are `src/ui/workspace_setup/`, and

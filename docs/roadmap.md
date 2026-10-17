@@ -1210,6 +1210,32 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   the app's own hand doing it. The Rust side holds the word itself: `suppress-bibliography` reaches
   pandoc as metadata and never as a variable, and a note with no library is told nothing.
 
+- **The folder the app works in is the folder the webview may work in.** The item had one thing wrong,
+  measured while fixing it: the session's *Save* is the app's own atomic write (`api/files.ts:
+  writeTextAtomically` → `files.rs`), which carries no scope and could always write anywhere. What the
+  plugin's `$HOME/**` scope actually refused is the *reads* (the session's `openPath`, and the three in
+  `document_manager.ts` that read a note's title), an **inserted picture** (`ui/image/image_flow.ts`
+  writes with the file plugin), the library `watch`, and the asset protocol that *serves* a rendered
+  image. The refusal itself is what the item had: reading `/private/tmp/…/note.md` from the page answered
+  *"forbidden path: … maybe it is not allowed on the scope for `allow-read-text-file`"*, while the app's
+  own commands reached it.
+  So `src-tauri/src/access.rs` grants the folders the app is *working in*, at run time and to **both**
+  scopes (the file plugin's and the asset protocol's): the ones the config names — the workspace, the
+  pictures folder, the library's — where the config is read (`settings.rs`, so a new workspace is granted
+  the moment it is saved), and a **document's** own folder through a command the window asks with
+  (`grant_folder`, called before the session reads a note and for every document a session restores).
+  What may be granted is one pure rule (`folders_in`) with a unit test: a folder named twice is one grant,
+  a folder that is not there is none at all, and a *file* named where a folder is expected grants the
+  folder it sits in. Nothing else opens up, and `workspace-outside-home.js` holds both halves: it takes
+  the measurement first (a folder nobody asked about is refused, read and write alike), then reads a note
+  the session opens outside the workspace, opens a workspace under `/private/tmp`, writes a picture into
+  it through the page, sees that picture **painted** over the asset protocol
+  (`asset://localhost/%2Fprivate%2Ftmp%2F…`), writes into the pictures folder the settings name — and
+  finds a stranger folder still refused at the end.
+  **And it changes a convention**: a probe whose subject goes through the webview no longer has to keep
+  its folder under `$HOME` (`test/README.md` says so), which is what made this the one item the probes
+  could not reach before.
+
 ## Open, in the order to take them
 
 - **A picture that is an SVG, a webp, or a URL behind a login.** Measured with pandoc 3.12, one note
@@ -1238,22 +1264,6 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   should turn such a picture into one the export can use — it has the machinery, the webview's own
   canvas (`ui/image/image_flow.ts: encode` already turns pixels into a `.png` for a pasted picture) —
   or goes on saying what it cannot do and leaving the note's bytes alone. Nothing of that half is done.
-- **The file plugin is scoped to `$HOME`, and the app cannot open a workspace outside it.** A
-  new note is written with `@tauri-apps/plugin-fs` — the same call the session's *Save* makes, and
-  the one an inserted image is written with — and the asset protocol that *serves* a rendered image
-  is scoped the same way (`tauri.conf.json`), so outside the home directory a note's images neither
-  save nor paint. That plugin's scope is `$HOME/**` (`src-tauri/capabilities/default.json`).
-  Measured while
-  writing the probe: reading a file under `/private/tmp` from the page is refused
-  (*"forbidden path: /private/tmp/yi-fs-scope/note.md, maybe it is not allowed on the scope for
-  `allow-read-text-file`"*), while the app's own Rust commands (`list_folder_files`,
-  `create_entry`, `move_entry`, …) reach anywhere, because they carry no scope of their own. So a
-  folder outside the home directory can be listed, rearranged and deleted, but a click in the
-  tree cannot open a file in it and *Save* cannot write one — not a limitation the app means to
-  have. The fix is scope the reader grants when they open a folder (the dialog plugin's folder
-  picker already returns the path), or a pair of commands of the app's own for the two calls the
-  webview makes; the probe is `new-markdown.js`, which makes its workspace in the home directory
-  for exactly this reason.
 - **The backend still answers in English — half of it now speaks the reader's language.** The mechanism
   landed: `i18n::remember` keeps the language the config asks for (set where the config is *read* — the
   menu's own `load_config` at startup — and where it is *written*, so a change tells the next sentence),
