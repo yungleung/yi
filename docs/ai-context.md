@@ -462,8 +462,15 @@ met by the reader in a toast beside translated chrome. They go through `i18n::no
 the language the app is speaking (`i18n::remember`, set where the config is read and where it is
 written — the menu's `load_config` at startup is the first of those). Held by a unit test that sets the
 language and reads the sentence back, and by `check-locales.mjs`, which walks `src-tauri/src` as well as
-the webview's tree so a message that uses a key counts as a use of it. The **Tauri plugins' own**
-messages are English and not this app's to translate.
+the webview's tree so a message that uses a key counts as a use of it. **Every sentence the backend
+writes for the reader goes through it now** — the file tree's refusals, the export path's, the fonts',
+the versioning seam's, the settings guard's, the external programs' (`app.cannotRun`) and the
+bibliography's — 262 keys in each of the eight catalogues, and a new one is held by the catalogue check
+(used, and present everywhere) and by the unit test that sets a language and reads a sentence back. What
+stays English is what no reader meets: the **Tauri plugins' own** messages (not this app's to
+translate), the development seams' sentences (a probe's bad call, a fetch error whose only consumer is a
+`catch` that replaces it with the app's own), and the versioning facts' `cloud_evidence`, which no window
+shows and one probe reads.
 
 Typing is not a command, so **what a bracket writes and the two lists that open as the author
 types** live in the editor's key path: `syntax/brackets.ts` says what a `[` (or `(`, `{`, a quote)

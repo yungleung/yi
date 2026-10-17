@@ -168,7 +168,12 @@ mod tests {
     // `now` speaks what `t` speaks for the remembered language, and a copy of the text here is a second
     // home for it — this test failed once for exactly that, when the key it names was deduplicated and
     // its own copy stayed behind.
-    for key in ["export.noPandoc", "files.nameEmpty", "versioning.gitUnusable"] {
+    for key in [
+      "export.noPandoc",
+      "files.nameEmpty",
+      "versioning.gitUnusable",
+      "versioning.notAVersion",
+    ] {
       assert_eq!(now(key, &[]), t("zh-Hans", key, &[]), "{key}");
     }
     assert_eq!(
@@ -182,7 +187,16 @@ mod tests {
     // And every catalogue really does answer for these keys, one by one: a key that only English has
     // would leave a reader in the other seven languages looking at the key itself.
     for language in LANGUAGES {
-      for key in ["export.noPandoc", "export.cannotWrite", "export.noSuchKind"] {
+      for key in [
+        "export.noPandoc",
+        "export.cannotWrite",
+        "export.noSuchKind",
+        "export.noShippedFonts",
+        "app.cannotRun",
+        "versioning.noGit",
+        "files.markdownOnly",
+        "versioning.notAVersionFile",
+      ] {
         let text = t(language, key, &[]);
         assert!(!text.is_empty() && text != *key, "{language} has nothing for {key}");
       }

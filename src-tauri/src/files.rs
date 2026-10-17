@@ -98,8 +98,9 @@ fn entry_name(name: &str, is_file: bool) -> Result<String, String> {
         return Ok(format!("{trimmed}.{NEW_FILE_EXTENSION}"));
     }
     if !is_markdown(trimmed) {
-        return Err(format!(
-            "This tree holds markdown files: name it with .{NEW_FILE_EXTENSION}."
+        return Err(crate::i18n::now(
+            "files.markdownOnly",
+            &[("extension", NEW_FILE_EXTENSION)],
         ));
     }
     Ok(trimmed.to_string())
@@ -198,9 +199,9 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
         return Ok(as_path(&source));
     }
     if target.exists() {
-        return Err(format!(
-            "{} already exists in that folder.",
-            name.to_string_lossy()
+        return Err(crate::i18n::now(
+            "files.alreadyInTarget",
+            &[("name", &name.to_string_lossy())],
         ));
     }
     // A folder cannot be moved inside itself: that would take it off the tree and leave
@@ -244,8 +245,12 @@ pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
 /// file plugin's truncate-and-write, so a save is never half a file for anything else to read.
 #[tauri::command]
 pub fn write_text_atomically(path: String, contents: String) -> Result<(), String> {
-    write_atomically(Path::new(&path), &contents)
-        .map_err(|error| format!("Failed to write {path}: {error}"))
+    write_atomically(Path::new(&path), &contents).map_err(|error| {
+        crate::i18n::now(
+            "files.writeFailed",
+            &[("path", &path), ("reason", &error.to_string())],
+        )
+    })
 }
 
 #[cfg(test)]

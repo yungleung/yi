@@ -362,7 +362,12 @@ fn run_git<S: AsRef<std::ffi::OsStr>>(git: &Path, workspace: &Path, arguments: &
         .arg(workspace)
         .args(arguments)
         .output()
-        .map_err(|error| format!("Could not run {}: {error}", git.display()))?;
+        .map_err(|error| {
+            crate::i18n::now(
+                "app.cannotRun",
+                &[("program", &git.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
     if !output.status.success() {
         let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
         // git's own sentence is the useful one ("Author identity unknown", "index.lock exists");
@@ -386,7 +391,7 @@ fn run_git<S: AsRef<std::ffi::OsStr>>(git: &Path, workspace: &Path, arguments: &
 fn git_to_run() -> Result<PathBuf, String> {
     find_git()
         .0
-        .ok_or_else(|| "This machine has no git to run.".to_string())
+        .ok_or_else(|| crate::i18n::now("versioning.noGit", &[]))
 }
 
 /// What the repository has configured for the reader, when there is a repository and a git to ask.
@@ -544,11 +549,11 @@ fn read_versions(
 fn version_text_arguments(revision: &str, path: &str) -> Result<String, String> {
     let hash = revision.trim();
     if hash.len() < 4 || hash.len() > 40 || !hash.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err("That is not a version this app can read.".to_string());
+        return Err(crate::i18n::now("versioning.notAVersion", &[]));
     }
     let name = path.trim();
     if name.is_empty() || name.starts_with('/') || name.starts_with('-') || name.contains("..") {
-        return Err("That is not a file this app can read from a version.".to_string());
+        return Err(crate::i18n::now("versioning.notAVersionFile", &[]));
     }
     Ok(format!("{hash}:{name}"))
 }
@@ -570,16 +575,21 @@ fn read_version_text(
         .arg(workspace)
         .args(["show", &expression])
         .output()
-        .map_err(|error| format!("Could not run {}: {error}", git.display()))?;
+        .map_err(|error| {
+            crate::i18n::now(
+                "app.cannotRun",
+                &[("program", &git.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
     if !output.status.success() {
         let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(if complaint.is_empty() {
-            "That version could not be read.".to_string()
+            crate::i18n::now("versioning.unreadable", &[])
         } else {
             complaint
         });
     }
-    String::from_utf8(output.stdout).map_err(|_| "This version is not text.".to_string())
+    String::from_utf8(output.stdout).map_err(|_| crate::i18n::now("versioning.notText", &[]))
 }
 
 /// One version of one file, as text.

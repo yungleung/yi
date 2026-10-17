@@ -1236,6 +1236,31 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   its folder under `$HOME` (`test/README.md` says so), which is what made this the one item the probes
   could not reach before.
 
+- **The backend's sentences, all of them the reader can meet.** The mechanism and the first two rounds
+  landed earlier (`i18n::remember`/`i18n::now`, the export path, the file tree's sixteen refusals, the
+  versioning seam, the settings guard); what was left was found by *reading the Rust tree* rather than
+  trusting the last list: nine sentences — the tree's markdown-only refusal, a **move** finding a name
+  already there (the create case had its own key and its own wording, the move case had neither), the
+  atomic write's failure, the three font-folder failures (one of them a copy of `export.cannotWrite`,
+  which it now reads), the picture fetch's refusal of a type a Word file cannot hold (with the app's own
+  words for *no type this app knows*), and the versioning seam's two revision guards — plus
+  `app.cannotRun`, one sentence for the four places an external program would not start (pandoc, curl,
+  and git twice). A second pass found four more: the bibliography's read failure, a machine with no git
+  to run, and the two ways a restored version's text can be unreadable. Fourteen keys, eight catalogues,
+  **262 keys each, all used**, and the unit test that sets a language and reads a sentence back now names
+  one key from each family.
+  **And a boundary, measured rather than assumed.** Some of the backend's strings are not the reader's
+  and stay as they are: the **Tauri plugins'** own messages (English, and not this app's to translate —
+  the earlier round's decision, unchanged), the development seams' sentences (*"The pandoc seam is
+  unusable"*, *"the app has no main window"*, and the fetch error whose only consumer is a `catch` that
+  replaces it with the app's own sentence), and the versioning facts' `cloud_evidence` — a string no
+  window shows and one probe reads. What is *not* here is a probe of the end-to-end sentence: changing
+  the language reloads the window, and the harness restores the language after every run on purpose, so
+  the proof stays the unit test and the catalogue check.
+  The lesson for the next round of this kind is in the finding: the list of sentences is not a list
+  anyone keeps — grep `Err(`, `format!` and `ok_or_else` in `src-tauri/src`, and read the ones that carry
+  a space.
+
 ## Open, in the order to take them
 
 - **A picture that is an SVG, a webp, or a URL behind a login.** Measured with pandoc 3.12, one note
@@ -1264,28 +1289,6 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   should turn such a picture into one the export can use — it has the machinery, the webview's own
   canvas (`ui/image/image_flow.ts: encode` already turns pixels into a `.png` for a pasted picture) —
   or goes on saying what it cannot do and leaving the note's bytes alone. Nothing of that half is done.
-- **The backend still answers in English — half of it now speaks the reader's language.** The mechanism
-  landed: `i18n::remember` keeps the language the config asks for (set where the config is *read* — the
-  menu's own `load_config` at startup — and where it is *written*, so a change tells the next sentence),
-  and `i18n::now` is `t` for a caller with no config, which is what a command has. The **export path's
-  sentences** go through it now: ten keys, in all eight catalogues, held by `check-locales.mjs` (which
-  reads the Rust tree as well as the webview's, so a message that uses a key is a use of it) and by a
-  unit test that sets the language and reads the sentence back. **And the sweep landed with it**: the
-  file tree's sixteen refusals (a name the file system refuses, a folder that cannot be moved into
-  itself, a thing that is not there), the versioning kind's git seam, and the settings version guard —
-  eighteen more keys, all eight catalogues, `check-locales.mjs` now reporting *240 keys each, all used*.
-  Two things it turned up. The backend's own `export.noPandoc` collided with a **card** string of the
-  same name, and — `JSON.parse` keeping the last of a repeated key and saying nothing — my second line
-  replaced the card's better sentence with the backend's plainer one, which a probe caught
-  (`export-refused`: the card read "This machine has no pandoc to run." where its own sentence belongs).
-  The duplicate line is gone (the backend now reads the card's string: one fact, one home) and the check
-  **fails on a key written twice** in a file, which is the guard this class of mistake needed. And the
-  decision about the **Tauri plugins'** own messages stands: they are English and not this app's to
-  translate.
-  One thing the round turned up that is worth keeping: the end-to-end sentence cannot be *probed* here —
-  changing the language reloads the window, and the harness restores the language after every run on
-  purpose — so the proof is the unit test and the catalogue check, and a reader-visible probe would need
-  a seam the harness does not have.
 - **What a *click* costs under a pane, and the suite's noisy tail. Closed**, and by the same
   measurement the rest of the entry is about: with the harness bringing the window forward itself
   (`session::focus_window`), a **whole `probe:all` run came out 177/177 with 28 skipped** — every
