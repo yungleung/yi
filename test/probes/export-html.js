@@ -125,8 +125,11 @@
     // --- the document ---------------------------------------------------------------------------
 
     field.value = target;
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const written = await until(() => exists(target));
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const page = written ? await readText(target) : '';
     check(
       'Export writes a whole HTML document',

@@ -134,8 +134,11 @@
     // --- the document --------------------------------------------------------------------------
 
     field.value = target;
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const written = await until(async () => (await bytesOf(target)) !== null);
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const bytes = await bytesOf(target);
     const latin = bytes === null ? '' : new TextDecoder('latin1').decode(bytes);
     check(

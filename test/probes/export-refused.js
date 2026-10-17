@@ -131,8 +131,15 @@
     await askForExport();
     document.querySelector('[data-export-target]').value = refusedTarget;
     document.querySelector('[data-export-run]').click();
-    const complained = await until(() => document.querySelector('[data-message]') !== null);
-    const message = document.querySelector('[data-message] [data-message-text]')?.textContent ?? '';
+    const complained = await until(() =>
+      [...document.querySelectorAll('[data-message-text]')].some((text) =>
+        (text.textContent ?? '').includes('the fake pandoc refuses')
+      )
+    );
+    const message =
+      [...document.querySelectorAll('[data-message-text]')]
+        .map((text) => text.textContent ?? '')
+        .find((text) => text.includes('the fake pandoc refuses')) ?? '';
     check(
       'when pandoc refuses, the reader gets pandoc’s own sentence as a message',
       complained && message.includes('the fake pandoc refuses'),
