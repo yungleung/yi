@@ -1,15 +1,12 @@
 /**
  * A footnote whose label is not a number, and one whose case the author chose.
  *
- * Markdown matches labels case-insensitively and normalises them for the
- * identifier, so `[^Ab]` and `[^ab]` are the same footnote and a marker draws the
- * *identifier* — `[ab]`, lowercased, which is what a marker has always drawn. The
- * source is the other half: while the caret is in either end, what is shown is the
- * characters the author typed (`[^Ab]`), because a source view is the text being
- * edited. This probe holds both ends to the same answer — the drawing agrees
- * between the marker and the notes run, and the source does too — and
- * `docs/roadmap.md` keeps the open question of whether the *drawn* label should
- * show the author's characters instead.
+ * Markdown matches labels case-insensitively and normalises them for the *identifier*, so `[^Ab]` and
+ * `[^ab]` are the same footnote and the anchor is `ab`. What a marker *draws* is the author's label:
+ * `[Ab]` at rest and `[^Ab]` while the caret is in it, so the drawing and the source agree. That was
+ * the open question in `docs/roadmap.md` — a marker used to draw the identifier, `[ab]`, against a
+ * source that said `[^Ab]` — and this probe holds both ends to the drawn label, the notes run to the
+ * same one, and the source to the characters the author typed.
  *
  * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/caret/offsets.ts,
  *   src/ui/markdown/syntax/footnotes.ts
@@ -37,15 +34,15 @@
   const doc = 'Body[^note] and[^Ab] here.\n\n[^note]: first\n\n[^Ab]: second\n';
   await t.load(doc);
   check(
-    'a labelled marker draws the identifier',
+    'a labelled marker draws the label the author wrote, while the identifier names the anchor',
     markers().map((element) => `${element.textContent}/${element.dataset.footnoteRef}`).join(' ') ===
-      '[note]/note [ab]/ab',
+      '[note]/note [Ab]/ab',
     markers().map((element) => `${element.textContent}/${element.dataset.footnoteRef}`)
   );
   check(
     'and the label in the notes run draws the same shape',
     labels().map((element) => `${element.textContent}/${element.dataset.footnoteDef}`).join(' ') ===
-      '[note]/note [ab]/ab',
+      '[note]/note [Ab]/ab',
     labels().map((element) => `${element.textContent}/${element.dataset.footnoteDef}`)
   );
   check(
