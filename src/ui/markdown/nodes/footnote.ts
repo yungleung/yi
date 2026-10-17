@@ -7,7 +7,10 @@
  * their own source while the caret is inside them (see `source_mode.ts`). A definition's
  * label is the only source that is part of a node rather than a node, so it asks with its
  * own range; a click on either end enters the label at the end of its content, and
- * Ctrl-click jumps between the two.
+ * Ctrl-click jumps between the two. What the marker *says* is the author's label, not the
+ * parse's normalised one: markdown matches labels case-insensitively, so `[^Ab]` and `[^ab]`
+ * are one footnote and the parse keeps `ab` — drawing that made a marker read `[ab]` where
+ * the note says `[^Ab]`, which is why {@link authoredLabel} reads the source instead.
  *
  * May import: the node contract (`editable_node.ts`, `revealable_node.ts`), the
  * registry (`createComponent`), the marker's shape (`syntax/footnotes.ts:
@@ -16,7 +19,7 @@
  */
 
 import { createComponent } from '../registry';
-import { isShownSourceRange, shownSourceText } from '../source_mode';
+import { isShownSourceRange, renderingBlock, shownSourceText } from '../source_mode';
 import { markerShape } from '../syntax/footnotes';
 import { EditableNodeComponent } from './editable_node';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
@@ -59,7 +62,10 @@ class FootnoteLabel extends RevealableNodeComponent {
 
   constructor(node: AstFootnoteDefinition) {
     const id = String(node.identifier ?? node.label ?? 'note');
-    const label = String(node.label ?? node.identifier ?? 'note');
+    // The author's characters, not the parse's: a label is matched case-insensitively, so the parse
+    // keeps `ab` for a note that says `[^Ab]`, and a marker drawn from that disagreed with the source
+    // until the caret was in it (`test/probes/footnote-labelled.js`).
+    const label = authoredLabel(node) ?? String(node.label ?? node.identifier ?? 'note');
     const start = node.position?.start?.offset;
     const marker = markerShape(label);
     const shown = start !== undefined && isShownSourceRange(start, start + marker.end);
@@ -96,7 +102,7 @@ function labelElement(shape: {
   if (!shape.shown || shape.start === undefined) {
     const anchor = document.createElement('a');
     anchor.className = 'markdown-footnote-label font-semibold inline-block align-top';
-    anchor.textContent = `[${shape.id}]`;
+    anchor.textContent = `[${shape.label}]`;
     return anchor;
   }
   const marker = markerShape(shape.label);
@@ -153,7 +159,7 @@ export class FootnoteReference extends RevealableNodeComponent {
 
   constructor(node: AstFootnoteReference) {
     const id = String(node.identifier ?? node.label ?? 'note');
-    const label = String(node.label ?? node.identifier ?? 'note');
+    const label = authoredLabel(node) ?? String(node.label ?? node.identifier ?? 'note');
     const content = markerShape(label).label;
     const sourceView = sourceViewFor(node, SOURCE_CLASS, () => content);
     super('footnoteReference', node, sourceView ?? document.createElement('sup'));
@@ -169,7 +175,7 @@ export class FootnoteReference extends RevealableNodeComponent {
     const link = document.createElement('a');
     link.href = `#fn-${id}`;
     link.className = 'text-primary font-medium';
-    link.textContent = `[${id}]`;
+    link.textContent = `[${label}]`;
     link.id = `fnref-${id}`;
     this.element.appendChild(link);
   }
@@ -182,4 +188,25 @@ export class FootnoteReference extends RevealableNodeComponent {
   protected sourceContentRange(): { start: number; end: number } {
     return this.content;
   }
+}
+
+/**
+ * The label as the author wrote it — the source between the `[^` and the `]` at the node's own
+ * position — or null when the node has no position or was built outside a render pass.
+ *
+ * The parse normalises a label (lower case, and whitespace runs) because markdown matches labels that
+ * way; drawing the normalised one made a marker read `[ab]` where the note says `[^Ab]`, so the two
+ * ends agreed with each other and disagreed with the source until the caret was inside it. The source
+ * is where the author's characters are, and the renderer names the block it is building
+ * (`source_mode.ts: renderingBlock`) so a node can read them without being handed the document.
+ */
+function authoredLabel(node: { position?: { start?: { offset?: number } } }): string | null {
+  const block = renderingBlock();
+  const start = node.position?.start?.offset;
+  if (block === null || start === undefined) {
+    return null;
+  }
+  const at = start - block.charStart;
+  const marker = /^\[\^([^\]\n]+)\]/.exec(block.text.slice(at));
+  return marker === null ? null : marker[1];
 }
