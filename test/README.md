@@ -52,6 +52,7 @@ methodology; this file is the index and the conventions.
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
 | `check-table-source.mjs` | Reading and writing a table's raw source |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
+| `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
@@ -168,7 +169,10 @@ first start (`first-run` — the card the start-up path asks with, saying where 
 be made, a folder taken from the path field and becoming the workspace the tree then shows, the
 answer remembered, and "not now" writing nothing; `first-run-create` — the other answer, with the
 documents folder pointed at one the probe made, so the folder appears once and is adopted when it
-is already there), the versions a workspace keeps (`versioning-facts` — what the backend says of a
+is already there); `tutorial` — the Help item's event opens the tutorial, its status says read-only,
+typing and a formatting command change nothing, and opening a file asks nothing;
+`tutorial-first-start` — a first start with no restored document opens it, and a later start with
+nothing restored does not), the versions a workspace keeps (`versioning-facts` — what the backend says of a
 folder it made itself, and what it says about `~/Library/CloudStorage` without asserting a vendor's
 answer; `versioning-fake-git` — every argument the app hands git, watched by a git that only
 records (`probes/fake-git.sh`, committed because a probe cannot set an executable bit);
