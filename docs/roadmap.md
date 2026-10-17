@@ -1456,8 +1456,22 @@ before deciding"; what is left is the "measure before deciding" column below.
   logical caret without asking the native selection to repaint what the app draws itself. `scheduleCaret`
   is not where the milliseconds are *in its own code* — `onTheLineItNames` is a DOM walk, the range
   listeners are 0 ms and the span's render is a frame — so the next measurement is the native side of
-  that lap, and that is where the write should be taken up again. The experiment is stashed
-  (`stash@{0}` on this branch), not landed.
+  that lap, and that is where the write would be taken up again — if it were taken up at all (see the
+  decision below).
+  **And then it was dropped, on the maintainer's call and on one more measurement: the cost is bounded
+  by the block, and a note's block is usually small.** A keystroke inside fenced blocks of one to eighty
+  lines, seven warm rounds each, this machine (elements in brackets): one line **10 ms** (5), three
+  **12** (9), five **11** (13), ten **11** (23), twenty **16** (43), forty **24** (83), eighty **33**
+  (163) — and the same round's paragraph, the control, **6**. The one-line figure is 10 here against the
+  earlier round's 4–6 for a one-line fence: a different document and a different moment, both far below
+  the 4.7 KB case the 25–34 numbers come from. What that means for the decision is plain: **the fix
+  would only reach blocks big enough to be rare, and it does not reach them without touching the caret
+  for every kind of block.** The write as built takes the 80-line block from 33 to 30 — inside the
+  noise — and the only way measured to make it pay (no caret placement) is 6 ms on that block and 29
+  on a paragraph. So the write is **not taken**, the experiment was dropped rather than shelved, and
+  the cost stays where it is: bounded by the block's size, about 11 ms for the blocks a note usually
+  has. What is kept is the instrument (`keystroke-parts.js`) and the finding, which is what a future
+  round would start from if notes with big code blocks became common.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
