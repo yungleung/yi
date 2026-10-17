@@ -1444,6 +1444,20 @@ before deciding"; what is left is the "measure before deciding" column below.
   is not a shape change; the visible question that comes with it is when the text is re-highlighted
   (P27 put that on the burst's timer, and the markup it left stale for a burst was measured there).
   That is the decision to take, and the numbers are now on its side.
+  **The write itself was then built and measured, and it stops at the caret.** `sourceRun`
+  (`editing/source_write.ts`) is the second place the fast path may write: a fenced block's source view
+  holds the document's characters one for one, so the plain rule's own test passes once its span is the
+  block's and not the body's — and the parse and the render go to **0 ms**, the write to **0**, and the
+  height read moves to the burst (`notePatchedBlock` at once, `measureEditedBlock` in the deferred
+  pass). The keystroke is still **30 ms**, and the trace puts **19–26 of it in `placeCaret`'s
+  `scheduleCaret` lap** — the caret being placed inside a 165-element block. Measured: the same
+  keystroke with that placement removed is **6 ms**, and the paragraph then costs **29**, because its
+  next keystroke reads a stale `activeRange`. So the placement cannot be dropped; it has to move the
+  logical caret without asking the native selection to repaint what the app draws itself. `scheduleCaret`
+  is not where the milliseconds are *in its own code* — `onTheLineItNames` is a DOM walk, the range
+  listeners are 0 ms and the span's render is a frame — so the next measurement is the native side of
+  that lap, and that is where the write should be taken up again. The experiment is stashed
+  (`stash@{0}` on this branch), not landed.
 - **Deriving the parse for a plain edit.** Possible — the new tree is the old one
   with the positions moved and one leaf rewritten — but it would put trees in the
   parse cache that the parser did not produce, and the deferred check would then
