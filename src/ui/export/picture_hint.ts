@@ -41,7 +41,14 @@ export function namesNoImage(destination: string): boolean {
  * is not reported.
  */
 export function destinationsThatNameNoImage(text: string): string[] {
+  return imageDestinations(text).filter((destination) => namesNoImage(destination));
+}
+
+/**
+ * The destinations of the note's images, each once, in the order they are written — read from the parse,
+ * so a `data:` URL or a path inside a fence or a code span is not an image destination.
+ */
+export function imageDestinations(text: string): string[] {
   const tree = parseMarkdown(text) as unknown as Walkable;
-  const named = spansOfType(tree, 'image').map((span) => (span.node as AstImage).url);
-  return [...new Set(named.filter((destination) => namesNoImage(destination)))];
+  return [...new Set(spansOfType(tree, 'image').map((span) => (span.node as AstImage).url))];
 }

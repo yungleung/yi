@@ -95,9 +95,12 @@
     return card();
   };
   const exportTo = async (target) => {
+    const hints = t.hintsNow();
     card().querySelector('[data-export-target]').value = target;
     card().querySelector('[data-export-run]').click();
-    return await until(async () => (await bytesOf(target)) !== null);
+    return await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
   };
 
   const before = await invoke('get_config');

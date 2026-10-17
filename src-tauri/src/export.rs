@@ -108,6 +108,14 @@ pub struct ExportKind {
     /// note's copy is what puts the two in one id-space. Every other kind's body is the note's own
     /// text, and a docx or an odt that opened with a heading of that name would say it twice.
     pub names_its_body: bool,
+    /// Whether this kind's output can hold a **picture as it is** — an SVG or a webp: a page of HTML and
+    /// a book can (SVG and webp are both EPUB core media types, and a book of one validates clean), and
+    /// the app's own hand leaves the note's destinations as written; a Word file, an OpenDocument file, a
+    /// page XeTeX lays out and the `.tex` that page is compiled from cannot — measured, a docx gets a
+    /// converted PNG beside the raw `.svg` where the machine has a rasteriser, the raw vector alone where
+    /// it has none, and a webp carried in as a file none of the five types promises. What the app does for
+    /// those kinds is draw the PNG itself and hand that over (`ui/export/raster_picture.ts`).
+    pub carries_pictures: bool,
     /// Whether the card may tell this kind **what page to lay out**, in a size and an orientation: the
     /// PDF, whose page XeTeX draws. Every other kind's page is the reader's own to set in the defaults
     /// file, or is not a page at all — a docx, a book or a web page carries the text and relies on
@@ -173,6 +181,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: false,
         takes_a_page_size: false,
         // Zettlr's own defaults, less one key (see the file's header): the shape a reader who knows
         // that app already knows, and a set of pandoc parameters worth respecting.
@@ -188,6 +197,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: false,
         takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
@@ -203,6 +213,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: false,
         takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: true,
@@ -218,6 +229,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: true,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: true,
         takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
@@ -234,6 +246,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_language: true,
         // And it is the one kind whose body the window writes: see `names_its_body`.
         names_its_body: true,
+        carries_pictures: true,
         takes_a_page_size: false,
         needs_pandoc: true,
         needs_a_font: false,
@@ -252,6 +265,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: false,
         // The one kind whose engine draws a page the app can size: see `takes_a_page_size`, and the
         // one kind the card offers a size and an orientation for.
         takes_a_page_size: true,
@@ -268,6 +282,7 @@ pub const KINDS: &[ExportKind] = &[
         takes_a_title: false,
         needs_a_language: false,
         names_its_body: false,
+        carries_pictures: true,
         takes_a_page_size: false,
         // No defaults file at all: there is no pandoc left to hand one to, and a file made of nothing
         // would be a file a reader could edit with no effect.
@@ -295,6 +310,9 @@ pub struct ExportKindInfo {
     /// Whether the window writes this kind's body rather than handing over the note's own text: the
     /// body keeps the note's own level-1 heading, its name standing in it when the note writes none.
     pub names_its_body: bool,
+    /// Whether the kind's output can hold a picture as it is — an SVG or a webp. The window draws a
+    /// picture it cannot carry as a PNG itself (`ui/export/raster_picture.ts`).
+    pub carries_pictures: bool,
     /// Whether the card offers a **page size and an orientation** for this kind.
     pub takes_a_page_size: bool,
     /// The sizes the card offers, in the order it offers them, each with the words a reader reads and
@@ -610,6 +628,7 @@ fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         takes_a_title: kind.takes_a_title,
         needs_a_language: kind.needs_a_language,
         names_its_body: kind.names_its_body,
+        carries_pictures: kind.carries_pictures,
         takes_a_page_size: kind.takes_a_page_size,
         paper_sizes: kind
             .takes_a_page_size
@@ -1529,6 +1548,18 @@ mod tests {
             .map(|kind| kind.kind)
             .collect();
         assert_eq!(sizing, vec!["pdf"]);
+    }
+
+    /// The kinds whose output can hold a picture as it is — an SVG or a webp — and nothing else: a page
+    /// of HTML and a book can, and the app's own hand leaves the note's destinations as written.
+    #[test]
+    fn only_the_kinds_that_can_hold_a_picture_as_it_is_say_they_can() {
+        let pictures: Vec<&str> = KINDS
+            .iter()
+            .filter(|kind| kind.carries_pictures)
+            .map(|kind| kind.kind)
+            .collect();
+        assert_eq!(pictures, vec!["html", "epub", "markdown"]);
     }
 
     /// A page a reader asked for is `geometry` options, and nothing at all for *the file's own*: a

@@ -75,7 +75,11 @@ Harness flags:
   `window.__probeSteps`, and the harness prints it as *"recovered after the bridge timed
   out"* — a result, not a failure, and not the app being slow: the `bridge: …` line the
   harness prints beside it says what the app's own calls cost (median ~3 ms on an idle
-  app, whatever the probe's length). Split a probe that needs longer than 5 s, or make
+  app, whatever the probe's length). The harness waits for the probe's own result
+  **before** it restores the config, the session or the language; those changes replace
+  the page a still-running probe is reading, and a probe measured across that moment
+  reports the harness's cleanup as an app bug. It gives up waiting after 30 s, then
+  cleans up as before. Split a probe that needs longer than 5 s, or make
   its rounds cheaper; `test/probes/load-cost.js` is the probe that says whether the app
   itself has started to cost more. The cost probes that sat on the budget were split into
   A cut-off probe keeps running, so what it leaves in the stash can arrive while the *next*

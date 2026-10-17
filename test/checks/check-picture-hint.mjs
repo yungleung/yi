@@ -24,7 +24,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'picture_hint.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { destinationsThatNameNoImage, namesNoImage } = await import(file);
+const { destinationsThatNameNoImage, imageDestinations, namesNoImage } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -70,6 +70,18 @@ check(
   []
 );
 check('a note with no images has nothing to say', destinationsThatNameNoImage('# A\n\ntext\n'), []);
+
+// The destinations the note's own images name, which is what an export draws from.
+check(
+  'the note’s image destinations are read in the order they are written, each once',
+  imageDestinations('![a](one.svg)\n\n![a](one.svg)\n\n![b](data:image/png;base64,cG5n)\n'),
+  ['one.svg', 'data:image/png;base64,cG5n']
+);
+check(
+  'and a destination inside a fence is not one of them',
+  imageDestinations('```md\n![x](not-an-image.svg)\n```\n'),
+  []
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

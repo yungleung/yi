@@ -69,6 +69,11 @@ export interface ExportAnswers {
    */
   fetchRemote: (url: string) => Promise<string | null>;
   /**
+   * The PNG the app drew for a destination this kind cannot carry as a vector, or null. Asked *first*:
+   * a vector is a vector only where the output holds one (`raster_picture.ts`).
+   */
+  rasterised?: (destination: string) => string | null;
+  /**
    * How the citations are written, for kinds whose conversion is the app's *own* (`markdown`): every
    * other kind leaves `[@key]` as written and lets pandoc's citeproc render it, and such a kind has
    * no citeproc behind it. So the app renders what it already knows how to render — the words a
@@ -169,7 +174,10 @@ async function imageRewrites(tree: Walkable, answers: ExportAnswers): Promise<Re
   const fetched = new Map<string, string | null>();
   for (const span of spansOfType(tree, 'image')) {
     const image = span.node as AstImage;
-    const file = (await resolvedFile(image.url, answers)) ?? (await remoteFile(image.url, answers, fetched));
+    const file =
+      answers.rasterised?.(image.url) ??
+      (await resolvedFile(image.url, answers)) ??
+      (await remoteFile(image.url, answers, fetched));
     if (file !== null) {
       rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, file) });
     }

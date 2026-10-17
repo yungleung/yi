@@ -255,6 +255,14 @@ The card also names a picture it cannot use: an image destination that is a `dat
 which is not an image (`src/ui/export/picture_hint.ts` — the note says the kind, so no machine is
 asked). The export is written either way; measured, pandoc carries such a destination into a docx as a
 `.txt` without a word, which is why the reader hears it from the app instead.
+And whether a picture survives **as it is** is the *kind's* answer (`export.rs: carries_pictures`): an
+HTML page and a book keep an SVG and a webp, the app's own hand leaves the note's destinations as written,
+and a Word file, an OpenDocument file, a TeX page or its `.tex` get a PNG the app draws itself
+(`src/ui/export/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
+folder of the app's own that the run removes). Pandoc draws a vector only where the machine happens to
+have a rasteriser, and carries a webp as a file none of a Word file's five types promises; the app draws
+both where the kind needs it. What is left is a picture **on the web** of either format: the app's own
+fetch takes the five types a Word file holds.
 **One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
 the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind
@@ -712,9 +720,10 @@ Before claiming a change works:
    added — one per pure rule).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report. A probe that "timed out" is usually its own
-   length: the bridge gives a script **5 s**, and the harness recovers anything longer
-   from the stash (`P21` measured it, with the app's own cost flat over a whole suite —
-   a load of the 314 KB fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
+   length: the bridge gives a script **5 s**, and the harness waits for the probe's own
+   result from the stash before it restores the session or settings, then recovers it
+   (`P21` measured the app's own cost as flat over a whole suite — a load of the 314 KB
+   fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
 4. If you changed behaviour, add or update a test that fails without your change and
    say which one proves it. Pure rules go in `test/checks/`; anything about DOM,
    caret or rendering goes in `test/probes/`.

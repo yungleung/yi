@@ -810,11 +810,66 @@ function reportResult(result) {
   process.exit(0);
 }
 
+/**
+ * Waits for a probe the bridge stopped waiting on to finish, before anything is put back.
+ *
+ * The bridge answers a script for five seconds and then gives up; the page keeps running. The
+ * session and the settings are this harness's to restore, but restoring them changes the page a
+ * running probe is reading — measured: `undo-selection-return` ran 9 ms past the budget, the
+ * empty session replaced its document, and the probe's last check read a selection as *gone*
+ * from a note that had been taken away, not from a bug. Two more probes failed the same way in
+ * one sweep (`insert-image-blob`, `insert-link-clipboard`). So the outcome is waited for first,
+ * and only then is the app put back.
+ *
+ * Only a probe that *finished* — one whose wrapper returned — counts as recovered:
+ * `__probeSteps` holds whatever the probe reported on the way, so treating that as success once
+ * hid a probe that threw half-way through. And only *this* run's frames count: what is stashed is
+ * stamped with the run that wrote it, because a probe that outlived the bridge is still running
+ * while the next probe drives the page, and its report is not the next probe's (measured before
+ * this: one run printed another's result as recovered and exited 0).
+ */
+async function waitForTheProbe(reply) {
+  if (reply.success) {
+    return { result: reply.data, steps: null, recovered: false };
+  }
+  // A script that threw is already over: there is nothing to wait for, and its own error is the
+  // answer. The bridge's own words for the case this waits on are "Script execution timeout".
+  if (!/timeout/i.test(String(reply.error))) {
+    return { result: null, steps: null, recovered: false };
+  }
+  let steps = null;
+  // The bridge's budget is five seconds; a probe that needs longer is a probe that should be
+  // split. Thirty seconds is enough for the slowest one this app has (a pandoc/LaTeX run) and
+  // short enough that a probe stuck on a promise does not hold a sweep forever.
+  for (let waited = 0; waited < 30000; waited += 500) {
+    await sleep(500);
+    const stashed = await call(
+      'JSON.stringify({ result: window.__probeResult ?? null, steps: window.__probeSteps ?? null })',
+      8000
+    );
+    let state = null;
+    try {
+      state = stashed.success ? JSON.parse(stashed.data) : null;
+    } catch {
+      state = null;
+    }
+    const result = state ? ownFrame(state.result, runToken) : null;
+    if (result !== null) {
+      return { result, steps, recovered: true };
+    }
+    if (state) {
+      steps = ownFrame(state.steps, runToken) ?? steps;
+    }
+  }
+  return { result: null, steps, recovered: false };
+}
+
 let reply = await runProbe();
 if (!reply.success && /window\.__t|t\.(report|blocks|load)/.test(String(reply.error))) {
   await installHelpers();
   reply = await runProbe();
 }
+const outcome = await waitForTheProbe(reply);
 await restoreConfig(previousConfig);
 forgetTheConfig();
 // The app is left holding no documents, and the file the reader's own: `emptyTheAppSession`.
@@ -825,47 +880,20 @@ await restoreTheExportSettings(previousExportSettings);
 forgetTheExportSettings();
 await restoreLanguage(languageBeforeProbing);
 await releaseTheOpener();
-if (reply.success) {
-  reportResult(reply.data);
-}
-
-// The page keeps working after the bridge gives up; poll for the stashed result
-// while it settles. Only a probe that *finished* — one whose wrapper returned —
-// counts as recovered: `__probeSteps` holds whatever the probe reported on the
-// way, so treating that as success once hid a probe that threw half-way through.
-// And only *this* run's frames count: what is stashed is stamped with the run that
-// wrote it, because a probe that outlived the bridge is still running while the next
-// probe drives the page, and its report is not the next probe's (measured before this:
-// one run printed another's result as recovered and exited 0).
-for (let attempt = 0; attempt < 8; attempt += 1) {
-  await sleep(4000);
-  const recovered = await call(
-    'JSON.stringify({ result: window.__probeResult ?? null, steps: window.__probeSteps ?? null })',
-    8000
-  );
-  let state = null;
-  try {
-    state = recovered.success ? JSON.parse(recovered.data) : null;
-  } catch {
-    state = null;
-  }
-  const result = state ? ownFrame(state.result, runToken) : null;
-  if (result !== null) {
-    // The probe is over however it reported, so the opener's hand goes back here too.
-    await releaseTheOpener();
+if (outcome.result !== null) {
+  if (outcome.recovered) {
     console.log(
       '(recovered after the bridge timed out; the probe had already run — the bridge gives a ' +
         'script 5 s, so this is what a longer probe always looks like, and the bridge: line ' +
         'below says whether the app was answering while it ran)'
     );
-    reportResult(result);
   }
-  const steps = state ? ownFrame(state.steps, runToken) : null;
-  if (steps !== null) {
-    console.error(JSON.stringify(steps, null, 2));
-    console.error('(the probe did not finish; the steps above are what it reported)');
-    process.exit(1);
-  }
+  reportResult(outcome.result);
+}
+if (outcome.steps !== null) {
+  console.error(JSON.stringify(outcome.steps, null, 2));
+  console.error('(the probe did not finish; the steps above are what it reported)');
+  process.exit(1);
 }
 
 console.error(JSON.stringify(reply, null, 2));

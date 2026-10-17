@@ -115,7 +115,9 @@ next click, because a gesture released where it went down is not a drag —
 `select-in-code-block` — a drag inside a fenced block keeps the selection it made, though the click
 that ends it lands the caret back in the block whose own text is the shape being shown —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
-`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
+`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`,
+`undo-selection-across-blocks`, `undo-plain-write` — the page follows a plain write's undo, for a
+committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
 reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is what a saved setting
@@ -259,6 +261,10 @@ TeX-run probe;
 `export-picture-hint` — the card's other hint about a *note*: a destination that is a `data:` URL of
 something which is not an image is named on it, and a picture's own `data:` URL leaves it quiet — read
 out of the parse by `ui/export/picture_hint.ts`, and drawn before any export is asked for;
+`export-picture-formats` — a picture whose format a Word file does not promise, and the *kind*: one note
+naming a local `figure.svg` and a local `shot.webp`, exported as a docx (PNGs the app drew and neither
+format — the vector at 240 x 120 for a 120 x 60 vector, the webp at its own size) and as an EPUB (both
+as they are, and no PNG), with the pictures a run drew gone when it ends;
 `export-markdown` — the seventh, and the one conversion that is *entirely* the app's (no pandoc is
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
