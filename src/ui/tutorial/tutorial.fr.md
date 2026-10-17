@@ -17,7 +17,8 @@ Un **espace de travail** est le dossier que Yi lit et écrit. L'arbre à gauche 
 - faites un clic droit sur un dossier ou une note pour les actions qui le concernent.
 
 Si vous n'avez pas encore choisi d'espace de travail, Yi vous propose d'en créer un dans votre
-dossier Documents. Vous pourrez le changer dans **Réglages → Général**.
+dossier Documents. Pour passer à un autre dossier plus tard, utilisez **Fichier → Ouvrir un
+dossier…**.
 
 ## Créer une note
 
@@ -63,6 +64,11 @@ L'`id` est l'identité stable de la note, que les wikiliens peuvent utiliser. Da
 
 ## Donner une structure à la page
 
+Pour faire un titre, écrivez d'abord ses mots. Cliquez ensuite au tout début de la ligne et placez
+la marque devant : `# ` pour un titre de premier niveau, `## ` pour un titre de deuxième niveau,
+et ainsi de suite. L'espace après les dièses est nécessaire. Par exemple, écrivez `Une section`,
+cliquez devant `Une` et tapez `## `.
+
 ### Titre de niveau deux
 
 #### Titre de niveau trois
@@ -83,6 +89,9 @@ Les listes à puces, numérotées et de tâches sont du markdown ordinaire :
 
 - [ ] une tâche à faire
 - [x] une tâche faite
+
+Pour faire une citation, commencez une nouvelle ligne par `> ` puis écrivez le texte. Chaque
+paragraphe cité commence par `> ` ; une ligne sans cette marque est hors de la citation.
 
 > Une citation tient un passage à distance.
 
@@ -149,9 +158,9 @@ une copie ancienne et la comparer au texte actuel.
 
 ## Adapter l'application
 
-**Réglages** change la langue, l'espace de travail, le dossier d'images, les citations, le modèle
-des nouvelles notes et si un document non enregistré s'ouvre dans la pile. Un réglage est
-enregistré quand vous le changez.
+**Réglages** change la langue, le dossier d'images, les citations, le modèle des nouvelles notes et
+si un document non enregistré s'ouvre dans la pile. Un réglage est enregistré quand vous le
+changez. L'espace de travail se change avec **Fichier → Ouvrir un dossier…**, pas dans les Réglages.
 
 L'application se souvient des documents ouverts et de l'endroit où vous étiez. Fermez la fenêtre et
 rouvrez-la ; la même page revient.

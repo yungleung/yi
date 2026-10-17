@@ -18,7 +18,7 @@ carpeta:
 - haz clic derecho en una carpeta o una nota para ver sus acciones.
 
 Si todavía no has elegido un espacio de trabajo, Yi te ofrece crear uno dentro de tu carpeta de
-Documentos. Puedes cambiarlo después en **Ajustes → General**.
+Documentos. Para cambiar a otra carpeta más tarde, usa **Archivo → Abrir carpeta…**.
 
 ## Crea una nota
 
@@ -64,6 +64,11 @@ El `id` es la identidad estable de la nota, que los wikienlaces pueden usar. En
 
 ## Da estructura a la página
 
+Para hacer un título, escribe primero sus palabras. Después haz clic al principio de la línea y
+pon la marca delante: `# ` para un título de primer nivel, `## ` para uno de segundo nivel, y así
+sucesivamente. El espacio después de las almohadillas es necesario. Por ejemplo, escribe
+`Una sección`, haz clic antes de `Una` y teclea `## `.
+
 ### Título de segundo nivel
 
 #### Título de tercer nivel
@@ -84,6 +89,9 @@ Las listas con viñetas, numeradas y de tareas son markdown normal:
 
 - [ ] una tarea pendiente
 - [x] una tarea hecha
+
+Para hacer una cita, empieza una línea nueva con `> ` y escribe después el texto. Cada párrafo
+citado empieza con `> `; una línea sin esa marca queda fuera de la cita.
 
 > Una cita mantiene un pasaje a distancia.
 
@@ -150,9 +158,9 @@ y compararla con el texto actual.
 
 ## Haz tuya la aplicación
 
-**Ajustes** cambia el idioma, el espacio de trabajo, la carpeta de imágenes, las citas, la
-plantilla de notas nuevas y si un documento sin guardar se abre en la pila. Un ajuste se guarda
-cuando lo cambias.
+**Ajustes** cambia el idioma, la carpeta de imágenes, las citas, la plantilla de notas nuevas y si
+un documento sin guardar se abre en la pila. Un ajuste se guarda cuando lo cambias. El espacio de
+trabajo se cambia con **Archivo → Abrir carpeta…**, no en Ajustes.
 
 La app recuerda los documentos que tenías abiertos y dónde estabas en ellos. Cierra la ventana y
 vuelve a abrirla; la misma página regresa.

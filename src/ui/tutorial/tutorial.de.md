@@ -18,7 +18,7 @@ Ordner:
 - ein Rechtsklick auf einen Ordner oder eine Notiz zeigt die passenden Aktionen.
 
 Wenn du noch keinen Arbeitsbereich gewählt hast, bietet Yi einen unter deinem Dokumente-Ordner an.
-Später kannst du ihn unter **Einstellungen → Allgemein** ändern.
+Zum Wechseln in einen anderen Ordner benutze später **Datei → Ordner öffnen…**.
 
 ## Eine Notiz anlegen
 
@@ -65,6 +65,11 @@ Die `id` ist die feste Identität der Notiz, die Wikilinks verwenden können. Un
 
 ## Der Seite Struktur geben
 
+Um eine Überschrift zu machen, schreibe zuerst ihren Text. Klicke dann ganz an den Anfang der
+Zeile und setze die Markierung davor: `# ` für eine Überschrift erster Ebene, `## ` für die zweite
+und so weiter. Das Leerzeichen nach den Rauten ist nötig. Schreibe zum Beispiel `Ein Abschnitt`,
+klicke vor `Ein` und tippe `## `.
+
 ### Überschrift zwei
 
 #### Überschrift drei
@@ -85,6 +90,9 @@ Aufzählungen, nummerierte Listen und Aufgabenlisten sind gewöhnliches Markdown
 
 - [ ] eine offene Aufgabe
 - [x] eine erledigte Aufgabe
+
+Um ein Zitat zu machen, beginne eine neue Zeile mit `> ` und schreibe dann den Text. Jeder zitierte
+Absatz beginnt mit `> `; eine Zeile ohne ist außerhalb des Zitats.
 
 > Ein Zitat hält eine Passage auf Abstand.
 
@@ -151,9 +159,10 @@ mit dem aktuellen Text vergleichen.
 
 ## Die App anpassen
 
-**Einstellungen** ändert die Sprache, den Arbeitsbereich, den Bilderordner, die Zitate, die
-Vorlage für neue Notizen und ob ein ungespeichertes Dokument im Stapel geöffnet wird. Eine
-Einstellung wird gespeichert, sobald du sie änderst.
+**Einstellungen** ändert die Sprache, den Bilderordner, die Zitate, die Vorlage für neue Notizen
+und ob ein ungespeichertes Dokument im Stapel geöffnet wird. Eine Einstellung wird gespeichert,
+sobald du sie änderst. Der Arbeitsbereich wird mit **Datei → Ordner öffnen…** gewechselt, nicht in
+den Einstellungen.
 
 Die App merkt sich die geöffneten Dokumente und deine Position darin. Schließe das Fenster und
 öffne es wieder; dieselbe Seite kommt zurück.

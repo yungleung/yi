@@ -16,7 +16,7 @@ Um **espaço de trabalho** é a pasta que o Yi lê e grava. A árvore à esquerd
 - clique com o botão direito em uma pasta ou nota para ver as ações dela.
 
 Se você ainda não escolheu um espaço de trabalho, o Yi oferece criar um dentro da sua pasta de
-Documentos. Você pode mudá-lo depois em **Configurações → Geral**.
+Documentos. Para mudar para outra pasta depois, use **Arquivo → Abrir pasta…**.
 
 ## Crie uma nota
 
@@ -62,6 +62,11 @@ O `id` é a identidade estável da nota, que os wikilinks podem usar. Em
 
 ## Dê estrutura à página
 
+Para fazer um título, escreva primeiro as palavras. Depois clique no início da linha e coloque a
+marca antes delas: `# ` para um título de primeiro nível, `## ` para um de segundo nível, e assim
+por diante. O espaço depois das cerquilhas é necessário. Por exemplo, escreva `Uma seção`, clique
+antes de `Uma` e digite `## `.
+
 ### Título de nível dois
 
 #### Título de nível três
@@ -82,6 +87,9 @@ Listas com marcadores, numeradas e de tarefas são markdown comum:
 
 - [ ] uma tarefa pendente
 - [x] uma tarefa feita
+
+Para fazer uma citação, comece uma linha nova com `> ` e escreva o texto. Cada parágrafo citado
+começa com `> `; uma linha sem essa marca fica fora da citação.
 
 > Uma citação mantém uma passagem à distância.
 
@@ -148,8 +156,9 @@ atual.
 
 ## Deixe o aplicativo do seu jeito
 
-**Configurações** muda o idioma, o espaço de trabalho, a pasta de imagens, as citações, o modelo de
-nota nova e se um documento não salvo abre na pilha. Uma configuração é salva quando você a altera.
+**Configurações** muda o idioma, a pasta de imagens, as citações, o modelo de nota nova e se um
+documento não salvo abre na pilha. Uma configuração é salva quando você a altera. O espaço de
+trabalho muda com **Arquivo → Abrir pasta…**, não nas Configurações.
 
 O aplicativo lembra os documentos abertos e onde você estava neles. Feche a janela e abra de novo; a
 mesma página volta.

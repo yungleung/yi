@@ -16,7 +16,7 @@ A **workspace** is the folder Yi reads and writes. The tree on the left is that 
 - right-click a folder or a note for the actions that belong to it.
 
 If you have not chosen a workspace yet, Yi offers to make one under your Documents folder. You can
-change it later in **Settings → General**.
+switch to another folder later with **File → Open Folder…**.
 
 ## Make a note
 
@@ -62,6 +62,11 @@ the frontmatter every new note starts from.
 
 ## Put structure on the page
 
+To make a heading, type its words first. Then click at the very start of the line and put the
+marker before them: `# ` for a first-level heading, `## ` for a second-level heading, and so on.
+The space after the hashes is required. For example, type `A section`, click before `A`, and type
+`## `.
+
 ### Heading two
 
 #### Heading three
@@ -82,6 +87,9 @@ Bullet lists, numbered lists and task lists are all plain markdown:
 
 - [ ] a task still to do
 - [x] a task already done
+
+To make a quote, start a new line with `> ` and then type the quotation. Every quoted paragraph
+starts with `> `; a line without it is outside the quote.
 
 > A quote keeps a passage at arm's length.
 
@@ -147,8 +155,9 @@ the current text.
 
 ## Make the app yours
 
-**Settings** changes the language, the workspace, the pictures folder, the citations, the new-note
-template and whether an unsaved document opens in the stack. A setting is saved when you change it.
+**Settings** changes the language, the pictures folder, the citations, the new-note template and
+whether an unsaved document opens in the stack. A setting is saved when you change it. The workspace
+is changed with **File → Open Folder…**, not in Settings.
 
 The app remembers the documents you had open and where you were in them. Close the window and open
 it again; the same page comes back.
