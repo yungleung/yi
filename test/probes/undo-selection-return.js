@@ -8,7 +8,9 @@
  * and leaves a caret, not a selection.
  *
  * The selection is read before the document is, because reading the document is a
- * Select All and a copy (`t.raw`), which clears it.
+ * Select All and a copy (`t.raw`), which clears it. A selection that spans two blocks
+ * is `undo-selection-across-blocks.js`: this probe is the single-block cases, and the
+ * two are apart so each answers inside the bridge's five-second budget.
  *
  * @covers src/ui/markdown/document/history.ts, src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/markdown_editor.ts
@@ -124,42 +126,6 @@
       restored
     );
   }
-
-  // A selection that spans blocks is restored across them.
-  await t.load('alpha\n\nbeta\n');
-  const startNode = t.textNodesIn(t.blocks()[0]).find((leaf) => leaf.data.includes('alpha'));
-  const endNode = t.textNodesIn(t.blocks()[1]).find((leaf) => leaf.data.includes('beta'));
-  const spanning = document.createRange();
-  spanning.setStart(startNode, 2);
-  spanning.setEnd(endNode, 2);
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(spanning);
-  await t.sleep(150);
-  await type('X');
-  const replaced = await t.raw();
-  check('typing over a selection across two blocks replaces the whole range',
-    replaced === 'alXta\n', replaced);
-  await undo();
-  const selection_ = window.getSelection();
-  const ends = {
-    collapsed: selection_ ? selection_.isCollapsed : null,
-    anchor: selection_?.anchorNode?.data ?? null,
-    anchorOffset: selection_?.anchorOffset ?? null,
-    focus: selection_?.focusNode?.data ?? null,
-    focusOffset: selection_?.focusOffset ?? null
-  };
-  const both = await t.raw();
-  check('undo restores both blocks', both === 'alpha\n\nbeta\n', both);
-  check(
-    'and the selection across them',
-    ends.collapsed === false &&
-      ends.anchor === 'alpha' &&
-      ends.anchorOffset === 2 &&
-      ends.focus === 'beta' &&
-      ends.focusOffset === 2,
-    ends
-  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

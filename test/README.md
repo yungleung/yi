@@ -115,7 +115,9 @@ next click, because a gesture released where it went down is not a drag —
 `select-in-code-block` — a drag inside a fenced block keeps the selection it made, though the click
 that ends it lands the caret back in the block whose own text is the shape being shown —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
-`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`, `undo-plain-write` — the page follows a plain write's undo, for a committed word and a typed letter),
+`plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`,
+`undo-selection-across-blocks`, `undo-plain-write` — the page follows a plain write's undo, for a
+committed word and a typed letter),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
 reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is what a saved setting

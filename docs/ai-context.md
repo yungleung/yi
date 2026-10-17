@@ -719,9 +719,10 @@ Before claiming a change works:
    added — one per pure rule).
 3. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report. A probe that "timed out" is usually its own
-   length: the bridge gives a script **5 s**, and the harness recovers anything longer
-   from the stash (`P21` measured it, with the app's own cost flat over a whole suite —
-   a load of the 314 KB fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
+   length: the bridge gives a script **5 s**, and the harness waits for the probe's own
+   result from the stash before it restores the session or settings, then recovers it
+   (`P21` measured the app's own cost as flat over a whole suite — a load of the 314 KB
+   fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
 4. If you changed behaviour, add or update a test that fails without your change and
    say which one proves it. Pure rules go in `test/checks/`; anything about DOM,
    caret or rendering goes in `test/probes/`.

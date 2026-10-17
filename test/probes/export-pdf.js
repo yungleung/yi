@@ -127,8 +127,11 @@
 
     // --- the export itself -----------------------------------------------------------------------
 
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const wrote = await until(async () => (await bytesOf(target)) !== null);
+    const wrote = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const pdf = await bytesOf(target);
     check(
       'and a real PDF comes out, through the TeX engine the settings file names',

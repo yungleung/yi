@@ -25,6 +25,23 @@ window.__t = (() => {
     return dt.getData('text/plain');
   };
 
+  /**
+   * The hints on screen now, as a set to tell them from the one a command is about to show.
+   *
+   * A hint is how the app says an export is over (`ui/export/export_flow.ts` shows it after the
+   * run returns), which is what a probe that reads the written file needs: pandoc writes a PDF
+   * straight to its destination, so the file exists — growing — long before it is whole. A
+   * probe that read on existence alone could find a page missing a script (measured: the
+   * PDF-scripts probe read Arabic as absent while a partial file was being written).
+   */
+  const hintsNow = () => new Set(document.querySelectorAll('[data-hint] [data-hint-text]'));
+
+  /** The first hint not in `before` whose words satisfy `matches`, or null while there is none. */
+  const newHint = (before, matches) =>
+    [...document.querySelectorAll('[data-hint] [data-hint-text]')].find(
+      (element) => !before.has(element) && matches(element.textContent ?? '')
+    ) ?? null;
+
   /** Loads a document into the editor. */
   const load = async (markdown) => {
     // The emit's promise can hang when the app falls back to its slower IPC
@@ -542,6 +559,8 @@ window.__t = (() => {
     blocks,
     textNodesIn,
     raw,
+    hintsNow,
+    newHint,
     load,
     openWorkspace,
     restoreWorkspace,
