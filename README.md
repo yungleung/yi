@@ -17,6 +17,8 @@ TypeScript — no server, no database, no account.
   pandoc-style footnotes and citations render through CSL and a bibliography file.
 - **Made for long notes.** Blocks outside the viewport are unmounted; a 320 KB note
   stays editable.
+- **A tutorial on first start.** A fresh install opens a read-only tour in its own
+  language; **Help → Open Tutorial** brings it back at any time.
 
 ## Requirements
 

@@ -170,6 +170,11 @@ export class MarkdownEditor extends BaseComponent {
     this.innerEditor.setLayout(layout);
   }
 
+  /** Shows a reference document without accepting an edit. */
+  setReadOnly(readOnly: boolean): void {
+    this.innerEditor.setReadOnly(readOnly);
+  }
+
   getLayout(): EditorLayout {
     return this.innerEditor.getLayout();
   }

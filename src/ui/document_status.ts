@@ -30,9 +30,16 @@ export class SavedStatus extends BaseComponent {
 
   private update(): void {
     const document = documentSession.current();
+    if (document?.readOnly) {
+      this.label.textContent = t('status.readOnly');
+      this.element.dataset.saved = 'true';
+      this.element.dataset.readOnly = 'true';
+      return;
+    }
     const saved = document === null || document.content === document.saved;
     this.label.textContent = saved ? t('status.saved') : t('status.editing');
     this.element.dataset.saved = String(saved);
+    this.element.dataset.readOnly = 'false';
   }
 }
 

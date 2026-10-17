@@ -503,6 +503,15 @@ elements) unless it says otherwise.
   config) and `first-run-create.js` (the folder made, then adopted). Measured end to end: with
   `{workspace: null, workspace_asked: false}` and a real page reload, the page that came up asked —
   "A new workspace will be made in /Users/urshanabi/Documents/Yi." — with all three answers on it.
+- **A first start has a tutorial**, as the user asked. The empty page after the workspace question
+  became eight read-only markdown documents — English, German, Spanish, French, Japanese, Portuguese,
+  Simplified Chinese and Traditional Chinese — chosen by the app's own language and opened with the
+  stable id `yi-tutorial`. **Help → Open Tutorial** opens the same document at any time. It is
+  pathless and read-only: typing, paste, composition, save and the editing commands are refused,
+  while navigation, copy, find and export remain. `openDecision` treats a read-only current document
+  as replaceable whatever its text says, so opening a file asks nothing and never shows *Push and
+  Open*. `check-tutorial.mjs` holds the language and first-start rules; `tutorial.js` holds the menu,
+  read-only editor and replacement, and `tutorial-first-start.js` holds the startup half.
 - **Versions of a workspace, kept by Git**, as the reader argued it out: local version control for
   the notes, Git only, if the machine has it, with no account and no remote required, and never any
   of it without their own answer. Landed as

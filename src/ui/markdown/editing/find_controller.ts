@@ -24,6 +24,7 @@ interface FindMatch {
 export class FindController {
   private matches: FindMatch[] = [];
   private activeIndex = -1;
+  private readOnly = false;
 
   constructor(
     private readonly context: EditorContext,
@@ -32,8 +33,14 @@ export class FindController {
 
   /** Opens the bar, optionally with the replace row. */
   open(showReplace: boolean): void {
-    this.bar.open(showReplace);
+    this.bar.open(showReplace && !this.readOnly);
     this.updateMatches(true);
+  }
+
+  /** A read-only document may be searched, never replaced. */
+  setReadOnly(readOnly: boolean): void {
+    this.readOnly = readOnly;
+    this.bar.setReplaceEnabled(!readOnly);
   }
 
   /** Closes the bar and clears the selection it created. */
@@ -78,6 +85,9 @@ export class FindController {
 
   /** Replaces the active match with the replacement text. */
   replaceCurrent(): void {
+    if (this.readOnly) {
+      return;
+    }
     const match = this.matches[this.activeIndex];
     if (!match) {
       return;
@@ -98,6 +108,9 @@ export class FindController {
 
   /** Replaces every match in one pass over the source text. */
   replaceAll(): void {
+    if (this.readOnly) {
+      return;
+    }
     if (this.matches.length === 0) {
       return;
     }

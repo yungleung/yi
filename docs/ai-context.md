@@ -65,6 +65,16 @@ asked. What the answer *does* is the File menu's own path — `workspaceManager.
 which announces `WORKSPACE_CHANGED` and persists the config — and only then is `workspace_asked`
 written.
 
+A first start that restores no document opens the **tutorial** after the workspace question: eight
+markdown documents under `src/ui/tutorial/` (one per catalogue language, chosen by
+`tutorial_rules.ts`), a pathless document with `readOnly: true` and the stable id `yi-tutorial`.
+The editor refuses writing commands, typing, paste and replacement; navigation, copy, find and export
+stay. `session_rules.ts: openDecision` treats a read-only current document as replaceable whatever
+its text says, so opening a file never asks to push it and never shows *Push and Open*. The same
+document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command is `help:tutorial`).
+`check-tutorial.mjs` holds the language and first-start rules, and `tutorial.js` /
+`tutorial-first-start.js` hold the app behavior.
+
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
 window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a

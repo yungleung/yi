@@ -67,6 +67,8 @@ const SAVE_DELAY_MS = 800;
  * reader is in it.
  */
 export interface SessionEditor {
+  /** Shows a reference document without accepting an edit. */
+  setReadOnly(readOnly: boolean): void;
   getContent(): string;
   setContent(content: string): void;
   /**
@@ -136,6 +138,10 @@ class DocumentSession {
     const current = this.current();
     if (current) {
       this.show(current);
+    } else {
+      // No document is on screen, so no document is refusing an edit. Without this a session the
+      // harness empties after a tutorial would leave the next document read-only.
+      this.editor?.setReadOnly(false);
     }
     this.announce();
   }
@@ -309,7 +315,7 @@ class DocumentSession {
   /** Writes the document on screen to its file, asking for one when it has none. */
   async save(): Promise<void> {
     const document = this.current();
-    if (!document || !this.editor) {
+    if (!document || document.readOnly || !this.editor) {
       return;
     }
     if (document.path) {
@@ -329,7 +335,7 @@ class DocumentSession {
    */
   async writeCurrent(): Promise<boolean> {
     const document = this.current();
-    if (!document || !this.editor || !document.path) {
+    if (!document || document.readOnly || !this.editor || !document.path) {
       return false;
     }
     this.capture();
@@ -339,7 +345,7 @@ class DocumentSession {
   /** Writes the document on screen to a file of its own, and follows it from then on. */
   async saveAs(): Promise<void> {
     const document = this.current();
-    if (!document || !this.editor) {
+    if (!document || document.readOnly || !this.editor) {
       return;
     }
     this.capture();
@@ -411,6 +417,7 @@ class DocumentSession {
     this.editor.setDocumentFolder(
       document.path === null ? null : parentFolder(document.path)
     );
+    this.editor.setReadOnly(document.readOnly);
     this.editor.setContent(document.content);
     this.editor.restoreView(document.view);
   }

@@ -18,6 +18,7 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
   redo: 'history:redo',
   cut: 'edit:cut',
   select_all: 'edit:selectAll',
+  tutorial: 'help:tutorial',
   new_markdown: 'file:newMarkdown',
   save: 'file:save',
   save_as: 'file:saveAs',

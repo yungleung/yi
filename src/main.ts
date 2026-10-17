@@ -30,6 +30,7 @@ import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
 import { registerVersionCommand } from './ui/versioning/save_version';
 import { registerExportCommand } from './ui/export/export_flow';
+import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/tutorial_flow';
 import { VersionStatus } from './ui/versioning/version_status';
 import { versionDiffView } from './ui/versioning/version_diff_view';
 import { prompt } from './ui/prompt';
@@ -121,6 +122,7 @@ function createAppShell(): MarkdownEditor {
   registerSessionCommands();
   // And the one that makes a note: the menu item and the tree's own *New file* name it.
   registerNewDocumentCommand();
+  registerTutorialCommand();
   // And the one that keeps a version: the File menu's item names it, and nothing else ever runs git.
   registerVersionCommand();
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is
@@ -191,18 +193,21 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
 
     // A fresh install has no workspace: ask once, and ask before the session restores a document —
     // a restored document opens into a window that has to know its folder.
-    if (
-      needsWorkspaceQuestion({
-        workspace: cfg.workspace ?? null,
-        workspace_asked: cfg.workspace_asked === true
-      })
-    ) {
+    const firstStart = needsWorkspaceQuestion({
+      workspace: cfg.workspace ?? null,
+      workspace_asked: cfg.workspace_asked === true
+    });
+    if (firstStart) {
       await runWorkspaceSetup();
     }
 
     // The documents the reader had open, and where they were in them. After the workspace, so
     // a restored document opens into a window that already knows its folder.
     await documentSession.load();
+    // A first start that restored nothing opens the tutorial, after the workspace question and
+    // after the session: the reader's own restored note always wins, and the tutorial is a
+    // reference they can leave by opening anything else.
+    await openTutorialForFirstStart(firstStart);
   } catch (error) {
     console.error('Failed to load the app config:', error);
   }

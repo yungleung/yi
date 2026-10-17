@@ -56,6 +56,11 @@ export interface SessionDocument {
   id: string;
   path: string | null;
   title: string;
+  /**
+   * Whether the document is a reference the reader is not writing — the tutorial. It is still
+   * captured and serialized like any other document, but it is never unsaved work.
+   */
+  readOnly: boolean;
   /** Its text as it stands. */
   content: string;
   /** Its text as last read or written: equal to `content` means saved. */
@@ -82,6 +87,8 @@ export interface DocumentRange {
 export interface IncomingDocument {
   path: string | null;
   content: string;
+  /** A reference document: shown in the editor, not written to. */
+  readOnly?: boolean;
   /**
    * Where the reader should land when this document is opened, or nothing for its beginning.
    * A new note opens on its title — the reader is about to write one — and everything else
@@ -101,6 +108,7 @@ export function openDocument(incoming: IncomingDocument, id: string): SessionDoc
     id,
     path: incoming.path,
     title: documentTitle(incoming.content, incoming.path),
+    readOnly: incoming.readOnly === true,
     content: incoming.content,
     saved: incoming.content,
     stacked: false,
@@ -166,6 +174,12 @@ export function openDecision(
   }
   const current = currentDocument(state);
   if (!current || current.stacked) {
+    return 'open';
+  }
+  // A reference document is not the reader's unsaved work whatever its text says. It is left
+  // behind quietly when another file opens — never asked about, and never pushed into the stack by
+  // the standing answer that is meant for a note somebody is writing.
+  if (current.readOnly) {
     return 'open';
   }
   // What is on screen is not in the stack, so it is only worth asking about when replacing it
@@ -380,8 +394,12 @@ function isDocument(value: unknown): value is SessionDocument {
  * `isDocument` refuses that document whole, the way it refuses any shape it cannot read.)
  */
 function readView(document: SessionDocument): SessionDocument {
-  if (typeof document.view.to === 'number') {
-    return document;
-  }
-  return { ...document, view: { ...document.view, to: null } };
+  return {
+    ...document,
+    readOnly: document.readOnly === true,
+    view:
+      typeof document.view.to === 'number'
+        ? document.view
+        : { ...document.view, to: null }
+  };
 }

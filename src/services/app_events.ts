@@ -32,6 +32,8 @@ export interface AppEvents {
   document_session_changed: SessionState;
   /** A document was opened into the app (the probes' own seam: `test/probes/lib.js: load`). */
   document_opened: string;
+  /** The Help menu's *Open Tutorial*. */
+  tutorial: null;
   /** A version list was read: the reading, which no listener reads — the news is the event. */
   versions_changed: unknown;
   /** A failure the app cannot do anything about. */
