@@ -1274,11 +1274,15 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   one note and one local `figure.svg`: the docx's media folder has a PNG and no vector, the book's has
   the vector and no PNG, and the PNG the app drew is 240 x 120 for a 120 x 60 vector — read from the
   app's file, because the docx's copy of it is pandoc's own re-encoding at the page's dpi.
-  **A webp, and an SVG on the web, are what is left.** A local webp is still carried in silently by every
-  kind (`word/media/rId10.webp`, measured) and is not one of the five types the app's own fetch takes
-  down from the web (`export.rs: image_extension`), so a *web* webp is reported as a picture the app
-  could not fetch while a *local* one is embedded where a reader may see nothing; drawing one is the
-  same canvas path this round added, and widening the fetch is a second decision it did not take.
+  **A webp is drawn by the same rule.** Measured before this round, a webp was carried in silently by
+  every kind — `word/media/rId10.webp`, no warning — and it is not one of the five types a Word file
+  promises; and measured *now*, an EPUB of a webp is
+  `EPUB/media/file0.webp` and validates clean (SVG and webp are both core media types of EPUB 3.4), so
+  the kinds that carry a vector carry a webp too, and `carries_vectors` became **`carries_pictures`**.
+  A webp is drawn at its own size rather than twice it, because it is already pixels; the probe holds
+  that against the size the page reads out of the webp itself. **What is left is a picture on the web**
+  — an SVG or a webp — because the app's own fetch takes the five types a Word file holds
+  (`export.rs: image_extension`), and widening it is a second decision this round did not take.
   **A URL behind a login is answered already**: the app's own fetch fails (`export_fetch_image`), the
   reader is told the URL in the app's own words (`export_flow.ts: fetchedPicture`) and pandoc is left
   the address to warn about if it wants to.

@@ -121,10 +121,11 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // the note: the titles a wikilink renders as, and the file each picture is found at — the same
     // folders the renderer resolves a relative destination against, so what goes into the file is
     // what the reader saw.
-    // A vector picture in a kind whose output cannot hold one is drawn here, before the pre-process
-    // resolves destinations: whether an SVG survives is the *kind's* answer (`carries_vectors`), and a
-    // docx, an odt, a TeX page or its `.tex` get the PNG the webview drew (`raster_picture.ts`).
-    const drawn = first.carries_vectors
+    // A picture in a kind whose output cannot hold it as it is — an SVG or a webp — is drawn here,
+    // before the pre-process resolves destinations: whether one survives is the *kind's* answer
+    // (`carries_pictures`), and a docx, an odt, a TeX page or its `.tex` get the PNG the webview drew
+    // (`raster_picture.ts`).
+    const drawn = first.carries_pictures
       ? new Map<string, string>()
       : await rasterPictures(imageDestinations(text), { bases: imageBases(), exists: fileExists });
     const prepared = await exportSource(text, {

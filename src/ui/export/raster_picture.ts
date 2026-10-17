@@ -1,20 +1,25 @@
 /**
- * A vector picture drawn as a PNG, for the kinds of export whose output cannot hold a vector.
+ * A picture drawn as a PNG, for the kinds of export whose output cannot hold it as it is.
  *
- * Whether a vector survives is a fact about the *kind*, which is the reader's choice and the kind's own
- * row (`src-tauri/src/export.rs: carries_vectors`): a page of HTML and a book hold an SVG as an SVG,
- * and the app's own hand leaves the note's destinations as written — while a Word file, an
- * OpenDocument file, a page XeTeX lays out and the `.tex` it is compiled from cannot. Measured with
- * pandoc 3.12: a docx gets a converted PNG *beside* the raw `.svg` where the machine happens to have a
- * rasteriser, and the raw vector alone where it has none (`[WARNING] Could not convert image …`), so
- * the picture is the app's to draw — the webview has a canvas, and `ui/image/image_flow.ts` already
- * turns pixels into a file with it.
+ * Whether a picture survives as it is depends on the *kind* — the reader's choice, and the kind's own
+ * row (`src-tauri/src/export.rs: carries_pictures`): a page of HTML and a book carry an SVG and a webp,
+ * and the app's own hand leaves the note's destinations as written; a Word file, an OpenDocument file, a
+ * page XeTeX lays out and the `.tex` it is compiled from carry neither. Measured with pandoc 3.12: a
+ * docx gets a converted PNG *beside* the raw `.svg` where the machine happens to have a rasteriser and
+ * the raw vector alone where it has none (`[WARNING] Could not convert image …`), and it carries a webp
+ * as a `word/media/rId10.webp` that is not one of the five types the app promises a Word file (an EPUB
+ * of the same picture is `EPUB/media/file0.webp` and validates clean — SVG and webp are both core media
+ * types of EPUB 3.4). So the picture is the app's to draw — the webview has a canvas, and
+ * `ui/image/image_flow.ts` already turns pixels into a file with it.
  *
- * What is drawn is the note's own destination: a local `.svg` file, or a `data:` URL of one. A picture
- * **on the web** is left alone — the app's own fetch takes the five types a Word file holds
- * (`export.rs: image_extension`), and a web vector is one of the things the roadmap still leaves open.
- * A destination whose file is not there, or whose drawing fails, is answered as nothing: pandoc's own
- * warning about a picture it cannot find is the reader's, and a half-drawn one would be worse.
+ * A vector is drawn at twice its own size — a diagram's hairlines and text are drawn for a vector, and a
+ * PNG at the vector's own size is the one that loses them — and a webp at its own, since it is already
+ * pixels. What is drawn is the note's own destination: a local `.svg` or `.webp` file, or a `data:` URL
+ * of one. A picture **on the web** is left alone — the app's own fetch takes the five types a Word file
+ * holds (`export.rs: image_extension`), and a web SVG or webp is one of the things the roadmap still
+ * leaves open. A destination whose file is not there, or whose drawing fails, is answered as nothing:
+ * pandoc's own warning about a picture it cannot find is the reader's, and a half-drawn one would be
+ * worse.
  *
  * May import: the destination rules (`services/workspace_folders.ts`), the app's data folder and the
  * file plugin (the same seam an inserted picture is written with). Upholds: the note is never edited —
@@ -22,7 +27,7 @@
  * app's own that the run removes, and the note's own text still says which picture it is.
  */
 import { appDataDir } from '@tauri-apps/api/path';
-import { mkdir, remove, writeFile } from '@tauri-apps/plugin-fs';
+import { mkdir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs';
 import { destinationPaths } from '../../services/workspace_folders';
 import type { ImageBases } from './preprocess';
 
@@ -33,23 +38,26 @@ export interface PictureLookup {
 }
 
 /**
- * Whether a destination names a vector picture: a `.svg` file, or a `data:` URL of one. A destination
+ * Whether a destination names a picture this export may have to draw: an SVG or a webp. A destination
  * with another scheme is not the app's to open — a URL is the fetch's business, and that takes the five
  * types a Word file holds.
  */
-export function isVector(destination: string): boolean {
+export function needsDrawing(destination: string): boolean {
   const path = destination.trim();
   if (/^data:/i.test(path)) {
-    return /^data:\s*image\/svg\+xml/i.test(path);
+    return /^data:\s*image\/(svg\+xml|webp)/i.test(path);
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(path)) {
     return false;
   }
-  return /\.svg$/i.test(path.split(/[?#]/)[0] ?? '');
+  return /\.(svg|webp)$/i.test(path.split(/[?#]/)[0] ?? '');
 }
 
-/** The SVG's own text: the file the destination names, or the URL's bytes, or null. */
-async function svgSource(destination: string, lookup: PictureLookup): Promise<string | null> {
+/** The picture's own bytes and media type: the file the destination names, or the URL's, or null. */
+async function pictureSource(
+  destination: string,
+  lookup: PictureLookup
+): Promise<{ bytes: Uint8Array<ArrayBuffer>; type: string } | null> {
   if (/^data:/i.test(destination.trim())) {
     const comma = destination.indexOf(',');
     if (comma < 0) {
@@ -57,21 +65,21 @@ async function svgSource(destination: string, lookup: PictureLookup): Promise<st
     }
     const header = destination.slice(0, comma);
     const body = destination.slice(comma + 1);
+    const type = /^data:\s*([^;,]+)/i.exec(header)?.[1]?.trim().toLowerCase() ?? '';
     try {
       if (/;base64$/i.test(header) || /;base64;/i.test(header)) {
-        return new TextDecoder().decode(
-          Uint8Array.from(atob(body), (character) => character.charCodeAt(0))
-        );
+        return { bytes: Uint8Array.from(atob(body), (character) => character.charCodeAt(0)), type };
       }
-      return decodeURIComponent(body);
+      return { bytes: new TextEncoder().encode(decodeURIComponent(body)), type };
     } catch {
       return null;
     }
   }
+  const type = /\.webp$/i.test(destination.trim()) ? 'image/webp' : 'image/svg+xml';
   for (const candidate of destinationPaths(destination, lookup.bases.images, lookup.bases.document)) {
     if (await lookup.exists(candidate)) {
       try {
-        return await (await import('@tauri-apps/plugin-fs')).readTextFile(candidate);
+        return { bytes: await readFile(candidate), type };
       } catch {
         return null;
       }
@@ -81,17 +89,19 @@ async function svgSource(destination: string, lookup: PictureLookup): Promise<st
 }
 
 /**
- * Draws one SVG as a PNG at twice its own size — a diagram's hairlines and text are drawn for a vector,
- * and a PNG at the vector's own size is the one that loses them — or null when the webview cannot draw
- * it (no size, a broken file, a canvas the page is not allowed).
+ * Draws one picture as a PNG — a vector at twice its own size, a webp at its own — or null when the
+ * webview cannot draw it (no size, a broken file, a canvas the page is not allowed).
  */
-async function drawPng(svg: string): Promise<Uint8Array | null> {
-  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+async function drawPng(picture: {
+  bytes: Uint8Array<ArrayBuffer>;
+  type: string;
+}): Promise<Uint8Array | null> {
+  const url = URL.createObjectURL(new Blob([picture.bytes], { type: picture.type }));
   try {
     const image = new Image();
     image.src = url;
     await image.decode();
-    const scale = 2;
+    const scale = picture.type === 'image/svg+xml' ? 2 : 1;
     const width = Math.max(1, Math.round((image.naturalWidth || 300) * scale));
     const height = Math.max(1, Math.round((image.naturalHeight || 150) * scale));
     const canvas = document.createElement('canvas');
@@ -117,7 +127,7 @@ export async function rasterFolder(): Promise<string> {
 }
 
 /**
- * Draws every vector picture in `destinations` — each once, in the order they are written — and answers
+ * Draws every picture in `destinations` — each once, in the order they are written — and answers
  * destination → the PNG's path. A picture that cannot be drawn is left out, which leaves pandoc to say
  * what it makes of the destination.
  */
@@ -129,10 +139,10 @@ export async function rasterPictures(
   const folder = await rasterFolder();
   let index = 0;
   for (const destination of new Set(destinations)) {
-    if (!isVector(destination)) {
+    if (!needsDrawing(destination)) {
       continue;
     }
-    const source = await svgSource(destination, lookup);
+    const source = await pictureSource(destination, lookup);
     if (source === null) {
       continue;
     }
