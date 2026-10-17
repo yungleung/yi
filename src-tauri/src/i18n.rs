@@ -196,6 +196,7 @@ mod tests {
         "versioning.noGit",
         "files.markdownOnly",
         "versioning.notAVersionFile",
+        "menu.help.tutorial",
       ] {
         let text = t(language, key, &[]);
         assert!(!text.is_empty() && text != *key, "{language} has nothing for {key}");
