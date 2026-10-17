@@ -150,7 +150,9 @@ pub fn fonts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let installed = app
         .path()
         .resolve("assets/fonts", tauri::path::BaseDirectory::Resource)
-        .map_err(|error| format!("Yi cannot find its own fonts folder: {error}"))?;
+        .map_err(|error| {
+            crate::i18n::now("export.noFontsFolder", &[("reason", &error.to_string())])
+        })?;
     if holds_faces(&installed) {
         return Ok(installed);
     }
@@ -158,10 +160,12 @@ pub fn fonts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     if holds_faces(&beside_the_crate) {
         return Ok(beside_the_crate);
     }
-    Err(format!(
-        "Yi cannot find the fonts it ships: nothing in {} or {}.",
-        installed.display(),
-        beside_the_crate.display()
+    Err(crate::i18n::now(
+        "export.noShippedFonts",
+        &[
+            ("installed", &installed.display().to_string()),
+            ("beside", &beside_the_crate.display().to_string()),
+        ],
     ))
 }
 
@@ -199,8 +203,12 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
         .replace("@@FONTS@@", &format!("{{{}}}", folder(fonts)))
         .replace("@@FACES@@", faces.trim_end());
     let path = dir.join(HEADER_FILE);
-    crate::files::write_atomically(&path, &text)
-        .map_err(|error| format!("Yi cannot write {}: {error}", path.display()))?;
+    crate::files::write_atomically(&path, &text).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotWrite",
+            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
     Ok(path)
 }
 

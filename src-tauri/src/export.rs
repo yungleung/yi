@@ -664,7 +664,12 @@ fn run_pandoc(
     let output = command
         .args(arguments)
         .output()
-        .map_err(|error| format!("Could not run {}: {error}", pandoc.display()))?;
+        .map_err(|error| {
+            crate::i18n::now(
+                "app.cannotRun",
+                &[("program", &pandoc.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
     if !output.status.success() {
         let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(if complaint.is_empty() {
@@ -772,7 +777,12 @@ fn run_curl(curl: &Path, dir: &Path, url: &str, path: &Path) -> Result<String, S
         .arg("--")
         .arg(url)
         .output()
-        .map_err(|error| format!("Could not run {}: {error}", curl.display()))?;
+        .map_err(|error| {
+            crate::i18n::now(
+                "app.cannotRun",
+                &[("program", &curl.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
     if !output.status.success() {
         let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(if complaint.is_empty() {
@@ -807,13 +817,16 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
         Some(extension) => extension,
         None => {
             let _ = fs::remove_file(&partial);
-            return Err(format!(
-                "{url} is {}, and a Word file cannot hold that.",
-                if content_type.is_empty() {
-                    "of no type this app knows".to_string()
-                } else {
-                    content_type
-                }
+            // The type is named in the reader's language only when the *app* is what has no answer for
+            // it; a type the server wrote down is the server's own name and stays as it is.
+            let kind = if content_type.is_empty() {
+                crate::i18n::now("export.pictureNoType", &[])
+            } else {
+                content_type.clone()
+            };
+            return Err(crate::i18n::now(
+                "export.pictureType",
+                &[("url", &url), ("type", &kind)],
             ));
         }
     };

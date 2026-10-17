@@ -210,11 +210,10 @@ pub fn get_current_config_version() -> Result<u32, String> {
 pub fn read_bibliography(app: tauri::AppHandle) -> Result<String, String> {
   let cfg = load_from_disk(&app).map_err(|e| e.to_string())?;
   let path = expand_tilde(&cfg.bibliography_file, &app);
-  fs::read_to_string(&path).map_err(|e| {
-    format!(
-      "Failed to read bibliography file {}: {}",
-      path.display(),
-      e
+  fs::read_to_string(&path).map_err(|error| {
+    crate::i18n::now(
+      "bibliography.readFailed",
+      &[("path", &path.display().to_string()), ("reason", &error.to_string())],
     )
   })
 }
