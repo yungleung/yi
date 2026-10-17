@@ -1263,26 +1263,32 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
 
 ## Open, in the order to take them
 
-- **A picture that is an SVG, a webp, or a URL behind a login.** Measured with pandoc 3.12, one note
-  each, and the answer splits three ways now. **An SVG is drawn by the app exactly for the kinds whose
+- **A URL behind a login, and a destination that is not a picture.** A picture that is an SVG, a
+  webp, or on the web now follows the kind: the local cases are `export-picture-formats.js`, and the
+  web cases are `export-web-picture-formats.js` (the fetch keeps `image/svg+xml` and `image/webp`;
+  a docx gets two PNGs the app drew, an EPUB both originals, and the fetched copies are gone).
+  Measured with pandoc 3.12, one note each, and the answer for the rest splits two ways.
+  **An SVG is drawn by the app exactly for the kinds whose
   output cannot hold a vector** — the maintainer's call, and the kind's own row says it
-  (`export.rs: carries_vectors`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
+  (`export.rs: carries_pictures`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
   EPUB core media types) and the app's own hand leaves the note's destinations as written, while a Word
   file, an OpenDocument file, a page XeTeX lays out and its `.tex` get a PNG the app draws itself
   (`ui/export/raster_picture.ts`: the webview's canvas, twice the vector's own size, into a folder of
-  the app's own that the run removes). `export-svg-picture.js` holds both halves through the app, from
-  one note and one local `figure.svg`: the docx's media folder has a PNG and no vector, the book's has
-  the vector and no PNG, and the PNG the app drew is 240 x 120 for a 120 x 60 vector — read from the
-  app's file, because the docx's copy of it is pandoc's own re-encoding at the page's dpi.
+  the app's own that the run removes). `export-picture-formats.js` holds both halves through the app,
+  from one note and one local `figure.svg`: the docx's media folder has a PNG and no vector, the
+  book's has the vector and no PNG, and the PNG the app drew is 240 x 120 for a 120 x 60 vector — read
+  from the app's file, because the docx's copy of it is pandoc's own re-encoding at the page's dpi.
   **A webp is drawn by the same rule.** Measured before this round, a webp was carried in silently by
   every kind — `word/media/rId10.webp`, no warning — and it is not one of the five types a Word file
   promises; and measured *now*, an EPUB of a webp is
   `EPUB/media/file0.webp` and validates clean (SVG and webp are both core media types of EPUB 3.4), so
   the kinds that carry a vector carry a webp too, and `carries_vectors` became **`carries_pictures`**.
   A webp is drawn at its own size rather than twice it, because it is already pixels; the probe holds
-  that against the size the page reads out of the webp itself. **What is left is a picture on the web**
-  — an SVG or a webp — because the app's own fetch takes the five types a Word file holds
-  (`export.rs: image_extension`), and widening it is a second decision this round did not take.
+  that against the size the page reads out of the webp itself. **A picture on the web follows the same
+  rule**: the fetch now keeps `image/svg+xml` and `image/webp`, and `export-web-picture-formats.js`
+  proves a docx of two remote pictures has PNGs the app drew while an EPUB carries both originals.
+  Processed markdown is the exception: the app writes that file itself, so it keeps the URL rather than
+  a path into the run's folder.
   **A URL behind a login is answered already**: the app's own fetch fails (`export_fetch_image`), the
   reader is told the URL in the app's own words (`export_flow.ts: fetchedPicture`) and pandoc is left
   the address to warn about if it wants to.

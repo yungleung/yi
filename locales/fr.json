@@ -102,7 +102,7 @@
   "export.noCurl": "Cette machine n'a pas curl pour le télécharger.",
   "export.noFontsFolder": "Yi ne trouve pas son propre dossier de polices : {reason}",
   "export.noShippedFonts": "Yi ne trouve pas les polices fournies : rien dans {installed} ni dans {beside}.",
-  "export.pictureType": "{url} est {type}, et un fichier Word ne peut pas le contenir.",
+  "export.pictureType": "{url} est {type}, et une exportation ne peut pas le dessiner.",
   "export.pictureNoType": "d’un type que cette application ne connaît pas",
     "export.noConfiguration": "Yi n'a pas de fichier de configuration pour {kind}.",
   "app.cannotRun": "Impossible d’exécuter {program} : {reason}",

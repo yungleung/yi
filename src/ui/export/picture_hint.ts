@@ -44,6 +44,11 @@ export function destinationsThatNameNoImage(text: string): string[] {
   return imageDestinations(text).filter((destination) => namesNoImage(destination));
 }
 
+/** Whether a destination asks the web for the picture: the app's own fetch is what reads it. */
+export function isWebDestination(destination: string): boolean {
+  return /^https?:\/\//i.test(destination.trim());
+}
+
 /**
  * The destinations of the note's images, each once, in the order they are written — read from the parse,
  * so a `data:` URL or a path inside a fence or a code span is not an image destination.
