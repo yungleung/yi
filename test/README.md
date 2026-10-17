@@ -273,7 +273,11 @@ at their own levels;
 `export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
 with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
 pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left
-behind),
+behind;
+`export-web-picture-formats` — the same fetch for an SVG and a webp: a note naming both on the web,
+exported as a docx (PNGs the app drew and neither format) and as an EPUB (both originals and no PNG),
+and as the app's own markdown (both URLs kept, because that file outlives the run), with the fake curl
+answering the type it was asked for and the fetched copies gone at the end),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
