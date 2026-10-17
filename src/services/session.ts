@@ -23,7 +23,7 @@
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { readTextFile } from '@tauri-apps/plugin-fs';
-import { writeTextAtomically } from '../api/files';
+import { grantFolder, writeTextAtomically } from '../api/files';
 import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { configManager } from './config_manager';
@@ -125,6 +125,14 @@ class DocumentSession {
       console.error('Failed to read the session:', error);
       this.state = emptySession();
     }
+    // The folders a session's documents live in are granted before anything reads or writes them: a
+    // note outside the workspace is one the webview could not open or save, and a restore is where the
+    // app first hears about it (`api/files.ts: grantFolder`).
+    for (const document of this.state.documents) {
+      if (document.path !== null) {
+        await grantFolder(document.path);
+      }
+    }
     const current = this.current();
     if (current) {
       this.show(current);
@@ -185,6 +193,10 @@ class DocumentSession {
    * which wikilink target), because only it knows what to call the thing that failed.
    */
   async openPath(path: string): Promise<void> {
+    // The folder is granted *before* the read: this is the one place a path becomes the document on
+    // screen, and a note that sits outside the workspace is one the webview could not read without it
+    // (`api/files.ts: grantFolder`).
+    await grantFolder(path);
     const content = await readTextFile(path);
     await this.openFile({ path, content });
   }
