@@ -148,8 +148,11 @@
     // --- the document ---------------------------------------------------------------------------
 
     field.value = target;
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const written = await until(() => exists(target));
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const tex = written ? await readText(target) : '';
     check(
       'Export writes a whole LaTeX document, not a fragment',
@@ -196,8 +199,11 @@
       await sleep(250);
       const targetNamed = `${folder}/named.tex`;
       card().querySelector('[data-export-target]').value = targetNamed;
+      const namedHints = t.hintsNow();
       card().querySelector('[data-export-run]').click();
-      const namedWritten = await until(() => exists(targetNamed));
+      const namedWritten = await until(
+        () => t.newHint(namedHints, (words) => words.startsWith('Exported to')) !== null
+      );
       const named = namedWritten ? await readText(targetNamed) : '';
       check(
         'a reader who names one gets it: xeCJK and that name are in the document',

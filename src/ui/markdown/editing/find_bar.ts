@@ -30,6 +30,7 @@ export class FindBar {
   private readonly replaceInput: HTMLInputElement;
   private readonly replaceRow: HTMLElement;
   private readonly replaceActions: HTMLElement;
+  private replaceEnabled = true;
   private readonly status: HTMLElement;
 
   constructor(handlers: FindBarHandlers) {
@@ -99,11 +100,21 @@ export class FindBar {
   open(showReplace: boolean): void {
     this.element.classList.remove('hidden');
     this.element.classList.add('flex');
-    this.replaceRow.classList.toggle('hidden', !showReplace);
-    this.replaceActions.classList.toggle('hidden', !showReplace);
-    this.replaceActions.classList.toggle('flex', showReplace);
+    const replace = showReplace && this.replaceEnabled;
+    this.replaceRow.classList.toggle('hidden', !replace);
+    this.replaceActions.classList.toggle('hidden', !replace);
+    this.replaceActions.classList.toggle('flex', replace);
     this.findInput.focus();
     this.findInput.select();
+  }
+
+  /** Turns the replace half off for a document that may not be written. */
+  setReplaceEnabled(enabled: boolean): void {
+    this.replaceEnabled = enabled;
+    this.replaceInput.disabled = !enabled;
+    for (const button of this.replaceActions.querySelectorAll('button')) {
+      button.disabled = !enabled;
+    }
   }
 
   /** Hides the bar and forgets its query. */

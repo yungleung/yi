@@ -168,6 +168,7 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
         .build()?;
 
     let help_submenu = SubmenuBuilder::new(app, t(language, "menu.help", &[]))
+        .text("tutorial", t(language, "menu.help.tutorial", &[]))
         .text("documentation", t(language, "menu.help.documentation", &[]))
         .text("report_issue", t(language, "menu.help.reportIssue", &[]))
         .text(
@@ -203,6 +204,9 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
         }
 
         match event.id().0.as_str() {
+            "tutorial" => {
+                app_handle.emit("tutorial", ()).unwrap();
+            }
             "settings" => {
                 app_handle.emit("setting", ()).unwrap();
             }

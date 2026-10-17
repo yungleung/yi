@@ -44,6 +44,7 @@ const exempt = {
   'find-status': 'find-bar UI state, not a document offset',
   'find-replace-actions': 'find-bar UI state, not a document offset',
   layout: 'which layout the editor is drawn in (`page` or `auto`), not a document offset',
+  'read-only': 'a flag on the editor’s scroller, not a document offset',
   language: 'the language a picker row offers, a name (`js`, `text`), not an offset'
 };
 

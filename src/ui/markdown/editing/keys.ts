@@ -30,6 +30,8 @@ export interface KeyHost {
   readonly context: EditorContext;
   readonly composition: CompositionInput;
   readonly completions: Completions;
+  /** Whether the document is a reference: navigation and copy stay, every writer goes. */
+  readonly readOnly: () => boolean;
   /** The command/control chords, returning true when one was handled. */
   shortcut(event: KeyboardEvent): boolean;
   /** The arrow keys, after everything else has declined the key. */
@@ -38,6 +40,10 @@ export interface KeyHost {
 
 /** Keyboard shortcuts and plain text input, for one editor. */
 export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
+  if (host.readOnly() && !readOnlyKey(event)) {
+    event.preventDefault();
+    return;
+  }
   // A character the input method is handling is not the editor's. The keys *during* a
   // composition say so with `isComposing`; a key the method routes does so with
   // `keyCode` 229 — the key that picks a candidate, and (with Caps Lock on, so the method
@@ -69,12 +75,41 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
   host.completions.refresh();
 }
 
+/**
+ * The keys a read-only document still answers: moving through it, selecting and copying it, finding
+ * in it, and leaving a control with Tab. Everything else is a writer — typing, deleting, undo, a
+ * formatting chord — and is refused.
+ */
+function readOnlyKey(event: KeyboardEvent): boolean {
+  const key = event.key;
+  if (
+    key === 'ArrowUp' ||
+    key === 'ArrowDown' ||
+    key === 'ArrowLeft' ||
+    key === 'ArrowRight' ||
+    key === 'Home' ||
+    key === 'End' ||
+    key === 'PageUp' ||
+    key === 'PageDown' ||
+    key === 'Escape' ||
+    key === 'Tab'
+  ) {
+    return true;
+  }
+  return (event.metaKey || event.ctrlKey) && ['a', 'c', 'f'].includes(key.toLowerCase());
+}
+
 /** The text path: the chords, and the keys that write and move. */
 function handleTextKey(event: KeyboardEvent, host: KeyHost): void {
   if (host.shortcut(event)) {
     return;
   }
   if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    // A reference document lets the browser keep Tab for moving focus; it has no cell or list to
+    // step through, and the indentation below would be a write.
+    if (host.readOnly()) {
+      return;
+    }
     // Tab walks a table's cells and moves a list item a level in or out;
     // elsewhere the browser keeps its own Tab, as it did before.
     if (moveTableCell(host.context, event.shiftKey ? -1 : 1)) {

@@ -70,7 +70,7 @@ import {
 } from './click_routing';
 import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
-import { runCommand, type CommandId } from './commands/registry';
+import { runCommand, setEditingAllowed, type CommandId } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
@@ -125,6 +125,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private pageScale = 1;
   /** A4 (`page`) or the column at the pane's width (`auto`); see `styles.css`. */
   private layout: EditorLayout = 'page';
+  /** A reference document is shown, not written: typing and editing commands are refused. */
+  private readOnly = false;
   /** A caret offset whose block is not mounted (restored on a later sync). */
   private pendingCaretOffset: number | null = null;
   /**
@@ -231,7 +233,15 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
     // its source, a wikilink opened with ⌘ (Ctrl) asks the app for the document it
     // names, and a click that missed every node still places a caret.
-    this.contentView.addEventListener('click', (event) => routeTaskClick(this.context, event), true);
+    this.contentView.addEventListener(
+      'click',
+      (event) => {
+        if (!this.readOnly) {
+          routeTaskClick(this.context, event);
+        }
+      },
+      true
+    );
     this.contentView.addEventListener(
       'click',
       (event) => routeFootnoteClick(this.context, event),
@@ -260,16 +270,27 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // a Ctrl-click on macOS (see `click_routing.ts`).
     this.contentView.addEventListener('contextmenu', (event) => {
       routeFootnoteMenu(this.context, event);
-      routeContextMenu(this.context, event);
+      if (!this.readOnly) {
+        routeContextMenu(this.context, event);
+      }
     });
     this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
-    this.contentView.addEventListener('paste', (event) => pasteText(this.context, event));
+    this.contentView.addEventListener('paste', (event) => {
+      if (this.readOnly) {
+        event.preventDefault();
+        return;
+      }
+      pasteText(this.context, event);
+    });
     // The system's way in: an input method's word, dictation and the emoji panel get
     // something to compose and arrive in, and what they commit is one edit of its own
     // (see `editing/composition_input.ts` and `editing/text_commands.ts: insertCommitted`).
     this.composition = installCompositionInput(
       this.contentView,
       (text) => {
+        if (this.readOnly) {
+          return;
+        }
         this.placeCaretForTheTextPath();
         insertCommitted(this.context, text);
       },
@@ -303,6 +324,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       context: this.context,
       composition: this.composition,
       completions: this.completions,
+      readOnly: () => this.readOnly,
       shortcut: (event) => this.handleShortcut(event),
       arrow: (event) => this.handleArrowKey(event)
     };
@@ -352,6 +374,19 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView.dataset.layout = layout;
     this.fitPage();
     void eventManager.emit(EDITOR_LAYOUT_CHANGED, layout);
+  }
+
+  /**
+   * Shows a reference document: navigation, selection, copy, find and export stay; anything that
+   * would write the text does not. The command gate is the editor's own, so the toolbar and the
+   * native menu cannot write around the keyboard.
+   */
+  setReadOnly(readOnly: boolean): void {
+    this.readOnly = readOnly;
+    this.composition.element.readOnly = readOnly;
+    this.contentView.dataset.readOnly = String(readOnly);
+    this.find.setReadOnly(readOnly);
+    setEditingAllowed(!readOnly);
   }
 
   /** The layout the editor is drawn in. */
@@ -666,6 +701,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * where the edit ends and being dropped for good.
    */
   private changeFenceLanguage(lineStart: number, language: string): void {
+    if (this.readOnly) {
+      return;
+    }
     const block = this.state.getBlockAtLine(lineStart);
     const edit = block ? fenceLanguageEdit(block.text, language) : null;
     if (block === null || edit === null) {

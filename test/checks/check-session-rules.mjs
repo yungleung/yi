@@ -120,6 +120,35 @@ check(
 check('a saved document is replaced without a question', openDecision(state, { id: 'other' }), 'open');
 check('and the setting does not push it', openDecision(state, { id: 'other' }, true), 'open');
 
+// A reference document is never the reader's unsaved work, even if something has changed its
+// text: opening a file replaces it without a question, and the standing push answer does not turn
+// that into a "push and open" either.
+const tutorial = openInto(
+  emptySession(),
+  {
+    path: null,
+    content: '---\nid: yi-tutorial\ntitle: Welcome\n---\n\nA tutorial.\n',
+    readOnly: true
+  },
+  'yi-tutorial'
+);
+check('a read-only document is opened as read-only', currentDocument(tutorial)?.readOnly, true);
+const tutorialEdited = capture(tutorial, '---\nid: yi-tutorial\ntitle: Welcome\n---\n\nChanged.\n', {
+  caret: 4,
+  to: null,
+  scroll: null
+});
+check(
+  'an edited read-only document is replaced without a question',
+  openDecision(tutorialEdited, { id: 'other' }),
+  'open'
+);
+check(
+  'and the push setting does not push it',
+  openDecision(tutorialEdited, { id: 'other' }, true),
+  'open'
+);
+
 // An edit its file does not have is what the question is for…
 const editing = capture(state, `${NOTE}More.\n`, { caret: 12, to: null, scroll: null });
 check('an unstacked document with an edit is asked about', openDecision(editing, { id: 'other' }), 'ask');
@@ -240,6 +269,27 @@ check('and it is still current', currentDocument(dropFromStack(three, 'third'))?
 
 const roundTripped = parseSession(serializeSession(three));
 check('a session survives the round trip', roundTripped, three);
+check(
+  'a session written before read-only documents reads one as ordinary',
+  parseSession(
+    JSON.stringify({
+      version: SESSION_VERSION,
+      current: 'old',
+      documents: [
+        {
+          id: 'old',
+          path: null,
+          title: 'Old',
+          content: 'Old.\n',
+          saved: 'Old.\n',
+          stacked: false,
+          view: { caret: null, to: null, scroll: null }
+        }
+      ]
+    })
+  ).documents[0].readOnly,
+  false
+);
 check('a session file this build does not know is discarded', parseSession('{"version":99,"documents":[]}'), emptySession());
 check('so is a file that is not JSON', parseSession('not json at all'), emptySession());
 check('and so is one with nothing in it', parseSession(null), emptySession());

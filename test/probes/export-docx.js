@@ -209,8 +209,11 @@
 
     // --- the export itself ---------------------------------------------------------------------
 
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const written = await until(async () => (await exists(target)) && (await bytesOf(target)).length > 2000);
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const bytes = await bytesOf(target);
     // A docx is a zip, and a zip keeps its entry *names* uncompressed: the media folder of a
     // document with a picture in it is a name this can look for without unzipping anything.

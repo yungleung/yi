@@ -37,6 +37,7 @@ export type CommandId =
   | 'file:saveAs'
   | 'file:export'
   | 'file:newMarkdown'
+  | 'help:tutorial'
   | 'version:save'
   | 'session:toggleStack'
   | 'session:openStack'
@@ -60,6 +61,34 @@ export interface Command {
 
 const commands = new Map<CommandId, Command>();
 
+/** Whether a command would change the note, rather than read it, move around it or export it. */
+function writesContent(id: CommandId): boolean {
+  return (
+    id.startsWith('format:') ||
+    id.startsWith('list:') ||
+    id.startsWith('table:') ||
+    id === 'history:undo' ||
+    id === 'history:redo' ||
+    id === 'edit:cut' ||
+    id === 'edit:insertFootnote' ||
+    id === 'edit:insertLink' ||
+    id === 'edit:insertRule' ||
+    id === 'edit:insertImage' ||
+    id === 'file:save' ||
+    id === 'file:saveAs' ||
+    id === 'version:save' ||
+    id === 'session:toggleStack'
+  );
+}
+
+/** The open document's editor says whether its commands may write. */
+let editingAllowed = true;
+
+/** Whether writing commands may run. A read-only reference turns all of them off at once. */
+export function setEditingAllowed(allowed: boolean): void {
+  editingAllowed = allowed;
+}
+
 /** Registers a command. Registering the same id twice is a bug, not a merge. */
 export function registerCommand(command: Command): void {
   if (commands.has(command.id)) {
@@ -71,7 +100,7 @@ export function registerCommand(command: Command): void {
 /** Runs a command by name. Returns false when it is not registered or not available. */
 export function runCommand(id: CommandId, payload?: unknown): boolean {
   const command = commands.get(id);
-  if (!command || command.available?.() === false) {
+  if (!command || (!editingAllowed && writesContent(id)) || command.available?.() === false) {
     return false;
   }
   command.run(payload);

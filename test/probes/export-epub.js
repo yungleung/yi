@@ -142,8 +142,11 @@
     // --- the book -------------------------------------------------------------------------------
 
     field.value = target;
+    const hints = t.hintsNow();
     veil.querySelector('[data-export-run]').click();
-    const written = await until(() => exists(target));
+    const written = await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
     const bytes = await bytesOf(target);
     if (bytes === null) {
       check('Export writes an EPUB where the reader asked', false, { written });
