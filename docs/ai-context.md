@@ -255,6 +255,13 @@ The card also names a picture it cannot use: an image destination that is a `dat
 which is not an image (`src/ui/export/picture_hint.ts` — the note says the kind, so no machine is
 asked). The export is written either way; measured, pandoc carries such a destination into a docx as a
 `.txt` without a word, which is why the reader hears it from the app instead.
+And whether a **vector** survives is the *kind's* answer (`export.rs: carries_vectors`): an HTML page and
+a book keep an SVG as an SVG, the app's own hand leaves the note's destinations as written, and a Word
+file, an OpenDocument file, a TeX page or its `.tex` get a PNG the app draws itself
+(`src/ui/export/raster_picture.ts` — the webview's canvas, twice the vector's own size, in a folder of
+the app's own that the run removes). Pandoc draws it only where the machine happens to have a
+rasteriser; the app draws it where the kind needs one. A **webp**, local or on the web, is still
+unhandled.
 **One kind is not pandoc's at all**: `markdown` (`needs_pandoc: false`) *is* the pre-process —
 the app writes the text it prepared (`export_own_text`) — so it ships
 no defaults file, and the card shows no settings row for it and refuses to make one. Every other kind

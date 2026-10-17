@@ -1264,7 +1264,21 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
 ## Open, in the order to take them
 
 - **A picture that is an SVG, a webp, or a URL behind a login.** Measured with pandoc 3.12, one note
-  each, and the answer splits in two.
+  each, and the answer splits three ways now. **An SVG is drawn by the app exactly for the kinds whose
+  output cannot hold a vector** — the maintainer's call, and the kind's own row says it
+  (`export.rs: carries_vectors`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
+  EPUB core media types) and the app's own hand leaves the note's destinations as written, while a Word
+  file, an OpenDocument file, a page XeTeX lays out and its `.tex` get a PNG the app draws itself
+  (`ui/export/raster_picture.ts`: the webview's canvas, twice the vector's own size, into a folder of
+  the app's own that the run removes). `export-svg-picture.js` holds both halves through the app, from
+  one note and one local `figure.svg`: the docx's media folder has a PNG and no vector, the book's has
+  the vector and no PNG, and the PNG the app drew is 240 x 120 for a 120 x 60 vector — read from the
+  app's file, because the docx's copy of it is pandoc's own re-encoding at the page's dpi.
+  **A webp, and an SVG on the web, are what is left.** A local webp is still carried in silently by every
+  kind (`word/media/rId10.webp`, measured) and is not one of the five types the app's own fetch takes
+  down from the web (`export.rs: image_extension`), so a *web* webp is reported as a picture the app
+  could not fetch while a *local* one is embedded where a reader may see nothing; drawing one is the
+  same canvas path this round added, and widening the fetch is a second decision it did not take.
   **A URL behind a login is answered already**: the app's own fetch fails (`export_fetch_image`), the
   reader is told the URL in the app's own words (`export_flow.ts: fetchedPicture`) and pandoc is left
   the address to warn about if it wants to.
@@ -1278,17 +1292,12 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   names the destination before the export runs. It does **not** refuse it and does not edit it: the
   file is written, and the reader is told which destination is no picture — the way the font hint names
   the characters a page would lose rather than deleting them.
-  **A picture of a kind this export cannot use is still open**, and the measurements say what it looks
-  like: an SVG is converted where the machine has a rasteriser (measured: a docx gets a
-  `word/media/rId13.png` beside the raw `.svg`, and a pdf of one is a real 5.5 KB page), and where it
-  has none pandoc warns (`Could not convert image figure.svg: "conversion from SVG failed"`) and carries
-  the vector alone. A **webp** is carried in silently by every kind — `word/media/rId10.webp`, no
-  warning — and it is not one of the five types this app's fetch takes down from the web
-  (`export.rs: image_extension`), so a web webp is reported as a picture the app could not fetch while a
-  *local* one is embedded where a reader may see nothing. **The decision this leaves**: whether the app
-  should turn such a picture into one the export can use — it has the machinery, the webview's own
-  canvas (`ui/image/image_flow.ts: encode` already turns pixels into a `.png` for a pasted picture) —
-  or goes on saying what it cannot do and leaving the note's bytes alone. Nothing of that half is done.
+  **Why the vector is drawn here rather than left to pandoc**: measured, a docx gets a converted
+  `word/media/rId13.png` *beside* the raw `.svg` where the machine has a rasteriser, and the raw vector
+  alone where it has none (`[WARNING] Could not convert image figure.svg`) — a Word file holding a
+  picture that may not draw — and a pdf of an SVG is a real page only on a machine that can convert it.
+  Drawing it here is the app doing what the machine may not, the way it fetches a picture pandoc cannot
+  (`export_fetch_image`).
 - **What a *click* costs under a pane, and the suite's noisy tail. Closed**, and by the same
   measurement the rest of the entry is about: with the harness bringing the window forward itself
   (`session::focus_window`), a **whole `probe:all` run came out 177/177 with 28 skipped** — every
