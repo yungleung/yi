@@ -726,7 +726,7 @@ elements) unless it says otherwise.
   text editor, because the parameters are theirs. None of the conversion is the app's: a kind *is* a
   pandoc **defaults file** (`<app data>/export/export.<kind>.yaml`), written from the copy the build
   ships the first time that kind is used and never overwritten again
-  (`src-tauri/src/export.rs: ensure_defaults_in`), and the docx one is Zettlr's own defaults file
+  (`src-tauri/src/export/config.rs: ensure_defaults_in`), and the docx one is Zettlr's own defaults file
   kept word for word, header and all. Every kind shares one pre-process
   (`ui/export/preprocess.ts`): a wikilink is written as the words it renders as — its own title, or
   the title of the note it names, or its target — and it is walked out of the *parse* rather than
@@ -771,7 +771,7 @@ elements) unless it says otherwise.
   Yi's copy and the header says why. The second is the pandoc: the one on this machine answers
   *"Could not fetch resource …: pandoc was compiled without HTTP support"* and puts the picture's
   description in the document, so no remote image can ever be embedded by it. The app therefore
-  **fetches the picture itself** (`export.rs: export_fetch_image`, through the system's curl — one
+  **fetches the picture itself** (`export/pictures.rs: export_fetch_image`, through the system's curl — one
   documented list of flags, a `YI_CURL`/`export_use_curl` seam, a curl that only records in
   `test/probes/fake-curl.sh`) and hands pandoc a local file, which is the same principle as the local
   case: what the page showed is what the document gets. Measured on the real demo document, with the
@@ -791,7 +791,7 @@ elements) unless it says otherwise.
   Measured both ways: with a curl that cannot run, the reader gets the app's sentence with the URL and
   the prepared note keeps the URL as written; with the real curl, the same note's picture is in the
   book (`EPUB/media/file0.png`, 1811 bytes — the server's own length). `export-refused.js` holds it.
-  **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export.rs` — plus the
+  **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export/kinds.rs` — plus the
   asset `src-tauri/assets/export/export.odt.yaml` (Zettlr's own LibreOffice defaults, less the same
   one key), a tab label in the catalogues and not one line of dialog code that knows what `odt` is.
   Measured through the app with the real pandoc, on the demo document: the file is a valid ODF
@@ -1138,7 +1138,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
   `ui/export/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
   frontmatter when it has not, one line of a name that came from a heading), the kind's own row says it
-  (`export.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
+  (`export/kinds.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
   the name would say it twice), and the window hands the book that body (`export_flow.ts`). The note's
   `## Going out` then takes the id pandoc gives the second of two headings saying the same thing, and
   the book's structure is the one a reader would draw: the name as the level-1 section, the note's own
@@ -1187,7 +1187,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
 
   So both answers are `geometry` options: they are appended after whatever the file lists and take the
   page with them, which is what "over whatever the file says" has to mean for a reader who asked for
-  this page, once. `PAPER_SIZES` (`export.rs`) is the list — the one the file's own comment carries,
+  this page, once. `PAPER_SIZES` (`export/kinds.rs`) is the list — the one the file's own comment carries,
   `geometry`'s own names, JIS B being the one with no `paper` after it — and a size that is not on it is
   *refused* rather than handed to LaTeX, the way the markdown2pdf round refused a theme. The kind's own
   row says which kinds take one (`takes_a_page_size`: the pdf, and nothing else — a docx or a book
@@ -1279,7 +1279,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   Measured with pandoc 3.12, one note each, and the answer for the rest splits two ways.
   **An SVG is drawn by the app exactly for the kinds whose
   output cannot hold a vector** — the maintainer's call, and the kind's own row says it
-  (`export.rs: carries_pictures`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
+  (`export/kinds.rs: carries_pictures`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
   EPUB core media types) and the app's own hand leaves the note's destinations as written, while a Word
   file, an OpenDocument file, a page XeTeX lays out and its `.tex` get a PNG the app draws itself
   (`ui/export/raster_picture.ts`: the webview's canvas, twice the vector's own size, into a folder of

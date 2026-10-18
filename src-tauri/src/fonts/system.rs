@@ -9,12 +9,12 @@
 //!   and not a name one: the macOS `Songti SC` draws Han and kana and no Hangul at all (measured), and
 //!   nothing about the name says so.
 //!
-//! May import: `std` and `crate::font_file`. Upholds: each answer is read **once** per run and kept (the
+//! May import: `std` and `crate::fonts::file`. Upholds: each answer is read **once** per run and kept (the
 //! machine's fonts are 543 MB in 367 files here, measured) and only the tables each question needs are
 //! read out of them (`font_file::read_tables`); a folder that is not there, or a file that is not a
 //! font, is skipped in silence rather than reported.
 
-use crate::font_file;
+use crate::fonts::file as font_file;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 

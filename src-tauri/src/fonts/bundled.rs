@@ -14,7 +14,8 @@
 //! pointing at a folder that is no longer there; and what those faces draw, read out of the fonts
 //! themselves, which is what lets the window say what a page will lose.
 //!
-//! May import: `std`, `tauri` (for the resource path) and the crate's `files` for the atomic write.
+//! May import: `std`, `tauri` (for the resource path), `crate::files` for the atomic write and
+//! `crate::fonts::file` for reading the faces.
 //! Upholds: the header is written from the asset this build ships, naming the fonts this build ships,
 //! so a page that draws a script is evidence about this build.
 
@@ -137,7 +138,7 @@ pub const HEADER_FILE: &str = "pdf-fonts.tex";
 
 /// The header this build ships, with two holes in it: `@@FONTS@@` for the folder the faces are in,
 /// and `@@HAN@@` for the line that makes the Han and kana face.
-const HEADER_ASSET: &str = include_str!("../assets/export/pdf-fonts.tex");
+const HEADER_ASSET: &str = include_str!("../../assets/export/pdf-fonts.tex");
 
 /// Where the faces are on this machine.
 ///
@@ -283,7 +284,7 @@ pub fn reader_scripts(settings: &str) -> Vec<&'static str> {
 /// Every font a settings file names, whatever the key it names it with — `mainfont`, `CJKmainfont`, and
 /// the `yi-<script>-font` lines — each once, in the order the keys are read.
 ///
-/// This is the list the app checks against the machine (`system_fonts::has_family`): a name that is not
+/// This is the list the app checks against the machine (`fonts::system::has_family`): a name that is not
 /// there is not a smaller problem than a missing character, and the card can say so before the export
 /// stops with the engine's own sentence.
 pub fn named_values(settings: &str) -> Vec<String> {
@@ -335,13 +336,13 @@ pub fn coverage(fonts: &Path) -> &'static [[u32; 2]] {
             for face in FACES {
                 let han = *face == HAN_FACE;
                 // Every face is read through the same parser the machine's own fonts go through
-                // (`font_file`), and all of a file's faces — one, for these.
+                // (`fonts::file`), and all of a file's faces — one, for these.
                 let Ok(data) = std::fs::read(fonts.join(face)) else {
                     continue;
                 };
-                let ranges: Vec<(u32, u32)> = crate::font_file::faces(&data)
+                let ranges: Vec<(u32, u32)> = crate::fonts::file::faces(&data)
                     .into_iter()
-                    .flat_map(|at| crate::font_file::cmap_ranges(&data, at))
+                    .flat_map(|at| crate::fonts::file::cmap_ranges(&data, at))
                     .filter(|(first, last)| !han || routed_to_han(*first, *last))
                     .collect();
                 points.extend(ranges);
