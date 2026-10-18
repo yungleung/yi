@@ -32,6 +32,7 @@ src-tauri/src/
     kinds.rs
     info.rs
     config.rs
+    search.rs
     pandoc.rs
     curl.rs
     pictures.rs
@@ -134,6 +135,7 @@ git commit -m "refactor(fonts): one family for parsing, shipping and finding fac
 - Create: `src-tauri/src/export/kinds.rs`
 - Create: `src-tauri/src/export/info.rs`
 - Create: `src-tauri/src/export/config.rs`
+- Create: `src-tauri/src/export/search.rs`
 - Create: `src-tauri/src/export/pandoc.rs`
 - Create: `src-tauri/src/export/curl.rs`
 - Create: `src-tauri/src/export/pictures.rs`
@@ -197,13 +199,16 @@ the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file
 The module header says it owns the app's export folder, defaults files and CSL copies; it may
 import `kinds` and the app's files; its invariant is that a file already there is never rewritten.
 
-- [ ] **Step 4: Create `pandoc.rs` and `curl.rs`**
+- [ ] **Step 4: Create `search.rs`, `pandoc.rs` and `curl.rs`**
 
-Move `known_pandoc_locations`, `find_pandoc_from`, `find_pandoc`, `export_use_pandoc`,
-`run_pandoc` and their pandoc tests into `pandoc.rs`.
+Move `find_pandoc_from` into `search.rs`.
+
+Move `known_pandoc_locations`, `find_pandoc`, `export_use_pandoc`, `run_pandoc` and their
+pandoc tests into `pandoc.rs`; it imports `search::find_pandoc_from`.
 
 Move `known_curl_locations`, `find_curl`, `export_use_curl`, `run_curl` and
-`a_curl_named_by_the_test_seam_is_the_one_that_is_run` into `curl.rs`.
+`a_curl_named_by_the_test_seam_is_the_one_that_is_run` into `curl.rs`; it imports the same
+search rule.
 
 Each file keeps the seam state and the one argument list in its own header.
 

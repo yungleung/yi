@@ -55,6 +55,7 @@ export/
   kinds.rs
   info.rs
   config.rs
+  search.rs
   pandoc.rs
   curl.rs
   pictures.rs
@@ -73,6 +74,8 @@ export/
 - **`pandoc.rs`** — the pandoc seam: known locations, `find_pandoc`, `export_use_pandoc` and
   `run_pandoc`.
 - **`curl.rs`** — the curl seam: known locations, `find_curl`, `export_use_curl` and `run_curl`.
+- **`search.rs`** — the shared search order for an external program: a named binary first, then
+  the known places, then `PATH`.
 - **`pictures.rs`** — a picture from the web: content-type extension, URL hashing and naming,
   `download_image` and `export_fetch_image`. Its temporary folder is `config::remote_dir`.
 - **`font_hints.rs`** — what the card says about fonts: `NamedFonts`, `export_named_fonts`,
@@ -88,7 +91,7 @@ Dependencies point inward:
 
 - `kinds` imports no sibling.
 - `config` imports `kinds`.
-- `pandoc` and `curl` import neither.
+- `pandoc` and `curl` import `search`.
 - `pictures` imports `config` and `curl`.
 - `info` imports `kinds` and `config`.
 - `font_hints` imports `config` and the font family.
@@ -165,8 +168,8 @@ Each step is a mechanical move, with tests moved beside their subject and no log
 1. **`fonts/`.** Move the three files, update their module headers and imports, and update the
    call sites in `export.rs`. This is the smallest family and proves the facade shape.
 2. **`export/`.** Move the declared units, split the existing tests by subject, and add the
-   `mod.rs` re-exports. The order inside this step is `kinds`, `config`, `pandoc`, `curl`,
-   `pictures`, `info`, `font_hints`, `run`.
+   `mod.rs` re-exports. The order inside this step is `kinds`, `config`, `search`, `pandoc`,
+   `curl`, `pictures`, `info`, `font_hints`, `run`.
 3. **`versioning/`.** Move `git`, facts and versions, split tests by subject, and add the
    `mod.rs` re-exports.
 4. **Maps.** Update `docs/structure.md` and `docs/ai-context.md` with the new paths and sizes.

@@ -150,7 +150,9 @@ the stack asks the session's question first, the same one opening a file asks.
 A **version** of a workspace is kept with git, and only ever because the reader asked for one:
 *File → Save a Version* is the command `version:save` (`src/ui/versioning/save_version.ts`), and it
 is the only action in the app that runs git — no timer, no quit hook, no on-save commit. The facts
-are Rust (`src-tauri/src/versioning.rs`: which git may be run — never by trusting `PATH`, and
+are Rust (`src-tauri/src/versioning/`: `git.rs` finds the one git and runs every command, `facts.rs`
+answers the repository and cloud-risk facts, and `versions.rs` reads a note's versions; which git
+may be run — never by trusting `PATH`, and
 `/usr/bin/git` only when `xcode-select -p` answers; whether the folder is in a repository of its
 own or one above it; whether a cloud drive could reach it; and where the app would keep a git
 directory outside the folder), the decision is pure (`services/versioning.ts: versioningPlan`, over
@@ -228,7 +230,7 @@ what is replaced, because a copy that differs may be an edit or an older build's
 be told apart from here. Escape leaves the file exactly as it was.
 
 **A note goes out through pandoc**, one kind at a time. The File menu's *Export* is a **submenu**,
-one item per kind (`src-tauri/src/menu.rs`, built from `src-tauri/src/export.rs: KINDS`), and the
+one item per kind (`src-tauri/src/menu.rs`, built from `src-tauri/src/export/kinds.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
 (`src/ui/export/export_flow.ts`), and what it opens is a card (`src/ui/export/export_dialog.ts`)
@@ -265,7 +267,8 @@ The card also names a picture it cannot use: an image destination that is a `dat
 which is not an image (`src/ui/export/picture_hint.ts` — the note says the kind, so no machine is
 asked). The export is written either way; measured, pandoc carries such a destination into a docx as a
 `.txt` without a word, which is why the reader hears it from the app instead.
-And whether a picture survives **as it is** is the *kind's* answer (`export.rs: carries_pictures`): an
+And whether a picture survives **as it is** is the *kind's* answer
+(`export/kinds.rs: carries_pictures`): an
 HTML page and a book keep an SVG and a webp, the app's own hand leaves the note's destinations as written,
 and a Word file, an OpenDocument file, a TeX page or its `.tex` get a PNG the app draws itself
 (`src/ui/export/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
@@ -286,7 +289,7 @@ written in**, because a page has no font fallback: a character outside the font 
 none of the words). **This build draws those scripts itself.** It ships eight faces under
 `src-tauri/assets/fonts/` (`bundle.resources` in `tauri.conf.json`, so `tauri-build` also puts them in
 the target folder a development run resolves as its resource directory) — one per script, OFL, with the
-licence beside them — and `src-tauri/src/export_fonts.rs` writes a header of its own,
+licence beside them — and `src-tauri/src/fonts/bundled.rs` writes a header of its own,
 `assets/export/pdf-fonts.tex`, into `<app data>/export/pdf-fonts.tex` before **every** PDF export (it
 names the faces by absolute path, so a moved app would otherwise leave a header pointing at a bundle
 that is gone) and hands it to pandoc as `--include-in-header`, which pandoc *adds* to whatever the

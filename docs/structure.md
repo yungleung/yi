@@ -27,7 +27,10 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 2 | 149 | reading CSL: the types, and the parse |
 | the two entry points (`src/main.ts`, `src/settings.ts`) | 2 | 200 | the app window and the settings window |
-| `src-tauri/src/*.rs` | 10 | 2,282 | the app's own commands: files, menu, i18n, session, settings, stats, versioning |
+| `src-tauri/src/*.rs` | 9 | 1,715 | the app's own commands and services: files, menu, i18n, session, settings, stats, the library root |
+| `src-tauri/src/export/` | 18 | 2,010 | the export kind table, configuration, pandoc/curl seams, pictures, font hints and the run |
+| `src-tauri/src/fonts/` | 4 | 1,136 | font-file parsing, the shipped faces and header, and the machine's faces |
+| `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
 
 `src/ui/markdown/` is 120 of the 209 modules and 17,353 of the 26,836 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
