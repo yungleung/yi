@@ -15,6 +15,7 @@
  * @covers src/ui/markdown/editing/completions.ts, src/ui/markdown/completion_card.ts
  * @fixture test/fixtures/workspace/zotero.bib — the two entries the list offers, and the titles it
  * shows beside their keys
+ * @needs-workspace — the fixture bibliography has to be the one the app has loaded
  */
 (async () => {
   const t = window.__t;

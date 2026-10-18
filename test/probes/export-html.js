@@ -11,14 +11,15 @@
  * second thing worth proving here: a page with a web picture comes out whole even on a pandoc that
  * cannot fetch anything itself.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts
+ * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
+ *   src/ui/export/export_dialog.ts
+ * @needs-http-fixture
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
-  const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -53,7 +54,7 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.html`;
-  const url = 'https://placehold.co/200x80/png';
+  const url = `${window.__probeHttpBase}/image.png`;
   const note = [
     '# Going out',
     '',
@@ -96,9 +97,6 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
-    // The web picture is the app's fetch, stood in for by a curl that only records and answers with
-    // a real PNG — so this needs no network, and what is proved is the page, not the internet.
-    await api.pointAtCurl(`${checkout}test/probes/fake-curl.sh`);
     await configManager.update({
       bibliography_file: `${checkout}test/fixtures/workspace/zotero.bib`
     });
@@ -147,7 +145,7 @@
       {
         carried: page.includes('src="data:image/png;base64,'),
         style: page.includes('<style'),
-        linked: page.includes('src="https://placehold.co')
+        linked: page.includes(`src="${url}`)
       }
     );
     check(
@@ -176,7 +174,6 @@
       hint?.textContent ?? null
     );
   } finally {
-    await api.pointAtCurl(null);
     await configManager.save(before);
     try {
       await files.deleteEntry(folder);

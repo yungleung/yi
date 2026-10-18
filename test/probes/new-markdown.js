@@ -66,6 +66,10 @@
     await files.createEntry(home, 'yi-probe-new-markdown', false);
     await files.createEntry(workspace, 'Notes', false);
     previous = await t.openWorkspace(workspace);
+    // The built-in template is what this probe is about: a reader's own template in the app's
+    // config would otherwise change every note it makes.
+    const { configManager } = await t.app('/src/services/config_manager.ts');
+    await configManager.update({ new_file_frontmatter: null });
 
     // --- the menu's own event: where and what, asked on a card ---
     check(

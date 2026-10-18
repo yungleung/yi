@@ -32,6 +32,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ownFrame } from './probe_stash.mjs';
+import { startHttpFixture } from './http_fixture.mjs';
 
 const usage =
   'usage: node test/tauri-probe.mjs <probe.js> | --install | --reload\n' +
@@ -70,6 +71,7 @@ const sessionSnapshot = join(tmpdir(), 'yi-probe-session.json');
 const documentArgument = withDoc || withFixture ? positional[0] : null;
 const probeFile = withDoc || withFixture ? positional[1] : positional[0];
 const probe = installing || reloading ? null : readFileSync(probeFile, 'utf8');
+const httpFixture = probe?.includes('@needs-http-fixture') ? await startHttpFixture() : null;
 // A probe that does not parse is still sent, and comes back as a bridge
 // timeout — which reads like a slow app, or like a native window holding the
 // page. Fail here instead, naming the file: `table-menu.js` carried a stray
@@ -116,6 +118,7 @@ const wrappedProbe = probe
     return report(value);
   };
   window.__probePaths = ${JSON.stringify(probePaths)};
+  window.__probeHttpBase = ${JSON.stringify(httpFixture?.base ?? null)};
   window.__probeDoc = ${JSON.stringify(documentText)};
   ${documentText === null ? '' : 'await window.__t.load(window.__probeDoc);'}
   const value = await (
@@ -347,9 +350,8 @@ async function runProbe() {
   // doing. It used to be the person typing the command who brought the app forward — which is a step
   // that is invisible in the result and easy to forget.
   //
-  // Then the seams a probe can leave set on the app itself go back: `versioning_use_git`,
-  // `export_use_pandoc` and `export_use_curl` are globals in the Rust process, which a page reload does
-  // not clear.
+  // Then the seams a probe can leave set on the app itself go back: `versioning_use_git` and
+  // `export_use_pandoc` are globals in the Rust process, which a page reload does not clear.
   // The page's own stash is *not* cleared here — a run's frames say which run made them
   // (`test/probe_stash.mjs`), and a clear sent in another script raced the probe it was meant
   // to tidy up after.
@@ -369,11 +371,6 @@ async function runProbe() {
          await window.__TAURI_INTERNALS__.invoke('export_use_pandoc', { pandoc: null });
        } catch (error) {
          // Nor a build without the export seam.
-       }
-       try {
-         await window.__TAURI_INTERNALS__.invoke('export_use_curl', { curl: null });
-       } catch (error) {
-         // Nor the seam a fetched picture goes through.
        }
        return null;
      })()`
