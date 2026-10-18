@@ -64,6 +64,7 @@
   "session.askDrop.yes": "保存して外す",
   "session.askDrop.no": "保存せずに外す",
   "session.saveFailed": "{title} を保存できませんでした: {message}",
+  "session.idLocked": "ノートの ID は作成時に決まり、変更できません。",
   "export.title": "エクスポート",
   "export.kind.docx": "Word 文書（.docx）",
   "export.kind.odt": "LibreOffice 文書（.odt）",

@@ -41,13 +41,20 @@ export class DocumentManager {
 
   constructor() {
     // Rebuild the document index whenever the workspace changes.
-    void eventManager.on(WORKSPACE_CHANGED, () => {
-      idIndex = null;
-      buildPromise = null;
-      titleCache.clear();
-      this.catalogue = null;
-      this.catalogueWork = null;
-    });
+    void eventManager.on(WORKSPACE_CHANGED, () => this.invalidate());
+  }
+
+  /**
+   * The workspace's files are not what they were: a note was made, renamed, moved, deleted or
+   * saved. Nothing is rebuilt now — every index is lazy — the next question about a document
+   * reads the disk again.
+   */
+  invalidate(): void {
+    idIndex = null;
+    buildPromise = null;
+    titleCache.clear();
+    this.catalogue = null;
+    this.catalogueWork = null;
   }
 
   /**

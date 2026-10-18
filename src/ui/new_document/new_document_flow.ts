@@ -28,6 +28,7 @@ import {
   titleRange
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
+import { documentManager } from '../../services/document_manager';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
@@ -108,6 +109,9 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     // nothing goes missing without the reader being told.
     notify('Making a new note', error);
   }
+  // The note is on disk now, which is what the wikilink index reads: its next question must see
+  // the file, not the catalogue that was built before it existed.
+  documentManager.invalidate();
   await refreshTreeFolders([folder]);
   await documentSession.openFile({ path: made.path, content, select: titleRange(content) });
 }

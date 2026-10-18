@@ -36,6 +36,19 @@ export function frontmatterEnd(content: string): number {
   return match === null ? 0 : (match.index ?? 0) + match[0].length;
 }
 
+/**
+ * The top-level `id:` line inside the frontmatter, as absolute offsets, or null when there is
+ * none. The app writes this line and keeps it: the editor pins it against the reader's edits.
+ */
+export function idLineRange(content: string): { start: number; end: number } | null {
+  const end = frontmatterEnd(content);
+  if (end === 0) {
+    return null;
+  }
+  const match = /^id[ \t]*:[^\n]*/m.exec(content.slice(0, end));
+  return match ? { start: match.index, end: match.index + match[0].length } : null;
+}
+
 /** The fields the app knows by name. Every one is text; a key the note does not give is null. */
 export interface FrontmatterFields {
   title: string | null;

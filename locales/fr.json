@@ -64,6 +64,7 @@
   "session.askDrop.yes": "Enregistrer et retirer",
   "session.askDrop.no": "Retirer sans enregistrer",
   "session.saveFailed": "Impossible d’enregistrer {title} : {message}",
+  "session.idLocked": "L’identifiant de la note est fixé à sa création et ne peut pas être modifié.",
   "export.title": "Exporter",
   "export.kind.docx": "Document Word (.docx)",
   "export.kind.odt": "Document LibreOffice (.odt)",

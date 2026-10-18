@@ -32,6 +32,7 @@ import { t } from './i18n';
 import { MESSAGE_EVENT } from './messages';
 import { parentFolder } from './workspace_folders';
 import { documentTitle } from './document_identity';
+import { documentManager } from './document_manager';
 import {
   capture as captureInto,
   currentDocument,
@@ -226,6 +227,8 @@ class DocumentSession {
       });
       return;
     }
+    // The file now holds this text: the title and id indexes must read it, not their last answer.
+    documentManager.invalidate();
     const id = keyFor(path, content, () => `${this.run}-${++this.madeKeys}`);
     // A document with a file is keyed by its path (`document_identity.ts: documentId`), so a restore
     // is not "open another document": it is *this* document holding other text now.
@@ -393,6 +396,7 @@ class DocumentSession {
       });
       return false;
     }
+    documentManager.invalidate();
     this.state = markSaved(this.state, document.id, document.content);
     this.announce();
     await this.persist();
