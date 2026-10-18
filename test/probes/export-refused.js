@@ -13,8 +13,10 @@
  *   backend's own words are the useful ones). The scratch note the app wrote for pandoc is deleted
  *   however the call ended, so a refused export leaves nothing of the reader's text behind.
  *
- * @covers src-tauri/src/export.rs (find_pandoc, run_export), src/ui/export/export_flow.ts (the
- *   failure), src/ui/export/export_dialog.ts (a kind that cannot run)
+ * @covers src-tauri/src/export/pandoc.rs (find_pandoc), src-tauri/src/export/run.rs (run_export),
+ *   src/ui/export/export_flow.ts (the failure), src/ui/export/export_dialog.ts (a kind that cannot
+ *   run)
+ * @needs-http-fixture
  */
 (async () => {
   const t = window.__t;
@@ -56,7 +58,7 @@
   const notePath = `${folder}/note.md`;
   const refusedTarget = `${folder}/refuse.docx`;
   const pictureTarget = `${folder}/picture.docx`;
-  const url = 'https://placehold.co/200x80/png';
+  const url = `${window.__probeHttpBase}/missing`;
   const note = `# A note that will not go out\n\nA [[other]] too, and a picture from the web: ![shot](${url}).\n`;
 
   const card = () => document.querySelector('[data-export-dialog]');
@@ -166,7 +168,6 @@
     // looking at a document that names a picture instead of showing it. The app says it now, in its
     // own words and with the URL: measured, a book whose fetch failed carried the picture's
     // *description* and nothing said which URL was missing.
-    await api.pointAtCurl('/definitely/not/curl');
     for (const close of [...document.querySelectorAll('[data-message-close]')]) {
       close.click();
     }
@@ -204,7 +205,6 @@
       { target: pictureTarget, kept: (await readText(`${recorder}/input.md`)).includes(url) }
     );
   } finally {
-    await api.pointAtCurl(null);
     await api.pointAtPandoc(null);
     for (const close of [...document.querySelectorAll('[data-message-close]')]) {
       close.click();

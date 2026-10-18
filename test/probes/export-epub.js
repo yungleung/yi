@@ -12,15 +12,15 @@
  * `export.epub.yaml` says nothing about metadata at all); the picture the app *fetched from the web*
  * carried in `EPUB/media/`; and the citations resolved into a `References` section of the chapter.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts,
- *   src-tauri/assets/export/export.epub.yaml
+ * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
+ *   src/ui/export/export_dialog.ts, src-tauri/assets/export/export.epub.yaml
+ * @needs-http-fixture
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
-  const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -59,7 +59,7 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.epub`;
-  const url = 'https://placehold.co/200x80/png';
+  const url = `${window.__probeHttpBase}/image.png`;
   const note = [
     '---',
     'title: The Book of Going Out',
@@ -113,9 +113,6 @@
     // two rounds of work — and a book made with it says nothing about the file a fresh install gets.
     // The harness puts the reader's copy back when the run is over (`restoreTheExportSettings`).
     await invoke('export_restore_config', { kind: 'epub' });
-    // The web picture is the app's fetch, stood in for by a curl that only records and answers with
-    // a real PNG — so this needs no network, and what is proved is the book, not the internet.
-    await api.pointAtCurl(`${checkout}test/probes/fake-curl.sh`);
     await configManager.update({
       bibliography_file: `${checkout}test/fixtures/workspace/zotero.bib`
     });
@@ -218,7 +215,6 @@
       hint?.textContent ?? null
     );
   } finally {
-    await api.pointAtCurl(null);
     await configManager.save(before);
     try {
       await files.deleteEntry(folder);

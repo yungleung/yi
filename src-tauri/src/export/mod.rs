@@ -9,7 +9,6 @@
 //! stay `export::…`, so a split by responsibility does not change the window's IPC.
 
 mod config;
-mod curl;
 mod font_hints;
 mod info;
 mod kinds;
@@ -20,8 +19,6 @@ mod search;
 
 #[allow(unused_imports)]
 pub use config::CslStyle;
-#[allow(unused_imports)]
-pub use curl::find_curl;
 pub use font_hints::NamedFonts;
 #[allow(unused_imports)]
 pub use info::{ExportKindInfo, ExportKinds};
@@ -65,18 +62,13 @@ pub fn export_font_for(points: Vec<u32>) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
-    pictures::export_fetch_image(app, url)
+pub async fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    pictures::export_fetch_image(app, url).await
 }
 
 #[tauri::command]
 pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
     pandoc::export_use_pandoc(pandoc)
-}
-
-#[tauri::command]
-pub fn export_use_curl(curl: Option<String>) -> Result<(), String> {
-    curl::export_use_curl(curl)
 }
 
 #[cfg(test)]

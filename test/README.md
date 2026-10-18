@@ -274,14 +274,13 @@ asked for it and none is needed): the note as every other export is handed it, w
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
 reads as, the works it names appended under the app's own heading, and the note's own headings left
 at their own levels;
-`export-web-image` — the picture the demo document names on the web: the app asks curl for that URL
-with the flags it documents (watched by `probes/fake-curl.sh`, which answers with a real PNG), hands
-pandoc a local file, and the document that comes out has `word/media/` in it and no fetched copy left
-behind;
+`export-web-image` — the picture a note names on the web: the app fetches it with `reqwest` from the
+local HTTP fixture (a redirect to a real PNG), follows the redirect, hands pandoc a local file, and
+the document that comes out has `word/media/` in it and no fetched copy left behind;
 `export-web-picture-formats` — the same fetch for an SVG and a webp: a note naming both on the web,
 exported as a docx (PNGs the app drew and neither format) and as an EPUB (both originals and no PNG),
-and as the app's own markdown (both URLs kept, because that file outlives the run), with the fake curl
-answering the type it was asked for and the fetched copies gone at the end),
+and as the app's own markdown (both URLs kept, because that file outlives the run), with the fixture
+answering both content types and the fetched copies gone at the end),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
@@ -311,6 +310,7 @@ live index; the newest probes carry a header naming what they cover:
  * @covers src/ui/markdown/<file>.ts
  * @fixture test/fixtures/workspace/...      (when it needs one)
  * @needs-workspace                          (when the app must open the fixtures)
+ * @needs-http-fixture                       (when the app fetches a web picture)
  */
 ```
 
@@ -328,7 +328,10 @@ live index; the newest probes carry a header naming what they cover:
   fixtures: run with `--with-workspace`), `@needs-source-workspace` (the maintainer's own
   notes folder open: `probe:all` skips it), `@needs-large-document` (`probe:all` gives it
   the 323 KB fixture note; everything else gets the demo document), `@needs-foreground-window`
-  (the editor window must be visible, so `probe:all` skips it).
+  (the editor window must be visible, so `probe:all` skips it), and `@needs-http-fixture` (the
+  harness starts `test/http_fixture.mjs` on loopback and puts its base URL in
+  `window.__probeHttpBase`; its PNG, SVG, webp, redirect, missing page and no-type endpoints need no
+  network).
 - A probe whose subject is written *through the webview* — a note opened, a picture inserted — may work
   in a folder anywhere the app's own commands can make one: the file plugin and the asset protocol start
   scoped to `$HOME` (`src-tauri/capabilities/default.json`), and the app grants the folders it is

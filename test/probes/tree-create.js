@@ -54,6 +54,10 @@
     await files.createEntry(workspace, 'sub', false);
     await files.createEntry(sub, 'inner.md', true);
     previous = await t.openWorkspace(workspace);
+    // The built-in template is what this probe reads back: a reader's own template in the app's
+    // config would otherwise change every note the tree makes.
+    const { configManager } = await t.app('/src/services/config_manager.ts');
+    await configManager.update({ new_file_frontmatter: null });
     // The folder the notes go in is unfolded, so the rows they make can be looked at.
     document.querySelector(`[data-tree-path="${sub}"]`)?.click();
     await t.sleep(300);

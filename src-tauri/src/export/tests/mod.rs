@@ -7,7 +7,7 @@ pub(super) use super::font_hints::named_fonts;
 pub(super) use super::info::kind_info;
 pub(super) use super::kinds::{config_file_name, kind_of, ExportKind};
 pub(super) use super::pandoc::warnings_in;
-pub(super) use super::pictures::{image_extension, remote_file_name};
+pub(super) use super::pictures::{download_image, image_extension, remote_file_name};
 pub(super) use super::run::pandoc_arguments;
 pub(super) use super::search::find_pandoc_from;
 
@@ -19,7 +19,6 @@ fn scratch(name: &str) -> PathBuf {
 }
 
 mod config;
-mod curl;
 mod font_hints;
 mod kinds;
 mod pandoc;

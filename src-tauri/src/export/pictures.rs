@@ -1,17 +1,21 @@
 //! A picture the note names on the web: fetched, named from its type, and kept inside the run.
 //!
-//! A server's path never becomes a directory: the name is filtered and carries a hash, and the file
-//! lands under the run's remote folder. A failed fetch is an error the caller turns into the app's
-//! own sentence.
+//! The fetch is in-process (`reqwest`), so the app does not depend on a system curl or a shell
+//! `PATH`. A server's path never becomes a directory: the name is filtered and carries a hash, and
+//! the file lands under the run's remote folder. A failed fetch is an error the caller turns into
+//! the app's own sentence.
 //!
-//! May import: `std`, the export folder, the curl seam and the app's i18n. Upholds: one URL is one
-//! file per run, and no fetched name can leave the run's folder.
+//! May import: `std`, `reqwest`, `tokio` for the retry's pause, the export folder and the app's
+//! i18n. Upholds: one URL is one file per run, no fetched name can leave the run's folder, and a
+//! fetch follows bounded redirects and gives up after thirty seconds.
 
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+use std::time::Duration;
 
 use super::config::{export_dir, remote_dir};
-use super::curl::{find_curl, run_curl};
 
 /// The extension a picture's own content type has — for the picture types this app can carry or
 /// draw, and for nothing else. The five Word holds are handed over as they are, and an SVG or a webp
@@ -66,29 +70,37 @@ pub(super) fn remote_file_name(url: &str) -> String {
     let stem = if stem.is_empty() { "picture" } else { stem.as_str() };
     format!("{stem}-{:016x}", url_hash(url))
 }
+
 /// One picture from the web, downloaded into a run's own folder, and where it landed.
-fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String> {
-    fs::create_dir_all(dir).map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &dir.display().to_string()), ("reason", &error.to_string())]))?;
+pub(super) async fn download_image(dir: &Path, url: &str) -> Result<PathBuf, String> {
+    fs::create_dir_all(dir).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotMake",
+            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
     let name = remote_file_name(url);
     // The name carries the picture's type, and the type is only known once the server has answered —
     // so it is fetched under a name of its own first and named properly afterwards.
     let partial = dir.join(format!("{name}.download"));
     // One retry, because a fetch that fails once is far likelier to be a network that blinked than a
-    // picture that is not there — and measured the other way round: a run whose fetch failed left a
-    // book holding the picture's *description*, with the only word about it coming from pandoc, which
-    // blamed itself ("compiled without HTTP support") for a failure that was the app's. The second
-    // failure is the answer.
-    let content_type = match run_curl(curl, dir, url, &partial) {
-        Ok(content_type) => content_type,
+    // picture that is not there. The second failure is the answer.
+    let response = match fetch_once(url).await {
+        Ok(response) => response,
         Err(first) => {
-            std::thread::sleep(std::time::Duration::from_millis(250));
-            run_curl(curl, dir, url, &partial).map_err(|_| first)?
+            tokio::time::sleep(Duration::from_millis(250)).await;
+            fetch_once(url).await.map_err(|_| first)?
         }
     };
+    let content_type = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("")
+        .to_string();
     let extension = match image_extension(&content_type) {
         Some(extension) => extension,
         None => {
-            let _ = fs::remove_file(&partial);
             // The type is named in the reader's language only when the *app* is what has no answer for
             // it; a type the server wrote down is the server's own name and stays as it is.
             let kind = if content_type.is_empty() {
@@ -102,10 +114,68 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
             ));
         }
     };
+    let mut response = response;
+    let mut file = fs::File::create(&partial).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotWrite",
+            &[("path", &partial.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
+    while let Some(chunk) = response.chunk().await.map_err(|error| {
+        crate::i18n::now(
+            "export.pictureUnreadable",
+            &[("url", &url), ("reason", &error.to_string())],
+        )
+    })? {
+        file.write_all(&chunk).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[("path", &partial.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
+    }
+    drop(file);
     let path = dir.join(format!("{name}.{extension}"));
-    fs::rename(&partial, &path)
-        .map_err(|error| crate::i18n::now("export.cannotName", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
+    fs::rename(&partial, &path).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotName",
+            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
     Ok(path)
+}
+
+/// One HTTP GET with the fetch policy the export uses: follow bounded redirects and give up after
+/// thirty seconds. A status that is not a success is an error even when its body is a picture.
+async fn fetch_once(url: &str) -> Result<reqwest::Response, String> {
+    let response = client()?.get(url).send().await.map_err(|error| {
+        crate::i18n::now("export.fetchFailed", &[("url", &url), ("reason", &error.to_string())])
+    })?;
+    if !response.status().is_success() {
+        return Err(crate::i18n::now(
+            "export.fetchStatus",
+            &[("url", &url), ("status", &response.status().to_string())],
+        ));
+    }
+    Ok(response)
+}
+
+/// The one client every fetch shares: a client owns its connection pool, and a document with a
+/// dozen pictures should not pay for a dozen pools. Cloning it is cheap — the pool is behind an
+/// `Arc` — and the policy lives in one place.
+fn client() -> Result<reqwest::Client, String> {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    if let Some(client) = CLIENT.get() {
+        return Ok(client.clone());
+    }
+    let built = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|error| {
+            crate::i18n::now("export.fetchUnavailable", &[("reason", &error.to_string())])
+        })?;
+    Ok(CLIENT.get_or_init(|| built).clone())
 }
 
 /// A picture the note names on the web, brought down as a local file for the pre-process to hand
@@ -117,10 +187,7 @@ fn download_image(curl: &Path, dir: &Path, url: &str) -> Result<PathBuf, String>
 /// hole this fills. A URL that cannot be fetched, or that is not a picture this app can carry or
 /// draw, is an error here and the window leaves the destination exactly as the note wrote it —
 /// pandoc's own warning about it reaches the reader either way (`ExportOutcome.warnings`).
-pub fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
-    let curl = find_curl()
-        .0
-        .ok_or_else(|| crate::i18n::now("export.noCurl", &[]))?;
-    let path = download_image(&curl, &remote_dir(&export_dir(&app)?), &url)?;
+pub async fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    let path = download_image(&remote_dir(&export_dir(&app)?), &url).await?;
     Ok(path.to_string_lossy().into_owned())
 }

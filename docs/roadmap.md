@@ -771,11 +771,11 @@ elements) unless it says otherwise.
   Yi's copy and the header says why. The second is the pandoc: the one on this machine answers
   *"Could not fetch resource …: pandoc was compiled without HTTP support"* and puts the picture's
   description in the document, so no remote image can ever be embedded by it. The app therefore
-  **fetches the picture itself** (`export/pictures.rs: export_fetch_image`, through the system's curl — one
-  documented list of flags, a `YI_CURL`/`export_use_curl` seam, a curl that only records in
-  `test/probes/fake-curl.sh`) and hands pandoc a local file, which is the same principle as the local
+  **fetches the picture itself** (`export/pictures.rs: export_fetch_image`, through an in-process
+  `reqwest` request; that request was a system curl in the round this describes) and hands pandoc a
+  local file, which is the same principle as the local
   case: what the page showed is what the document gets. Measured on the real demo document, with the
-  real curl and the real pandoc: `word/media/rId19.png`, 1811 bytes — the size the server answers
+  real server and the real pandoc: `word/media/rId19.png`, 1811 bytes — the size the server answers
   with. And pandoc's warnings now reach the reader instead of the hole: a successful export whose
   stderr holds warnings (`run_pandoc` keeps them, `ExportOutcome.warnings`) shows them as a message,
   which is how "the image is not there" stops being a mystery — the demo document's own export says
@@ -788,8 +788,8 @@ elements) unless it says otherwise.
   the app's. The window now says it in its own words, naming the URL (`export.pictureNotFetched`, in
   all eight catalogues, one message for up to four of them) and the download is retried once, because
   a fetch that fails once is likelier to be a network that blinked than a picture that is not there.
-  Measured both ways: with a curl that cannot run, the reader gets the app's sentence with the URL and
-  the prepared note keeps the URL as written; with the real curl, the same note's picture is in the
+  Measured both ways: with an unreachable picture URL, the reader gets the app's sentence with the URL
+  and the prepared note keeps the URL as written; with the real server, the same note's picture is in the
   book (`EPUB/media/file0.png`, 1811 bytes — the server's own length). `export-refused.js` holds it.
   **The second kind is `odt`**, and it cost a row — `KINDS` in `src-tauri/src/export/kinds.rs` — plus the
   asset `src-tauri/assets/export/export.odt.yaml` (Zettlr's own LibreOffice defaults, less the same
@@ -1253,8 +1253,8 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   atomic write's failure, the three font-folder failures (one of them a copy of `export.cannotWrite`,
   which it now reads), the picture fetch's refusal of a type a Word file cannot hold (with the app's own
   words for *no type this app knows*), and the versioning seam's two revision guards — plus
-  `app.cannotRun`, one sentence for the four places an external program would not start (pandoc, curl,
-  and git twice). A second pass found four more: the bibliography's read failure, a machine with no git
+  `app.cannotRun`, one sentence for the places an external program would not start (pandoc, and git
+  twice). A second pass found four more: the bibliography's read failure, a machine with no git
   to run, and the two ways a restored version's text can be unreadable. Fourteen keys, eight catalogues,
   **262 keys each, all used**, and the unit test that sets a language and reads a sentence back now names
   one key from each family.

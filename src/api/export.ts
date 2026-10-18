@@ -200,10 +200,3 @@ export async function pointAtPandoc(pandoc: string | null): Promise<void> {
   await invoke('export_use_pandoc', { pandoc });
 }
 
-/**
- * Points the app at another curl — `YI_CURL`, as a call, for a probe that cannot change the
- * environment of the app it drives. `null` puts it back to looking for one.
- */
-export async function pointAtCurl(curl: string | null): Promise<void> {
-  await invoke('export_use_curl', { curl });
-}

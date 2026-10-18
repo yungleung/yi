@@ -8,17 +8,17 @@
  * pre-process then treats it exactly as a local one: the docx has PNGs the app drew and neither
  * original, while the EPUB carries both originals and no PNG.
  *
- * The fake curl (`fake-curl.sh`) answers a URL with `svg` or `webp` in it from the picture this probe
- * put in the recorder's folder, and says the matching content type. Nothing goes to the network.
+ * The local HTTP fixture answers the two URLs with the matching content types. Nothing leaves the
+ * machine.
  *
- * @covers src-tauri/src/export.rs (image_extension, download_image, export_fetch_image),
+ * @needs-http-fixture
+ * @covers src-tauri/src/export/pictures.rs (image_extension, download_image, export_fetch_image),
  *   src/ui/export/export_flow.ts (the web pictures fetched before the pre-process),
  *   src/ui/export/preprocess.ts (the remote rule), src/ui/export/raster_picture.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const api = await t.app('/src/api/export.ts');
   const session = await t.app('/src/services/session.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
@@ -57,26 +57,19 @@
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const folderName = `yi-probe-web-pictures-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
-  const recorder = `${home}/yi-probe-fake-curl`;
   const notePath = `${folder}/note.md`;
   const docxTarget = `${folder}/note.docx`;
   const epubTarget = `${folder}/note.epub`;
   const markdownTarget = `${folder}/note.processed.md`;
-  const svgUrl = 'https://example.com/diagram.svg';
-  const webpUrl = 'https://example.com/photo.webp';
+  const svgUrl = `${window.__probeHttpBase}/image.svg`;
+  const webpUrl = `${window.__probeHttpBase}/image.webp`;
   const note =
     '# Pictures from the web\n\n' +
     `A diagram: ![diagram](${svgUrl}), a photo: ![photo](${webpUrl})\n`;
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">' +
-    '<rect width="120" height="60" fill="#3b82f6"/>' +
-    '<circle cx="60" cy="30" r="20" fill="#f59e0b"/></svg>';
-  // The webp `export-picture-formats.js` uses: 258 x 2, and what makes the fetched file a webp the
-  // webview can decode rather than a name the server happened to give.
-  const webp = Uint8Array.from(
-    atob('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoCAQIAAUAmJQBOgCHwAP7+4AAAAA=='),
-    (character) => character.charCodeAt(0)
-  );
+  const appData = await invoke('plugin:path|resolve_directory', { directory: 14 });
+  const remote = await invoke('plugin:path|join', {
+    paths: [appData, 'export', 'tmp', 'remote']
+  });
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -114,7 +107,7 @@
 
   const before = await invoke('get_config');
   try {
-    for (const stale of [folder, recorder]) {
+    for (const stale of [folder]) {
       try {
         await files.deleteEntry(stale);
       } catch {
@@ -124,16 +117,8 @@
     await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
-    // The fake curl copies these out for a URL that names them, so the bytes the app fetches are a
-    // real SVG and a real webp.
-    await files.createEntry(home, 'yi-probe-fake-curl', false);
-    await files.writeTextAtomically(`${recorder}/picture.svg`, svg);
-    await window.__TAURI_INTERNALS__.invoke('plugin:fs|write_file', webp, {
-      headers: { path: encodeURIComponent(`${recorder}/picture.webp`) }
-    });
     await t.openWorkspace(folder);
     await show(notePath, note);
-    await api.pointAtCurl(`${window.__probePaths.checkout}test/probes/fake-curl.sh`);
 
     // --- the kinds that cannot hold either format -----------------------------------------------
 
@@ -176,26 +161,13 @@
 
     // --- and the copies are the run's own ---------------------------------------------------------
 
-    const log = await readText(`${recorder}/argv.log`);
-    const downloads = [...log.matchAll(/\n(\/[^\n]*\/export\/tmp\/remote\/[^\n]*)\n/g)].map(
-      (match) => match[1]
-    );
-    const left = [];
-    for (const path of downloads) {
-      if (await exists(path)) {
-        left.push(path);
-      }
-    }
     check(
       'and the copies fetched for the run are gone when it is over',
-      // Two exports of two pictures each: a run fetches its own copy rather than remembering one,
-      // because the page it came from may have changed.
-      downloads.length === 4 && left.length === 0,
-      { downloads, left }
+      !(await exists(remote)),
+      { remote, stillThere: await exists(remote) }
     );
   } finally {
-    await api.pointAtCurl(null);
-    for (const stale of [folder, recorder]) {
+    for (const stale of [folder]) {
       try {
         await files.deleteEntry(stale);
       } catch {
