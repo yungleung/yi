@@ -21,6 +21,7 @@ import { listFolderFiles, type FileInfo } from '../api/files';
 import { configManager } from './config_manager';
 import {
   firstHeading,
+  readFrontmatterFields,
   readFrontmatterId,
   readFrontmatterTitle
 } from './document_identity';
@@ -87,9 +88,10 @@ export class DocumentManager {
       } catch {
         continue;
       }
+      const fields = readFrontmatterFields(content);
       documents.push({
-        target: readFrontmatterId(content) ?? name,
-        title: readFrontmatterTitle(content) ?? firstHeading(content) ?? name
+        target: fields.id ?? name,
+        title: fields.title ?? firstHeading(content) ?? name
       });
     }
     return documents;

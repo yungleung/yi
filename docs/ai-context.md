@@ -119,6 +119,11 @@ offset is not the scroller's (a page puts 118px of desk and margin above the pro
 the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
 screen is dropped (`reachable`) — nothing could bring it back.
 
+The frontmatter's `title`, `id` and `lang` are read by the YAML parser in `document_identity.ts`
+with the *failsafe* schema, which keeps every scalar as text: a quoted colon, a comment, a folded
+block and an id with leading zeros are all the author's value. A header the parser refuses falls
+back to the old line reader, so a broken note keeps whatever title its `title:` line gives.
+
 A **new note** is one command, `file:newMarkdown`. `services/new_document.ts` is the rule: the
 id's fourteen digits (`YYYYMMDDHHMMSS`, local — an author's own stamp), the four keys every note
 carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list holding `untagged`), the

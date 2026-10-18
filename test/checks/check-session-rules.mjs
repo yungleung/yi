@@ -44,7 +44,7 @@ const {
   setStacked,
   stackedDocuments
 } = session;
-const { documentId, documentTitle } = identity;
+const { documentId, documentTitle, readFrontmatterLang } = identity;
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -66,6 +66,65 @@ check(
   'a heading inside that frontmatter is not the first heading',
   documentTitle('---\nid: x\n# not a heading\n...\n\n# The real one\n', '/notes/a.md'),
   'The real one'
+);
+// The fields are YAML, and a value may hold a colon, a comment, a folded block or an apostrophe.
+const TRICKY = [
+  '---',
+  'id: 20240707122715 # the stamp',
+  'title: "A title: with a colon" # the reader’s',
+  'lang: en-GB',
+  '...',
+  '',
+  '# Heading',
+  '',
+  'Body.',
+  ''
+].join('\n');
+check(
+  'a comment after the id is not part of it',
+  documentId(TRICKY, '/notes/t.md'),
+  '20240707122715'
+);
+check(
+  'and a quoted title with a colon reads whole',
+  documentTitle(TRICKY, '/notes/t.md'),
+  'A title: with a colon'
+);
+check('the language too', readFrontmatterLang(TRICKY), 'en-GB');
+check(
+  'a folded title is the text it folds to',
+  documentTitle('---\ntitle: >\n  A folded\n  title\n---\n\nBody\n', '/notes/f.md'),
+  'A folded title'
+);
+check(
+  'a single-quoted title keeps its apostrophe',
+  documentTitle("---\ntitle: 'It''s mine'\n---\n\nBody\n", '/notes/q.md'),
+  "It's mine"
+);
+check(
+  'an id keeps its leading zeros',
+  documentId('---\nid: 00123456789012\n---\n\nBody\n', '/notes/z.md'),
+  '00123456789012'
+);
+check(
+  'a date-shaped title stays the text it is',
+  documentTitle('---\ntitle: 2024-07-07\n---\n\nBody\n', '/notes/d.md'),
+  '2024-07-07'
+);
+check(
+  'a nested title is not the document title',
+  documentTitle('---\nauthor:\n  title: not mine\n---\n\n# Mine\n', '/notes/n.md'),
+  'Mine'
+);
+check(
+  'a title that is only a comment is no title',
+  documentTitle('---\ntitle: # not yet\n---\n\n# Fallback\n', '/notes/c.md'),
+  'Fallback'
+);
+check(
+  'a header the parser refuses still gives its line',
+  documentTitle('---\ntitle: "unclosed\n---\n\n# Body\n', '/notes/b.md'),
+  'unclosed'
 );
 check(
   'and the first fourteen digits when it has none',

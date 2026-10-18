@@ -7,10 +7,12 @@
  * the file it was read from. The title is the frontmatter `title`, the first heading, the file
  * name, or `Untitled`.
  *
- * May import: nothing. Upholds: one reader for each rule — the wikilink resolver's id index,
- * the tree's *Copy id*, and the session's stack all ask here rather than keeping a copy of the
- * pattern, so a document is the same document to all of them.
+ * May import: the YAML parser. Upholds: one reader for each rule — the wikilink resolver's id
+ * index, the tree's *Copy id*, and the session's stack all ask here rather than keeping a copy of
+ * the pattern, so a document is the same document to all of them.
  */
+
+import { parseDocument } from 'yaml';
 
 /**
  * The frontmatter block: `---`, its lines, then `---` or YAML's `...` end marker — the one shape
@@ -34,24 +36,53 @@ export function frontmatterEnd(content: string): number {
   return match === null ? 0 : (match.index ?? 0) + match[0].length;
 }
 
-/** The `title` the frontmatter gives, or null. */
-export function readFrontmatterTitle(content: string): string | null {
+/** The fields the app knows by name. Every one is text; a key the note does not give is null. */
+export interface FrontmatterFields {
+  title: string | null;
+  id: string | null;
+  lang: string | null;
+}
+
+/**
+ * The app's three fields, read as YAML.
+ *
+ * The parser is the one that understands what a value is: a quoted string holding a colon, a
+ * comment after the value, a folded block, or an `id` with leading zeros. The *failsafe* schema is
+ * deliberate — it keeps every scalar as the text it was written as, so an id never becomes a
+ * number and a title never becomes a date or a boolean.
+ *
+ * A header the parser refuses (a duplicate key, an unclosed quote) is read the way it was before
+ * the parser: a titled line is still a title, and a broken one costs a reader nothing. That
+ * fallback is the only place the line pattern survives.
+ */
+export function readFrontmatterFields(content: string): FrontmatterFields {
   const frontmatter = readFrontmatterBlock(content);
   if (!frontmatter) {
-    return null;
+    return { title: null, id: null, lang: null };
   }
-  const match = frontmatter.match(/^\s*title:\s*(.+?)\s*$/m);
-  return match ? unquote(match[1]) : null;
+  try {
+    const doc = parseDocument(frontmatter, { schema: 'failsafe' });
+    if (doc.errors.length > 0) {
+      return fieldsFromLines(frontmatter);
+    }
+    return {
+      title: scalarText(doc.get('title')),
+      id: scalarText(doc.get('id')),
+      lang: scalarText(doc.get('lang'))
+    };
+  } catch {
+    return fieldsFromLines(frontmatter);
+  }
+}
+
+/** The `title` the frontmatter gives, or null. */
+export function readFrontmatterTitle(content: string): string | null {
+  return readFrontmatterFields(content).title;
 }
 
 /** The `id` the frontmatter gives, or null. */
 export function readFrontmatterId(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
-    return null;
-  }
-  const match = frontmatter.match(/^\s*id:\s*(.+?)\s*$/m);
-  return match ? unquote(match[1]) : null;
+  return readFrontmatterFields(content).id;
 }
 
 /**
@@ -61,11 +92,30 @@ export function readFrontmatterId(content: string): string | null {
  * overruled there.
  */
 export function readFrontmatterLang(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
-    return null;
+  return readFrontmatterFields(content).lang;
+}
+
+/** A parsed scalar as the text it is, or null for a value this app cannot use as text. */
+function scalarText(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text === '' ? null : text;
   }
-  const match = frontmatter.match(/^\s*lang:\s*(.+?)\s*$/m);
+  return null;
+}
+
+/** The three fields read from their lines, for a header the YAML parser could not read. */
+function fieldsFromLines(frontmatter: string): FrontmatterFields {
+  return {
+    title: lineField(frontmatter, 'title'),
+    id: lineField(frontmatter, 'id'),
+    lang: lineField(frontmatter, 'lang')
+  };
+}
+
+/** A key's own line, read the way this module did before it had a parser. */
+function lineField(frontmatter: string, key: string): string | null {
+  const match = new RegExp(`^\\s*${key}:\\s*(.+?)\\s*$`, 'm').exec(frontmatter);
   return match ? unquote(match[1]) : null;
 }
 

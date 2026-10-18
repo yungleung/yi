@@ -58,5 +58,26 @@
   check('a +++ block is not frontmatter', document.querySelector('.markdown-frontmatter') === null, true);
   check('and its fences are text', shown().includes('+++'), true);
 
+  // The app's own readers get their values from YAML: a comment is not part of the title, a colon
+  // inside a quoted title survives, and an id keeps its leading zeros.
+  const session = await t.app('/src/services/session.ts');
+  await session.documentSession.openFile({
+    path: null,
+    content:
+      '---\ntitle: "A title: with a colon" # the reader’s\nid: 00123456789012\n...\n\n# Body\n'
+  });
+  await t.sleep(350);
+  const current = session.documentSession.current();
+  check(
+    'the session reads the quoted title whole',
+    current?.title === 'A title: with a colon',
+    current?.title ?? null
+  );
+  check(
+    'and keeps the id as the text it was written as',
+    current?.id === '00123456789012',
+    current?.id ?? null
+  );
+
   return { checks, failed: checks.filter((item) => !item.pass).map((item) => item.name) };
 })()
