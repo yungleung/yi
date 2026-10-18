@@ -58,6 +58,16 @@ const check = (name, actual, expected) => {
 const NOTE = '---\nid: 20240707122715\ntitle: A note about things\n---\n\n# A heading\n\nBody.\n';
 check('the id is the one the frontmatter gives', documentId(NOTE, '/notes/a.md'), '20240707122715');
 check(
+  'and one whose frontmatter ends with YAML’s ...',
+  documentId(NOTE.replace('\n---\n', '\n...\n'), '/notes/a.md'),
+  '20240707122715'
+);
+check(
+  'a heading inside that frontmatter is not the first heading',
+  documentTitle('---\nid: x\n# not a heading\n...\n\n# The real one\n', '/notes/a.md'),
+  'The real one'
+);
+check(
   'and the first fourteen digits when it has none',
   documentId('# A heading\n\nwritten 20250101121314 by hand\n', '/notes/b.md'),
   '/notes/b.md'

@@ -188,12 +188,11 @@ interface FenceKind extends FenceTextStyle {
  */
 function fenceKind(node: BlockNode): FenceKind {
   if (node.kind === 'frontmatter') {
-    const format = node.format ?? 'yaml';
     return {
       className: 'markdown-frontmatter',
-      language: format,
-      highlight: (source) => highlightFrontmatter(source, format),
-      label: format === 'toml' ? 'TOML Frontmatter' : 'YAML Frontmatter',
+      language: 'yaml',
+      highlight: (source) => highlightFrontmatter(source),
+      label: 'YAML Frontmatter',
       choosesLanguage: false
     };
   }

@@ -13,10 +13,11 @@
  */
 
 /**
- * The frontmatter block: `---`, its lines, `---` — the one shape every reader of it agrees on, so a
- * caller that wants the text under it and one that wants to write *there* read the same pattern.
+ * The frontmatter block: `---`, its lines, then `---` or YAML's `...` end marker — the one shape
+ * every reader of it agrees on, so a caller that wants the text under it and one that wants to
+ * write *there* read the same pattern.
  */
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/;
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/;
 
 /** The frontmatter block's own text, or null when the document has none. */
 export function readFrontmatterBlock(content: string): string | null {
@@ -25,7 +26,7 @@ export function readFrontmatterBlock(content: string): string | null {
 }
 
 /**
- * Where the frontmatter stops — the offset just past its closing `---`, or 0 when the document has
+ * Where the frontmatter stops — the offset just past its closing marker, or 0 when the document has
  * none. What a caller writes *under* it needs the cut, where reading a key out of it wants the text.
  */
 export function frontmatterEnd(content: string): number {
@@ -92,9 +93,7 @@ export function documentId(content: string, path: string | null): string | null 
 
 /** The first `# heading` outside the frontmatter, or null. */
 export function firstHeading(content: string): string | null {
-  const body = readFrontmatterBlock(content)
-    ? content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
-    : content;
+  const body = content.slice(frontmatterEnd(content));
   const match = body.match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : null;
 }

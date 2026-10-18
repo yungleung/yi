@@ -219,7 +219,7 @@ const documents = [
   'a paragraph that wraps\nonto a second line, and a third\n\ntitle\n---\n',
   'see www.example.org and example.com and https://example.com now\n',
   '| Item | Cost |\n| --- | ---: |\n| tea | 1.50 |\n',
-  '---\ntitle: x\n---\n\n+++\nname = "y"\n+++\n\nbody\n',
+  '---\ntitle: x\n...\n\nbody\n',
   'x\n\n    indented code\n\n- item\n  - nested\n\nprice is $5, 5% off; 5.5 total\n'
 ];
 /**

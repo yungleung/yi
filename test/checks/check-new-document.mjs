@@ -173,6 +173,7 @@ check('a single-quoted title too', covered("---\ntitle: 'Another'\n---\n\n"), 'A
 check('a document with no frontmatter has no title range', titleRange('# Heading\n\nBody\n'), null);
 check('nor has one whose title is empty', titleRange('---\ntitle:\n---\n\n'), null);
 check('a title in the body is not the frontmatter title', titleRange('---\nid: x\n---\n\ntitle: body word\n'), null);
+check('a frontmatter closed by ... is still the frontmatter', covered('---\ntitle: "Ends with dots"\n...\n\nBody\n'), 'Ends with dots');
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

@@ -7,15 +7,52 @@
  * home, so a marker rule can never be restated — and drift — somewhere else.
  */
 
-/** The frontmatter fence when the line is a lone `---` or `+++`. */
-export function frontmatterDelimiter(line: string): '---' | '+++' | null {
-  if (line.trim() === '---') {
-    return '---';
+/** The frontmatter's opening fence when the line is a lone `---`, or null. */
+export function frontmatterDelimiter(line: string): '---' | null {
+  return line.trim() === '---' ? '---' : null;
+}
+
+/**
+ * Whether a line closes a YAML frontmatter block.
+ *
+ * YAML writes the end of a document as `---` or `...`, and both mean the same thing to the note:
+ * the lines above are the frontmatter and the lines below are its body.
+ */
+export function closesFrontmatter(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed === '---' || trimmed === '...';
+}
+
+/**
+ * The same text with a leading frontmatter's `...` end marker written as `---`.
+ *
+ * `remark-frontmatter` closes a `---` block on `---` alone, so its parser is handed this spelling
+ * of the same document. Both markers are three characters, which keeps every offset the parser
+ * reports — and the carets and selections derived from them — pointing at the same characters.
+ */
+export function frontmatterForParsers(markdown: string): string {
+  const opening = /^---(?:\r?\n)/.exec(markdown);
+  if (!opening) {
+    return markdown;
   }
-  if (line.trim() === '+++') {
-    return '+++';
+  let at = opening[0].length;
+  for (;;) {
+    const newline = markdown.indexOf('\n', at);
+    const end = newline < 0 ? markdown.length : newline;
+    const line = markdown.slice(at, end);
+    const marker = line.trim();
+    if (marker === '---') {
+      return markdown;
+    }
+    if (marker === '...') {
+      const dots = at + line.indexOf('...');
+      return `${markdown.slice(0, dots)}---${markdown.slice(dots + 3)}`;
+    }
+    if (newline < 0) {
+      return markdown;
+    }
+    at = newline + 1;
   }
-  return null;
 }
 
 /** The fence marker (``` or ~~~) when the line opens a fenced code block. */
@@ -139,7 +176,7 @@ export function fenceBody(text: string): { start: number; end: number } {
   const start = Math.min(formula && text[opening] === '\n' ? opening + 1 : opening, text.length);
   const last = lines[lines.length - 1];
   const closedLine = lines.length > 1 && isDelimiterLine(last.text);
-  const closedFrontmatter = lines.length > 1 && frontmatterDelimiter(last.text) !== null;
+  const closedFrontmatter = lines.length > 1 && closesFrontmatter(last.text);
   const closedOnContent = formula && last.text.trimEnd().endsWith('$$') && last.text.length > 2;
   const end = closedLine || closedFrontmatter
     ? last.start

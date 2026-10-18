@@ -13,10 +13,10 @@
 
 import hljs from 'highlight.js';
 
-/** The block's markup, in the language its delimiter gave it. */
-export function highlightFrontmatter(source: string, format: 'yaml' | 'toml'): string {
+/** The block's markup. The frontmatter is YAML, which is the one language it is written in. */
+export function highlightFrontmatter(source: string): string {
   try {
-    return hljs.highlight(source, { language: format, ignoreIllegals: true }).value;
+    return hljs.highlight(source, { language: 'yaml', ignoreIllegals: true }).value;
   } catch {
     // Not a failure worth losing the block over: the characters are the point, and the
     // markup only decorates them.
