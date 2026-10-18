@@ -382,8 +382,8 @@ one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own read
 of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
 image's destination written as the file the app resolves it to (absolute and encoded, through
 `workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
-what the docx embeds is what the page showed — and for a picture *on the web*, fetched by the app,
-through the system's curl, because a pandoc built without HTTP support cannot fetch it at all; the
+what the docx embeds is what the page showed — and for a picture *on the web*, fetched by the app
+with an in-process `reqwest` request, because a pandoc built without HTTP support cannot fetch it at all; the
 files land in `<data>/export/tmp/remote/` and go at the end of the run) — and a third, for the kind
 pandoc is not the one converting for: each citation written as the words it reads as, with the works
 it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind
@@ -492,7 +492,7 @@ language and reads the sentence back, and by `check-locales.mjs`, which walks `s
 the webview's tree so a message that uses a key counts as a use of it. **Every sentence the backend
 writes for the reader goes through it now** — the file tree's refusals, the export path's, the fonts',
 the versioning seam's, the settings guard's, the external programs' (`app.cannotRun`) and the
-bibliography's — 264 keys in each of the eight catalogues, and a new one is held by the catalogue check
+bibliography's — 267 keys in each of the eight catalogues, and a new one is held by the catalogue check
 (used, and present everywhere) and by the unit test that sets a language and reads a sentence back. What
 stays English is what no reader meets: the **Tauri plugins' own** messages (not this app's to
 translate), the development seams' sentences (a probe's bad call, a fetch error whose only consumer is a
