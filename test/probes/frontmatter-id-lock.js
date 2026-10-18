@@ -17,29 +17,43 @@
   await t.sleep(350);
 
   const frontmatter = () => document.querySelector('.markdown-frontmatter');
-  const idValue = frontmatter()?.querySelector('.hljs-number');
-  if (idValue) {
-    await t.click(idValue, 0.5);
-    await t.sleep(200);
+  /** Places the caret by character, through the markup the highlighter drew. */
+  const clickCharacter = async (prefix, offset) => {
+    const node = t.textNodesIn(frontmatter()).find((candidate) =>
+      candidate.data.startsWith(prefix)
+    );
+    if (!node) return false;
+    const range = document.createRange();
+    range.setStart(node, offset);
+    range.collapse(true);
+    const rect = range.getBoundingClientRect();
+    node.parentElement.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
+    );
+    await t.sleep(250);
+    return true;
+  };
+
+  const inId = await clickCharacter('20240707122715', 2);
+  if (inId) {
     t.key('9');
     await t.sleep(250);
   }
-  check('a character typed into the id leaves the text alone', await t.raw(), doc);
+  const afterId = await t.raw();
+  check('a character typed into the id leaves the text alone', afterId === doc, afterId);
   check(
     'and the app says why',
     (document.querySelector('[data-hint-text]')?.textContent ?? '').length > 0,
     document.querySelector('[data-hint-text]')?.textContent ?? null
   );
 
-  const titleWord = frontmatter()?.querySelector('.hljs-string');
-  if (titleWord) {
-    await t.click(titleWord, 0.99);
-    await t.sleep(200);
+  const inTitle = await clickCharacter('note', 4);
+  if (inTitle) {
     t.key('X');
     await t.sleep(250);
   }
   const written = await t.raw();
-  check('typing in the title still writes', written.includes('title: A'), written);
+  check('typing in the title still writes', written.includes('title: A noteX'), written);
   check('and the id is still the one it was', written.includes('id: 20240707122715'), written);
 
   return { checks, failed: checks.filter((item) => !item.pass).map((item) => item.name) };
