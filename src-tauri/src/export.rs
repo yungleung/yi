@@ -77,7 +77,7 @@ pub struct ExportKind {
     /// and whatever opens it picks a font of its own.
     pub needs_a_font: bool,
     /// Whether this kind's page is drawn **by a font this build ships**, wired into the export by a
-    /// header of its own (`export_fonts`): the PDF, and only the PDF.
+    /// header of its own (`fonts::bundled`): the PDF, and only the PDF.
     ///
     /// A note in a script no font on the machine draws comes out with the space its words took and
     /// none of the words (measured), and naming a font is the reader's line to write — which is still
@@ -924,8 +924,8 @@ fn export_with_pandoc(
         .ships_fonts
         .then(|| {
             let settings = settings_text(app, kind)?;
-            let faces = crate::export_fonts::fonts_dir(app)?;
-            crate::export_fonts::write_header(&dir, &faces, &settings)
+            let faces = crate::fonts::bundled::fonts_dir(app)?;
+            crate::fonts::bundled::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
     let note = write_note(&dir, &request.text)?;
@@ -949,7 +949,7 @@ fn export_with_pandoc(
 
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
 /// folders a relative destination is resolved against, the library and the style the citations came
-/// from, the header that wires in the fonts this build ships (`export_fonts`), and the note itself.
+/// from, the header that wires in the fonts this build ships (`fonts::bundled`), and the note itself.
 ///
 /// The header goes on the command line rather than into the reader's defaults file: pandoc *adds* a
 /// `--include-in-header` to whatever that file lists (measured), so the reader's own file is still
@@ -1123,14 +1123,14 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
         mainfont: mainfont.is_some(),
         cjk_mainfont: cjk_mainfont.is_some(),
         // What this build's own faces draw, for the kind whose page they draw: the window asks the
-        // fonts, not a list of code points kept beside them (`export_fonts::coverage`), so a face
+        // fonts, not a list of code points kept beside them (`fonts::bundled::coverage`), so a face
         // swapped for another cannot leave the card quiet about a page that lost a character.
         shipped: kind
             .ships_fonts
-            .then(|| crate::export_fonts::fonts_dir(&app))
+            .then(|| crate::fonts::bundled::fonts_dir(&app))
             .transpose()?
             .map(|faces| {
-                crate::export_fonts::coverage(&faces)
+                crate::fonts::bundled::coverage(&faces)
                     .iter()
                     .map(|[first, last]| [*first, *last])
                     .collect()
@@ -1142,7 +1142,7 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
         named_scripts: kind
             .ships_fonts
             .then(|| {
-                crate::export_fonts::reader_scripts(&settings)
+            crate::fonts::bundled::reader_scripts(&settings)
                     .into_iter()
                     .map(str::to_string)
                     .collect()
@@ -1152,9 +1152,9 @@ pub fn export_named_fonts(app: tauri::AppHandle, kind: String) -> Result<NamedFo
         // export on one of those — *"The font … cannot be found"* rather than a fallback — so the card
         // says it while the reader is still looking at the file's name on the card.
         unknown_fonts: if kind.needs_a_font {
-            crate::export_fonts::named_values(&settings)
+            crate::fonts::bundled::named_values(&settings)
                 .into_iter()
-                .filter(|name| !crate::system_fonts::has_family(name))
+                .filter(|name| !crate::fonts::system::has_family(name))
                 .collect()
         } else {
             Vec::new()
@@ -1177,7 +1177,7 @@ pub struct NamedFonts {
     /// kind whose page they do not draw.
     ///
     /// It is what makes the card's hint quiet about a note this build can already set: with nothing
-    /// named, a page draws ten scripts (see `export_fonts`), and reporting those characters as lost
+    /// named, a page draws ten scripts (see `fonts::bundled`), and reporting those characters as lost
     /// would be the hint telling the reader to fix something that is not broken.
     pub shipped: Vec<[u32; 2]>,
     /// The scripts the settings file names a face of its own for, as the header spells them
@@ -1197,7 +1197,7 @@ pub struct NamedFonts {
 /// holds on a machine nobody here has measured.
 #[tauri::command]
 pub fn export_font_for(points: Vec<u32>) -> Option<String> {
-    crate::system_fonts::covering(&points)
+    crate::fonts::system::covering(&points)
 }
 
 /// The settings a kind would be run with, as their own text: the reader's copy when it has been
@@ -1210,12 +1210,12 @@ fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result<String, St
 }
 
 /// The document's own font and Han's, as `settings` names them — `(mainfont, CJKmainfont)`, each absent
-/// when the file names none. The reading itself is `export_fonts::named`, which is also what the header
+/// when the file names none. The reading itself is `fonts::bundled::named`, which is also what the header
 /// reads the per-script lines with, so which key names a font has one home.
 fn named_fonts(settings: &str) -> (Option<String>, Option<String>) {
     (
-        crate::export_fonts::named(settings, "mainfont"),
-        crate::export_fonts::named(settings, "CJKmainfont"),
+        crate::fonts::bundled::named(settings, "mainfont"),
+        crate::fonts::bundled::named(settings, "CJKmainfont"),
     )
 }
 

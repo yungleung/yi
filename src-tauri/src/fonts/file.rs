@@ -1,7 +1,7 @@
 //! Reading a font file's own tables, whoever's font it is.
 //!
-//! Two callers need this and they are the reason it is a module: `export_fonts` reads the faces this
-//! build ships (what they cover, for the card's hint) and `system_fonts` reads whatever the machine
+//! Two callers need this and they are the reason it is a module: `fonts::bundled` reads the faces this
+//! build ships (what they cover, for the card's hint) and `fonts::system` reads whatever the machine
 //! has (the family names it answers to). A table is parsed one way, so a mistake in the parsing is one
 //! mistake, and neither caller has to know how a TTF is laid out.
 //!
