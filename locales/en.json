@@ -64,6 +64,7 @@
   "session.askDrop.yes": "Save and drop",
   "session.askDrop.no": "Drop without saving",
   "session.saveFailed": "Failed to save {title}: {message}",
+  "session.idLocked": "The note’s id is fixed when the note is made and cannot be changed.",
   "export.title": "Export",
   "export.kind.docx": "Word document (.docx)",
   "export.kind.odt": "LibreOffice document (.odt)",

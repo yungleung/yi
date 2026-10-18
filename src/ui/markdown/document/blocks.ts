@@ -9,8 +9,8 @@
  * only the affected region.
  *
  * Block rules:
- * - `frontmatter`: a `---` (YAML) or `+++` (TOML) fence at the very start
- *   of the document, through its closing fence;
+ * - `frontmatter`: a `---` fence at the very start of the document, through its
+ *   closing `---` or `...`;
  * - `fencedCode`: an opening fence through the closing fence (blank lines
  *   are allowed inside);
  * - `displayMath`: `$$` … `$$` (blank lines are allowed inside);
@@ -29,7 +29,14 @@
  * moves it without touching it.
  */
 
-import { closingFence, frontmatterDelimiter, htmlBlockTerminator, listMarker, openingFence } from '../syntax/markers';
+import {
+  closesFrontmatter,
+  closingFence,
+  frontmatterDelimiter,
+  htmlBlockTerminator,
+  listMarker,
+  openingFence
+} from '../syntax/markers';
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 import { BlockIndex, type BlockEntry } from './block_index';
@@ -38,8 +45,6 @@ import type { DocumentEdit } from './history';
 
 export interface MarkdownBlock {
   kind: BlockKind;
-  /** `yaml` or `toml` for frontmatter blocks. */
-  format?: 'yaml' | 'toml';
   /** 1-based number of the block's first line (inclusive). */
   lineStart: number;
   /** 1-based number of the block's last line (inclusive). */
@@ -95,7 +100,6 @@ interface SourceLine {
  */
 class Block implements MarkdownBlock {
   readonly kind: BlockKind;
-  readonly format?: 'yaml' | 'toml';
   readonly text: string;
   readonly index: BlockIndex;
   declare readonly lineStart: number;
@@ -103,16 +107,10 @@ class Block implements MarkdownBlock {
   declare readonly charStart: number;
   declare readonly charEnd: number;
 
-  constructor(
-    index: BlockIndex,
-    kind: BlockKind,
-    text: string,
-    format?: 'yaml' | 'toml'
-  ) {
+  constructor(index: BlockIndex, kind: BlockKind, text: string) {
     this.index = index;
     this.kind = kind;
     this.text = text;
-    this.format = format;
     // Where the block is, as *own* properties: they are still derived — every read
     // asks the index — but a caller that copies a block gets what it read.
     // `virtual_block_renderer.ts` spreads one into the DOM factory, and a prototype
@@ -140,7 +138,6 @@ class Block implements MarkdownBlock {
  */
 interface BlockSeed {
   kind: BlockKind;
-  format?: 'yaml' | 'toml';
   text: string;
   lineStart: number;
   lineEnd: number;
@@ -282,7 +279,7 @@ function stridesAfter(
 
 /** A block for this seed, in this index. */
 function view(seed: BlockSeed, index: BlockIndex): MarkdownBlock {
-  return new Block(index, seed.kind, seed.text, seed.format);
+  return new Block(index, seed.kind, seed.text);
 }
 
 /** What the index needs about this block: what it holds, and how far the next starts. */
@@ -379,14 +376,12 @@ function* blocksFrom(
 
   // Frontmatter must start at the very first line of the document.
   if (startIndex === 0 && blocksBefore === 0) {
-    const delimiter = frontmatterDelimiter(lines[0].text);
-    if (delimiter) {
-      const close = lines.findIndex((line, index) => index > 0 && line.text.trim() === delimiter);
+    if (frontmatterDelimiter(lines[0].text)) {
+      const close = lines.findIndex((line, index) => index > 0 && closesFrontmatter(line.text));
       if (close >= 0) {
         const last = lines[close];
         yield {
           kind: 'frontmatter',
-          format: delimiter === '+++' ? 'toml' : 'yaml',
           lineStart: lines[0].number,
           lineEnd: last.number,
           charStart: lines[0].start,

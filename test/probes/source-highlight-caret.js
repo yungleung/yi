@@ -19,7 +19,7 @@
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
 
-  const FRONTMATTER = '---\nid: 20240707122715\ntitle: "A note"\n---';
+  const FRONTMATTER = '---\nid: 20240707122715\ntitle: "A note"\nauthor: me\n---';
   const FENCE = '```ts\nconst a = 1;\n```';
   const document_ = [FRONTMATTER, '', FENCE, '', 'tail', ''].join('\n');
   const frontmatter = () => t.prose().querySelector('.markdown-frontmatter');
@@ -60,36 +60,37 @@
         };
   };
 
-  // 1. A character in the middle of the frontmatter's first key.
+  // 1. A character in the middle of a key. The id line is pinned (`editing/id_lock.ts`), so this
+  //    walks the keys beside it.
   await t.load(document_);
-  const inKey = await clickCharacter(frontmatter(), 'id', 2);
+  const inKey = await clickCharacter(frontmatter(), 'title', 2);
   check(
     'a click in the frontmatter puts the caret at the character clicked',
-    inKey !== null && inKey.inside === true && inKey.offset === 2 && inKey.text === 'id:',
+    inKey !== null && inKey.inside === true && inKey.offset === 2 && inKey.text === 'title:',
     inKey
   );
   t.key('I');
   await t.sleep(300);
   check(
     'and typing writes the document at that character',
-    (await t.raw()) === document_.replace('id:', 'idI:'),
+    (await t.raw()) === document_.replace('title:', 'tiItle:'),
     await t.raw()
   );
 
   // 2. A character on a later line of it: the click maps through the highlighted markup
   // line by line, not just at the block's edges.
   await t.load(document_);
-  const inTitle = await clickCharacter(frontmatter(), 'title', 2);
+  const inTitle = await clickCharacter(frontmatter(), 'author', 2);
   check(
     'a click on a later line of the frontmatter lands on that line',
-    inTitle !== null && inTitle.inside === true && inTitle.offset === 2 && inTitle.text === 'title:',
+    inTitle !== null && inTitle.inside === true && inTitle.offset === 2 && inTitle.text === 'author:',
     inTitle
   );
   t.key('T');
   await t.sleep(300);
   check(
     'and the character typed is written on that line',
-    (await t.raw()) === document_.replace('title:', 'tiTtle:'),
+    (await t.raw()) === document_.replace('author:', 'auTthor:'),
     await t.raw()
   );
 

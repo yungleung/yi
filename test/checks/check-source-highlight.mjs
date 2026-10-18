@@ -37,33 +37,25 @@ const textOf = (markup) =>
     .replace(/&amp;/g, '&');
 
 const YAML = '---\nid: 20240707122715\ntitle: "A note & a half"\ntags: [alpha, beta]\n---';
-const TOML = '+++\ntitle = "A note"\ndraft = true\n+++';
-const PAIRS = 'title = "A note"\ndraft = true';
 
-check('a yaml block reads back as itself', textOf(highlightFrontmatter(YAML, 'yaml')), YAML);
-check('a toml block reads back as itself', textOf(highlightFrontmatter(TOML, 'toml')), TOML);
+check('a yaml block reads back as itself', textOf(highlightFrontmatter(YAML)), YAML);
 check(
   'and a source full of characters HTML would eat',
-  textOf(highlightFrontmatter('title: a & b <c> "d" \'e\'', 'yaml')),
+  textOf(highlightFrontmatter('title: a & b <c> "d" \'e\'')),
   'title: a & b <c> "d" \'e\''
 );
 check(
   'and one that is not ASCII',
-  textOf(highlightFrontmatter('title: 虚无与生发\n', 'yaml')),
+  textOf(highlightFrontmatter('title: 虚无与生发\n')),
   'title: 虚无与生发\n'
 );
-check('the keys are marked, not left plain', highlightFrontmatter(YAML, 'yaml').includes('hljs-attr'), true);
+check('the keys are marked, not left plain', highlightFrontmatter(YAML).includes('hljs-attr'), true);
 check(
   'the values are marked too',
-  highlightFrontmatter(YAML, 'yaml').includes('hljs-string'),
+  highlightFrontmatter(YAML).includes('hljs-string'),
   true
 );
-check(
-  'the format is the one the block was parsed as',
-  highlightFrontmatter(PAIRS, 'toml') !== highlightFrontmatter(PAIRS, 'yaml'),
-  true
-);
-check('an empty block stays empty', highlightFrontmatter('', 'yaml'), '');
+check('an empty block stays empty', highlightFrontmatter(''), '');
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

@@ -7,16 +7,19 @@
  * the file it was read from. The title is the frontmatter `title`, the first heading, the file
  * name, or `Untitled`.
  *
- * May import: nothing. Upholds: one reader for each rule — the wikilink resolver's id index,
- * the tree's *Copy id*, and the session's stack all ask here rather than keeping a copy of the
- * pattern, so a document is the same document to all of them.
+ * May import: the YAML parser. Upholds: one reader for each rule — the wikilink resolver's id
+ * index, the tree's *Copy id*, and the session's stack all ask here rather than keeping a copy of
+ * the pattern, so a document is the same document to all of them.
  */
 
+import { parseDocument } from 'yaml';
+
 /**
- * The frontmatter block: `---`, its lines, `---` — the one shape every reader of it agrees on, so a
- * caller that wants the text under it and one that wants to write *there* read the same pattern.
+ * The frontmatter block: `---`, its lines, then `---` or YAML's `...` end marker — the one shape
+ * every reader of it agrees on, so a caller that wants the text under it and one that wants to
+ * write *there* read the same pattern.
  */
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---/;
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/;
 
 /** The frontmatter block's own text, or null when the document has none. */
 export function readFrontmatterBlock(content: string): string | null {
@@ -25,7 +28,7 @@ export function readFrontmatterBlock(content: string): string | null {
 }
 
 /**
- * Where the frontmatter stops — the offset just past its closing `---`, or 0 when the document has
+ * Where the frontmatter stops — the offset just past its closing marker, or 0 when the document has
  * none. What a caller writes *under* it needs the cut, where reading a key out of it wants the text.
  */
 export function frontmatterEnd(content: string): number {
@@ -33,24 +36,66 @@ export function frontmatterEnd(content: string): number {
   return match === null ? 0 : (match.index ?? 0) + match[0].length;
 }
 
-/** The `title` the frontmatter gives, or null. */
-export function readFrontmatterTitle(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
+/**
+ * The top-level `id:` line inside the frontmatter, as absolute offsets, or null when there is
+ * none. The app writes this line and keeps it: the editor pins it against the reader's edits.
+ */
+export function idLineRange(content: string): { start: number; end: number } | null {
+  const end = frontmatterEnd(content);
+  if (end === 0) {
     return null;
   }
-  const match = frontmatter.match(/^\s*title:\s*(.+?)\s*$/m);
-  return match ? unquote(match[1]) : null;
+  const match = /^id[ \t]*:[^\n]*/m.exec(content.slice(0, end));
+  return match ? { start: match.index, end: match.index + match[0].length } : null;
+}
+
+/** The fields the app knows by name. Every one is text; a key the note does not give is null. */
+export interface FrontmatterFields {
+  title: string | null;
+  id: string | null;
+  lang: string | null;
+}
+
+/**
+ * The app's three fields, read as YAML.
+ *
+ * The parser is the one that understands what a value is: a quoted string holding a colon, a
+ * comment after the value, a folded block, or an `id` with leading zeros. The *failsafe* schema is
+ * deliberate — it keeps every scalar as the text it was written as, so an id never becomes a
+ * number and a title never becomes a date or a boolean.
+ *
+ * A header the parser refuses (a duplicate key, an unclosed quote) is read the way it was before
+ * the parser: a titled line is still a title, and a broken one costs a reader nothing. That
+ * fallback is the only place the line pattern survives.
+ */
+export function readFrontmatterFields(content: string): FrontmatterFields {
+  const frontmatter = readFrontmatterBlock(content);
+  if (!frontmatter) {
+    return { title: null, id: null, lang: null };
+  }
+  try {
+    const doc = parseDocument(frontmatter, { schema: 'failsafe' });
+    if (doc.errors.length > 0) {
+      return fieldsFromLines(frontmatter);
+    }
+    return {
+      title: scalarText(doc.get('title')),
+      id: scalarText(doc.get('id')),
+      lang: scalarText(doc.get('lang'))
+    };
+  } catch {
+    return fieldsFromLines(frontmatter);
+  }
+}
+
+/** The `title` the frontmatter gives, or null. */
+export function readFrontmatterTitle(content: string): string | null {
+  return readFrontmatterFields(content).title;
 }
 
 /** The `id` the frontmatter gives, or null. */
 export function readFrontmatterId(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
-    return null;
-  }
-  const match = frontmatter.match(/^\s*id:\s*(.+?)\s*$/m);
-  return match ? unquote(match[1]) : null;
+  return readFrontmatterFields(content).id;
 }
 
 /**
@@ -60,11 +105,30 @@ export function readFrontmatterId(content: string): string | null {
  * overruled there.
  */
 export function readFrontmatterLang(content: string): string | null {
-  const frontmatter = readFrontmatterBlock(content);
-  if (!frontmatter) {
-    return null;
+  return readFrontmatterFields(content).lang;
+}
+
+/** A parsed scalar as the text it is, or null for a value this app cannot use as text. */
+function scalarText(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text === '' ? null : text;
   }
-  const match = frontmatter.match(/^\s*lang:\s*(.+?)\s*$/m);
+  return null;
+}
+
+/** The three fields read from their lines, for a header the YAML parser could not read. */
+function fieldsFromLines(frontmatter: string): FrontmatterFields {
+  return {
+    title: lineField(frontmatter, 'title'),
+    id: lineField(frontmatter, 'id'),
+    lang: lineField(frontmatter, 'lang')
+  };
+}
+
+/** A key's own line, read the way this module did before it had a parser. */
+function lineField(frontmatter: string, key: string): string | null {
+  const match = new RegExp(`^\\s*${key}:\\s*(.+?)\\s*$`, 'm').exec(frontmatter);
   return match ? unquote(match[1]) : null;
 }
 
@@ -92,9 +156,7 @@ export function documentId(content: string, path: string | null): string | null 
 
 /** The first `# heading` outside the frontmatter, or null. */
 export function firstHeading(content: string): string | null {
-  const body = readFrontmatterBlock(content)
-    ? content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
-    : content;
+  const body = content.slice(frontmatterEnd(content));
   const match = body.match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : null;
 }

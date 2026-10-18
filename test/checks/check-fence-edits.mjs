@@ -56,6 +56,11 @@ check(
   '---\ntitle: aQ\n---'
 );
 check(
+  'and when its last line ends the document with ...',
+  applied('---\ntitle: a\n...', typed('---\ntitle: a\n...', 13, 'Q')),
+  '---\ntitle: aQ\n...'
+);
+check(
   'a body with no line yet takes a line of its own',
   applied('```js\n```', typed('```js\n```', 6, 'Q')),
   '```js\nQ\n```'

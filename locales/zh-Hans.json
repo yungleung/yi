@@ -64,6 +64,7 @@
   "session.askDrop.yes": "保存并移出",
   "session.askDrop.no": "不保存直接移出",
   "session.saveFailed": "保存{title}失败：{message}",
+  "session.idLocked": "笔记的 ID 在创建时确定，不能更改。",
   "export.title": "导出",
   "export.kind.docx": "Word 文档（.docx）",
   "export.kind.odt": "LibreOffice 文档（.odt）",

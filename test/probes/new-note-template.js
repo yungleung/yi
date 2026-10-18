@@ -20,6 +20,7 @@
   const ops = await t.app('/src/ui/workspace/tree_ops.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { NewDocumentSettings } = await t.app('/src/ui/settings/new_document_settings.ts');
+  const { DEFAULT_TEMPLATE } = await t.app('/src/services/new_document.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
@@ -57,6 +58,15 @@
     await files.createEntry(home, 'yi-probe-new-note-template', false);
     previous = await t.openWorkspace(workspace);
 
+    await configManager.update({ new_file_frontmatter: null });
+    const defaults = new NewDocumentSettings();
+    await t.sleep(150);
+    const shown = defaults.element.querySelector('[data-new-file-frontmatter]')?.value ?? null;
+    check(
+      'with no template of their own, the field shows the built-in one',
+      shown === DEFAULT_TEMPLATE,
+      shown
+    );
     await configManager.update({ new_file_frontmatter: template });
     check('the config holds the template that was written', (await invoke('get_config')).new_file_frontmatter, template);
     const tab = new NewDocumentSettings();

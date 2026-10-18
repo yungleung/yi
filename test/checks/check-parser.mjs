@@ -135,6 +135,18 @@ check('an ordinary paragraph keeps every node it had', (() => {
     : [parsed.error];
 })(), [1, 1, 1, 1]);
 
+// The frontmatter is YAML: its two closing markers are read, and a TOML fence is text.
+const dotted = '---\ntitle: X\n...\n\nBody\n';
+const dottedTree = parseMarkdown(dotted);
+check('a frontmatter closed by ... is frontmatter', dottedTree.children[0]?.type, 'yaml');
+check(
+  'and the marker is not body text',
+  nodesOfType(dottedTree, 'paragraph').map((node) => sourceOf(dotted, node)),
+  ['Body']
+);
+const toml = '+++\ntitle = "X"\n+++\n\nBody\n';
+check('a +++ block is not frontmatter', nodesOfType(parseMarkdown(toml), 'yaml').length, 0);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

@@ -58,7 +58,12 @@ const cases = [
   ['two formulas under one paragraph are two blocks', 'a\n$$\nx\n$$\n$$\ny\n$$\nb\n', 'paragraph@1 displayMath@2 displayMath@5 paragraph@8'],
   // The same two with the blank lines markdown's own reading does not need: unchanged.
   ['a fence with blank lines around it is what it was', 'text\n\n```\ncode\n```\n\nafter\n', 'paragraph@1 fencedCode@3 paragraph@7'],
-  ['and so is display math', 'text\n\n$$\nx\n$$\n\nafter\n', 'paragraph@1 displayMath@3 paragraph@7']
+  ['and so is display math', 'text\n\n$$\nx\n$$\n\nafter\n', 'paragraph@1 displayMath@3 paragraph@7'],
+  // The frontmatter is YAML, and YAML ends a document with `---` or `...`.
+  ['frontmatter closed by ---', '---\na: b\n---\n\nbody\n', 'frontmatter@1 paragraph@5'],
+  ['and one closed by ...', '---\na: b\n...\n\nbody\n', 'frontmatter@1 paragraph@5'],
+  ['the first closing marker ends it', '---\na: b\n---\n\nbody\n...\n', 'frontmatter@1 paragraph@5'],
+  ['+++ is not a frontmatter fence', '+++\na = 1\n+++\n\nbody\n', 'paragraph@1 paragraph@5']
 ];
 
 let failures = 0;
@@ -143,6 +148,7 @@ reSplit('typing at the end of a paragraph', 'a\n\nb\n', [[1, 1, 'x'], [2, 2, 'y'
 reSplit('typing on a blank line', 'a\n\n\nb\n', [[2, 2, 'x'], [2, 3, ''], [2, 2, '#']]);
 reSplit('deleting a line ending', 'a\n\nb\n', [[2, 3, '']]);
 reSplit('editing the frontmatter', '---\ntitle: x\n---\n\nbody\n', [[13, 13, '!']]);
+reSplit('editing frontmatter closed by ...', '---\ntitle: x\n...\n\nbody\n', [[13, 13, '!']]);
 reSplit('editing the last line of a document with no line ending', 'a\n\nb', [[4, 4, 'c'], [5, 5, '\n']]);
 
 // A deterministic walk through a document with the constructs that span lines,

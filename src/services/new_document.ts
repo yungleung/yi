@@ -141,7 +141,7 @@ export function newDocumentDate(when: Date = new Date()): string {
  * because a keystroke in their place would edit the quotes.
  */
 export function titleRange(text: string): { start: number; end: number } | null {
-  const block = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  const block = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/.exec(text);
   if (!block) {
     return null;
   }
@@ -161,7 +161,7 @@ export function titleRange(text: string): { start: number; end: number } | null 
   return { start, end };
 }
 
-/** The template's own lines, without the `---` fences an author may have pasted with them. */
+/** The template's own lines, without the fences an author may have pasted with them. */
 function frontmatterLines(template: string): string[] {
   const lines = template
     .split('\n')
@@ -175,7 +175,7 @@ function frontmatterLines(template: string): string[] {
   if (lines.length > 0 && lines[0].trim() === '---') {
     lines.shift();
   }
-  if (lines.length > 0 && lines[lines.length - 1].trim() === '---') {
+  if (lines.length > 0 && ['---', '...'].includes(lines[lines.length - 1].trim())) {
     lines.pop();
   }
   return lines;

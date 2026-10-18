@@ -119,6 +119,17 @@ offset is not the scroller's (a page puts 118px of desk and margin above the pro
 the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
 screen is dropped (`reachable`) — nothing could bring it back.
 
+The frontmatter's `title`, `id` and `lang` are read by the YAML parser in `document_identity.ts`
+with the *failsafe* schema, which keeps every scalar as text: a quoted colon, a comment, a folded
+block and an id with leading zeros are all the author's value. A header the parser refuses falls
+back to the old line reader, so a broken note keeps whatever title its `title:` line gives.
+
+The `id:` line itself is the app's, not the reader's: `editing/id_lock.ts` refuses an edit that
+would change it or either newline beside it, and `applyEdit` says why with `session.idLocked`.
+The document manager's catalogue and indexes are invalidated by every create, rename, move and
+delete the tree or the new-note flow makes, and by every save (`documentManager.invalidate()`);
+the rebuild itself stays lazy, on the next question about a document.
+
 A **new note** is one command, `file:newMarkdown`. `services/new_document.ts` is the rule: the
 id's fourteen digits (`YYYYMMDDHHMMSS`, local — an author's own stamp), the four keys every note
 carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list holding `untagged`), the
@@ -492,7 +503,7 @@ language and reads the sentence back, and by `check-locales.mjs`, which walks `s
 the webview's tree so a message that uses a key counts as a use of it. **Every sentence the backend
 writes for the reader goes through it now** — the file tree's refusals, the export path's, the fonts',
 the versioning seam's, the settings guard's, the external programs' (`app.cannotRun`) and the
-bibliography's — 267 keys in each of the eight catalogues, and a new one is held by the catalogue check
+bibliography's — 268 keys in each of the eight catalogues, and a new one is held by the catalogue check
 (used, and present everywhere) and by the unit test that sets a language and reads a sentence back. What
 stays English is what no reader meets: the **Tauri plugins' own** messages (not this app's to
 translate), the development seams' sentences (a probe's bad call, a fetch error whose only consumer is a
@@ -559,7 +570,8 @@ character rather than an item**. `editing/fence_open.ts` writes both delimiter l
 the blank lines markdown needs around them — and puts the caret on the blank line between them,
 where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
 (`editing/language_picker.ts`), `$$` needs no such thing, and `---` is frontmatter *only* on the
-note's very first line, where it would otherwise be a thematic break. `syntax/bare_markers.ts` is
+note's very first line, where it would otherwise be a thematic break. That frontmatter is YAML,
+closed by `---` or its `...` end marker; `+++` is ordinary text, not a fence. `syntax/bare_markers.ts` is
 the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
 paragraph line, as a setext underline, so the repair makes it text — the delimiter space is what
 starts an item (`- `) — and the line above is never swallowed. Each rule has its check

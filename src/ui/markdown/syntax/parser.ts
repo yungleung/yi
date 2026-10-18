@@ -24,6 +24,7 @@ import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
 import { restoreSpacedDestinations } from './spaced_destinations';
+import { frontmatterForParsers } from './markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
@@ -34,7 +35,7 @@ const parseProcessor = unified()
   .use(remarkDeflist)
   .use(remarkGfm)
   .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
   .use(remarkWikilink);
 
@@ -44,7 +45,7 @@ const fragmentProcessor = unified()
   .use(remarkGfm)
   .use(remarkDeflist)
   .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
   .use(remarkWikilink);
 
@@ -73,12 +74,12 @@ const stringifyProcessor = unified()
   .use(remarkGfm)
   .use(remarkDeflist)
   .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml', 'toml'])
+  .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
   .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
-  const tree = parseProcessor.parse(markdown) as Root;
+  const tree = parseProcessor.parse(frontmatterForParsers(markdown)) as Root;
   const root = parseProcessor.runSync(tree) as Root;
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);

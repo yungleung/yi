@@ -20,7 +20,7 @@
 
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
-import { readDocumentId } from '../../services/document_manager';
+import { documentManager, readDocumentId } from '../../services/document_manager';
 import { eventManager } from '../../services/event_manager';
 import { showHint, type HintPlace } from '../../services/hints';
 import { MESSAGE_EVENT, notify } from '../../services/messages';
@@ -119,6 +119,7 @@ export async function dropEntry(entry: TreeEntry, targetDir: string): Promise<bo
     notify('The workspace tree', error);
     return false;
   }
+  documentManager.invalidate();
   await tree.refreshFolders([folderOf(entry.path), targetDir]);
   // The folder that took the entry is opened on it, so the reader sees where it went —
   // dropping onto a folded folder would otherwise look like the entry vanished.
@@ -142,6 +143,7 @@ export async function renameEntryTo(entry: TreeEntry, name: string): Promise<boo
     notify('The workspace tree', error);
     return false;
   }
+  documentManager.invalidate();
   await tree.refreshFolders([folderOf(renamed)]);
   if (wasOpen) {
     await tree.reveal(renamed);
@@ -189,6 +191,7 @@ export async function deleteNow(entry: TreeEntry, tree: TreeHost | null = host):
     notify('The workspace tree', error);
     return;
   }
+  documentManager.invalidate();
   await tree.refreshFolders([folderOf(entry.path)]);
 }
 
@@ -210,6 +213,7 @@ async function createAndRename(tree: TreeHost, folder: string, base: string): Pr
     const name = ordinal === 1 ? base : `${base} ${ordinal}`;
     try {
       const path = await createEntry(folder, name, false);
+      documentManager.invalidate();
       await tree.refreshFolders([folder]);
       await tree.renameAt(path);
       return;

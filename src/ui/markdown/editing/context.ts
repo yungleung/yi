@@ -10,9 +10,10 @@
  * inside a block, or a Select-All range anchored to the prose root.
  *
  * May import: the caret, the offsets mapping (`caret/offsets.ts`,
- * `caret/dom_position.ts`), the renderer, the state, `source_mode.ts` and the
+ * `caret/dom_position.ts`), the renderer, the state, `source_mode.ts`, the
  * syntax rules it reads (`syntax/plain_edit.ts`, `syntax/node_shape.ts`, and
- * `syntax/footnotes.ts` for the shape of a definition's label). Upholds: every
+ * `syntax/footnotes.ts` for the shape of a definition's label), and the app's
+ * hint surface and words for the pinned frontmatter id. Upholds: every
  * command funnels its change through `applyEdit`, so the change → re-render →
  * place-the-caret sequence is identical everywhere.
  */
@@ -38,6 +39,9 @@ import type { RootContent } from 'mdast';
 import { hasSourceMode } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
+import { editsId } from './id_lock';
+import { showHint } from '../../../services/hints';
+import { t } from '../../../services/i18n';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
 /** What every editing command needs to read and change the document. */
@@ -280,6 +284,12 @@ export function applyEdit(
   caret: EditCaret = from + replacement.length,
   kind: EditKind = 'other'
 ): void {
+  if (editsId(context.state.getText(), from, to)) {
+    // Refusing the write still consumes the keystroke: the editor's text is the truth, and a
+    // native insertion after this return would be the very edit the pin exists to stop.
+    showHint(t('session.idLocked'), null);
+    return;
+  }
   const anchor = context.contentView.scrollTop;
   // Where the author was before the edit — a caret, or the selection this edit is about
   // to replace. The history keeps it (`history.ts: EditMark`), so undo can put the

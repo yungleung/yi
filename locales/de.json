@@ -64,6 +64,7 @@
   "session.askDrop.yes": "Sichern und nehmen",
   "session.askDrop.no": "Ohne Sichern nehmen",
   "session.saveFailed": "{title} konnte nicht gesichert werden: {message}",
+  "session.idLocked": "Die ID einer Notiz wird beim Anlegen festgelegt und kann nicht geändert werden.",
   "export.title": "Exportieren",
   "export.kind.docx": "Word-Dokument (.docx)",
   "export.kind.odt": "LibreOffice-Dokument (.odt)",

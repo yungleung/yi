@@ -64,6 +64,7 @@
   "session.askDrop.yes": "Guardar y quitar",
   "session.askDrop.no": "Quitar sin guardar",
   "session.saveFailed": "No se pudo guardar {title}: {message}",
+  "session.idLocked": "El id de la nota se fija al crearla y no se puede cambiar.",
   "export.title": "Exportar",
   "export.kind.docx": "Documento de Word (.docx)",
   "export.kind.odt": "Documento de LibreOffice (.odt)",
