@@ -825,13 +825,14 @@ elements) unless it says otherwise.
   moved or mailed as it stands. It composes with the work three turns back in a way worth naming: a
   picture the note names *on the web* ends up carried in the page too, because the **app** fetched it
   for the run and pandoc inlined the file it was handed — on a pandoc that cannot fetch anything
-  itself. The exception is MathJax: a script is inlined only when pandoc can fetch it, so on this
-  machine every html export of a note with math warns that it could not fetch the CDN URL and leaves
-  the `<script src="https://cdn.jsdelivr.net/…">` in place — the page renders its math when it is
-  opened with a network and shows the reader's own TeX when it is not. That is Zettlr's arrangement
-  (their `html-math-method`, and the URL is pandoc's own default), the asset's header says so and
-  names the alternative (`method: mathml`, no script at all), and the warning reaches the reader as a
-  message rather than being swallowed. `export-html.js` holds the page: the heading shifted the way
+  itself. The exception is KaTeX: its script and stylesheet are inlined only when pandoc can fetch
+  them, so on this machine every html export of a note with math warns that it could not fetch the
+  CDN URLs and leaves `<script src="…/katex.min.js">` and `<link … katex.min.css>` in place — the
+  page renders its math when it is opened with a network and shows the reader's own TeX when it is
+  not. The asset says `html-math-method: katex` with no `url`, because the method name is enough and
+  pandoc supplies its own default, and its header names the alternative (`method: mathml`, no script
+  at all); the warning reaches the reader as a message rather than being swallowed. `export-html.js`
+  holds the page: the heading shifted the way
   the file says, the picture carried, the math marked, and the citations as `(Smith, 2020)` over a
   `References` heading and its entry.
 - **The fifth kind is `epub`**, and it is the one file in that folder Yi writes *itself*: the four
@@ -847,7 +848,7 @@ elements) unless it says otherwise.
     and the roadmaps' "metadata from the frontmatter" item is answered by pandoc reading it.
   - **`self-contained` is not a question for a container**: measured, a book carries its pictures,
     its stylesheet and its math either way, so the key is left out rather than copied for the look of
-    it. Math is MathML in the book — no CDN script, unlike the html kind's MathJax — so an EPUB's
+    it. Math is MathML in the book — no CDN script, unlike the html kind's KaTeX — so an EPUB's
     math renders offline.
   - `export-epub.js` reads the book the way a reader's software does, and reads *inside* it: the
     page walks the zip's central directory and inflates an entry by name (`DecompressionStream`), so
