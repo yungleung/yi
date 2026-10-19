@@ -28,6 +28,7 @@ import {
   namedFonts,
   runExport
 } from '../../api/export';
+import { exportTemplates } from '../../api/templates';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -78,6 +79,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     return;
   }
   const note = documentSession.current();
+  const templates = await exportTemplates();
+  const selectedTemplateId =
+    configManager.get()?.export_templates?.[first.kind] ?? null;
   const folder = await targetFolder(note?.path ?? null);
   // The note's own path with no extension: the card adds the chosen kind's name suffix and
   // extension to it, because the *kind* is what the card knows and this is what it is asked with.
@@ -109,7 +113,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     uncovered,
     suggestedFont,
     unknownFonts: fonts.unknown_fonts,
-    notPictures: destinationsThatNameNoImage(text)
+    notPictures: destinationsThatNameNoImage(text),
+    templates,
+    selectedTemplateId
   });
   if (answer === null) {
     return;
@@ -209,7 +215,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       paper: answer.paper,
       landscape: answer.landscape,
       // The citations resolved either way: this is only about the list at the end of the document.
-      suppress_references: answer.suppressReferences
+      suppress_references: answer.suppressReferences,
+      template_id: answer.templateId
     });
     showHint(t('export.done', { file: fileName(outputPath) }), null);
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about

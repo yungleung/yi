@@ -17,6 +17,7 @@
             paper: None,
             landscape: None,
             suppress_references: false,
+            template_id: None,
         }
     }
 
@@ -31,6 +32,7 @@
             &dir.join("note-1.md"),
             request,
             kind,
+            None,
             None,
         )
         .unwrap()
@@ -62,6 +64,7 @@
             &ExportRequest { kind: name, ..request },
             kind_of("pdf").unwrap(),
             Some(&header),
+            None,
         )
         .unwrap()
         .iter()
@@ -102,6 +105,126 @@
                 dir.join("note-1.md").to_string_lossy().into_owned(),
             ]
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A selected package reaches pandoc as the one entry it names, its style wins over the
+    /// reader's own for this export, and the package folder is the first resource path. The
+    /// template file is absolute and inside the package the app resolved.
+    #[test]
+    fn a_selected_package_names_its_entry_style_and_resource_path() {
+        let dir = scratch("package");
+        let package = dir.join("templates").join("journal");
+        fs::create_dir_all(&package).unwrap();
+        fs::write(package.join("main.tex"), "$body$").unwrap();
+        fs::write(package.join("journal.csl"), "<style/>").unwrap();
+        let manifest = crate::export::templates::TemplateManifest {
+            schema: 1,
+            id: "journal".to_string(),
+            name: "Journal".to_string(),
+            kind: "latex".to_string(),
+            mode: crate::export::TemplateMode::Template,
+            origin: crate::export::templates::TemplateOrigin {
+                source_type: "folder".to_string(),
+                path: None,
+                source: None,
+                license: None,
+                imported: None,
+            },
+            template: Some("main.tex".to_string()),
+            reference_doc: None,
+            csl: Some("journal.csl".to_string()),
+            assets: vec!["journal.csl".to_string()],
+            deliver: Vec::new(),
+        };
+        let mut request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out.tex").to_string_lossy().into_owned(),
+            ..request_in(&dir)
+        };
+        request.bibliography = None;
+        request.csl = Some(CslStyle {
+            name: "apa".to_string(),
+            xml: "<style>apa</style>".to_string(),
+        });
+        let arguments = pandoc_arguments(
+            &dir,
+            &dir.join("export.latex.yaml"),
+            &dir.join("note-1.md"),
+            &request,
+            kind_of("latex").unwrap(),
+            None,
+            Some((&package, &manifest)),
+        )
+        .unwrap()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<String>>();
+        let at = arguments
+            .iter()
+            .position(|argument| argument == "--template")
+            .expect("no template was handed over");
+        assert_eq!(arguments[at + 1], package.join("main.tex").to_string_lossy());
+        let resources = arguments
+            .iter()
+            .position(|argument| argument == "--resource-path")
+            .expect("no resource path");
+        assert!(arguments[resources + 1].starts_with(package.to_string_lossy().as_ref()));
+        let style_values: Vec<&String> = arguments
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| *index > 0 && arguments[index - 1] == "--csl")
+            .map(|(_, argument)| argument)
+            .collect();
+        assert_eq!(
+            style_values.last().copied(),
+            Some(&package.join("journal.csl").to_string_lossy().into_owned())
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A Word package is handed as `--reference-doc`, never as `--template`.
+    #[test]
+    fn a_reference_package_is_handed_as_the_binary_pandoc_reads() {
+        let dir = scratch("reference");
+        let package = dir.join("journal");
+        fs::create_dir_all(&package).unwrap();
+        fs::write(package.join("journal.docx"), b"PK").unwrap();
+        let manifest = crate::export::templates::TemplateManifest {
+            schema: 1,
+            id: "journal".to_string(),
+            name: "Journal".to_string(),
+            kind: "docx".to_string(),
+            mode: crate::export::TemplateMode::ReferenceDoc,
+            origin: crate::export::templates::TemplateOrigin {
+                source_type: "file".to_string(),
+                path: None,
+                source: None,
+                license: None,
+                imported: None,
+            },
+            template: None,
+            reference_doc: Some("journal.docx".to_string()),
+            csl: None,
+            assets: Vec::new(),
+            deliver: Vec::new(),
+        };
+        let request = request_in(&dir);
+        let arguments = pandoc_arguments(
+            &dir,
+            &dir.join("export.docx.yaml"),
+            &dir.join("note-1.md"),
+            &request,
+            kind_of("docx").unwrap(),
+            None,
+            Some((&package, &manifest)),
+        )
+        .unwrap()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<String>>();
+        assert!(arguments.iter().any(|argument| argument == "--reference-doc"));
+        assert!(!arguments.iter().any(|argument| argument == "--template"));
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -270,6 +393,7 @@
             &dir.join("note-1.md"),
             &request,
             kind_of("pdf").unwrap(),
+            None,
             None,
         )
         .expect_err("a size that is not in the list was passed on");

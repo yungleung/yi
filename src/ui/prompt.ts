@@ -53,6 +53,9 @@ export class Prompt extends QuestionCard<boolean> implements Prompter {
   constructor() {
     super('w-[26rem]');
     this.element.dataset.prompt = 'true';
+    // A question must be above whatever asked it, including the template editor's full-window
+    // mode. The floating family's base z-index is under that mode on purpose.
+    this.element.style.zIndex = '80';
 
     this.heading = document.createElement('p');
     this.heading.className = 'mb-1 text-sm font-semibold';

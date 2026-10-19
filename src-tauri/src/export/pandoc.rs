@@ -59,19 +59,7 @@ pub(super) fn run_pandoc(
     arguments: &[OsString],
     working_dir: Option<&Path>,
 ) -> Result<Vec<String>, String> {
-    let mut command = Command::new(pandoc);
-    if let Some(dir) = working_dir.filter(|dir| dir.is_dir()) {
-        command.current_dir(dir);
-    }
-    let output = command
-        .args(arguments)
-        .output()
-        .map_err(|error| {
-            crate::i18n::now(
-                "app.cannotRun",
-                &[("program", &pandoc.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
+    let output = pandoc_output(pandoc, arguments, working_dir)?;
     if !output.status.success() {
         let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
         return Err(if complaint.is_empty() {
@@ -81,6 +69,46 @@ pub(super) fn run_pandoc(
         });
     }
     Ok(warnings_in(&String::from_utf8_lossy(&output.stderr)))
+}
+
+/// Runs pandoc for the answer on its standard output rather than for one of its writers: the
+/// default template (`--print-default-template`) and the default reference document
+/// (`--print-default-data-file`) are both pandoc's to produce.
+pub(super) fn run_pandoc_bytes(
+    pandoc: &Path,
+    arguments: &[OsString],
+    working_dir: Option<&Path>,
+) -> Result<Vec<u8>, String> {
+    let output = pandoc_output(pandoc, arguments, working_dir)?;
+    if !output.status.success() {
+        let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if complaint.is_empty() {
+            format!("{} failed", pandoc.display())
+        } else {
+            complaint
+        });
+    }
+    Ok(output.stdout)
+}
+
+fn pandoc_output(
+    pandoc: &Path,
+    arguments: &[OsString],
+    working_dir: Option<&Path>,
+) -> Result<std::process::Output, String> {
+    let mut command = Command::new(pandoc);
+    if let Some(dir) = working_dir.filter(|dir| dir.is_dir()) {
+        command.current_dir(dir);
+    }
+    command
+        .args(arguments)
+        .output()
+        .map_err(|error| {
+            crate::i18n::now(
+                "app.cannotRun",
+                &[("program", &pandoc.display().to_string()), ("reason", &error.to_string())],
+            )
+        })
 }
 
 /// The lines pandoc wrote that are not blank: its warnings, one sentence each.

@@ -193,19 +193,25 @@
       { card: cardBox, rows, window: [window.innerWidth, window.innerHeight] }
     );
 
-    // The button that hands the reader their own copy of the parameters. What it does is the
-    // window's ask — the harness holds the opener's system hand away and keeps what was asked for,
-    // so no editor comes up during a run — and the file it names is on the disk to be edited.
+    // The button that hands the reader their own copy of the parameters. It is the package
+    // editor's YAML panel, not a system reveal: the file is written, named, and editable in place.
     veil.querySelector('[data-export-open-config]').click();
-    await until(() => (window.__probeOpenedUrls ?? []).length > 0);
-    const asked = (window.__probeOpenedUrls ?? []).filter(
-      (entry) => entry.url.includes('reveal_item_in_dir') && entry.body.includes(config)
+    const opened = await until(
+      () => document.querySelector('[data-template-editor] .cm-editor') !== null
     );
     check(
-      'the settings button has the file written and asks the system to reveal it in its folder',
-      asked.length === 1 && (await exists(config)),
-      { asked: asked.length, written: await exists(config) }
+      'the settings button has the file written and opens it in the defaults editor',
+      opened &&
+        (await exists(config)) &&
+        document.querySelector('[data-template-file="export.docx.yaml"]') !== null,
+      {
+        opened,
+        written: await exists(config),
+        file: document.querySelector('[data-template-file="export.docx.yaml"]') !== null
+      }
     );
+    document.querySelector('[data-template-editor-close]')?.click();
+    await sleep(100);
 
     // --- the export itself ---------------------------------------------------------------------
 

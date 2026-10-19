@@ -16,6 +16,7 @@ mod pandoc;
 mod pictures;
 mod run;
 mod search;
+pub mod templates;
 
 #[allow(unused_imports)]
 pub use config::CslStyle;
@@ -23,7 +24,7 @@ pub use font_hints::NamedFonts;
 #[allow(unused_imports)]
 pub use info::{ExportKindInfo, ExportKinds};
 #[allow(unused_imports)]
-pub use kinds::{ExportKind, PaperSize, KINDS, PAPER_SIZES};
+pub use kinds::{ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES};
 #[allow(unused_imports)]
 pub use pandoc::find_pandoc;
 pub use run::{ExportOutcome, ExportRequest};
@@ -49,6 +50,20 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
 #[tauri::command]
 pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     config::export_restore_config(app, kind)
+}
+
+#[tauri::command]
+pub fn export_config_text(app: tauri::AppHandle, kind: String) -> Result<String, String> {
+    config::export_config_text(app, kind)
+}
+
+#[tauri::command]
+pub fn export_save_config_text(
+    app: tauri::AppHandle,
+    kind: String,
+    text: String,
+) -> Result<(), String> {
+    config::export_save_config_text(app, kind, text)
 }
 
 #[tauri::command]

@@ -192,7 +192,7 @@ fence's body untouched; `export-kinds` — one item per kind in the File menu's 
 kind the app ships opens the card it names, about that kind, under the note's own name
 (`note.processed.md` for the one kind whose output would otherwise be the note itself);
 `export-docx` — the File menu's *Export* item for the docx, end to end: the card, the target field,
-the settings button asking the system to *reveal* the file, the real pandoc writing a Word file where
+the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
 names), the hint that says so, and Escape writing nothing at all; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
@@ -209,6 +209,14 @@ the kind's own font rule in both of its halves: a `.tex` of a CJK note carries *
 file comes (naming a font the reader's machine may not have would fail their compile where the card's
 hint merely warns), and carries `\usepackage{xeCJK}` with the name for the length of one export where
 the reader has written one into their own copy;
+the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
+a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
+(pandoc's default template and reference document, and a validation that names a deleted entry),
+`export-template-output` (HTML and LaTeX markers in the output, the class and bst delivered beside
+the `.tex`, and a Word export through a reference document), `export-template-ui` (the Template row,
+the library's inspect-then-import, CodeMirror, an atomic save, validation and the defaults panel),
+`export-template-create-ui` (Create…, details, duplicate and remove) and `export-template-pdf` (the
+package as the engine's working directory, which is what finds `journal.cls`);
 `export-citations` — the three citation forms nobody had asked citeproc about, read through an EPUB
 because a book is a zip and `lib.js: zipEntry` inflates its pages: a locator lands where citeproc's
 grammar expects it (`(Smith, 2020, p. 45)`), a suppressed author leaves a parenthetical with the year and

@@ -50,6 +50,8 @@ export interface ExportKindInfo {
    * says what the button does and lets the reader answer.
    */
   config_is_shipped: boolean;
+  /** What a package for this kind hands pandoc: a text template, a reference document, or nothing. */
+  template_mode: 'text' | 'reference-doc' | 'none';
 }
 
 /** The kinds, and the pandoc the app would run — null when the machine has none. */
@@ -91,6 +93,8 @@ export interface ExportRequest {
    * the kinds pandoc writes, `suppress-bibliography` in the metadata; for the app's own hand, no list
    * is written at all. */
   suppress_references: boolean;
+  /** The package this export uses, by id, or null for pandoc's default. */
+  template_id: string | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

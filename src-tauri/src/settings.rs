@@ -1,6 +1,7 @@
 //! This module contains the settings of the application, which is shared across all components.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::{fs, path::PathBuf};
 use tauri::{Emitter, Manager};
 
@@ -63,6 +64,11 @@ pub struct AppConfig {
   /// silently either way (`src/services/document_session.ts: openDecision`).
   #[serde(default)]
   pub push_unstacked_on_open: bool,
+  /// The template package chosen for each export kind, by package id. A kind with no entry is
+  /// *pandoc's default*, which is what every export did before packages existed. The ids are
+  /// resolved under the app's export folder by the run; a path is never read from here.
+  #[serde(default)]
+  pub export_templates: BTreeMap<String, String>,
   pub config_version: u32,
 }
 
@@ -94,6 +100,7 @@ impl Default for AppConfig {
       image_folder: String::new(),
       language: String::new(),
       push_unstacked_on_open: false,
+      export_templates: BTreeMap::new(),
       config_version: CURRENT_CONFIG_VERSION,
     }
   }
@@ -292,6 +299,25 @@ mod tests {
     let cfg: AppConfig = serde_json::from_str(json).unwrap();
 
     assert!(!cfg.workspace_asked);
+  }
+
+  #[test]
+  fn a_config_written_before_template_selection_reads_as_pandocs_default() {
+    let json = r#"{
+      "workspace": null,
+      "bibliography_file": "~/Documents/ZettlrNotes/zotero.json",
+      "csl_style": "apa",
+      "editor_layout": "page",
+      "new_file_frontmatter": null,
+      "image_folder": "",
+      "language": "",
+      "push_unstacked_on_open": false,
+      "workspace_asked": false,
+      "config_version": 1
+    }"#;
+    let cfg: AppConfig = serde_json::from_str(json).unwrap();
+
+    assert!(cfg.export_templates.is_empty());
   }
 
   #[test]

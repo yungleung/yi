@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "journal-x-latex",
+  "name": "Journal X — LaTeX submission",
+  "kind": "latex",
+  "mode": "wrapper",
+  "origin": {
+    "type": "folder",
+    "path": "/Users/reader/Downloads/journal-x",
+    "source": "https://journal.example/author-kit",
+    "license": "CC BY 4.0",
+    "imported": "2026-10-19"
+  },
+  "template": "template.tex",
+  "reference_doc": null,
+  "csl": "journal.csl",
+  "assets": ["journal.cls", "journal.bst", "journal.csl", "source.tex"],
+  "deliver": ["journal.cls", "journal.bst"]
+}

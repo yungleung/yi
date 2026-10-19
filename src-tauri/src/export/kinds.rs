@@ -7,7 +7,30 @@
 //! May import: `serde` and the assets this compile ships. Upholds: one row per kind, so a kind is
 //! added in one place and its name is refused if it is not there.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+/// What kind of file a pandoc format takes as its form: a text template, a binary reference
+/// document, or nothing at all.
+///
+/// It is a fact of the *kind*, so the export card and the run read the same row rather than each
+/// deciding which of the seven formats is which.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum KindTemplate {
+    Text,
+    ReferenceDoc,
+    None,
+}
+
+/// How one package's entry is used: a pandoc text template, a complete document with `$body$`
+/// inserted (a wrapper), or a binary reference document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TemplateMode {
+    Template,
+    Wrapper,
+    ReferenceDoc,
+}
 
 /// One kind of export the app knows.
 #[derive(Debug)]
@@ -83,6 +106,9 @@ pub struct ExportKind {
     pub takes_a_page_size: bool,
     /// The defaults file this build ships, as its own bytes: what a reader's copy starts as.
     pub defaults: &'static str,
+    /// What a package for this kind hands pandoc: a text template, a reference document, or nothing.
+    /// `markdown` says none because its conversion is the app's own pre-process.
+    pub template_mode: KindTemplate,
 }
 
 /// One page size as the card offers it: the words on it, and the `geometry` option behind them.
@@ -149,6 +175,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: false,
         defaults: include_str!("../../assets/export/export.docx.yaml"),
         ships_fonts: false,
+        template_mode: KindTemplate::ReferenceDoc,
     },
     ExportKind {
         kind: "odt",
@@ -163,6 +190,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: false,
         defaults: include_str!("../../assets/export/export.odt.yaml"),
         ships_fonts: false,
+        template_mode: KindTemplate::ReferenceDoc,
     },
     ExportKind {
         kind: "latex",
@@ -179,6 +207,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: true,
         defaults: include_str!("../../assets/export/export.latex.yaml"),
         ships_fonts: false,
+        template_mode: KindTemplate::Text,
     },
     ExportKind {
         kind: "html",
@@ -195,6 +224,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: false,
         defaults: include_str!("../../assets/export/export.html.yaml"),
         ships_fonts: false,
+        template_mode: KindTemplate::Text,
     },
     ExportKind {
         kind: "epub",
@@ -212,6 +242,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: false,
         defaults: include_str!("../../assets/export/export.epub.yaml"),
         ships_fonts: false,
+        template_mode: KindTemplate::Text,
     },
     ExportKind {
         kind: "pdf",
@@ -233,6 +264,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: true,
         defaults: include_str!("../../assets/export/export.pdf.yaml"),
         ships_fonts: true,
+        template_mode: KindTemplate::Text,
     },
     ExportKind {
         kind: "markdown",
@@ -250,6 +282,7 @@ pub const KINDS: &[ExportKind] = &[
         needs_a_font: false,
         defaults: "",
         ships_fonts: false,
+        template_mode: KindTemplate::None,
     },
 ];
 

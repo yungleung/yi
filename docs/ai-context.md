@@ -417,6 +417,47 @@ year and no name, and the list is appended under the heading the app asks for. *
 is metadata, not a variable** — a `variables:` line leaves the list exactly where it was (measured) —
 so a reader who wants the keys resolved and no list writes a `metadata:` block in their settings file.
 
+**A template is a package under the app's export data, not a note.** The folder is
+`<app data>/export/templates/<id>/`; `template.json` is the app's manifest — schema, id, name, export
+kind, `template`/`wrapper`/`reference-doc` mode, provenance and licence, one entry, the CSL and the
+asset/deliver lists — and the reader never writes it by hand. The manifest's `id` is a slug of the
+display name (`-2`, `-3` on collision); it is edited through the details form, and the raw JSON is a
+read-only view in the package editor. A package belongs to one export kind. `assets` are every other
+file, and `deliver` is the subset a LaTeX export copies beside its `.tex` (`.cls`, `.sty`, `.bst`,
+`.bbx`, `.cbx`), so the reader's own compile finds the journal's class and bibliography style.
+
+Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
+folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference
+document, a lone `.csl` is refused, and a lone defaults file is refused in favour of the defaults
+panel. A folder or zip is walked recursively, dot-entries ignored, and the main `.tex` chosen by
+`$body$`, then a document environment, then `main.tex`/`template.tex`/`article.tex`, then size; equal
+candidates come back for the reader to choose. A complete document becomes a **wrapper** proposal:
+`source.tex` stays as an asset, `template.tex` is a copy with `$body$` before `\end{document}`, and
+mapping its `\title{}`/`\author{}` to `$title$`/`$author$` is offered unchecked. A zip is extracted
+into a hidden staging folder and renamed into place only when complete; absolute paths and `..` are
+refused, as are symlinks, more than 2,000 files or 200 MB. `createDefault` is the other factory and
+writes the same shape, from `pandoc --print-default-template` or
+`--print-default-data-file=reference.docx`.
+
+The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
+row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`
+resolves it under the app's export folder, refuses one for another kind, and hands pandoc
+`--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
+folder as the first `--resource-path`. A PDF run also uses the package folder as its working
+directory, which is what makes `\documentclass{journal}` and `\usepackage{…}` resolve. The app never
+runs TeX's unrestricted shell escape or `tlmgr`, and it does not download journal kits.
+
+The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
+`StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
+session document. It lists the package's files, shows binaries read-only with *Open in system*, saves
+with `Mod-S` atomically, and **Validate** / **Test PDF** run pandoc on a one-paragraph fixture and
+show its stderr. The same panel edits a kind's defaults YAML, which is why the export card's old
+*Reveal in folder* is now **Edit defaults**. The library is `library.ts` (choose, import, create,
+details, duplicate, remove), the confirmation is `import_dialog.ts`, and the manifest shape is held
+by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
+`export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
+`export-template-ui.js`, `export-template-create-ui.js` and `export-template-pdf.js`.
+
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
 named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:

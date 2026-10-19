@@ -13,8 +13,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::config::{ensure_csl_in, ensure_defaults_in, export_dir, remote_dir, settings_text, CslStyle};
-use super::kinds::{kind_of, ExportKind, PAPER_SIZES};
+use super::kinds::{kind_of, ExportKind, KindTemplate, PAPER_SIZES, TemplateMode};
 use super::pandoc::{find_pandoc, run_pandoc};
+use super::templates::TemplateManifest;
 
 /// What an export did: whether it wrote the file, and what pandoc said on the way.
 #[derive(Debug, Serialize, Clone)]
@@ -79,6 +80,10 @@ pub struct ExportRequest {
     /// language the app is speaking. Used by the kinds that must declare one (`needs_a_language`).
     #[serde(default)]
     pub language: Option<String>,
+    /// The package this export was asked to use, by id, or null for pandoc's default. The backend
+    /// resolves the id under the app's export folder; a path from the window is never trusted.
+    #[serde(default)]
+    pub template_id: Option<String>,
 }
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
@@ -130,6 +135,7 @@ fn export_with_pandoc(
         .ok_or_else(|| crate::i18n::now("export.noPandoc", &[]))?;
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
+    let template = resolve_template(app, kind, request.template_id.as_deref())?;
     // The faces this build ships, for the kinds whose page is drawn by them: the header names them by
     // absolute path, so it is written per export rather than once — an app that has been replaced
     // since the last export would leave a header pointing into a bundle that is gone. Han and kana
@@ -144,16 +150,32 @@ fn export_with_pandoc(
         })
         .transpose()?;
     let note = write_note(&dir, &request.text)?;
-    let result = pandoc_arguments(&dir, &defaults, &note, request, kind, header.as_deref()).and_then(
-        |arguments| {
-            run_pandoc(
-                &pandoc,
-                &arguments,
-                request.source_dir.as_deref().map(Path::new),
-            )
-            .map(|warnings| ExportOutcome { warnings })
-        },
-    );
+    let result = pandoc_arguments(
+        &dir,
+        &defaults,
+        &note,
+        request,
+        kind,
+        header.as_deref(),
+        template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
+    )
+    .and_then(|arguments| {
+        // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
+        // it is run in, so a package is that folder. The note, defaults and output are absolute,
+        // which is what keeps that current directory from changing what the other paths mean.
+        let working = template
+            .as_ref()
+            .filter(|_| kind.kind == "pdf")
+            .map(|(package, _)| package.as_path())
+            .or_else(|| request.source_dir.as_deref().map(Path::new));
+        run_pandoc(&pandoc, &arguments, working).map(|warnings| ExportOutcome { warnings })
+    })
+    .and_then(|outcome| {
+        if let Some((package, manifest)) = &template {
+            deliver_beside_output(package, manifest, request, kind)?;
+        }
+        Ok(outcome)
+    });
     // The note's copy under the app's data folder is a thing of this call, whatever pandoc said —
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.
@@ -176,23 +198,30 @@ pub(super) fn pandoc_arguments(
     request: &ExportRequest,
     kind: &ExportKind,
     header: Option<&Path>,
+    template: Option<(&Path, &TemplateManifest)>,
 ) -> Result<Vec<OsString>, String> {
+    let output = absolute_output(&request.output_path, request.source_dir.as_deref());
     let mut arguments: Vec<OsString> = vec![
         OsString::from("--defaults"),
         defaults.as_os_str().to_os_string(),
         OsString::from("--output"),
-        OsString::from(&request.output_path),
+        output.into_os_string(),
     ];
     if let Some(header) = header {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
     }
-    if !request.resource_paths.is_empty() {
-        let paths: Vec<PathBuf> = request.resource_paths.iter().map(PathBuf::from).collect();
+    {
+        let mut paths: Vec<PathBuf> = template
+            .map(|(package, _)| vec![package.to_path_buf()])
+            .unwrap_or_default();
+        paths.extend(request.resource_paths.iter().map(PathBuf::from));
+        if !paths.is_empty() {
         let joined = std::env::join_paths(&paths)
             .map_err(|error| crate::i18n::now("export.cannotSearch", &[("path", request.output_path.as_str()), ("reason", &error.to_string())]))?;
         arguments.push(OsString::from("--resource-path"));
         arguments.push(joined);
+        }
     }
     // The library and the style the note's citations were formatted from. Pandoc appends the
     // reference list itself once it has a bibliography, so what is owed at the end of the document
@@ -222,6 +251,32 @@ pub(super) fn pandoc_arguments(
     if let Some(style) = &request.csl {
         arguments.push(OsString::from("--csl"));
         arguments.push(ensure_csl_in(dir, style)?.into_os_string());
+    }
+    if let Some((package, manifest)) = template {
+        match manifest.mode {
+            TemplateMode::ReferenceDoc => {
+                arguments.push(OsString::from("--reference-doc"));
+                arguments.push(
+                    super::templates::manifest_file(package, manifest.entry())
+                        .into_os_string(),
+                );
+            }
+            TemplateMode::Template | TemplateMode::Wrapper => {
+                arguments.push(OsString::from("--template"));
+                arguments.push(
+                    super::templates::manifest_file(package, manifest.entry())
+                        .into_os_string(),
+                );
+            }
+        }
+        // The package's style is handed over *after* the reader's own, so it wins for this export:
+        // a journal kit's reference list should look like the journal's, not like the app's default.
+        if let Some(csl) = &manifest.csl {
+            arguments.push(OsString::from("--csl"));
+            arguments.push(
+                super::templates::manifest_file(package, csl).into_os_string(),
+            );
+        }
     }
     // What the note is called, and the language it is in — for the kinds that carry their own name
     // or must declare a language (see `ExportKind`). The window sends both whatever the kind is, and
@@ -272,4 +327,92 @@ pub(super) fn pandoc_arguments(
     }
     arguments.push(note.as_os_str().to_os_string());
     Ok(arguments)
+}
+
+/// Resolves the package the window named, and refuses one that does not fit the kind. The id is
+/// the only thing the window sends; the path comes from the app's own folder.
+fn resolve_template(
+    app: &tauri::AppHandle,
+    kind: &ExportKind,
+    id: Option<&str>,
+) -> Result<Option<(PathBuf, TemplateManifest)>, String> {
+    let Some(id) = id.map(str::trim).filter(|id| !id.is_empty()) else {
+        return Ok(None);
+    };
+    if kind.template_mode == KindTemplate::None {
+        return Err(crate::i18n::now("template.noTemplateKind", &[("kind", kind.kind)]));
+    }
+    let (path, manifest) = super::templates::resolve_package(app, id)?;
+    if manifest.kind != kind.kind {
+        return Err(crate::i18n::now(
+            "template.wrongKind",
+            &[("kind", &manifest.kind), ("asked", kind.kind)],
+        ));
+    }
+    if manifest.mode == TemplateMode::ReferenceDoc
+        && kind.template_mode != KindTemplate::ReferenceDoc
+    {
+        return Err(crate::i18n::now("template.textKind", &[("kind", kind.kind)]));
+    }
+    if manifest.mode != TemplateMode::ReferenceDoc && kind.template_mode != KindTemplate::Text {
+        return Err(crate::i18n::now("template.referenceKind", &[("kind", kind.kind)]));
+    }
+    let entry = super::templates::manifest_file(&path, manifest.entry());
+    if !entry.is_file() {
+        return Err(crate::i18n::now(
+            "template.entryMissing",
+            &[("file", manifest.entry())],
+        ));
+    }
+    Ok(Some((path, manifest)))
+}
+
+/// Copies the files a LaTeX output needs beside it. Pandoc has written the `.tex`; the class and
+/// bibliography style are the package's, so the reader's own compile finds them without a path.
+fn deliver_beside_output(
+    package: &Path,
+    manifest: &TemplateManifest,
+    request: &ExportRequest,
+    kind: &ExportKind,
+) -> Result<(), String> {
+    if kind.kind != "latex" || manifest.deliver.is_empty() {
+        return Ok(());
+    }
+    let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+    let folder = output
+        .parent()
+        .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
+    for name in &manifest.deliver {
+        let source = super::templates::manifest_file(package, name);
+        let target = folder.join(name);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                crate::i18n::now(
+                    "export.cannotMake",
+                    &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
+                )
+            })?;
+        }
+        fs::copy(&source, &target).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
+    }
+    Ok(())
+}
+
+/// The output path as the run means it. Pandoc is run in the package folder for a PDF, so a
+/// relative destination from a caller has to become the one the reader saw.
+fn absolute_output(path: &str, source_dir: Option<&str>) -> PathBuf {
+    let path = PathBuf::from(path);
+    if path.is_absolute() {
+        return path;
+    }
+    let base = source_dir
+        .map(PathBuf::from)
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap_or_default();
+    base.join(path)
 }
