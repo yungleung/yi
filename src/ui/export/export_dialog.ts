@@ -441,7 +441,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.selectedTemplateId === null
         ? t('template.pandocDefault')
         : selected?.manifest?.name ?? t('template.missing', { id: this.selectedTemplateId });
-    this.editTemplate.disabled = this.selectedTemplateId === null;
+    this.editTemplate.disabled =
+      selected?.manifest === undefined || selected?.manifest === null;
     this.createTemplate.disabled = this.question?.pandoc === null;
   }
 

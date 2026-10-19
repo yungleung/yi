@@ -456,7 +456,8 @@ show its stderr. The same panel edits a kind's defaults YAML, which is why the e
 details, duplicate, remove), the confirmation is `import_dialog.ts`, and the manifest shape is held
 by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
 `export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
-`export-template-ui.js`, `export-template-create-ui.js` and `export-template-pdf.js`.
+`export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
+`export-template-pdf.js`.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

@@ -216,7 +216,9 @@ a wrapper, a duplicate and a remove; the session stack stays empty), `export-tem
 the `.tex`, and a Word export through a reference document), `export-template-ui` (the Template row,
 the library's inspect-then-import, CodeMirror, an atomic save, validation and the defaults panel),
 `export-template-create-ui` (Create…, details, duplicate and remove) and `export-template-pdf` (the
-package as the engine's working directory, which is what finds `journal.cls`);
+package as the engine's working directory, which is what finds `journal.cls`), with
+`export-template-broken` holding a newer manifest to the sentence it names and the library row it
+can still be removed from;
 `export-citations` — the three citation forms nobody had asked citeproc about, read through an EPUB
 because a book is a zip and `lib.js: zipEntry` inflates its pages: a locator lands where citeproc's
 grammar expects it (`(Smith, 2020, p. 45)`), a suppressed author leaves a parenthetical with the year and

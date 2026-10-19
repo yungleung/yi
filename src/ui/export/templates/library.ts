@@ -216,12 +216,11 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
     const compatible = summary.manifest !== null && summary.manifest.kind === this.kind;
     const row = document.createElement('button');
     row.type = 'button';
-    row.disabled = !compatible;
     row.className = `rounded border px-2 py-1 text-left text-sm ${
       this.selected === summary.id
         ? 'border-primary bg-primary/10'
         : 'border-base-300 hover:bg-base-300'
-    } ${compatible ? '' : 'opacity-45'}`;
+    } ${compatible ? '' : 'opacity-65'}`;
     row.setAttribute('data-template-package', summary.id);
     row.setAttribute('data-template-package-id', summary.id);
     const name = document.createElement('span');
@@ -241,12 +240,12 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
             .filter((fact): fact is string => typeof fact === 'string' && fact !== '')
             .join(' · ');
     row.append(name, facts);
-    if (compatible) {
-      row.addEventListener('click', () => {
-        this.selected = summary.id;
-        this.render();
-      });
-    }
+    // A package that cannot be used for this kind — or one whose manifest cannot be read — is still
+    // selectable, so its details, a duplicate or a removal are reachable. *Use* is what refuses it.
+    row.addEventListener('click', () => {
+      this.selected = summary.id;
+      this.render();
+    });
     return row;
   }
 
