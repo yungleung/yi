@@ -20,13 +20,13 @@
 # page with a web picture comes out whole even though the pandoc on this machine cannot fetch
 # anything by itself.
 #
-# `html-math-method: mathjax` (Zettlr's, and its URL is the same one pandoc defaults to) is the
-# exception to "one file": MathJax is a script, and pandoc inlines a script only when it can fetch
-# it — measured with a pandoc built without HTTP support, which warns and leaves the `<script
-# src="https://cdn.jsdelivr.net/…">` in place, so the page renders its math when it is opened with a
-# network and shows the reader's own TeX when it is not. A reader who wants the math to render
-# offline wants a different key: `method: mathml` needs no script at all, and pandoc's webtex and
-# katex methods each bring their own.
+# `html-math-method: katex` is the exception to "one file": KaTeX is a script and a stylesheet, and
+# pandoc inlines them only when it can fetch them — measured with a pandoc built without HTTP
+# support (3.12.1), which warns and leaves `<script src="…/katex.min.js">` and
+# `<link … katex.min.css>` in place, so the page renders its math when it is opened with a network
+# and shows the reader's own TeX when it is not. No `url` is written: `katex` names the method, and
+# pandoc supplies its own default CDN URLs. A reader who wants the math to render offline wants a
+# different key: `method: mathml` needs no script at all.
 #
 # Two things the app adds on the command line, because they are its own settings rather than this
 # file's: the bibliography the citations were formatted from (Settings → Citation) and the CSL style
@@ -66,9 +66,7 @@ strip-comments: false
 indented-code-classes: []
 ascii: false
 highlight-style: pygments
-html-math-method:
-  method: mathjax
-  url: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+html-math-method: katex
 tab-stop: 4
 preserve-tabs: false
 html-q-tags: false

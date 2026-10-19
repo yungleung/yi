@@ -5,9 +5,9 @@
  * email or open anywhere: the note's picture is *carried* rather than linked, and the stylesheet is
  * in the head rather than in a folder beside it. So that is what this probe looks at first — the
  * picture as a `data:image/png;base64` URL and a `<style>` in the file — and then at the rest of a
- * document: the heading, the math (MathJax marks it; the script is a CDN link, which is the one
- * thing that leaves the file, and the asset's header says so), and the citations as a reference list
- * in the page's style. The picture is one the app *fetched from the web* for this run, which is the
+ * document: the heading, the math (KaTeX marks it; its script and stylesheet are CDN links, the one
+ * thing that leaves the file, and the asset's header says so), and the citations as a reference
+ * list in the page's style. The picture is one the app *fetched from the web* for this run, which is the
  * second thing worth proving here: a page with a web picture comes out whole even on a pandoc that
  * cannot fetch anything itself.
  *
@@ -97,6 +97,9 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
+    // The shipped defaults are what this probe is about; the reader's copy in the app data is
+    // theirs and is never overwritten by the app. The harness puts that copy back after the run.
+    await invoke('export_restore_config', { kind: 'html' });
     await configManager.update({
       bibliography_file: `${checkout}test/fixtures/workspace/zotero.bib`
     });
@@ -149,11 +152,12 @@
       }
     );
     check(
-      'the math is marked for MathJax rather than left as raw text',
-      page.includes('class="math inline"') && /<script[^>]*mathjax[^>]*>/i.test(page),
+      'the math is marked for KaTeX rather than left as raw text',
+      page.includes('class="math inline"') && /katex\.min\.(?:js|css)/i.test(page),
       {
         marked: page.includes('class="math inline"'),
-        script: /<script[^>]*mathjax[^>]*>/i.exec(page)?.[0]?.slice(0, 60) ?? null
+        asset:
+          /<(?:script|link)[^>]*katex[^>]*>/i.exec(page)?.[0]?.slice(0, 80) ?? null
       }
     );
     check(
