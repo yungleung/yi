@@ -226,8 +226,8 @@ list exactly where it was, and the file's own `metadata:` block is what resolves
 nothing;
 `export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
 picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
-heading is shifted the way the file says, the math is marked for MathJax (a CDN script, the one
-thing that leaves the page), and the citations become a headed `References` list;
+heading is shifted the way the file says, the math is marked for KaTeX (a CDN script and
+stylesheet, the one thing that leaves the page), and the citations become a headed `References` list;
 `export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
