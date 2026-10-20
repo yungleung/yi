@@ -317,6 +317,13 @@ soul Error: Reconstruction failed* once the header was included: pandoc's defaul
 `\st` and `\ul` with `soul`, whose scanner cannot see past them. The header therefore loads `ulem`
 after pandoc's preamble and maps those two commands to `\sout` and `\uline` (`export-pdf.js` holds a
 note with inline code and strikeout through the default document path).
+**A custom PDF template may not emit `header-includes` at all**, so `--include-in-header` is silently
+useless there (NeurIPS is the measured case). `run.rs` injects a small compatibility preamble before
+`\begin{document}` instead: `amssymb` for task-list boxes, `ulem` and `\st`/`\ul`, and the `none`
+counter Pandoc's unnumbered `longtable` captions use. A template that defines neither `Shaded` nor
+`Highlighting` is given `--syntax-highlighting=none`, so fenced code falls back to `verbatim` rather
+than asking the template for environments it does not have. `testTemplatePdf` uses the same
+preamble, and its fixture holds a task list, a table, strikeout and a code block.
 
 **What the reader's file names still wins**, and the header's own comment says how: `mainfont` is the
 document's own font — `\normalfont`, so Latin and every block no shipped face answers for is set in it,

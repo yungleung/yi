@@ -141,7 +141,11 @@
 \usepackage[normalem]{ulem}
 \ifdefined\st
   \renewcommand{\st}[1]{\sout{#1}}
+\else
+  \newcommand{\st}[1]{\sout{#1}}
 \fi
 \ifdefined\ul
   \renewcommand{\ul}[1]{\uline{#1}}
+\else
+  \newcommand{\ul}[1]{\uline{#1}}
 \fi

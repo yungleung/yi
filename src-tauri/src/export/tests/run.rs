@@ -36,6 +36,8 @@
             None,
             None,
             None,
+            None,
+            None,
         )
         .unwrap()
         .iter()
@@ -66,6 +68,8 @@
             &ExportRequest { kind: name, ..request },
             kind_of("pdf").unwrap(),
             Some(&header),
+            None,
+            None,
             None,
             None,
         )
@@ -109,6 +113,15 @@
             ]
         );
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_custom_pdf_template_receives_the_header_before_its_document() {
+        let template = "\\documentclass{article}\n\\begin{document}\n$body$\n\\end{document}\n";
+        let header = "\\usepackage[normalem]{ulem}\n\\providecommand{\\st}[1]{\\sout{#1}}\n";
+        let injected = inject_pdf_header(template, header).unwrap();
+        assert!(injected.find(header).unwrap() < injected.find("\\begin{document}").unwrap());
+        assert_eq!(injected.matches("\\begin{document}").count(), 1);
     }
 
     #[test]
@@ -178,6 +191,8 @@
             None,
             Some((&package, &manifest)),
             None,
+            None,
+            None,
         )
         .unwrap()
         .iter()
@@ -241,6 +256,8 @@
             kind_of("docx").unwrap(),
             None,
             Some((&package, &manifest)),
+            None,
+            None,
             None,
         )
         .unwrap()
@@ -417,6 +434,8 @@
             &dir.join("note-1.md"),
             &request,
             kind_of("pdf").unwrap(),
+            None,
+            None,
             None,
             None,
             None,
