@@ -13,12 +13,12 @@
 # so a working web picture became `…/png.jpg` and a 404 (measured; `export.docx.yaml` has the long
 # version). Left out, pandoc uses the path exactly as it was written.
 #
-# `self-contained: true` is Zettlr's, and it is what makes the output **one file**: measured, the
-# note's picture comes out as `src="data:image/png;base64,…"` and the stylesheet as a `<style>` in
-# the head, so the page can be moved anywhere and emailed as it stands. A picture the app resolved
-# is a file pandoc inlines; one it fetched from the web for this run is inlined too, which is how a
-# page with a web picture comes out whole even though the pandoc on this machine cannot fetch
-# anything by itself.
+# `self-contained: true` is Zettlr's, and it is what makes the output **one file** for local media:
+# measured, a picture the app resolved comes out as `src="data:image/png;base64,…"` and the
+# stylesheet as a `<style>` in the head, so the page can be moved anywhere and emailed as it stands.
+# A picture written as a web URL stays a web URL: the author asked for that address, and a temporary
+# copy would stop working when the run ends. With this false, Yi copies the note's local pictures
+# into `<output>.assets/` and rewrites their `src`; the URL still stays as written.
 #
 # `html-math-method: katex` is the exception to "one file": KaTeX is a script and a stylesheet, and
 # pandoc inlines them only when it can fetch them — measured with a pandoc built without HTTP

@@ -1,15 +1,12 @@
 /**
  * The fourth kind, and the one whose promise is "one file".
  *
- * `self-contained: true` (Zettlr's) is what makes an HTML export a document a reader can move,
- * email or open anywhere: the note's picture is *carried* rather than linked, and the stylesheet is
- * in the head rather than in a folder beside it. So that is what this probe looks at first — the
- * picture as a `data:image/png;base64` URL and a `<style>` in the file — and then at the rest of a
- * document: the heading, the math (KaTeX marks it; its script and stylesheet are CDN links, the one
- * thing that leaves the file, and the asset's header says so), and the citations as a reference
- * list in the page's style. The picture is one the app *fetched from the web* for this run, which is the
- * second thing worth proving here: a page with a web picture comes out whole even on a pandoc that
- * cannot fetch anything itself.
+ * `self-contained: true` (Zettlr's) carries the page's stylesheet in the head. A picture the note
+ * names on the web is different: Yi keeps the URL the author wrote, rather than fetching it into a
+ * temporary file that is deleted after the run. That is what this probe looks at first — the URL
+ * still linked and no `export/tmp/remote` path — and then at the rest of a document: the heading,
+ * the math (KaTeX marks it; its script and stylesheet are CDN links, and the asset's header says
+ * so), and the citations as a reference list in the page's style.
  *
  * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
  *   src/ui/export/export_dialog.ts
@@ -143,12 +140,16 @@
       { heading: /<h2[^>]*>Going out/.exec(page)?.[0] ?? null }
     );
     check(
-      'and it is one file: the picture it fetched from the web is carried in it, not linked',
-      page.includes('src="data:image/png;base64,') && page.includes('<style'),
+      'and the web picture stays the URL the note wrote instead of an app temporary file',
+      page.includes(`src="${url}"`) &&
+        !page.includes('src="data:image/png;base64,') &&
+        !page.includes('/export/tmp/remote/') &&
+        page.includes('<style'),
       {
+        linked: page.includes(`src="${url}"`),
         carried: page.includes('src="data:image/png;base64,'),
-        style: page.includes('<style'),
-        linked: page.includes(`src="${url}`)
+        temporary: page.includes('/export/tmp/remote/'),
+        style: page.includes('<style')
       }
     );
     check(

@@ -10,6 +10,7 @@
 
 mod config;
 mod font_hints;
+mod html_media;
 mod info;
 mod kinds;
 mod pandoc;

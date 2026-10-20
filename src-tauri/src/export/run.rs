@@ -187,6 +187,10 @@ fn export_with_pandoc(
         run_pandoc(&pandoc, &arguments, working).map(|warnings| ExportOutcome { warnings })
     })
     .and_then(|outcome| {
+        if kind.kind == "html" {
+            let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+            super::html_media::package_html_media(&output)?;
+        }
         if let Some((package, manifest)) = &template {
             deliver_package_assets(
                 package,

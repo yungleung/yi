@@ -228,10 +228,12 @@ no name (`(2020)`), the reference list is appended under the heading the app ask
 **`suppress-bibliography` is metadata and not a variable** — measured: a `variables:` line leaves the
 list exactly where it was, and the file's own `metadata:` block is what resolves the keys and appends
 nothing;
-`export-html` — the fourth, and the one whose promise is one file: `self-contained` carries the
-picture the app *fetched from the web* as a `data:` URL and the stylesheet as a `<style>`, the
-heading is shifted the way the file says, the math is marked for KaTeX (a CDN script and
-stylesheet, the one thing that leaves the page), and the citations become a headed `References` list;
+`export-html` — the fourth: `self-contained` carries the stylesheet as a `<style>`, while a web
+picture stays the URL the note wrote instead of becoming an app temporary; the heading is shifted
+the way the file says, the math is marked for KaTeX (a CDN script and stylesheet), and the
+citations become a headed `References` list; `export-html-local-assets` — non-self-contained HTML:
+the note's local picture is copied to `note.assets/` and linked relatively, a web picture stays its
+URL, and Yuki's `template/` tree travels beside the page;
 `export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,

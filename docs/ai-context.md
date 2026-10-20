@@ -398,9 +398,13 @@ one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own read
 of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
 image's destination written as the file the app resolves it to (absolute and encoded, through
 `workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
-what the docx embeds is what the page showed — and for a picture *on the web*, fetched by the app
-with an in-process `reqwest` request, because a pandoc built without HTTP support cannot fetch it at all; the
-files land in `<data>/export/tmp/remote/` and go at the end of the run) — and a third, for the kind
+what the docx embeds is what the page showed). A picture written as a web URL is kept as that URL
+for HTML: the author's address must not become a temporary file that disappears after the run. For
+the other pandoc kinds it is fetched by the app with an in-process `reqwest` request, because a
+pandoc built without HTTP support cannot fetch it at all; those files land in
+`<data>/export/tmp/remote/` and go at the end of the run. When an HTML page is not self-contained,
+`export/html_media.rs` copies the note's local pictures to `<output>.assets/` and rewrites their
+`src`; web URLs and data URIs are untouched — and a third rule, for the kind
 pandoc is not the one converting for: each citation written as the words it reads as, with the works
 it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind
 has no citeproc behind it. Those rules walk the *parse*,

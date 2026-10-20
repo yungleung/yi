@@ -141,7 +141,10 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // The kind the app writes itself keeps the note's URL: a processed markdown is the reader's own
     // file, and a copy in this run's folder would be a path that is taken away when the run ends. The
     // kinds pandoc writes need the file, because pandoc may not be built to fetch one.
-    if (first.needs_pandoc) {
+    // HTML keeps a web picture as the URL the author wrote: a self-contained page can leave it
+    // remote, and a non-self-contained one should not point at an app temporary that is deleted
+    // after this run. The other kinds still need a local file for pandoc or the TeX engine.
+    if (first.needs_pandoc && first.kind !== 'html') {
       for (const destination of destinations) {
         if (isWebDestination(destination) && !fetched.has(destination)) {
           fetched.set(destination, await fetchedPicture(destination, unfetched));
@@ -168,6 +171,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       bases: imageBases(),
       exists: fileExists,
       fetchRemote: async (url) => {
+        if (first.kind === 'html') {
+          return null;
+        }
         if (!first.needs_pandoc) {
           return null;
         }
