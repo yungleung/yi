@@ -495,9 +495,16 @@ pub(super) fn deliver_html_assets(
     }
     for prefix in prefixes {
         for asset in &assets {
+            let target = folder.join(&prefix).join(asset);
+            // A kit may ship a sample with the same name as the page being written (`Yuki` ships
+            // `default-document.html`). The generated page is the output; an asset may never
+            // replace it with a stale sample.
+            if target == output {
+                continue;
+            }
             copy_bundle_asset(
                 &super::templates::manifest_file(package, asset),
-                &folder.join(&prefix).join(asset),
+                &target,
             )?;
         }
     }

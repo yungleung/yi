@@ -624,6 +624,21 @@
         let _ = fs::remove_dir_all(&dir);
     }
 
+    #[test]
+    fn a_template_sample_never_overwrites_the_generated_page() {
+        let dir = scratch("html-sample-collision");
+        let package = dir.join("package");
+        let output = dir.join("out").join("note.html");
+        fs::create_dir_all(&package).unwrap();
+        fs::create_dir_all(output.parent().unwrap()).unwrap();
+        fs::write(package.join("note.html"), "stale sample").unwrap();
+        fs::write(&output, "generated page").unwrap();
+        let manifest = package_manifest("html", vec!["note.html".to_string()]);
+        deliver_html_assets(&package, &manifest, &output).unwrap();
+        assert_eq!(fs::read_to_string(&output).unwrap(), "generated page");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
     /// A `.tex` cannot carry its class, style or figures, so every asset travels beside it.
     #[test]
     fn latex_delivery_copies_every_asset_not_only_the_class_and_bst() {
