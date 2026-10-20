@@ -13,9 +13,9 @@
 # so a working web picture became `…/png.jpg` and a 404 (measured; `export.docx.yaml` has the long
 # version). Left out, pandoc uses the path exactly as it was written.
 #
-# The card controls `self-contained` per export, and starts it **off**: the target is a folder that
-# receives the page, its local pictures and the template's files. A reader who wants one HTML file
-# for local media ticks the card's box; a picture written as a web URL stays that URL either way.
+# The card controls `self-contained` per export, and starts it **off**. The target is a folder that
+# always receives the page, its local pictures and the template's files; ticking the card's box also
+# embeds local media in the page. A picture written as a web URL stays that URL either way.
 #
 # `html-math-method: katex` is the exception to "one file": KaTeX is a script and a stylesheet, and
 # pandoc inlines them only when it can fetch them — measured with a pandoc built without HTTP

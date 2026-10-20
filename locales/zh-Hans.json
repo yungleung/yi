@@ -372,5 +372,5 @@
   "export.targetFolder": "Export folder",
   "export.selfContained": "Self-contained HTML (embed local files)",
   "export.selfContainedHint": "Off by default. Yi creates a folder containing the page and its files; tick this to put everything in one HTML file.",
-  "export.doneFolder": "Exported to folder {file}"
+  "export.doneFolder": "Exported to bundle {folder}"
 }

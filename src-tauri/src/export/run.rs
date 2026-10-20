@@ -487,6 +487,12 @@ pub(super) fn deliver_html_assets(
             }
         }
     }
+    // Even a self-contained page may not name every file a journal kit carries. The reader asked
+    // for a bundle folder, so the whole package travels there; with no link to infer a prefix from,
+    // use the folder name the template was written in.
+    if prefixes.is_empty() {
+        prefixes.insert(html_bundle_prefix(manifest, &assets));
+    }
     for prefix in prefixes {
         for asset in &assets {
             copy_asset(
@@ -496,6 +502,22 @@ pub(super) fn deliver_html_assets(
         }
     }
     Ok(())
+}
+
+fn html_bundle_prefix(manifest: &TemplateManifest, assets: &[String]) -> String {
+    let aliases = super::templates::alias_names(manifest);
+    if aliases.iter().any(|alias| {
+        assets
+            .iter()
+            .any(|asset| asset.starts_with(&format!("{alias}/")))
+    }) {
+        return String::new();
+    }
+    aliases
+        .into_iter()
+        .find(|alias| alias != &manifest.id)
+        .map(|alias| format!("{alias}/"))
+        .unwrap_or_default()
 }
 
 /// The package's files that are not its entry. The CSL is already in `assets` for a new package;

@@ -228,7 +228,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     const written = fileName(outputPath);
     showHint(
       first.kind === 'html'
-        ? t('export.doneFolder', { file: written })
+        ? t('export.doneFolder', { folder: outputPath })
         : t('export.done', { file: written }),
       null
     );

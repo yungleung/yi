@@ -591,7 +591,30 @@
         let embedded = dir.join("out/embedded.html");
         fs::write(&embedded, "<style>body{}</style>").unwrap();
         deliver_html_assets(&package, &manifest, &embedded).unwrap();
-        assert!(!dir.join("out/css/template.css").exists());
+        assert!(dir.join("out/css/template.css").is_file());
+        assert!(dir.join("out/js/template.js").is_file());
+        assert!(dir.join("out/img/logo.png").is_file());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_self_contained_page_still_receives_unreferenced_package_assets() {
+        let dir = scratch("html-self-contained-assets");
+        let package = dir.join("package");
+        let output = dir.join("out").join("note.html");
+        fs::create_dir_all(package.join("css")).unwrap();
+        fs::create_dir_all(output.parent().unwrap()).unwrap();
+        fs::write(package.join("css/site.css"), "body{}").unwrap();
+        fs::write(package.join("readme.txt"), "read me").unwrap();
+        fs::write(&output, "<style>body{}</style>").unwrap();
+        let mut manifest = package_manifest(
+            "html",
+            vec!["css/site.css".to_string(), "readme.txt".to_string()],
+        );
+        manifest.origin.path = Some("/Downloads/template".to_string());
+        deliver_html_assets(&package, &manifest, &output).unwrap();
+        assert!(dir.join("out/template/css/site.css").is_file());
+        assert!(dir.join("out/template/readme.txt").is_file());
         let _ = fs::remove_dir_all(&dir);
     }
 

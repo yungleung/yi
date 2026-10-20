@@ -459,7 +459,8 @@ also staged under the folder name its template uses in relative links (`template
 so the card's **Self-contained HTML** box, off by default, embeds the package's local CSS,
 JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/note` becomes
 `/notes/note/note.html`, with `note.assets/` and the template's files inside it. When the box is
-off, the page keeps relative links and all local files travel in that folder; web URLs stay URLs.
+off, the page keeps relative links. The bundle always receives the package's whole asset tree,
+whether or not the page also embedded those files; web URLs stay URLs.
 `ExportRequest.self_contained` becomes an explicit `--embed-resources=true|false`, so an older
 reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pack.rs` rewrites
 chapter links to an `assets/` folder, copies the package's web resources there and declares them in

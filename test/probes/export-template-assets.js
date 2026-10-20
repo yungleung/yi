@@ -73,12 +73,14 @@
         htmlText.includes('YI-JS-ASSET-MARKER') &&
         htmlText.includes('data:image/svg+xml') &&
         !htmlText.includes('href="template/css/site.css"') &&
-        !htmlText.includes('src="template/js/site.js"'),
+        !htmlText.includes('src="template/js/site.js"') &&
+        (await exists(`${htmlTarget}/template/readme.txt`)),
       {
         css: htmlText.includes('YI-CSS-ASSET-MARKER'),
         js: htmlText.includes('YI-JS-ASSET-MARKER'),
         image: htmlText.includes('data:image/svg+xml'),
-        brokenCss: htmlText.includes('href="template/css/site.css"')
+        brokenCss: htmlText.includes('href="template/css/site.css"'),
+        unreferenced: await exists(`${htmlTarget}/template/readme.txt`)
       }
     );
 
