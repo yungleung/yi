@@ -82,6 +82,14 @@
     const web = `${window.__probeHttpBase}/image.png`;
     const note = `# Assets\n\n![local](local.png) and ![web](${web}).\n`;
     await files.writeTextAtomically(notePath, note);
+    // A second export into the same bundle must replace the page's generated files.
+    await files.createEntry(folder, 'note', false);
+    await files.createEntry(target, 'template', false);
+    await files.createEntry(`${target}/template`, 'css', false);
+    await writeBytes(
+      `${target}/template/css/site.css`,
+      new TextEncoder().encode('old generated copy')
+    );
     await t.openWorkspace(folder);
     await show(notePath, note);
 
@@ -145,6 +153,11 @@
         js: await exists(`${target}/template/js/site.js`),
         image: await exists(`${target}/template/img/logo.svg`)
       }
+    );
+    check(
+      'a re-export replaces an older generated asset instead of refusing',
+      (await readText(`${target}/template/css/site.css`)).includes('YI-CSS-ASSET-MARKER'),
+      await readText(`${target}/template/css/site.css`)
     );
     document.querySelector('[data-export-cancel]')?.click();
   } finally {

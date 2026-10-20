@@ -575,6 +575,8 @@
             r#"<link href="template/css/template.css"><script src="template/js/template.js"></script>"#,
         )
         .unwrap();
+        fs::create_dir_all(dir.join("out/template/css")).unwrap();
+        fs::write(dir.join("out/template/css/template.css"), "old export").unwrap();
         let manifest = package_manifest(
             "html",
             vec![
@@ -585,6 +587,10 @@
         );
         deliver_html_assets(&package, &manifest, &output).unwrap();
         assert!(dir.join("out/template/css/template.css").is_file());
+        assert_eq!(
+            fs::read_to_string(dir.join("out/template/css/template.css")).unwrap(),
+            "body{}"
+        );
         assert!(dir.join("out/template/js/template.js").is_file());
         assert!(dir.join("out/template/img/logo.png").is_file());
 

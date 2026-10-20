@@ -495,12 +495,47 @@ pub(super) fn deliver_html_assets(
     }
     for prefix in prefixes {
         for asset in &assets {
-            copy_asset(
+            copy_bundle_asset(
                 &super::templates::manifest_file(package, asset),
                 &folder.join(&prefix).join(asset),
             )?;
         }
     }
+    Ok(())
+}
+
+/// A file inside the HTML bundle belongs to the export that created it. Re-exporting over an old
+/// bundle replaces the generated copy; a reader's *output* folder elsewhere is still protected by
+/// [`copy_asset`] for LaTeX.
+fn copy_bundle_asset(source: &Path, target: &Path) -> Result<(), String> {
+    if target.is_dir() {
+        return Err(crate::i18n::now(
+            "template.outputConflict",
+            &[("file", &target.display().to_string())],
+        ));
+    }
+    if target.exists() {
+        fs::remove_file(target).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotMake",
+                &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
+    }
+    fs::copy(source, target).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotWrite",
+            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
     Ok(())
 }
 
