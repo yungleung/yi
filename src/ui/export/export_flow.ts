@@ -222,9 +222,16 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       landscape: answer.landscape,
       // The citations resolved either way: this is only about the list at the end of the document.
       suppress_references: answer.suppressReferences,
-      template_id: answer.templateId
+      template_id: answer.templateId,
+      self_contained: answer.selfContained
     });
-    showHint(t('export.done', { file: fileName(outputPath) }), null);
+    const written = fileName(outputPath);
+    showHint(
+      first.kind === 'html'
+        ? t('export.doneFolder', { file: written })
+        : t('export.done', { file: written }),
+      null
+    );
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about
     // it, which blames pandoc for its own missing HTTP support and would leave the reader none the
     // wiser about which URL is missing from the document they are holding.

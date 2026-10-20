@@ -63,9 +63,9 @@
       map_author: false
     });
     made.push(html.id);
-    const htmlTarget = `${folder}/probe.html`;
+    const htmlTarget = `${folder}/probe`;
     await run('html', html.id, htmlTarget, '# A note for the template\n\nHTML body text.\n');
-    const htmlText = await readText(htmlTarget);
+    const htmlText = await readText(`${htmlTarget}/probe.html`);
     check(
       'an HTML export goes through the package template, marker and body together',
       htmlText.includes('YI-HTML-TEMPLATE-MARKER') &&

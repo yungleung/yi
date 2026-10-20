@@ -456,12 +456,15 @@ resolves it under the app's export folder, refuses one for another kind, and han
 folder as the first `--resource-path`. A PDF run also uses the package folder as its working
 directory, which is what makes `\documentclass{journal}` and `\usepackage{…}` resolve. The package is
 also staged under the folder name its template uses in relative links (`template/css/…` for Yuki),
-so a self-contained HTML embeds the package's local CSS, JavaScript and pictures; if the reader's
-settings leave it non-self-contained, the assets are copied beside the page under those prefixes.
-For EPUB, `epub_pack.rs` rewrites chapter links to an `assets/` folder, copies the package's web
-resources there and declares them in `content.opf`. DOCX, ODT and PDF are containers and need no
-sidecars. The app never runs TeX's unrestricted shell escape or `tlmgr`, and it does not download
-journal kits.
+so the card's **Self-contained HTML** box, off by default, embeds the package's local CSS,
+JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/note` becomes
+`/notes/note/note.html`, with `note.assets/` and the template's files inside it. When the box is
+off, the page keeps relative links and all local files travel in that folder; web URLs stay URLs.
+`ExportRequest.self_contained` becomes an explicit `--embed-resources=true|false`, so an older
+reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pack.rs` rewrites
+chapter links to an `assets/` folder, copies the package's web resources there and declares them in
+`content.opf`. DOCX, ODT and PDF are containers and need no sidecars. The app never runs TeX's
+unrestricted shell escape or `tlmgr`, and it does not download journal kits.
 
 The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a

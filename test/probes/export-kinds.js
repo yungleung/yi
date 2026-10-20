@@ -70,7 +70,10 @@
             kind: card().dataset.exportKind,
             heading: card().querySelector('p')?.textContent ?? null,
             target: card().querySelector('[data-export-target]')?.value ?? null,
-            expected: `${folder}/note${info.name_suffix}.${info.extension}`
+            expected:
+              info.kind === 'html'
+                ? `${folder}/note`
+                : `${folder}/note${info.name_suffix}.${info.extension}`
           };
         } else {
           await sleep(25);

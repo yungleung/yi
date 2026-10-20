@@ -86,6 +86,10 @@ pub struct ExportRequest {
     /// resolves the id under the app's export folder; a path from the window is never trusted.
     #[serde(default)]
     pub template_id: Option<String>,
+    /// Whether an HTML page should embed its local files. The card's box is off by default; the
+    /// command-line value is explicit so an older defaults file cannot silently turn it back on.
+    #[serde(default)]
+    pub self_contained: bool,
 }
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
@@ -102,8 +106,15 @@ fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
-pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
+pub fn run_export(
+    app: tauri::AppHandle,
+    mut request: ExportRequest,
+) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
+    if kind.kind == "html" {
+        let (_, page) = super::html_media::html_output(&request.output_path)?;
+        request.output_path = page.to_string_lossy().into_owned();
+    }
     if kind.needs_pandoc {
         export_with_pandoc(&app, kind, &request)
     } else {
@@ -239,6 +250,13 @@ pub(super) fn pandoc_arguments(
     if let Some(header) = header {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
+    }
+    if kind.kind == "html" {
+        arguments.push(OsString::from(if request.self_contained {
+            "--embed-resources=true"
+        } else {
+            "--embed-resources=false"
+        }));
     }
     {
         let mut paths: Vec<PathBuf> = template

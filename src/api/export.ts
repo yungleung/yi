@@ -95,6 +95,8 @@ export interface ExportRequest {
   suppress_references: boolean;
   /** The package this export uses, by id, or null for pandoc's default. */
   template_id: string | null;
+  /** Whether an HTML page embeds its local files. The card's box is off by default. */
+  self_contained: boolean;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

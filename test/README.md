@@ -190,7 +190,8 @@ and the note — which is the text *after* the export's pre-process, so a wikili
 words it renders as, an image's destination as the absolute path the app resolved it to, and a
 fence's body untouched; `export-kinds` — one item per kind in the File menu's *Export* submenu: every
 kind the app ships opens the card it names, about that kind, under the note's own name
-(`note.processed.md` for the one kind whose output would otherwise be the note itself);
+(`note.processed.md` for the one kind whose output would otherwise be the note itself; HTML's
+target is the bundle folder `note/`);
 `export-docx` — the File menu's *Export* item for the docx, end to end: the card, the target field,
 the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
@@ -228,12 +229,12 @@ no name (`(2020)`), the reference list is appended under the heading the app ask
 **`suppress-bibliography` is metadata and not a variable** — measured: a `variables:` line leaves the
 list exactly where it was, and the file's own `metadata:` block is what resolves the keys and appends
 nothing;
-`export-html` — the fourth: `self-contained` carries the stylesheet as a `<style>`, while a web
-picture stays the URL the note wrote instead of becoming an app temporary; the heading is shifted
-the way the file says, the math is marked for KaTeX (a CDN script and stylesheet), and the
-citations become a headed `References` list; `export-html-local-assets` — non-self-contained HTML:
-the note's local picture is copied to `note.assets/` and linked relatively, a web picture stays its
-URL, and Yuki's `template/` tree travels beside the page;
+`export-html` — the fourth: the card's Self-contained box is off by default and the target is a
+bundle folder whose `note.html` is read back; a web picture stays the URL the note wrote instead of
+becoming an app temporary; the heading is shifted the way the file says, the math is marked for
+KaTeX (a CDN script and stylesheet), and the citations become a headed `References` list;
+`export-html-local-assets` — the bundle's contents: the note's local picture is copied to
+`note.assets/`, a web picture stays its URL, and Yuki's `template/` tree travels beside the page;
 `export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,

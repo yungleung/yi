@@ -22,7 +22,8 @@
  * answer — a kind and a path, or nothing — so the flow cannot export something nobody asked for.
  */
 
-import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { join } from '@tauri-apps/api/path';
 import { restoreExportConfig, type ExportKindInfo } from '../../api/export';
 import {
   createDefaultTemplate,
@@ -93,6 +94,8 @@ export interface ExportAnswer {
   suppressReferences: boolean;
   /** The package this export uses, or null for pandoc's default. */
   templateId: string | null;
+  /** Whether an HTML page embeds its local files; the box starts off. */
+  selfContained: boolean;
 }
 
 /** Up to eight of the characters a note needs a font for, and an ellipsis when there are more. */
@@ -128,6 +131,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   /** The ask about the citations: the keys resolved, and no list at the end of the document. */
   private readonly noReferences: HTMLInputElement;
   private readonly noReferencesRowElement: HTMLElement;
+  /** The HTML page's optional embedding of local files. Off by default. */
+  private readonly selfContained: HTMLInputElement;
+  private readonly selfContainedRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   /** The line that says the note is written in characters the settings name no font for. */
   private readonly fontHint: HTMLParagraphElement;
@@ -214,6 +220,11 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.noReferences.className = 'checkbox checkbox-sm';
     this.noReferences.setAttribute('data-export-no-references', 'true');
 
+    this.selfContained = document.createElement('input');
+    this.selfContained.type = 'checkbox';
+    this.selfContained.className = 'checkbox checkbox-sm';
+    this.selfContained.setAttribute('data-export-self-contained', 'true');
+
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
@@ -266,6 +277,11 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     );
     this.templateRowElement = this.templateRow();
     this.noReferencesRowElement = this.checkboxRow(this.noReferences, t('export.noReferences'));
+    this.selfContainedRowElement = this.checkboxRow(
+      this.selfContained,
+      t('export.selfContained')
+    );
+    this.selfContainedRowElement.title = t('export.selfContainedHint');
 
     this.form = document.createElement('form');
     this.form.addEventListener('submit', (event) => {
@@ -280,6 +296,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
       this.templateRowElement,
+      this.selfContainedRowElement,
       this.pageRowElement,
       this.noReferencesRowElement,
       this.status,
@@ -325,14 +342,23 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
     const pandoc = this.question?.pandoc ?? null;
     // The target is the note's own path, the kind's own name suffix and its extension — unless the
-    // reader has written in the field, in which case what they typed is theirs.
+    // reader has written in the field, in which case what they typed is theirs. HTML is the one
+    // kind whose target is a folder: the page and its assets belong together.
     if (!this.edited) {
-      this.target.value = `${this.question?.baseTarget ?? ''}${info.name_suffix}.${info.extension}`;
+      this.target.value =
+        info.kind === 'html'
+          ? (this.question?.baseTarget ?? '')
+          : `${this.question?.baseTarget ?? ''}${info.name_suffix}.${info.extension}`;
     }
+    this.targetLabel.textContent = info.kind === 'html' ? t('export.targetFolder') : t('export.target');
     // A kind the app writes itself has no defaults file: the row is taken away rather than naming a
     // path that will never be written.
     this.configRowElement.classList.toggle('hidden', !info.needs_pandoc);
     this.templateRowElement.classList.toggle('hidden', info.template_mode === 'none');
+    this.selfContainedRowElement.classList.toggle(
+      'hidden',
+      info.kind !== 'html'
+    );
     // The button that puts the shipped file back is offered only when the reader's copy is *not* it:
     // a copy that already holds what the build ships has nothing to replace. A copy that differs may
     // be the reader's edit or an older build's copy, and the question behind the button says which
@@ -353,6 +379,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // Unticked every time the card is drawn, like the page fields: the list is what every kind
     // appends, and this is a reader asking for something else once.
     this.noReferences.checked = false;
+    // HTML starts as a folder bundle, with local files linked; a reader may ask for one embedded
+    // page for this export.
+    this.selfContained.checked = false;
     if (info.takes_a_page_size) {
       const choice = (label: string, value: string): HTMLOptionElement => {
         const option = document.createElement('option');
@@ -410,6 +439,21 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private async pick(): Promise<void> {
     const info = this.question?.kind ?? null;
     if (!info) {
+      return;
+    }
+    if (info.kind === 'html') {
+      const parent = this.target.value.replace(/[\\/][^\\/]*$/, '');
+      const chosen = await openDialog({
+        directory: true,
+        multiple: false,
+        defaultPath: parent
+      });
+      if (typeof chosen === 'string') {
+        const name =
+          (this.question?.baseTarget ?? '').split(/[\\/]/).filter(Boolean).pop() ?? 'page';
+        this.target.value = await join(chosen, name);
+        this.edited = true;
+      }
       return;
     }
     const chosen = await saveDialog({
@@ -565,7 +609,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       paper: this.paper.value === '' ? null : this.paper.value,
       landscape: orientation === '' ? null : orientation === 'landscape',
       suppressReferences: this.noReferences.checked,
-      templateId: this.selectedTemplateId
+      templateId: this.selectedTemplateId,
+      selfContained: this.selfContained.checked
     });
   }
 

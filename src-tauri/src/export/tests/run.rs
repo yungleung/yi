@@ -18,6 +18,7 @@
             landscape: None,
             suppress_references: false,
             template_id: None,
+            self_contained: false,
         }
     }
 
@@ -107,6 +108,25 @@
                 dir.join("note-1.md").to_string_lossy().into_owned(),
             ]
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn html_embedding_is_the_cards_explicit_off_by_default_answer() {
+        let dir = scratch("html-embedding");
+        let off = ExportRequest {
+            kind: "html".to_string(),
+            self_contained: false,
+            ..request_in(&dir)
+        };
+        let arguments = named_arguments_for(&dir, &off, kind_of("html").unwrap());
+        assert!(arguments.contains(&"--embed-resources=false".to_string()));
+        let on = ExportRequest {
+            self_contained: true,
+            ..off
+        };
+        let arguments = named_arguments_for(&dir, &on, kind_of("html").unwrap());
+        assert!(arguments.contains(&"--embed-resources=true".to_string()));
         let _ = fs::remove_dir_all(&dir);
     }
 

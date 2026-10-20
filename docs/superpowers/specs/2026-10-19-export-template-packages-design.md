@@ -206,9 +206,10 @@ necessary as its class. HTML is made whole first: the package is staged under th
 template uses in relative links (a folder imported as `template/` keeps that name), added to the
 resource path, and a self-contained page embeds its local CSS, JavaScript and pictures. A picture
 written as a web URL stays that URL: it is not fetched into a temporary file for HTML. If the
-reader's settings leave the page self-contained off, the same template asset tree is copied under
-every relative prefix the finished page names, and the note's own local pictures are copied to
-`<output>.assets/` and linked from there. EPUB is a container, so its packer rewrites local chapter
+reader leaves the card's **Self-contained HTML** box off (the default), the same template asset tree
+is copied under every relative prefix the finished page names, and the note's own local pictures are
+copied to `<output>.assets/` and linked from there. An HTML target is a bundle folder: the page,
+`<output>.assets/` and template files are created together inside it. EPUB is a container, so its packer rewrites local chapter
 links to `assets/…`, adds the package's CSS/JavaScript/images/fonts there, and declares them in
 `content.opf`. DOCX, ODT and PDF embed what the converter read and need no sidecars.
 

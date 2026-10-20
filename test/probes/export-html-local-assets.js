@@ -31,14 +31,10 @@
   const folderName = `yi-probe-html-assets-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
-  const target = `${folder}/note.html`;
+  const target = `${folder}/note`;
+  const pagePath = `${target}/note.html`;
   const checkout = window.__probePaths.checkout;
   const before = await invoke('get_config');
-  const defaults = await api.exportConfigText('html');
-  const noSelfContained = defaults.replace(
-    /self-contained:\s*(?:true|false)/,
-    'self-contained: false'
-  );
   let made = [];
   const png = Uint8Array.from(
     atob(
@@ -100,28 +96,36 @@
       map_author: false
     });
     made.push(pkg.id);
-    await api.saveExportConfigText('html', noSelfContained);
     await configManager.update({
       export_templates: { ...(configManager.get()?.export_templates ?? {}), html: pkg.id }
     });
 
     await invoke('plugin:event|emit', { event: 'export', payload: 'html' });
     await until(() => open());
+    check(
+      'Self-contained HTML starts off and the target is a bundle folder',
+      document.querySelector('[data-export-self-contained]')?.checked === false &&
+        document.querySelector('[data-export-target]')?.value === target,
+      {
+        checked: document.querySelector('[data-export-self-contained]')?.checked,
+        target: document.querySelector('[data-export-target]')?.value
+      }
+    );
     const hints = t.hintsNow();
     document.querySelector('[data-export-target]').value = target;
     document.querySelector('[data-export-run]').click();
     const written = await until(
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
-    const page = written ? await readText(target) : '';
+    const page = written ? await readText(pagePath) : '';
     check(
       'the local note picture is copied beside the page and linked relatively',
       page.includes('src="note.assets/local.png"') &&
-        (await exists(`${folder}/note.assets/local.png`)) &&
+        (await exists(`${target}/note.assets/local.png`)) &&
         !page.includes(`${folder}/local.png`),
       {
         local: page.includes('src="note.assets/local.png"'),
-        copied: await exists(`${folder}/note.assets/local.png`)
+        copied: await exists(`${target}/note.assets/local.png`)
       }
     );
     check(
@@ -133,18 +137,17 @@
       'the template’s CSS, JavaScript, image and folder spelling are delivered beside the page',
       page.includes('href="template/css/site.css"') &&
         page.includes('src="template/js/site.js"') &&
-        (await exists(`${folder}/template/css/site.css`)) &&
-        (await exists(`${folder}/template/js/site.js`)) &&
-        (await exists(`${folder}/template/img/logo.svg`)),
+        (await exists(`${target}/template/css/site.css`)) &&
+        (await exists(`${target}/template/js/site.js`)) &&
+        (await exists(`${target}/template/img/logo.svg`)),
       {
-        css: await exists(`${folder}/template/css/site.css`),
-        js: await exists(`${folder}/template/js/site.js`),
-        image: await exists(`${folder}/template/img/logo.svg`)
+        css: await exists(`${target}/template/css/site.css`),
+        js: await exists(`${target}/template/js/site.js`),
+        image: await exists(`${target}/template/img/logo.svg`)
       }
     );
     document.querySelector('[data-export-cancel]')?.click();
   } finally {
-    await api.saveExportConfigText('html', defaults).catch(() => {});
     for (const id of made.reverse()) {
       try {
         await api.removeTemplate(id);

@@ -50,7 +50,8 @@
   const folderName = `yi-probe-export-html-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
-  const target = `${folder}/note.html`;
+  const target = `${folder}/note`;
+  const pagePath = `${target}/note.html`;
   const url = `${window.__probeHttpBase}/image.png`;
   const note = [
     '# Going out',
@@ -114,7 +115,7 @@
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
     check(
-      'the menu’s html item opens the card for the HTML kind, and the target becomes a .html',
+      'the menu’s html item opens the card for the HTML kind, with a bundle-folder target',
       card().dataset.exportKind === 'html' &&
         field.value === target,
       { kind: card().dataset.exportKind, chosen: field.value }
@@ -128,7 +129,7 @@
     const written = await until(
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
-    const page = written ? await readText(target) : '';
+    const page = written ? await readText(pagePath) : '';
     check(
       'Export writes a whole HTML document',
       page.includes('<!DOCTYPE html>') && page.includes('<html'),
@@ -175,7 +176,7 @@
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(
       'and the reader is told which file it wrote',
-      (hint?.textContent ?? '').includes('note.html'),
+      (hint?.textContent ?? '').includes('note'),
       hint?.textContent ?? null
     );
   } finally {

@@ -15,6 +15,47 @@ const IMAGE_EXTENSIONS: [&str; 9] = [
     "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "bmp", "tif",
 ];
 
+/// The folder an HTML export creates, and the page inside it.
+///
+/// A target ending in `.html`/`.htm` is accepted for an older path, but the extension is dropped:
+/// `/notes/note.html` and `/notes/note` both mean `/notes/note/note.html` with the page's assets
+/// beside it.
+pub(super) fn html_output(requested: &str) -> Result<(PathBuf, PathBuf), String> {
+    let requested = Path::new(requested);
+    let extension = requested
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let bundle = if matches!(extension.as_str(), "html" | "htm") {
+        requested.with_extension("")
+    } else {
+        requested.to_path_buf()
+    };
+    if bundle.as_os_str().is_empty() {
+        return Err(crate::i18n::now("export.noTarget", &[]));
+    }
+    if bundle.exists() && !bundle.is_dir() {
+        return Err(crate::i18n::now(
+            "template.outputConflict",
+            &[("file", &bundle.display().to_string())],
+        ));
+    }
+    fs::create_dir_all(&bundle).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotMake",
+            &[("path", &bundle.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
+    let name = bundle
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "page".to_string());
+    let page = bundle.join(format!("{name}.html"));
+    Ok((bundle, page))
+}
+
 pub(super) fn package_html_media(output: &Path) -> Result<(), String> {
     let Ok(html) = fs::read_to_string(output) else {
         return Ok(());
@@ -230,6 +271,28 @@ fn hex(byte: u8) -> Option<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_html_target_becomes_a_bundle_folder_with_the_page_inside() {
+        let dir = std::env::temp_dir().join(format!(
+            "yi-html-bundle-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        let (bundle, page) = html_output(&dir.join("note.html").to_string_lossy()).unwrap();
+        assert_eq!(bundle, dir.join("note"));
+        assert!(bundle.is_dir());
+        assert_eq!(page, dir.join("note").join("note.html"));
+        let (bundle_again, page_again) =
+            html_output(&dir.join("note").to_string_lossy()).unwrap();
+        assert_eq!(bundle_again, bundle);
+        assert_eq!(page_again, page);
+        let _ = fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn local_images_are_copied_and_web_urls_are_left_alone() {

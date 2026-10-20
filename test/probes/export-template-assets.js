@@ -47,7 +47,8 @@
       paper: null,
       landscape: null,
       suppress_references: false,
-      template_id: templateId
+      template_id: templateId,
+      self_contained: true
     });
   try {
     await files.createEntry(home, folderName, false);
@@ -63,9 +64,9 @@
       map_author: false
     });
     made.push(html.id);
-    const htmlTarget = `${folder}/assets.html`;
+    const htmlTarget = `${folder}/assets`;
     await run('html', html.id, htmlTarget);
-    const htmlText = new TextDecoder().decode(await readBytes(htmlTarget));
+    const htmlText = new TextDecoder().decode(await readBytes(`${htmlTarget}/assets.html`));
     check(
       'a self-contained HTML page embeds the package’s CSS, JavaScript and image',
       htmlText.includes('YI-CSS-ASSET-MARKER') &&

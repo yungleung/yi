@@ -368,5 +368,9 @@
   "template.wrapperNeeded": "No $body$; this is a complete document, so Yi proposes a wrapper.",
   "template.wrongKind": "This package is for {kind}, not for the export you asked for ({asked}).",
   "template.loneDefaults": "A pandoc defaults file is edited in the kind’s defaults panel, not imported as a template.",
-  "template.outputConflict": "Yi did not overwrite {file}: a different file is already there."
+  "template.outputConflict": "Yi did not overwrite {file}: a different file is already there.",
+  "export.targetFolder": "Export folder",
+  "export.selfContained": "Self-contained HTML (embed local files)",
+  "export.selfContainedHint": "Off by default. Yi creates a folder containing the page and its files; tick this to put everything in one HTML file.",
+  "export.doneFolder": "Exported to folder {file}"
 }
