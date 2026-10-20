@@ -50,7 +50,8 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  const note = '# Going out\n\nA short paragraph, and a citation [@smith2020].\n';
+  const note =
+    '# Going out\n\nA short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].\n';
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {

@@ -312,6 +312,11 @@ one line of each on one page with **no** font named in the settings file: Greek,
 Arabic, Devanagari, Thai, Armenian, Georgian, Han, kana and Hangul all draw, with a `ToUnicode` map per
 face so the page can be searched and copied from (`export-pdf-scripts.js` reads such a page back, and
 reads the page's `/BaseFont` names to say they were *this build's* faces).
+The same inter-character tokens are what made every `~~strikethrough~~` stop the PDF with *Package
+soul Error: Reconstruction failed* once the header was included: pandoc's default template defines
+`\st` and `\ul` with `soul`, whose scanner cannot see past them. The header therefore loads `ulem`
+after pandoc's preamble and maps those two commands to `\sout` and `\uline` (`export-pdf.js` holds a
+note with inline code and strikeout through the default document path).
 
 **What the reader's file names still wins**, and the header's own comment says how: `mainfont` is the
 document's own font — `\normalfont`, so Latin and every block no shipped face answers for is set in it,

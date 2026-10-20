@@ -133,3 +133,15 @@
 \setTransitionTo{Kanbun}{\yiHan}
 \setTransitionTo{HalfwidthAndFullwidthForms}{\yiHan}
 \fi
+
+% The default template defines strikethrough and underline with `soul`, whose scanner does not
+% survive the inter-character tokens `ucharclasses` installs: every strikeout then stops the PDF
+% with "Reconstruction failed" (measured with pandoc 3.12.1's default latex template). `ulem`
+% draws the same two marks without that scanner, and is loaded here, after pandoc's own preamble.
+\usepackage[normalem]{ulem}
+\ifdefined\st
+  \renewcommand{\st}[1]{\sout{#1}}
+\fi
+\ifdefined\ul
+  \renewcommand{\ul}[1]{\uline{#1}}
+\fi
