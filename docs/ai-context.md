@@ -428,8 +428,9 @@ kind, `template`/`wrapper`/`reference-doc` mode, provenance and licence, one ent
 asset/deliver lists — and the reader never writes it by hand. The manifest's `id` is a slug of the
 display name (`-2`, `-3` on collision); it is edited through the details form, and the raw JSON is a
 read-only view in the package editor. A package belongs to one export kind. `assets` are every other
-file, and `deliver` is the subset a LaTeX export copies beside its `.tex` (`.cls`, `.sty`, `.bst`,
-`.bbx`, `.cbx`), so the reader's own compile finds the journal's class and bibliography style.
+file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
+export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
+file the template names travels too.
 
 Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
 folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference
@@ -449,8 +450,14 @@ row changes it for later exports too. `ExportRequest.template_id` carries only t
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
 folder as the first `--resource-path`. A PDF run also uses the package folder as its working
-directory, which is what makes `\documentclass{journal}` and `\usepackage{…}` resolve. The app never
-runs TeX's unrestricted shell escape or `tlmgr`, and it does not download journal kits.
+directory, which is what makes `\documentclass{journal}` and `\usepackage{…}` resolve. The package is
+also staged under the folder name its template uses in relative links (`template/css/…` for Yuki),
+so a self-contained HTML embeds the package's local CSS, JavaScript and pictures; if the reader's
+settings leave it non-self-contained, the assets are copied beside the page under those prefixes.
+For EPUB, `epub_pack.rs` rewrites chapter links to an `assets/` folder, copies the package's web
+resources there and declares them in `content.opf`. DOCX, ODT and PDF are containers and need no
+sidecars. The app never runs TeX's unrestricted shell escape or `tlmgr`, and it does not download
+journal kits.
 
 The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
@@ -812,7 +819,9 @@ own: its config names *their* workspace, bibliography and layout, and its sessio
 documents they had open. So a test run that points the app at `test/fixtures/workspace` — or at a
 folder a probe made — **backs both up before it starts and puts both back when it ends**, and no
 test ever runs *in* the reader's own folder. `--with-workspace` does the config half for you (the
-harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and the harness does the
+harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`). The harness also starts
+every run with `export_templates` empty — a reader's Yuki choice must not turn an export probe into a
+measurement of their selection — and the snapshot puts the choice back afterwards. It does the
 session half too, for **every** run: it reads `load_session` up front and writes it back through
 `save_session` once the probe has reported, waiting out the app's own 800 ms session debounce first —
 because a probe loads documents into the maintainer's app, and one that types into them leaves its

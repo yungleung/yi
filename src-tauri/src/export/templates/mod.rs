@@ -6,6 +6,8 @@
 //! May import: the export folder, the kind vocabulary and the module's own children. Upholds: the
 //! window names a package by id, and the backend resolves it under the app's data folder.
 
+mod assets;
+mod epub_pack;
 mod manifest;
 mod package;
 mod scan;
@@ -27,6 +29,11 @@ pub(super) fn manifest_file(package: &std::path::Path, name: &str) -> std::path:
 }
 
 pub(super) use package::resolve_package;
+#[allow(unused_imports)]
+pub(super) use package::{alias_names, stage_alias};
+#[allow(unused_imports)]
+pub(super) use assets::{media_type, reference_to, relative_url, safe_prefix};
+pub(super) use epub_pack::pack_epub;
 
 #[tauri::command]
 pub fn export_templates(app: tauri::AppHandle) -> Result<Vec<TemplateSummary>, String> {

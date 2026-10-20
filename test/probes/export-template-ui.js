@@ -22,6 +22,11 @@
   const name = `Probe UI ${stamp}`;
   const before = await invoke('get_config');
   const stackBefore = session.documentSession.stack().length;
+  // The library is the reader's: a package they already chose for HTML must not turn this run's
+  // first assertion into a different starting point.
+  const templates = { ...(before.export_templates ?? {}) };
+  delete templates.html;
+  await configManager.update({ export_templates: templates });
   const visible = (selector) => {
     const element = document.querySelector(selector);
     return element !== null && !element.classList.contains('hidden');

@@ -212,8 +212,10 @@ the reader has written one into their own copy;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
 (pandoc's default template and reference document, and a validation that names a deleted entry),
-`export-template-output` (HTML and LaTeX markers in the output, the class and bst delivered beside
-the `.tex`, and a Word export through a reference document), `export-template-ui` (the Template row,
+`export-template-output` (HTML and LaTeX markers in the output, the class, bst and every other
+package asset delivered beside the `.tex`, and a Word export through a reference document),
+`export-template-assets` (Yuki's `template/css/…` spelling embedded in self-contained HTML, the full
+LaTeX asset tree, and an EPUB with its package assets packed into the book), `export-template-ui` (the Template row,
 the library's inspect-then-import, CodeMirror, an atomic save, validation and the defaults panel),
 `export-template-create-ui` (Create…, details, duplicate and remove) and `export-template-pdf` (the
 package as the engine's working directory, which is what finds `journal.cls`), with

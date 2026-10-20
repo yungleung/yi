@@ -8,6 +8,7 @@
 //! picture behind.
 
 use serde::Serialize;
+use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -16,6 +17,7 @@ use super::config::{ensure_csl_in, ensure_defaults_in, export_dir, remote_dir, s
 use super::kinds::{kind_of, ExportKind, KindTemplate, PAPER_SIZES, TemplateMode};
 use super::pandoc::{find_pandoc, run_pandoc};
 use super::templates::TemplateManifest;
+use super::templates::{reference_to, safe_prefix};
 
 /// What an export did: whether it wrote the file, and what pandoc said on the way.
 #[derive(Debug, Serialize, Clone)]
@@ -136,6 +138,19 @@ fn export_with_pandoc(
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     let template = resolve_template(app, kind, request.template_id.as_deref())?;
+    // A template's own relative links may name the folder it was written in (`template/css/…`).
+    // The package is stored under its id, so it is staged under the original basename too while
+    // pandoc reads it; a self-contained HTML then embeds those local files.
+    let alias = match &template {
+        Some((package, manifest)) => {
+            let root = dir
+                .join("tmp")
+                .join(format!("template-resources-{}", nanos()));
+            let names = super::templates::stage_alias(package, manifest, &root)?;
+            Some((root, names))
+        }
+        None => None,
+    };
     // The faces this build ships, for the kinds whose page is drawn by them: the header names them by
     // absolute path, so it is written per export rather than once — an app that has been replaced
     // since the last export would leave a header pointing into a bundle that is gone. Han and kana
@@ -158,6 +173,7 @@ fn export_with_pandoc(
         kind,
         header.as_deref(),
         template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
+        alias.as_ref().map(|(root, _)| root.as_path()),
     )
     .and_then(|arguments| {
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
@@ -172,7 +188,12 @@ fn export_with_pandoc(
     })
     .and_then(|outcome| {
         if let Some((package, manifest)) = &template {
-            deliver_beside_output(package, manifest, request, kind)?;
+            deliver_package_assets(
+                package,
+                manifest,
+                request,
+                kind,
+            )?;
         }
         Ok(outcome)
     });
@@ -180,6 +201,9 @@ fn export_with_pandoc(
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.
     let _ = fs::remove_file(&note);
+    if let Some((root, _)) = &alias {
+        let _ = fs::remove_dir_all(root);
+    }
     let _ = fs::remove_dir_all(remote_dir(&dir));
     result
 }
@@ -199,6 +223,7 @@ pub(super) fn pandoc_arguments(
     kind: &ExportKind,
     header: Option<&Path>,
     template: Option<(&Path, &TemplateManifest)>,
+    alias_root: Option<&Path>,
 ) -> Result<Vec<OsString>, String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
     let mut arguments: Vec<OsString> = vec![
@@ -215,6 +240,9 @@ pub(super) fn pandoc_arguments(
         let mut paths: Vec<PathBuf> = template
             .map(|(package, _)| vec![package.to_path_buf()])
             .unwrap_or_default();
+        if let Some(root) = alias_root {
+            paths.push(root.to_path_buf());
+        }
         paths.extend(request.resource_paths.iter().map(PathBuf::from));
         if !paths.is_empty() {
         let joined = std::env::join_paths(&paths)
@@ -367,40 +395,135 @@ fn resolve_template(
     Ok(Some((path, manifest)))
 }
 
-/// Copies the files a LaTeX output needs beside it. Pandoc has written the `.tex`; the class and
-/// bibliography style are the package's, so the reader's own compile finds them without a path.
-fn deliver_beside_output(
+/// Copies the package's sidecar files where the output still refers to them.
+///
+/// A LaTeX output is compiled elsewhere, so every asset travels beside the `.tex` (class, style,
+/// bibliography, figures). An HTML whose reader settings turn self-contained off keeps its links,
+/// so the asset tree is copied under each relative prefix the finished page uses. EPUB, DOCX, ODT
+/// and PDF are containers: their assets are read by pandoc or the engine, and the output is whole.
+fn deliver_package_assets(
     package: &Path,
     manifest: &TemplateManifest,
     request: &ExportRequest,
     kind: &ExportKind,
 ) -> Result<(), String> {
-    if kind.kind != "latex" || manifest.deliver.is_empty() {
+    if kind.kind == "latex" {
+        return deliver_latex_assets(package, manifest, request);
+    }
+    if kind.kind == "epub" {
+        let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+        return super::templates::pack_epub(&output, package, manifest);
+    }
+    if kind.kind != "html" {
         return Ok(());
     }
+    let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+    deliver_html_assets(package, manifest, &output)
+}
+
+/// A `.tex` is only useful with what it names: the whole asset tree goes beside it.
+pub(super) fn deliver_latex_assets(
+    package: &Path,
+    manifest: &TemplateManifest,
+    request: &ExportRequest,
+) -> Result<(), String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
     let folder = output
         .parent()
         .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
-    for name in &manifest.deliver {
-        let source = super::templates::manifest_file(package, name);
-        let target = folder.join(name);
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).map_err(|error| {
-                crate::i18n::now(
-                    "export.cannotMake",
-                    &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
-                )
-            })?;
+    for name in asset_names(manifest) {
+        copy_asset(
+            &super::templates::manifest_file(package, &name),
+            &folder.join(&name),
+        )?;
+    }
+    Ok(())
+}
+
+/// An HTML page that is not self-contained keeps its relative links, so the assets go beside it
+/// under the same prefixes. The finished page is read rather than the template: a self-contained
+/// page has already inlined these files, and copying them again would be clutter.
+pub(super) fn deliver_html_assets(
+    package: &Path,
+    manifest: &TemplateManifest,
+    output: &Path,
+) -> Result<(), String> {
+    let Ok(text) = fs::read_to_string(output) else {
+        return Ok(());
+    };
+    let folder = output
+        .parent()
+        .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
+    let assets = asset_names(manifest);
+    let mut prefixes = BTreeSet::new();
+    for asset in &assets {
+        if let Some(reference) = reference_to(&text, asset) {
+            if let Some(prefix) = reference.strip_suffix(asset.as_str()) {
+                if safe_prefix(prefix) {
+                    prefixes.insert(prefix.to_string());
+                }
+            }
         }
-        fs::copy(&source, &target).map_err(|error| {
+    }
+    for prefix in prefixes {
+        for asset in &assets {
+            copy_asset(
+                &super::templates::manifest_file(package, asset),
+                &folder.join(&prefix).join(asset),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// The package's files that are not its entry. The CSL is already in `assets` for a new package;
+/// an older manifest may list it only in `csl`, so it is included once either way.
+fn asset_names(manifest: &TemplateManifest) -> Vec<String> {
+    let mut names = manifest.assets.clone();
+    if let Some(csl) = &manifest.csl {
+        names.push(csl.clone());
+    }
+    names.sort();
+    names.dedup();
+    names
+}
+
+/// One copied asset. A different file already at the destination is the reader's and is not
+/// overwritten: the export names the conflict instead.
+fn copy_asset(source: &Path, target: &Path) -> Result<(), String> {
+    if target.exists() {
+        if let (Ok(source), Ok(target)) = (fs::read(source), fs::read(target)) {
+            if source == target {
+                return Ok(());
+            }
+        }
+        return Err(crate::i18n::now(
+            "template.outputConflict",
+            &[("file", &target.display().to_string())],
+        ));
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|error| {
             crate::i18n::now(
-                "export.cannotWrite",
-                &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+                "export.cannotMake",
+                &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
             )
         })?;
     }
+    fs::copy(source, target).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotWrite",
+            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+        )
+    })?;
     Ok(())
+}
+
+fn nanos() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_nanos())
+        .unwrap_or(0)
 }
 
 /// The output path as the run means it. Pandoc is run in the package folder for a PDF, so a

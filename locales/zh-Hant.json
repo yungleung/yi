@@ -367,5 +367,6 @@
   "template.wrapperDescription": "{source} stays in the package as an asset; {entry} is a copy with $body$ inserted {insertion}.",
   "template.wrapperNeeded": "No $body$; this is a complete document, so Yi proposes a wrapper.",
   "template.wrongKind": "This package is for {kind}, not for the export you asked for ({asked}).",
-  "template.loneDefaults": "A pandoc defaults file is edited in the kind’s defaults panel, not imported as a template."
+  "template.loneDefaults": "A pandoc defaults file is edited in the kind’s defaults panel, not imported as a template.",
+  "template.outputConflict": "Yi did not overwrite {file}: a different file is already there."
 }

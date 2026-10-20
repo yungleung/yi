@@ -89,16 +89,18 @@
     await run('latex', latex.id, latexTarget, '# A note for the template\n\nLaTeX body text.\n');
     const latexText = await readText(latexTarget);
     check(
-      'a LaTeX export goes through the package template and leaves the class and style beside it',
+      'a LaTeX export goes through the package template and leaves every package asset beside it',
       latexText.includes('YI-LATEX-TEMPLATE-MARKER') &&
         latexText.includes('LaTeX body text.') &&
         (await exists(`${folder}/journal.cls`)) &&
-        (await exists(`${folder}/journal.bst`)),
+        (await exists(`${folder}/journal.bst`)) &&
+        (await exists(`${folder}/notes.txt`)),
       {
         marker: latexText.includes('YI-LATEX-TEMPLATE-MARKER'),
         body: latexText.includes('LaTeX body text.'),
         cls: await exists(`${folder}/journal.cls`),
-        bst: await exists(`${folder}/journal.bst`)
+        bst: await exists(`${folder}/journal.bst`),
+        notes: await exists(`${folder}/notes.txt`)
       }
     );
 

@@ -34,6 +34,7 @@
             kind,
             None,
             None,
+            None,
         )
         .unwrap()
         .iter()
@@ -64,6 +65,7 @@
             &ExportRequest { kind: name, ..request },
             kind_of("pdf").unwrap(),
             Some(&header),
+            None,
             None,
         )
         .unwrap()
@@ -155,6 +157,7 @@
             kind_of("latex").unwrap(),
             None,
             Some((&package, &manifest)),
+            None,
         )
         .unwrap()
         .iter()
@@ -218,6 +221,7 @@
             kind_of("docx").unwrap(),
             None,
             Some((&package, &manifest)),
+            None,
         )
         .unwrap()
         .iter()
@@ -395,6 +399,7 @@
             kind_of("pdf").unwrap(),
             None,
             None,
+            None,
         )
         .expect_err("a size that is not in the list was passed on");
         assert!(refusal.contains("tabloid"), "{refusal}");
@@ -448,6 +453,149 @@
         // note's own name, so without this the export would write over the document it is exporting.
         assert_eq!(kind_of("markdown").unwrap().name_suffix, ".processed");
         assert_eq!(kind_of("pdf").unwrap().name_suffix, "");
+    }
+
+    /// A template's own relative URL keeps the prefix it used: Yuki says `template/css/…`, and the
+    /// asset is stored as `css/…`, so the delivery step has to know both.
+    #[test]
+    fn a_relative_reference_keeps_the_prefix_the_template_wrote() {
+        let page = r#"<link href="template/css/template.css"><script src="template/js/template.js"></script>"#;
+        assert_eq!(
+            reference_to(page, "css/template.css").as_deref(),
+            Some("template/css/template.css")
+        );
+        assert_eq!(
+            reference_to(page, "js/template.js").as_deref(),
+            Some("template/js/template.js")
+        );
+        assert_eq!(reference_to(page, "css/missing.css"), None);
+        assert_eq!(reference_to(r#"<img src="https://example/x.png">"#, "x.png"), None);
+        assert_eq!(reference_to(r#"<img src="../../x.png">"#, "x.png"), None);
+    }
+
+    #[test]
+    fn only_a_prefix_inside_the_output_folder_is_delivered() {
+        assert!(safe_prefix("template/"));
+        assert!(safe_prefix(""));
+        assert!(!safe_prefix("../"));
+        assert!(!safe_prefix("/tmp/"));
+        assert!(!safe_prefix("https://"));
+    }
+
+    #[test]
+    fn a_folder_package_keeps_its_original_folder_name_as_an_alias() {
+        let manifest = crate::export::templates::TemplateManifest {
+            schema: 1,
+            id: "yuki".to_string(),
+            name: "Yuki".to_string(),
+            kind: "html".to_string(),
+            mode: crate::export::TemplateMode::Template,
+            origin: crate::export::templates::TemplateOrigin {
+                source_type: "folder".to_string(),
+                path: Some("/Downloads/pandoc-templates-main/template".to_string()),
+                source: None,
+                license: None,
+                imported: None,
+            },
+            template: Some("yuki.html".to_string()),
+            reference_doc: None,
+            csl: None,
+            assets: Vec::new(),
+            deliver: Vec::new(),
+        };
+        assert_eq!(
+            crate::export::templates::alias_names(&manifest),
+            vec!["template".to_string(), "yuki".to_string()]
+        );
+    }
+
+    fn package_manifest(kind: &str, assets: Vec<String>) -> crate::export::templates::TemplateManifest {
+        crate::export::templates::TemplateManifest {
+            schema: 1,
+            id: "package".to_string(),
+            name: "Package".to_string(),
+            kind: kind.to_string(),
+            mode: if kind == "docx" || kind == "odt" {
+                crate::export::TemplateMode::ReferenceDoc
+            } else {
+                crate::export::TemplateMode::Template
+            },
+            origin: crate::export::templates::TemplateOrigin {
+                source_type: "folder".to_string(),
+                path: Some("/Downloads/package".to_string()),
+                source: None,
+                license: None,
+                imported: None,
+            },
+            template: (kind != "docx").then(|| "main.tex".to_string()),
+            reference_doc: (kind == "docx").then(|| "reference.docx".to_string()),
+            csl: None,
+            assets,
+            deliver: Vec::new(),
+        }
+    }
+
+    /// An HTML page that was not embedded still names the package's files. The delivery step puts
+    /// the whole asset tree under the prefix the template wrote, so Yuki's `template/css/…` works
+    /// and a generic `css/…` works too. A self-contained page has no such link and gets no copies.
+    #[test]
+    fn html_delivery_puts_the_asset_tree_where_the_page_names_it() {
+        let dir = scratch("html-assets");
+        let package = dir.join("package");
+        let output = dir.join("out").join("note.html");
+        fs::create_dir_all(package.join("css")).unwrap();
+        fs::create_dir_all(package.join("js")).unwrap();
+        fs::create_dir_all(package.join("img")).unwrap();
+        fs::create_dir_all(output.parent().unwrap()).unwrap();
+        fs::write(package.join("css/template.css"), "body{}").unwrap();
+        fs::write(package.join("js/template.js"), "void 0").unwrap();
+        fs::write(package.join("img/logo.png"), b"png").unwrap();
+        fs::write(
+            &output,
+            r#"<link href="template/css/template.css"><script src="template/js/template.js"></script>"#,
+        )
+        .unwrap();
+        let manifest = package_manifest(
+            "html",
+            vec![
+                "css/template.css".to_string(),
+                "js/template.js".to_string(),
+                "img/logo.png".to_string(),
+            ],
+        );
+        deliver_html_assets(&package, &manifest, &output).unwrap();
+        assert!(dir.join("out/template/css/template.css").is_file());
+        assert!(dir.join("out/template/js/template.js").is_file());
+        assert!(dir.join("out/template/img/logo.png").is_file());
+
+        let embedded = dir.join("out/embedded.html");
+        fs::write(&embedded, "<style>body{}</style>").unwrap();
+        deliver_html_assets(&package, &manifest, &embedded).unwrap();
+        assert!(!dir.join("out/css/template.css").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A `.tex` cannot carry its class, style or figures, so every asset travels beside it.
+    #[test]
+    fn latex_delivery_copies_every_asset_not_only_the_class_and_bst() {
+        let dir = scratch("latex-assets");
+        let package = dir.join("package");
+        fs::create_dir_all(package.join("img")).unwrap();
+        fs::write(package.join("journal.cls"), "class").unwrap();
+        fs::write(package.join("img/logo.png"), b"png").unwrap();
+        let manifest = package_manifest(
+            "latex",
+            vec!["journal.cls".to_string(), "img/logo.png".to_string()],
+        );
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+            ..request_in(&dir)
+        };
+        deliver_latex_assets(&package, &manifest, &request).unwrap();
+        assert!(dir.join("out/journal.cls").is_file());
+        assert!(dir.join("out/img/logo.png").is_file());
+        let _ = fs::remove_dir_all(&dir);
     }
 use super::*;
 use std::fs;
