@@ -111,7 +111,6 @@ fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
 /// the shipped faces and the `\st`/`\ul` compatibility macros.
 struct PreparedPdfTemplate {
     path: PathBuf,
-    supports_highlighting: bool,
 }
 
 fn prepare_pdf_template(
@@ -123,9 +122,8 @@ fn prepare_pdf_template(
     let Ok(template) = fs::read_to_string(&entry) else {
         return Ok(None);
     };
-    let supports_highlighting = template.contains("\\newenvironment{Shaded}")
-        || template.contains("\\DefineVerbatimEnvironment{Highlighting}");
-    let Some(template) = inject_pdf_header(&template, COMPAT_PREAMBLE) else {
+    let preamble = compat_preamble(&template);
+    let Some(template) = inject_pdf_header(&template, &preamble) else {
         return Ok(None);
     };
     let folder = dir.join("tmp");
@@ -142,10 +140,7 @@ fn prepare_pdf_template(
             &[("path", &path.display().to_string()), ("reason", &error.to_string())],
         )
     })?;
-    Ok(Some(PreparedPdfTemplate {
-        path,
-        supports_highlighting,
-    }))
+    Ok(Some(PreparedPdfTemplate { path }))
 }
 
 /// The parts of Pandoc's LaTeX contract a custom template must have to accept its writer's output.
@@ -153,6 +148,17 @@ fn prepare_pdf_template(
 /// this small preamble is safe in every XeLaTeX template.
 pub(super) const COMPAT_PREAMBLE: &str =
     "\\usepackage{amssymb}\n\\usepackage{longtable}\n\\usepackage{booktabs}\n\\usepackage{array}\n\\usepackage{graphicx}\n\\usepackage{xcolor}\n\\usepackage[normalem]{ulem}\n\\providecommand{\\tightlist}{\\setlength{\\itemsep}{0pt}\\setlength{\\parskip}{0pt}}\n\\providecommand{\\pandocbounded}[1]{#1}\n\\providecommand{\\st}[1]{\\sout{#1}}\n\\providecommand{\\ul}[1]{\\uline{#1}}\n\\makeatletter\\@ifundefined{c@none}{\\newcounter{none}}{}\\makeatother\n";
+
+pub(super) fn compat_preamble(template: &str) -> String {
+    let mut preamble = COMPAT_PREAMBLE.to_string();
+    let has_highlighting = template.contains("$highlighting-macros$")
+        || template.contains("\\newenvironment{Shaded}")
+        || template.contains("\\DefineVerbatimEnvironment{Highlighting}");
+    if !has_highlighting {
+        preamble.push_str("$highlighting-macros$\n");
+    }
+    preamble
+}
 
 pub(super) fn inject_pdf_header(template: &str, header: &str) -> Option<String> {
     let at = template.find("\\begin{document}")?;
@@ -252,9 +258,6 @@ fn export_with_pandoc(
         template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
         alias.as_ref().map(|(root, _)| root.as_path()),
         prepared_template.as_ref().map(|prepared| prepared.path.as_path()),
-        prepared_template
-            .as_ref()
-            .map(|prepared| prepared.supports_highlighting),
     )
     .and_then(|arguments| {
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
@@ -313,7 +316,6 @@ pub(super) fn pandoc_arguments(
     template: Option<(&Path, &TemplateManifest)>,
     alias_root: Option<&Path>,
     template_override: Option<&Path>,
-    syntax_highlighting: Option<bool>,
 ) -> Result<Vec<OsString>, String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
     let mut arguments: Vec<OsString> = vec![
@@ -325,9 +327,6 @@ pub(super) fn pandoc_arguments(
     if let Some(header) = header.filter(|_| template_override.is_none()) {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
-    }
-    if syntax_highlighting == Some(false) {
-        arguments.push(OsString::from("--syntax-highlighting=none"));
     }
     if kind.kind == "html" {
         arguments.push(OsString::from(if request.self_contained {

@@ -37,7 +37,6 @@
             None,
             None,
             None,
-            None,
         )
         .unwrap()
         .iter()
@@ -68,7 +67,6 @@
             &ExportRequest { kind: name, ..request },
             kind_of("pdf").unwrap(),
             Some(&header),
-            None,
             None,
             None,
             None,
@@ -122,6 +120,14 @@
         let injected = inject_pdf_header(template, header).unwrap();
         assert!(injected.find(header).unwrap() < injected.find("\\begin{document}").unwrap());
         assert_eq!(injected.matches("\\begin{document}").count(), 1);
+    }
+
+    #[test]
+    fn a_custom_template_without_highlighting_gets_pandocs_style_macros() {
+        let preamble = crate::export::run::compat_preamble("\\documentclass{article}");
+        assert!(preamble.contains("$highlighting-macros$"));
+        let already = crate::export::run::compat_preamble("$highlighting-macros$");
+        assert!(!already.contains("$highlighting-macros$"));
     }
 
     #[test]
@@ -192,7 +198,6 @@
             Some((&package, &manifest)),
             None,
             None,
-            None,
         )
         .unwrap()
         .iter()
@@ -256,7 +261,6 @@
             kind_of("docx").unwrap(),
             None,
             Some((&package, &manifest)),
-            None,
             None,
             None,
         )
@@ -434,7 +438,6 @@
             &dir.join("note-1.md"),
             &request,
             kind_of("pdf").unwrap(),
-            None,
             None,
             None,
             None,

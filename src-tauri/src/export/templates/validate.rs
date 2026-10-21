@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use super::super::config::{export_dir, settings_text};
 use super::super::kinds::{kind_of, KindTemplate};
 use super::super::pandoc::{find_pandoc, run_pandoc};
-use super::super::run::{inject_pdf_header, COMPAT_PREAMBLE};
+use super::super::run::{compat_preamble, inject_pdf_header};
 use super::package::resolve_package;
 
 /// What a check found, in the reader's terms.
@@ -131,13 +131,11 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
         let output = workspace.join("check.pdf");
         let custom = super::manifest::file_in(&package, manifest.entry())?;
         let custom_text = fs::read_to_string(&custom).ok();
-        let supports_highlighting = custom_text.as_deref().is_some_and(|template| {
-            template.contains("\\newenvironment{Shaded}")
-                || template.contains("\\DefineVerbatimEnvironment{Highlighting}")
-        });
         let custom = custom_text
             .as_deref()
-            .and_then(|template| inject_pdf_header(&template, COMPAT_PREAMBLE))
+            .and_then(|template| {
+                inject_pdf_header(template, &compat_preamble(template))
+            })
             .map(|template| {
                 let path = workspace.join("template.tex");
                 (path, template)
@@ -159,9 +157,6 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
             "--output".into(),
             output.as_os_str().to_os_string(),
         ];
-        if !supports_highlighting {
-            arguments.push("--syntax-highlighting=none".into());
-        }
         package_arguments(&package, &manifest, &mut arguments, custom.as_deref())?;
         arguments.push(note.as_os_str().to_os_string());
         match run_pandoc(&pandoc, &arguments, Some(&package)) {
