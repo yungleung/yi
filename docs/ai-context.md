@@ -75,6 +75,12 @@ document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command 
 `check-tutorial.mjs` holds the language and first-start rules, and `tutorial.js` /
 `tutorial-first-start.js` hold the app behavior.
 
+**Help → Documentation** (`F1`) opens the bundled English template-authoring guide
+`src/ui/documentation/documentation.en.md` through the same pathless read-only reference rule
+(`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
+file without a session question. The guide includes Pandoc and TeX installation requirements and
+points to the six complete packages under `test/fixtures/templates/examples/`.
+
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
 window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a

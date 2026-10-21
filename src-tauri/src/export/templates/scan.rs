@@ -128,7 +128,11 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
     let names: Vec<String> = files.iter().map(|file| file.name.clone()).collect();
 
     let tex: Vec<String> = names.iter().filter(|name| has_extension(name, "tex")).cloned().collect();
-    let html: Vec<String> = names.iter().filter(|name| has_extension(name, "html")).cloned().collect();
+    let html: Vec<String> = names
+        .iter()
+        .filter(|name| has_extension(name, "html") || has_extension(name, "xhtml"))
+        .cloned()
+        .collect();
     let reference: Vec<String> = names
         .iter()
         .filter(|name| has_extension(name, "docx") || has_extension(name, "odt"))
@@ -189,6 +193,11 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
         if !reference.is_empty() {
             entry_candidates.extend(reference.iter().cloned());
         }
+        let suggested = if has_extension(&entry, "xhtml") {
+            "epub"
+        } else {
+            "html"
+        };
         (
             entry,
             TemplateMode::Template,
@@ -197,7 +206,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
             } else {
                 TemplateKind::Ambiguous
             },
-            Some("html".to_string()),
+            Some(suggested.to_string()),
         )
     } else if !reference.is_empty() {
         let entry = largest(source, &reference)?;
@@ -974,6 +983,21 @@ mod tests {
         assert_eq!(scanned.mode, TemplateMode::Template);
         assert_eq!(scanned.entry, "main.tex");
         assert_eq!(scanned.suggested_kind.as_deref(), Some("latex"));
+        let _ = fs::remove_dir_all(folder);
+    }
+
+    #[test]
+    fn an_xhtml_body_is_an_epub_template_entry() {
+        let folder = temp_dir();
+        write(
+            &folder.join("template.xhtml"),
+            "<html><body>$body$</body></html>",
+        );
+        let scanned = inspect(&folder).unwrap();
+        assert_eq!(scanned.kind, TemplateKind::Template);
+        assert_eq!(scanned.mode, TemplateMode::Template);
+        assert_eq!(scanned.entry, "template.xhtml");
+        assert_eq!(scanned.suggested_kind.as_deref(), Some("epub"));
         let _ = fs::remove_dir_all(folder);
     }
 

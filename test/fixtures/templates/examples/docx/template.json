@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "example-docx",
+  "name": "Example Word reference document",
+  "kind": "docx",
+  "mode": "reference-doc",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/docx",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": null,
+  "reference_doc": "reference.docx",
+  "csl": null,
+  "assets": [],
+  "deliver": []
+}

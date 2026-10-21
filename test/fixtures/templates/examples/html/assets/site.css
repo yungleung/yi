@@ -1,0 +1,12 @@
+body {
+  color: #20242b;
+  font-family: Georgia, serif;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 48rem;
+  padding: 2rem;
+}

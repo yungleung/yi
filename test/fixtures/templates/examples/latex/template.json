@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "example-latex",
+  "name": "Example LaTeX template",
+  "kind": "latex",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/latex",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": "template.tex",
+  "reference_doc": null,
+  "csl": null,
+  "assets": [
+    "example.sty",
+    "references.bst"
+  ],
+  "deliver": [
+    "example.sty",
+    "references.bst"
+  ]
+}

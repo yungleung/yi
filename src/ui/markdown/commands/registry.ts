@@ -38,6 +38,7 @@ export type CommandId =
   | 'file:export'
   | 'file:newMarkdown'
   | 'help:tutorial'
+  | 'help:documentation'
   | 'version:save'
   | 'session:toggleStack'
   | 'session:openStack'

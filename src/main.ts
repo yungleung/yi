@@ -31,6 +31,7 @@ import { registerNewDocumentCommand } from './ui/new_document/new_document_flow'
 import { registerVersionCommand } from './ui/versioning/save_version';
 import { registerExportCommand } from './ui/export/export_flow';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/tutorial_flow';
+import { registerDocumentationCommand } from './ui/documentation/documentation_flow';
 import { VersionStatus } from './ui/versioning/version_status';
 import { versionDiffView } from './ui/versioning/version_diff_view';
 import { prompt } from './ui/prompt';
@@ -123,6 +124,7 @@ function createAppShell(): MarkdownEditor {
   // And the one that makes a note: the menu item and the tree's own *New file* name it.
   registerNewDocumentCommand();
   registerTutorialCommand();
+  registerDocumentationCommand();
   // And the one that keeps a version: the File menu's item names it, and nothing else ever runs git.
   registerVersionCommand();
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is

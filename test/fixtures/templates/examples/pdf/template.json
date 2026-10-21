@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "example-pdf",
+  "name": "Example PDF template",
+  "kind": "pdf",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/pdf",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": "template.tex",
+  "reference_doc": null,
+  "csl": null,
+  "assets": [
+    "example.sty"
+  ],
+  "deliver": []
+}

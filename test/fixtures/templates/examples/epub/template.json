@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "example-epub",
+  "name": "Example EPUB template",
+  "kind": "epub",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/epub",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": "template.xhtml",
+  "reference_doc": null,
+  "csl": null,
+  "assets": [
+    "assets/book.css"
+  ],
+  "deliver": []
+}

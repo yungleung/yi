@@ -1,0 +1,4 @@
+standalone: true
+highlight-style: pygments
+metadata:
+  subject: Example LaTeX export

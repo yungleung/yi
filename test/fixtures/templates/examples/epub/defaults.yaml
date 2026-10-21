@@ -1,0 +1,5 @@
+standalone: true
+toc: true
+toc-depth: 2
+metadata:
+  subject: Example EPUB export

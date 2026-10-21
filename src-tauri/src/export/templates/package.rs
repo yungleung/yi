@@ -815,7 +815,9 @@ fn unique_entry_name(assets: &[String], wanted: &str) -> String {
 }
 
 fn is_text_entry(name: &str) -> bool {
-    ["tex", "html", "htm", "txt"].iter().any(|extension| extension_of(name) == *extension)
+    ["tex", "html", "htm", "xhtml", "txt"]
+        .iter()
+        .any(|extension| extension_of(name) == *extension)
 }
 
 fn is_reference_entry(name: &str) -> bool {
@@ -826,7 +828,7 @@ fn is_text_name(name: &str) -> bool {
     matches!(
         extension_of(name),
         "tex" | "cls" | "sty" | "bst" | "bbx" | "cbx" | "yaml" | "yml" | "csl"
-            | "html" | "htm" | "txt" | "md" | "bib" | "json" | "lua"
+            | "html" | "htm" | "xhtml" | "txt" | "md" | "bib" | "json" | "lua"
     )
 }
 
