@@ -317,14 +317,13 @@ soul Error: Reconstruction failed* once the header was included: pandoc's defaul
 `\st` and `\ul` with `soul`, whose scanner cannot see past them. The header therefore loads `ulem`
 after pandoc's preamble and maps those two commands to `\sout` and `\uline` (`export-pdf.js` holds a
 note with inline code and strikeout through the default document path).
-**A custom PDF template may not emit `header-includes` at all**, so `--include-in-header` is silently
-useless there (NeurIPS is the measured case). `run.rs` injects a small compatibility preamble before
-`\begin{document}` instead: `amssymb` for task-list boxes, `ulem` and `\st`/`\ul`, and the `none`
-counter Pandoc's unnumbered `longtable` captions use. A template that defines neither `Shaded` nor
-`Highlighting` and has no `$highlighting-macros$` placeholder gets that placeholder injected, so the
-style in `export.<kind>.yaml` — Pygments in the shipped PDF file — still supplies its token macros
-and `Shaded` environment. `testTemplatePdf` uses the same preamble, and its fixture holds a task
-list, a table, strikeout and a code block.
+**A custom PDF template is used exactly as imported.** It may not emit `header-includes`, may lack
+Pandoc's `$highlighting-macros$` placeholder, and may not define `\st`, `\tightlist`, `Shaded` or
+other writer macros; Yi does not rewrite its preamble or inject those pieces. `--include-in-header`
+still reaches Pandoc, but a template that does not emit the header simply ignores it. Validation,
+Test PDF and a normal export report Pandoc or the engine's own sentence naming what is missing. That
+keeps the reader's template authoritative and avoids package/macro conflicts; template-authoring
+documentation is the place to explain the Pandoc contract.
 
 **What the reader's file names still wins**, and the header's own comment says how: `mainfont` is the
 document's own font — `\normalfont`, so Latin and every block no shipped face answers for is set in it,

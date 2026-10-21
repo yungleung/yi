@@ -106,71 +106,6 @@ fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-/// A custom PDF template may not emit `header-includes`, so `--include-in-header` would be dropped
-/// by Pandoc. A private copy with the header placed before `\begin{document}` gives every template
-/// the shipped faces and the `\st`/`\ul` compatibility macros.
-struct PreparedPdfTemplate {
-    path: PathBuf,
-}
-
-fn prepare_pdf_template(
-    dir: &Path,
-    package: &Path,
-    manifest: &TemplateManifest,
-) -> Result<Option<PreparedPdfTemplate>, String> {
-    let entry = super::templates::manifest_file(package, manifest.entry());
-    let Ok(template) = fs::read_to_string(&entry) else {
-        return Ok(None);
-    };
-    let preamble = compat_preamble(&template);
-    let Some(template) = inject_pdf_header(&template, &preamble) else {
-        return Ok(None);
-    };
-    let folder = dir.join("tmp");
-    fs::create_dir_all(&folder).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[("path", &folder.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    let path = folder.join(format!("template-{}.tex", nanos()));
-    crate::files::write_atomically(&path, &template).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    Ok(Some(PreparedPdfTemplate { path }))
-}
-
-/// The parts of Pandoc's LaTeX contract a custom template must have to accept its writer's output.
-/// The shipped font header also uses `fontspec`, which a journal template may deliberately avoid;
-/// this small preamble is safe in every XeLaTeX template.
-pub(super) const COMPAT_PREAMBLE: &str =
-    "\\usepackage{amssymb}\n\\usepackage{longtable}\n\\usepackage{booktabs}\n\\usepackage{array}\n\\usepackage{graphicx}\n\\usepackage{xcolor}\n\\usepackage[normalem]{ulem}\n\\providecommand{\\tightlist}{\\setlength{\\itemsep}{0pt}\\setlength{\\parskip}{0pt}}\n\\providecommand{\\pandocbounded}[1]{#1}\n\\providecommand{\\st}[1]{\\sout{#1}}\n\\providecommand{\\ul}[1]{\\uline{#1}}\n\\makeatletter\\@ifundefined{c@none}{\\newcounter{none}}{}\\makeatother\n";
-
-pub(super) fn compat_preamble(template: &str) -> String {
-    let mut preamble = COMPAT_PREAMBLE.to_string();
-    let has_highlighting = template.contains("$highlighting-macros$")
-        || template.contains("\\newenvironment{Shaded}")
-        || template.contains("\\DefineVerbatimEnvironment{Highlighting}");
-    if !has_highlighting {
-        preamble.push_str("$highlighting-macros$\n");
-    }
-    preamble
-}
-
-pub(super) fn inject_pdf_header(template: &str, header: &str) -> Option<String> {
-    let at = template.find("\\begin{document}")?;
-    let mut injected = String::with_capacity(template.len() + header.len() + 2);
-    injected.push_str(&template[..at]);
-    injected.push_str(header);
-    if !header.ends_with('\n') {
-        injected.push('\n');
-    }
-    injected.push_str(&template[at..]);
-    Some(injected)
-}
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
 pub fn run_export(
     app: tauri::AppHandle,
@@ -241,12 +176,6 @@ fn export_with_pandoc(
             crate::fonts::bundled::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
-    let prepared_template = match &template {
-        Some((package, manifest)) if kind.kind == "pdf" => {
-            prepare_pdf_template(&dir, package, manifest)?
-        }
-        _ => None,
-    };
     let note = write_note(&dir, &request.text)?;
     let result = pandoc_arguments(
         &dir,
@@ -257,7 +186,6 @@ fn export_with_pandoc(
         header.as_deref(),
         template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
         alias.as_ref().map(|(root, _)| root.as_path()),
-        prepared_template.as_ref().map(|prepared| prepared.path.as_path()),
     )
     .and_then(|arguments| {
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
@@ -289,9 +217,6 @@ fn export_with_pandoc(
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.
     let _ = fs::remove_file(&note);
-    if let Some(prepared) = &prepared_template {
-        let _ = fs::remove_file(&prepared.path);
-    }
     if let Some((root, _)) = &alias {
         let _ = fs::remove_dir_all(root);
     }
@@ -315,7 +240,6 @@ pub(super) fn pandoc_arguments(
     header: Option<&Path>,
     template: Option<(&Path, &TemplateManifest)>,
     alias_root: Option<&Path>,
-    template_override: Option<&Path>,
 ) -> Result<Vec<OsString>, String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
     let mut arguments: Vec<OsString> = vec![
@@ -324,7 +248,7 @@ pub(super) fn pandoc_arguments(
         OsString::from("--output"),
         output.into_os_string(),
     ];
-    if let Some(header) = header.filter(|_| template_override.is_none()) {
+    if let Some(header) = header {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
     }
@@ -391,9 +315,7 @@ pub(super) fn pandoc_arguments(
             TemplateMode::Template | TemplateMode::Wrapper => {
                 arguments.push(OsString::from("--template"));
                 arguments.push(
-                    template_override
-                        .map(Path::to_path_buf)
-                        .unwrap_or_else(|| super::templates::manifest_file(package, manifest.entry()))
+                    super::templates::manifest_file(package, manifest.entry())
                         .into_os_string(),
                 );
             }

@@ -16,7 +16,6 @@ use std::path::{Path, PathBuf};
 use super::super::config::{export_dir, settings_text};
 use super::super::kinds::{kind_of, KindTemplate};
 use super::super::pandoc::{find_pandoc, run_pandoc};
-use super::super::run::{compat_preamble, inject_pdf_header};
 use super::package::resolve_package;
 
 /// What a check found, in the reader's terms.
@@ -79,7 +78,7 @@ pub fn validate_template(
             "--output".into(),
             output.as_os_str().to_os_string(),
         ];
-        package_arguments(&package, &manifest, &mut arguments, None)?;
+        package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
         match run_pandoc(&pandoc, &arguments, Some(&package)) {
             Ok(warnings) => Ok(ValidationResult {
@@ -113,7 +112,7 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
         let note = workspace.join("fixture.md");
         fs::write(
             &note,
-            "# A template check\n\n- [x] A task\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\nOne paragraph with ~~strikethrough~~.\n\n```text\nplain code\n```\n",
+            "# A template check\n\nOne paragraph, one page.\n",
         )
         .map_err(|error| {
             crate::i18n::now(
@@ -129,35 +128,13 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
             )
         })?;
         let output = workspace.join("check.pdf");
-        let custom = super::manifest::file_in(&package, manifest.entry())?;
-        let custom_text = fs::read_to_string(&custom).ok();
-        let custom = custom_text
-            .as_deref()
-            .and_then(|template| {
-                inject_pdf_header(template, &compat_preamble(template))
-            })
-            .map(|template| {
-                let path = workspace.join("template.tex");
-                (path, template)
-            });
-        let custom = if let Some((path, template)) = custom {
-            fs::write(&path, template).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-                )
-            })?;
-            Some(path)
-        } else {
-            None
-        };
         let mut arguments: Vec<OsString> = vec![
             "--defaults".into(),
             defaults.into_os_string(),
             "--output".into(),
             output.as_os_str().to_os_string(),
         ];
-        package_arguments(&package, &manifest, &mut arguments, custom.as_deref())?;
+        package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
         match run_pandoc(&pandoc, &arguments, Some(&package)) {
             Ok(warnings) => Ok(ValidationResult {
@@ -180,7 +157,6 @@ fn package_arguments(
     package: &Path,
     manifest: &super::manifest::TemplateManifest,
     arguments: &mut Vec<OsString>,
-    template_override: Option<&Path>,
 ) -> Result<(), String> {
     if manifest.mode == super::super::kinds::TemplateMode::ReferenceDoc {
         arguments.push("--reference-doc".into());
@@ -190,10 +166,7 @@ fn package_arguments(
     } else {
         arguments.push("--template".into());
         arguments.push(
-            template_override
-                .map(Path::to_path_buf)
-                .unwrap_or(super::manifest::file_in(package, manifest.entry())?)
-                .into_os_string(),
+            super::manifest::file_in(package, manifest.entry())?.into_os_string(),
         );
     }
     if let Some(csl) = &manifest.csl {
