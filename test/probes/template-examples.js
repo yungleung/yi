@@ -59,6 +59,13 @@
       );
       const metadata = await api.readTemplateFile(pkg.id, 'metadata.yaml');
       check(`${kind}: the sample metadata names its note`, metadata.includes(`title: ${title}`), metadata);
+      if (kind === 'docx' || kind === 'odt') {
+        check(
+          `${kind}: the sample metadata covers the reference document fields`,
+          ['subtitle:', 'author:', 'date:', 'abstract:'].every((key) => metadata.includes(key)),
+          metadata
+        );
+      }
       const validated = await api.validateTemplate(pkg.id);
       check(`${kind}: Pandoc validates the complete example`, validated.ok, validated);
       if (kind === 'pdf') {

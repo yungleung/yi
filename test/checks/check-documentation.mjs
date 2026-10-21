@@ -81,6 +81,14 @@ if (existsSync(file)) {
       /preserv/i.test(text)
   );
   check(
+    'it maps Word and OpenDocument metadata to their reference-document styles',
+    /Subtitle/.test(text) &&
+      /Author/.test(text) &&
+      /Date/.test(text) &&
+      /Abstract Title/.test(text) &&
+      /Abstract/.test(text)
+  );
+  check(
     'the HTML bundle and self-contained behavior are explained',
     /self-contained/i.test(text) && /assets/i.test(text)
   );

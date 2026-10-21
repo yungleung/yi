@@ -5,7 +5,8 @@
  * When Pandoc is available the check also converts one paragraph through the text templates and
  * reference documents, so an example cannot drift into something that merely looks plausible.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parse } from 'yaml';
@@ -75,6 +76,14 @@ for (const kind of kinds) {
     try {
       const parsed = parse(readFileSync(metadata, 'utf8'));
       check(`${kind}: metadata.yaml is a mapping`, parsed !== null && typeof parsed === 'object');
+      if (kind === 'docx' || kind === 'odt') {
+        for (const key of ['title', 'subtitle', 'author', 'date', 'abstract']) {
+          check(
+            `${kind}: metadata.yaml demonstrates ${key}`,
+            Object.prototype.hasOwnProperty.call(parsed, key)
+          );
+        }
+      }
     } catch (error) {
       check(`${kind}: metadata.yaml parses`, false, error.message);
     }
@@ -93,8 +102,14 @@ if (pandoc.status !== 0) {
     const format =
       kind === 'epub' ? 'epub3' : kind === 'pdf' ? 'latex' : kind;
     const args = ['--from=markdown', `--to=${format}`, '--standalone'];
+    let output = null;
+    let outputFolder = null;
     if (manifest.mode === 'reference-doc') {
       args.push(`--reference-doc=${join(folder, manifest.reference_doc)}`);
+      args.push(`--metadata-file=${join(folder, 'metadata.yaml')}`);
+      outputFolder = mkdtempSync(join(tmpdir(), `yi-template-${kind}-`));
+      output = join(outputFolder, `out.${kind}`);
+      args.push(`--output=${output}`);
     } else {
       args.push(`--template=${join(folder, manifest.template)}`);
     }
@@ -105,9 +120,27 @@ if (pandoc.status !== 0) {
     });
     check(
       `${kind}: Pandoc converts a paragraph with the example`,
-      converted.status === 0 && converted.stdout.length > 0,
+      converted.status === 0 &&
+        (output === null ? converted.stdout.length > 0 : existsSync(output)),
       converted.stderr.trim()
     );
+    if (output !== null && existsSync(output)) {
+      const entry = kind === 'docx' ? 'word/document.xml' : 'content.xml';
+      const unpacked = spawnSync('unzip', ['-p', output, entry], { encoding: 'utf8' });
+      const required =
+        kind === 'docx'
+          ? ['Title', 'Subtitle', 'Author', 'Date', 'AbstractTitle', 'Abstract']
+          : ['Title', 'Subtitle', 'Author', 'Date', 'Abstract'];
+      check(
+        `${kind}: the reference document receives every metadata style`,
+        unpacked.status === 0 &&
+          required.every((style) => unpacked.stdout.includes(`\"${style}\"`)),
+        required.filter((style) => !unpacked.stdout.includes(`\"${style}\"`))
+      );
+      if (outputFolder !== null) {
+        rmSync(outputFolder, { recursive: true, force: true });
+      }
+    }
   }
 }
 

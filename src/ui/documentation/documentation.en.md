@@ -419,6 +419,17 @@ example-odt/
 Pandoc copies styles from the reference document into the exported file. Keep its style names and
 structure stable:
 
+- `title` uses **Title**;
+- `subtitle` uses **Subtitle**;
+- `author` uses **Author**;
+- `date` uses **Date**;
+- `abstract` uses **Abstract Title** followed by **Abstract** paragraphs;
+- captions use the caption styles, and `keywords` and other metadata are available for custom use.
+
+The package's `metadata.yaml` is starting frontmatter for a new note, so it should demonstrate every
+document-level field the reference document styles. The DOCX and ODT examples include `title`,
+`subtitle`, `author`, `date` and a multi-line `abstract`.
+
 - use Word/LibreOffice built-in paragraph styles where possible;
 - define headings, body text, quotations, code and captions consistently;
 - set page size and margins in the reference document;

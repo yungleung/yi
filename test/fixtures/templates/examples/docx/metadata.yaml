@@ -1,5 +1,10 @@
 title: Example Word document
+subtitle: A complete reference-document example
 author: Example Author
+date: 2026-10-21
+abstract: |
+  This abstract demonstrates the paragraph style Pandoc assigns to document
+  metadata in a Word reference document.
 lang: en
 keywords:
   - example
