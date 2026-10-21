@@ -9,7 +9,7 @@ read and copy, while still using the real manifest, entry, metadata and defaults
 | `latex/` | `template.tex` | A standalone template and files delivered beside `.tex` |
 | `pdf/` | `template.tex` | The same Pandoc contract with a PDF engine |
 | `epub/` | `template.xhtml` | EPUB chapter markup and package assets |
-| `docx/` | `reference.docx` | Word styles from a binary reference document |
+| `docx/` | `reference.docx` | Word styles from a binary reference document; `example.md` exercises all of them |
 | `odt/` | `reference.odt` | LibreOffice styles from a binary reference document |
 
 Each package also has:

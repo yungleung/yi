@@ -13,6 +13,9 @@
   "template": null,
   "reference_doc": "reference.docx",
   "csl": null,
-  "assets": [],
+  "assets": [
+    "example.svg",
+    "references.bib"
+  ],
   "deliver": []
 }

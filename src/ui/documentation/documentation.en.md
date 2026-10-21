@@ -502,6 +502,10 @@ Each package contains `template.json`, its text entry or binary reference docume
 `defaults.yaml`, `metadata.yaml`, and an explanatory `README.md`. Open those folders as authoring
 references, then import the same folder into Yi to see the package in the Template library.
 
+The Word package also contains `example.md`. Open it as a note and export it as Word to inspect every
+reference style: title metadata, all nine heading levels, first and body paragraphs, lists, code,
+math, quotes, footnotes, captions, a figure, definitions and a bibliography.
+
 ## Validate before using a template
 
 Before exporting a real note:

@@ -24,6 +24,40 @@ for (const kind of kinds) {
   const manifestPath = join(folder, 'template.json');
   check(`${kind}: the package has its own reading guide`, existsSync(join(folder, 'README.md')));
   check(`${kind}: the package has template.json`, existsSync(manifestPath));
+  if (kind === 'docx') {
+    check('docx: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
+    check('docx: the example has a figure asset', existsSync(join(folder, 'example.svg')));
+    if (existsSync(join(folder, 'example.md'))) {
+      const example = readFileSync(join(folder, 'example.md'), 'utf8');
+      check(
+        'docx: the example carries complete document metadata',
+        ['title:', 'subtitle:', 'author:', 'date:', 'abstract:', 'lang:', 'keywords:'].every(
+          (key) => example.includes(key)
+        )
+      );
+      check(
+        'docx: the example covers headings one through nine',
+        Array.from({ length: 9 }, (_, index) => index + 1).every((level) =>
+          new RegExp(`^${'#'.repeat(level)} `, 'm').test(example)
+        )
+      );
+      check(
+        'docx: the example covers the block and inline elements',
+        [
+          '> ',
+          '```',
+          '~~',
+          '[^',
+          '|',
+          '![',
+          ': Definition',
+          '$',
+          '- [ ]',
+          '1. '
+        ].every((needle) => example.includes(needle))
+      );
+    }
+  }
   if (!existsSync(manifestPath)) continue;
   let manifest = null;
   try {
@@ -107,6 +141,9 @@ if (pandoc.status !== 0) {
     if (manifest.mode === 'reference-doc') {
       args.push(`--reference-doc=${join(folder, manifest.reference_doc)}`);
       args.push(`--metadata-file=${join(folder, 'metadata.yaml')}`);
+      if (kind === 'docx') {
+        args.push('--citeproc', '--resource-path=' + folder);
+      }
       outputFolder = mkdtempSync(join(tmpdir(), `yi-template-${kind}-`));
       output = join(outputFolder, `out.${kind}`);
       args.push(`--output=${output}`);
@@ -114,8 +151,13 @@ if (pandoc.status !== 0) {
       args.push(`--template=${join(folder, manifest.template)}`);
     }
     if (kind === 'epub') args.push('--metadata=title:Example', '--metadata=lang:en');
+    const example = join(folder, 'example.md');
+    const input =
+      kind === 'docx' && existsSync(example)
+        ? readFileSync(example, 'utf8')
+        : '# Example\n\nOne paragraph.\n';
     const converted = spawnSync('pandoc', args, {
-      input: '# Example\n\nOne paragraph.\n',
+      input,
       encoding: 'utf8'
     });
     check(
@@ -129,7 +171,38 @@ if (pandoc.status !== 0) {
       const unpacked = spawnSync('unzip', ['-p', output, entry], { encoding: 'utf8' });
       const required =
         kind === 'docx'
-          ? ['Title', 'Subtitle', 'Author', 'Date', 'AbstractTitle', 'Abstract']
+          ? [
+              'Title',
+              'Subtitle',
+              'Author',
+              'Date',
+              'AbstractTitle',
+              'Abstract',
+              'Heading1',
+              'Heading2',
+              'Heading3',
+              'Heading4',
+              'Heading5',
+              'Heading6',
+              'Heading7',
+              'Heading8',
+              'Heading9',
+              'FirstParagraph',
+              'BodyText',
+              'Compact',
+              'BlockText',
+              'TableCaption',
+              'Table',
+              'ImageCaption',
+              'CaptionedFigure',
+              'DefinitionTerm',
+              'Definition',
+              'Hyperlink',
+              'VerbatimChar',
+              'SourceCode',
+              'TOCHeading',
+              'Bibliography'
+            ]
           : ['Title', 'Subtitle', 'Author', 'Date', 'Abstract'];
       check(
         `${kind}: the reference document receives every metadata style`,
@@ -137,6 +210,21 @@ if (pandoc.status !== 0) {
           required.every((style) => unpacked.stdout.includes(`\"${style}\"`)),
         required.filter((style) => !unpacked.stdout.includes(`\"${style}\"`))
       );
+      if (kind === 'docx') {
+        const footnotes = spawnSync('unzip', ['-p', output, 'word/footnotes.xml'], {
+          encoding: 'utf8'
+        });
+        check(
+          'docx: the footnote body receives the footnote paragraph styles',
+          footnotes.status === 0 &&
+            ['FootnoteText', 'FootnoteBlockText'].every((style) =>
+              footnotes.stdout.includes(`\"${style}\"`)
+            ),
+          ['FootnoteText', 'FootnoteBlockText'].filter(
+            (style) => !footnotes.stdout.includes(`\"${style}\"`)
+          )
+        );
+      }
       if (outputFolder !== null) {
         rmSync(outputFolder, { recursive: true, force: true });
       }

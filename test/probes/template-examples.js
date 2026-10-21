@@ -10,8 +10,14 @@
 (async () => {
   const t = window.__t;
   const api = await t.app('/src/api/templates.ts');
+  const exportApi = await t.app('/src/api/export.ts');
+  const files = await t.app('/src/api/files.ts');
+  const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checkout = window.__probePaths.checkout;
   const stamp = Date.now().toString(36);
+  const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
+  const folderName = `yi-probe-template-examples-${stamp}`;
+  const folder = `${home}/${folderName}`;
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const examples = [
@@ -24,6 +30,7 @@
   ];
   const made = [];
   try {
+    await files.createEntry(home, folderName, false);
     for (const [kind, entry, mode, title] of examples) {
       let pkg = null;
       try {
@@ -72,6 +79,69 @@
         const testPdf = await api.testTemplatePdf(pkg.id);
         check('pdf: the example also compiles through XeLaTeX', testPdf.ok, testPdf);
       }
+      if (kind === 'docx') {
+        const source = await api.readTemplateFile(pkg.id, 'example.md');
+        const target = `${folder}/complete.docx`;
+        await exportApi.runExport({
+          kind: 'docx',
+          text: source,
+          output_path: target,
+          resource_paths: [],
+          source_dir: null,
+          bibliography: null,
+          csl: null,
+          references: null,
+          title: 'Complete Word template example',
+          language: 'en',
+          paper: null,
+          landscape: null,
+          suppress_references: false,
+          template_id: pkg.id,
+          self_contained: false
+        });
+        const bytes = await invoke('plugin:fs|read_file', { path: target });
+        const data = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
+        const document = (await t.zipEntry(data, 'word/document.xml')) ?? '';
+        const footnotes = (await t.zipEntry(data, 'word/footnotes.xml')) ?? '';
+        const styles = [...`${document}${footnotes}`.matchAll(/w:(?:pStyle|rStyle|tblStyle) w:val="([^"]+)"/g)]
+          .map((match) => match[1]);
+        check(
+          'docx: the complete Markdown produces every reference style',
+          [
+            'Title',
+            'Subtitle',
+            'Author',
+            'Date',
+            'AbstractTitle',
+            'Abstract',
+            'Heading1',
+            'Heading9',
+            'FirstParagraph',
+            'BodyText',
+            'Compact',
+            'BlockText',
+            'FootnoteText',
+            'FootnoteBlockText',
+            'TableCaption',
+            'Table',
+            'ImageCaption',
+            'CaptionedFigure',
+            'DefinitionTerm',
+            'Definition',
+            'Hyperlink',
+            'VerbatimChar',
+            'SourceCode',
+            'TOCHeading',
+            'Bibliography'
+          ].every((style) => styles.includes(style)),
+          [...new Set(styles)].sort()
+        );
+        check(
+          'docx: the example figure is embedded',
+          data.length > 0 && document.includes('<w:drawing>'),
+          { size: data.length }
+        );
+      }
     }
   } finally {
     for (const id of made.reverse()) {
@@ -80,6 +150,11 @@
       } catch {
         // A package a failed import never made.
       }
+    }
+    try {
+      await files.deleteEntry(folder);
+    } catch {
+      // The folder this run never made.
     }
   }
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
