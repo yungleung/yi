@@ -144,6 +144,17 @@
       }
       if (kind === 'odt') {
         const source = await api.readTemplateFile(pkg.id, 'example.md');
+        await t.load(source);
+        const visible = t.prose().textContent ?? '';
+        check(
+          'odt: the example renders only Markdown Yi supports',
+          visible.includes('H₂O') &&
+            visible.includes('E = mc²') &&
+            !visible.includes('custom-style') &&
+            !visible.includes('{#fig:dissertation') &&
+            !visible.includes('{.underline}') &&
+            !visible.includes('Extended level seven')
+        );
         const target = `${folder}/dissertation.odt`;
         await exportApi.runExport({
           kind: 'odt',
@@ -168,6 +179,9 @@
         const style = (await t.zipEntry(data, 'styles.xml')) ?? '';
         const manifest = (await t.zipEntry(data, 'META-INF/manifest.xml')) ?? '';
         const entries = t.zipNames(data);
+        const outlineLevels = [...content.matchAll(/text:outline-level="(\d+)"/g)].map(
+          (match) => match[1]
+        );
         check(
           'odt: the generated book has the four cover lines, abstract and keywords',
           ['Author: John', 'Institution: Example College', 'Instructor: Professor Jane Scholar', 'Date: October 22, 2026', 'Abstract', 'Keywords:'].every(
@@ -176,10 +190,18 @@
           { size: data.length }
         );
         check(
-          'odt: the generated book has a two-level contents page',
-          ['Contents', '1. Introduction', '1.1 Research questions', '1.2 Materials and methods'].every(
-            (text) => content.includes(text)
-          )
+          'odt: the generated book has the supported two-level contents page',
+          content.includes('text:style-name="Horizontal_20_Line"') &&
+            content.includes('<text:list') &&
+            content.includes('text:style-name="Quotations"') &&
+            outlineLevels.includes('1'),
+          {
+            horizontalRule: content.includes('text:style-name="Horizontal_20_Line"'),
+            list: content.includes('<text:list'),
+            contents: content.includes('text:style-name="Quotations"'),
+            bodyHeading: outlineLevels.includes('1'),
+            outlineLevels
+          }
         );
         check(
           'odt: the generated book keeps the cover, abstract, TOC and body master pages',

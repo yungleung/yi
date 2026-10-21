@@ -12,9 +12,11 @@ This example is an academic dissertation reference document:
 - the body starts on page four with A4 heading, body, quotation, footnote, table, figure and
   bibliography styles.
 
-Open `example.md` as a note and export it as LibreOffice with this package selected. The Markdown
-uses custom styles for the cover, contents and body-start page breaks. `college-cover.svg` is the
-editable source for the embedded cover; `college-cover.png` is the raster embedded in `reference.odt`.
+Open `example.md` as a note and export it as LibreOffice with this package selected. It uses only
+Markdown Yi renders: frontmatter supplies the cover and abstract, a thematic break selects the
+contents page, an ordinary nested ordered list supplies its two levels, and the first level-one
+heading starts the body page. `college-cover.svg` is the editable source for the embedded cover;
+`college-cover.png` is the raster embedded in `reference.odt`.
 
 `metadata.yaml` supplies sample note metadata, `defaults.yaml` supplies package-local settings,
 `example.svg` supplies the figure and `references.bib` supplies the reference entry.

@@ -66,6 +66,7 @@ for (const kind of kinds) {
       const source = readFileSync(join(folder, 'example.md'), 'utf8');
       const frontmatter = /^---\n([\s\S]*?)\n---/.exec(source)?.[1] ?? '';
       const metadata = parse(frontmatter);
+      const prose = source.replace(/\$\$[\s\S]*?\$\$/g, '').replace(/\$[^$\n]+\$/g, '');
       const coverLines = Array.isArray(metadata.author)
         ? [...metadata.author.map(String), `Date: ${String(metadata.date)}`]
         : [];
@@ -83,13 +84,32 @@ for (const kind of kinds) {
           metadata.abstract.includes('Keywords:')
       );
       check(
-        'odt: the example has a two-level contents page and a body start',
-        source.includes('custom-style="TOC Heading"') &&
-          source.includes('custom-style="TOC 1"') &&
-          source.includes('custom-style="TOC 2"') &&
-          source.includes('custom-style="Body Start"')
+        'odt: the example uses only Markdown Yi renders',
+        !/^:::/m.test(source) &&
+          !/\]\{|\)\{/.test(source) &&
+          !/^#{7,}\s/m.test(source) &&
+          !/^:\s+(?:Table|Figure) caption/m.test(source) &&
+          !/(^|[^~])~[^~\n]+~([^~]|$)/m.test(prose) &&
+          !/\^[^$\n^]{1,30}\^/m.test(prose),
+        {
+          fencedDiv: /^:::/m.test(source),
+          attributeBlock: /\]\{|\)\{/.test(source),
+          deepHeading: /^#{7,}\s/m.test(source),
+          textCaption: /^:\s+(?:Table|Figure) caption/m.test(source),
+          subscript: /(^|[^~])~[^~\n]+~([^~]|$)/m.test(prose),
+          superscript: /\^[^$\n^]{1,30}\^/m.test(prose)
+        }
+      );
+      check(
+        'odt: the example has a supported two-level contents list',
+        /^1\. Introduction$/m.test(source) && /^   1\. Research questions$/m.test(source)
       );
     }
+    const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
+    check(
+      'odt: the package keeps source heading levels',
+      defaults['shift-heading-level-by'] === 0
+    );
     const styleFile = join(folder, 'reference.odt');
     if (existsSync(styleFile)) {
       const styles = spawnSync('unzip', ['-p', styleFile, 'styles.xml'], { encoding: 'utf8' }).stdout;
@@ -118,9 +138,8 @@ for (const kind of kinds) {
         [
           ['Title', 'DissertationCover'],
           ['Abstract', 'DissertationAbstract'],
-          ['Contents_20_Heading', 'DissertationTOC'],
-          ['TOC Heading', 'DissertationTOC'],
-          ['Body Start', 'DissertationBody']
+          ['Horizontal_20_Line', 'DissertationTOC'],
+          ['Heading_20_1', 'DissertationBody']
         ].every(([style, master]) =>
           new RegExp(
             `style:name=\"${style}\"[\\s\\S]{0,900}style:master-page-name=\"${master}\"`
@@ -288,7 +307,6 @@ if (pandoc.status !== 0) {
               'Text_20_body',
               'Quotations',
               'Preformatted_20_Text',
-              'TableCaption',
               'FigureCaption',
               'Definition_20_Term',
               'Definition_20_Definition',
@@ -320,11 +338,11 @@ if (pandoc.status !== 0) {
           encoding: 'utf8'
         }).stdout;
         check(
-          'odt: the exported content has the two-level contents page and body start',
-          content.includes('text:style-name="TOC Heading"') &&
-            content.includes('text:style-name="TOC 1"') &&
-            content.includes('text:style-name="TOC 2"') &&
-            content.includes('text:style-name="Body Start"') &&
+          'odt: the exported content has the TOC page and the body heading',
+          content.includes('text:style-name="Horizontal_20_Line"') &&
+            content.includes('<text:list') &&
+            content.includes('text:style-name="Quotations"') &&
+            content.includes('text:style-name="Heading_20_1"') &&
             content.includes('Introduction')
         );
         const office = spawnSync('soffice', ['--version'], { encoding: 'utf8' });
@@ -373,7 +391,8 @@ if (pandoc.status !== 0) {
                 abstract.includes('Keywords:') &&
                 !abstract.includes('Contents') &&
                 contents.includes('Contents') &&
-                contents.includes('1.1 Research questions') &&
+                contents.includes('Research questions') &&
+                contents.includes('Materials and methods') &&
                 !contents.includes('This is the first paragraph') &&
                 body.includes('Introduction') &&
                 body.includes('This is the first paragraph of the dissertation body.') &&

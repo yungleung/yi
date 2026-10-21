@@ -86,10 +86,18 @@ try {
       <style:text-properties fo:font-size="11.5pt"/>
     </style:style>`
   );
+  styles = replaceStyle(
+    styles,
+    'Horizontal_20_Line',
+    `<style:style style:name="Horizontal_20_Line" style:display-name="Horizontal Line" style:family="paragraph" style:parent-style-name="Standard" style:next-style-name="Text_20_body" style:class="html" style:master-page-name="DissertationTOC">
+      <style:paragraph-properties fo:break-before="page" fo:margin-top="0in" fo:margin-bottom="0.1965in" style:contextual-spacing="false" fo:padding="0in" fo:border-left="none" fo:border-right="none" fo:border-top="none" fo:border-bottom="none" text:number-lines="false" text:line-number="0" style:join-border="false"/>
+      <style:text-properties fo:font-size="6pt" style:font-size-asian="6pt" style:font-size-complex="6pt"/>
+    </style:style>`
+  );
   styles = styles.replace(
     /<style:style style:name="Heading_20_1"[\s\S]*?<\/style:style>/,
-    `<style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:class="text">
-      <style:paragraph-properties fo:break-before="auto" fo:margin-top="0.45cm" fo:margin-bottom="0.3cm" fo:keep-with-next="always"/>
+    `<style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:class="text" style:master-page-name="DissertationBody">
+      <style:paragraph-properties fo:break-before="page" style:page-number="1" fo:margin-top="0.45cm" fo:margin-bottom="0.3cm" fo:keep-with-next="always"/>
       <style:text-properties fo:font-size="18pt" fo:font-weight="bold" fo:color="#20364a" style:font-size-asian="18pt" style:font-weight-asian="bold"/>
     </style:style>`
   );
@@ -105,22 +113,6 @@ try {
     </style:style>
     <style:style style:name="Contents_20_2" style:display-name="Contents 2" style:family="paragraph" style:parent-style-name="Standard">
       <style:paragraph-properties fo:margin-left="1.2cm" fo:margin-bottom="0.12cm"/>
-    </style:style>
-    <style:style style:name="TOC Heading" style:display-name="TOC Heading" style:family="paragraph" style:parent-style-name="Heading_20_1" style:master-page-name="DissertationTOC">
-      <style:paragraph-properties fo:text-align="center" fo:break-before="page" fo:margin-top="1.2cm" fo:margin-bottom="1.1cm"/>
-      <style:text-properties fo:font-size="18pt" fo:font-weight="bold" fo:color="#20364a"/>
-    </style:style>
-    <style:style style:name="TOC 1" style:display-name="TOC 1" style:family="paragraph" style:parent-style-name="Standard">
-      <style:paragraph-properties fo:margin-left="0.8cm" fo:margin-bottom="0.2cm"/>
-      <style:text-properties fo:font-weight="bold"/>
-    </style:style>
-    <style:style style:name="TOC 2" style:display-name="TOC 2" style:family="paragraph" style:parent-style-name="Standard">
-      <style:paragraph-properties fo:margin-left="1.8cm" fo:margin-bottom="0.14cm"/>
-      <style:text-properties fo:font-size="11pt"/>
-    </style:style>
-    <style:style style:name="Body Start" style:display-name="Body Start" style:family="paragraph" style:parent-style-name="Standard" style:master-page-name="DissertationBody">
-      <style:paragraph-properties fo:break-before="page" style:page-number="1" fo:margin-top="0cm" fo:margin-bottom="0cm" fo:line-height="1%"/>
-      <style:text-properties fo:font-size="1pt" style:font-size-asian="1pt" style:font-size-complex="1pt"/>
     </style:style>
     <style:style style:name="DissertationFooter" style:display-name="Dissertation Footer" style:family="paragraph" style:parent-style-name="Footer">
       <style:paragraph-properties fo:text-align="center"/>

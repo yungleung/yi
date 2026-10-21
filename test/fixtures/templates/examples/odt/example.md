@@ -17,41 +17,23 @@ reference-section-title: References
 number-sections: true
 ---
 
-::: {custom-style="TOC Heading"}
-Contents
-:::
+---
 
-::: {custom-style="TOC 1"}
-1\. Introduction
-:::
+> **Contents**
 
-::: {custom-style="TOC 2"}
-1.1 Research questions
-:::
-
-::: {custom-style="TOC 2"}
-1.2 Materials and methods
-:::
-
-::: {custom-style="TOC 2"}
-1.3 Results
-:::
-
-::: {custom-style="TOC 2"}
-1.4 Discussion
-:::
-
-::: {custom-style="Body Start"}
-​
-:::
+1. Introduction
+   1. Research questions
+   2. Materials and methods
+   3. Results
+   4. Discussion
 
 # Introduction
 
 This is the first paragraph of the dissertation body.
 
 This second paragraph demonstrates ordinary body text, **bold**, *italic*,
-~~strikethrough~~, `inline code`, [a hyperlink](https://pandoc.org/), H~2~O,
-E = mc^2^, [underlined text]{.underline}, and a footnote.[^method]
+~~strikethrough~~, `inline code`, [a hyperlink](https://pandoc.org/), H₂O,
+E = mc², and a footnote.[^method]
 
 > A block quotation receives its own academic paragraph style.
 >
@@ -76,18 +58,6 @@ Terms follow the conventions of document engineering.
 ###### Conventions
 
 Values shown in the example are illustrative.
-
-####### Extended level seven
-
-Pandoc can represent deeper heading levels in its document model.
-
-######## Extended level eight
-
-These levels are present for completeness.
-
-######### Extended level nine
-
-The final heading level closes the hierarchy.
 
 ## Materials and methods
 
@@ -130,9 +100,7 @@ A citation such as [@example2026] produces the bibliography entries below.
 | Heading 2 | Subheading |
 | Table | Academic table |
 
-: Table caption for the dissertation example.
-
-![Figure caption for the dissertation example](example.svg){#fig:dissertation width=4in}
+![Figure caption for the dissertation example](example.svg)
 
 The figure and its caption demonstrate the reference document's visual language.
 
@@ -146,9 +114,7 @@ Term two
 
 : Definition text for the second term.
 
----
-
-The thematic break separates the closing discussion.
+The discussion closes the body.
 
 [^method]: A footnote receives the dedicated footnote style.
 

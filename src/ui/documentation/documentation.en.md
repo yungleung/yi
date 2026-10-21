@@ -432,9 +432,15 @@ document-level field the reference document styles. The DOCX and ODT examples in
 `subtitle`, `author`, `date` and a multi-line `abstract`.
 
 The dissertation ODT adds page master styles for the cover, abstract, contents and body. Its
-`example.md` uses custom paragraph styles to place the four labelled cover fields, force the
-two-level contents page and begin the body on page four. The cover illustration is embedded in
-`reference.odt`; its editable SVG and generated PNG are kept in the ODT example package.
+`example.md` uses only Markdown Yi renders. Frontmatter places the four labelled cover fields and
+the abstract, a thematic break selects the contents page, an ordinary nested ordered list supplies
+its two levels, and the first level-one heading begins the body. The cover illustration is embedded
+in `reference.odt`; its editable SVG and generated PNG are kept in the ODT example package.
+
+Pandoc-only constructs such as fenced `::: {custom-style="…"}` blocks, `{#id}`/`{.class}` attribute
+blocks, superscript or subscript markers, and headings deeper than level six are not Yi Markdown.
+They display literally in the editor. Use supported Markdown and put page and paragraph behavior in
+the reference document's styles instead.
 
 - use Word/LibreOffice built-in paragraph styles where possible;
 - define headings, body text, quotations, code and captions consistently;
