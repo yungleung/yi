@@ -48,6 +48,14 @@
       await t.sleep(250);
     }
   };
+  /** A package with metadata may ask first; this reader keeps the app's configured default. */
+  const finishTemplateQuestion = async () => {
+    const card = document.querySelector('[data-new-document-template-card]');
+    if (card && !card.classList.contains('hidden')) {
+      card.querySelector('[data-new-document-template-create]')?.click();
+      await t.sleep(200);
+    }
+  };
   let previous = null;
   try {
     try {
@@ -79,6 +87,7 @@
 
     await ops.runTreeAction('new-file', entry(workspace, 'workspace', false));
     await t.sleep(400);
+    await finishTemplateQuestion();
     await answerPrompt();
     await t.sleep(300);
     const made = (await namesIn(workspace)).filter((name) => stamp.test(name));

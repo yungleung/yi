@@ -157,6 +157,23 @@ This is the same package shape with another factory:
 If pandoc is not available, the action is disabled with the same explanation the export card uses.
 The generated template is pandoc's own, with `$body$`; it is editable and duplicated like any other.
 
+### Package YAML
+
+Two conventional root files give a package behaviour without adding more fields to `template.json`:
+
+- `metadata.yaml` is a YAML mapping a **new note** may start from. New-note creation offers every
+  readable package that has one. Its top-level keys win over `new_file_frontmatter`; the reader's
+  default supplies keys the package omits; `date` and `id` are always stamped by the app. The choice
+  belongs to that one note and is not written into `AppConfig.export_templates`.
+- `export.yaml`, or `defaults.yaml` when there is no `export.yaml`, is handed to Pandoc after the
+  app's `export.{kind}.yaml`. Package settings therefore override the app's, while the app's explicit
+  output and template arguments follow on the command line and win. The package root is the working
+  directory, so filters, metadata files and other relative paths use the kit's own spelling.
+
+A PDF export refuses a package defaults file that enables TeX shell escape (`--shell-escape`,
+`-shell-escape`, or `-enable-write18`). This is the existing no-unrestricted-shell boundary,
+not a new interpretation of the template.
+
 ### Wrapper conversion
 
 For a main `.tex` with no `$body$`:

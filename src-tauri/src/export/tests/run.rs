@@ -36,6 +36,7 @@
             None,
             None,
             None,
+            None,
         )
         .unwrap()
         .iter()
@@ -66,6 +67,7 @@
             &ExportRequest { kind: name, ..request },
             kind_of("pdf").unwrap(),
             Some(&header),
+            None,
             None,
             None,
         )
@@ -176,6 +178,7 @@
             &request,
             kind_of("latex").unwrap(),
             None,
+            None,
             Some((&package, &manifest)),
             None,
         )
@@ -203,6 +206,75 @@
             style_values.last().copied(),
             Some(&package.join("journal.csl").to_string_lossy().into_owned())
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// A package's defaults are the kit's own settings: Pandoc receives them after the app's file,
+    /// while the app's explicit output and template arguments still follow and therefore win.
+    #[test]
+    fn package_defaults_override_the_app_defaults_before_explicit_arguments() {
+        let dir = scratch("package-defaults");
+        let package = dir.join("journal");
+        fs::create_dir_all(&package).unwrap();
+        fs::write(package.join("main.tex"), "$body$").unwrap();
+        fs::write(package.join("export.yaml"), "metadata:\n  marker: package\n").unwrap();
+        let manifest = crate::export::templates::TemplateManifest {
+            schema: 1,
+            id: "journal".to_string(),
+            name: "Journal".to_string(),
+            kind: "latex".to_string(),
+            mode: crate::export::TemplateMode::Template,
+            origin: crate::export::templates::TemplateOrigin {
+                source_type: "folder".to_string(),
+                path: None,
+                source: None,
+                license: None,
+                imported: None,
+            },
+            template: Some("main.tex".to_string()),
+            reference_doc: None,
+            csl: None,
+            assets: vec!["export.yaml".to_string()],
+            deliver: Vec::new(),
+        };
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out.tex").to_string_lossy().into_owned(),
+            ..request_in(&dir)
+        };
+        let package_defaults = package.join("export.yaml");
+        let arguments = pandoc_arguments(
+            &dir,
+            &dir.join("export.latex.yaml"),
+            &dir.join("note-1.md"),
+            &request,
+            kind_of("latex").unwrap(),
+            None,
+            Some(&package_defaults),
+            Some((&package, &manifest)),
+            None,
+        )
+        .unwrap()
+        .iter()
+        .map(|argument| argument.to_string_lossy().into_owned())
+        .collect::<Vec<String>>();
+        let app_defaults = arguments
+            .iter()
+            .position(|argument| argument.ends_with("export.latex.yaml"))
+            .unwrap();
+        let package_at = arguments
+            .iter()
+            .position(|argument| argument.ends_with("export.yaml"))
+            .unwrap();
+        let output = arguments
+            .iter()
+            .position(|argument| argument == "--output")
+            .unwrap();
+        let template = arguments
+            .iter()
+            .position(|argument| argument == "--template")
+            .unwrap();
+        assert!(app_defaults < package_at && package_at < output && output < template);
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -239,6 +311,7 @@
             &dir.join("note-1.md"),
             &request,
             kind_of("docx").unwrap(),
+            None,
             None,
             Some((&package, &manifest)),
             None,
@@ -417,6 +490,7 @@
             &dir.join("note-1.md"),
             &request,
             kind_of("pdf").unwrap(),
+            None,
             None,
             None,
             None,

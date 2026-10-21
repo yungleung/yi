@@ -56,6 +56,14 @@
       await t.sleep(250);
     }
   };
+  /** The tree asks only when a package with metadata is installed; this accepts no template. */
+  const finishTemplateQuestion = async () => {
+    const card = document.querySelector('[data-new-document-template-card]');
+    if (card && !card.classList.contains('hidden')) {
+      card.querySelector('[data-new-document-template-create]')?.click();
+      await t.sleep(200);
+    }
+  };
   let previous = null;
   try {
     try {
@@ -135,6 +143,7 @@
     await t.sleep(250);
     await ops.runTreeAction('new-file', entry(notes, 'Notes', false));
     await t.sleep(350);
+    await finishTemplateQuestion();
     await answerPrompt();
     await t.sleep(250);
     const made = (await namesIn(notes)).filter((name) => stamp.test(name));

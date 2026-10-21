@@ -7,6 +7,7 @@
 //! window names a package by id, and the backend resolves it under the app's data folder.
 
 mod assets;
+mod defaults;
 mod epub_pack;
 mod manifest;
 mod package;
@@ -33,6 +34,7 @@ pub(super) use package::resolve_package;
 pub(super) use package::{alias_names, stage_alias};
 #[allow(unused_imports)]
 pub(super) use assets::{media_type, reference_to, relative_url, safe_prefix};
+pub(super) use defaults::{append_defaults, ensure_pdf_defaults_safe, package_defaults};
 pub(super) use epub_pack::pack_epub;
 
 #[tauri::command]

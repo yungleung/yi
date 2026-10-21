@@ -1,9 +1,9 @@
 //! Asking pandoc what it thinks of a package, on a paragraph nobody has to keep.
 //!
 //! Validation is a real conversion into a temp folder: the reader's defaults file, the package's
-//! entry, CSL and resource path, and pandoc's own sentence when it refuses. The PDF test is the
-//! same run with the engine turned on, and is the only one that can say a `\documentclass` file is
-//! missing.
+//! own defaults when it has them, its entry, CSL and resource path, and pandoc's own sentence when
+//! it refuses. The PDF test is the same run with the engine turned on, and is the only one that can
+//! say a `\documentclass` file is missing.
 //!
 //! May import: the package resolver, the export folder and the one pandoc seam. Upholds: a check
 //! writes nothing outside the app's temp folder and changes nothing about the package.
@@ -75,11 +75,16 @@ pub fn validate_template(
         let mut arguments: Vec<OsString> = vec![
             "--defaults".into(),
             defaults.into_os_string(),
+        ];
+        if let Some(package_defaults) = super::defaults::package_defaults(&package) {
+            super::defaults::append_defaults(&mut arguments, &package_defaults);
+        }
+        arguments.extend([
             "--to".into(),
             writer.into(),
             "--output".into(),
             output.as_os_str().to_os_string(),
-        ];
+        ]);
         package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
         match run_pandoc(&pandoc, &arguments, Some(&package)) {
@@ -133,9 +138,15 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
         let mut arguments: Vec<OsString> = vec![
             "--defaults".into(),
             defaults.into_os_string(),
+        ];
+        if let Some(package_defaults) = super::defaults::package_defaults(&package) {
+            super::defaults::ensure_pdf_defaults_safe(&package_defaults)?;
+            super::defaults::append_defaults(&mut arguments, &package_defaults);
+        }
+        arguments.extend([
             "--output".into(),
             output.as_os_str().to_os_string(),
-        ];
+        ]);
         package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
         let (working, environment) = pdf_environment(&package, &manifest);

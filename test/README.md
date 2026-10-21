@@ -42,7 +42,7 @@ methodology; this file is the index and the conventions.
 | `check-bare-markers.mjs` | What the parser makes of a marker-only line (`syntax/bare_markers.ts`): an empty item when the marker has its delimiter space (`- `), text when it has not (`-`), and never a setext heading that swallows the paragraph above it |
 | `check-spaced-destinations.mjs` | What the parser makes of a path with spaces in it, in an image or a link (`syntax/spaced_destinations.ts`): the run is the node it names wherever it stands, the words around it stay text, a title after the path is the title, the `%20` spelling stays a link, and an escaped `\![` or a run in code is left as the characters it is |
 | `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): the two delimiter lines with the caret on the blank line between them, the blank lines markdown needs around the block, `---` only at the very top of a note, and the ordinary typing everything else stays |
-| `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, and the range the title's value sits in |
+| `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
@@ -66,7 +66,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and five of them (`probe:all` runs 177 and skips 28, each skip for the reason its
+two hundred and twenty-nine of them (`probe:all` runs 200 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -76,7 +76,9 @@ the page it happened on in place), making a note (`new-markdown` — the card th
 command opens: the generated id in the name field, the workspace's folders, the file written
 where it was asked for with its frontmatter on screen and its title selected, and the tree's own
 *New file* through the same command; `new-note-template` — a template written through the app's
-config, the settings tab that shows it, and the note that comes out), blocks and spacing
+config, the settings tab that shows it, and the note that comes out;
+`new-note-package-metadata` — a package chosen for one note, its metadata merged over the configured
+frontmatter with app-owned stamps, and the tree's next note keeping the configured default), blocks and spacing
 (`block-gaps`, `spacing`,
 `empty-*`, `enter-new-paragraph` — a letter typed after `Enter` at the end of a block is a
 paragraph of its own, whether a block follows it or the block is the file's last, and the
@@ -217,6 +219,8 @@ a wrapper, a duplicate and a remove; the session stack stays empty), `export-tem
 package asset delivered beside the `.tex`, and a Word export through a reference document),
 `export-template-assets` (Yuki's `template/css/…` spelling embedded in self-contained HTML, the full
 LaTeX asset tree, and an EPUB with its package assets packed into the book),
+`export-template-defaults-package` (a package's `defaults.yaml` reaching Pandoc after the app's file
+without replacing the explicit template or output),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
 the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,
 literal dollars escaped for Pandoc, and another sample selected without losing the folder), `export-template-ui` (the Template row,

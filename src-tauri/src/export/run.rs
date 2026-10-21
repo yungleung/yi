@@ -3,9 +3,10 @@
 //! The app writes the note to its own scratch file, asks pandoc through the pandoc seam, removes the
 //! scratch files whatever happened, and answers with pandoc's warnings.
 //!
-//! May import: the kind vocabulary, the export folder, the pandoc seam and the font family. Upholds:
-//! every pandoc call goes through `pandoc::run_pandoc`, and a run leaves no scratch note or remote
-//! picture behind.
+//! May import: the kind vocabulary, the export folder, the pandoc seam, the font family and the
+//! template package rules. Upholds: every pandoc call goes through `pandoc::run_pandoc`, package
+//! defaults override the app's defaults but not explicit export paths, and a run leaves no scratch
+//! note or remote picture behind.
 
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -150,6 +151,14 @@ fn export_with_pandoc(
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
     let template = resolve_template(app, kind, request.template_id.as_deref())?;
+    let template_defaults = template
+        .as_ref()
+        .and_then(|(package, _)| super::templates::package_defaults(package));
+    if kind.kind == "pdf" {
+        if let Some(defaults) = &template_defaults {
+            super::templates::ensure_pdf_defaults_safe(defaults)?;
+        }
+    }
     // A template's own relative links may name the folder it was written in (`template/css/…`).
     // The package is stored under its id, so it is staged under the original basename too while
     // pandoc reads it; a self-contained HTML then embeds those local files.
@@ -184,6 +193,7 @@ fn export_with_pandoc(
         request,
         kind,
         header.as_deref(),
+        template_defaults.as_deref(),
         template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
         alias.as_ref().map(|(root, _)| root.as_path()),
     )
@@ -191,20 +201,23 @@ fn export_with_pandoc(
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
         // it is run in, so a package is that folder. The note, defaults and output are absolute,
         // which is what keeps that current directory from changing what the other paths mean.
-        let (working, environment) = template
-            .as_ref()
-            .filter(|_| kind.kind == "pdf")
-            .map(|(package, manifest)| pdf_environment(package, manifest))
-            .unwrap_or_else(|| {
-                (
-                    request
-                        .source_dir
-                        .as_deref()
-                        .map(Path::new)
-                        .map(Path::to_path_buf),
-                    Vec::new(),
-                )
-            });
+        let (working, environment) = match &template {
+            Some((package, manifest)) if kind.kind == "pdf" => {
+                pdf_environment(package, manifest)
+            }
+            // A package's filters and metadata files use paths relative to its own root. The note
+            // and every destination the app supplies are absolute, so this working directory is
+            // the package's own context without changing what any other argument means.
+            Some((package, _)) => (Some(package.clone()), Vec::new()),
+            None => (
+                request
+                    .source_dir
+                    .as_deref()
+                    .map(Path::new)
+                    .map(Path::to_path_buf),
+                Vec::new(),
+            ),
+        };
         run_pandoc_with_env(
             &pandoc,
             &arguments,
@@ -253,16 +266,18 @@ pub(super) fn pandoc_arguments(
     request: &ExportRequest,
     kind: &ExportKind,
     header: Option<&Path>,
+    package_defaults: Option<&Path>,
     template: Option<(&Path, &TemplateManifest)>,
     alias_root: Option<&Path>,
 ) -> Result<Vec<OsString>, String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
-    let mut arguments: Vec<OsString> = vec![
-        OsString::from("--defaults"),
-        defaults.as_os_str().to_os_string(),
-        OsString::from("--output"),
-        output.into_os_string(),
-    ];
+    let mut arguments: Vec<OsString> =
+        vec![OsString::from("--defaults"), defaults.as_os_str().to_os_string()];
+    if let Some(package_defaults) = package_defaults {
+        super::templates::append_defaults(&mut arguments, package_defaults);
+    }
+    arguments.push(OsString::from("--output"));
+    arguments.push(output.into_os_string());
     if let Some(header) = header {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());

@@ -136,7 +136,13 @@ carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list hol
 template the reader may write (the app config's `new_file_frontmatter`, a string or null for the
 app's own, shown by settings → *New note*) and the range the title's value sits in, so the editor
 can select it. A required key whose value is written *under* it — the keyword list — is the
-reader's and is left alone; one with nothing under it gets the app's. `services/workspace_folders.ts`
+reader's and is left alone; one with nothing under it gets the app's. A readable template package
+with a root `metadata.yaml` may also seed one new note. `services/new_document_templates.ts` lists
+those choices and reads the chosen file; the package's keys win over the configured frontmatter,
+the configured template supplies keys the package omits, and `date`/`id` remain the app's stamps.
+The choice belongs to that note only and is never written into `export_templates`; there is a
+template-only card for the tree's *New file*, where the folder is already known.
+`services/workspace_folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/new_document_flow.ts`
 does the four observable things in order — create the file, write the note into it, tell the tree
@@ -153,7 +159,8 @@ rule the sheet's answer is read by is checked in Node (`test/checks/check-worksp
 The tree's own *New file* runs the same command with the row's folder as its payload, so a note
 made in the tree and one made from the menu cannot drift apart; it no longer starts an inline
 rename, because the file is already named by its id and the *title* is what the reader is asked to
-type. Two things bite here: the file plugin is scoped to `$HOME`
+type. A selected package does not stay selected: the next creation asks again, and export keeps its
+separate per-kind choice. Two things bite here: the file plugin is scoped to `$HOME`
 (`src-tauri/capabilities/default.json`), so a workspace outside it can be listed, moved and
 deleted but not read or written by the webview; and making a note from a document that is not in
 the stack asks the session's question first, the same one opening a file asks.
