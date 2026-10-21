@@ -1,11 +1,17 @@
-title: Example OpenDocument text
-subtitle: A complete reference-document example
-author: Example Author
-date: 2026-10-21
+title: Dissertation title
+subtitle: A Dissertation in Template Design
+author:
+  - "Author: John"
+  - "Institution: Example College"
+  - "Instructor: Professor Jane Scholar"
+date: "Date: October 22, 2026"
 abstract: |
-  This abstract demonstrates the paragraph style Pandoc assigns to document
-  metadata in an OpenDocument reference document.
+  **Abstract**\
+  This dissertation examines how a carefully designed reference document\
+  carries academic structure without obscuring the author's words.\
+  **Keywords:** academic writing, document design, ODT, reference documents
 lang: en
 keywords:
-  - example
-  - odt
+  - academic writing
+  - document design
+  - ODT

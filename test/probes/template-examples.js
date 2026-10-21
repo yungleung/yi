@@ -26,7 +26,7 @@
     ['pdf', 'template.tex', 'template', 'Example PDF note'],
     ['epub', 'template.xhtml', 'template', 'Example EPUB book'],
     ['docx', 'reference.docx', 'reference-doc', 'Example Word document'],
-    ['odt', 'reference.odt', 'reference-doc', 'Example OpenDocument text']
+    ['odt', 'reference.odt', 'reference-doc', 'Dissertation title']
   ];
   const made = [];
   try {
@@ -140,6 +140,58 @@
           'docx: the example figure is embedded',
           data.length > 0 && document.includes('<w:drawing>'),
           { size: data.length }
+        );
+      }
+      if (kind === 'odt') {
+        const source = await api.readTemplateFile(pkg.id, 'example.md');
+        const target = `${folder}/dissertation.odt`;
+        await exportApi.runExport({
+          kind: 'odt',
+          text: source,
+          output_path: target,
+          resource_paths: [],
+          source_dir: null,
+          bibliography: null,
+          csl: null,
+          references: null,
+          title: 'Dissertation reference-document example',
+          language: 'en',
+          paper: null,
+          landscape: null,
+          suppress_references: false,
+          template_id: pkg.id,
+          self_contained: false
+        });
+        const bytes = await invoke('plugin:fs|read_file', { path: target });
+        const data = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
+        const content = (await t.zipEntry(data, 'content.xml')) ?? '';
+        const style = (await t.zipEntry(data, 'styles.xml')) ?? '';
+        const manifest = (await t.zipEntry(data, 'META-INF/manifest.xml')) ?? '';
+        const entries = t.zipNames(data);
+        check(
+          'odt: the generated book has the four cover lines, abstract and keywords',
+          ['Author: John', 'Institution: Example College', 'Instructor: Professor Jane Scholar', 'Date: October 22, 2026', 'Abstract', 'Keywords:'].every(
+            (text) => content.includes(text)
+          ),
+          { size: data.length }
+        );
+        check(
+          'odt: the generated book has a two-level contents page',
+          ['Contents', '1. Introduction', '1.1 Research questions', '1.2 Materials and methods'].every(
+            (text) => content.includes(text)
+          )
+        );
+        check(
+          'odt: the generated book keeps the cover, abstract, TOC and body master pages',
+          ['DissertationCover', 'DissertationAbstract', 'DissertationTOC', 'DissertationBody'].every(
+            (name) => style.includes(`style:name="${name}"`)
+          )
+        );
+        check(
+          'odt: the generated book embeds the college cover and declares it',
+          entries.includes('Pictures/college-cover.png') &&
+            manifest.includes('Pictures/college-cover.png') &&
+            style.includes('Pictures/college-cover.png')
         );
       }
     }

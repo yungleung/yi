@@ -423,12 +423,18 @@ structure stable:
 - `subtitle` uses **Subtitle**;
 - `author` uses **Author**;
 - `date` uses **Date**;
-- `abstract` uses **Abstract Title** followed by **Abstract** paragraphs;
+- Word's `abstract` uses **Abstract Title** followed by **Abstract** paragraphs; the ODT example
+  keeps the abstract and keywords together on the **Abstract** page;
 - captions use the caption styles, and `keywords` and other metadata are available for custom use.
 
 The package's `metadata.yaml` is starting frontmatter for a new note, so it should demonstrate every
 document-level field the reference document styles. The DOCX and ODT examples include `title`,
 `subtitle`, `author`, `date` and a multi-line `abstract`.
+
+The dissertation ODT adds page master styles for the cover, abstract, contents and body. Its
+`example.md` uses custom paragraph styles to place the four labelled cover fields, force the
+two-level contents page and begin the body on page four. The cover illustration is embedded in
+`reference.odt`; its editable SVG and generated PNG are kept in the ODT example package.
 
 - use Word/LibreOffice built-in paragraph styles where possible;
 - define headings, body text, quotations, code and captions consistently;

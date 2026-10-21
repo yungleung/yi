@@ -10,7 +10,7 @@ read and copy, while still using the real manifest, entry, metadata and defaults
 | `pdf/` | `template.tex` | The same Pandoc contract with a PDF engine |
 | `epub/` | `template.xhtml` | EPUB chapter markup and package assets |
 | `docx/` | `reference.docx` | Word styles from a binary reference document; `example.md` exercises all of them |
-| `odt/` | `reference.odt` | LibreOffice styles from a binary reference document |
+| `odt/` | `reference.odt` | An A4 dissertation with cover, abstract, two-level contents and body; `example.md` exercises it |
 
 Each package also has:
 

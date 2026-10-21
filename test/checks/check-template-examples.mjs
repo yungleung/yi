@@ -58,6 +58,77 @@ for (const kind of kinds) {
       );
     }
   }
+  if (kind === 'odt') {
+    check('odt: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
+    check('odt: the example has a figure asset', existsSync(join(folder, 'example.svg')));
+    check('odt: the example has a bibliography', existsSync(join(folder, 'references.bib')));
+    if (existsSync(join(folder, 'example.md'))) {
+      const source = readFileSync(join(folder, 'example.md'), 'utf8');
+      const frontmatter = /^---\n([\s\S]*?)\n---/.exec(source)?.[1] ?? '';
+      const metadata = parse(frontmatter);
+      const coverLines = Array.isArray(metadata.author)
+        ? [...metadata.author.map(String), `Date: ${String(metadata.date)}`]
+        : [];
+      check(
+        'odt: the cover carries the four labelled lines',
+        ['Author:', 'Institution:', 'Instructor:', 'Date:'].every((label) =>
+            coverLines.some((line) => line.startsWith(label))
+          ),
+        coverLines
+      );
+      check(
+        'odt: the abstract page carries abstract and keywords',
+        typeof metadata.abstract === 'string' &&
+          metadata.abstract.includes('Abstract') &&
+          metadata.abstract.includes('Keywords:')
+      );
+      check(
+        'odt: the example has a two-level contents page and a body start',
+        source.includes('custom-style="TOC Heading"') &&
+          source.includes('custom-style="TOC 1"') &&
+          source.includes('custom-style="TOC 2"') &&
+          source.includes('custom-style="Body Start"')
+      );
+    }
+    const styleFile = join(folder, 'reference.odt');
+    if (existsSync(styleFile)) {
+      const styles = spawnSync('unzip', ['-p', styleFile, 'styles.xml'], { encoding: 'utf8' }).stdout;
+      const entries = spawnSync('unzip', ['-Z1', styleFile], { encoding: 'utf8' }).stdout;
+      check(
+        'odt: the reference has cover, abstract, TOC and body master pages',
+        ['DissertationCover', 'DissertationAbstract', 'DissertationTOC', 'DissertationBody'].every(
+          (name) => styles.includes(`style:master-page style:name=\"${name}\"`)
+        )
+      );
+      check(
+        'odt: the master pages are A4 portrait',
+        styles.includes('fo:page-width="21cm"') && styles.includes('fo:page-height="29.7cm"')
+      );
+      check(
+        'odt: the cover page embeds its college picture',
+        entries.includes('Pictures/college-cover.png') &&
+          /style:background-image[^>]*xlink:href="Pictures\/college-cover\.png"/.test(styles)
+      );
+      check(
+        'odt: the four cover values use an underlined Author style',
+        /style:name="Author"[\s\S]{0,800}fo:text-decoration="underline"/.test(styles)
+      );
+      check(
+        'odt: title, abstract, TOC and first body heading select their master pages',
+        [
+          ['Title', 'DissertationCover'],
+          ['Abstract', 'DissertationAbstract'],
+          ['Contents_20_Heading', 'DissertationTOC'],
+          ['TOC Heading', 'DissertationTOC'],
+          ['Body Start', 'DissertationBody']
+        ].every(([style, master]) =>
+          new RegExp(
+            `style:name=\"${style}\"[\\s\\S]{0,900}style:master-page-name=\"${master}\"`
+          ).test(styles)
+        )
+      );
+    }
+  }
   if (!existsSync(manifestPath)) continue;
   let manifest = null;
   try {
@@ -144,6 +215,9 @@ if (pandoc.status !== 0) {
       if (kind === 'docx') {
         args.push('--citeproc', '--resource-path=' + folder);
       }
+      if (kind === 'odt') {
+        args.push('--citeproc', '--resource-path=' + folder);
+      }
       outputFolder = mkdtempSync(join(tmpdir(), `yi-template-${kind}-`));
       output = join(outputFolder, `out.${kind}`);
       args.push(`--output=${output}`);
@@ -153,7 +227,7 @@ if (pandoc.status !== 0) {
     if (kind === 'epub') args.push('--metadata=title:Example', '--metadata=lang:en');
     const example = join(folder, 'example.md');
     const input =
-      kind === 'docx' && existsSync(example)
+      (kind === 'docx' || kind === 'odt') && existsSync(example)
         ? readFileSync(example, 'utf8')
         : '# Example\n\nOne paragraph.\n';
     const converted = spawnSync('pandoc', args, {
@@ -203,7 +277,23 @@ if (pandoc.status !== 0) {
               'TOCHeading',
               'Bibliography'
             ]
-          : ['Title', 'Subtitle', 'Author', 'Date', 'Abstract'];
+          : [
+              'Title',
+              'Subtitle',
+              'Author',
+              'Abstract',
+              'Heading_20_1',
+              'Heading_20_2',
+              'First_20_paragraph',
+              'Text_20_body',
+              'Quotations',
+              'Preformatted_20_Text',
+              'TableCaption',
+              'FigureCaption',
+              'Definition_20_Term',
+              'Definition_20_Definition',
+              'Source_20_Text'
+            ];
       check(
         `${kind}: the reference document receives every metadata style`,
         unpacked.status === 0 &&
@@ -224,6 +314,80 @@ if (pandoc.status !== 0) {
             (style) => !footnotes.stdout.includes(`\"${style}\"`)
           )
         );
+      }
+      if (kind === 'odt') {
+        const content = spawnSync('unzip', ['-p', output, 'content.xml'], {
+          encoding: 'utf8'
+        }).stdout;
+        check(
+          'odt: the exported content has the two-level contents page and body start',
+          content.includes('text:style-name="TOC Heading"') &&
+            content.includes('text:style-name="TOC 1"') &&
+            content.includes('text:style-name="TOC 2"') &&
+            content.includes('text:style-name="Body Start"') &&
+            content.includes('Introduction')
+        );
+        const office = spawnSync('soffice', ['--version'], { encoding: 'utf8' });
+        const pdfInfo = spawnSync('pdfinfo', ['-v'], { encoding: 'utf8' });
+        if (office.status === 0 && pdfInfo.status === 0) {
+          const rendered = spawnSync(
+            'soffice',
+            ['--headless', '--convert-to', 'pdf', '--outdir', outputFolder, output],
+            { encoding: 'utf8' }
+          );
+          const pdf = output.replace(/\.odt$/, '.pdf');
+          const info = spawnSync('pdfinfo', [pdf], { encoding: 'utf8' });
+          const pages = Number(/^Pages:\s+(\d+)/m.exec(info.stdout)?.[1] ?? 0);
+          check(
+            'odt: the dissertation render has a cover, abstract, contents and body pages',
+            rendered.status === 0 &&
+              info.status === 0 &&
+              pages >= 4 &&
+              /595\.\d+ x 841\.\d+ pts \(A4\)/.test(info.stdout),
+            { pages, size: /^Page size:\s+(.*)$/m.exec(info.stdout)?.[1] ?? null }
+          );
+          const ghostscript = spawnSync('gs', ['--version'], { encoding: 'utf8' });
+          if (ghostscript.status === 0) {
+            const pageText = (page) =>
+              spawnSync(
+                'gs',
+                [
+                  '-q',
+                  '-dNOPAUSE',
+                  '-dBATCH',
+                  `-dFirstPage=${page}`,
+                  `-dLastPage=${page}`,
+                  '-sDEVICE=txtwrite',
+                  '-sOutputFile=-',
+                  pdf
+                ],
+                { encoding: 'utf8' }
+              ).stdout.replace(/\s+/g, ' ').trim();
+            const [cover, abstract, contents, body] = [1, 2, 3, 4].map(pageText);
+            check(
+              'odt: the dissertation pages are cover, abstract, contents and body in that order',
+              ['The Architecture of Academic Inquiry', 'Author: John', 'Institution: Example College'].every(
+                (text) => cover.includes(text)
+              ) &&
+                abstract.includes('Abstract') &&
+                abstract.includes('Keywords:') &&
+                !abstract.includes('Contents') &&
+                contents.includes('Contents') &&
+                contents.includes('1.1 Research questions') &&
+                !contents.includes('This is the first paragraph') &&
+                body.includes('Introduction') &&
+                body.includes('This is the first paragraph of the dissertation body.') &&
+                !body.includes('Contents'),
+              { cover, abstract, contents, body }
+            );
+          } else {
+            console.log(
+              'template examples: Ghostscript is absent, so ODT page-order extraction was skipped'
+            );
+          }
+        } else {
+          console.log('template examples: LibreOffice/PDF tools are absent, so ODT rendering was skipped');
+        }
       }
       if (outputFolder !== null) {
         rmSync(outputFolder, { recursive: true, force: true });
