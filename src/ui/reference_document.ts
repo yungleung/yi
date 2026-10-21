@@ -11,5 +11,5 @@
 import { documentSession } from '../services/session';
 
 export async function openReferenceDocument(content: string): Promise<void> {
-  await documentSession.openFile({ path: null, content, readOnly: true });
+  await documentSession.openReference({ path: null, content, readOnly: true });
 }

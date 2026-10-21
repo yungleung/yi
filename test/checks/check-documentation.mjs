@@ -73,6 +73,14 @@ if (existsSync(file)) {
       /wins over|takes precedence/i.test(text)
   );
   check(
+    'it explains when to use wrapper mode instead of template mode',
+    /### Wrapper mode/.test(text) &&
+      /complete LaTeX document/i.test(text) &&
+      /no `\$body\$`|without `\$body\$`/i.test(text) &&
+      /template mode/i.test(text) &&
+      /preserv/i.test(text)
+  );
+  check(
     'the HTML bundle and self-contained behavior are explained',
     /self-contained/i.test(text) && /assets/i.test(text)
   );

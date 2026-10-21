@@ -78,6 +78,13 @@
       ].every((needle) => text.includes(needle)),
       { length: text.length }
     );
+    check(
+      'it explains when a complete LaTeX sample needs wrapper mode',
+      text.includes('### Wrapper mode') &&
+        text.includes('complete LaTeX document') &&
+        text.includes('no `$body$`'),
+      { length: text.length }
+    );
     const rendered = t.prose();
     check(
       'the guide renders its headings, tables and examples',
@@ -94,6 +101,17 @@
       'and the guide needs no pictures from the reader’s workspace',
       rendered.querySelectorAll('img').length === 0,
       rendered.querySelectorAll('img').length
+    );
+    // A restored reference may be an older copy than the bundle that shipped with this run.
+    const stale = session.documentSession.current();
+    if (stale !== null) stale.content += '\nSTALE DOCUMENTATION\n';
+    await invoke('plugin:event|emit', { event: 'documentation' });
+    await sleep(300);
+    check(
+      'reopening Documentation refreshes a restored read-only copy',
+      !(await t.raw()).includes('STALE DOCUMENTATION') &&
+        (await t.raw()).includes('### Wrapper mode'),
+      { length: (await t.raw()).length }
     );
 
     const first = t.blocks()[0];

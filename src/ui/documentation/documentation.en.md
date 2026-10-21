@@ -182,6 +182,41 @@ The important fields are:
 - `origin` records provenance and licence for the reader; the package does not keep using the
   original source path.
 
+### Wrapper mode
+
+Use `mode: "wrapper"` when the file you start from is a **complete LaTeX document**, not a Pandoc
+template. A journal sample commonly looks like this:
+
+```tex
+\documentclass{journal}
+\usepackage{journal}
+\begin{document}
+\title{A sample paper}
+\maketitle
+The journal's example prose.
+\end{document}
+```
+
+It has a preamble and its own document environment, but no `$body$`. Pandoc cannot use it as a
+template directly. During import, Yi recognizes that shape and proposes wrapper mode. It keeps the
+original sample as a package asset, such as `source.tex`, and writes a new `template.tex` with
+`$body$` inserted immediately before `\end{document}`. You may also ask Yi to replace the sample's
+`\title{...}` and `\author{...}` with `$title$` and `$author$`; those replacements are optional.
+
+Choose between the three modes by asking what the entry already is:
+
+| Mode | Choose it when | Entry |
+| --- | --- | --- |
+| `template` | The file is already a Pandoc template and contains `$body$` and any wanted Pandoc variables | The template itself |
+| `wrapper` | The file is a complete LaTeX sample with `\begin{document}` and `\end{document}` but no `$body$` | Yi's generated wrapper, with the original sample kept as an asset |
+| `reference-doc` | The entry is a binary Word or OpenDocument styled document | `reference.docx` or `reference.odt` |
+
+Wrapper mode preserves the journal sample's document class, packages and front matter. It does not
+turn the sample into a polished template automatically: the sample's own prose is still present
+unless you edit `template.tex`, and Yi does not infer replacements for arbitrary journal commands.
+Use a normal Pandoc **template mode** instead when the kit already provides a template with
+`$body$`, or when you can refactor the sample yourself into a clean template.
+
 ### Create from Pandoc’s default
 
 **Create…** asks for a name, source and licence, then runs Pandoc to print the default template or
