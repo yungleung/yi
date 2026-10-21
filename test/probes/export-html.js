@@ -15,6 +15,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
+  const exportApi = await t.app('/src/api/export.ts');
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
@@ -130,15 +131,24 @@
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
     const page = written ? await readText(pagePath) : '';
+    const config = await exportApi.exportConfigPath('html');
+    const configText = await readText(config);
+    const shift = Number(
+      /^shift-heading-level-by:\s*(-?\d+)/m.exec(configText)?.[1] ?? 0
+    );
+    const headingLevel = Math.min(6, Math.max(1, 1 + shift));
     check(
       'Export writes a whole HTML document',
       page.includes('<!DOCTYPE html>') && page.includes('<html'),
       { written, head: page.split('\n').slice(0, 2) }
     );
     check(
-      'with the note’s heading, shifted the way the file says',
-      page.includes('<h2 id="going-out">Going out</h2>') || page.includes('<h2>Going out</h2>'),
-      { heading: /<h2[^>]*>Going out/.exec(page)?.[0] ?? null }
+      'with the note’s heading at the level the settings file asks for',
+      new RegExp(`<h${headingLevel}[^>]*>Going out</h${headingLevel}>`).test(page),
+      {
+        shift,
+        heading: new RegExp(`<h${headingLevel}[^>]*>Going out`).exec(page)?.[0] ?? null
+      }
     );
     check(
       'and the web picture stays the URL the note wrote instead of an app temporary file',

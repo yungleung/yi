@@ -256,7 +256,10 @@ output is written under, whether pandoc writes it at all, and the bytes of a pan
 makes a reader's edit theirs (the docx one is Zettlr's own defaults file, less one key: their
 `default-image-extension: .jpg` is applied by pandoc to a URL whose path has no extension, turning a
 working web image into a 404 — measured — so it is left out and the header says so; the epub one is
-Yi's own, written in that shape). A row also says what the *window* owes a kind's **body**: a book's
+Yi's own, written in that shape). Every shipped file states `shift-heading-level-by: 0`: heading
+levels belong to the note and the app's body rules, not to a defaults file. A reader's existing copy
+is still never rewritten, so an older copy may keep another value. A row also says what the *window*
+owes a kind's **body**: a book's
 keeps the note's own level-1 heading, the note's name standing in it when the note keeps that heading in
 its frontmatter `title:` (`src/ui/export/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
 would otherwise make a heading of its own, level 1, out of the book's name *outside* the document pandoc
