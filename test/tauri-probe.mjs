@@ -515,6 +515,25 @@ async function openTheConfig() {
   const found = (await readConfigText()) ?? left;
   if (found !== null) {
     writeFileSync(configSnapshot, found);
+    // A reader's chosen template belongs to the reader, not to a probe: an export probe that
+    // inherited Yuki would be measuring the maintainer's selection rather than the branch's code.
+    // The snapshot above is what `restoreConfig` puts back when the run is over.
+    try {
+      const cfg = JSON.parse(found);
+      if (Object.keys(cfg.export_templates ?? {}).length > 0) {
+        cfg.export_templates = {};
+        await call(
+          `(async () => {
+             await window.__TAURI_INTERNALS__.invoke('set_config', { cfg: ${JSON.stringify(cfg)} });
+             return 'template selection cleared';
+           })()`,
+          15000
+        );
+        await sleep(300);
+      }
+    } catch {
+      // A config that will not parse is the app's own problem to report; the run continues.
+    }
   }
   return found;
 }

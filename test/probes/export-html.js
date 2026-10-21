@@ -1,15 +1,12 @@
 /**
  * The fourth kind, and the one whose promise is "one file".
  *
- * `self-contained: true` (Zettlr's) is what makes an HTML export a document a reader can move,
- * email or open anywhere: the note's picture is *carried* rather than linked, and the stylesheet is
- * in the head rather than in a folder beside it. So that is what this probe looks at first — the
- * picture as a `data:image/png;base64` URL and a `<style>` in the file — and then at the rest of a
- * document: the heading, the math (KaTeX marks it; its script and stylesheet are CDN links, the one
- * thing that leaves the file, and the asset's header says so), and the citations as a reference
- * list in the page's style. The picture is one the app *fetched from the web* for this run, which is the
- * second thing worth proving here: a page with a web picture comes out whole even on a pandoc that
- * cannot fetch anything itself.
+ * `self-contained: true` (Zettlr's) carries the page's stylesheet in the head. A picture the note
+ * names on the web is different: Yi keeps the URL the author wrote, rather than fetching it into a
+ * temporary file that is deleted after the run. That is what this probe looks at first — the URL
+ * still linked and no `export/tmp/remote` path — and then at the rest of a document: the heading,
+ * the math (KaTeX marks it; its script and stylesheet are CDN links, and the asset's header says
+ * so), and the citations as a reference list in the page's style.
  *
  * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
  *   src/ui/export/export_dialog.ts
@@ -18,6 +15,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
+  const exportApi = await t.app('/src/api/export.ts');
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
@@ -53,7 +51,8 @@
   const folderName = `yi-probe-export-html-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
-  const target = `${folder}/note.html`;
+  const target = `${folder}/note`;
+  const pagePath = `${target}/note.html`;
   const url = `${window.__probeHttpBase}/image.png`;
   const note = [
     '# Going out',
@@ -117,7 +116,7 @@
     const veil = card();
     const field = veil.querySelector('[data-export-target]');
     check(
-      'the menu’s html item opens the card for the HTML kind, and the target becomes a .html',
+      'the menu’s html item opens the card for the HTML kind, with a bundle-folder target',
       card().dataset.exportKind === 'html' &&
         field.value === target,
       { kind: card().dataset.exportKind, chosen: field.value }
@@ -131,24 +130,37 @@
     const written = await until(
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
-    const page = written ? await readText(target) : '';
+    const page = written ? await readText(pagePath) : '';
+    const config = await exportApi.exportConfigPath('html');
+    const configText = await readText(config);
+    const shift = Number(
+      /^shift-heading-level-by:\s*(-?\d+)/m.exec(configText)?.[1] ?? 0
+    );
+    const headingLevel = Math.min(6, Math.max(1, 1 + shift));
     check(
       'Export writes a whole HTML document',
       page.includes('<!DOCTYPE html>') && page.includes('<html'),
       { written, head: page.split('\n').slice(0, 2) }
     );
     check(
-      'with the note’s heading, shifted the way the file says',
-      page.includes('<h2 id="going-out">Going out</h2>') || page.includes('<h2>Going out</h2>'),
-      { heading: /<h2[^>]*>Going out/.exec(page)?.[0] ?? null }
+      'with the note’s heading at the level the settings file asks for',
+      new RegExp(`<h${headingLevel}[^>]*>Going out</h${headingLevel}>`).test(page),
+      {
+        shift,
+        heading: new RegExp(`<h${headingLevel}[^>]*>Going out`).exec(page)?.[0] ?? null
+      }
     );
     check(
-      'and it is one file: the picture it fetched from the web is carried in it, not linked',
-      page.includes('src="data:image/png;base64,') && page.includes('<style'),
+      'and the web picture stays the URL the note wrote instead of an app temporary file',
+      page.includes(`src="${url}"`) &&
+        !page.includes('src="data:image/png;base64,') &&
+        !page.includes('/export/tmp/remote/') &&
+        page.includes('<style'),
       {
+        linked: page.includes(`src="${url}"`),
         carried: page.includes('src="data:image/png;base64,'),
-        style: page.includes('<style'),
-        linked: page.includes(`src="${url}`)
+        temporary: page.includes('/export/tmp/remote/'),
+        style: page.includes('<style')
       }
     );
     check(
@@ -174,7 +186,7 @@
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(
       'and the reader is told which file it wrote',
-      (hint?.textContent ?? '').includes('note.html'),
+      (hint?.textContent ?? '').includes('note'),
       hint?.textContent ?? null
     );
   } finally {

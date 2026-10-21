@@ -28,6 +28,7 @@ import {
   namedFonts,
   runExport
 } from '../../api/export';
+import { exportTemplates } from '../../api/templates';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -78,6 +79,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     return;
   }
   const note = documentSession.current();
+  const templates = await exportTemplates();
+  const selectedTemplateId =
+    configManager.get()?.export_templates?.[first.kind] ?? null;
   const folder = await targetFolder(note?.path ?? null);
   // The note's own path with no extension: the card adds the chosen kind's name suffix and
   // extension to it, because the *kind* is what the card knows and this is what it is asked with.
@@ -109,7 +113,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     uncovered,
     suggestedFont,
     unknownFonts: fonts.unknown_fonts,
-    notPictures: destinationsThatNameNoImage(text)
+    notPictures: destinationsThatNameNoImage(text),
+    templates,
+    selectedTemplateId
   });
   if (answer === null) {
     return;
@@ -135,7 +141,10 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // The kind the app writes itself keeps the note's URL: a processed markdown is the reader's own
     // file, and a copy in this run's folder would be a path that is taken away when the run ends. The
     // kinds pandoc writes need the file, because pandoc may not be built to fetch one.
-    if (first.needs_pandoc) {
+    // HTML keeps a web picture as the URL the author wrote: a self-contained page can leave it
+    // remote, and a non-self-contained one should not point at an app temporary that is deleted
+    // after this run. The other kinds still need a local file for pandoc or the TeX engine.
+    if (first.needs_pandoc && first.kind !== 'html') {
       for (const destination of destinations) {
         if (isWebDestination(destination) && !fetched.has(destination)) {
           fetched.set(destination, await fetchedPicture(destination, unfetched));
@@ -162,6 +171,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       bases: imageBases(),
       exists: fileExists,
       fetchRemote: async (url) => {
+        if (first.kind === 'html') {
+          return null;
+        }
         if (!first.needs_pandoc) {
           return null;
         }
@@ -209,9 +221,17 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       paper: answer.paper,
       landscape: answer.landscape,
       // The citations resolved either way: this is only about the list at the end of the document.
-      suppress_references: answer.suppressReferences
+      suppress_references: answer.suppressReferences,
+      template_id: answer.templateId,
+      self_contained: answer.selfContained
     });
-    showHint(t('export.done', { file: fileName(outputPath) }), null);
+    const written = fileName(outputPath);
+    showHint(
+      first.kind === 'html'
+        ? t('export.doneFolder', { folder: outputPath })
+        : t('export.done', { file: written }),
+      null
+    );
     // A picture the *app* could not fetch, in the app's own words — before pandoc's warning about
     // it, which blames pandoc for its own missing HTTP support and would leave the reader none the
     // wiser about which URL is missing from the document they are holding.

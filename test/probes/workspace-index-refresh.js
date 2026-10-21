@@ -45,7 +45,7 @@
     );
 
     let done = false;
-    void flow.newDocument(workspace).then(() => {
+    void flow.newDocument(workspace, undefined, { choose: async () => null }).then(() => {
       done = true;
     });
     for (let attempt = 0; attempt < 60 && !done; attempt += 1) {

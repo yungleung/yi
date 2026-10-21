@@ -29,6 +29,7 @@ const {
   DEFAULT_TEMPLATE,
   DEFAULT_TITLE,
   REQUIRED_KEYS,
+  mergeFrontmatterTemplates,
   newDocumentDate,
   newDocumentId,
   newDocumentText,
@@ -158,6 +159,39 @@ check(
   [...REQUIRED_KEYS]
 );
 check("the defaults are the ask's own words", [DEFAULT_TITLE, DEFAULT_KEYWORDS], ['Untitle', 'untagged']);
+
+// --- a package's metadata ---
+
+const readerTemplate =
+  'title: Default title\nauthor: Default author\ndate:\nid:\nkeywords:\n  - untagged\nreviewed: false';
+const packageMetadata =
+  'title: Template title\nauthor: Template Author\ndate: 1999-01-01\nid: old-id\nkeywords:\n  - journal\ncategory:\n  name: article';
+check(
+  'a package metadata block supplies its keys first and the default supplies only the rest',
+  mergeFrontmatterTemplates(readerTemplate, packageMetadata),
+  'title: Template title\nauthor: Template Author\ndate: 1999-01-01\nid: old-id\nkeywords:\n  - journal\ncategory:\n  name: article\nreviewed: false'
+);
+check(
+  'and the app still stamps its date and id over the package values',
+  newDocumentText({ ...STAMP, template: readerTemplate, metadata: packageMetadata }),
+  '---\ntitle: Template title\nauthor: Template Author\ndate: 2026-09-29\nid: 20260929080503\nkeywords:\n  - journal\ncategory:\n  name: article\nreviewed: false\n---\n\n'
+);
+check(
+  'a metadata file with no value for a required key falls back to the default',
+  newDocumentText({ ...STAMP, template: readerTemplate, metadata: 'author: Package author' }),
+  '---\nauthor: Package author\ntitle: Default title\ndate: 2026-09-29\nid: 20260929080503\nkeywords:\n  - untagged\nreviewed: false\n---\n\n'
+);
+let invalidMetadata = null;
+try {
+  mergeFrontmatterTemplates(readerTemplate, 'title: [unclosed');
+} catch (error) {
+  invalidMetadata = error instanceof Error ? error.message : String(error);
+}
+check(
+  'broken package metadata is refused instead of becoming a broken note',
+  invalidMetadata?.includes('not valid YAML') ?? false,
+  true
+);
 
 // --- the title's range ---
 

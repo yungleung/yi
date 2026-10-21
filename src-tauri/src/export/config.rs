@@ -109,6 +109,42 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     Ok(path.to_string_lossy().into_owned())
 }
 
+/// A kind's defaults file as text, for the package editor's YAML panel. A missing copy is written
+/// from the shipped bytes first, exactly as the reveal button does.
+pub fn export_config_text(app: tauri::AppHandle, kind: String) -> Result<String, String> {
+    let kind = kind_of(&kind)?;
+    if !kind.needs_pandoc {
+        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+    }
+    let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
+    fs::read_to_string(&path).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotRead",
+            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
+        )
+    })
+}
+
+/// Writes the reader's defaults text atomically. This is one of the two text files the export UI
+/// edits; the package editor is the other, and neither is a session document.
+pub fn export_save_config_text(
+    app: tauri::AppHandle,
+    kind: String,
+    text: String,
+) -> Result<(), String> {
+    let kind = kind_of(&kind)?;
+    if !kind.needs_pandoc {
+        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+    }
+    let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
+    crate::files::write_atomically(&path, &text).map_err(|error| {
+        crate::i18n::now(
+            "export.cannotWrite",
+            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
+        )
+    })
+}
+
 /// Writes the copy this build ships over the reader's own, because the reader asked for it.
 ///
 /// The card offers the button only when the two differ ([`ExportKindInfo::config_is_shipped`]) and

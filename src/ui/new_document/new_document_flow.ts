@@ -15,8 +15,9 @@
  * default one character at a time.
  *
  * May import: the app's file commands, the note's own rules, the session, the tree's host, and
- * the card. Upholds: a new note is one command — `file:newMarkdown` — whichever trigger asked
- * for it, and nothing here is written by hand twice.
+ * the cards, with the template package seam behind them. Upholds: a new note is one command —
+ * `file:newMarkdown` — whichever trigger asked for it, its template choice is local to that note,
+ * and nothing here is written by hand twice.
  */
 
 import { createEntry, writeTextAtomically } from '../../api/files';
@@ -31,10 +32,21 @@ import { documentSession } from '../../services/session';
 import { documentManager } from '../../services/document_manager';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
+import {
+  newNoteMetadata,
+  newNoteTemplates,
+  type NewNoteTemplate
+} from '../../services/new_document_templates';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
 import { registerCommand } from '../markdown/commands/registry';
 import { refreshTreeFolders } from '../workspace/tree_ops';
 import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
+import { newDocumentTemplatePicker } from './template_picker';
+
+/** The one question a tree-created note still has: which package metadata to begin from. */
+export interface NewDocumentTemplateChooser {
+  choose(templates: NewNoteTemplate[]): Promise<string | null | undefined>;
+}
 
 /**
  * Registers the command the menu item names and the tree's *New file* runs.
@@ -42,12 +54,19 @@ import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialo
  * A payload carrying a folder is a trigger that already knows the place; without one the card
  * is asked.
  */
-export function registerNewDocumentCommand(chooser: NewDocumentChooser = newDocumentDialog): void {
+export function registerNewDocumentCommand(
+  chooser: NewDocumentChooser = newDocumentDialog,
+  templateChooser: NewDocumentTemplateChooser = newDocumentTemplatePicker
+): void {
   registerCommand({
     id: 'file:newMarkdown',
     run: (payload) => {
       const folder = (payload as { folder?: unknown } | undefined)?.folder;
-      void newDocument(typeof folder === 'string' ? folder : null, chooser);
+      void newDocument(
+        typeof folder === 'string' ? folder : null,
+        chooser,
+        templateChooser
+      );
     }
   });
 }
@@ -60,11 +79,19 @@ export function registerNewDocumentCommand(chooser: NewDocumentChooser = newDocu
  */
 export async function newDocument(
   folder: string | null,
-  chooser: NewDocumentChooser = newDocumentDialog
+  chooser: NewDocumentChooser = newDocumentDialog,
+  templateChooser: NewDocumentTemplateChooser = newDocumentTemplatePicker
 ): Promise<void> {
   const id = newDocumentId();
   let place = folder;
   let name = id;
+  let templateId: string | null = null;
+  const templates = await newNoteTemplates().catch((error) => {
+    // Templates are an optional beginning; a package directory that cannot be listed must not take
+    // away the app's basic ability to make a note.
+    console.error('Failed to list templates for a new note:', error);
+    return [];
+  });
   if (place === null) {
     const root = configManager.get()?.workspace;
     if (!root) {
@@ -78,19 +105,62 @@ export async function newDocument(
       // The walk is the card's to ask for: a reader's own sheet brings its own way of choosing.
       folders: () => workspaceFolders(root),
       folder: (onScreen && parentFolder(onScreen)) || root,
-      name: id
+      name: id,
+      templates
     });
     if (!answer) {
       return;
     }
     place = answer.folder;
     name = answer.name;
+    templateId = answer.templateId;
+  } else if (templates.length > 0) {
+    const chosen = await templateChooser.choose(templates);
+    if (chosen === undefined) {
+      return;
+    }
+    templateId = chosen;
   }
-  await create(place, name, id);
+  await create(place, name, id, templateId);
 }
 
 /** Creates the file, writes the note into it, shows it in the tree, and opens it. */
-async function create(folder: string, name: string, id: string): Promise<void> {
+async function create(
+  folder: string,
+  name: string,
+  id: string,
+  templateId: string | null
+): Promise<void> {
+  let metadata: string | undefined;
+  if (templateId !== null) {
+    try {
+      metadata = await newNoteMetadata(templateId);
+    } catch (error) {
+      notify('Making a new note', error);
+      return;
+    }
+  }
+  const configured = configManager.get()?.new_file_frontmatter ?? undefined;
+  try {
+    // Parsing package metadata must fail before a file appears. The real text is built again after
+    // the file has its final id, which can move forward when two notes are made in one second.
+    newDocumentText({
+      id,
+      date: newDocumentDate(),
+      template: configured,
+      metadata
+    });
+  } catch (error) {
+    notify(
+      'Making a new note',
+      new Error(
+        t('newNote.metadataInvalid', {
+          reason: error instanceof Error ? error.message : String(error)
+        })
+      )
+    );
+    return;
+  }
   const made = await createFile(folder, name, id);
   if (!made) {
     return;
@@ -99,7 +169,8 @@ async function create(folder: string, name: string, id: string): Promise<void> {
     id: made.id,
     date: newDocumentDate(),
     // No template of the reader's means the app's own (`services/new_document.ts`).
-    template: configManager.get()?.new_file_frontmatter ?? undefined
+    template: configured,
+    metadata
   });
   try {
     await writeTextAtomically(made.path, content);

@@ -22,13 +22,23 @@
  * answer — a kind and a path, or nothing — so the flow cannot export something nobody asked for.
  */
 
-import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { exportConfigPath, restoreExportConfig, type ExportKindInfo } from '../../api/export';
+import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { join } from '@tauri-apps/api/path';
+import { restoreExportConfig, type ExportKindInfo } from '../../api/export';
+import {
+  createDefaultTemplate,
+  exportTemplates,
+  type TemplateSummary
+} from '../../api/templates';
+import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { prompt } from '../prompt';
 import { QuestionCard } from '../floating/question_card';
+import { createDefaultDialog } from './templates/create_default_dialog';
+import { templateEditorPanel } from './templates/editor';
+import { kindLabel } from './templates/kind_label';
+import { templateLibraryDialog } from './templates/library';
 
 /** What the card is asked with: the kind the menu named, and the note's own path without an extension. */
 export interface ExportQuestion {
@@ -66,6 +76,10 @@ export interface ExportQuestion {
    * files they are, which is a picture the reader should know about before it is written.
    */
   notPictures: string[];
+  /** The packages the app has now, so the Template row can say which one is chosen. */
+  templates: TemplateSummary[];
+  /** The package remembered for this kind, or null for pandoc's default. */
+  selectedTemplateId: string | null;
 }
 
 /** The reader's answer: where the file goes. */
@@ -78,34 +92,10 @@ export interface ExportAnswer {
   landscape: boolean | null;
   /** Whether the reader asked for the citations resolved with no reference list at the end. */
   suppressReferences: boolean;
-}
-
-/** The label a kind is offered under, or its own name when the catalogues have none. */
-function kindLabel(kind: string): string {
-  if (kind === 'docx') {
-    return t('export.kind.docx');
-  }
-  if (kind === 'odt') {
-    return t('export.kind.odt');
-  }
-  if (kind === 'latex') {
-    return t('export.kind.latex');
-  }
-  if (kind === 'html') {
-    return t('export.kind.html');
-  }
-  if (kind === 'epub') {
-    return t('export.kind.epub');
-  }
-  if (kind === 'pdf') {
-    return t('export.kind.pdf');
-  }
-  if (kind === 'markdown') {
-    return t('export.kind.markdown');
-  }
-  // A kind with no label of its own is shown by its name: an untranslated item is better than none,
-  // and this is the same fallback `i18n.ts` gives a key no catalogue holds.
-  return kind;
+  /** The package this export uses, or null for pandoc's default. */
+  templateId: string | null;
+  /** Whether an HTML page embeds its local files; the box starts off. */
+  selfContained: boolean;
 }
 
 /** Up to eight of the characters a note needs a font for, and an ellipsis when there are more. */
@@ -125,6 +115,13 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly replaceConfig: HTMLButtonElement;
   /** The configuration row: the kind's own defaults file, which every export of it reads. */
   private readonly configRowElement: HTMLElement;
+  /** The package row: pandoc's default, or one chosen package, and the way to change it. */
+  private readonly templateLabel: HTMLSpanElement;
+  private readonly templateValue: HTMLSpanElement;
+  private readonly chooseTemplate: HTMLButtonElement;
+  private readonly createTemplate: HTMLButtonElement;
+  private readonly editTemplate: HTMLButtonElement;
+  private readonly templateRowElement: HTMLElement;
   /** The page size and orientation, for a kind whose engine lays out the page — the PDF. */
   private readonly paperLabel: HTMLLabelElement;
   private readonly paper: HTMLSelectElement;
@@ -134,6 +131,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   /** The ask about the citations: the keys resolved, and no list at the end of the document. */
   private readonly noReferences: HTMLInputElement;
   private readonly noReferencesRowElement: HTMLElement;
+  /** The HTML page's optional embedding of local files. Off by default. */
+  private readonly selfContained: HTMLInputElement;
+  private readonly selfContainedRowElement: HTMLElement;
   private readonly status: HTMLParagraphElement;
   /** The line that says the note is written in characters the settings name no font for. */
   private readonly fontHint: HTMLParagraphElement;
@@ -146,6 +146,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   private readonly cancel: HTMLButtonElement;
 
   private question: ExportQuestion | null = null;
+  private templatePackages: TemplateSummary[] = [];
+  private selectedTemplateId: string | null = null;
   /** Whether the reader has written in the target field: what they typed is not overwritten. */
   private edited = false;
 
@@ -182,9 +184,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.configPath.setAttribute('data-export-config', 'true');
     this.openConfig = this.button(
       'export-open-config',
-      t('export.revealConfig'),
+      t('export.editDefaults'),
       'btn btn-ghost btn-xs px-0',
-      () => void this.revealConfiguration()
+      () => void this.editDefaults()
     );
     this.replaceConfig = this.button(
       'export-replace-config',
@@ -218,6 +220,11 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.noReferences.className = 'checkbox checkbox-sm';
     this.noReferences.setAttribute('data-export-no-references', 'true');
 
+    this.selfContained = document.createElement('input');
+    this.selfContained.type = 'checkbox';
+    this.selfContained.className = 'checkbox checkbox-sm';
+    this.selfContained.setAttribute('data-export-self-contained', 'true');
+
     this.status = document.createElement('p');
     this.status.className = 'mt-2 min-h-4 text-xs opacity-70';
     this.status.setAttribute('data-export-status', 'true');
@@ -244,7 +251,37 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // one (measured the hard way — the card's configuration row was nowhere in the page).
     this.configRowElement = this.configRow();
     this.pageRowElement = this.pageRow();
+    this.templateLabel = document.createElement('span');
+    this.templateLabel.className = 'block text-xs opacity-70';
+    this.templateLabel.textContent = t('template.rowLabel');
+    this.templateValue = document.createElement('span');
+    this.templateValue.className = 'block break-all text-xs';
+    this.templateValue.setAttribute('data-export-template', 'true');
+    this.chooseTemplate = this.button(
+      'export-choose-template',
+      t('template.choose'),
+      'btn btn-ghost btn-xs px-0',
+      () => void this.chooseTemplatePackage()
+    );
+    this.createTemplate = this.button(
+      'export-create-template',
+      t('template.create'),
+      'btn btn-ghost btn-xs px-0',
+      () => void this.createTemplatePackage()
+    );
+    this.editTemplate = this.button(
+      'export-edit-template',
+      t('template.edit'),
+      'btn btn-ghost btn-xs px-0',
+      () => void this.editTemplatePackage()
+    );
+    this.templateRowElement = this.templateRow();
     this.noReferencesRowElement = this.checkboxRow(this.noReferences, t('export.noReferences'));
+    this.selfContainedRowElement = this.checkboxRow(
+      this.selfContained,
+      t('export.selfContained')
+    );
+    this.selfContainedRowElement.title = t('export.selfContainedHint');
 
     this.form = document.createElement('form');
     this.form.addEventListener('submit', (event) => {
@@ -258,6 +295,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     this.form.append(
       this.row(this.targetLabel, this.target, this.choose),
       this.configRowElement,
+      this.templateRowElement,
+      this.selfContainedRowElement,
       this.pageRowElement,
       this.noReferencesRowElement,
       this.status,
@@ -276,6 +315,8 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
   /** Asks. Null is the reader saying no. */
   async ask(question: ExportQuestion): Promise<ExportAnswer | null> {
     this.question = question;
+    this.templatePackages = question.templates;
+    this.selectedTemplateId = question.selectedTemplateId;
     this.edited = false;
     // The kind is the menu's answer, not the card's question: the card is *about* one kind, and the
     // heading says which — the reader picked it in the File menu, one item per kind.
@@ -301,13 +342,23 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
     const pandoc = this.question?.pandoc ?? null;
     // The target is the note's own path, the kind's own name suffix and its extension — unless the
-    // reader has written in the field, in which case what they typed is theirs.
+    // reader has written in the field, in which case what they typed is theirs. HTML is the one
+    // kind whose target is a folder: the page and its assets belong together.
     if (!this.edited) {
-      this.target.value = `${this.question?.baseTarget ?? ''}${info.name_suffix}.${info.extension}`;
+      this.target.value =
+        info.kind === 'html'
+          ? (this.question?.baseTarget ?? '')
+          : `${this.question?.baseTarget ?? ''}${info.name_suffix}.${info.extension}`;
     }
+    this.targetLabel.textContent = info.kind === 'html' ? t('export.targetFolder') : t('export.target');
     // A kind the app writes itself has no defaults file: the row is taken away rather than naming a
     // path that will never be written.
     this.configRowElement.classList.toggle('hidden', !info.needs_pandoc);
+    this.templateRowElement.classList.toggle('hidden', info.template_mode === 'none');
+    this.selfContainedRowElement.classList.toggle(
+      'hidden',
+      info.kind !== 'html'
+    );
     // The button that puts the shipped file back is offered only when the reader's copy is *not* it:
     // a copy that already holds what the build ships has nothing to replace. A copy that differs may
     // be the reader's edit or an older build's copy, and the question behind the button says which
@@ -328,6 +379,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     // Unticked every time the card is drawn, like the page fields: the list is what every kind
     // appends, and this is a reader asking for something else once.
     this.noReferences.checked = false;
+    // HTML starts as a folder bundle, with local files linked; a reader may ask for one embedded
+    // page for this export.
+    this.selfContained.checked = false;
     if (info.takes_a_page_size) {
       const choice = (label: string, value: string): HTMLOptionElement => {
         const option = document.createElement('option');
@@ -378,12 +432,28 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
         : t('export.notPictures', { destinations: notPictures.slice(0, 4).join(', ') });
     // A kind that cannot run is not offered a button that would fail: the sentence above says why.
     this.run.disabled = info.needs_pandoc && pandoc === null;
+    this.showTemplate();
   }
 
   /** The system's own sheet, for a reader who would rather not type a path. */
   private async pick(): Promise<void> {
     const info = this.question?.kind ?? null;
     if (!info) {
+      return;
+    }
+    if (info.kind === 'html') {
+      const parent = this.target.value.replace(/[\\/][^\\/]*$/, '');
+      const chosen = await openDialog({
+        directory: true,
+        multiple: false,
+        defaultPath: parent
+      });
+      if (typeof chosen === 'string') {
+        const name =
+          (this.question?.baseTarget ?? '').split(/[\\/]/).filter(Boolean).pop() ?? 'page';
+        this.target.value = await join(chosen, name);
+        this.edited = true;
+      }
       return;
     }
     const chosen = await saveDialog({
@@ -396,22 +466,102 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     }
   }
 
-  /**
-   * Reveals the kind's configuration file in the folder it lives in, with the file selected.
-   *
-   * *Revealed* rather than opened: which editor a file belongs to is the reader's own arrangement,
-   * and the folder they can see is one they can drag the file out of, open in whatever they like,
-   * or copy before changing. The app's tree reveals a file the same way (`tree_ops.ts: reveal`).
-   */
-  private async revealConfiguration(): Promise<void> {
+  /** The defaults file, in the same code panel that edits a package. */
+  private async editDefaults(): Promise<void> {
     const kind = this.question?.kind.kind ?? '';
-    try {
-      const path = await exportConfigPath(kind);
-      this.configPath.textContent = path;
-      await revealItemInDir(path);
-    } catch (error) {
-      notify('Export configuration', error);
+    await templateEditorPanel.openDefaults(kind, kindLabel(kind));
+  }
+
+  /** Says which package this export will use, or that pandoc's own template will. */
+  private showTemplate(): void {
+    const info = this.question?.kind ?? null;
+    if (info === null) {
+      return;
     }
+    const selected = this.templatePackages.find(
+      (summary) => summary.id === this.selectedTemplateId
+    );
+    this.templateValue.textContent =
+      this.selectedTemplateId === null
+        ? t('template.pandocDefault')
+        : selected?.manifest?.name ?? t('template.missing', { id: this.selectedTemplateId });
+    this.editTemplate.disabled =
+      selected?.manifest === undefined || selected?.manifest === null;
+    this.createTemplate.disabled = this.question?.pandoc === null;
+  }
+
+  private async chooseTemplatePackage(): Promise<void> {
+    const info = this.question?.kind ?? null;
+    if (info === null) {
+      return;
+    }
+    const choice = await templateLibraryDialog.ask(
+      info.kind,
+      this.selectedTemplateId,
+      this.question?.pandoc ?? null
+    );
+    if (choice === null) {
+      return;
+    }
+    this.templatePackages = await exportTemplates();
+    await this.selectTemplate(choice.id);
+  }
+
+  private async createTemplatePackage(): Promise<void> {
+    const info = this.question?.kind ?? null;
+    if (info === null) {
+      return;
+    }
+    const answer = await createDefaultDialog.ask(info.kind);
+    if (answer === null) {
+      return;
+    }
+    try {
+      const created = await createDefaultTemplate(
+        info.kind,
+        answer.name,
+        answer.source,
+        answer.license
+      );
+      this.templatePackages = await exportTemplates();
+      await this.selectTemplate(created.id);
+      await templateEditorPanel.openPackage(created, async () => {
+        this.templatePackages = await exportTemplates();
+        this.showTemplate();
+      });
+    } catch (error) {
+      notify('Export template', error);
+    }
+  }
+
+  private async editTemplatePackage(): Promise<void> {
+    const summary = this.templatePackages.find(
+      (entry) => entry.id === this.selectedTemplateId
+    );
+    if (summary === undefined) {
+      return;
+    }
+    await templateEditorPanel.openPackage(summary, async () => {
+      this.templatePackages = await exportTemplates();
+      this.showTemplate();
+    });
+  }
+
+  /** A choice made in the card is the choice remembered for later exports of this kind. */
+  private async selectTemplate(id: string | null): Promise<void> {
+    const kind = this.question?.kind.kind ?? '';
+    this.selectedTemplateId = id;
+    const current = configManager.get();
+    if (current !== null) {
+      const remembered = { ...(current.export_templates ?? {}) };
+      if (id === null) {
+        delete remembered[kind];
+      } else {
+        remembered[kind] = id;
+      }
+      await configManager.update({ export_templates: remembered });
+    }
+    this.showTemplate();
   }
 
   /**
@@ -458,7 +608,9 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       outputPath,
       paper: this.paper.value === '' ? null : this.paper.value,
       landscape: orientation === '' ? null : orientation === 'landscape',
-      suppressReferences: this.noReferences.checked
+      suppressReferences: this.noReferences.checked,
+      templateId: this.selectedTemplateId,
+      selfContained: this.selfContained.checked
     });
   }
 
@@ -481,6 +633,16 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
     buttons.className = 'flex items-center gap-3';
     buttons.append(this.openConfig, this.replaceConfig);
     group.append(this.configLabel, this.configPath, buttons);
+    return group;
+  }
+
+  private templateRow(): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'mt-3 flex flex-col gap-1';
+    const buttons = document.createElement('div');
+    buttons.className = 'flex items-center gap-3';
+    buttons.append(this.chooseTemplate, this.createTemplate, this.editTemplate);
+    group.append(this.templateLabel, this.templateValue, buttons);
     return group;
   }
 

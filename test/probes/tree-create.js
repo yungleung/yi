@@ -43,6 +43,14 @@
       await t.sleep(250);
     }
   };
+  /** A template package may add one question before the file is made; this accepts none. */
+  const finishTemplateQuestion = async () => {
+    const card = document.querySelector('[data-new-document-template-card]');
+    if (card && !card.classList.contains('hidden')) {
+      card.querySelector('[data-new-document-template-create]')?.click();
+      await t.sleep(200);
+    }
+  };
   let previous = null;
   try {
     try {
@@ -64,6 +72,7 @@
 
     await ops.runTreeAction('new-file', entry(sub, 'sub', false));
     await t.sleep(350);
+    await finishTemplateQuestion();
     await answerPrompt();
     await t.sleep(250);
     const first = (await namesIn(sub)).filter((name) => stamp.test(name));
@@ -89,6 +98,7 @@
 
     await ops.runTreeAction('new-file', entry(sub, 'sub', false));
     await t.sleep(350);
+    await finishTemplateQuestion();
     await answerPrompt();
     await t.sleep(250);
     const second = (await namesIn(sub)).filter((name) => stamp.test(name) && name !== first[0]);

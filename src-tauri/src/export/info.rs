@@ -11,7 +11,7 @@ use std::fs;
 use std::path::Path;
 
 use super::config::export_dir;
-use super::kinds::{config_file_name, ExportKind, PaperSize, KINDS, PAPER_SIZES};
+use super::kinds::{config_file_name, ExportKind, KindTemplate, PaperSize, KINDS, PAPER_SIZES};
 use super::pandoc::find_pandoc;
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
@@ -51,6 +51,8 @@ pub struct ExportKindInfo {
     /// cannot be told apart from here, and the card does not try: it says what the button does and
     /// lets the reader answer.
     pub config_is_shipped: bool,
+    /// What a package for this kind hands pandoc: `text`, `reference-doc` or `none`.
+    pub template_mode: KindTemplate,
 }
 
 /// What the export dialog is built from: the kinds, and the pandoc the app would run.
@@ -112,5 +114,6 @@ pub(super) fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         config_path: config
             .map(|path| path.to_string_lossy().into_owned())
             .unwrap_or_default(),
+        template_mode: kind.template_mode,
     }
 }

@@ -136,7 +136,13 @@ carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list hol
 template the reader may write (the app config's `new_file_frontmatter`, a string or null for the
 app's own, shown by settings → *New note*) and the range the title's value sits in, so the editor
 can select it. A required key whose value is written *under* it — the keyword list — is the
-reader's and is left alone; one with nothing under it gets the app's. `services/workspace_folders.ts`
+reader's and is left alone; one with nothing under it gets the app's. A readable template package
+with a root `metadata.yaml` may also seed one new note. `services/new_document_templates.ts` lists
+those choices and reads the chosen file; the package's keys win over the configured frontmatter,
+the configured template supplies keys the package omits, and `date`/`id` remain the app's stamps.
+The choice belongs to that note only and is never written into `export_templates`; there is a
+template-only card for the tree's *New file*, where the folder is already known.
+`services/workspace_folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/new_document_flow.ts`
 does the four observable things in order — create the file, write the note into it, tell the tree
@@ -153,7 +159,8 @@ rule the sheet's answer is read by is checked in Node (`test/checks/check-worksp
 The tree's own *New file* runs the same command with the row's folder as its payload, so a note
 made in the tree and one made from the menu cannot drift apart; it no longer starts an inline
 rename, because the file is already named by its id and the *title* is what the reader is asked to
-type. Two things bite here: the file plugin is scoped to `$HOME`
+type. A selected package does not stay selected: the next creation asks again, and export keeps its
+separate per-kind choice. Two things bite here: the file plugin is scoped to `$HOME`
 (`src-tauri/capabilities/default.json`), so a workspace outside it can be listed, moved and
 deleted but not read or written by the webview; and making a note from a document that is not in
 the stack asks the session's question first, the same one opening a file asks.
@@ -256,7 +263,10 @@ output is written under, whether pandoc writes it at all, and the bytes of a pan
 makes a reader's edit theirs (the docx one is Zettlr's own defaults file, less one key: their
 `default-image-extension: .jpg` is applied by pandoc to a URL whose path has no extension, turning a
 working web image into a 404 — measured — so it is left out and the header says so; the epub one is
-Yi's own, written in that shape). A row also says what the *window* owes a kind's **body**: a book's
+Yi's own, written in that shape). Every shipped file states `shift-heading-level-by: 0`: heading
+levels belong to the note and the app's body rules, not to a defaults file. A reader's existing copy
+is still never rewritten, so an older copy may keep another value. A row also says what the *window*
+owes a kind's **body**: a book's
 keeps the note's own level-1 heading, the note's name standing in it when the note keeps that heading in
 its frontmatter `title:` (`src/ui/export/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
 would otherwise make a heading of its own, level 1, out of the book's name *outside* the document pandoc
@@ -312,6 +322,18 @@ one line of each on one page with **no** font named in the settings file: Greek,
 Arabic, Devanagari, Thai, Armenian, Georgian, Han, kana and Hangul all draw, with a `ToUnicode` map per
 face so the page can be searched and copied from (`export-pdf-scripts.js` reads such a page back, and
 reads the page's `/BaseFont` names to say they were *this build's* faces).
+The same inter-character tokens are what made every `~~strikethrough~~` stop the PDF with *Package
+soul Error: Reconstruction failed* once the header was included: pandoc's default template defines
+`\st` and `\ul` with `soul`, whose scanner cannot see past them. The header therefore loads `ulem`
+after pandoc's preamble and maps those two commands to `\sout` and `\uline` (`export-pdf.js` holds a
+note with inline code and strikeout through the default document path).
+**A custom PDF template is used exactly as imported.** It may not emit `header-includes`, may lack
+Pandoc's `$highlighting-macros$` placeholder, and may not define `\st`, `\tightlist`, `Shaded` or
+other writer macros; Yi does not rewrite its preamble or inject those pieces. `--include-in-header`
+still reaches Pandoc, but a template that does not emit the header simply ignores it. Validation,
+Test PDF and a normal export report Pandoc or the engine's own sentence naming what is missing. That
+keeps the reader's template authoritative and avoids package/macro conflicts; template-authoring
+documentation is the place to explain the Pandoc contract.
 
 **What the reader's file names still wins**, and the header's own comment says how: `mainfont` is the
 document's own font — `\normalfont`, so Latin and every block no shipped face answers for is set in it,
@@ -393,9 +415,13 @@ one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own read
 of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
 image's destination written as the file the app resolves it to (absolute and encoded, through
 `workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
-what the docx embeds is what the page showed — and for a picture *on the web*, fetched by the app
-with an in-process `reqwest` request, because a pandoc built without HTTP support cannot fetch it at all; the
-files land in `<data>/export/tmp/remote/` and go at the end of the run) — and a third, for the kind
+what the docx embeds is what the page showed). A picture written as a web URL is kept as that URL
+for HTML: the author's address must not become a temporary file that disappears after the run. For
+the other pandoc kinds it is fetched by the app with an in-process `reqwest` request, because a
+pandoc built without HTTP support cannot fetch it at all; those files land in
+`<data>/export/tmp/remote/` and go at the end of the run. When an HTML page is not self-contained,
+`export/html_media.rs` copies the note's local pictures to `<output>.assets/` and rewrites their
+`src`; web URLs and data URIs are untouched — and a third rule, for the kind
 pandoc is not the one converting for: each citation written as the words it reads as, with the works
 it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind
 has no citeproc behind it. Those rules walk the *parse*,
@@ -416,6 +442,64 @@ number where the style puts it (`(Smith, 2020, p. 45)` in APA), `-@key` leaves a
 year and no name, and the list is appended under the heading the app asks for. **`suppress-bibliography`
 is metadata, not a variable** — a `variables:` line leaves the list exactly where it was (measured) —
 so a reader who wants the keys resolved and no list writes a `metadata:` block in their settings file.
+
+**A template is a package under the app's export data, not a note.** The folder is
+`<app data>/export/templates/<id>/`; `template.json` is the app's manifest — schema, id, name, export
+kind, `template`/`wrapper`/`reference-doc` mode, provenance and licence, one entry, the CSL and the
+asset/deliver lists — and the reader never writes it by hand. The manifest's `id` is a slug of the
+display name (`-2`, `-3` on collision); it is edited through the details form, and the raw JSON is a
+read-only view in the package editor. A package belongs to one export kind. `assets` are every other
+file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
+export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
+file the template names travels too.
+
+Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
+folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference
+document, a lone `.csl` is refused, and a lone defaults file is refused in favour of the defaults
+panel. A folder or zip is walked recursively, dot-entries ignored, and the main `.tex` chosen by
+`$body$`, then a document environment, then `main.tex`/`template.tex`/`article.tex`, then size; equal
+candidates come back for the reader to choose. A complete document becomes a **wrapper** proposal:
+`source.tex` stays as an asset beside it, `template.tex` is a copy with `$body$` before
+`\end{document}`, and mapping its `\title{}`/`\author{}` to `$title$`/`$author$` is offered
+unchecked. A document in `samples/` wraps in `samples/`, so its relative inputs and graphics keep
+their folder; literal `$` characters are doubled (`$$`) for Pandoc's template parser and return to
+one dollar in the output. Choosing another complete document in the details form makes the same
+wrapper conversion. A zip is extracted
+into a hidden staging folder and renamed into place only when complete; absolute paths and `..` are
+refused, as are symlinks, more than 2,000 files or 200 MB. `createDefault` is the other factory and
+writes the same shape, from `pandoc --print-default-template` or
+`--print-default-data-file=reference.docx`.
+
+The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
+row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`
+resolves it under the app's export folder, refuses one for another kind, and hands pandoc
+`--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
+folder as the first `--resource-path`. A PDF run works from the entry file's folder, so a sample's
+relative graphics and inputs resolve, and puts the package root on `TEXINPUTS`, `BIBINPUTS` and
+`BSTINPUTS`, so its class, bibliography and style still resolve. The package is
+also staged under the folder name its template uses in relative links (`template/css/…` for Yuki),
+so the card's **Self-contained HTML** box, off by default, embeds the package's local CSS,
+JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/note` becomes
+`/notes/note/note.html`, with `note.assets/` and the template's files inside it. When the box is
+off, the page keeps relative links. The bundle always receives the package's whole asset tree,
+whether or not the page also embedded those files; web URLs stay URLs.
+`ExportRequest.self_contained` becomes an explicit `--embed-resources=true|false`, so an older
+reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pack.rs` rewrites
+chapter links to an `assets/` folder, copies the package's web resources there and declares them in
+`content.opf`. DOCX, ODT and PDF are containers and need no sidecars. The app never runs TeX's
+unrestricted shell escape or `tlmgr`, and it does not download journal kits.
+
+The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
+`StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
+session document. It lists the package's files, shows binaries read-only with *Open in system*, saves
+with `Mod-S` atomically, and **Validate** / **Test PDF** run pandoc on a one-paragraph fixture and
+show its stderr. The same panel edits a kind's defaults YAML, which is why the export card's old
+*Reveal in folder* is now **Edit defaults**. The library is `library.ts` (choose, import, create,
+details, duplicate, remove), the confirmation is `import_dialog.ts`, and the manifest shape is held
+by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
+`export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
+`export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
+`export-template-pdf.js`.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
@@ -765,7 +849,9 @@ own: its config names *their* workspace, bibliography and layout, and its sessio
 documents they had open. So a test run that points the app at `test/fixtures/workspace` — or at a
 folder a probe made — **backs both up before it starts and puts both back when it ends**, and no
 test ever runs *in* the reader's own folder. `--with-workspace` does the config half for you (the
-harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`), and the harness does the
+harness snapshots `get_config` and writes it back; `test/tauri-probe.mjs`). The harness also starts
+every run with `export_templates` empty — a reader's Yuki choice must not turn an export probe into a
+measurement of their selection — and the snapshot puts the choice back afterwards. It does the
 session half too, for **every** run: it reads `load_session` up front and writes it back through
 `save_session` once the probe has reported, waiting out the app's own 800 ms session debounce first —
 because a probe loads documents into the maintainer's app, and one that types into them leaves its

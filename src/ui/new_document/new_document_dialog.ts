@@ -18,17 +18,20 @@
  * caret when it opens, with the generated id selected, because that default is a name meant to
  * be typed over rather than kept.
  *
- * May import: the dialog plugin, the component base, the shared "under test" rule, and the path
- * rules the two hands share. Upholds: one answer to the question — a folder and a name, or a
- * cancel that writes nothing — and a folder that is the chosen path's own, whichever hand was in
- * the room.
+ * May import: the dialog plugin, the component base, the shared "under test" rule, the path rules
+ * the two hands share, the new-note templates and the kind labels. Upholds: one answer to the
+ * question — a folder, a name and an optional template, or a cancel that writes nothing — and a
+ * folder that is the chosen path's own, whichever hand was in the room.
  */
 
 import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
+import type { NewNoteTemplate } from '../../services/new_document_templates';
 import { QuestionCard } from '../floating/question_card';
+import { kindLabel } from '../export/templates/kind_label';
 import { drivenByTools } from '../under_test';
 import { placementOfPath, type FolderOption } from '../../services/workspace_folders';
+import { newDocumentTemplatePicker } from './template_picker';
 
 /** What the card needs to ask: the places, the one to start on, and the name to start with. */
 export interface NewDocumentRequest {
@@ -42,12 +45,16 @@ export interface NewDocumentRequest {
   folder: string;
   /** The name to start with, without its extension (the app writes `.md`). */
   name: string;
+  /** The readable packages that carry a root `metadata.yaml`. */
+  templates: NewNoteTemplate[];
 }
 
 /** The reader's answer: where the note goes, and what it is called. */
 export interface NewDocumentPlacement {
   folder: string;
   name: string;
+  /** The package whose metadata seeds this note, or null for the reader's own template only. */
+  templateId: string | null;
 }
 
 /** Whoever can ask for a place and a name. A module that needs an answer takes one of these. */
@@ -61,6 +68,7 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
   private readonly form: HTMLFormElement;
   private readonly list: HTMLDivElement;
   private readonly nameField: HTMLInputElement;
+  private readonly templateField: HTMLSelectElement;
   private folder = '';
   private fallbackName = '';
 
@@ -89,6 +97,10 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
     this.nameField.setAttribute('data-new-document-name', 'true');
     this.nameField.setAttribute('spellcheck', 'false');
 
+    this.templateField = document.createElement('select');
+    this.templateField.className = 'select select-bordered select-sm w-full';
+    this.templateField.setAttribute('data-new-document-template', 'true');
+
     this.form.append(
       this.field(t('newNote.folder'), this.list),
       this.field(t('newNote.name'), this.nameField),
@@ -104,7 +116,12 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
   /** Asks, on the system's sheet when a reader is there and on the card when a probe is. */
   async choose(request: NewDocumentRequest): Promise<NewDocumentPlacement | null> {
     if (!drivenByTools()) {
-      return await this.askOnTheSystemSheet(request);
+      const placement = await this.askOnTheSystemSheet(request);
+      if (placement === null) {
+        return null;
+      }
+      const templateId = await this.askTemplate(request.templates);
+      return templateId === undefined ? null : { ...placement, templateId };
     }
     return await this.askOnTheCard(request);
   }
@@ -120,7 +137,7 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
    */
   private async askOnTheSystemSheet(
     request: NewDocumentRequest
-  ): Promise<NewDocumentPlacement | null> {
+  ): Promise<Omit<NewDocumentPlacement, 'templateId'> | null> {
     const chosen = await saveChosen({
       defaultPath: `${request.folder}/${request.name}.md`,
       filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
@@ -143,8 +160,17 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
     return await answered;
   }
 
+  /**
+   * The second answer, on a card because no system sheet can carry it. Asking the same card keeps
+   * the question in one component; the card's first step has already closed, so this is a fresh one.
+   */
+  private async askTemplate(templates: NewNoteTemplate[]): Promise<string | null | undefined> {
+    return await newDocumentTemplatePicker.choose(templates);
+  }
+
   /** The folder rows and the starting name, for one question. */
   private fill(folders: FolderOption[], request: NewDocumentRequest): void {
+    this.heading.textContent = t('newNote.title');
     this.folder = folders.some((option) => option.path === request.folder)
       ? request.folder
       : (folders[0]?.path ?? '');
@@ -154,7 +180,26 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
     for (const option of folders) {
       this.list.appendChild(this.folderRow(option));
     }
+    this.form.querySelector('[data-new-note-template-field]')?.remove();
+    const group = this.field(t('newNote.template'), this.templateField);
+    group.setAttribute('data-new-note-template-field', 'true');
+    this.form.insertBefore(group, this.form.lastElementChild);
+    this.fillTemplates(request.templates, group);
     this.markChosen();
+  }
+
+  private fillTemplates(templates: NewNoteTemplate[], group: HTMLElement): void {
+    this.templateField.replaceChildren();
+    this.templateField.append(this.option('', t('newNote.withoutTemplate')));
+    for (const template of templates) {
+      this.templateField.append(
+        this.option(
+          template.id,
+          `${template.name} — ${kindLabel(template.kind)}`
+        )
+      );
+    }
+    group.classList.toggle('hidden', templates.length === 0);
   }
 
   /** One folder of the list: a row, indented the way the tree indents one. */
@@ -215,7 +260,18 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
     }
     // An empty field is not a name: the generated id it opened with is the name the ask asks
     // for, and a note has to be called something.
-    this.settle({ folder: this.folder, name: this.nameField.value.trim() || this.fallbackName });
+    this.settle({
+      folder: this.folder,
+      name: this.nameField.value.trim() || this.fallbackName,
+      templateId: this.templateField.value || null
+    });
+  }
+
+  private option(value: string, label: string): HTMLOptionElement {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    return option;
   }
 
   private button(

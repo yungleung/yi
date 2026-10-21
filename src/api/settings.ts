@@ -36,6 +36,9 @@ export type AppConfig = {
    * it (`src/services/session_rules.ts: openDecision`); false — the default — keeps the
    * question, which is asked only when replacing that document would lose the reader's words. */
   push_unstacked_on_open: boolean;
+  /** The template package chosen for each export kind, by id. A kind with no entry is pandoc's
+   * default. Ids are resolved under the app's export folder; this never holds a path. */
+  export_templates: Record<string, string>;
   config_version: number;
 };
 

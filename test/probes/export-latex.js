@@ -161,8 +161,8 @@
     );
     check(
       'with the note’s heading as a section of it',
-      tex.includes('\\section{Going out}'),
-      { section: tex.includes('\\section{Going out}') }
+      /\\(?:chapter|section|subsection)\{Going out\}/.test(tex),
+      { section: /\\(?:chapter|section|subsection)\{Going out\}/.exec(tex)?.[0] ?? null }
     );
     check(
       'and no font setup of its own: this file names none, so the compile is not stopped by a name the reader’s machine may not have',
@@ -233,12 +233,13 @@
     check(
       'the citations are resolved and the reference list appended, headed and in the page’s style',
       tex.includes('(Smith, 2020)') &&
-        tex.includes('\\section*{References}') &&
+        /\\(?:chapter|section|subsection)\*\{References\}/.test(tex) &&
         tex.includes('\\bibitem') &&
         tex.includes('Smith, J. (2020)'),
       {
         citation: tex.includes('(Smith, 2020)'),
-        heading: tex.includes('\\section*{References}'),
+        heading:
+          /\\(?:chapter|section|subsection)\*\{References\}/.exec(tex)?.[0] ?? null,
         entry: tex.includes('Smith, J. (2020)')
       }
     );

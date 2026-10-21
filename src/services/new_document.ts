@@ -15,10 +15,12 @@
  * values are stamped over whatever the template wrote there. A key the template does not
  * name at all is appended, in the order the ask lists the four.
  *
- * May import: nothing. Upholds: one home for the shape of a new note — the id's digits, the
- * date's, the required keys and where the title's value sits in the text — so the file name,
- * the frontmatter and the editor's selection cannot drift apart.
+ * May import: the YAML parser for package metadata. Upholds: one home for the shape of a new note
+ * — the id's digits, the date's, the required keys and where the title's value sits in the text —
+ * so the file name, the frontmatter and the editor's selection cannot drift apart.
  */
+
+import { isMap, parseDocument } from 'yaml';
 
 /**
  * The keys every note carries. The reader may add more, and may write them anywhere in the
@@ -53,6 +55,8 @@ export interface NewDocumentFields {
   date: string;
   /** The frontmatter the reader configured, or `DEFAULT_TEMPLATE`. */
   template?: string;
+  /** A chosen package's `metadata.yaml`: its keys win over the reader's template, except the stamps. */
+  metadata?: string;
 }
 
 /**
@@ -60,14 +64,16 @@ export interface NewDocumentFields {
  * blank line that keeps a parser from reading the first paragraph as more frontmatter.
  */
 export function newDocumentText(fields: NewDocumentFields): string {
-  const { id, date, template = DEFAULT_TEMPLATE } = fields;
+  const { id, date, template = DEFAULT_TEMPLATE, metadata } = fields;
   const stamp: Record<RequiredKey, string> = {
     title: DEFAULT_TITLE,
     date,
     id,
     keywords: DEFAULT_KEYWORDS
   };
-  const written = frontmatterLines(template);
+  const source =
+    metadata === undefined ? template : mergeFrontmatterTemplates(template, metadata);
+  const written = frontmatterLines(source);
   const body: string[] = [];
   written.forEach((line, index) => {
     const key = keyOf(line);
@@ -90,6 +96,48 @@ export function newDocumentText(fields: NewDocumentFields): string {
     }
   }
   return `---\n${body.join('\n')}\n---\n\n`;
+}
+
+/**
+ * A package's metadata over the reader's default frontmatter.
+ *
+ * The package owns every key it names; the default supplies the keys it does not. `date` and `id`
+ * are the two exceptions: they keep the package's position when it names them, but
+ * [`newDocumentText`] stamps the app's values over both. Keeping this a text merge preserves the
+ * reader's comments and the package's order rather than round-tripping either through a YAML value.
+ */
+export function mergeFrontmatterTemplates(defaultTemplate: string, metadata: string): string {
+  const base = frontmatterLines(defaultTemplate).join('\n');
+  const chosen = frontmatterLines(metadata).join('\n');
+  if (chosen.trim() === '') {
+    return base;
+  }
+  const parsed = parseDocument(chosen, { uniqueKeys: false });
+  if (parsed.errors.length > 0) {
+    throw new Error(`The template metadata is not valid YAML: ${parsed.errors[0].message}`);
+  }
+  if (parsed.contents !== null && !isMap(parsed.contents)) {
+    throw new Error('The template metadata must be a YAML mapping.');
+  }
+  const baseBlocks = keyedBlocks(base);
+  const chosenBlocks = keyedBlocks(chosen);
+  const named = new Set(
+    chosenBlocks.map((block) => block.key).filter((key): key is string => key !== null)
+  );
+  const merged = chosenBlocks.slice();
+  for (const block of baseBlocks) {
+    if (block.key === null) {
+      if (chosenBlocks.length === 0) {
+        merged.push(block);
+      }
+    } else if (!named.has(block.key)) {
+      merged.push(block);
+    }
+  }
+  return merged
+    .map((block) => block.lines.join('\n'))
+    .filter((block) => block.trim() !== '')
+    .join('\n');
 }
 
 /**
@@ -179,6 +227,37 @@ function frontmatterLines(template: string): string[] {
     lines.pop();
   }
   return lines;
+}
+
+interface FrontmatterBlock {
+  key: string | null;
+  lines: string[];
+}
+
+/**
+ * The top-level blocks of a frontmatter, keyed by the name on their first line.
+ *
+ * A key's block runs through every indented value, list item and comment beneath it. A leading
+ * comment is kept with the first key rather than becoming a key of its own.
+ */
+function keyedBlocks(text: string): FrontmatterBlock[] {
+  const blocks: FrontmatterBlock[] = [];
+  let current: FrontmatterBlock = { key: null, lines: [] };
+  for (const line of text.split('\n')) {
+    const match = /^([A-Za-z_][\w.-]*)\s*:/.exec(line);
+    if (match) {
+      if (current.lines.length > 0) {
+        blocks.push(current);
+      }
+      current = { key: match[1], lines: [line] };
+    } else {
+      current.lines.push(line);
+    }
+  }
+  if (current.lines.length > 0) {
+    blocks.push(current);
+  }
+  return blocks;
 }
 
 /** The key a frontmatter line names, or null when it names none. */
