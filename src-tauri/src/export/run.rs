@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 use super::config::{ensure_csl_in, ensure_defaults_in, export_dir, remote_dir, settings_text, CslStyle};
 use super::kinds::{kind_of, ExportKind, KindTemplate, PAPER_SIZES, TemplateMode};
-use super::pandoc::{find_pandoc, run_pandoc};
+use super::pandoc::{find_pandoc, run_pandoc_with_env};
 use super::templates::TemplateManifest;
 use super::templates::{reference_to, safe_prefix};
 
@@ -191,12 +191,27 @@ fn export_with_pandoc(
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
         // it is run in, so a package is that folder. The note, defaults and output are absolute,
         // which is what keeps that current directory from changing what the other paths mean.
-        let working = template
+        let (working, environment) = template
             .as_ref()
             .filter(|_| kind.kind == "pdf")
-            .map(|(package, _)| package.as_path())
-            .or_else(|| request.source_dir.as_deref().map(Path::new));
-        run_pandoc(&pandoc, &arguments, working).map(|warnings| ExportOutcome { warnings })
+            .map(|(package, manifest)| pdf_environment(package, manifest))
+            .unwrap_or_else(|| {
+                (
+                    request
+                        .source_dir
+                        .as_deref()
+                        .map(Path::new)
+                        .map(Path::to_path_buf),
+                    Vec::new(),
+                )
+            });
+        run_pandoc_with_env(
+            &pandoc,
+            &arguments,
+            working.as_deref(),
+            &environment,
+        )
+        .map(|warnings| ExportOutcome { warnings })
     })
     .and_then(|outcome| {
         if kind.kind == "html" {
@@ -625,4 +640,37 @@ fn absolute_output(path: &str, source_dir: Option<&str>) -> PathBuf {
         .or_else(|| std::env::current_dir().ok())
         .unwrap_or_default();
     base.join(path)
+}
+
+/// A PDF template entry may live in `samples/` while its class lives at the package root. Run TeX
+/// from the entry's own folder so relative pictures and inputs resolve, and put both folders on the
+/// TeX/BibTeX search paths so the package's class and bibliography files still resolve.
+pub(super) fn pdf_environment(
+    package: &Path,
+    manifest: &TemplateManifest,
+) -> (Option<PathBuf>, Vec<(&'static str, OsString)>) {
+    let entry = super::templates::manifest_file(package, manifest.entry());
+    let working = entry.parent().unwrap_or(package).to_path_buf();
+    let separator = if cfg!(windows) { ';' } else { ':' };
+    let mut value = format!(
+        "{}{separator}{}{separator}",
+        package.display(),
+        working.display()
+    );
+    if let Ok(existing) = std::env::var("TEXINPUTS") {
+        if !existing.is_empty() {
+            value.push_str(&format!("{existing}{separator}"));
+        }
+    }
+    let texinputs = OsString::from(value.clone());
+    let bibinputs = OsString::from(value.clone());
+    let bstinputs = OsString::from(value);
+    (
+        Some(working),
+        vec![
+            ("TEXINPUTS", texinputs),
+            ("BIBINPUTS", bibinputs),
+            ("BSTINPUTS", bstinputs),
+        ],
+    )
 }

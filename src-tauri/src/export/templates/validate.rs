@@ -16,6 +16,8 @@ use std::path::{Path, PathBuf};
 use super::super::config::{export_dir, settings_text};
 use super::super::kinds::{kind_of, KindTemplate};
 use super::super::pandoc::{find_pandoc, run_pandoc};
+use super::super::pandoc::run_pandoc_with_env;
+use super::super::run::pdf_environment;
 use super::package::resolve_package;
 
 /// What a check found, in the reader's terms.
@@ -136,7 +138,8 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
         ];
         package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
-        match run_pandoc(&pandoc, &arguments, Some(&package)) {
+        let (working, environment) = pdf_environment(&package, &manifest);
+        match run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment) {
             Ok(warnings) => Ok(ValidationResult {
                 ok: true,
                 message: crate::i18n::now("template.pdfValidated", &[]),

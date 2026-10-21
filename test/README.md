@@ -218,10 +218,12 @@ package asset delivered beside the `.tex`, and a Word export through a reference
 `export-template-assets` (Yuki's `template/css/…` spelling embedded in self-contained HTML, the full
 LaTeX asset tree, and an EPUB with its package assets packed into the book),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
-the bundle), `export-template-ui` (the Template row,
+the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,
+literal dollars escaped for Pandoc, and another sample selected without losing the folder), `export-template-ui` (the Template row,
 the library's inspect-then-import, CodeMirror, an atomic save, validation and the defaults panel),
 `export-template-create-ui` (Create…, details, duplicate and remove) and `export-template-pdf` (the
-package as the engine's working directory, which is what finds `journal.cls`), with
+entry's folder as the engine's working directory with the package root on `TEXINPUTS`, which is what
+finds both `sampleteaser.pdf` and `acmart.cls` for nested entries), with
 `export-template-broken` holding a newer manifest to the sentence it names and the library row it
 can still be removed from;
 `export-citations` — the three citation forms nobody had asked citeproc about, read through an EPUB

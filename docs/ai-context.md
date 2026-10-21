@@ -449,8 +449,12 @@ document, a lone `.csl` is refused, and a lone defaults file is refused in favou
 panel. A folder or zip is walked recursively, dot-entries ignored, and the main `.tex` chosen by
 `$body$`, then a document environment, then `main.tex`/`template.tex`/`article.tex`, then size; equal
 candidates come back for the reader to choose. A complete document becomes a **wrapper** proposal:
-`source.tex` stays as an asset, `template.tex` is a copy with `$body$` before `\end{document}`, and
-mapping its `\title{}`/`\author{}` to `$title$`/`$author$` is offered unchecked. A zip is extracted
+`source.tex` stays as an asset beside it, `template.tex` is a copy with `$body$` before
+`\end{document}`, and mapping its `\title{}`/`\author{}` to `$title$`/`$author$` is offered
+unchecked. A document in `samples/` wraps in `samples/`, so its relative inputs and graphics keep
+their folder; literal `$` characters are doubled (`$$`) for Pandoc's template parser and return to
+one dollar in the output. Choosing another complete document in the details form makes the same
+wrapper conversion. A zip is extracted
 into a hidden staging folder and renamed into place only when complete; absolute paths and `..` are
 refused, as are symlinks, more than 2,000 files or 200 MB. `createDefault` is the other factory and
 writes the same shape, from `pandoc --print-default-template` or
@@ -460,8 +464,9 @@ The choice is per kind in `AppConfig.export_templates` (kind → package id) and
 row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
-folder as the first `--resource-path`. A PDF run also uses the package folder as its working
-directory, which is what makes `\documentclass{journal}` and `\usepackage{…}` resolve. The package is
+folder as the first `--resource-path`. A PDF run works from the entry file's folder, so a sample's
+relative graphics and inputs resolve, and puts the package root on `TEXINPUTS`, `BIBINPUTS` and
+`BSTINPUTS`, so its class, bibliography and style still resolve. The package is
 also staged under the folder name its template uses in relative links (`template/css/…` for Yuki),
 so the card's **Self-contained HTML** box, off by default, embeds the package's local CSS,
 JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/note` becomes

@@ -265,7 +265,7 @@ fn build_package(
             if request.map_author {
                 wrapped = scan::replace_argument(&wrapped, "\\author", "$author$");
             }
-            let original_name = unique_asset_name(&assets, "source.tex");
+            let original_name = unique_asset_name(&assets, &scan::wrapper_source(chosen));
             let original_path = staging.join(relative_path(chosen)?);
             let kept = staging.join(&original_name);
             fs::rename(&original_path, &kept).map_err(|error| {
@@ -275,7 +275,7 @@ fn build_package(
                 )
             })?;
             assets.push(original_name);
-            entry = unique_entry_name(&assets, "template.tex");
+            entry = unique_entry_name(&assets, &scan::wrapper_entry(chosen));
             let wrapped_path = staging.join(&entry);
             crate::files::write_atomically(&wrapped_path, &wrapped).map_err(|error| {
                 crate::i18n::now(
@@ -499,29 +499,62 @@ pub fn update_details(
         }
         _ => {}
     }
+    let final_entry;
     if reference {
         manifest.mode = TemplateMode::ReferenceDoc;
         manifest.template = None;
         manifest.reference_doc = Some(entry.clone());
+        final_entry = entry.clone();
     } else if manifest.mode == TemplateMode::Wrapper && entry == manifest.entry() {
         // The wrapped entry is the package's own `template.tex`: it contains `$body$`, but the mode
         // stays wrapper because the original document is still the package's source asset.
         manifest.template = Some(entry.clone());
         manifest.reference_doc = None;
+        final_entry = entry.clone();
     } else {
         let text = fs::read_to_string(file_in(&path, &entry)?).unwrap_or_default();
-        manifest.mode = if text.contains("$body$") {
-            TemplateMode::Template
-        } else if entry == "template.tex"
-            && text.contains("\\begin{document}")
-            && text.contains("\\end{document}")
-        {
-            TemplateMode::Wrapper
+        if text.contains("$body$") {
+            manifest.mode = TemplateMode::Template;
+            manifest.template = Some(entry.clone());
+            manifest.reference_doc = None;
+            final_entry = entry.clone();
+        } else if text.contains("\\begin{document}") && text.contains("\\end{document}") {
+            let (wrapped, _) = scan::insert_body(&text)
+                .ok_or_else(|| crate::i18n::now("template.noDocumentEnd", &[]))?;
+            // Choosing a complete sample as the entry makes it a wrapper package. The sample file
+            // stays as an asset; the Pandoc entry is a new `template.tex` with escaped dollars and
+            // `$body$` inserted before the closing environment.
+            let wrapper = scan::wrapper_entry(&entry);
+            if entry == wrapper {
+                let names: Vec<String> = package_files(&path)
+                    .into_iter()
+                    .map(|file| file.name)
+                    .collect();
+                let source = unique_asset_name(&names, &scan::wrapper_source(&entry));
+                fs::copy(file_in(&path, &entry)?, file_in(&path, &source)?).map_err(|error| {
+                    crate::i18n::now(
+                        "template.cannotWrite",
+                        &[("path", &source), ("reason", &error.to_string())],
+                    )
+                })?;
+            }
+            let target = file_in(&path, &wrapper)?;
+            crate::files::write_atomically(&target, &wrapped).map_err(|error| {
+                crate::i18n::now(
+                    "template.cannotWrite",
+                    &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+                )
+            })?;
+            manifest.mode = TemplateMode::Wrapper;
+            manifest.template = Some(wrapper.clone());
+            manifest.reference_doc = None;
+            final_entry = wrapper;
         } else {
-            TemplateMode::Template
-        };
-        manifest.template = Some(entry.clone());
-        manifest.reference_doc = None;
+            manifest.mode = TemplateMode::Template;
+            manifest.template = Some(entry.clone());
+            manifest.reference_doc = None;
+            final_entry = entry.clone();
+        }
     }
     manifest.name = patch.name.trim().to_string();
     manifest.kind = kind.kind.to_string();
@@ -531,7 +564,11 @@ pub fn update_details(
     manifest.assets = files
         .iter()
         .map(|file| file.name.clone())
-        .filter(|name| name != &entry && name != "template.json" && Some(name) != manifest.csl.as_ref())
+        .filter(|name| {
+            name != &final_entry
+                && name != "template.json"
+                && Some(name) != manifest.csl.as_ref()
+        })
         .collect();
     if let Some(csl) = &manifest.csl {
         manifest.assets.push(csl.clone());
@@ -759,9 +796,13 @@ fn unique_asset_name(assets: &[String], wanted: &str) -> String {
         .extension()
         .map(|extension| extension.to_string_lossy().into_owned())
         .unwrap_or_else(|| "tex".to_string());
+    let parent = Path::new(wanted).parent().filter(|parent| !parent.as_os_str().is_empty());
     let mut number = 2;
     loop {
-        let candidate = format!("{stem}-{number}.{extension}");
+        let file = format!("{stem}-{number}.{extension}");
+        let candidate = parent
+            .map(|parent| parent.join(&file).to_string_lossy().replace('\\', "/"))
+            .unwrap_or(file);
         if !assets.iter().any(|asset| asset == &candidate) {
             return candidate;
         }

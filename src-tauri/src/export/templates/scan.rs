@@ -240,7 +240,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
             let (preview, line) = insert_body(&text)?;
             Some(WrapperProposal {
                 source_entry: entry.clone(),
-                entry: "template.tex".to_string(),
+                entry: wrapper_entry(&entry),
                 insertion: crate::i18n::now(
                     "template.insertBeforeEnd",
                     &[("line", &line.to_string())],
@@ -858,16 +858,39 @@ pub(super) fn deliver_for(kind: Option<&str>, assets: &[String]) -> Vec<String> 
 /// immediately before the closing document environment.
 pub(super) fn insert_body(text: &str) -> Option<(String, usize)> {
     let marker = "\\end{document}";
-    let offset = text.rfind(marker)?;
-    let line = text[..offset].lines().count() + 1;
-    let mut wrapped = String::with_capacity(text.len() + marker.len() + 8);
-    wrapped.push_str(&text[..offset]);
+    // A complete LaTeX document is not yet a Pandoc template: every literal `$` is a template
+    // delimiter there. `$$` emits one literal `$` through Pandoc's template engine, so math and
+    // escaped dollars survive while the inserted `$body$` remains the one real variable.
+    let escaped = text.replace('$', "$$");
+    let offset = escaped.rfind(marker)?;
+    let line = escaped[..offset].lines().count() + 1;
+    let mut wrapped = String::with_capacity(escaped.len() + marker.len() + 8);
+    wrapped.push_str(&escaped[..offset]);
     if !wrapped.ends_with('\n') {
         wrapped.push('\n');
     }
     wrapped.push_str("$body$\n");
-    wrapped.push_str(&text[offset..]);
+    wrapped.push_str(&escaped[offset..]);
     Some((wrapped, line))
+}
+
+/// A wrapper entry beside the document it wraps, so relative inputs, graphics and bibliography
+/// files keep the folder they were written against.
+pub(super) fn wrapper_entry(entry: &str) -> String {
+    sibling_entry(entry, "template.tex")
+}
+
+/// The original document kept beside the wrapper.
+pub(super) fn wrapper_source(entry: &str) -> String {
+    sibling_entry(entry, "source.tex")
+}
+
+fn sibling_entry(entry: &str, name: &str) -> String {
+    Path::new(entry)
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .map(|parent| format!("{}/{}", parent.to_string_lossy().replace('\\', "/"), name))
+        .unwrap_or_else(|| name.to_string())
 }
 
 /// Whether a TeX document gives `\title{…}` or `\author{…}` a value at all.
@@ -1039,6 +1062,23 @@ mod tests {
         let (wrapped, line) = insert_body("\\begin{document}\nHi\n\\end{document}\n").unwrap();
         assert_eq!(wrapped, "\\begin{document}\nHi\n$body$\n\\end{document}\n");
         assert_eq!(line, 3);
+    }
+
+    #[test]
+    fn a_wrapper_escapes_literal_dollars_in_the_original_document() {
+        let (wrapped, _line) =
+            insert_body("\\begin{document}\n$\\pi$ and \\$\n\\end{document}\n").unwrap();
+        assert!(wrapped.contains("$$\\pi$$"), "{wrapped}");
+        assert!(wrapped.contains("\\$$"), "{wrapped}");
+        assert!(wrapped.contains("$body$"), "{wrapped}");
+        assert_eq!(wrapped.matches("$body$").count(), 1);
+    }
+
+    #[test]
+    fn a_nested_document_wraps_beside_itself() {
+        assert_eq!(wrapper_entry("samples/sigconf.tex"), "samples/template.tex");
+        assert_eq!(wrapper_source("samples/sigconf.tex"), "samples/source.tex");
+        assert_eq!(wrapper_entry("main.tex"), "template.tex");
     }
 
     #[test]
