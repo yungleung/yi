@@ -1,3 +1,7 @@
 standalone: true
+shift-heading-level-by: 0
+toc: true
+toc-depth: 2
 metadata:
-  subject: Example HTML export
+  subject: Technical blog with a sidebar table of contents
+  toc-title: Contents

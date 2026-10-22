@@ -21,7 +21,7 @@
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const examples = [
-    ['html', 'template.html', 'template', 'Example HTML note'],
+    ['html', 'template.html', 'template', 'Models, Agents, and the Harness Between Them'],
     ['latex', 'template.tex', 'template', 'Example LaTeX note'],
     ['pdf', 'template.tex', 'template', 'Example PDF note'],
     ['epub', 'template.xhtml', 'template', 'Example EPUB book'],
@@ -75,6 +75,82 @@
       }
       const validated = await api.validateTemplate(pkg.id);
       check(`${kind}: Pandoc validates the complete example`, validated.ok, validated);
+      if (kind === 'html') {
+        const source = await api.readTemplateFile(pkg.id, 'example.md');
+        await t.load(source);
+        check(
+          'html: the example is a technical article about models, agents and harnesses',
+          ['large language model', 'AI agent', 'harness'].every((phrase) =>
+            (t.prose().textContent ?? '').includes(phrase)
+          )
+        );
+        const target = `${folder}/technical-blog`;
+        const pagePath = `${target}/technical-blog.html`;
+        await exportApi.runExport({
+          kind: 'html',
+          text: source,
+          output_path: target,
+          resource_paths: [],
+          source_dir: null,
+          bibliography: null,
+          csl: null,
+          references: null,
+          title: 'Models, Agents, and the Harness Between Them',
+          language: 'en',
+          paper: null,
+          landscape: null,
+          suppress_references: false,
+          template_id: pkg.id,
+          self_contained: false
+        });
+        const readText = async (path) => {
+          const bytes = await invoke('plugin:fs|read_text_file', { path });
+          return new TextDecoder().decode(
+            bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)
+          );
+        };
+        const exists = async (path) => {
+          try {
+            return await invoke('plugin:fs|exists', { path });
+          } catch {
+            return false;
+          }
+        };
+        const page = await readText(pagePath);
+        const nav = /<aside\b[^>]*>[\s\S]*?<nav id="TOC"[\s\S]*?<\/nav>[\s\S]*?<\/aside>/.exec(
+          page
+        )?.[0];
+        const targets = [...(nav ?? '').matchAll(/href="#([^"]+)"/g)].map(
+          (match) => match[1]
+        );
+        const ids = new Set([...page.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+        check(
+          'html: the exported blog has a sidebar table of contents with working local links',
+          nav !== undefined &&
+            targets.length >= 10 &&
+            targets.every((targetId) => ids.has(targetId))
+        );
+        check(
+          'html: the sidebar respects the two-level toc depth',
+          ids.has('a-note-on-plausibility') &&
+            !targets.includes('a-note-on-plausibility'),
+          { targets }
+        );
+        check(
+          'html: Bootstrap and the blog assets travel with the export',
+          page.includes(
+            'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css'
+          ) &&
+            page.includes('href="assets/site.css"') &&
+            page.includes('src="assets/site.js"') &&
+            (await exists(`${target}/assets/site.css`)) &&
+            (await exists(`${target}/assets/site.js`))
+        );
+        check(
+          'html: the exported script highlights the section currently being read',
+          (await readText(`${target}/assets/site.js`)).includes('IntersectionObserver')
+        );
+      }
       if (kind === 'pdf') {
         const testPdf = await api.testTemplatePdf(pkg.id);
         check('pdf: the example also compiles through XeLaTeX', testPdf.ok, testPdf);

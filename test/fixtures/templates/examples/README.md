@@ -5,7 +5,7 @@ read and copy, while still using the real manifest, entry, metadata and defaults
 
 | Directory | Entry | Use it to learn |
 | --- | --- | --- |
-| `html/` | `template.html` | Page structure, CSS and JavaScript relative to the bundle |
+| `html/` | `template.html` | A Bootstrap technical blog with a sidebar table of contents |
 | `latex/` | `template.tex` | A standalone template and files delivered beside `.tex` |
 | `pdf/` | `template.tex` | The same Pandoc contract with a PDF engine |
 | `epub/` | `template.xhtml` | EPUB chapter markup and package assets |

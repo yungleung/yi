@@ -24,6 +24,14 @@ for (const kind of kinds) {
   const manifestPath = join(folder, 'template.json');
   check(`${kind}: the package has its own reading guide`, existsSync(join(folder, 'README.md')));
   check(`${kind}: the package has template.json`, existsSync(manifestPath));
+  if (kind === 'html') {
+    check('html: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
+    const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
+    check(
+      'html: the package asks Pandoc for a two-level contents sidebar',
+      defaults.toc === true && defaults['toc-depth'] === 2
+    );
+  }
   if (kind === 'docx') {
     check('docx: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
     check('docx: the example has a figure asset', existsSync(join(folder, 'example.svg')));
@@ -272,10 +280,11 @@ if (pandoc.status !== 0) {
     const format =
       kind === 'epub' ? 'epub3' : kind === 'pdf' ? 'latex' : kind;
     const args = ['--from=markdown', `--to=${format}`, '--standalone'];
+    if (kind === 'html') args.push('--section-divs');
     let output = null;
     let outputFolder = null;
+    args.push(`--defaults=${join(folder, 'defaults.yaml')}`);
     if (manifest.mode === 'reference-doc') {
-      args.push(`--defaults=${join(folder, 'defaults.yaml')}`);
       args.push(`--reference-doc=${join(folder, manifest.reference_doc)}`);
       args.push(`--metadata-file=${join(folder, 'metadata.yaml')}`);
       if (kind === 'docx') {
@@ -293,7 +302,7 @@ if (pandoc.status !== 0) {
     if (kind === 'epub') args.push('--metadata=title:Example', '--metadata=lang:en');
     const example = join(folder, 'example.md');
     const input =
-      (kind === 'docx' || kind === 'odt') && existsSync(example)
+      (kind === 'html' || kind === 'docx' || kind === 'odt') && existsSync(example)
         ? readFileSync(example, 'utf8')
         : '# Example\n\nOne paragraph.\n';
     const converted = spawnSync('pandoc', args, {
@@ -306,6 +315,30 @@ if (pandoc.status !== 0) {
         (output === null ? converted.stdout.length > 0 : existsSync(output)),
       converted.stderr.trim()
     );
+    if (kind === 'html' && converted.status === 0) {
+      const html = converted.stdout;
+      const nav = /<aside\b[^>]*>[\s\S]*?<nav id="TOC"[\s\S]*?<\/nav>[\s\S]*?<\/aside>/.exec(
+        html
+      )?.[0];
+      const targets = [...(nav ?? '').matchAll(/href="#([^"]+)"/g)].map((match) => match[1]);
+      const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+      check(
+        'html: the example has a Bootstrap stylesheet',
+        /<link\b[^>]*href="https:\/\/cdn\.jsdelivr\.net\/npm\/bootstrap[^"]*\/dist\/css\/bootstrap[^"]*\.css"/.test(
+          html
+        )
+      );
+      check(
+        'html: the contents sit in a sidebar with links into the article',
+        nav !== undefined &&
+          targets.length >= 3 &&
+          targets.every((target) => ids.has(target))
+      );
+      check(
+        'html: a level-three heading stays out of a two-level contents',
+        ids.has('a-note-on-plausibility') && !targets.includes('a-note-on-plausibility')
+      );
+    }
     if (output !== null && existsSync(output)) {
       const entry = kind === 'docx' ? 'word/document.xml' : 'content.xml';
       const unpacked = spawnSync('unzip', ['-p', output, entry], { encoding: 'utf8' });
