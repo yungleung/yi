@@ -11,15 +11,20 @@
 use serde::Serialize;
 use std::collections::HashSet;
 use std::fs;
-use std::io::{Read, Write};
-use std::path::{Component, Path, PathBuf};
+use std::io::Read;
+use std::path::Path;
+#[cfg(test)]
+use std::path::PathBuf;
 
 use super::super::kinds::TemplateMode;
 
-/// The most files one package may receive.
-pub(super) const MAX_FILES: usize = 2_000;
-/// The most bytes one package may receive, uncompressed.
-pub(super) const MAX_BYTES: u64 = 200 * 1024 * 1024;
+mod source;
+
+pub(super) use source::{
+    copy_into, read_file, relative, source_type, MAX_BYTES, MAX_FILES,
+};
+#[cfg(test)]
+use source::list_files;
 
 /// What a source looks like before the reader says which export kind it is for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -70,52 +75,6 @@ pub struct ScannedSource {
     pub files: Vec<ScannedFile>,
 }
 
-/// The kind of place a source is.
-pub(super) fn source_type(source: &Path) -> &'static str {
-    if source.is_dir() {
-        "folder"
-    } else if source
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("zip"))
-    {
-        "zip"
-    } else {
-        "file"
-    }
-}
-
-/// Lists the files a source carries, with the paths the package would give them.
-pub(super) fn list_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
-    let files = if source.is_dir() {
-        folder_files(source)?
-    } else if source_type(source) == "zip" {
-        zip_files(source)?
-    } else {
-        single_file(source)?
-    };
-    if files.len() > MAX_FILES {
-        return Err(crate::i18n::now(
-            "template.tooManyFiles",
-            &[("count", &files.len().to_string()), ("limit", &MAX_FILES.to_string())],
-        ));
-    }
-    let bytes: u64 = files.iter().map(|file| file.size).sum();
-    if bytes > MAX_BYTES {
-        return Err(crate::i18n::now(
-            "template.tooLarge",
-            &[
-                ("size", &bytes.to_string()),
-                ("limit", &MAX_BYTES.to_string()),
-            ],
-        ));
-    }
-    if files.is_empty() {
-        return Err(crate::i18n::now("template.noFiles", &[]));
-    }
-    Ok(files)
-}
-
 /// Inspects a source without copying it.
 pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
     if !source.exists() {
@@ -124,7 +83,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
             &[("path", &source.display().to_string())],
         ));
     }
-    let files = list_files(source)?;
+    let files = source::list_files(source)?;
     let names: Vec<String> = files.iter().map(|file| file.name.clone()).collect();
 
     let tex: Vec<String> = names.iter().filter(|name| has_extension(name, "tex")).cloned().collect();
@@ -166,7 +125,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
             .max_by_key(|scored| scored.size)
             .map(|scored| scored.name.clone())
             .unwrap_or_else(|| tex[0].clone());
-        let text = read_text(source, &entry).unwrap_or_default();
+        let text = source::read_text(source, &entry).unwrap_or_default();
         let mode = mode_for_tex(&text);
         if mode == TemplateMode::Template && !text.contains("$body$") {
             warnings.push(crate::i18n::now("template.noBody", &[]));
@@ -184,7 +143,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
         (entry, mode, kind, Some("latex".to_string()))
     } else if !html.is_empty() {
         let entry = largest(source, &html)?;
-        let text = read_text(source, &entry).unwrap_or_default();
+        let text = source::read_text(source, &entry).unwrap_or_default();
         if !text.contains("$body$") {
             warnings.push(crate::i18n::now("template.noBody", &[]));
         }
@@ -233,7 +192,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
             &[("files", &labels.join(", "))],
         ));
     }
-    if source_type(source) == "file" && suggested_kind.is_none() {
+    if source::source_type(source) == "file" && suggested_kind.is_none() {
         return Err(crate::i18n::now("template.noEntry", &[]));
     }
     let assets: Vec<String> = names
@@ -245,7 +204,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
 
     let wrapper = (mode == TemplateMode::Wrapper)
         .then(|| {
-            let text = read_text(source, &entry).ok()?;
+            let text = source::read_text(source, &entry).ok()?;
             let (preview, line) = insert_body(&text)?;
             Some(WrapperProposal {
                 source_entry: entry.clone(),
@@ -268,7 +227,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
         assets,
         deliver,
         warnings,
-        source_type: source_type(source).to_string(),
+        source_type: source::source_type(source).to_string(),
         suggested_kind,
         csl,
         entry_candidates,
@@ -276,192 +235,6 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
         wrapper,
         files,
     })
-}
-
-/// Reads one of the source's files.
-pub(super) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
-    if source.is_dir() {
-        let path = source.join(relative(name)?);
-        return fs::read(&path).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-            )
-        });
-    }
-    if source_type(source) == "zip" {
-        return read_zip_file(source, name);
-    }
-    let path = single_name(source)?;
-    if name != path {
-        return Err(crate::i18n::now("template.cannotRead", &[("path", name), ("reason", "not in source")]));
-    }
-    fs::read(source).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
-}
-
-/// Copies a source into the folder a package is being built in.
-pub(super) fn copy_into(source: &Path, target: &Path) -> Result<(), String> {
-    fs::create_dir_all(target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    if source_type(source) == "zip" {
-        return extract_zip(source, target);
-    }
-    let files = list_files(source)?;
-    for file in files {
-        let destination = target.join(relative(&file.name)?);
-        if let Some(parent) = destination.parent() {
-            fs::create_dir_all(parent).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotMake",
-                    &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
-                )
-            })?;
-        }
-        let bytes = read_file(source, &file.name)?;
-        let mut written = fs::File::create(&destination).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
-        written.write_all(&bytes).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
-    }
-    Ok(())
-}
-
-/// The one path rule a name from a folder or a zip has to pass.
-pub(super) fn relative(name: &str) -> Result<PathBuf, String> {
-    if name.is_empty() || name.starts_with('/') || name.contains('\\') {
-        return Err(crate::i18n::now("template.badPath", &[("file", name)]));
-    }
-    let mut path = PathBuf::new();
-    for component in Path::new(name).components() {
-        match component {
-            Component::Normal(part) if !part.to_string_lossy().is_empty() => path.push(part),
-            _ => return Err(crate::i18n::now("template.badPath", &[("file", name)])),
-        }
-    }
-    if path.as_os_str().is_empty() {
-        return Err(crate::i18n::now("template.badPath", &[("file", name)]));
-    }
-    Ok(path)
-}
-
-fn single_name(source: &Path) -> Result<String, String> {
-    let name = source
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .ok_or_else(|| crate::i18n::now("template.noEntry", &[]))?;
-    if name.starts_with('.') {
-        return Err(crate::i18n::now("template.badPath", &[("file", &name)]));
-    }
-    Ok(name)
-}
-
-fn single_file(source: &Path) -> Result<Vec<ScannedFile>, String> {
-    let metadata = fs::symlink_metadata(source).map_err(|_error| {
-        crate::i18n::now(
-            "template.sourceMissing",
-            &[("path", &source.display().to_string())],
-        )
-    })?;
-    if metadata.file_type().is_symlink() || !metadata.is_file() {
-        return Err(crate::i18n::now("template.badPath", &[("file", &source.display().to_string())]));
-    }
-    if metadata.len() > MAX_BYTES {
-        return Err(crate::i18n::now(
-            "template.tooLarge",
-            &[("size", &metadata.len().to_string()), ("limit", &MAX_BYTES.to_string())],
-        ));
-    }
-    Ok(vec![ScannedFile {
-        name: single_name(source)?,
-        size: metadata.len(),
-    }])
-}
-
-fn folder_files(root: &Path) -> Result<Vec<ScannedFile>, String> {
-    let mut files = Vec::new();
-    walk_folder(root, root, &mut files)?;
-    files.sort_by(|left, right| left.name.cmp(&right.name));
-    Ok(files)
-}
-
-fn walk_folder(root: &Path, folder: &Path, files: &mut Vec<ScannedFile>) -> Result<(), String> {
-    let entries = fs::read_dir(folder).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &folder.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    let mut paths: Vec<PathBuf> = entries
-        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-        .collect();
-    paths.sort();
-    for path in paths {
-        let name = path
-            .strip_prefix(root)
-            .map_err(|_| crate::i18n::now("template.badPath", &[("file", &path.display().to_string())]))?;
-        if name
-            .components()
-            .any(|component| component.as_os_str().to_string_lossy().starts_with('.'))
-        {
-            continue;
-        }
-        let metadata = fs::symlink_metadata(&path).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
-        if metadata.file_type().is_symlink() {
-            return Err(crate::i18n::now(
-                "template.symlink",
-                &[("path", &path.display().to_string())],
-            ));
-        }
-        if metadata.is_dir() {
-            walk_folder(root, &path, files)?;
-        } else if metadata.is_file() {
-            files.push(ScannedFile {
-                name: package_name(name)?,
-                size: metadata.len(),
-            });
-        }
-    }
-    Ok(())
-}
-
-fn package_name(path: &Path) -> Result<String, String> {
-    let mut parts = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::Normal(part) => parts.push(part.to_string_lossy().into_owned()),
-            _ => {
-                return Err(crate::i18n::now(
-                    "template.badPath",
-                    &[("file", &path.display().to_string())],
-                ))
-            }
-        }
-    }
-    let name = parts.join("/");
-    relative(&name)?;
-    Ok(name)
 }
 
 fn zip_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
@@ -766,13 +539,6 @@ fn extension_kind(_source: &Path, name: &str) -> &'static str {
     }
 }
 
-fn read_text(source: &Path, name: &str) -> Result<String, String> {
-    let bytes = read_file(source, name)?;
-    String::from_utf8(bytes).map_err(|_| {
-        crate::i18n::now("template.notText", &[("file", name)])
-    })
-}
-
 struct ScoredTex {
     name: String,
     score: u8,
@@ -782,7 +548,7 @@ struct ScoredTex {
 fn score_tex(source: &Path, tex: &[String]) -> Result<Vec<ScoredTex>, String> {
     let mut scored = Vec::new();
     for name in tex {
-        let text = read_text(source, name).unwrap_or_default();
+        let text = source::read_text(source, name).unwrap_or_default();
         let score = if text.contains("$body$") {
             4
         } else if text.contains("\\begin{document}") && text.contains("\\end{document}") {
