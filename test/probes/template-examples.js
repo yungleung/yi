@@ -81,6 +81,16 @@
       }
       if (kind === 'docx') {
         const source = await api.readTemplateFile(pkg.id, 'example.md');
+        await t.load(source);
+        const visible = t.prose().textContent ?? '';
+        check(
+          'docx: the example renders only Markdown Yi supports',
+          visible.includes('H₂O') &&
+            visible.includes('E = mc²') &&
+            !visible.includes('{.underline}') &&
+            !visible.includes('{#fig:example') &&
+            !visible.includes('Heading level seven')
+        );
         const target = `${folder}/complete.docx`;
         await exportApi.runExport({
           kind: 'docx',
@@ -103,6 +113,7 @@
         const data = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
         const document = (await t.zipEntry(data, 'word/document.xml')) ?? '';
         const footnotes = (await t.zipEntry(data, 'word/footnotes.xml')) ?? '';
+        const settings = (await t.zipEntry(data, 'word/settings.xml')) ?? '';
         const styles = [...`${document}${footnotes}`.matchAll(/w:(?:pStyle|rStyle|tblStyle) w:val="([^"]+)"/g)]
           .map((match) => match[1]);
         check(
@@ -115,14 +126,13 @@
             'AbstractTitle',
             'Abstract',
             'Heading1',
-            'Heading9',
+            'Heading6',
             'FirstParagraph',
             'BodyText',
             'Compact',
             'BlockText',
             'FootnoteText',
             'FootnoteBlockText',
-            'TableCaption',
             'Table',
             'ImageCaption',
             'CaptionedFigure',
@@ -140,6 +150,11 @@
           'docx: the example figure is embedded',
           data.length > 0 && document.includes('<w:drawing>'),
           { size: data.length }
+        );
+        check(
+          'docx: the automatic contents field is refreshed when opened',
+          /<w:updateFields\b[^>]*w:val="(?:true|1)"/.test(settings) &&
+            /TOC\b[^<]*\\o &quot;1-2&quot;/.test(document)
         );
       }
       if (kind === 'odt') {
@@ -177,6 +192,7 @@
         const data = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
         const content = (await t.zipEntry(data, 'content.xml')) ?? '';
         const style = (await t.zipEntry(data, 'styles.xml')) ?? '';
+        const settings = (await t.zipEntry(data, 'settings.xml')) ?? '';
         const manifest = (await t.zipEntry(data, 'META-INF/manifest.xml')) ?? '';
         const entries = t.zipNames(data);
         const outlineLevels = [...content.matchAll(/text:outline-level="(\d+)"/g)].map(
@@ -190,24 +206,35 @@
           { size: data.length }
         );
         check(
-          'odt: the generated book has the supported two-level contents page',
-          content.includes('text:style-name="Horizontal_20_Line"') &&
-            content.includes('<text:list') &&
-            content.includes('text:style-name="Quotations"') &&
+          'odt: the generated book has the automatic two-level contents field',
+          !source.includes('> **Contents**') &&
+            content.includes('<text:table-of-content>') &&
+            content.includes('text:outline-level="2"') &&
             outlineLevels.includes('1'),
           {
-            horizontalRule: content.includes('text:style-name="Horizontal_20_Line"'),
-            list: content.includes('<text:list'),
-            contents: content.includes('text:style-name="Quotations"'),
+            manualContents: source.includes('> **Contents**'),
+            field: content.includes('<text:table-of-content>'),
             bodyHeading: outlineLevels.includes('1'),
             outlineLevels
           }
+        );
+        check(
+          'odt: the contents field is refreshed when opened',
+          /config:name="FieldAutoUpdate"[^>]*>true</.test(settings) &&
+            /config:name="UpdateFromTemplate"[^>]*>true</.test(settings)
         );
         check(
           'odt: the generated book keeps the cover, abstract, TOC and body master pages',
           ['DissertationCover', 'DissertationAbstract', 'DissertationTOC', 'DissertationBody'].every(
             (name) => style.includes(`style:name="${name}"`)
           )
+        );
+        check(
+          'odt: numbering starts on the body and no front-matter page has a footer',
+          /style:name="Heading_20_1"[\s\S]{0,900}style:page-number="1"/.test(style) &&
+            /style:name="DissertationBody"[\s\S]{0,600}<text:page-number\b/.test(style) &&
+            /<style:master-page style:name="DissertationAbstract"[^>]*\/>/.test(style) &&
+            /<style:master-page style:name="DissertationTOC"[^>]*\/>/.test(style)
         );
         check(
           'odt: the generated book embeds the college cover and declares it',

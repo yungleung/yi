@@ -433,9 +433,13 @@ document-level field the reference document styles. The DOCX and ODT examples in
 
 The dissertation ODT adds page master styles for the cover, abstract, contents and body. Its
 `example.md` uses only Markdown Yi renders. Frontmatter places the four labelled cover fields and
-the abstract, a thematic break selects the contents page, an ordinary nested ordered list supplies
-its two levels, and the first level-one heading begins the body. The cover illustration is embedded
-in `reference.odt`; its editable SVG and generated PNG are kept in the ODT example package.
+the abstract, `defaults.yaml` asks for Pandoc's automatic two-level contents, and the first level-one
+heading begins the body. Only the body master page has a footer, with numbering restarted at 1.
+The cover illustration is embedded in `reference.odt`; its editable SVG and generated PNG are kept
+in the ODT example package.
+
+Word and OpenDocument contents tables are fields. Their reference documents mark fields to update
+when opened, so readers do not receive an empty contents control after exporting.
 
 Pandoc-only constructs such as fenced `::: {custom-style="…"}` blocks, `{#id}`/`{.class}` attribute
 blocks, superscript or subscript markers, and headings deeper than level six are not Yi Markdown.

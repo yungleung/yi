@@ -2,7 +2,8 @@
  * Builds the dissertation ODT reference document from Pandoc’s own ODT reference file.
  *
  * The generated file keeps every Pandoc style, then adds the cover, abstract, TOC and body master
- * pages, the cover background, underlined metadata lines, A4 geometry and a body page-number reset.
+ * pages, the cover background, underlined metadata lines, A4 geometry, field updates and a body
+ * page-number reset.
  * Run: node scripts/build-dissertation-odt.mjs
  */
 
@@ -86,14 +87,6 @@ try {
       <style:text-properties fo:font-size="11.5pt"/>
     </style:style>`
   );
-  styles = replaceStyle(
-    styles,
-    'Horizontal_20_Line',
-    `<style:style style:name="Horizontal_20_Line" style:display-name="Horizontal Line" style:family="paragraph" style:parent-style-name="Standard" style:next-style-name="Text_20_body" style:class="html" style:master-page-name="DissertationTOC">
-      <style:paragraph-properties fo:break-before="page" fo:margin-top="0in" fo:margin-bottom="0.1965in" style:contextual-spacing="false" fo:padding="0in" fo:border-left="none" fo:border-right="none" fo:border-top="none" fo:border-bottom="none" text:number-lines="false" text:line-number="0" style:join-border="false"/>
-      <style:text-properties fo:font-size="6pt" style:font-size-asian="6pt" style:font-size-complex="6pt"/>
-    </style:style>`
-  );
   styles = styles.replace(
     /<style:style style:name="Heading_20_1"[\s\S]*?<\/style:style>/,
     `<style:style style:name="Heading_20_1" style:display-name="Heading 1" style:family="paragraph" style:parent-style-name="Heading" style:next-style-name="Text_20_body" style:default-outline-level="1" style:class="text" style:master-page-name="DissertationBody">
@@ -103,7 +96,7 @@ try {
   );
   styles = styles.replace(
     '</office:styles>',
-    `<style:style style:name="Contents_20_Heading" style:display-name="Contents Heading" style:family="paragraph" style:parent-style-name="Heading_20_1" style:master-page-name="DissertationTOC">
+    `<style:style style:name="Contents_20_Heading" style:display-name="Contents Heading" style:family="paragraph" style:parent-style-name="Heading" style:master-page-name="DissertationTOC">
       <style:paragraph-properties fo:text-align="center" fo:break-before="page" fo:margin-top="1.2cm" fo:margin-bottom="1.1cm"/>
       <style:text-properties fo:font-size="18pt" fo:font-weight="bold" fo:color="#20364a"/>
     </style:style>
@@ -154,13 +147,28 @@ try {
   </office:master-styles>`
   );
   writeFileSync(join(unpacked, 'styles.xml'), styles);
+  writeFileSync(
+    join(unpacked, 'settings.xml'),
+    `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-settings xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0" office:version="1.3">
+  <office:settings>
+    <config:config-item-set config:name="ooo:configuration-settings">
+      <config:config-item config:name="FieldAutoUpdate" config:type="boolean">true</config:config-item>
+      <config:config-item config:name="UpdateFromTemplate" config:type="boolean">true</config:config-item>
+      <config:config-item config:name="LinkUpdateMode" config:type="short">1</config:config-item>
+    </config:config-item-set>
+  </office:settings>
+</office:document-settings>
+`
+  );
 
   mkdirSync(join(unpacked, 'Pictures'));
   copyFileSync(cover, join(unpacked, 'Pictures/college-cover.png'));
   const manifestPath = join(unpacked, 'META-INF/manifest.xml');
   const manifest = readFileSync(manifestPath, 'utf8').replace(
     '</manifest:manifest>',
-    ` <manifest:file-entry manifest:full-path="Pictures/college-cover.png" manifest:media-type="image/png"/>\n</manifest:manifest>`
+    ` <manifest:file-entry manifest:full-path="Pictures/college-cover.png" manifest:media-type="image/png"/>
+ <manifest:file-entry manifest:full-path="settings.xml" manifest:media-type="application/xml"/>\n</manifest:manifest>`
   );
   writeFileSync(manifestPath, manifest);
 

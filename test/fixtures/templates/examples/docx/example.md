@@ -24,8 +24,8 @@ number-sections: true
 This is the first paragraph after a heading, so Pandoc applies **First Paragraph**.
 
 This is the second paragraph, so it uses **Body Text**. Inline elements include **bold**,
-*italic*, ~~strikethrough~~, `inline code`, [a hyperlink](https://pandoc.org/), H~2~O,
-E = mc^2^, [underlined text]{.underline}, and a footnote.[^complete]
+*italic*, ~~strikethrough~~, `inline code`, [a hyperlink](https://pandoc.org/), H₂O,
+E = mc², and a footnote.[^complete]
 
 > A block quote uses **Block Text**.
 >
@@ -50,18 +50,6 @@ Paragraph text under heading level five.
 ###### Heading level 6
 
 Paragraph text under heading level six.
-
-####### Heading level 7
-
-Paragraph text under heading level seven.
-
-######## Heading level 8
-
-Paragraph text under heading level eight.
-
-######### Heading level 9
-
-Paragraph text under heading level nine.
 
 ## Lists and code
 
@@ -106,11 +94,9 @@ A citation such as [@example2026] produces the bibliography entries below.
 | Table | Styles the table itself |
 | Compact | Styles tight table-cell paragraphs |
 
-: Caption for the example table.
-
 ## Figure with caption
 
-![Caption for the example figure](example.svg){#fig:example width=3in}
+![Caption for the example figure](example.svg)
 
 The image and its caption exercise the figure and image-caption styles.
 

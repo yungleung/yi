@@ -27,8 +27,23 @@ for (const kind of kinds) {
   if (kind === 'docx') {
     check('docx: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
     check('docx: the example has a figure asset', existsSync(join(folder, 'example.svg')));
+    const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
+    check(
+      'docx: the package asks Pandoc for a two-level contents field',
+      defaults.toc === true && defaults['toc-depth'] === 2
+    );
+    const referenceSettings = spawnSync(
+      'unzip',
+      ['-p', join(folder, 'reference.docx'), 'word/settings.xml'],
+      { encoding: 'utf8' }
+    ).stdout;
+    check(
+      'docx: the reference asks the word processor to update fields',
+      /<w:updateFields\b[^>]*w:val="(?:true|1)"/.test(referenceSettings)
+    );
     if (existsSync(join(folder, 'example.md'))) {
       const example = readFileSync(join(folder, 'example.md'), 'utf8');
+      const prose = example.replace(/\$\$[\s\S]*?\$\$/g, '').replace(/\$[^$\n]+\$/g, '');
       check(
         'docx: the example carries complete document metadata',
         ['title:', 'subtitle:', 'author:', 'date:', 'abstract:', 'lang:', 'keywords:'].every(
@@ -36,10 +51,19 @@ for (const kind of kinds) {
         )
       );
       check(
-        'docx: the example covers headings one through nine',
-        Array.from({ length: 9 }, (_, index) => index + 1).every((level) =>
+        'docx: the example covers headings one through six',
+        Array.from({ length: 6 }, (_, index) => index + 1).every((level) =>
           new RegExp(`^${'#'.repeat(level)} `, 'm').test(example)
         )
+      );
+      check(
+        'docx: the example uses only Markdown Yi renders',
+        !/^:::/m.test(example) &&
+          !/\]\{|\)\{/.test(example) &&
+          !/^#{7,}\s/m.test(example) &&
+          !/^:\s+(?:Table|Figure) caption/m.test(example) &&
+          !/(^|[^~])~[^~\n]+~([^~]|$)/m.test(prose) &&
+          !/\^[^$\n^]{1,30}\^/m.test(prose)
       );
       check(
         'docx: the example covers the block and inline elements',
@@ -101,8 +125,8 @@ for (const kind of kinds) {
         }
       );
       check(
-        'odt: the example has a supported two-level contents list',
-        /^1\. Introduction$/m.test(source) && /^   1\. Research questions$/m.test(source)
+        'odt: the example leaves the contents to Pandoc',
+        !source.includes('> **Contents**') && !/^1\. Introduction$/m.test(source)
       );
     }
     const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
@@ -110,10 +134,17 @@ for (const kind of kinds) {
       'odt: the package keeps source heading levels',
       defaults['shift-heading-level-by'] === 0
     );
+    check(
+      'odt: the package asks Pandoc for a two-level contents field',
+      defaults.toc === true && defaults['toc-depth'] === 2
+    );
     const styleFile = join(folder, 'reference.odt');
     if (existsSync(styleFile)) {
       const styles = spawnSync('unzip', ['-p', styleFile, 'styles.xml'], { encoding: 'utf8' }).stdout;
       const entries = spawnSync('unzip', ['-Z1', styleFile], { encoding: 'utf8' }).stdout;
+      const settings = spawnSync('unzip', ['-p', styleFile, 'settings.xml'], {
+        encoding: 'utf8'
+      }).stdout;
       check(
         'odt: the reference has cover, abstract, TOC and body master pages',
         ['DissertationCover', 'DissertationAbstract', 'DissertationTOC', 'DissertationBody'].every(
@@ -130,6 +161,11 @@ for (const kind of kinds) {
           /style:background-image[^>]*xlink:href="Pictures\/college-cover\.png"/.test(styles)
       );
       check(
+        'odt: the reference asks the word processor to update fields',
+        /config:name="FieldAutoUpdate"[^>]*>true</.test(settings) &&
+          /config:name="UpdateFromTemplate"[^>]*>true</.test(settings)
+      );
+      check(
         'odt: the four cover values use an underlined Author style',
         /style:name="Author"[\s\S]{0,800}fo:text-decoration="underline"/.test(styles)
       );
@@ -138,13 +174,23 @@ for (const kind of kinds) {
         [
           ['Title', 'DissertationCover'],
           ['Abstract', 'DissertationAbstract'],
-          ['Horizontal_20_Line', 'DissertationTOC'],
+          ['Contents_20_Heading', 'DissertationTOC'],
           ['Heading_20_1', 'DissertationBody']
         ].every(([style, master]) =>
           new RegExp(
             `style:name=\"${style}\"[\\s\\S]{0,900}style:master-page-name=\"${master}\"`
           ).test(styles)
         )
+      );
+      check(
+        'odt: only the body master page carries page numbers, starting at one',
+        /style:name="Heading_20_1"[\s\S]{0,900}style:page-number="1"/.test(styles) &&
+          /style:name="DissertationBody"[\s\S]{0,600}<text:page-number\b/.test(styles) &&
+          /<style:master-page style:name="DissertationCover"[^>]*>\s*<\/style:master-page>/.test(
+            styles
+          ) &&
+          /<style:master-page style:name="DissertationAbstract"[^>]*\/>/.test(styles) &&
+          /<style:master-page style:name="DissertationTOC"[^>]*\/>/.test(styles)
       );
     }
   }
@@ -229,6 +275,7 @@ if (pandoc.status !== 0) {
     let output = null;
     let outputFolder = null;
     if (manifest.mode === 'reference-doc') {
+      args.push(`--defaults=${join(folder, 'defaults.yaml')}`);
       args.push(`--reference-doc=${join(folder, manifest.reference_doc)}`);
       args.push(`--metadata-file=${join(folder, 'metadata.yaml')}`);
       if (kind === 'docx') {
@@ -277,14 +324,10 @@ if (pandoc.status !== 0) {
               'Heading4',
               'Heading5',
               'Heading6',
-              'Heading7',
-              'Heading8',
-              'Heading9',
               'FirstParagraph',
               'BodyText',
               'Compact',
               'BlockText',
-              'TableCaption',
               'Table',
               'ImageCaption',
               'CaptionedFigure',
@@ -322,6 +365,17 @@ if (pandoc.status !== 0) {
         const footnotes = spawnSync('unzip', ['-p', output, 'word/footnotes.xml'], {
           encoding: 'utf8'
         });
+        const settings = spawnSync('unzip', ['-p', output, 'word/settings.xml'], {
+          encoding: 'utf8'
+        }).stdout;
+        check(
+          'docx: the generated document updates its contents field when opened',
+          /<w:updateFields\b[^>]*w:val="(?:true|1)"/.test(settings)
+        );
+        check(
+          'docx: the generated document has a two-level contents field',
+          /<w:instrText[^>]*>\s*TOC\b[^<]*\\o &quot;1-2&quot;/.test(unpacked.stdout)
+        );
         check(
           'docx: the footnote body receives the footnote paragraph styles',
           footnotes.status === 0 &&
@@ -338,10 +392,9 @@ if (pandoc.status !== 0) {
           encoding: 'utf8'
         }).stdout;
         check(
-          'odt: the exported content has the TOC page and the body heading',
-          content.includes('text:style-name="Horizontal_20_Line"') &&
-            content.includes('<text:list') &&
-            content.includes('text:style-name="Quotations"') &&
+          'odt: the exported content has an automatic TOC and the body heading',
+          content.includes('<text:table-of-content>') &&
+            content.includes('text:outline-level="2"') &&
             content.includes('text:style-name="Heading_20_1"') &&
             content.includes('Introduction')
         );
@@ -357,10 +410,10 @@ if (pandoc.status !== 0) {
           const info = spawnSync('pdfinfo', [pdf], { encoding: 'utf8' });
           const pages = Number(/^Pages:\s+(\d+)/m.exec(info.stdout)?.[1] ?? 0);
           check(
-            'odt: the dissertation render has a cover, abstract, contents and body pages',
+            'odt: the dissertation render has A4 pages',
             rendered.status === 0 &&
               info.status === 0 &&
-              pages >= 4 &&
+              pages >= 3 &&
               /595\.\d+ x 841\.\d+ pts \(A4\)/.test(info.stdout),
             { pages, size: /^Page size:\s+(.*)$/m.exec(info.stdout)?.[1] ?? null }
           );
@@ -381,23 +434,23 @@ if (pandoc.status !== 0) {
                 ],
                 { encoding: 'utf8' }
               ).stdout.replace(/\s+/g, ' ').trim();
-            const [cover, abstract, contents, body] = [1, 2, 3, 4].map(pageText);
+            const pageTexts = Array.from({ length: pages }, (_, index) => pageText(index + 1));
+            const bodyIndex = pageTexts.findIndex((text) =>
+              text.includes('This is the first paragraph of the dissertation body.')
+            );
             check(
-              'odt: the dissertation pages are cover, abstract, contents and body in that order',
+              'odt: page numbering starts with the body and numbers no front matter',
+              bodyIndex >= 2 &&
               ['The Architecture of Academic Inquiry', 'Author: John', 'Institution: Example College'].every(
-                (text) => cover.includes(text)
+                (text) => pageTexts[0].includes(text)
               ) &&
-                abstract.includes('Abstract') &&
-                abstract.includes('Keywords:') &&
-                !abstract.includes('Contents') &&
-                contents.includes('Contents') &&
-                contents.includes('Research questions') &&
-                contents.includes('Materials and methods') &&
-                !contents.includes('This is the first paragraph') &&
-                body.includes('Introduction') &&
-                body.includes('This is the first paragraph of the dissertation body.') &&
-                !body.includes('Contents'),
-              { cover, abstract, contents, body }
+                pageTexts[1].includes('Abstract') &&
+                pageTexts[1].includes('Keywords:') &&
+                !pageTexts[0].endsWith('1') &&
+                !pageTexts[1].endsWith('1') &&
+                pageTexts[bodyIndex].includes('Introduction') &&
+                pageTexts[bodyIndex].endsWith('1'),
+              { bodyPage: bodyIndex + 1, pages: pageTexts }
             );
           } else {
             console.log(

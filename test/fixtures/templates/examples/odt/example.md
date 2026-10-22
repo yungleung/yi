@@ -17,16 +17,6 @@ reference-section-title: References
 number-sections: true
 ---
 
----
-
-> **Contents**
-
-1. Introduction
-   1. Research questions
-   2. Materials and methods
-   3. Results
-   4. Discussion
-
 # Introduction
 
 This is the first paragraph of the dissertation body.
