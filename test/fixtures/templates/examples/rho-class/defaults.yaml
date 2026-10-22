@@ -1,0 +1,11 @@
+standalone: true
+pdf-engine: pdflatex
+shift-heading-level-by: 0
+highlight-style: pygments
+bibliography: rho.bib
+csl: ieee.csl
+filters:
+  - type: citeproc
+  - table.lua
+metadata:
+  reference-section-title: References

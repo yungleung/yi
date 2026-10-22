@@ -79,7 +79,8 @@ document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command 
 `src/ui/documentation/documentation.en.md` through the same pathless read-only reference rule
 (`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
 file without a session question. The guide includes Pandoc and TeX installation requirements and
-points to the six complete packages under `test/fixtures/templates/examples/`.
+points to the seven complete packages under `test/fixtures/templates/examples/`, including the
+CC BY 4.0 Rho Class PDF article and its required attribution.
 
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
@@ -529,7 +530,7 @@ by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.
 `export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
 `export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
 `export-template-pdf.js`; `export-template-native-bibliography.js` covers cited-only BibTeX source
-packaging, and `template-examples.js` validates and exports the six authoring examples.
+packaging, and `template-examples.js` validates and exports the seven authoring examples.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

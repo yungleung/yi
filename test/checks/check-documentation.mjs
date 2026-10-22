@@ -74,6 +74,14 @@ if (existsSync(file)) {
       /only those works|only the cited|uncited works/i.test(text)
   );
   check(
+    'the Rho Class prompt preserves the upstream licence and attribution',
+    /#### Example prompt: Rho Class PDF/.test(text) &&
+      /latextemplates\.com\/template\/rho-class-article/.test(text) &&
+      /CC BY 4\.0/.test(text) &&
+      /Guillermo Jimenez/.test(text) &&
+      /ATTRIBUTION\.txt/.test(text)
+  );
+  check(
     'LaTeX source pictures and the BibTeX search path are explained',
     /BSTINPUTS/.test(text) &&
       /Local pictures named by the note are copied/i.test(text) &&
@@ -122,7 +130,7 @@ if (existsSync(file)) {
     'the document points readers at the complete fixture packages',
     text.includes('test/fixtures/templates/examples')
   );
-  const prompts = ['HTML', 'LaTeX', 'PDF', 'EPUB', 'Word', 'OpenDocument'];
+  const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
   for (const kind of prompts) {
     check(
       `it has a copy-ready ${kind} prompt`,

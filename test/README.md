@@ -225,8 +225,8 @@ package asset delivered beside the `.tex`, and a Word export through a reference
 LaTeX asset tree, and an EPUB with its package assets packed into the book),
 `export-template-defaults-package` (a package's `defaults.yaml` reaching Pandoc after the app's file
 without replacing the explicit template or output),
-`template-examples` (all six authoring examples imported and validated by the app, including the PDF
-example through XeLaTeX), `documentation` (Help → Documentation as a read-only, replaceable guide
+`template-examples` (all seven authoring examples imported and validated by the app, including the
+XeLaTeX PDF example and the pdfLaTeX Rho Class article), `documentation` (Help → Documentation as a read-only, replaceable guide
 with the installation and template-authoring chapters),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
 the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,

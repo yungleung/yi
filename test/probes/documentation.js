@@ -85,6 +85,7 @@
         '#### Example prompt: HTML',
         '#### Example prompt: LaTeX',
         '#### Example prompt: PDF',
+        '#### Example prompt: Rho Class PDF',
         '#### Example prompt: EPUB',
         '#### Example prompt: Word',
         '#### Example prompt: OpenDocument'

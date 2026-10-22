@@ -1,5 +1,5 @@
 /**
- * The six authoring examples as Yi imports and validates them.
+ * The seven authoring examples as Yi imports and validates them.
  *
  * The Node check reads the packages; this probe takes them through the real Template library
  * commands, so a manifest that only looks valid still has to become a package Pandoc accepts.
@@ -482,6 +482,88 @@
             style.includes('Pictures/college-cover.png')
         );
       }
+    }
+    let rho = null;
+    try {
+      rho = await api.importTemplate({
+        source: `${checkout}test/fixtures/templates/examples/rho-class`,
+        name: `Example rho class ${stamp}`,
+        kind: 'pdf',
+        entry: 'template.tex',
+        source_url: 'https://latextemplates.com/template/rho-class-article/',
+        license: 'CC-BY-4.0 (Rho Class); CC-BY-SA-3.0 (IEEE CSL)',
+        map_title: false,
+        map_author: false
+      });
+      made.push(rho.id);
+      check(
+        'rho-class: the licensed PDF example imports as a template',
+        rho.manifest?.kind === 'pdf' &&
+          rho.manifest?.mode === 'template' &&
+          rho.manifest?.template === 'template.tex' &&
+          rho.manifest?.csl === 'ieee.csl' &&
+          /CC-BY-4\.0/.test(rho.manifest?.origin?.license ?? '') &&
+          rho.files.some((file) => file.name === 'CSL-NOTICE.txt'),
+        rho.manifest
+      );
+      const source = await api.readTemplateFile(rho.id, 'example.md');
+      await t.load(source);
+      const visible = (t.prose().textContent ?? '').normalize('NFKC');
+      check(
+        'rho-class: the example is a supported Markdown research article',
+        ['Seeing Structure in a Noisy Sky', 'Calibration assumption', 'Channel weights'].every(
+          (text) => visible.includes(text)
+        ) &&
+          !visible.includes(':::') &&
+          !visible.includes('{#fig:')
+      );
+      const testPdf = await api.testTemplatePdf(rho.id);
+      check('rho-class: Test PDF passes through pdfLaTeX', testPdf.ok, testPdf);
+      const target = `${folder}/rho-class-article.pdf`;
+      await exportApi.runExport({
+        kind: 'pdf',
+        text: source,
+        output_path: target,
+        resource_paths: [],
+        source_dir: null,
+        bibliography: `${checkout}test/fixtures/templates/examples/rho-class/rho.bib`,
+        csl: null,
+        references: 'References',
+        title: 'Seeing Structure in a Noisy Sky',
+        language: 'en',
+        paper: null,
+        landscape: null,
+        suppress_references: false,
+        template_id: rho.id,
+        self_contained: false
+      });
+      const read = await invoke('plugin:fs|read_file', { path: target });
+      const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
+      const page = (await t.pdfText(bytes)).normalize('NFKC').replace(/\s+/g, ' ').toLowerCase();
+      const squashed = page.replace(/[^a-z0-9]+/g, '');
+      const pageSize = await t.pdfPageSize(bytes);
+      check(
+        'rho-class: the exported article renders its metadata, callout, table and reference',
+        [
+          'seeingstructureinanoisysky',
+          'mirachen',
+          'eliasward',
+          'noorpatel',
+          'calibrationassumption',
+          'table1',
+          'references',
+          'anexamplereferencefortherhoclasstemplate'
+        ].every((text) => squashed.includes(text)),
+        page.slice(-2500)
+      );
+      check(
+        'rho-class: the exported original design is two-column A4',
+        Math.abs((pageSize?.width ?? 0) - 595.28) < 1 &&
+          Math.abs((pageSize?.height ?? 0) - 841.89) < 1,
+        pageSize
+      );
+    } catch (error) {
+      check('rho-class: the licensed PDF example imports and exports', false, String(error));
     }
   } finally {
     for (const id of made.reverse()) {

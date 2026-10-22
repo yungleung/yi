@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "example-rho-class",
+  "name": "Rho Class research article",
+  "kind": "pdf",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/rho-class",
+    "source": "https://latextemplates.com/template/rho-class-article/",
+    "license": "CC-BY-4.0 (Rho Class); CC-BY-SA-3.0 (IEEE CSL)"
+  },
+  "template": "template.tex",
+  "reference_doc": null,
+  "csl": "ieee.csl",
+  "assets": [
+    "ATTRIBUTION.txt",
+    "CSL-NOTICE.txt",
+    "README.md",
+    "defaults.yaml",
+    "example.md",
+    "figures/sensor-residuals.pdf",
+    "figures/sensor-residuals.svg",
+    "ieee.csl",
+    "metadata.yaml",
+    "rho-class/rho.cls",
+    "rho-class/rhobabel.sty",
+    "rho-class/rhoenvs.sty",
+    "rho.bib",
+    "table.lua"
+  ],
+  "deliver": []
+}

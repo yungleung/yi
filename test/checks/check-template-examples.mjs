@@ -1,5 +1,5 @@
 /**
- * The six complete template packages kept beside the tests as authoring examples.
+ * The seven complete template packages kept beside the tests as authoring examples.
  *
  * Each package has to carry its own valid manifest, a real entry and any file that manifest names.
  * When Pandoc is available the check also converts one paragraph through the text templates and
@@ -721,8 +721,132 @@ if (pandoc.status !== 0) {
   }
 }
 
+const rhoClass = join(root, 'rho-class');
+check(
+  'rho-class: the licensed PDF example carries its complete source package',
+  [
+    'ATTRIBUTION.txt',
+    'CSL-NOTICE.txt',
+    'README.md',
+    'defaults.yaml',
+    'example.md',
+    'ieee.csl',
+    'metadata.yaml',
+    'rho.bib',
+    'rho-class/rho.cls',
+    'rho-class/rhobabel.sty',
+    'rho-class/rhoenvs.sty',
+    'template.json',
+    'template.tex',
+    'table.lua'
+  ].every((file) => existsSync(join(rhoClass, file)))
+);
+if (existsSync(join(rhoClass, 'template.json'))) {
+  const manifest = JSON.parse(readFileSync(join(rhoClass, 'template.json'), 'utf8'));
+  const defaults = parse(readFileSync(join(rhoClass, 'defaults.yaml'), 'utf8'));
+  const template = readFileSync(join(rhoClass, 'template.tex'), 'utf8');
+  const example = readFileSync(join(rhoClass, 'example.md'), 'utf8');
+  const attribution = readFileSync(join(rhoClass, 'ATTRIBUTION.txt'), 'utf8');
+  check(
+    'rho-class: the manifest identifies the CC BY PDF package and its source',
+    manifest.kind === 'pdf' &&
+      manifest.mode === 'template' &&
+      manifest.template === 'template.tex' &&
+      /CC-BY-4\.0/.test(manifest.origin.license) &&
+      /CC-BY-SA-3\.0/.test(manifest.origin.license) &&
+      manifest.origin.source === 'https://latextemplates.com/template/rho-class-article/' &&
+      manifest.assets.every((asset) => existsSync(join(rhoClass, asset)))
+  );
+  check(
+    'rho-class: pdfLaTeX and numbered citeproc drive the original class',
+    defaults['pdf-engine'] === 'pdflatex' &&
+      defaults.filters[0]?.type === 'citeproc' &&
+      defaults.filters[1] === 'table.lua' &&
+      defaults.bibliography === 'rho.bib' &&
+      defaults.csl === 'ieee.csl' &&
+      defaults['shift-heading-level-by'] === 0
+  );
+  check(
+    'rho-class: the Pandoc entry takes title, authors, dates and journal fields from metadata',
+    ['$title$', '$for(author)$', '$author.name$', '$author.affiliation$', '$date$', '$abstract$', '$keywords$', '$journal-name$'].every(
+      (variable) => template.includes(variable)
+    ) &&
+      !['Seeing Structure in a Noisy Sky', 'Mira Chen', 'Elias Ward', 'Noor Patel'].some(
+        (text) => template.includes(text)
+      )
+  );
+  check(
+    'rho-class: the example uses supported Markdown and exercises the article layout',
+    /^> /m.test(example) &&
+      /^```python$/m.test(example) &&
+      /^!\[[^\]]*\]\(figures\/sensor-residuals\.pdf\)$/m.test(example) &&
+      /^\| Channel \|/m.test(example) &&
+      /\\hat\{s\}/.test(example) &&
+      /^\[\^weights\]:/m.test(example) &&
+      !/^:::/m.test(example) &&
+      !/\]\{|\)\{/.test(example)
+  );
+  check(
+    'rho-class: the upstream author and licence travel with the package',
+    /Guillermo Jimenez/.test(attribution) &&
+      /CC-BY-4\.0/.test(attribution) &&
+      /MemoJimenez\/Rho-class/.test(attribution) &&
+      /CC BY 4\.0/.test(readFileSync(join(rhoClass, 'README.md'), 'utf8'))
+  );
+  if (pandoc.status === 0) {
+    const outputFolder = mkdtempSync(join(tmpdir(), 'yi-template-rho-'));
+    const output = join(outputFolder, 'rho-article.pdf');
+    const converted = spawnSync(
+      'pandoc',
+      [
+        '--from=markdown',
+        '--to=pdf',
+        `--defaults=${join(rhoClass, 'defaults.yaml')}`,
+        `--template=${join(rhoClass, 'template.tex')}`,
+        `--resource-path=${rhoClass}`,
+        `--output=${output}`,
+        join(rhoClass, 'example.md')
+      ],
+      {
+        cwd: rhoClass,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          TEXINPUTS: `.${process.platform === 'win32' ? ';' : ':'}${rhoClass}${process.platform === 'win32' ? ';' : ':'}`,
+          BIBINPUTS: `.${process.platform === 'win32' ? ';' : ':'}${rhoClass}${process.platform === 'win32' ? ';' : ':'}`,
+          BSTINPUTS: `.${process.platform === 'win32' ? ';' : ':'}${rhoClass}${process.platform === 'win32' ? ';' : ':'}`
+        }
+      }
+    );
+    check(
+      'rho-class: the complete example compiles through pdfLaTeX and citeproc',
+      converted.status === 0 && existsSync(output),
+      converted.stderr.trim()
+    );
+    if (converted.status === 0 && existsSync(output)) {
+      const rendered = spawnSync(
+        'gs',
+        ['-q', '-dNOPAUSE', '-dBATCH', '-sDEVICE=txtwrite', '-sOutputFile=-', output],
+        { encoding: 'utf8' }
+      );
+      const renderedText = rendered.stdout
+        .replace(/-\s*\r?\n\s*/g, '')
+        .replace(/\s+/g, ' ');
+      check(
+        'rho-class: the rendered article resolves its citation and reference',
+        rendered.status === 0 &&
+          /\[1\]/.test(renderedText) &&
+          /An Example Reference for the Rho Class Template/i.test(renderedText) &&
+          !/Citation .* undefined/i.test(renderedText),
+        rendered.stdout.slice(-2500)
+      );
+    }
+    rmSync(outputFolder, { recursive: true, force: true });
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
 }
-console.log(`template examples: ${kinds.length} packages passed`);
+console.log(`template examples: ${kinds.length + 1} packages passed`);

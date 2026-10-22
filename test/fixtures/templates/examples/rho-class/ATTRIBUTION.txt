@@ -1,0 +1,10 @@
+This template is based on work by Guillermo Jimenez.
+
+Licence: CC-BY-4.0
+Source:  https://github.com/MemoJimenez/Rho-class
+
+The licence requires you to credit the original author when you distribute this
+template or publish work based on it. Keep this file with the template, and
+name Guillermo Jimenez in your own credits.
+
+Packaged by latextemplates.com — the starter document itself is unrestricted.

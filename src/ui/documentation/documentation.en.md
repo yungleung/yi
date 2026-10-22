@@ -586,13 +586,15 @@ what the template genuinely requires.
 
 ### Complete examples
 
-The repository contains one complete, workable package for every kind under:
+The repository contains one complete, workable package for every kind, plus the licensed Rho Class
+research-article design, under:
 
 ```text
 test/fixtures/templates/examples/
   html/
   latex/
   pdf/
+  rho-class/
   epub/
   docx/
   odt/
@@ -691,6 +693,34 @@ The template must work from the package root and must not depend on files outsid
 `tlmgr`, enable shell escape, or use unrestricted `\write18`. If a TeX package is unavailable,
 report it rather than trying to install it. Run the complete Pandoc-to-XeLaTeX path when possible
 and report the output and diagnostics.
+```
+
+#### Example prompt: Rho Class PDF
+
+```text
+Create an importable Yi PDF template source package in `my-rho-template/`, modelled on
+`test/fixtures/templates/examples/rho-class/` and the CC BY 4.0 Rho Class research-article design:
+<https://latextemplates.com/template/rho-class-article/>.
+
+Preserve the upstream `rho.cls`, `rhobabel.sty`, `rhoenvs.sty`, source URL and
+`ATTRIBUTION.txt`. Credit Guillermo Jimenez as the licence requires. Do not rename the upstream
+class or imply that the design is original.
+
+Include:
+
+- `template.tex`, a Pandoc template containing `$body$` exactly once and taking title, authors,
+  affiliations, abstract, keywords, date and journal fields from note metadata;
+- `defaults.yaml` with pdfLaTeX, unshifted headings, Pandoc citeproc, an IEEE CSL style and only the
+  filters the package needs;
+- `rho.bib`, `ieee.csl`, and a small Lua filter for tables that must span the two-column layout;
+- `metadata.yaml` and `example.md` demonstrating three authors, distinct affiliations, an abstract,
+  journal footer, callout, mathematics, code, figure, table, footnote and numbered reference;
+- `README.md` explaining the upstream licence, TeX dependencies, Test PDF and export workflow.
+
+Keep Markdown within Yi's supported syntax. Keep user-visible metadata out of the template. Do not
+create `template.json`; Yi writes it on import. Do not download journal assets, install TeX
+packages, run `tlmgr`, enable shell escape, or use unrestricted `\write18`. Run Test PDF and export
+the complete example, then inspect the rendered page and report the result.
 ```
 
 #### Example prompt: EPUB
