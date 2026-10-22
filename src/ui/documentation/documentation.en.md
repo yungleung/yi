@@ -710,9 +710,9 @@ Include:
 
 - `template.tex`, a Pandoc template containing `$body$` exactly once and taking title, authors,
   affiliations, abstract, keywords, date and journal fields from note metadata;
-- `defaults.yaml` with pdfLaTeX, unshifted headings, Pandoc citeproc, an IEEE CSL style and only the
-  filters the package needs;
-- `rho.bib`, `ieee.csl`, and a small Lua filter for tables that must span the two-column layout;
+- `defaults.yaml` with pdfLaTeX, unshifted headings, and only the package-specific table filter;
+  Yi supplies citeproc, the selected bibliography and the selected CSL style;
+- `rho.bib`, `ieee.csl.xml`, and a small Lua filter for tables that must span the two-column layout;
 - `metadata.yaml` and `example.md` demonstrating three authors, distinct affiliations, an abstract,
   journal footer, callout, mathematics, code, figure, table, footnote and numbered reference;
 - `README.md` explaining the upstream licence, TeX dependencies, Test PDF and export workflow.

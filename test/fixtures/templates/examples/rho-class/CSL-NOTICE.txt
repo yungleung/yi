@@ -1,4 +1,4 @@
-ieee.csl is the IEEE Citation Style Language style maintained by the Citation Style Language
+ieee.csl.xml is the IEEE Citation Style Language style maintained by the Citation Style Language
 project and its listed contributors.
 
 Source: https://github.com/citation-style-language/styles/blob/master/ieee.csl

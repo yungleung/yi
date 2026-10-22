@@ -19,7 +19,7 @@ rho-class/
   metadata.yaml
   defaults.yaml
   rho.bib
-  ieee.csl
+  ieee.csl.xml
   CSL-NOTICE.txt
   table.lua
   ATTRIBUTION.txt
@@ -30,11 +30,16 @@ rho-class/
   rho-class/rhoenvs.sty
 ```
 
-`defaults.yaml` selects pdfLaTeX and Pandoc's citeproc path through `rho.bib`,
-with `ieee.csl` restoring the original numbered reference appearance. The
-machine must have pdfLaTeX and the standard TeX packages loaded by `rho.cls`,
-including `extarticle`, `stix2`, `FiraSans`, `FiraMono`, `authblk`,
+`defaults.yaml` selects pdfLaTeX and the package's table filter. Yi supplies
+citeproc, the bibliography selected in **Settings → Citation**, and its CSL
+style. The machine must have pdfLaTeX and the standard TeX packages loaded by
+`rho.cls`, including `extarticle`, `stix2`, `FiraSans`, `FiraMono`, `authblk`,
 `mdframed`, `tcolorbox`, `listings` and `biblatex`.
+
+`rho.bib` and `ieee.csl.xml` are the standalone example's sample data and numbered
+style. They are package assets, not overrides applied to Yi exports. Compile
+`example.md` outside Yi with those files named explicitly when reproducing the
+original IEEE reference appearance.
 
 Markdown blockquotes become the class's green **Note** callout. Fenced code,
 figures, tables, footnotes, mathematics and citations use Pandoc's ordinary
@@ -54,5 +59,5 @@ distributing this package or publishing work based on it.
 - Template: <https://latextemplates.com/template/rho-class-article/>
 - Upstream source: <https://github.com/MemoJimenez/Rho-class>
 
-`ieee.csl` is distributed separately by the Citation Style Language project
+`ieee.csl.xml` is distributed separately by the Citation Style Language project
 under CC BY-SA 3.0. `CSL-NOTICE.txt` identifies its source and licence.

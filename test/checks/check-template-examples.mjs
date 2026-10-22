@@ -21,6 +21,7 @@ import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
 
 const root = resolve('test/fixtures/templates/examples');
+const appPdfDefaults = resolve('src-tauri/assets/export/export.pdf.yaml');
 const kinds = ['html', 'latex', 'pdf', 'epub', 'docx', 'odt'];
 const failures = [];
 const check = (name, pass, actual = null) => {
@@ -730,7 +731,7 @@ check(
     'README.md',
     'defaults.yaml',
     'example.md',
-    'ieee.csl',
+    'ieee.csl.xml',
     'metadata.yaml',
     'rho.bib',
     'rho-class/rho.cls',
@@ -758,13 +759,17 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       manifest.assets.every((asset) => existsSync(join(rhoClass, asset)))
   );
   check(
-    'rho-class: pdfLaTeX and numbered citeproc drive the original class',
+    'rho-class: pdfLaTeX and its table filter leave citations to Yi settings',
     defaults['pdf-engine'] === 'pdflatex' &&
-      defaults.filters[0]?.type === 'citeproc' &&
-      defaults.filters[1] === 'table.lua' &&
-      defaults.bibliography === 'rho.bib' &&
-      defaults.csl === 'ieee.csl' &&
+      defaults.filters.length === 1 &&
+      defaults.filters[0] === 'table.lua' &&
+      defaults.bibliography === undefined &&
+      defaults.csl === undefined &&
       defaults['shift-heading-level-by'] === 0
+  );
+  check(
+    'rho-class: the manifest does not override the selected citation style',
+    manifest.csl === null
   );
   check(
     'rho-class: the Pandoc entry takes title, authors, dates and journal fields from metadata',
@@ -801,9 +806,13 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       [
         '--from=markdown',
         '--to=pdf',
+        `--defaults=${appPdfDefaults}`,
         `--defaults=${join(rhoClass, 'defaults.yaml')}`,
         `--template=${join(rhoClass, 'template.tex')}`,
         `--resource-path=${rhoClass}`,
+        '--bibliography=rho.bib',
+        '--csl=ieee.csl.xml',
+        '--metadata=reference-section-title=References',
         `--output=${output}`,
         join(rhoClass, 'example.md')
       ],
@@ -833,10 +842,10 @@ if (existsSync(join(rhoClass, 'template.json'))) {
         .replace(/-\s*\r?\n\s*/g, '')
         .replace(/\s+/g, ' ');
       check(
-        'rho-class: the rendered article resolves its citation and reference',
+        'rho-class: the rendered article resolves its citation and reference once',
         rendered.status === 0 &&
           /\[1\]/.test(renderedText) &&
-          /An Example Reference for the Rho Class Template/i.test(renderedText) &&
+          renderedText.match(/An Example Reference for the Rho Class Template/gi)?.length === 1 &&
           !/Citation .* undefined/i.test(renderedText),
         rendered.stdout.slice(-2500)
       );

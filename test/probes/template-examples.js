@@ -501,7 +501,7 @@
         rho.manifest?.kind === 'pdf' &&
           rho.manifest?.mode === 'template' &&
           rho.manifest?.template === 'template.tex' &&
-          rho.manifest?.csl === 'ieee.csl' &&
+          rho.manifest?.csl === null &&
           /CC-BY-4\.0/.test(rho.manifest?.origin?.license ?? '') &&
           rho.files.some((file) => file.name === 'CSL-NOTICE.txt'),
         rho.manifest
@@ -541,9 +541,11 @@
       const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
       const page = (await t.pdfText(bytes)).normalize('NFKC').replace(/\s+/g, ' ').toLowerCase();
       const squashed = page.replace(/[^a-z0-9]+/g, '');
+      const referenceCount =
+        squashed.match(/anexamplereferencefortherhoclasstemplate/g)?.length ?? 0;
       const pageSize = await t.pdfPageSize(bytes);
       check(
-        'rho-class: the exported article renders its metadata, callout, table and reference',
+        'rho-class: the exported article renders its metadata, callout, table and reference once',
         [
           'seeingstructureinanoisysky',
           'mirachen',
@@ -553,8 +555,8 @@
           'table1',
           'references',
           'anexamplereferencefortherhoclasstemplate'
-        ].every((text) => squashed.includes(text)),
-        page.slice(-2500)
+        ].every((text) => squashed.includes(text)) && referenceCount === 1,
+        { referenceCount, tail: page.slice(-2500) }
       );
       check(
         'rho-class: the exported original design is two-column A4',
