@@ -227,6 +227,10 @@ fn export_with_pandoc(
         .map(|warnings| ExportOutcome { warnings })
     })
     .and_then(|outcome| {
+        if kind.kind == "odt" {
+            let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+            super::odt_toc::cache_contents(&output)?;
+        }
         if kind.kind == "html" {
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());
             super::html_media::package_html_media(&output)?;

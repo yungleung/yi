@@ -13,6 +13,7 @@ mod font_hints;
 mod html_media;
 mod info;
 mod kinds;
+mod odt_toc;
 mod pandoc;
 mod pictures;
 mod run;

@@ -206,14 +206,19 @@
           { size: data.length }
         );
         check(
-          'odt: the generated book has the automatic two-level contents field',
+          'odt: the generated book has a visible automatic two-level contents table',
           !source.includes('> **Contents**') &&
-            content.includes('<text:table-of-content>') &&
+            content.includes('<text:table-of-content') &&
             content.includes('text:outline-level="2"') &&
+            content.includes('<text:index-body>') &&
+            ['Introduction', 'Research questions', 'Materials and methods'].every((text) =>
+              content.includes(`>${text}</text:a>`)
+            ) &&
             outlineLevels.includes('1'),
           {
             manualContents: source.includes('> **Contents**'),
-            field: content.includes('<text:table-of-content>'),
+            field: content.includes('<text:table-of-content'),
+            indexBody: content.includes('<text:index-body>'),
             bodyHeading: outlineLevels.includes('1'),
             outlineLevels
           }

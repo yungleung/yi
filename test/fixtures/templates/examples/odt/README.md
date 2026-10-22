@@ -18,6 +18,9 @@ the automatic two-level contents, and the first level-one heading starts the bod
 `college-cover.svg` is the editable source for the embedded cover; `college-cover.png` is the raster
 embedded in `reference.odt`.
 
+Yi fills the cached ODT index body after Pandoc runs, so the generated Contents page is visible in
+LibreOffice and OnlyOffice without asking the reader to refresh a field.
+
 Only the body master page has a footer. Its numbering restarts at 1 on the first body heading, so
 the cover, abstract and contents pages carry no page number.
 

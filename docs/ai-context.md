@@ -449,6 +449,13 @@ year and no name, and the list is appended under the heading the app asks for. *
 is metadata, not a variable** — a `variables:` line leaves the list exactly where it was (measured) —
 so a reader who wants the keys resolved and no list writes a `metadata:` block in their settings file.
 
+**An ODT contents field is made visible before either office suite opens it.** Pandoc writes
+`text:table-of-content-source` and its title but leaves the generated `text:index-body` empty.
+LibreOffice may refresh that field; OnlyOffice displays no contents at all until a body exists.
+After Pandoc succeeds, `src-tauri/src/export/odt_toc.rs` reads the heading bookmarks it wrote and
+caches level-one/two entries in the field, preserving `mimetype` as the first ZIP entry. The note is
+not edited and no TOC is authored in Markdown; `toc: true` remains the package's instruction.
+
 **A template is a package under the app's export data, not a note.** The folder is
 `<app data>/export/templates/<id>/`; `template.json` is the app's manifest — schema, id, name, export
 kind, `template`/`wrapper`/`reference-doc` mode, provenance and licence, one entry, the CSL and the
