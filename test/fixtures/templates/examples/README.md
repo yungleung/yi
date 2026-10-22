@@ -8,7 +8,7 @@ read and copy, while still using the real manifest, entry, metadata and defaults
 | `html/` | `template.html` | A Bootstrap technical blog with a sidebar table of contents |
 | `latex/` | `template.tex` | A standalone template and files delivered beside `.tex` |
 | `pdf/` | `template.tex` | The same Pandoc contract with a PDF engine |
-| `epub/` | `template.xhtml` | EPUB chapter markup and package assets |
+| `epub/` | `template.xhtml` | A three-chapter novel with cover, front matter and visible contents |
 | `docx/` | `reference.docx` | Word styles from a binary reference document; `example.md` exercises all of them |
 | `odt/` | `reference.odt` | An A4 dissertation with cover, abstract, two-level contents and body; `example.md` exercises it |
 

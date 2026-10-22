@@ -1,15 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="$lang$" xml:lang="$lang$">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:epub="http://www.idpf.org/2007/ops"
+  lang="$lang$"
+  xml:lang="$lang$"
+>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
+    <meta name="generator" content="pandoc" />
     <title>$pagetitle$</title>
-    <link rel="stylesheet" href="assets/book.css">
+    $for(css)$
+    <link rel="stylesheet" type="text/css" href="$css$" />
+    $endfor$
   </head>
-  <body>
+  <body$if(coverpage)$ id="cover" class="cover-page"$else$$if(titlepage)$ class="frontmatter-page"$else$ class="chapter-page"$endif$$endif$$if(body-type)$ epub:type="$body-type$"$endif$>
+    $if(coverpage)$
+    <section class="cover" epub:type="cover">
+      <p class="cover-press">$if(publisher)$$publisher$$endif$</p>
+      <div class="cover-art" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 520">
+          <path class="cover-room" d="M84 470V196L300 48l216 148v274" />
+          <path class="cover-window" d="M220 128h160v170H220zM300 128v170M220 210h160" />
+          <ellipse class="cover-chair" cx="118" cy="410" rx="62" ry="48" />
+          <path class="cover-chair-back" d="M78 396V250c0-18 14-32 32-32h16c18 0 32 14 32 32v146" />
+          <ellipse class="cover-cat-body" cx="402" cy="390" rx="76" ry="92" />
+          <circle class="cover-cat-head" cx="402" cy="290" r="56" />
+          <path class="cover-cat-ear" d="M360 258l-10-58 48 28M444 258l10-58-48 28" />
+          <path class="cover-cat-tail" d="M462 424c86 6 72-108 12-112" />
+          <path class="cover-thread" d="M150 380C226 330 244 250 294 206M462 424c55 26 84 34 120 38" />
+        </svg>
+      </div>
+      <div class="cover-copy">
+        <p class="cover-kicker">A Novel</p>
+        <h1 class="cover-title">$title$</h1>
+        <p class="cover-author">$for(author)$$author$$sep$ · $endfor$</p>
+      </div>
+    </section>
+    $else$
+    $if(titlepage)$
+    <section class="titlepage" epub:type="titlepage">
+      <p class="press">$if(publisher)$$publisher$$endif$</p>
+      $if(edition)$
+      <p class="edition">$edition$</p>
+      $endif$
+      <div class="title-ornament" aria-hidden="true">
+        <span></span><b>◇</b><span></span>
+      </div>
+      <h1 class="book-title">$title$</h1>
+      $if(subtitle)$
+      <p class="book-subtitle">$subtitle$</p>
+      $endif$
+      <p class="byline">by</p>
+      <p class="book-author">$for(author)$$author$$sep$ · $endfor$</p>
+    </section>
+
+    <section class="imprint-page" epub:type="copyright-page">
+      <h2>Copyright</h2>
+      $if(rights)$
+      <p>$rights$</p>
+      $endif$
+      $if(isbn)$
+      <p class="isbn">ISBN $isbn$</p>
+      $endif$
+      $if(publisher)$
+      <p>$publisher$</p>
+      $endif$
+      $if(edition)$
+      <p>$edition$</p>
+      $endif$
+      <p>
+        This is a work of fiction. Names, characters, places, and incidents are either products of
+        the author's imagination or used fictitiously.
+      </p>
+      <p>All rights reserved. No part of this book may be reproduced without written permission.</p>
+    </section>
+
+    $if(dedication)$
+    <section class="dedication-page" epub:type="dedication">
+      <h2 class="visually-hidden">Dedication</h2>
+      <div class="dedication">$dedication$</div>
+    </section>
+    $endif$
+    $else$
     <section class="chapter">
-      <h1>$title$</h1>
+      <div class="chapter-ornament" aria-hidden="true">
+        <span></span><b>◇</b><span></span>
+      </div>
       $body$
     </section>
+    $endif$
+    $endif$
   </body>
 </html>

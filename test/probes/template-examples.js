@@ -24,7 +24,7 @@
     ['html', 'template.html', 'template', 'Models, Agents, and the Harness Between Them'],
     ['latex', 'template.tex', 'template', 'Example LaTeX note'],
     ['pdf', 'template.tex', 'template', 'Example PDF note'],
-    ['epub', 'template.xhtml', 'template', 'Example EPUB book'],
+    ['epub', 'template.xhtml', 'template', 'The Animal Between Us'],
     ['docx', 'reference.docx', 'reference-doc', 'Example Word document'],
     ['odt', 'reference.odt', 'reference-doc', 'Dissertation title']
   ];
@@ -149,6 +149,90 @@
         check(
           'html: the exported script highlights the section currently being read',
           (await readText(`${target}/assets/site.js`)).includes('IntersectionObserver')
+        );
+      }
+      if (kind === 'epub') {
+        const source = await api.readTemplateFile(pkg.id, 'example.md');
+        await t.load(source);
+        const lowerSource = source.toLowerCase();
+        check(
+          'epub: the example is a three-chapter psychological novel',
+          ['# prologue', '# the animal between us', '# epilogue', 'yuzu', 'hard to domesticate'].every(
+            (text) => lowerSource.includes(text)
+          ) && (t.prose().textContent ?? '').includes('For one year I lived with a man')
+        );
+        const target = `${folder}/animal-between-us.epub`;
+        await exportApi.runExport({
+          kind: 'epub',
+          text: source,
+          output_path: target,
+          resource_paths: [],
+          source_dir: null,
+          bibliography: null,
+          csl: null,
+          references: null,
+          title: 'The Animal Between Us',
+          language: 'en',
+          paper: null,
+          landscape: null,
+          suppress_references: false,
+          template_id: pkg.id,
+          self_contained: false
+        });
+        const bytes = await invoke('plugin:fs|read_file', { path: target });
+        const data = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
+        const entries = t.zipNames(data);
+        const titlePage = (await t.zipEntry(data, 'EPUB/text/title_page.xhtml')) ?? '';
+        const coverPage = (await t.zipEntry(data, 'EPUB/text/cover.xhtml')) ?? '';
+        const nav = (await t.zipEntry(data, 'EPUB/nav.xhtml')) ?? '';
+        const opf = (await t.zipEntry(data, 'EPUB/content.opf')) ?? '';
+        check(
+          'epub: the exported novel has a cover, front matter, contents and three chapters',
+          entries.includes('EPUB/text/cover.xhtml') &&
+            entries.includes('EPUB/text/title_page.xhtml') &&
+            entries.includes('EPUB/nav.xhtml') &&
+            ['ch001', 'ch002', 'ch003'].every((chapter) =>
+              entries.includes(`EPUB/text/${chapter}.xhtml`)
+            ) &&
+            !entries.includes('EPUB/text/ch004.xhtml'),
+          entries
+        );
+        check(
+          'epub: the cover carries the title, author and fictional press',
+          ['The Animal Between Us', 'An Rui', 'North Window Press'].every((text) =>
+            coverPage.includes(text)
+          ),
+          coverPage
+        );
+        check(
+          'epub: the title page carries press, ISBN, rights and dedication',
+          ['North Window Press', '978-1-946821-47-8', 'Copyright', 'For the cat'].every((text) =>
+            titlePage.includes(text)
+          ),
+          titlePage
+        );
+        check(
+          'epub: the contents page is visible in the spine and links the three chapters',
+          nav.includes('id="toc"') &&
+            nav.includes('>Contents</h1>') &&
+            ['Prologue', 'The Animal Between Us', 'Epilogue'].every((text) =>
+              new RegExp(`href="text/ch00[1-3]\\.xhtml#[^"]+">${text}</a>`).test(nav)
+            ),
+          nav
+        );
+        check(
+          'epub: the book record carries title, author, publisher, rights and ISBN',
+          [
+            '<dc:title',
+            'The Animal Between Us',
+            '<dc:creator',
+            'An Rui',
+            '<dc:publisher',
+            'North Window Press',
+            '<dc:rights',
+            '978-1-946821-47-8'
+          ].every((text) => opf.includes(text)),
+          opf
         );
       }
       if (kind === 'pdf') {

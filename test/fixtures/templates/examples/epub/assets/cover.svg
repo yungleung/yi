@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2400" viewBox="0 0 1600 2400">
+  <defs>
+    <radialGradient id="glow" cx="34%" cy="17%" r="70%">
+      <stop offset="0" stop-color="#a85c42" stop-opacity=".46" />
+      <stop offset="1" stop-color="#1e2526" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#202829" />
+      <stop offset="1" stop-color="#151a1b" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="2400" fill="url(#paper)" />
+  <rect width="1600" height="2400" fill="url(#glow)" />
+  <rect x="100" y="100" width="1400" height="2200" fill="none" stroke="#d9ceb8" stroke-opacity=".34" stroke-width="2" />
+
+  <g aria-hidden="true">
+    <path d="M264 1290V590L800 230l536 360v700" fill="none" stroke="#d9ceb8" stroke-opacity=".72" stroke-width="9" />
+    <path d="M566 402h468v416H566zM800 402v416M566 610h468" fill="#d9ceb8" fill-opacity=".04" stroke="#c9bea7" stroke-width="7" />
+    <path d="M340 1080V702c0-58 47-105 105-105h30c58 0 105 47 105 105v378" fill="none" stroke="#d9ceb8" stroke-width="9" />
+    <ellipse cx="430" cy="1090" rx="146" ry="92" fill="#3f4b4b" />
+
+    <ellipse cx="1050" cy="1020" rx="190" ry="238" fill="#a75438" />
+    <circle cx="1050" cy="765" r="136" fill="#a75438" />
+    <path d="M948 690l-32-154 130 82M1152 690l32-154-130 82" fill="#a75438" />
+    <path d="M1210 1108c215 8 172-272 36-286" fill="none" stroke="#a75438" stroke-linecap="round" stroke-width="48" />
+
+    <path d="M505 1030c205-150 240-360 390-480M1198 1130c127 32 185 60 252 102" fill="none" stroke="#d9ceb8" stroke-opacity=".65" stroke-dasharray="10 24" stroke-linecap="round" stroke-width="8" />
+  </g>
+
+  <text x="800" y="238" fill="#d9ceb8" font-family="Avenir Next, Avenir, Segoe UI, sans-serif" font-size="30" font-weight="600" letter-spacing="9" text-anchor="middle">NORTH WINDOW PRESS</text>
+  <line x1="500" y1="1580" x2="1100" y2="1580" stroke="#a75438" stroke-width="3" />
+  <text x="800" y="1740" fill="#f2eadb" font-family="Iowan Old Style, Palatino, Georgia, serif" font-size="176" font-weight="500" letter-spacing="-6" text-anchor="middle">THE ANIMAL</text>
+  <text x="800" y="1910" fill="#f2eadb" font-family="Iowan Old Style, Palatino, Georgia, serif" font-size="176" font-weight="500" letter-spacing="-6" text-anchor="middle">BETWEEN US</text>
+  <text x="800" y="2025" fill="#d9ceb8" font-family="Iowan Old Style, Palatino, Georgia, serif" font-size="48" font-style="italic" text-anchor="middle">A Novel</text>
+  <text x="800" y="2190" fill="#f2eadb" font-family="Avenir Next, Avenir, Segoe UI, sans-serif" font-size="42" font-weight="600" letter-spacing="13" text-anchor="middle">AN RUI</text>
+</svg>

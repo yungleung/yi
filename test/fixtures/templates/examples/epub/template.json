@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "example-epub",
-  "name": "Example EPUB template",
+  "name": "Literary EPUB template",
   "kind": "epub",
   "mode": "template",
   "origin": {
@@ -14,7 +14,8 @@
   "reference_doc": null,
   "csl": null,
   "assets": [
-    "assets/book.css"
+    "assets/book.css",
+    "assets/cover.svg"
   ],
   "deliver": []
 }

@@ -7,11 +7,12 @@
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parse } from 'yaml';
+import { runEpubcheck } from './support/epubcheck.mjs';
 
-const root = 'test/fixtures/templates/examples';
+const root = resolve('test/fixtures/templates/examples');
 const kinds = ['html', 'latex', 'pdf', 'epub', 'docx', 'odt'];
 const failures = [];
 const check = (name, pass, actual = null) => {
@@ -31,6 +32,28 @@ for (const kind of kinds) {
       'html: the package asks Pandoc for a two-level contents sidebar',
       defaults.toc === true && defaults['toc-depth'] === 2
     );
+  }
+  if (kind === 'epub') {
+    check('epub: the package has a complete example novel', existsSync(join(folder, 'example.md')));
+    check('epub: the package has its own cover', existsSync(join(folder, 'assets/cover.svg')));
+    const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
+    check(
+      'epub: the package asks Pandoc for navigation, a cover and unshifted chapters',
+      defaults.toc === true &&
+        defaults['toc-depth'] === 2 &&
+        defaults['shift-heading-level-by'] === 0 &&
+        defaults['epub-cover-image'] === 'assets/cover.svg'
+    );
+    if (existsSync(join(folder, 'example.md'))) {
+      const source = readFileSync(join(folder, 'example.md'), 'utf8');
+      check(
+        'epub: the novel has exactly a prologue, main story and epilogue',
+        [...source.matchAll(/^# (?!#)/gm)].length === 3 &&
+          ['# Prologue', '# The Animal Between Us', '# Epilogue'].every((heading) =>
+            source.includes(heading)
+          )
+      );
+    }
   }
   if (kind === 'docx') {
     check('docx: the package has a complete example markdown', existsSync(join(folder, 'example.md')));
@@ -298,16 +321,22 @@ if (pandoc.status !== 0) {
       args.push(`--output=${output}`);
     } else {
       args.push(`--template=${join(folder, manifest.template)}`);
+      if (kind === 'epub') {
+        outputFolder = mkdtempSync(join(tmpdir(), 'yi-template-epub-'));
+        output = join(outputFolder, 'out.epub');
+        args.push(`--resource-path=${folder}`, `--output=${output}`);
+      }
     }
-    if (kind === 'epub') args.push('--metadata=title:Example', '--metadata=lang:en');
     const example = join(folder, 'example.md');
     const input =
-      (kind === 'html' || kind === 'docx' || kind === 'odt') && existsSync(example)
+      (kind === 'html' || kind === 'epub' || kind === 'docx' || kind === 'odt') &&
+      existsSync(example)
         ? readFileSync(example, 'utf8')
         : '# Example\n\nOne paragraph.\n';
     const converted = spawnSync('pandoc', args, {
       input,
-      encoding: 'utf8'
+      encoding: 'utf8',
+      cwd: folder
     });
     check(
       `${kind}: Pandoc converts a paragraph with the example`,
@@ -339,7 +368,59 @@ if (pandoc.status !== 0) {
         ids.has('a-note-on-plausibility') && !targets.includes('a-note-on-plausibility')
       );
     }
-    if (output !== null && existsSync(output)) {
+    if (kind === 'epub' && output !== null && existsSync(output)) {
+      const entries = spawnSync('unzip', ['-Z1', output], { encoding: 'utf8' }).stdout;
+      const titlePage = spawnSync('unzip', ['-p', output, 'EPUB/text/title_page.xhtml'], {
+        encoding: 'utf8'
+      }).stdout;
+      const nav = spawnSync('unzip', ['-p', output, 'EPUB/nav.xhtml'], {
+        encoding: 'utf8'
+      }).stdout;
+      const opf = spawnSync('unzip', ['-p', output, 'EPUB/content.opf'], {
+        encoding: 'utf8'
+      }).stdout;
+      check(
+        'epub: the book carries a cover, title page, contents and exactly three chapters',
+        entries.includes('EPUB/text/cover.xhtml') &&
+          entries.includes('EPUB/text/title_page.xhtml') &&
+          entries.includes('EPUB/nav.xhtml') &&
+          ['ch001', 'ch002', 'ch003'].every((chapter) =>
+            entries.includes(`EPUB/text/${chapter}.xhtml`)
+          ) &&
+          !entries.includes('EPUB/text/ch004.xhtml')
+      );
+      check(
+        'epub: the title page carries press, ISBN, copyright and dedication',
+        ['North Window Press', '978-1-946821-47-8', 'Copyright', 'For the cat'].every((text) =>
+          titlePage.includes(text)
+        ),
+        titlePage
+      );
+      check(
+        'epub: the visible contents links all three chapters',
+        ['Prologue', 'The Animal Between Us', 'Epilogue'].every((text) =>
+          new RegExp(`href="text/ch00[1-3]\\.xhtml#[^"]+">${text}</a>`).test(nav)
+        ),
+        nav
+      );
+      check(
+        'epub: package metadata reaches the book record',
+        ['<dc:title', 'The Animal Between Us', '<dc:creator', 'An Rui', '<dc:publisher', 'North Window Press', '<dc:rights'].every(
+          (text) => opf.includes(text)
+        )
+      );
+      const checked = runEpubcheck(output);
+      if (!checked.available) {
+        console.log(`template examples: EPUB validation skipped, ${checked.reason}`);
+      } else {
+        check(
+          'epub: the generated novel passes epubcheck',
+          checked.ok,
+          checked.complaints.length > 0 ? checked.complaints : checked.counts
+        );
+      }
+    }
+    if ((kind === 'docx' || kind === 'odt') && output !== null && existsSync(output)) {
       const entry = kind === 'docx' ? 'word/document.xml' : 'content.xml';
       const unpacked = spawnSync('unzip', ['-p', output, entry], { encoding: 'utf8' });
       const required =
@@ -494,9 +575,9 @@ if (pandoc.status !== 0) {
           console.log('template examples: LibreOffice/PDF tools are absent, so ODT rendering was skipped');
         }
       }
-      if (outputFolder !== null) {
-        rmSync(outputFolder, { recursive: true, force: true });
-      }
+    }
+    if (outputFolder !== null) {
+      rmSync(outputFolder, { recursive: true, force: true });
     }
   }
 }

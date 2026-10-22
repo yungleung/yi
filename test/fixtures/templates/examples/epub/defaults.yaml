@@ -1,5 +1,12 @@
 standalone: true
 toc: true
 toc-depth: 2
+shift-heading-level-by: 0
+epub-title-page: true
+epub-chapter-level: 1
+epub-cover-image: assets/cover.svg
+css:
+  - assets/book.css
 metadata:
-  subject: Example EPUB export
+  subject: A psychological novel about silence, care and a cat
+  toc-title: Contents
