@@ -391,6 +391,19 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error article.tex
 
 Without `latexmk`, run `pdflatex`, `bibtex`, and then `pdflatex` twice more.
 
+If `latexmk` reports `LaTeX didn't generate the expected log file`, verify the TeX engine directly:
+
+```sh
+/Library/TeX/texbin/pdflatex -interaction=nonstopmode -halt-on-error article.tex
+```
+
+This means `latexmk` did not receive a normal engine log; it is not evidence of a template or
+bibliography error. If `pdflatex` reports `Operation not permitted` for a `.fls`, `.log` or output
+file, the process cannot write to the source folder. That commonly happens in a restricted or
+sandboxed terminal, or when macOS has denied folder access. Compile from an ordinary Terminal
+window with the source folder accessible, then run `latexmk` again to complete BibTeX and the
+remaining reruns.
+
 ### Native BibTeX source
 
 Some journals expect citations to remain as TeX citation commands and the bibliography to be built

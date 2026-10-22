@@ -53,6 +53,20 @@ export BSTINPUTS=".:bibliography:"
 latexmk -pdf -interaction=nonstopmode -halt-on-error note.tex
 ```
 
+If `latexmk` reports `LaTeX didn't generate the expected log file 'note.log'`, run `pdflatex`
+directly once:
+
+```sh
+/Library/TeX/texbin/pdflatex -interaction=nonstopmode -halt-on-error note.tex
+```
+
+That message means the engine did not reach normal TeX processing; it is not a template error. An
+error such as `pdflatex: pdflatexNNNN.fls: Operation not permitted` means the process cannot write
+to the source folder, commonly because it was launched from a restricted/sandboxed terminal or
+macOS denied access to the folder. Run the command from an ordinary Terminal window with the project
+folder accessible, then run `latexmk` again. If `pdflatex` succeeds and creates `note.log`, the
+subsequent `latexmk` pass performs the BibTeX reruns.
+
 The figure's SVG is the editable source; `rsvg-convert -f pdf -o figures/cmb-spectrum.pdf
 figures/cmb-spectrum.svg` regenerates the vector PDF.
 

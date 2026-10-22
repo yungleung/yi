@@ -65,8 +65,16 @@ for (const kind of kinds) {
   }
   if (kind === 'latex') {
     const entry = readFileSync(join(folder, 'template.tex'), 'utf8');
+    const guide = readFileSync(join(folder, 'README.md'), 'utf8');
     const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
     const examplePath = join(folder, 'example.md');
+    check(
+      'latex: the guide diagnoses a missing latexmk log with direct pdflatex',
+      /LaTeX didn't generate the expected log file/.test(guide) &&
+        /pdflatex -interaction=nonstopmode -halt-on-error note\.tex/.test(guide) &&
+        /Operation not permitted/.test(guide) &&
+        /restricted\/sandboxed terminal/.test(guide)
+    );
     check('latex: the package has a complete example markdown', existsSync(examplePath));
     check(
       'latex: the package has a bibliography, bibliography style and vector figure',

@@ -80,6 +80,14 @@ if (existsSync(file)) {
       /\.assets\//.test(text)
   );
   check(
+    'the missing latexmk log and direct pdflatex diagnosis are explained',
+    /LaTeX didn't generate the expected log file/.test(text) &&
+      /pdflatex -interaction=nonstopmode -halt-on-error article\.tex/.test(text) &&
+      /Operation not permitted/.test(text) &&
+      /restricted or\s+sandboxed terminal/i.test(text) &&
+      /macOS has denied folder access/i.test(text)
+  );
+  check(
     'the optional package files and their precedence are explicit',
     /metadata\.yaml/.test(text) &&
       /export\.yaml/.test(text) &&
