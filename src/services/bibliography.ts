@@ -15,11 +15,10 @@
  * re-render.
  */
 import { BaseDirectory, watch } from '@tauri-apps/plugin-fs';
-import { Cite, plugins, type CiteInstance } from '@citation-js/core';
-import '@citation-js/plugin-csl';
-import '@citation-js/plugin-bibtex';
+import { plugins, type CiteInstance } from '@citation-js/core';
 import { readBibliography } from '../api/bibliography';
 import { parseCitation, type CitationItem } from '../citations/parse';
+import { loadCitationLibrary } from '../citations/library';
 import { referenceIds } from './citation_reference';
 import { CITATION_CONFIG_CHANGED, configManager } from './config_manager';
 import { eventManager } from './event_manager';
@@ -75,7 +74,7 @@ export class BibliographyManager {
   private async doLoad(): Promise<boolean> {
     try {
       const content = await readBibliography();
-      bibliography = buildCite(content);
+      bibliography = loadCitationLibrary(content)?.cite ?? null;
       // Previous renders may have cached raw fallbacks; formatting data changed.
       formatCache.clear();
       referenceCache.clear();
@@ -305,26 +304,6 @@ export class BibliographyManager {
 
 /** The app-wide bibliography manager singleton. */
 export const bibliographyManager = new BibliographyManager();
-
-function buildCite(content: string): CiteInstance | null {
-  try {
-    const trimmed = content.trim();
-    if (trimmed.startsWith('[')) {
-      // CSL-JSON export (Zotero): use `citation-key` as the lookup id.
-      const items = (JSON.parse(trimmed) as Array<Record<string, unknown>>).map(
-        (item) => ({
-          ...item,
-          id: item['citation-key'] ?? item.id
-        })
-      );
-      return new Cite(items);
-    }
-    // BibTeX (or another format citation-js understands).
-    return new Cite(trimmed);
-  } catch {
-    return null;
-  }
-}
 
 function joinNarrative(authorOnly: string, full: string): string {
   if (!full.startsWith('(') || !full.endsWith(')')) {

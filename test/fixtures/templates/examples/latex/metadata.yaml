@@ -1,6 +1,23 @@
-title: Example LaTeX note
-author: Example Author
-date: 2026-10-21
+title: A Wideband Transition-Edge Search for Cosmic Microwave Background Spectral Distortions
+author:
+  - name: Elena M. Hart
+    affiliation: Department of Physics and Astronomy, Northridge University, Northridge, California 91330, USA
+    email: elena.hart@northridge.example
+  - name: Mateo R. Silva
+    affiliation: Kestrel Institute for Millimeter Astronomy, Pasadena, California 91125, USA
+    email: mateo.silva@kestrel.example
+  - name: Priya N. Rao
+    affiliation: Cosmology Group, Lakeview University, Madison, Wisconsin 53706, USA
+    email: priya.rao@lakeview.example
+date: 2026-10-22
+abstract: |
+  We report a wideband search for small spectral distortions in the cosmic microwave background
+  using transition-edge sensors observed from a high-altitude site. The data constrain the
+  chemical-potential distortion, $|\mu| < 2.4 \times 10^{-5}$ at 95% confidence, and demonstrate
+  that on-chip calibration suppresses atmospheric and instrumental residuals to below the
+  photon-noise floor over the 90--353 GHz band.
 keywords:
-  - example
-  - latex
+  - cosmic microwave background
+  - spectral distortions
+  - transition-edge sensors
+lang: en

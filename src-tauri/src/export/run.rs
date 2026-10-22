@@ -29,6 +29,15 @@ pub struct ExportOutcome {
     pub warnings: Vec<String>,
 }
 
+/// The filtered BibTeX for a native-BibTeX package, and where its template expects it.
+#[derive(Debug, serde::Deserialize)]
+pub struct NativeBibliography {
+    /// A `/`-separated path inside the output folder, conventionally `references.bib`.
+    pub path: String,
+    /// The cited entries already converted from the reader's selected library.
+    pub text: String,
+}
+
 /// The note to write and where to write it, as the window asks for it.
 #[derive(Debug, serde::Deserialize)]
 pub struct ExportRequest {
@@ -91,6 +100,10 @@ pub struct ExportRequest {
     /// command-line value is explicit so an older defaults file cannot silently turn it back on.
     #[serde(default)]
     pub self_contained: bool,
+    /// The cited part of the reader's selected library, for a LaTeX package that keeps native
+    /// `\cite` and BibTeX instead of citeproc. The window computes this from the Markdown parse.
+    #[serde(default)]
+    pub native_bibliography: Option<NativeBibliography>,
 }
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
@@ -308,34 +321,38 @@ pub(super) fn pandoc_arguments(
         arguments.push(joined);
         }
     }
+    let native_bibliography = kind.kind == "latex" && request.native_bibliography.is_some();
     // The library and the style the note's citations were formatted from. Pandoc appends the
     // reference list itself once it has a bibliography, so what is owed at the end of the document
-    // is what citing the note in the app already showed the reader.
-    if let Some(library) = request
-        .bibliography
-        .as_deref()
-        .filter(|path| Path::new(path).exists())
-    {
-        arguments.push(OsString::from("--bibliography"));
-        arguments.push(OsString::from(library));
-        // The list pandoc appends is a section of the document, and a section has a name. Pandoc
-        // leaves it unnamed unless it is told one, which reads as a page of references with nothing
-        // introducing them.
-        if let Some(title) = request.references.as_deref().filter(|title| !title.is_empty()) {
-            arguments.push(OsString::from("--metadata"));
-            arguments.push(OsString::from(format!("reference-section-title={title}")));
+    // is what citing the note in the app already showed the reader. A native-BibTeX package keeps
+    // those arguments out of Pandoc: its template owns the bibliography directive.
+    if !native_bibliography {
+        if let Some(library) = request
+            .bibliography
+            .as_deref()
+            .filter(|path| Path::new(path).exists())
+        {
+            arguments.push(OsString::from("--bibliography"));
+            arguments.push(OsString::from(library));
+            // The list pandoc appends is a section of the document, and a section has a name. Pandoc
+            // leaves it unnamed unless it is told one, which reads as a page of references with nothing
+            // introducing them.
+            if let Some(title) = request.references.as_deref().filter(|title| !title.is_empty()) {
+                arguments.push(OsString::from("--metadata"));
+                arguments.push(OsString::from(format!("reference-section-title={title}")));
+            }
+            // And whether the reader wants that list at all: `suppress-bibliography` is *metadata* —
+            // measured, the same word under `variables:` leaves the list exactly where it was — so it is
+            // asked for beside the list's own name rather than as a variable.
+            if request.suppress_references {
+                arguments.push(OsString::from("--metadata"));
+                arguments.push(OsString::from("suppress-bibliography=true"));
+            }
         }
-        // And whether the reader wants that list at all: `suppress-bibliography` is *metadata* —
-        // measured, the same word under `variables:` leaves the list exactly where it was — so it is
-        // asked for beside the list's own name rather than as a variable.
-        if request.suppress_references {
-            arguments.push(OsString::from("--metadata"));
-            arguments.push(OsString::from("suppress-bibliography=true"));
+        if let Some(style) = &request.csl {
+            arguments.push(OsString::from("--csl"));
+            arguments.push(ensure_csl_in(dir, style)?.into_os_string());
         }
-    }
-    if let Some(style) = &request.csl {
-        arguments.push(OsString::from("--csl"));
-        arguments.push(ensure_csl_in(dir, style)?.into_os_string());
     }
     if let Some((package, manifest)) = template {
         match manifest.mode {
@@ -488,13 +505,73 @@ pub(super) fn deliver_latex_assets(
     let folder = output
         .parent()
         .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
+    let native = request
+        .native_bibliography
+        .as_ref()
+        .map(|bibliography| {
+            safe_bibliography_path(&bibliography.path).map(|path| (bibliography, path))
+        })
+        .transpose()?;
     for name in asset_names(manifest) {
+        if native
+            .as_ref()
+            .is_some_and(|(bibliography, _)| bibliography.path == name)
+        {
+            continue;
+        }
         copy_asset(
             &super::templates::manifest_file(package, &name),
             &folder.join(&name),
         )?;
     }
+    if let Some((bibliography, path)) = native {
+        let target = folder.join(path);
+        if target.is_dir() {
+            return Err(crate::i18n::now(
+                "template.outputConflict",
+                &[("file", &target.display().to_string())],
+            ));
+        }
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                crate::i18n::now(
+                    "export.cannotMake",
+                    &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
+                )
+            })?;
+        }
+        crate::files::write_atomically(&target, &bibliography.text).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+            )
+        })?;
+    }
     Ok(())
+}
+
+/// A native bibliography is a relative `.bib` inside the output folder, never an absolute path or a
+/// climb out of the source tree the reader will compile.
+fn safe_bibliography_path(path: &str) -> Result<PathBuf, String> {
+    let candidate = Path::new(path);
+    let safe = !path.is_empty()
+        && !path.contains('\\')
+        && !candidate.is_absolute()
+        && candidate
+            .components()
+            .all(|component| matches!(component, std::path::Component::Normal(_)))
+        && candidate
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("bib"));
+    if safe {
+        Ok(candidate.to_path_buf())
+    } else {
+        Err(crate::i18n::now(
+            "template.badPath",
+            &[("file", path)],
+        ))
+    }
 }
 
 /// An HTML page that is not self-contained keeps its relative links, so the assets go beside it

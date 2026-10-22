@@ -1,4 +1,8 @@
 standalone: true
+top-level-division: default
+shift-heading-level-by: 0
 highlight-style: pygments
-metadata:
-  subject: Example LaTeX export
+filters:
+  - tools/revtex-table.lua
+cite-method: natbib
+bibliography: references.bib

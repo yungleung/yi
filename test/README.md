@@ -44,6 +44,7 @@ methodology; this file is the index and the conventions.
 | `check-spaced-destinations.mjs` | What the parser makes of a path with spaces in it, in an image or a link (`syntax/spaced_destinations.ts`): the run is the node it names wherever it stands, the words around it stay text, a title after the path is the title, the `%20` spelling stays a link, and an escaped `\![` or a run in code is left as the characters it is |
 | `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): the two delimiter lines with the caret on the blank line between them, the blank lines markdown needs around the block, `---` only at the very top of a note, and the ordinary typing everything else stays |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
+| `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
@@ -54,7 +55,7 @@ methodology; this file is the index and the conventions.
 | `check-table-source.mjs` | Reading and writing a table's raw source |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
-| `check-template-examples.mjs` | One complete, readable template package for each export kind under `test/fixtures/templates/examples/`: manifest and entry agreement, assets, metadata/defaults YAML, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, DOCX/ODT XML style checks, and an A4 ODT render when the tools are installed |
+| `check-template-examples.mjs` | One complete, readable template package for each export kind under `test/fixtures/templates/examples/`: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
@@ -68,7 +69,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and thirty-one of them (`probe:all` runs 202 and skips 29, each skip for the reason its
+two hundred and thirty-two of them (`probe:all` runs 203 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -234,7 +235,9 @@ the library's inspect-then-import, CodeMirror, an atomic save, validation and th
 entry's folder as the engine's working directory with the package root on `TEXINPUTS`, which is what
 finds both `sampleteaser.pdf` and `acmart.cls` for nested entries), with
 `export-template-broken` holding a newer manifest to the sentence it names and the library row it
-can still be removed from;
+can still be removed from; `export-template-native-bibliography` drives the PRL package through the
+ordinary export card with a selected `.bib` and then a CSL-JSON library, proving both become a
+cited-only `references.bib` in the output tree;
 `export-citations` — the three citation forms nobody had asked citeproc about, read through an EPUB
 because a book is a zip and `lib.js: zipEntry` inflates its pages: a locator lands where citeproc's
 grammar expects it (`(Smith, 2020, p. 45)`), a suppressed author leaves a parenthetical with the year and

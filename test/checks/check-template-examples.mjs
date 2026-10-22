@@ -5,7 +5,15 @@
  * When Pandoc is available the check also converts one paragraph through the text templates and
  * reference documents, so an example cannot drift into something that merely looks plausible.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -52,6 +60,71 @@ for (const kind of kinds) {
           ['# Prologue', '# The Animal Between Us', '# Epilogue'].every((heading) =>
             source.includes(heading)
           )
+      );
+    }
+  }
+  if (kind === 'latex') {
+    const entry = readFileSync(join(folder, 'template.tex'), 'utf8');
+    const defaults = parse(readFileSync(join(folder, 'defaults.yaml'), 'utf8'));
+    const examplePath = join(folder, 'example.md');
+    check('latex: the package has a complete example markdown', existsSync(examplePath));
+    check(
+      'latex: the package has a bibliography, bibliography style and vector figure',
+      ['references.bib', 'bibliography/apsrev4-2.bst', 'figures/cmb-spectrum.pdf'].every(
+        (file) => existsSync(join(folder, file))
+      )
+    );
+    check(
+      'latex: the template reads metadata instead of naming the example authors',
+      ['$title$', '$date$', '$abstract$', '$for(author)$', '$author.name$', '$author.affiliation$', '$author.email$'].every(
+        (variable) => entry.includes(variable)
+      ) &&
+        !/Cosmic Microwave Background|Elena M\. Hart|Mateo R\. Silva|Priya N\. Rao/.test(entry)
+    );
+    check(
+      'latex: native BibTeX and unshifted headings are declared in package defaults',
+      Array.isArray(defaults.filters) &&
+        defaults.filters.includes('tools/revtex-table.lua') &&
+        defaults['cite-method'] === 'natbib' &&
+        defaults.bibliography === 'references.bib' &&
+        defaults['shift-heading-level-by'] === 0
+    );
+    if (existsSync(examplePath)) {
+      const example = readFileSync(examplePath, 'utf8');
+      const frontmatter = /^---\n([\s\S]*?)\n---/.exec(example)?.[1] ?? '';
+      const metadata = parse(frontmatter);
+      const authors = Array.isArray(metadata.author) ? metadata.author : [];
+      check(
+        'latex: the metadata carries three authors with distinct institutions and emails',
+        authors.length === 3 &&
+          authors.every(
+            (author) =>
+              typeof author.name === 'string' &&
+              typeof author.affiliation === 'string' &&
+              typeof author.email === 'string'
+          ) &&
+          new Set(authors.map((author) => author.affiliation)).size === 3 &&
+          new Set(authors.map((author) => author.email)).size === 3
+      );
+      const introduction = /^# Introduction\n([\s\S]*?)(?=^# )/m.exec(example)?.[1] ?? '';
+      const cited = [...introduction.matchAll(/@([A-Za-z0-9_:#$%&+?<>~./-]+)/g)].map(
+        (match) => match[1]
+      );
+      check(
+        'latex: the introduction carries at least five distinct citations',
+        new Set(cited).size >= 5
+      );
+      check(
+        'latex: the main text has a figure, a table and mathematics',
+        /!\[[^\]]*\]\(figures\/cmb-spectrum\.pdf\)/.test(example) &&
+          /^\| /m.test(example) &&
+          /\$\$[\s\S]*?\\mu|\\Delta|\\chi\^2[\s\S]*?\$\$/.test(example) &&
+          !/: Table 1\./i.test(example)
+      );
+      const bibliography = readFileSync(join(folder, 'references.bib'), 'utf8');
+      check(
+        'latex: every cited key has a BibTeX entry',
+        [...new Set(cited)].every((key) => new RegExp(`@\\w+\\{${key},`).test(bibliography))
       );
     }
   }
@@ -329,7 +402,7 @@ if (pandoc.status !== 0) {
     }
     const example = join(folder, 'example.md');
     const input =
-      (kind === 'html' || kind === 'epub' || kind === 'docx' || kind === 'odt') &&
+      (kind === 'html' || kind === 'latex' || kind === 'epub' || kind === 'docx' || kind === 'odt') &&
       existsSync(example)
         ? readFileSync(example, 'utf8')
         : '# Example\n\nOne paragraph.\n';
@@ -344,6 +417,64 @@ if (pandoc.status !== 0) {
         (output === null ? converted.stdout.length > 0 : existsSync(output)),
       converted.stderr.trim()
     );
+    if (kind === 'latex' && converted.status === 0) {
+      check(
+        'latex: Pandoc writes native citations into the REVTeX source',
+        converted.stdout.includes('\\documentclass[') &&
+          converted.stdout.includes('revtex4-2}') &&
+          converted.stdout.includes('\\citep{penzias1965, dicke1965}') &&
+          converted.stdout.includes('\\bibliography{references}') &&
+          !converted.stdout.includes('\\section*{References}')
+      );
+      const tools = spawnSync('latexmk', ['-v'], { encoding: 'utf8' });
+      if (tools.status === 0) {
+        const latexFolder = mkdtempSync(join(tmpdir(), 'yi-template-latex-compile-'));
+        mkdirSync(join(latexFolder, 'figures'), { recursive: true });
+        mkdirSync(join(latexFolder, 'bibliography'), { recursive: true });
+        writeFileSync(join(latexFolder, 'note.tex'), converted.stdout);
+        copyFileSync(join(folder, 'references.bib'), join(latexFolder, 'references.bib'));
+        copyFileSync(
+          join(folder, 'figures/cmb-spectrum.pdf'),
+          join(latexFolder, 'figures/cmb-spectrum.pdf')
+        );
+        copyFileSync(
+          join(folder, 'bibliography/apsrev4-2.bst'),
+          join(latexFolder, 'bibliography/apsrev4-2.bst')
+        );
+        const compiled = spawnSync(
+          'latexmk',
+          ['-pdf', '-interaction=nonstopmode', '-halt-on-error', '-file-line-error', 'note.tex'],
+          {
+            cwd: latexFolder,
+            encoding: 'utf8',
+            env: {
+              ...process.env,
+              BIBINPUTS: '.:bibliography:',
+              BSTINPUTS: '.:bibliography:'
+            }
+          }
+        );
+        const fullLog = existsSync(join(latexFolder, 'note.log'))
+          ? readFileSync(join(latexFolder, 'note.log'), 'utf8')
+          : compiled.stdout;
+        const errorAt = fullLog.indexOf('\n!');
+        const log = errorAt === -1 ? fullLog.slice(-2000) : fullLog.slice(errorAt, errorAt + 3000);
+        check(
+          'latex: the exported source compiles through REVTeX and BibTeX',
+          compiled.status === 0 && existsSync(join(latexFolder, 'note.pdf')),
+          log
+        );
+        check(
+          'latex: the compiled PRL source has no overfull boxes or unresolved references',
+          !/Overfull \\hbox/.test(fullLog) &&
+            !/undefined (?:references|citations)|Citation .* undefined/i.test(fullLog),
+          log
+        );
+        rmSync(latexFolder, { recursive: true, force: true });
+      } else {
+        console.log('template examples: latexmk is absent, so the REVTeX compile was skipped');
+      }
+    }
     if (kind === 'html' && converted.status === 0) {
       const html = converted.stdout;
       const nav = /<aside\b[^>]*>[\s\S]*?<nav id="TOC"[\s\S]*?<\/nav>[\s\S]*?<\/aside>/.exec(

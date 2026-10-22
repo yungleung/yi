@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <title>Illustrative CMB spectral-distortion residuals</title>
+  <desc>Two panels showing a Planck spectrum and measured residuals around the best-fit chemical-potential distortion.</desc>
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <g font-family="Georgia, 'Times New Roman', serif" fill="#20242a">
+    <text x="88" y="52" font-size="28" font-weight="600">Planck spectrum</text>
+    <text x="88" y="404" font-size="28" font-weight="600">Residual after 2.725 K subtraction</text>
+
+    <g stroke="#303640" stroke-width="2" fill="none">
+      <path d="M110 96 V330 H540"/>
+      <path d="M110 464 V698 H540"/>
+    </g>
+    <g stroke="#d7dbe0" stroke-width="1">
+      <path d="M110 138 H540 M110 180 H540 M110 222 H540 M110 264 H540 M110 306 H540"/>
+      <path d="M196 464 V698 M282 464 V698 M368 464 V698 M454 464 V698"/>
+    </g>
+    <g font-size="17" fill="#4c525b">
+      <text x="244" y="736">Frequency (GHz)</text>
+      <text x="20" y="230" transform="rotate(-90 20 230)">Intensity (arb. units)</text>
+      <text x="244" y="366">Frequency (GHz)</text>
+      <text x="20" y="590" transform="rotate(-90 20 590)">Residual (kJy sr⁻¹)</text>
+      <text x="96" y="352">80</text>
+      <text x="176" y="352">150</text>
+      <text x="263" y="352">220</text>
+      <text x="348" y="352">280</text>
+      <text x="434" y="352">353</text>
+      <text x="488" y="352">500</text>
+      <text x="96" y="720">80</text>
+      <text x="176" y="720">150</text>
+      <text x="263" y="720">220</text>
+      <text x="348" y="720">280</text>
+      <text x="434" y="720">353</text>
+      <text x="488" y="720">500</text>
+      <text x="638" y="302">150</text>
+      <text x="632" y="344">100</text>
+      <text x="648" y="386">50</text>
+    </g>
+
+    <path
+      d="M110 314 C132 282 151 238 181 187 C210 137 247 120 286 121 C334 123 379 151 425 192 C466 229 504 278 540 320"
+      fill="none"
+      stroke="#0b6e99"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+    <circle cx="181" cy="187" r="5" fill="#0b6e99"/>
+    <circle cx="286" cy="121" r="5" fill="#0b6e99"/>
+    <circle cx="425" cy="192" r="5" fill="#0b6e99"/>
+    <text x="392" y="104" font-size="18" fill="#0b6e99">2.725 K blackbody</text>
+
+    <path d="M110 581 H540" stroke="#959ba4" stroke-width="2" stroke-dasharray="8 8"/>
+    <path
+      d="M112 578 C145 586 172 602 200 615 C236 631 272 634 308 624 C350 612 395 582 438 553 C474 529 508 514 540 506"
+      fill="none"
+      stroke="#b24c32"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+
+    <g stroke="#20242a" stroke-width="2" fill="#20242a">
+      <path d="M178 649 V589 M266 611 V549 M354 573 V509 M442 605 V545 M486 628 V568"/>
+      <circle cx="178" cy="619" r="7"/>
+      <circle cx="266" cy="580" r="7"/>
+      <circle cx="354" cy="541" r="7"/>
+      <circle cx="442" cy="575" r="7"/>
+      <circle cx="486" cy="598" r="7"/>
+    </g>
+    <text x="595" y="493" font-size="18" fill="#b24c32">best-fit μ model</text>
+    <text x="595" y="521" font-size="18" fill="#20242a">weighted band residuals</text>
+
+    <g transform="translate(668 100)">
+      <rect x="0" y="0" width="452" height="500" rx="18" fill="#f5f7f8" stroke="#c9ced4" stroke-width="2"/>
+      <text x="34" y="54" font-size="24" font-weight="600">Illustrative fit</text>
+      <text x="34" y="102" font-size="19" fill="#4c525b">Chemical potential</text>
+      <text x="34" y="153" font-size="38" fill="#b24c32">μ = −1.7 × 10⁻⁵</text>
+      <text x="34" y="188" font-size="20" fill="#4c525b">± 0.7 × 10⁻⁵</text>
+      <path d="M34 220 H418" stroke="#c9ced4" stroke-width="2"/>
+      <text x="34" y="268" font-size="19" fill="#4c525b">No-distortion fit</text>
+      <text x="34" y="311" font-size="31">2.4σ disfavored</text>
+      <path d="M34 344 H418" stroke="#c9ced4" stroke-width="2"/>
+      <text x="34" y="392" font-size="19" fill="#4c525b">Compton y</text>
+      <text x="34" y="436" font-size="31">(0.2 ± 1.1) × 10⁻⁶</text>
+      <text x="34" y="476" font-size="17" fill="#6b7179">Representative values; not a new measurement.</text>
+    </g>
+  </g>
+</svg>

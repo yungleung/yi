@@ -1,24 +1,32 @@
 {
   "schema": 1,
   "id": "example-latex",
-  "name": "Example LaTeX template",
+  "name": "Physical Review Letters template",
   "kind": "latex",
   "mode": "template",
   "origin": {
     "type": "folder",
     "path": "test/fixtures/templates/examples/latex",
-    "source": null,
-    "license": "CC0-1.0"
+    "source": "https://journals.aps.org/prl/authors#style-and-formatting",
+    "license": "CC0-1.0; apsrev4-2.bst under LPPL-1.3-or-later"
   },
   "template": "template.tex",
   "reference_doc": null,
   "csl": null,
   "assets": [
-    "example.sty",
-    "references.bst"
+    "README.md",
+    "bibliography/apsrev4-2.bst",
+    "defaults.yaml",
+    "example.md",
+    "figures/cmb-spectrum.pdf",
+    "figures/cmb-spectrum.svg",
+    "metadata.yaml",
+    "references.bib",
+    "tools/revtex-table.lua"
   ],
   "deliver": [
-    "example.sty",
-    "references.bst"
+    "bibliography/apsrev4-2.bst",
+    "figures/cmb-spectrum.pdf",
+    "references.bib"
   ]
 }

@@ -502,6 +502,19 @@ chapter links to an `assets/` folder, copies the package's web resources there a
 `content.opf`. DOCX, ODT and PDF are containers and need no sidecars. The app never runs TeX's
 unrestricted shell escape or `tlmgr`, and it does not download journal kits.
 
+**A native-BibTeX LaTeX package receives a cited-only bibliography from Settings → Citation.**
+`src/ui/export/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`
+target and a filter list that does not contain `citeproc` (the example also sets
+`cite-method: natbib`). It reads citation keys through the same Markdown parser the editor uses,
+filters the selected BibTeX or CSL-JSON library, and converts the result to BibTeX. The shared
+`src/citations/library.ts` owns the `citation-key`-then-`id` rule for both editor formatting and
+this export. `ExportRequest.native_bibliography` carries the generated text and relative target;
+`run.rs` omits the ordinary `--bibliography`/`--csl` citeproc arguments, refuses a target outside
+the output folder, skips the package's sample file, and writes the generated `.bib` beside the
+`.tex`. Missing cited keys and a missing citation-tab selection are reported rather than silently
+falling back. `export-template-native-bibliography.js` drives both a `.bib` and CSL-JSON selection
+through the running app and proves uncited works do not reach the source tree.
+
 The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
 session document. It lists the package's files, shows binaries read-only with *Open in system*, saves
@@ -512,7 +525,8 @@ details, duplicate, remove), the confirmation is `import_dialog.ts`, and the man
 by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
 `export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
 `export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
-`export-template-pdf.js`.
+`export-template-pdf.js`; `export-template-native-bibliography.js` covers cited-only BibTeX source
+packaging, and `template-examples.js` validates and exports the six authoring examples.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

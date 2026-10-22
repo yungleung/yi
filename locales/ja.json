@@ -81,6 +81,8 @@
   "export.replaceConfig": "同梱のファイルに置き換え",
   "export.replaceQuestion": "{path} をこのビルド同梱の内容に置き換えますか？変更した内容は失われます。",
   "export.noReferences": "参考文献一覧を付けない",
+  "export.bibliographyRequired": "このテンプレートは BibTeX ソースを書き出します。エクスポート前に「設定 → 引用」で参考文献ファイルを選択してください。",
+  "export.bibliographyMissing": "次の引用キーが選択した参考文献にありません: {keys}",
   "export.paper": "用紙サイズ",
   "export.paperOwn": "設定ファイルのまま",
   "export.orientation": "向き",

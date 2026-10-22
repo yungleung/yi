@@ -81,6 +81,8 @@
   "export.replaceConfig": "Remplacer par le fichier fourni",
   "export.replaceQuestion": "Remplacer votre copie de {path} par celle fournie avec cette version ? Vos modifications seront perdues.",
   "export.noReferences": "Aucune liste de références",
+  "export.bibliographyRequired": "Ce modèle produit un fichier source BibTeX. Sélectionnez une bibliographie dans Réglages → Citations avant l’exportation.",
+  "export.bibliographyMissing": "Ces clés citées sont absentes de la bibliographie sélectionnée : {keys}",
   "export.paper": "Format du papier",
   "export.paperOwn": "Celui du fichier de réglages",
   "export.orientation": "Orientation",

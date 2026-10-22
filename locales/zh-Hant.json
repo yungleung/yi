@@ -81,6 +81,8 @@
   "export.replaceConfig": "取代為隨附的檔案",
   "export.replaceQuestion": "用此版本隨附的內容取代 {path} 嗎？你對它的修改將會遺失。",
   "export.noReferences": "不附參考文獻列表",
+  "export.bibliographyRequired": "此範本會寫入 BibTeX 原始檔。匯出前請先在「設定 → 引用」中選擇參考文獻庫。",
+  "export.bibliographyMissing": "選取的參考文獻庫缺少這些引用鍵：{keys}",
   "export.paper": "紙張大小",
   "export.paperOwn": "沿用設定檔",
   "export.orientation": "方向",

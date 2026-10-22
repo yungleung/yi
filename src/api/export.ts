@@ -65,6 +65,12 @@ export interface ExportOutcome {
   warnings: string[];
 }
 
+/** The filtered BibTeX a native-LaTeX package receives and the relative path it expects. */
+export interface NativeBibliography {
+  path: string;
+  text: string;
+}
+
 /** One export to run: the note's text, the kind, and where the output goes. */
 export interface ExportRequest {
   kind: string;
@@ -97,6 +103,8 @@ export interface ExportRequest {
   template_id: string | null;
   /** Whether an HTML page embeds its local files. The card's box is off by default. */
   self_contained: boolean;
+  /** The cited entries from the selected library, for a package that keeps native BibTeX. */
+  native_bibliography: NativeBibliography | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

@@ -16,7 +16,7 @@ declare module '@citation-js/core' {
 
   export interface CiteInstance {
     data: unknown[];
-    format(format: 'citation' | 'bibliography', options?: CiteFormatOptions): string;
+    format(format: 'citation' | 'bibliography' | 'bibtex', options?: CiteFormatOptions): string;
   }
 
   interface CiteConstructor {

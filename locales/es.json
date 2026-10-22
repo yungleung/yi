@@ -81,6 +81,8 @@
   "export.replaceConfig": "Reemplazar por el archivo incluido",
   "export.replaceQuestion": "¿Reemplazar tu copia de {path} por la incluida en esta versión? Lo que hayas cambiado se perderá.",
   "export.noReferences": "Sin lista de referencias",
+  "export.bibliographyRequired": "Esta plantilla genera un archivo fuente BibTeX. Selecciona una bibliografía en Ajustes → Citas antes de exportar.",
+  "export.bibliographyMissing": "Estas claves citadas no están en la bibliografía seleccionada: {keys}",
   "export.paper": "Tamaño de página",
   "export.paperOwn": "El del archivo de ajustes",
   "export.orientation": "Orientación",

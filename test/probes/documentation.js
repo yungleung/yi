@@ -72,6 +72,7 @@
         '## Package YAML',
         '## Author HTML templates',
         '## Author LaTeX and PDF templates',
+        '### Native BibTeX source',
         '## Author EPUB templates',
         '## Author Word and OpenDocument templates',
         '## Package checklist'

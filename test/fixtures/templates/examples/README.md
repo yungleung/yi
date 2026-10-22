@@ -6,7 +6,7 @@ read and copy, while still using the real manifest, entry, metadata and defaults
 | Directory | Entry | Use it to learn |
 | --- | --- | --- |
 | `html/` | `template.html` | A Bootstrap technical blog with a sidebar table of contents |
-| `latex/` | `template.tex` | A standalone template and files delivered beside `.tex` |
+| `latex/` | `template.tex` | A three-author PRL/REVTeX source package with native cited-only BibTeX |
 | `pdf/` | `template.tex` | The same Pandoc contract with a PDF engine |
 | `epub/` | `template.xhtml` | A three-chapter novel with cover, front matter and visible contents |
 | `docx/` | `reference.docx` | Word styles from a binary reference document; `example.md` exercises all of them |

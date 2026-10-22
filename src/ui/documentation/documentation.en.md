@@ -331,6 +331,30 @@ Use `$body$` exactly once. Other Pandoc variables such as `$title$`, `$author$`,
 manual. Yi does not rewrite or inject compatibility preambles into your template. If a command used
 by the document is missing upstream, validation or TeX reports it.
 
+For a journal with separate institutions and emails, keep the author data in frontmatter and let the
+template emit it:
+
+```yaml
+author:
+  - name: Ada Example
+    affiliation: Department of Physics, First University
+    email: ada@first.example
+  - name: Bo Example
+    affiliation: Institute for Astronomy, Second University
+    email: bo@second.example
+```
+
+```tex
+$for(author)$
+\author{$author.name$}
+$if(author.email)$\email{$author.email$}$endif$
+$if(author.affiliation)$\affiliation{$author.affiliation$}$endif$
+$endfor$
+```
+
+Do not put the example paper's title, names, institutions or emails in the template itself. That
+makes the package appear to work in validation while silently replacing another note's author data.
+
 ### LaTeX output
 
 LaTeX export copies the complete package asset tree beside the `.tex` output, not only the files in
@@ -340,6 +364,7 @@ sources. The output is a source package the reader can compile:
 ```text
 article/
   article.tex
+  references.bib
   journal.cls
   journal.bst
   figures/
@@ -347,8 +372,39 @@ article/
 ```
 
 The manifest's `deliver` field documents the class and bibliography-style subset that belongs with
-the submission. A different file already at the destination is never overwritten; Yi reports the
-conflict.
+the submission. A different non-generated file already at the destination is never overwritten; Yi
+reports the conflict. The generated `references.bib` described below belongs to the export and is
+replaced when the note is exported again.
+
+### Native BibTeX source
+
+Some journals expect citations to remain as TeX citation commands and the bibliography to be built
+by BibTeX. A package opts into that source mode in `defaults.yaml`:
+
+```yaml
+filters: []
+cite-method: natbib
+bibliography: references.bib
+```
+
+The value of `bibliography` is the relative path the template refers to, conventionally:
+
+```tex
+\bibliographystyle{apsrev4-2}
+\bibliography{references}
+```
+
+The file bundled in the package is an authoring sample. At export time the library selected in
+**Settings → Citation** is authoritative. Yi reads the citation keys from the actual Markdown
+parse, keeps only those works, and writes them to the declared `references.bib` beside the `.tex`.
+A selected BibTeX library is filtered to the cited entries. A selected CSL-JSON library is also
+converted to BibTeX, using `citation-key` when present and the item's `id` otherwise. Uncited works
+never enter the exported bibliography.
+
+The package may list other filters instead of an empty list; the native path is selected when the
+filter list does not contain `citeproc`. With no bibliography selected and citations present,
+export reports that a library is required instead of substituting the package's example. Citation
+keys missing from the selected library are reported as export warnings.
 
 ### PDF output
 
@@ -563,9 +619,12 @@ Include:
 - `template.tex`, a standalone Pandoc template containing `$body$` exactly once;
 - `journal.sty` for the package's article styling;
 - `journal.bst` for the bibliography style;
-- `defaults.yaml` with `standalone: true`, `shift-heading-level-by: 0`, and only the highlighting or
-  metadata settings the template requires;
-- `metadata.yaml` with representative article metadata;
+- `references.bib` as authoring sample data, plus at least one figure under `figures/`;
+- `defaults.yaml` with `standalone: true`, `shift-heading-level-by: 0`,
+  `bibliography: references.bib`, `cite-method: natbib`, no `citeproc` filter, and only the other
+  settings the template requires;
+- `metadata.yaml` with representative article metadata, including three authors whose names,
+  affiliations and email addresses are distinct;
 - `example.md` using only Markdown supported by Yi; and
 - `README.md` identifying `journal.sty` and `journal.bst` as assets to deliver beside the exported
   `.tex` file.
@@ -576,7 +635,8 @@ Use the ordinary Pandoc highlighting variables when needed; do not add a compati
 notes. Keep every local reference inside the package with `/`-separated relative paths. Do not
 create `template.json`; Yi writes it on import. Do not download journal assets, install TeX
 packages, run `tlmgr`, enable shell escape, or use unrestricted `\write18`. Run Pandoc and, when
-available, a TeX compile, then report the files and results.
+available, a TeX compile, then report the files and results. Keep the title, authors and
+affiliations out of the template: they must come from note metadata.
 ```
 
 #### Example prompt: PDF
@@ -689,6 +749,10 @@ embedded assets in LibreOffice or OnlyOffice; report any tooling that was unavai
 The Word package also contains `example.md`. Open it as a note and export it as Word to inspect every
 reference style: title metadata, all nine heading levels, first and body paragraphs, lists, code,
 math, quotes, footnotes, captions, a figure, definitions and a bibliography.
+
+The LaTeX package's `example.md` is a three-author PRL paper. Export it as LaTeX, set the Citation
+tab to its `references.bib`, and the output folder contains the generated `.tex`, a cited-only
+`references.bib`, `figures/cmb-spectrum.pdf`, and `bibliography/apsrev4-2.bst`.
 
 ## Validate before using a template
 

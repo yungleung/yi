@@ -20,9 +20,25 @@
   const folder = `${home}/${folderName}`;
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
+  const readText = async (path) => {
+    const bytes = await invoke('plugin:fs|read_text_file', { path });
+    return new TextDecoder().decode(bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes));
+  };
+  const exists = async (path) => {
+    try {
+      return await invoke('plugin:fs|exists', { path });
+    } catch {
+      return false;
+    }
+  };
   const examples = [
     ['html', 'template.html', 'template', 'Models, Agents, and the Harness Between Them'],
-    ['latex', 'template.tex', 'template', 'Example LaTeX note'],
+    [
+      'latex',
+      'template.tex',
+      'template',
+      'A Wideband Transition-Edge Search for Cosmic Microwave Background Spectral Distortions'
+    ],
     ['pdf', 'template.tex', 'template', 'Example PDF note'],
     ['epub', 'template.xhtml', 'template', 'The Animal Between Us'],
     ['docx', 'reference.docx', 'reference-doc', 'Example Word document'],
@@ -75,6 +91,77 @@
       }
       const validated = await api.validateTemplate(pkg.id);
       check(`${kind}: Pandoc validates the complete example`, validated.ok, validated);
+      if (kind === 'latex') {
+        const source = await api.readTemplateFile(pkg.id, 'example.md');
+        const entry = await api.readTemplateFile(pkg.id, 'template.tex');
+        await t.load(source);
+        check(
+          'latex: the example carries three authors and a real PRL manuscript',
+          ['Elena M. Hart', 'Mateo R. Silva', 'Priya N. Rao'].every((name) =>
+            source.includes(`name: ${name}`)
+          ) &&
+            source.includes('# Introduction') &&
+            source.includes('figures/cmb-spectrum.pdf') &&
+            source.includes(': Representative observing bands') &&
+            !entry.includes('Elena M. Hart')
+        );
+        const native = await t.app('/src/ui/export/native_bibliography.ts');
+        const selectedLibrary = await readText(
+          `${checkout}test/fixtures/templates/examples/latex/references.bib`
+        );
+        const packaged = native.packageCitedBibliography(
+          selectedLibrary,
+          native.citedKeys(source)
+        );
+        const targetFolder = `${folder}/prl-source`;
+        const target = `${targetFolder}/paper.tex`;
+        await files.createEntry(folder, 'prl-source', false);
+        await exportApi.runExport({
+          kind: 'latex',
+          text: source,
+          output_path: target,
+          resource_paths: [],
+          source_dir: null,
+          bibliography: `${checkout}test/fixtures/templates/examples/latex/references.bib`,
+          csl: null,
+          references: null,
+          title: 'A Wideband Transition-Edge Search for Cosmic Microwave Background Spectral Distortions',
+          language: 'en',
+          paper: null,
+          landscape: null,
+          suppress_references: false,
+          template_id: pkg.id,
+          self_contained: false,
+          native_bibliography: { path: 'references.bib', text: packaged.text }
+        });
+        const tex = await readText(target);
+        const bibliography = await readText(`${targetFolder}/references.bib`);
+        check(
+          'latex: the exported source uses metadata, native citations and the PRL class',
+          tex.includes('\\documentclass[') &&
+            tex.includes('revtex4-2}') &&
+            ['Elena M. Hart', 'Mateo R. Silva', 'Priya N. Rao'].every((name) =>
+              tex.includes(`\\author{${name}}`)
+            ) &&
+            /\\(?:cite|citep)\{penzias1965/.test(tex) &&
+            tex.includes('\\includegraphics') &&
+            tex.includes('\\begin{table*}') &&
+            tex.includes('\\bibliography{references}') &&
+            !tex.includes('\\section*{References}')
+        );
+        check(
+          'latex: the exported bibliography contains only the keys cited by the note',
+          ['penzias1965', 'dicke1965', 'mather1994', 'smoot1992', 'fixsen2009', 'planck2020'].every(
+            (key) => bibliography.includes(`{${key},`)
+          ) && !bibliography.includes('uncited2024'),
+          bibliography
+        );
+        check(
+          'latex: the journal source tree carries the figure, style and REVTeX bibliography style',
+          (await exists(`${targetFolder}/figures/cmb-spectrum.pdf`)) &&
+            (await exists(`${targetFolder}/bibliography/apsrev4-2.bst`))
+        );
+      }
       if (kind === 'html') {
         const source = await api.readTemplateFile(pkg.id, 'example.md');
         await t.load(source);
@@ -103,19 +190,6 @@
           template_id: pkg.id,
           self_contained: false
         });
-        const readText = async (path) => {
-          const bytes = await invoke('plugin:fs|read_text_file', { path });
-          return new TextDecoder().decode(
-            bytes instanceof ArrayBuffer ? bytes : Uint8Array.from(bytes)
-          );
-        };
-        const exists = async (path) => {
-          try {
-            return await invoke('plugin:fs|exists', { path });
-          } catch {
-            return false;
-          }
-        };
         const page = await readText(pagePath);
         const nav = /<aside\b[^>]*>[\s\S]*?<nav id="TOC"[\s\S]*?<\/nav>[\s\S]*?<\/aside>/.exec(
           page

@@ -45,6 +45,7 @@ if (existsSync(file)) {
     'Import a template kit',
     'Author HTML templates',
     'Author LaTeX and PDF templates',
+    'Native BibTeX source',
     'Author EPUB templates',
     'Author Word and OpenDocument templates',
     'Package YAML',
@@ -64,6 +65,13 @@ if (existsSync(file)) {
   check(
     'both reference-document kinds are named',
     /reference\.docx/.test(text) && /reference\.odt/.test(text)
+  );
+  check(
+    'native LaTeX bibliography packaging is explained',
+    /cite-method: natbib/.test(text) &&
+      /bibliography: references\.bib/.test(text) &&
+      /citation-key/.test(text) &&
+      /only those works|only the cited|uncited works/i.test(text)
   );
   check(
     'the optional package files and their precedence are explicit',
