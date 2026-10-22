@@ -4,6 +4,7 @@
 //! regular, inside the source, and reported by a safe relative package path.
 
 use super::ScannedFile;
+use super::archive;
 use std::fs;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
@@ -33,7 +34,7 @@ pub(crate) fn list_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
     let files = if source.is_dir() {
         folder_files(source)?
     } else if source_type(source) == "zip" {
-        super::zip_files(source)?
+        archive::list_files(source)?
     } else {
         single_file(source)?
     };
@@ -83,7 +84,7 @@ pub(crate) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
         });
     }
     if source_type(source) == "zip" {
-        return super::read_zip_file(source, name);
+        return archive::read_file(source, name);
     }
     let path = single_name(source)?;
     if name != path {
@@ -115,7 +116,7 @@ pub(crate) fn copy_into(source: &Path, target: &Path) -> Result<(), String> {
         )
     })?;
     if source_type(source) == "zip" {
-        return super::extract_zip(source, target);
+        return archive::extract(source, target);
     }
     let files = list_files(source)?;
     for file in files {
