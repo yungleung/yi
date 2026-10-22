@@ -103,6 +103,15 @@ if (existsSync(file)) {
       /wins over|takes precedence/i.test(text)
   );
   check(
+    'the manifest CSL override is distinguished from a defaults fallback',
+    /`csl` optionally names a package CSL file/.test(text) &&
+      /applies it after the reader's selected CSL/i.test(text) &&
+      /only a fallback/i.test(text) &&
+      /set the style file in the\s+manifest's `csl` field/i.test(text) &&
+      /runs the filter twice/i.test(text) &&
+      /duplicate references/i.test(text)
+  );
+  check(
     'it explains when to use wrapper mode instead of template mode',
     /### Wrapper mode/.test(text) &&
       /complete LaTeX document/i.test(text) &&

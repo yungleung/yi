@@ -179,6 +179,9 @@ The important fields are:
 - `assets` uses `/`-separated paths relative to the package root.
 - `deliver` is the subset copied beside a LaTeX output so the reader's own TeX installation can
   find classes and bibliography styles.
+- `csl` optionally names a package CSL file. Yi applies it after the reader's selected CSL, so this
+  field is how a template enforces its own citation style. Leave it `null` to follow Settings →
+  Citation.
 - `origin` records provenance and licence for the reader; the package does not keep using the
   original source path.
 
@@ -569,6 +572,14 @@ If a package contains `export.yaml`, Yi passes that file to Pandoc after the app
 Package defaults therefore win over the app defaults, but explicit command-line paths and options
 still take precedence: output, the chosen template or reference document, CSL and resource paths.
 Filters, metadata files and resource-path entries are resolved from the package root.
+
+This precedence matters for citation styles. A `csl` entry in `export.yaml` or `defaults.yaml` is
+only a fallback: when the reader has a CSL selected in Settings → Citation, Yi passes that selected
+style later and it wins. To make a package enforce its own citation style, set the style file in the
+manifest's `csl` field instead. That package CSL is applied after the reader's style.
+
+Do not add citeproc to package defaults to change citation behavior. Yi already supplies citeproc
+for Pandoc-written files; adding it again runs the filter twice and can duplicate references.
 
 Use the package file for settings that belong to the package:
 

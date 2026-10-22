@@ -500,6 +500,12 @@ JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/n
 `/notes/note/note.html`, with `note.assets/` and the template's files inside it. When the box is
 off, the page keeps relative links. The bundle always receives the package's whole asset tree,
 whether or not the page also embedded those files; web URLs stay URLs.
+The distinction between the manifest CSL and a `csl` entry in package defaults is the precedence
+the order above creates: a package default is loaded before the reader's explicit `--csl`, while
+the manifest CSL is appended afterward. A template that must enforce its own citation style names
+the file in `template.json`; one that should follow Settings → Citation leaves the manifest `csl`
+null. Do not add a second citeproc filter merely to change style: Yi already supplies citeproc, and
+running it twice duplicates references.
 `ExportRequest.self_contained` becomes an explicit `--embed-resources=true|false`, so an older
 reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pack.rs` rewrites
 chapter links to an `assets/` folder, copies the package's web resources there and declares them in
