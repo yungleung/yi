@@ -9,8 +9,9 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
-use tauri::Manager;
+use std::path::Path;
+#[cfg(test)]
+use std::path::PathBuf;
 
 use super::super::kinds::{kind_of, KindTemplate, TemplateMode};
 use super::manifest::{
@@ -19,21 +20,19 @@ use super::manifest::{
 };
 use super::scan;
 
-/// The subfolder of the export data that holds packages.
-pub(super) fn templates_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let dir = app
-        .path()
-        .app_data_dir()
-        .map(|data| data.join("export").join("templates"))
-        .map_err(|error| crate::i18n::now("export.noDataFolder", &[("reason", &error.to_string())]))?;
-    fs::create_dir_all(&dir).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    Ok(dir)
-}
+mod library;
+mod storage;
+
+pub(super) use library::templates_dir;
+pub(crate) use library::resolve_package;
+pub(super) use library::summary_at;
+pub use library::{duplicate_template, list_templates, remove_template};
+pub(super) use storage::{
+    copy_directory, is_reference_entry, is_text_entry, nanos, package_files, package_path,
+    unique_asset_name, unique_entry_name,
+};
+#[cfg(test)]
+use storage::is_text_name;
 
 /// One file as the package editor lists it.
 #[derive(Debug, Serialize, Clone)]
@@ -88,41 +87,12 @@ pub struct DetailsPatch {
     pub entry: Option<String>,
 }
 
-/// Lists every package, reading only what a summary needs.
-pub fn list_templates(app: &tauri::AppHandle) -> Result<Vec<TemplateSummary>, String> {
-    let dir = templates_dir(app)?;
-    let mut packages = Vec::new();
-    let entries = fs::read_dir(&dir).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    for entry in entries {
-        let Ok(entry) = entry else {
-            continue;
-        };
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if !path.is_dir() || name.starts_with('.') {
-            continue;
-        }
-        packages.push(summary_at(&name, &path));
-    }
-    packages.sort_by(|left, right| {
-        let left_name = left
-            .manifest
-            .as_ref()
-            .map(|manifest| manifest.name.to_lowercase())
-            .unwrap_or_else(|| left.id.clone());
-        let right_name = right
-            .manifest
-            .as_ref()
-            .map(|manifest| manifest.name.to_lowercase())
-            .unwrap_or_else(|| right.id.clone());
-        left_name.cmp(&right_name)
-    });
-    Ok(packages)
+fn clean_option(value: &Option<String>) -> Option<String> {
+    value
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
 }
 
 /// Inspects a source and answers the package the reader would be making from it.
@@ -428,43 +398,6 @@ pub fn create_default(
     built
 }
 
-/// Copies a package under a new id and name, keeping its provenance.
-pub fn duplicate_template(app: &tauri::AppHandle, id: String) -> Result<TemplateSummary, String> {
-    let dir = templates_dir(app)?;
-    let source = package_path(&dir, &id)?;
-    let mut manifest = read_manifest(&source)?;
-    let name = format!("{} copy", manifest.name);
-    let new_id = unique_id(&dir, &name);
-    let target = dir.join(&new_id);
-    copy_directory(&source, &target)?;
-    manifest.id = new_id.clone();
-    manifest.name = name;
-    manifest.origin = TemplateOrigin {
-        source_type: "duplicate".to_string(),
-        path: Some(source.display().to_string()),
-        source: manifest.origin.source,
-        license: manifest.origin.license,
-        imported: Some(today()),
-    };
-    if let Err(error) = write_manifest(&target, &manifest) {
-        let _ = fs::remove_dir_all(&target);
-        return Err(error);
-    }
-    Ok(summary_at(&new_id, &target))
-}
-
-/// Removes one package and everything in it. The caller asks first.
-pub fn remove_template(app: &tauri::AppHandle, id: String) -> Result<(), String> {
-    let dir = templates_dir(app)?;
-    let path = package_path(&dir, &id)?;
-    fs::remove_dir_all(&path).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotDelete",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
-}
-
 /// Updates the manifest's own facts from the details form.
 pub fn update_details(
     app: &tauri::AppHandle,
@@ -624,39 +557,6 @@ pub fn write_template_file(
     })
 }
 
-/// One package's folder, by id. A config value is never trusted as a path.
-pub(crate) fn resolve_package(
-    app: &tauri::AppHandle,
-    id: &str,
-) -> Result<(PathBuf, TemplateManifest), String> {
-    let dir = templates_dir(app)?;
-    let path = package_path(&dir, id)?;
-    let manifest = read_manifest(&path)?;
-    if manifest.id != id {
-        return Err(crate::i18n::now("template.idMismatch", &[("id", id)]));
-    }
-    Ok((path, manifest))
-}
-
-pub(super) fn summary_at(id: &str, path: &Path) -> TemplateSummary {
-    match read_manifest(path) {
-        Ok(manifest) => TemplateSummary {
-            id: manifest.id.clone(),
-            path: path.to_string_lossy().into_owned(),
-            files: package_files(path),
-            manifest: Some(manifest),
-            error: None,
-        },
-        Err(error) => TemplateSummary {
-            id: id.to_string(),
-            path: path.to_string_lossy().into_owned(),
-            files: package_files(path),
-            manifest: None,
-            error: Some(error),
-        },
-    }
-}
-
 /// The names a template may use for the package folder in its own relative links.
 ///
 /// A folder package's original basename is part of the template's own URLs: the Yuki template, for
@@ -729,159 +629,6 @@ fn link_directory(_source: &Path, _target: &Path) -> std::io::Result<()> {
         std::io::ErrorKind::Unsupported,
         "directory links are not supported on this platform",
     ))
-}
-
-fn package_files(path: &Path) -> Vec<TemplateFileInfo> {
-    let mut files = Vec::new();
-    collect_files(path, path, &mut files);
-    files.sort_by(|left, right| left.name.cmp(&right.name));
-    files
-}
-
-fn collect_files(root: &Path, folder: &Path, files: &mut Vec<TemplateFileInfo>) {
-    let Ok(entries) = fs::read_dir(folder) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if name.starts_with('.') {
-            continue;
-        }
-        if path.is_dir() {
-            collect_files(root, &path, files);
-        } else if let Ok(metadata) = fs::symlink_metadata(&path) {
-            if !metadata.is_file() {
-                continue;
-            }
-            let relative = path
-                .strip_prefix(root)
-                .map(|path| path.to_string_lossy().replace('\\', "/"))
-                .unwrap_or_else(|_| name.clone());
-            files.push(TemplateFileInfo {
-                editable: relative != "template.json" && !is_reference_entry(&relative) && is_text_name(&relative),
-                name: relative,
-                size: metadata.len(),
-            });
-        }
-    }
-}
-
-fn package_path(dir: &Path, id: &str) -> Result<PathBuf, String> {
-    if id.is_empty()
-        || id.starts_with('.')
-        || id.contains(['/', '\\'])
-        || !id
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_'))
-    {
-        return Err(crate::i18n::now("template.badId", &[("id", id)]));
-    }
-    let path = dir.join(id);
-    if !path.is_dir() {
-        return Err(crate::i18n::now("template.notFound", &[("id", id)]));
-    }
-    Ok(path)
-}
-
-fn unique_asset_name(assets: &[String], wanted: &str) -> String {
-    if !assets.iter().any(|asset| asset == wanted) {
-        return wanted.to_string();
-    }
-    let stem = Path::new(wanted)
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "source".to_string());
-    let extension = Path::new(wanted)
-        .extension()
-        .map(|extension| extension.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "tex".to_string());
-    let parent = Path::new(wanted).parent().filter(|parent| !parent.as_os_str().is_empty());
-    let mut number = 2;
-    loop {
-        let file = format!("{stem}-{number}.{extension}");
-        let candidate = parent
-            .map(|parent| parent.join(&file).to_string_lossy().replace('\\', "/"))
-            .unwrap_or(file);
-        if !assets.iter().any(|asset| asset == &candidate) {
-            return candidate;
-        }
-        number += 1;
-    }
-}
-
-fn unique_entry_name(assets: &[String], wanted: &str) -> String {
-    unique_asset_name(assets, wanted)
-}
-
-fn is_text_entry(name: &str) -> bool {
-    ["tex", "html", "htm", "xhtml", "txt"]
-        .iter()
-        .any(|extension| extension_of(name) == *extension)
-}
-
-fn is_reference_entry(name: &str) -> bool {
-    matches!(extension_of(name), "docx" | "odt")
-}
-
-fn is_text_name(name: &str) -> bool {
-    matches!(
-        extension_of(name),
-        "tex" | "cls" | "sty" | "bst" | "bbx" | "cbx" | "yaml" | "yml" | "csl"
-            | "html" | "htm" | "xhtml" | "txt" | "md" | "bib" | "json" | "lua"
-    )
-}
-
-fn extension_of(name: &str) -> &str {
-    Path::new(name)
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .unwrap_or("")
-}
-
-fn clean_option(value: &Option<String>) -> Option<String> {
-    value
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
-}
-
-fn copy_directory(source: &Path, target: &Path) -> Result<(), String> {
-    fs::create_dir_all(target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    for entry in fs::read_dir(source).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
-        )
-    })? {
-        let entry = entry.map_err(|error| crate::i18n::now("template.cannotRead", &[("path", &source.display().to_string()), ("reason", &error.to_string())]))?;
-        let path = entry.path();
-        let destination = target.join(entry.file_name());
-        if path.is_dir() {
-            copy_directory(&path, &destination)?;
-        } else {
-            fs::copy(&path, &destination).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
-                )
-            })?;
-        }
-    }
-    Ok(())
-}
-
-fn nanos() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|since| since.as_nanos())
-        .unwrap_or(0)
 }
 
 #[cfg(test)]
