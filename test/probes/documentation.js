@@ -79,6 +79,18 @@
       { length: text.length }
     );
     check(
+      'it gives an AI-agent prompt for every finished template example',
+      [
+        '#### Example prompt: HTML',
+        '#### Example prompt: LaTeX',
+        '#### Example prompt: PDF',
+        '#### Example prompt: EPUB',
+        '#### Example prompt: Word',
+        '#### Example prompt: OpenDocument'
+      ].every((needle) => text.includes(needle)),
+      { length: text.length }
+    );
+    check(
       'it explains when a complete LaTeX sample needs wrapper mode',
       text.includes('### Wrapper mode') &&
         text.includes('complete LaTeX document') &&

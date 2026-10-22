@@ -518,6 +518,174 @@ Each package contains `template.json`, its text entry or binary reference docume
 `defaults.yaml`, `metadata.yaml`, and an explanatory `README.md`. Open those folders as authoring
 references, then import the same folder into Yi to see the package in the Template library.
 
+### Prompts for AI agents
+
+The prompts below ask an AI coding agent to create an importable source folder for each finished
+example. They intentionally leave out `template.json`: Yi inspects the source folder and writes that
+manifest during import. Replace the example folder name and visual direction when adapting a prompt.
+
+#### Example prompt: HTML
+
+```text
+Create an importable Yi HTML template source package in `my-html-template/`, modelled on
+`test/fixtures/templates/examples/html/`. Make a polished technical article or documentation page
+with a responsive main column, a sticky sidebar table of contents, accessible landmarks, and
+print-friendly styles.
+
+Include:
+
+- `template.html`, a Pandoc template containing `$body$` once and `$table-of-contents$` in the
+  sidebar;
+- `defaults.yaml` with `standalone: true`, `toc: true`, and `toc-depth: 2`;
+- `metadata.yaml` with a representative title, subtitle, author, date, description, language, and
+  keywords;
+- `assets/site.css` and `assets/site.js` for package-local styling and active-section highlighting;
+- `example.md` using only Markdown supported by Yi; and
+- `README.md` explaining the files and how to validate and export the package.
+
+Keep asset URLs relative to the package root. A Bootstrap CDN link in the rendered page is allowed,
+but all custom files needed by the design must be in the package. Do not create `template.json`.
+Do not download journal assets, install TeX packages, run `tlmgr`, enable shell escape, or use
+unrestricted `\write18`. Run Pandoc with the package and report the files produced and any check
+that could not run.
+```
+
+#### Example prompt: LaTeX
+
+```text
+Create an importable Yi LaTeX template source package in `my-latex-template/`, modelled on
+`test/fixtures/templates/examples/latex/`. Design a restrained journal-style article with a title,
+author block, abstract, two-level table of contents, highlighted code, figures, tables, footnotes,
+and a bibliography.
+
+Include:
+
+- `template.tex`, a standalone Pandoc template containing `$body$` exactly once;
+- `journal.sty` for the package's article styling;
+- `journal.bst` for the bibliography style;
+- `defaults.yaml` with `standalone: true`, `shift-heading-level-by: 0`, and only the highlighting or
+  metadata settings the template requires;
+- `metadata.yaml` with representative article metadata;
+- `example.md` using only Markdown supported by Yi; and
+- `README.md` identifying `journal.sty` and `journal.bst` as assets to deliver beside the exported
+  `.tex` file.
+
+Do not invent or silently substitute a downloaded journal class. If the design needs a class or
+support file, include an original file or report that the user must supply a trusted licensed copy.
+Use the ordinary Pandoc highlighting variables when needed; do not add a compatibility preamble to
+notes. Keep every local reference inside the package with `/`-separated relative paths. Do not
+create `template.json`; Yi writes it on import. Do not download journal assets, install TeX
+packages, run `tlmgr`, enable shell escape, or use unrestricted `\write18`. Run Pandoc and, when
+available, a TeX compile, then report the files and results.
+```
+
+#### Example prompt: PDF
+
+```text
+Create an importable Yi PDF template source package in `my-pdf-template/`, modelled on
+`test/fixtures/templates/examples/pdf/`. Design a polished academic report for XeLaTeX with a
+title page, abstract, section hierarchy, code highlighting, figures, a table, footnotes, and a
+bibliography.
+
+Include:
+
+- `template.tex`, a standalone Pandoc template containing `$body$` exactly once;
+- `report.sty` for the design and any standard TeX dependencies it declares;
+- `defaults.yaml` with `pdf-engine: xelatex`, `standalone: true`,
+  `shift-heading-level-by: 0`, and only the settings the package genuinely needs;
+- `metadata.yaml` with representative report metadata;
+- `example.md` using only Markdown supported by Yi; and
+- `README.md` explaining the required TeX packages, how to run Validate and Test PDF in Yi, and
+  what the generated document should contain.
+
+The template must work from the package root and must not depend on files outside it. Do not create
+`template.json`; Yi writes it on import. Do not download journal assets, install TeX packages, run
+`tlmgr`, enable shell escape, or use unrestricted `\write18`. If a TeX package is unavailable,
+report it rather than trying to install it. Run the complete Pandoc-to-XeLaTeX path when possible
+and report the output and diagnostics.
+```
+
+#### Example prompt: EPUB
+
+```text
+Create an importable Yi EPUB template source package in `my-epub-template/`, modelled on
+`test/fixtures/templates/examples/epub/`. Design a literary novella with a striking cover, a title
+and imprint page carrying publisher, edition, ISBN, rights, and dedication, followed by three short
+chapters and a visible Contents page.
+
+Include:
+
+- `template.xhtml`, a valid XHTML Pandoc template that handles `coverpage`, `titlepage`, and ordinary
+  chapter pages and contains `$body$` exactly once;
+- `assets/book.css` for the complete reflowable book design;
+- `assets/cover.svg` as the library cover image;
+- `defaults.yaml` with `standalone: true`, `toc: true`, `toc-depth: 2`,
+  `shift-heading-level-by: 0`, `epub-cover-image: assets/cover.svg`, and the needed chapter settings;
+- `metadata.yaml` with title, subtitle, author, language, publisher, identifier, ISBN, rights,
+  dedication, description, and keywords;
+- `example.md` containing three level-one chapters and only Markdown supported by Yi; and
+- `README.md` explaining the front matter, visible contents, cover replacement, and validation.
+
+Keep CSS, images, fonts, and scripts inside the package and use package-relative URLs. Let Pandoc
+generate the EPUB navigation and visible Contents page from the headings. Do not create
+`template.json`; Yi writes it on import. Do not download journal assets, install TeX packages, run
+`tlmgr`, enable shell escape, or use unrestricted `\write18`. Validate the rendered EPUB with
+epubcheck when it is available and report all diagnostics.
+```
+
+#### Example prompt: Word
+
+```text
+Create an importable Yi Word reference-document package in `my-word-template/`, modelled on
+`test/fixtures/templates/examples/docx/`. Design a clean academic or professional report whose
+styles carry title, subtitle, author, date, abstract title, abstract, headings one through nine,
+body and first paragraphs, quotations, code, captions, lists, footnotes, tables, figures, and a
+bibliography.
+
+Include:
+
+- `reference.docx`, generated and inspected with Word-compatible tooling;
+- `defaults.yaml` with `standalone: true`, `toc: true`, and `toc-depth: 2`;
+- `metadata.yaml` demonstrating title, subtitle, author, date, abstract, language, and keywords;
+- `example.md` covering every reference style using only Markdown supported by Yi;
+- `example.svg` for the figure; and
+- `README.md` naming the expected Word styles and explaining how to update the reference document.
+
+Mark the contents and other generated fields for refresh when Word opens the exported document.
+Keep local assets inside the package. Do not create `template.json`; Yi writes it on import. Do not
+download journal assets, install TeX packages, run `tlmgr`, enable shell escape, or use unrestricted
+`\write18`. Export the example with the package when possible, inspect the resulting contents field
+and style set, and report the checks and any unavailable tooling.
+```
+
+#### Example prompt: OpenDocument
+
+```text
+Create an importable Yi OpenDocument reference package in `my-odt-template/`, modelled on
+`test/fixtures/templates/examples/odt/`. Design an A4 academic dissertation with a college-image
+cover, four labelled and underlined lines for author, institution, instructor, and date, a second
+page for the abstract and keywords, a third-page two-level Contents table, and body pages starting
+at page 1.
+
+Include:
+
+- `reference.odt` with the named paragraph, heading, quote, code, caption, table, figure, footnote,
+  bibliography, and page-master styles;
+- `college-cover.svg` as the editable cover source and the embedded raster version used by the ODT;
+- `defaults.yaml` with `standalone: true`, `toc: true`, `toc-depth: 2`, and
+  `shift-heading-level-by: 0`;
+- `metadata.yaml` showing the four cover fields, abstract, keywords, language, and title;
+- `example.md` using only Markdown supported by Yi;
+- `example.svg` for the figure; and
+- `README.md` explaining the page masters, automatic contents field, and body-only page numbering.
+
+The cover, abstract, and contents pages must not show page numbers. Keep local assets inside the
+package. Do not create `template.json`; Yi writes it on import. Do not download journal assets,
+install TeX packages, run `tlmgr`, enable shell escape, or use unrestricted `\write18`. Export the
+example when possible and verify the visible two-level Contents table, page numbering, cover, and
+embedded assets in LibreOffice or OnlyOffice; report any tooling that was unavailable.
+```
+
 The Word package also contains `example.md`. Open it as a note and export it as Word to inspect every
 reference style: title metadata, all nine heading levels, first and body paragraphs, lists, code,
 math, quotes, footnotes, captions, a figure, definitions and a bibliography.

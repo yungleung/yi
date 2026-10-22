@@ -100,6 +100,23 @@ if (existsSync(file)) {
     'the document points readers at the complete fixture packages',
     text.includes('test/fixtures/templates/examples')
   );
+  const prompts = ['HTML', 'LaTeX', 'PDF', 'EPUB', 'Word', 'OpenDocument'];
+  for (const kind of prompts) {
+    check(
+      `it has a copy-ready ${kind} prompt`,
+      new RegExp(`^#### Example prompt: ${kind}$`, 'm').test(text)
+    );
+  }
+  check(
+    'every example prompt leaves the package manifest to Yi',
+    (text.match(/Do not\s+create\s+`template\.json`/g) ?? []).length === prompts.length
+  );
+  check(
+    'the prompts repeat the package safety boundaries',
+    (text.match(/do not\s+download|never download/gi) ?? []).length >= prompts.length &&
+      (text.match(/tlmgr/g) ?? []).length >= prompts.length &&
+      (text.match(/shell\s+escape/gi) ?? []).length >= prompts.length
+  );
   check(
     'it contains no unfinished placeholders',
     !/\b(?:TODO|TBD|FIXME)\b/.test(text)
