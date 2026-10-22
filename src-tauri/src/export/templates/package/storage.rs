@@ -107,8 +107,23 @@ pub(crate) fn is_reference_entry(name: &str) -> bool {
 pub(crate) fn is_text_name(name: &str) -> bool {
     matches!(
         extension_of(name),
-        "tex" | "cls" | "sty" | "bst" | "bbx" | "cbx" | "yaml" | "yml" | "csl"
-            | "html" | "htm" | "xhtml" | "txt" | "md" | "bib" | "json" | "lua"
+        "tex"
+            | "cls"
+            | "sty"
+            | "bst"
+            | "bbx"
+            | "cbx"
+            | "yaml"
+            | "yml"
+            | "csl"
+            | "html"
+            | "htm"
+            | "xhtml"
+            | "txt"
+            | "md"
+            | "bib"
+            | "json"
+            | "lua"
     )
 }
 
@@ -123,16 +138,30 @@ pub(crate) fn copy_directory(source: &Path, target: &Path) -> Result<(), String>
     fs::create_dir_all(target).map_err(|error| {
         crate::i18n::now(
             "template.cannotMake",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &target.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     for entry in fs::read_dir(source).map_err(|error| {
         crate::i18n::now(
             "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })? {
-        let entry = entry.map_err(|error| crate::i18n::now("template.cannotRead", &[("path", &source.display().to_string()), ("reason", &error.to_string())]))?;
+        let entry = entry.map_err(|error| {
+            crate::i18n::now(
+                "template.cannotRead",
+                &[
+                    ("path", &source.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
+            )
+        })?;
         let path = entry.path();
         let destination = target.join(entry.file_name());
         if path.is_dir() {
@@ -141,7 +170,10 @@ pub(crate) fn copy_directory(source: &Path, target: &Path) -> Result<(), String>
             fs::copy(&path, &destination).map_err(|error| {
                 crate::i18n::now(
                     "template.cannotWrite",
-                    &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
+                    &[
+                        ("path", &destination.display().to_string()),
+                        ("reason", &error.to_string()),
+                    ],
                 )
             })?;
         }

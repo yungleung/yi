@@ -9,9 +9,9 @@
 // regular file inside the source, named by a relative path that cannot leave the package.
 
 use serde::Serialize;
-use std::path::Path;
 #[cfg(test)]
 use std::fs;
+use std::path::Path;
 #[cfg(test)]
 use std::path::PathBuf;
 
@@ -22,11 +22,11 @@ mod detection;
 mod source;
 mod wrapper;
 
+pub(super) use detection::deliver_for;
 #[cfg(test)]
 use source::list_files;
 #[allow(unused_imports)]
-pub(super) use source::{copy_into, read_file, relative, source_type, MAX_BYTES, MAX_FILES};
-pub(super) use detection::deliver_for;
+pub(super) use source::{MAX_BYTES, MAX_FILES, copy_into, read_file, relative, source_type};
 pub(super) use wrapper::{insert_body, replace_argument, wrapper_entry, wrapper_source};
 
 /// What a source looks like before the reader says which export kind it is for.
@@ -91,8 +91,7 @@ pub(super) fn inspect(source: &Path) -> Result<ScannedSource, String> {
     let wrapper = match detection.mode {
         TemplateMode::Wrapper => source::read_text(source, &detection.entry)
             .ok()
-            .map(|text| wrapper::proposal(&detection.entry, &text))
-            .transpose()?,
+            .and_then(|text| wrapper::proposal(&detection.entry, &text).ok()),
         _ => None,
     };
 

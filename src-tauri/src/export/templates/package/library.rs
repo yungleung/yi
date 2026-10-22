@@ -3,10 +3,10 @@
 //! May import: std, tauri, manifest rules and storage helpers. Upholds: package ids resolve only
 //! below the app export template directory and broken packages remain listable for removal.
 
-use super::storage::{copy_directory, package_files, package_path};
 use super::TemplateSummary;
+use super::storage::{copy_directory, package_files, package_path};
 use crate::export::templates::manifest::{
-    read_manifest, today, unique_id, write_manifest, TemplateManifest, TemplateOrigin,
+    TemplateManifest, TemplateOrigin, read_manifest, today, unique_id, write_manifest,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,11 +18,16 @@ pub(crate) fn templates_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .path()
         .app_data_dir()
         .map(|data| data.join("export").join("templates"))
-        .map_err(|error| crate::i18n::now("export.noDataFolder", &[("reason", &error.to_string())]))?;
+        .map_err(|error| {
+            crate::i18n::now("export.noDataFolder", &[("reason", &error.to_string())])
+        })?;
     fs::create_dir_all(&dir).map_err(|error| {
         crate::i18n::now(
             "template.cannotMake",
-            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &dir.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     Ok(dir)
@@ -35,7 +40,10 @@ pub fn list_templates(app: &tauri::AppHandle) -> Result<Vec<TemplateSummary>, St
     let entries = fs::read_dir(&dir).map_err(|error| {
         crate::i18n::now(
             "template.cannotRead",
-            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &dir.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     for entry in entries {
@@ -97,7 +105,10 @@ pub fn remove_template(app: &tauri::AppHandle, id: String) -> Result<(), String>
     fs::remove_dir_all(&path).map_err(|error| {
         crate::i18n::now(
             "template.cannotDelete",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &path.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })
 }

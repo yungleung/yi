@@ -25,15 +25,17 @@ pub(crate) use alias::{alias_names, stage_alias};
 pub use editor::{
     read_package_file as read_template_file, write_package_file as write_template_file,
 };
-pub use import::{create_default, import_template, inspect_template, update_details, wrapper_preview};
+pub use import::{
+    create_default, import_template, inspect_template, update_details, wrapper_preview,
+};
 pub(crate) use library::resolve_package;
 pub use library::{duplicate_template, list_templates, remove_template};
+#[cfg(test)]
+use storage::is_text_name;
 #[cfg(test)]
 pub(super) use storage::{
     is_reference_entry, nanos, package_files, package_path, unique_asset_name,
 };
-#[cfg(test)]
-use storage::is_text_name;
 
 /// One file as the package editor lists it.
 #[derive(Debug, Serialize, Clone)]

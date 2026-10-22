@@ -13,10 +13,7 @@ pub(super) fn proposal(source_entry: &str, text: &str) -> Result<WrapperProposal
     Ok(WrapperProposal {
         source_entry: source_entry.to_string(),
         entry: wrapper_entry(source_entry),
-        insertion: crate::i18n::now(
-            "template.insertBeforeEnd",
-            &[("line", &line.to_string())],
-        ),
+        insertion: crate::i18n::now("template.insertBeforeEnd", &[("line", &line.to_string())]),
         preview,
         maps_title: has_command(text, "\\title"),
         maps_author: has_command(text, "\\author"),

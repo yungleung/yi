@@ -9,10 +9,10 @@ use super::storage::{
     unique_entry_name,
 };
 use super::{DetailsPatch, ImportRequest, TemplateSummary};
-use crate::export::kinds::{kind_of, KindTemplate, TemplateMode};
+use crate::export::kinds::{KindTemplate, TemplateMode, kind_of};
 use crate::export::templates::manifest::{
-    file_in, read_manifest, relative_path, today, unique_id, write_manifest, TemplateManifest,
-    TemplateOrigin, MANIFEST_SCHEMA,
+    MANIFEST_SCHEMA, TemplateManifest, TemplateOrigin, file_in, read_manifest, relative_path,
+    today, unique_id, write_manifest,
 };
 use crate::export::templates::scan;
 use std::fs;
@@ -69,7 +69,10 @@ pub fn import_template(
         .clone()
         .unwrap_or_else(|| scanned.entry.clone());
     if !scanned.files.iter().any(|file| file.name == entry) {
-        return Err(crate::i18n::now("template.entryMissing", &[("file", &entry)]));
+        return Err(crate::i18n::now(
+            "template.entryMissing",
+            &[("file", &entry)],
+        ));
     }
     let text_entry = is_text_entry(&entry);
     let reference_entry = is_reference_entry(&entry);
@@ -78,19 +81,19 @@ pub fn import_template(
             return Err(crate::i18n::now(
                 "template.noTemplateKind",
                 &[("kind", kind.kind)],
-            ))
+            ));
         }
         KindTemplate::ReferenceDoc if !reference_entry => {
             return Err(crate::i18n::now(
                 "template.entryNotReference",
                 &[("file", &entry)],
-            ))
+            ));
         }
         KindTemplate::Text if !text_entry => {
             return Err(crate::i18n::now(
                 "template.entryNotText",
                 &[("file", &entry)],
-            ))
+            ));
         }
         _ => {}
     }
@@ -283,7 +286,7 @@ pub fn create_default(
             return Err(crate::i18n::now(
                 "template.noTemplateKind",
                 &[("kind", kind.kind)],
-            ))
+            ));
         }
     };
     let bytes = match kind.template_mode {
@@ -409,19 +412,19 @@ pub fn update_details(
             return Err(crate::i18n::now(
                 "template.noTemplateKind",
                 &[("kind", kind.kind)],
-            ))
+            ));
         }
         KindTemplate::ReferenceDoc if !reference => {
             return Err(crate::i18n::now(
                 "template.entryNotReference",
                 &[("file", &entry)],
-            ))
+            ));
         }
         KindTemplate::Text if reference => {
             return Err(crate::i18n::now(
                 "template.entryNotText",
                 &[("file", &entry)],
-            ))
+            ));
         }
         _ => {}
     }

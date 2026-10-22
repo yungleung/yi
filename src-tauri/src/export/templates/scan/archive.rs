@@ -15,13 +15,19 @@ pub(super) fn list_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
     let file = fs::File::open(source).map_err(|error| {
         crate::i18n::now(
             "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut archive = zip::ZipArchive::new(file).map_err(|error| {
         crate::i18n::now(
             "template.badZip",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut files = Vec::new();
@@ -29,7 +35,10 @@ pub(super) fn list_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
         let entry = archive.by_index(index).map_err(|error| {
             crate::i18n::now(
                 "template.badZip",
-                &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+                &[
+                    ("path", &source.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
             )
         })?;
         if zip_symlink(&entry) {
@@ -54,19 +63,28 @@ pub(super) fn list_files(source: &Path) -> Result<Vec<ScannedFile>, String> {
     if files.len() > MAX_FILES {
         return Err(crate::i18n::now(
             "template.tooManyFiles",
-            &[("count", &files.len().to_string()), ("limit", &MAX_FILES.to_string())],
+            &[
+                ("count", &files.len().to_string()),
+                ("limit", &MAX_FILES.to_string()),
+            ],
         ));
     }
     if bytes > MAX_BYTES {
         return Err(crate::i18n::now(
             "template.tooLarge",
-            &[("size", &bytes.to_string()), ("limit", &MAX_BYTES.to_string())],
+            &[
+                ("size", &bytes.to_string()),
+                ("limit", &MAX_BYTES.to_string()),
+            ],
         ));
     }
     let mut seen = HashSet::new();
     for file in &files {
         if !seen.insert(file.name.clone()) {
-            return Err(crate::i18n::now("template.duplicateFile", &[("file", &file.name)]));
+            return Err(crate::i18n::now(
+                "template.duplicateFile",
+                &[("file", &file.name)],
+            ));
         }
     }
     files.sort_by(|left, right| left.name.cmp(&right.name));
@@ -111,9 +129,9 @@ fn strip_single_root(files: &mut Vec<ScannedFile>) {
     };
     let root = first.name.split('/').next().unwrap_or("");
     if root.is_empty()
-        || files.iter().any(|file| {
-            file.name.split('/').next() != Some(root) || !file.name.contains('/')
-        })
+        || files
+            .iter()
+            .any(|file| file.name.split('/').next() != Some(root) || !file.name.contains('/'))
     {
         return;
     }
@@ -131,22 +149,37 @@ pub(super) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
     let file = fs::File::open(source).map_err(|error| {
         crate::i18n::now(
             "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut archive = zip::ZipArchive::new(file).map_err(|error| {
         crate::i18n::now(
             "template.badZip",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut found: Vec<ZipEntry> = Vec::new();
     for index in 0..archive.len() {
         let entry = archive.by_index(index).map_err(|error| {
-            crate::i18n::now("template.badZip", &[("path", &source.display().to_string()), ("reason", &error.to_string())])
+            crate::i18n::now(
+                "template.badZip",
+                &[
+                    ("path", &source.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
+            )
         })?;
         if zip_symlink(&entry) {
-            return Err(crate::i18n::now("template.symlink", &[("path", entry.name())]));
+            return Err(crate::i18n::now(
+                "template.symlink",
+                &[("path", entry.name())],
+            ));
         }
         if entry.is_dir() {
             continue;
@@ -163,9 +196,20 @@ pub(super) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
     let found = found
         .into_iter()
         .find(|candidate| candidate.name == name)
-        .ok_or_else(|| crate::i18n::now("template.cannotRead", &[("path", name), ("reason", "not in source")]))?;
+        .ok_or_else(|| {
+            crate::i18n::now(
+                "template.cannotRead",
+                &[("path", name), ("reason", "not in source")],
+            )
+        })?;
     let mut entry = archive.by_index(found.index).map_err(|error| {
-        crate::i18n::now("template.badZip", &[("path", &source.display().to_string()), ("reason", &error.to_string())])
+        crate::i18n::now(
+            "template.badZip",
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
+        )
     })?;
     let mut bytes = Vec::new();
     entry
@@ -181,7 +225,10 @@ pub(super) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
     if bytes.len() as u64 > MAX_BYTES {
         return Err(crate::i18n::now(
             "template.tooLarge",
-            &[("size", &bytes.len().to_string()), ("limit", &MAX_BYTES.to_string())],
+            &[
+                ("size", &bytes.len().to_string()),
+                ("limit", &MAX_BYTES.to_string()),
+            ],
         ));
     }
     Ok(bytes)
@@ -219,22 +266,37 @@ pub(super) fn extract(source: &Path, target: &Path) -> Result<(), String> {
     let file = fs::File::open(source).map_err(|error| {
         crate::i18n::now(
             "template.cannotRead",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut archive = zip::ZipArchive::new(file).map_err(|error| {
         crate::i18n::now(
             "template.badZip",
-            &[("path", &source.display().to_string()), ("reason", &error.to_string())],
+            &[
+                ("path", &source.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
         )
     })?;
     let mut found: Vec<ZipEntry> = Vec::new();
     for index in 0..archive.len() {
         let entry = archive.by_index(index).map_err(|error| {
-            crate::i18n::now("template.badZip", &[("path", &source.display().to_string()), ("reason", &error.to_string())])
+            crate::i18n::now(
+                "template.badZip",
+                &[
+                    ("path", &source.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
+            )
         })?;
         if zip_symlink(&entry) {
-            return Err(crate::i18n::now("template.symlink", &[("path", entry.name())]));
+            return Err(crate::i18n::now(
+                "template.symlink",
+                &[("path", entry.name())],
+            ));
         }
         if entry.is_dir() {
             continue;
@@ -251,49 +313,78 @@ pub(super) fn extract(source: &Path, target: &Path) -> Result<(), String> {
     if found.len() > MAX_FILES {
         return Err(crate::i18n::now(
             "template.tooManyFiles",
-            &[("count", &found.len().to_string()), ("limit", &MAX_FILES.to_string())],
+            &[
+                ("count", &found.len().to_string()),
+                ("limit", &MAX_FILES.to_string()),
+            ],
         ));
     }
     let bytes: u64 = found.iter().map(|entry| entry.size).sum();
     if bytes > MAX_BYTES {
         return Err(crate::i18n::now(
             "template.tooLarge",
-            &[("size", &bytes.to_string()), ("limit", &MAX_BYTES.to_string())],
+            &[
+                ("size", &bytes.to_string()),
+                ("limit", &MAX_BYTES.to_string()),
+            ],
         ));
     }
     let mut seen = HashSet::new();
     for found in found {
         if !seen.insert(found.name.clone()) {
-            return Err(crate::i18n::now("template.duplicateFile", &[("file", &found.name)]));
+            return Err(crate::i18n::now(
+                "template.duplicateFile",
+                &[("file", &found.name)],
+            ));
         }
         let destination = target.join(relative(&found.name)?);
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).map_err(|error| {
                 crate::i18n::now(
                     "template.cannotMake",
-                    &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
+                    &[
+                        ("path", &parent.display().to_string()),
+                        ("reason", &error.to_string()),
+                    ],
                 )
             })?;
         }
         let mut entry = archive.by_index(found.index).map_err(|error| {
-            crate::i18n::now("template.badZip", &[("path", &source.display().to_string()), ("reason", &error.to_string())])
+            crate::i18n::now(
+                "template.badZip",
+                &[
+                    ("path", &source.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
+            )
         })?;
         let mut written = fs::File::create(&destination).map_err(|error| {
             crate::i18n::now(
                 "template.cannotWrite",
-                &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
+                &[
+                    ("path", &destination.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
             )
         })?;
-        let copied = std::io::copy(&mut entry.by_ref().take(MAX_BYTES + 1), &mut written).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &destination.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
+        let copied = std::io::copy(&mut entry.by_ref().take(MAX_BYTES + 1), &mut written).map_err(
+            |error| {
+                crate::i18n::now(
+                    "template.cannotWrite",
+                    &[
+                        ("path", &destination.display().to_string()),
+                        ("reason", &error.to_string()),
+                    ],
+                )
+            },
+        )?;
         if copied > MAX_BYTES {
             return Err(crate::i18n::now(
                 "template.tooLarge",
-                &[("size", &copied.to_string()), ("limit", &MAX_BYTES.to_string())],
+                &[
+                    ("size", &copied.to_string()),
+                    ("limit", &MAX_BYTES.to_string()),
+                ],
             ));
         }
     }

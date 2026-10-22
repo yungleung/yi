@@ -470,7 +470,7 @@ file the template names travels too. Pictures the note itself names are made por
 keeps the same relative path and its bytes win, while other local pictures go under
 `<output-stem>.assets/`; Pandoc never sees an absolute note path in the finished `.tex`.
 
-Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
+Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan/mod.rs` reads a single file, a
 folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference
 document, a lone `.csl` is refused, and a lone defaults file is refused in favour of the defaults
 panel. A folder or zip is walked recursively, dot-entries ignored, and the main `.tex` chosen by
@@ -486,6 +486,23 @@ into a hidden staging folder and renamed into place only when complete; absolute
 refused, as are symlinks, more than 2,000 files or 200 MB. `createDefault` is the other factory and
 writes the same shape, from `pandoc --print-default-template` or
 `--print-default-data-file=reference.docx`.
+
+The Rust scan and package facades keep the caller-facing paths stable while their children own one
+rule each:
+
+```text
+scan/archive.rs       ZIP safety and extraction
+scan/detection.rs     entry, kind and mode detection
+scan/source.rs        file/folder listing, limits and copies
+scan/wrapper.rs       complete-document conversion
+package/import.rs     creation, import and details mutation
+package/library.rs    discovery, summaries and resolution
+package/editor.rs     code-panel file access
+package/alias.rs      export-time alias staging
+package/storage.rs    package paths, naming and file classification
+```
+
+`scan/mod.rs` and `package/mod.rs` remain the stable orchestration and IPC-facing boundaries.
 
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
 row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`

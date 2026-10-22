@@ -235,10 +235,7 @@ fn walk_folder(root: &Path, folder: &Path, files: &mut Vec<ScannedFile>) -> Resu
     paths.sort();
     for path in paths {
         let name = path.strip_prefix(root).map_err(|_| {
-            crate::i18n::now(
-                "template.badPath",
-                &[("file", &path.display().to_string())],
-            )
+            crate::i18n::now("template.badPath", &[("file", &path.display().to_string())])
         })?;
         if name
             .components()
@@ -282,7 +279,7 @@ fn package_name(path: &Path) -> Result<String, String> {
                 return Err(crate::i18n::now(
                     "template.badPath",
                     &[("file", &path.display().to_string())],
-                ))
+                ));
             }
         }
     }
