@@ -464,7 +464,10 @@ display name (`-2`, `-3` on collision); it is edited through the details form, a
 read-only view in the package editor. A package belongs to one export kind. `assets` are every other
 file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
 export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
-file the template names travels too.
+file the template names travels too. Pictures the note itself names are made portable by
+`src/ui/export/latex_images.ts` and copied by `run.rs`: a local picture that replaces a package asset
+keeps the same relative path and its bytes win, while other local pictures go under
+`<output-stem>.assets/`; Pandoc never sees an absolute note path in the finished `.tex`.
 
 Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
 folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference

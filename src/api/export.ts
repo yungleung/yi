@@ -71,6 +71,12 @@ export interface NativeBibliography {
   text: string;
 }
 
+/** A note-local picture copied beside a LaTeX source file. */
+export interface NoteAsset {
+  source: string;
+  target: string;
+}
+
 /** One export to run: the note's text, the kind, and where the output goes. */
 export interface ExportRequest {
   kind: string;
@@ -105,6 +111,8 @@ export interface ExportRequest {
   self_contained: boolean;
   /** The cited entries from the selected library, for a package that keeps native BibTeX. */
   native_bibliography: NativeBibliography | null;
+  /** Local pictures referenced by a LaTeX source, copied into the output source tree. */
+  note_assets: NoteAsset[];
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

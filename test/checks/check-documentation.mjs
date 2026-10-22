@@ -74,6 +74,12 @@ if (existsSync(file)) {
       /only those works|only the cited|uncited works/i.test(text)
   );
   check(
+    'LaTeX source pictures and the BibTeX search path are explained',
+    /BSTINPUTS/.test(text) &&
+      /Local pictures named by the note are copied/i.test(text) &&
+      /\.assets\//.test(text)
+  );
+  check(
     'the optional package files and their precedence are explicit',
     /metadata\.yaml/.test(text) &&
       /export\.yaml/.test(text) &&

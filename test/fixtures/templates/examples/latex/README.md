@@ -38,10 +38,19 @@ incompatibility between Pandoc's generated `longtable` specification and REVTeX.
 The exported source can be compiled with
 
 ```sh
+export BSTINPUTS=".:bibliography:"
+
 pdflatex note.tex
 bibtex note
 pdflatex note.tex
 pdflatex note.tex
+```
+
+Or, from the same shell, one command performs the whole sequence:
+
+```sh
+export BSTINPUTS=".:bibliography:"
+latexmk -pdf -interaction=nonstopmode -halt-on-error note.tex
 ```
 
 The figure's SVG is the editable source; `rsvg-convert -f pdf -o figures/cmb-spectrum.pdf

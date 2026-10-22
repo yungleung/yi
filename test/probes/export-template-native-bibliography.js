@@ -39,6 +39,14 @@
       return false;
     }
   };
+  const readBytes = async (path) => {
+    const bytes = await invoke('plugin:fs|read_file', { path });
+    return bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : Uint8Array.from(bytes);
+  };
+  const writeBytes = async (path, bytes) =>
+    await window.__TAURI_INTERNALS__.invoke('plugin:fs|write_file', bytes, {
+      headers: { path: encodeURIComponent(path) }
+    });
   const until = async (ready, tries = 120) => {
     for (let attempt = 0; attempt < tries; attempt += 1) {
       if (await ready()) return true;
@@ -50,12 +58,21 @@
     await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'source', false);
     await files.createEntry(folder, 'json-source', false);
+    await files.createEntry(folder, 'figures', false);
     await files.createEntry(folder, 'paper.md', true);
     await files.createEntry(folder, 'json-paper.md', true);
     const source = await readText(
       `${checkout}test/fixtures/templates/examples/latex/example.md`
     );
     await files.writeTextAtomically(notePath, source);
+    const templatePicture = await readBytes(
+      `${checkout}test/fixtures/templates/examples/latex/figures/cmb-spectrum.pdf`
+    );
+    const noteMarker = new TextEncoder().encode('\n% note-local probe picture\n');
+    const notePicture = new Uint8Array(templatePicture.length + noteMarker.length);
+    notePicture.set(templatePicture);
+    notePicture.set(noteMarker, templatePicture.length);
+    await writeBytes(`${folder}/figures/cmb-spectrum.pdf`, notePicture);
     await t.openWorkspace(folder);
     templateId = (
       await api.importTemplate({
@@ -103,7 +120,9 @@
           tex.includes(`\\author{${name}}`)
         ) &&
         /\\(?:cite|citep)\{penzias1965/.test(tex) &&
-        !tex.includes('\\section*{References}')
+        !tex.includes('\\section*{References}') &&
+        tex.includes(']{figures/cmb-spectrum.pdf}') &&
+        !tex.includes(`${checkout}test/fixtures/templates/examples/latex/figures/cmb-spectrum.pdf`)
     );
     check(
       'the selected library is filtered to exactly the cited works',
@@ -115,7 +134,22 @@
     check(
       'the output carries the official source-tree companions',
       (await exists(`${targetFolder}/figures/cmb-spectrum.pdf`)) &&
-        (await exists(`${targetFolder}/bibliography/apsrev4-2.bst`))
+        (await exists(`${targetFolder}/bibliography/apsrev4-2.bst`)),
+      {
+        figure: await exists(`${targetFolder}/figures/cmb-spectrum.pdf`),
+        bibliography: await exists(`${targetFolder}/bibliography/apsrev4-2.bst`)
+      }
+    );
+    const deliveredPicture = await readBytes(`${targetFolder}/figures/cmb-spectrum.pdf`);
+    check(
+      'the note picture replaces the template picture in the output',
+      deliveredPicture.length === notePicture.length &&
+        deliveredPicture.every((byte, index) => byte === notePicture[index]),
+      {
+        deliveredBytes: deliveredPicture.length,
+        noteBytes: notePicture.length,
+        templateBytes: templatePicture.length
+      }
     );
 
     const jsonSource = `---

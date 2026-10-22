@@ -376,6 +376,21 @@ the submission. A different non-generated file already at the destination is nev
 reports the conflict. The generated `references.bib` described below belongs to the export and is
 replaced when the note is exported again.
 
+Local pictures named by the note are copied into the source folder. A note picture that uses the
+same relative path as a package asset replaces that package copy in the output; other pictures are
+placed under `<output-name>.assets/` and the `.tex` names them relatively. It never keeps a path into
+Yi's package store or the note's original machine location.
+
+To compile a source tree whose bibliography style is in `bibliography/`, tell BibTeX where that
+folder is:
+
+```sh
+export BSTINPUTS=".:bibliography:"
+latexmk -pdf -interaction=nonstopmode -halt-on-error article.tex
+```
+
+Without `latexmk`, run `pdflatex`, `bibtex`, and then `pdflatex` twice more.
+
 ### Native BibTeX source
 
 Some journals expect citations to remain as TeX citation commands and the bibliography to be built

@@ -26,7 +26,8 @@ import {
   exportFontFor,
   exportKinds,
   namedFonts,
-  runExport
+  runExport,
+  type NoteAsset
 } from '../../api/export';
 import { readBibliography } from '../../api/bibliography';
 import { exportTemplates, readTemplateFile, type TemplateSummary } from '../../api/templates';
@@ -52,6 +53,7 @@ import {
 } from './picture_hint';
 import { exportSource } from './preprocess';
 import { forgetRasters, rasterPictures } from './raster_picture';
+import { portableLatexImage } from './latex_images';
 import {
   citedKeys,
   nativeBibliographyTarget,
@@ -128,6 +130,31 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   }
   const outputPath = answer.outputPath;
   const selectedBibliography = await bibliographyPath();
+  // The card may create or import a package after it opened, so its answer is resolved against
+  // the library as it stands now rather than the list the card first drew.
+  const selectedTemplates = answer.templateId === null ? templates : await exportTemplates();
+  const selectedPackage = selectedTemplates.find(
+    (candidate) => candidate.manifest?.id === answer.templateId
+  );
+  const noteAssets: NoteAsset[] = [];
+  const imageTargets = new Map<string, string>();
+  const imageTarget =
+    first.kind === 'latex'
+      ? (file: string, destination: string) => {
+          const plan = portableLatexImage({
+            destination,
+            resolved: file,
+            outputPath,
+            packageRoot: selectedPackage?.path ?? null,
+            packageAssets: selectedPackage?.manifest?.assets ?? [],
+            targets: imageTargets
+          });
+          if (plan.asset !== null) {
+            noteAssets.push(plan.asset);
+          }
+          return plan.path;
+        }
+      : undefined;
 
   /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
   const unfetched: string[] = [];
@@ -190,6 +217,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         return fetchedPicture(url, unfetched);
       },
       rasterised: (destination) => drawn.get(destination) ?? null,
+      imageTarget,
       // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
       // itself has none, so for it the app renders what it already knows — the words a citation
       // reads as in the page (`bibliography.format`) — and lists the works it names under them.
@@ -212,10 +240,6 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // heading, the note's name standing in it when the note writes none (`book_body.ts`). Every
     // other kind's body is the note's own text.
     const body = first.names_its_body ? bodyWithItsName(prepared, title) : prepared;
-    // The card may create or import a package after it opened, so its answer is resolved against
-    // the library as it stands now rather than the list the card first drew.
-    const selectedTemplates =
-      answer.templateId === null ? templates : await exportTemplates();
     const nativeBibliography = await nativeBibliographyFor(
       first.kind,
       answer.templateId,
@@ -245,7 +269,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       native_bibliography:
         nativeBibliography === null
           ? null
-          : { path: nativeBibliography.path, text: nativeBibliography.text }
+          : { path: nativeBibliography.path, text: nativeBibliography.text },
+      note_assets: noteAssets
     });
     const written = fileName(outputPath);
     showHint(

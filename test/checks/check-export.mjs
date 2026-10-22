@@ -81,6 +81,7 @@ const render = async (text, answers = {}) => {
     bases: notes.bases,
     exists: notes.exists,
     fetchRemote: notes.fetchRemote,
+    imageTarget: answers.imageTarget,
     citations: answers.citations ?? null
   });
   return { rendered, asked: notes.asked, looked: notes.looked, fetched: notes.fetched };
@@ -195,6 +196,18 @@ const render = async (text, answers = {}) => {
     files: ['/notes/shot.png']
   });
   check('an image beside the note is written as its own absolute path', rendered, 'Beside the note: ![shot.png](/notes/shot.png)');
+}
+
+{
+  const { rendered } = await render('Beside the note: ![shot.png](shot.png)', {
+    files: ['/notes/shot.png'],
+    imageTarget: (_file, destination) => destination
+  });
+  check(
+    'an exporter with portable assets writes the destination it will copy',
+    rendered,
+    'Beside the note: ![shot.png](shot.png)'
+  );
 }
 
 {

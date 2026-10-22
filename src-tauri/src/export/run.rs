@@ -38,6 +38,13 @@ pub struct NativeBibliography {
     pub text: String,
 }
 
+/// A note-local picture and the relative path a LaTeX source will use for it.
+#[derive(Debug, serde::Deserialize)]
+pub struct NoteAsset {
+    pub source: String,
+    pub target: String,
+}
+
 /// The note to write and where to write it, as the window asks for it.
 #[derive(Debug, serde::Deserialize)]
 pub struct ExportRequest {
@@ -104,6 +111,9 @@ pub struct ExportRequest {
     /// `\cite` and BibTeX instead of citeproc. The window computes this from the Markdown parse.
     #[serde(default)]
     pub native_bibliography: Option<NativeBibliography>,
+    /// Pictures the note refers to, copied into a generated bundle beside a LaTeX source.
+    #[serde(default)]
+    pub note_assets: Vec<NoteAsset>,
 }
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
@@ -255,6 +265,9 @@ fn export_with_pandoc(
                 request,
                 kind,
             )?;
+        }
+        if kind.kind == "latex" {
+            deliver_note_assets(request)?;
         }
         Ok(outcome)
     });
@@ -516,6 +529,10 @@ pub(super) fn deliver_latex_assets(
         if native
             .as_ref()
             .is_some_and(|(bibliography, _)| bibliography.path == name)
+            || request
+                .note_assets
+                .iter()
+                .any(|asset| asset.target == name)
         {
             continue;
         }
@@ -564,6 +581,57 @@ fn safe_bibliography_path(path: &str) -> Result<PathBuf, String> {
             .extension()
             .and_then(|extension| extension.to_str())
             .is_some_and(|extension| extension.eq_ignore_ascii_case("bib"));
+    if safe {
+        Ok(candidate.to_path_buf())
+    } else {
+        Err(crate::i18n::now(
+            "template.badPath",
+            &[("file", path)],
+        ))
+    }
+}
+
+/// A LaTeX note picture is copied under the generated `<stem>.assets/` tree beside its `.tex`.
+pub(super) fn deliver_note_assets(request: &ExportRequest) -> Result<(), String> {
+    if request.note_assets.is_empty() {
+        return Ok(());
+    }
+    let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+    let folder = output
+        .parent()
+        .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
+    for asset in &request.note_assets {
+        let target = folder.join(safe_note_asset_path(&asset.target)?);
+        copy_bundle_asset(Path::new(&asset.source), &target)?;
+    }
+    Ok(())
+}
+
+fn safe_note_asset_path(path: &str) -> Result<PathBuf, String> {
+    let candidate = Path::new(path);
+    let safe = !path.contains('\\')
+        && !candidate.is_absolute()
+        && candidate
+            .components()
+            .all(|component| matches!(component, std::path::Component::Normal(_)))
+        && candidate
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| {
+                matches!(
+                    extension.to_ascii_lowercase().as_str(),
+                    "avif"
+                        | "gif"
+                        | "jpeg"
+                        | "jpg"
+                        | "pdf"
+                        | "png"
+                        | "svg"
+                        | "tif"
+                        | "tiff"
+                        | "webp"
+                )
+            });
     if safe {
         Ok(candidate.to_path_buf())
     } else {

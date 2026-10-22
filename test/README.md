@@ -36,6 +36,7 @@ methodology; this file is the index and the conventions.
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
+| `check-latex-images.mjs` | Where pictures go in a LaTeX source tree (`ui/export/latex_images.ts`): package pictures keep their relative path, a note picture may replace a package asset, and other or unsafe destinations are reduced to unique relative files under `<output>.assets/` |
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
