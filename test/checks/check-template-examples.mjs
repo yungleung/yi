@@ -731,7 +731,7 @@ check(
     'README.md',
     'defaults.yaml',
     'example.md',
-    'ieee.csl.xml',
+    'ieee.csl',
     'metadata.yaml',
     'rho.bib',
     'rho-class/rho.cls',
@@ -768,8 +768,8 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       defaults['shift-heading-level-by'] === 0
   );
   check(
-    'rho-class: the manifest does not override the selected citation style',
-    manifest.csl === null
+    'rho-class: the manifest supplies the package IEEE citation style',
+    manifest.csl === 'ieee.csl'
   );
   check(
     'rho-class: the Pandoc entry takes title, authors, dates and journal fields from metadata',
@@ -811,7 +811,7 @@ if (existsSync(join(rhoClass, 'template.json'))) {
         `--template=${join(rhoClass, 'template.tex')}`,
         `--resource-path=${rhoClass}`,
         '--bibliography=rho.bib',
-        '--csl=ieee.csl.xml',
+        '--csl=ieee.csl',
         '--metadata=reference-section-title=References',
         `--output=${output}`,
         join(rhoClass, 'example.md')

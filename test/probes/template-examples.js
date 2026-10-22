@@ -501,7 +501,7 @@
         rho.manifest?.kind === 'pdf' &&
           rho.manifest?.mode === 'template' &&
           rho.manifest?.template === 'template.tex' &&
-          rho.manifest?.csl === null &&
+          rho.manifest?.csl === 'ieee.csl' &&
           /CC-BY-4\.0/.test(rho.manifest?.origin?.license ?? '') &&
           rho.files.some((file) => file.name === 'CSL-NOTICE.txt'),
         rho.manifest
@@ -543,6 +543,7 @@
       const squashed = page.replace(/[^a-z0-9]+/g, '');
       const referenceCount =
         squashed.match(/anexamplereferencefortherhoclasstemplate/g)?.length ?? 0;
+      const ieeeStyle = squashed.includes('jdoeandjroe');
       const pageSize = await t.pdfPageSize(bytes);
       check(
         'rho-class: the exported article renders its metadata, callout, table and reference once',
@@ -555,8 +556,10 @@
           'table1',
           'references',
           'anexamplereferencefortherhoclasstemplate'
-        ].every((text) => squashed.includes(text)) && referenceCount === 1,
-        { referenceCount, tail: page.slice(-2500) }
+        ].every((text) => squashed.includes(text)) &&
+          ieeeStyle &&
+          referenceCount === 1,
+        { ieeeStyle, referenceCount, tail: page.slice(-2500) }
       );
       check(
         'rho-class: the exported original design is two-column A4',

@@ -12,7 +12,7 @@
   },
   "template": "template.tex",
   "reference_doc": null,
-  "csl": null,
+  "csl": "ieee.csl",
   "assets": [
     "ATTRIBUTION.txt",
     "CSL-NOTICE.txt",
@@ -21,7 +21,7 @@
     "example.md",
     "figures/sensor-residuals.pdf",
     "figures/sensor-residuals.svg",
-    "ieee.csl.xml",
+    "ieee.csl",
     "metadata.yaml",
     "rho-class/rho.cls",
     "rho-class/rhobabel.sty",
