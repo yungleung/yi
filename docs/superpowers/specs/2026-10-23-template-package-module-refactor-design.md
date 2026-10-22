@@ -155,7 +155,6 @@ Owns package discovery and lifecycle:
 Owns the code panel's package-file contract:
 
 - editable/read-only classification;
-- package file listing;
 - atomic reads and writes;
 - refusal to edit or replace `template.json` through the editor.
 
@@ -174,6 +173,7 @@ Owns shared filesystem rules:
 
 - safe package id/path resolution;
 - unique asset and entry-name allocation;
+- package file listing and editable/read-only classification;
 - package directory copying;
 - text/reference entry extension predicates.
 
