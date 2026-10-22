@@ -20,9 +20,13 @@ use super::manifest::{
 };
 use super::scan;
 
+mod editor;
 mod library;
 mod storage;
 
+pub use editor::{
+    read_package_file as read_template_file, write_package_file as write_template_file,
+};
 pub(super) use library::templates_dir;
 pub(crate) use library::resolve_package;
 pub(super) use library::summary_at;
@@ -511,50 +515,6 @@ pub fn update_details(
     manifest.deliver = scan::deliver_for(Some(&manifest.kind), &manifest.assets);
     write_manifest(&path, &manifest)?;
     Ok(summary_at(&id, &path))
-}
-
-/// Reads one of a package's text files.
-pub fn read_template_file(
-    app: &tauri::AppHandle,
-    id: String,
-    file: String,
-) -> Result<String, String> {
-    let dir = templates_dir(app)?;
-    let path = package_path(&dir, &id)?;
-    let target = file_in(&path, &file)?;
-    if !target.is_file() {
-        return Err(crate::i18n::now("template.entryMissing", &[("file", &file)]));
-    }
-    fs::read_to_string(&target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
-}
-
-/// Writes one of a package's text files atomically. The app's manifest is not editable here.
-pub fn write_template_file(
-    app: &tauri::AppHandle,
-    id: String,
-    file: String,
-    text: String,
-) -> Result<(), String> {
-    if file == "template.json" {
-        return Err(crate::i18n::now("template.manifestAppOwned", &[]));
-    }
-    let dir = templates_dir(app)?;
-    let path = package_path(&dir, &id)?;
-    let target = file_in(&path, &file)?;
-    if !target.is_file() {
-        return Err(crate::i18n::now("template.entryMissing", &[("file", &file)]));
-    }
-    crate::files::write_atomically(&target, &text).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
 }
 
 /// The names a template may use for the package folder in its own relative links.
