@@ -1,0 +1,303 @@
+---
+title: Yi-Dokumentation
+id: yi-documentation
+lang: de
+---
+
+Yi ist ein lokal arbeitender Markdown-Editor. Ein Arbeitsbereich ist ein gewöhnlicher Ordner, jede
+Notiz eine gewöhnliche Markdown-Datei und der Export wird an Pandoc übergeben. Diese Anleitung
+erklärt die tägliche Arbeit und besonders sorgfältig zu behandelnde Exportvorlagen.
+
+Dieses Dokument ist schreibgeschützt. **F1** öffnet es erneut; eine andere Notiz ersetzt es ohne
+Speicherabfrage.
+
+## Arbeitsbereich und Notizen
+
+Der Ordner links im Baum ist der Arbeitsbereich. Es gibt kein Konto und keine entfernte Kopie.
+
+- **File → New Markdown** erzeugt eine Notiz mit einer vierzehnstelligen ID als Dateinamen und
+  markiert den `title` zur Eingabe.
+- **New file** im Baum erstellt dieselbe Art Notiz im gewählten Ordner.
+- **File → Open Folder…** wechselt den Arbeitsbereich, **File → Save** speichert.
+- Nur ausdrücklich hinzugefügte Dokumente liegen im Sitzungsstapel. Tutorial und Anleitung sind
+  Referenzdokumente und gelangen nicht hinein.
+
+### Frontmatter
+
+```yaml
+---
+title: Eine Notiz
+date: 2026-10-21
+id: 20261021153000
+keywords:
+  - notes
+  - export
+---
+```
+
+`title` benennt das Dokument, `id` ist die unveränderliche Kennung und `lang` die Sprache für EPUB
+und andere Exporte. Weitere Schlüssel stehen Pandoc und Vorlagenpaketen zur Verfügung.
+
+**Settings → New note** legt das anfängliche Frontmatter fest. `metadata.yaml` eines Pakets gilt nur
+für die aktuell erzeugte Notiz und ändert nicht die Exportvorlage späterer Exporte.
+
+### Bearbeiten
+
+Yi zeigt Markdown gerendert an und behandelt den Quelltext als maßgeblich. Beim Bearbeiten eines
+Links, einer Formel oder eines eingezäunten Blocks erscheint dessen Markdown an Ort und Stelle.
+Wichtige Tastenkürzel: ⌘S / Ctrl+S speichern, ⌘N / Ctrl+N neu, ⌘F / Ctrl+F suchen,
+⇧⌘F / Ctrl+Shift+F ersetzen und F1 für diese Anleitung.
+
+## Eine Notiz exportieren
+
+| Art | Ausgabe |
+| --- | --- |
+| HTML | Bundled-Ordner mit Seite und lokalen Ressourcen |
+| LaTeX | `.tex` und Vorlagenressourcen |
+| PDF | PDF aus einer TeX-Engine |
+| EPUB | EPUB-Buch |
+| Word | `.docx` |
+| LibreOffice | `.odt` |
+| Markdown | Von Yi vorverarbeitetes Markdown |
+
+Außer Markdown benötigen alle Formate Pandoc; PDF benötigt zusätzlich XeLaTeX oder eine andere
+TeX-Engine. Yi sucht Pandoc an üblichen Orten und in `PATH`, installiert aber keine Software und
+startet nicht TeX Live Manager.
+
+### Pandoc und TeX installieren
+
+```sh
+# macOS
+brew install pandoc
+brew install --cask mactex-no-gui
+
+# Debian / Ubuntu
+sudo apt install pandoc texlive-xetex texlive-fonts-recommended
+```
+
+```powershell
+# Windows
+winget install JohnMacFarlane.Pandoc
+winget install MiKTeX.MiKTeX
+```
+
+Prüfen:
+
+```sh
+pandoc --version
+xelatex --version
+```
+
+Schlägt `pandoc --version` fehl, sind alle Pandoc-Exporte nicht verfügbar. Schlägt nur
+`xelatex --version` fehl, funktionieren alle Formate außer PDF. Fehlende TeX-Pakete werden mit dem
+Paketmanager der TeX-Installation ergänzt; Yi führt kein `tlmgr` aus.
+
+Jede Art besitzt eine bearbeitbare Datei `export.<kind>.yaml`, etwa `export.pdf.yaml`. Es sind
+normale Pandoc-Defaults für Writer, PDF-Engine, Hervorhebung, Seitenvariablen, Filter und
+Ressourcenpfade.
+
+## Vorlagenpakete
+
+Vorlagenpakete liegen im Exportdatenordner von Yi, nicht im Arbeitsbereich und nicht in der Sitzung.
+
+```text
+example-latex/
+  template.json
+  template.tex
+  journal.cls
+  journal.bst
+  metadata.yaml
+  defaults.yaml
+```
+
+`template.json` wird von Yi gepflegt. `kind` ist `html`, `latex`, `pdf`, `epub`, `docx` oder `odt`;
+`mode` ist `template`, `wrapper` oder `reference-doc`. Textvorlagen verwenden `template`, Word und
+ODT verwenden `reference_doc`; nur eines davon darf gesetzt sein. `assets` enthält
+`/`-getrennte relative Pfade. `deliver` nennt Klassen und BibTeX-Stile für LaTeX-Ausgaben. `csl`
+kann einen paketeigenen Zitierstil erzwingen.
+
+### Wrapper-Modus
+
+Eine vollständige LaTeX-Datei mit `\begin{document}` und `\end{document}`, aber ohne `$body$`, wird
+beim Import als Wrapper angeboten. Yi behält das Original als `source.tex` und erzeugt
+`template.tex` mit `$body$` vor `\end{document}`. Optional werden `\title{}` und `\author{}` durch
+`$title$` und `$author$` ersetzt.
+
+### Aus Pandocs Standard erzeugen
+
+**Create…** fragt Name, Quelle und Lizenz ab und erzeugt anschließend mit Pandoc die Standardvorlage
+oder das Referenzdokument. Textformate erhalten `template.html`, `template.tex` usw.; Word und ODT
+erhalten `reference.docx` und `reference.odt`.
+
+### Vorlagenkit importieren
+
+Yi importiert eine Datei, einen Ordner oder ein ZIP. Zuerst wird geprüft, erst nach Bestätigung
+kopiert. ZIPs mit absoluten Pfaden, `..`, symbolischen Links, zu vielen Dateien oder zu großer
+Größe werden abgewiesen und in einem temporären Ordner verarbeitet.
+
+### Bearbeiten und prüfen
+
+Der Codepanel zeigt editierbare Textdateien und schreibgeschützte Binärdateien mit Zeilennummern,
+Suche, Undo, YAML-/LaTeX-Hervorhebung und atomarem Speichern. **Validate** führt eine echte kurze
+Konvertierung aus; **Test PDF** startet zusätzlich die PDF-Engine.
+
+## HTML-Vorlagen
+
+```html
+<!doctype html>
+<html lang="$lang$">
+  <head><meta charset="utf-8"><title>$title$</title></head>
+  <body><main>$body$</main></body>
+</html>
+```
+
+`$body$` steht einmal an der Inhaltsstelle. Yi legt immer einen Bundled-Ordner an. Ist
+**Self-contained HTML** aus, werden Vorlagenressourcen und lokale Bilder relativ kopiert; ist es an,
+werden lokale Dateien eingebettet und die vollständigen Paketressourcen trotzdem mitgeliefert.
+HTTP- und HTTPS-Bilder bleiben URLs.
+
+## LaTeX- und PDF-Vorlagen
+
+```tex
+\documentclass{article}
+\begin{document}
+$if(title)$\title{$title$}\maketitle$endif$
+$body$
+\end{document}
+```
+
+`$body$` darf nur einmal vorkommen. Titel, Autoren, Institute und E-Mails gehören in die
+Notizmetadaten. LaTeX-Exporte kopieren den gesamten Ressourcenbaum neben die `.tex`-Datei; vorhandene
+abweichende Dateien werden nicht überschrieben. Lokale Notizbilder ersetzen gleiche relative
+Paketpfade; andere werden unter `<ausgabe>.assets/` abgelegt.
+
+Native-BibTeX-Pakete setzen:
+
+```yaml
+filters: []
+cite-method: natbib
+bibliography: references.bib
+```
+
+**Settings → Citation** bleibt maßgeblich. Yi schreibt nur tatsächlich zitierte Werke nach
+`references.bib`; CSL-JSON wird mit `citation-key` oder ersatzweise `id` nach BibTeX konvertiert.
+PDF läuft mit Pandoc und `pdf-engine`; Paket- und Einstiegspfade werden über `TEXINPUTS`,
+`BIBINPUTS` und `BSTINPUTS` gefunden. Uneingeschränkte Shell-Erweiterung wird in PDF-Defaults
+abgewiesen.
+
+## EPUB-Vorlagen
+
+EPUB verwendet `template.xhtml` mit einmaligem `$body$`. CSS, Bilder, Schriften und Skripte liegen
+im Paket. Pandoc erzeugt das Buch, Yi legt Ressourcen unter `EPUB/assets/` ab und trägt sie in
+`content.opf` ein. EPUB benötigt `title` und `lang`; für die Veröffentlichung sollte zusätzlich
+epubcheck verwendet werden.
+
+## Word- und OpenDocument-Vorlagen
+
+Word und OpenDocument verwenden gestaltete **Referenzdokumente**, keine Textvorlagen.
+
+```text
+example-docx/
+  template.json
+  reference.docx
+  defaults.yaml
+  metadata.yaml
+```
+
+Pandoc übernimmt Absatz-, Zeichen-, Tabellen- und Seitenstile. Bewahren Sie die erwarteten Namen für
+Titel, Untertitel, Autor, Datum, Abstract, Überschriften, Text, Zitate, Code, Beschriftungen,
+Listen, Fußnoten, Tabellen, Abbildungen und Literatur. Yi bearbeitet Binärdateien nicht;
+**Open in system** öffnet sie in Word oder LibreOffice.
+
+### Mit Pandocs Referenzdokument beginnen
+
+Der Abschnitt
+[`--reference-doc`](https://pandoc.org/MANUAL.html#option--reference-doc)
+der offiziellen Pandoc-Anleitung beschreibt DOCX- und ODT-Unterschiede, Stilnamen und den empfohlenen
+Arbeitsablauf. Das vollständige
+[Pandoc-Handbuch](https://pandoc.org/MANUAL.html) erklärt alle weiteren von Yi durchgereichten
+Einstellungen.
+
+**Create…** erzeugt in Yi ein Standard-Referenzdokument. Im Terminal lauten die Befehle:
+
+```sh
+pandoc -o custom-reference.docx --print-default-data-file reference.docx
+pandoc -o custom-reference.odt --print-default-data-file reference.odt
+```
+
+Öffnen Sie die Datei in Word oder LibreOffice, ändern Sie die Stile und speichern Sie sie. Ändern Sie
+die von Pandoc erwarteten Stilnamen nicht; Schrift, Abstände, Farben und Rahmen dürfen angepasst
+werden.
+
+- Ein DOCX-Referenzdokument liefert Stile und Dokumenteigenschaften einschließlich Seitengröße,
+  Rändern, Kopf- und Fußzeilen. Der sichtbare Inhalt wird ignoriert.
+- Ein ODT-Referenzdokument liefert seine Stylesheets. Der sichtbare Inhalt wird ignoriert.
+
+Speichern Sie es als `reference.docx` oder `reference.odt` und wählen Sie es als Eintrag des
+passenden Pakets.
+
+## Paket-YAML
+
+`metadata.yaml` kann das Frontmatter einer neuen Notiz liefern. Seine Schlüssel gewinnen außer `date`
+und `id`, die Yi immer setzt. `export.yaml` folgt auf `export.<kind>.yaml`; ohne diese Datei gilt
+`defaults.yaml`. Paketwerte gewinnen über App-Standards, aber explizite Ausgabe-, Vorlagen-, CSL- und
+Ressourcenargumente gewinnen zuletzt.
+
+Ein `csl` in Paket-YAML ist nur ein Fallback. **Settings → Citation** wird später übergeben und
+gewinnt. Für einen erzwungenen Stil gehört die Datei in `csl` von `template.json`. Kein zusätzliches
+citeproc hinzufügen; Yi liefert es bereits und doppelte Filter erzeugen doppelte Literatur.
+
+## Vollständige Beispiele und KI-Prompts
+
+Unter `test/fixtures/templates/examples/` liegen vollständige Pakete für HTML, LaTeX, PDF,
+Rho Class, EPUB, Word und ODT.
+
+KI-Aufträge sollen einen importierbaren Quellordner erzeugen, aber kein `template.json`:
+
+- **HTML:** `$body$`, Seitenleisten-Inhalt, `toc-depth: 2`, paketlokales CSS und JavaScript.
+- **LaTeX:** drei Autoren und Institute, Abstract, Abbildungen, Tabellen, Fußnoten und native Zitate.
+- **PDF:** XeLaTeX, Titelseite, Abstract, Code, Abbildungen, Tabellen und Literatur.
+- **Rho Class PDF:** CC-BY-4.0-Design, Klassenname, Quell-URL und Attribution bewahren.
+- **EPUB:** Cover, Verlag, ISBN, Rechte, Widmung, Inhaltsverzeichnis und drei Kapitel.
+- **Word:** vollständige `reference.docx`-Stile, `toc: true`, `toc-depth: 2`.
+- **OpenDocument:** A4-Dissertation mit Cover, Abstract, zweistufigem Inhalt und Seitennummern ab 1.
+
+## Vor Verwendung prüfen
+
+1. Paket im Vorlageneditor öffnen.
+2. **Validate** ausführen und die vollständige Meldung lesen.
+3. Bei PDF anschließend **Test PDF** ausführen.
+4. Eine kurze Notiz mit Überschriften, Listen, Tabelle, Code, Mathematik und Bild exportieren.
+5. Relative Ressourcen und Literaturdateien prüfen.
+
+| Meldung | Prüfen |
+| --- | --- |
+| Pandoc not found | Pandoc installieren und Yi mit aktuellem `PATH` neu starten |
+| PDF engine not found | TeX installieren und `xelatex --version` prüfen |
+| `journal.cls` not found | Klasse ins Paket legen und das Paket in den TeX-Suchpfad aufnehmen |
+| Template variable missing | Vorlage mit den Variablen des Pandoc-Writers vergleichen |
+| Filter could not start | Laufzeit des Filters installieren oder Filter entfernen |
+| Local picture missing | Paketrelativen Pfad und Bild in `assets` prüfen |
+
+## Sicherheit und Vertrauen
+
+Vorlagen sind ausführbare Konvertierungskonfiguration und können Pandoc-Filter, Lua, LaTeX-Klassen,
+Pakete und Schriften enthalten. Verwenden Sie nur vertrauenswürdige Vorlagen. Yi zeichnet Quelle und
+Lizenz auf, entscheidet aber nicht über Nutzungsrechte. Es lädt keine Journaldateien herunter,
+installiert keine TeX-Pakete, führt kein `tlmgr` aus, erlaubt in PDF-Standards keine
+uneingeschränkte Shell-Erweiterung und schreibt beliebige Beispiele nicht automatisch in perfekte
+Pandoc-Vorlagen um.
+
+## Paket-Checkliste
+
+- [ ] `template.json` existiert und verwendet Schema 1.
+- [ ] `kind`, Eintrag und `mode` stimmen überein.
+- [ ] Eine Textvorlage enthält genau ein `$body$` an der Inhaltsstelle.
+- [ ] Das Referenzdokument öffnet in Word oder LibreOffice.
+- [ ] Alle Pfade in `assets`, `deliver` und `csl` existieren.
+- [ ] Relative Links verwenden `/` und bleiben im Paket.
+- [ ] `metadata.yaml` ist eine YAML-Zuordnung auf oberster Ebene.
+- [ ] `defaults.yaml` / `export.yaml` enthalten nur notwendige Einstellungen.
+- [ ] PDF-Standards aktivieren keine Shell-Erweiterung.
+- [ ] Eine kurze repräsentative Notiz wird erfolgreich validiert.
+- [ ] Ein echter Export enthält Klassen, Stile, Bilder und Literatur.

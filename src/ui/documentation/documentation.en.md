@@ -503,6 +503,36 @@ example-odt/
   metadata.yaml
 ```
 
+### Start from Pandoc’s reference document
+
+Pandoc’s [`--reference-doc` section](https://pandoc.org/MANUAL.html#option--reference-doc) is the
+authoritative description. It includes separate DOCX and ODT guidance, the supported style names
+and Pandoc’s recommended creation workflow. The complete [Pandoc User’s
+Guide](https://pandoc.org/MANUAL.html) documents the other export settings Yi passes through.
+
+The safest starting point is a document produced by Pandoc itself. In Yi, **Create…** can generate
+the default reference document for Word or LibreOffice. From a terminal, the equivalent commands
+are:
+
+```sh
+pandoc -o custom-reference.docx --print-default-data-file reference.docx
+pandoc -o custom-reference.odt --print-default-data-file reference.odt
+```
+
+Open the generated file in Word or LibreOffice, modify its styles, and save it. Keep the style names
+Pandoc expects; changing a style’s font, spacing, colour or borders is safe, while renaming the
+style makes it unavailable for the corresponding Markdown element.
+
+Pandoc reads the two formats slightly differently:
+
+- A DOCX reference document supplies its styles and document properties, including page size,
+  margins, headers and footers. Its visible body content is ignored.
+- An ODT reference document supplies its stylesheets. Its visible body content is ignored.
+
+After editing, save the file as `reference.docx` or `reference.odt`, create or update a package for
+the matching Word or LibreOffice export kind, and choose that file as the package entry. Yi does not
+edit the binary document; **Open in system** opens it for further styling.
+
 Pandoc copies styles from the reference document into the exported file. Keep its style names and
 structure stable:
 

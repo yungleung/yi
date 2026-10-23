@@ -1,0 +1,263 @@
+---
+title: Yi 文件說明
+id: yi-documentation
+lang: zh-Hant
+---
+
+Yi 是本地優先的 Markdown 編輯器。工作區是一般資料夾，每則筆記是一般 Markdown 檔案，匯出交給
+Pandoc。本指南說明日常工作，以及最需要謹慎處理的匯出範本套件。
+
+本文件為唯讀；按 **F1** 可再次開啟。開啟其他筆記時會直接取代，不會詢問是否儲存。
+
+## 工作區與筆記
+
+左側樹狀檢視顯示的資料夾就是工作區，沒有帳戶或遠端副本。**File → New Markdown** 建立以十四位
+ID 為檔名的筆記，並選取 `title`；樹中的 **New file** 在指定資料夾內建立同類筆記。
+
+```yaml
+---
+title: 筆記標題
+date: 2026-10-21
+id: 20261021153000
+keywords:
+  - notes
+  - export
+---
+```
+
+`title` 是文件標題，`id` 是不可編輯的穩定識別碼，`lang` 可供 EPUB 等匯出使用。其他欄位會傳給
+Pandoc 和範本套件。**Settings → New note** 控制新筆記的初始內容；套件 `metadata.yaml` 的選擇
+只用於那一則筆記，不會改變之後的匯出範本。
+
+Yi 以 Markdown 原文為準，同時顯示呈現結果。游標進入連結、公式或圍欄程式碼時，可在原處編輯
+Markdown。常用快捷鍵為 ⌘S / Ctrl+S 儲存、⌘N / Ctrl+N 新增、⌘F / Ctrl+F 尋找、
+⇧⌘F / Ctrl+Shift+F 取代，以及 F1 文件。
+
+## 匯出筆記
+
+| 類型 | 輸出 |
+| --- | --- |
+| HTML | 含頁面與本地資源的組合資料夾 |
+| LaTeX | `.tex` 與範本資源 |
+| PDF | TeX 引擎產生的 PDF |
+| EPUB | EPUB 電子書 |
+| Word | `.docx` |
+| LibreOffice | `.odt` |
+| Markdown | Yi 預處理的 Markdown |
+
+除 Markdown 外都需要 Pandoc；PDF 另需 XeLaTeX 等 TeX 環境。Yi 會從常見位置及 `PATH` 尋找
+Pandoc，但不會自動安裝軟體，也不會執行 TeX Live Manager。
+
+### 安裝 Pandoc 與 TeX
+
+```sh
+# macOS
+brew install pandoc
+brew install --cask mactex-no-gui
+
+# Debian / Ubuntu
+sudo apt install pandoc texlive-xetex texlive-fonts-recommended
+```
+
+```powershell
+# Windows
+winget install JohnMacFarlane.Pandoc
+winget install MiKTeX.MiKTeX
+```
+
+檢查：
+
+```sh
+pandoc --version
+xelatex --version
+```
+
+`pandoc --version` 失敗時，所有依賴 Pandoc 的匯出都不可用；只有 `xelatex --version` 失敗時，
+PDF 以外的格式仍可使用。缺少的 TeX 套件由安裝 TeX 的套件管理器補充，Yi 不執行 `tlmgr`。
+
+每個格式都有可編輯的 `export.<kind>.yaml`，例如 `export.pdf.yaml`。它們是 Pandoc defaults
+檔案，可設定 writer、PDF 引擎、高亮、頁面變數、濾鏡和資源路徑。
+
+## 範本套件
+
+範本套件位於 Yi 匯出資料目錄，不屬於工作區，也不會進入工作階段堆疊。
+
+```text
+example-latex/
+  template.json
+  template.tex
+  journal.cls
+  journal.bst
+  metadata.yaml
+  defaults.yaml
+```
+
+`template.json` 由 Yi 維護。`kind` 為 `html`、`latex`、`pdf`、`epub`、`docx` 或 `odt`；
+`mode` 為 `template`、`wrapper` 或 `reference-doc`。文字範本使用 `template`，Word 與 ODT
+使用 `reference_doc`，兩者只能有一個。`assets` 是從套件根開始的 `/` 分隔相對路徑；
+`deliver` 是 LaTeX 輸出旁需要的類別與 BibTeX 樣式子集；`csl` 可指定套件自身的引用樣式。
+
+### 包裝模式
+
+若起點是包含 `\begin{document}` 與 `\end{document}` 的完整 LaTeX 文件，而不是 Pandoc 範本，
+應使用 `wrapper`。Yi 可保留原文為 `source.tex`，建立一個在 `\end{document}` 前插入 `$body$`
+的 `template.tex`，並可選擇把 `\title{}` 和 `\author{}` 改成 `$title$`、`$author$`。
+
+### 從 Pandoc 預設建立
+
+**Create…** 詢問名稱、來源與授權後，用 Pandoc 產生預設範本或參照文件。文字格式得到
+`template.html`、`template.tex` 等；Word 與 ODT 得到 `reference.docx`、`reference.odt`。
+
+### 匯入範本組合
+
+可匯入單一檔案、資料夾或 ZIP。Yi 先檢查，確認後才複製。ZIP 的絕對路徑、`..`、符號連結、過大
+容量或過多檔案會被拒絕；解壓只在暫存資料夾進行並於結束後清除。類別、樣式、文獻、圖片、字型、
+CSS 和 JavaScript 都會保留為資產。
+
+### 編輯與驗證
+
+程式碼面板列出可編輯文字與唯讀二進位檔，支援行號、搜尋、復原、YAML/LaTeX 高亮和原子儲存。
+**Validate** 以短段落執行實際轉換；**Test PDF** 另執行 PDF 引擎。錯誤會顯示 Pandoc 或 TeX
+原本的訊息。
+
+## HTML 範本
+
+```html
+<!doctype html>
+<html lang="$lang$">
+  <head><meta charset="utf-8"><title>$title$</title></head>
+  <body><main>$body$</main></body>
+</html>
+```
+
+將 `$body$` 放在內容位置。Yi 一定建立輸出資料夾；**Self-contained HTML** 關閉時，範本資源與
+筆記本地圖片以相對 URL 複製，開啟時則嵌入頁面，但完整套件資產仍會保留在組合資料夾。
+`http://`、`https://` 圖片保持原本 URL。
+
+## LaTeX 與 PDF 範本
+
+```tex
+\documentclass{article}
+\begin{document}
+$if(title)$\title{$title$}\maketitle$endif$
+$body$
+\end{document}
+```
+
+`$body$` 只能出現一次，標題、作者、單位與電子郵件應來自筆記中繼資料。LaTeX 匯出會把完整套件資產
+複製到 `.tex` 旁；若目標已有不同檔案，Yi 會回報衝突而不覆寫。筆記本地圖片優先於相同相對路徑的
+範本圖片，其餘放在 `<輸出名>.assets/`。
+
+原生 BibTeX 套件在 `defaults.yaml` 使用：
+
+```yaml
+filters: []
+cite-method: natbib
+bibliography: references.bib
+```
+
+匯出時 **Settings → Citation** 是依據，Yi 只將筆記實際引用的項目寫入 `references.bib`。
+BibTeX 與 CSL-JSON 都可使用；CSL-JSON 優先採用 `citation-key`，否則使用 `id`。
+PDF 由 Pandoc 和 `pdf-engine` 執行，套件根與入口資料夾會加入 TeX/BibTeX 搜尋路徑。Yi 拒絕在
+PDF defaults 啟用無限制 shell escape。
+
+## EPUB 範本
+
+EPUB 使用包含 `$body$` 的 XHTML `template.xhtml`。CSS、圖片、字型和指令碼放在套件內並使用相對
+URL。Pandoc 建立書籍，Yi 將資源放入 `EPUB/assets/` 並登錄到 `content.opf`。EPUB 需要 `title`
+與 `lang`，正式發布前也應使用 epubcheck 等專用工具。
+
+## Word 與 OpenDocument 範本
+
+Word 和 OpenDocument 使用帶樣式的**參照文件**，不是文字範本。
+
+```text
+example-docx/
+  template.json
+  reference.docx
+  defaults.yaml
+  metadata.yaml
+```
+
+Pandoc 會採用參照文件中的段落、字元、表格和頁面樣式。標題、副標題、作者、日期、摘要、各級標題、
+正文、引用、程式碼、圖表標題、清單、腳註和參考文獻的樣式名稱應保持不變。Yi 不編輯二進位檔，
+**Open in system** 會在 Word 或 LibreOffice 中開啟。
+
+### 從 Pandoc 參照文件開始
+
+Pandoc 的
+[`--reference-doc` 章節](https://pandoc.org/MANUAL.html#option--reference-doc)
+是正式說明，包含 DOCX 與 ODT 差異、樣式名稱和建議流程。完整的
+[Pandoc 使用者指南](https://pandoc.org/MANUAL.html)說明 Yi 傳遞的其他設定。
+
+可在 Yi 使用 **Create…** 產生預設參照文件，或在終端執行：
+
+```sh
+pandoc -o custom-reference.docx --print-default-data-file reference.docx
+pandoc -o custom-reference.odt --print-default-data-file reference.odt
+```
+
+以 Word 或 LibreOffice 開啟並修改樣式後儲存。不要更改 Pandoc 需要的樣式名稱；字型、間距、顏色和
+框線可以調整。DOCX 參照文件提供樣式與文件屬性，包括頁面尺寸、邊界、頁首和頁尾，正文內容會被忽略；
+ODT 參照文件提供樣式表，正文內容同樣會被忽略。最後存成 `reference.docx` 或 `reference.odt`，
+並設為對應套件的入口。
+
+## 套件 YAML
+
+`metadata.yaml` 可作為新筆記的初始中繼資料；內容優先於設定的新筆記範本，但 `date`、`id` 永遠由
+Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有時使用 `defaults.yaml`。
+套件設定優先於 App 預設，但明確的命令列輸出路徑、範本、CSL 和資源路徑最後生效。
+
+套件 YAML 的 `csl` 只是後備；**Settings → Citation** 的樣式會稍後傳入並優先。要強制套件樣式，
+應在 `template.json` 的 `csl` 指定。不要再加入 citeproc，否則可能產生重複文獻。
+
+## 完整範例與 AI 提示
+
+`test/fixtures/templates/examples/` 有 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
+完整套件。可先閱讀，再匯入 Yi 的範本庫。
+
+給 AI 代理的提示應要求建立可匯入的來源資料夾，但不要建立 `template.json`：
+
+- **HTML**：`$body$`、側邊目錄、`toc-depth: 2`、套件內 CSS/JavaScript。
+- **LaTeX**：三位作者、不同單位、摘要、圖表、腳註、原生引用、類別和 BibTeX 樣式。
+- **PDF**：XeLaTeX、標題頁、摘要、程式碼、圖表與文獻。
+- **Rho Class PDF**：保留 CC BY 4.0 設計、類別名稱、來源 URL 與署名。
+- **EPUB**：封面、出版社、ISBN、版權、獻詞、目錄與三章。
+- **Word**：完整 `reference.docx` 樣式、`toc: true`、`toc-depth: 2`。
+- **OpenDocument**：A4 學位論文、封面、摘要、兩層目錄、正文從第 1 頁編號。
+
+## 使用前驗證
+
+1. 在範本編輯器開啟套件。
+2. 執行 **Validate** 並讀完整訊息。
+3. PDF 再執行 **Test PDF**。
+4. 匯出含標題、清單、表格、程式碼、數學與圖片的短筆記。
+5. 檢查相對資產與參考文獻。
+
+| 訊息 | 檢查 |
+| --- | --- |
+| Pandoc not found | 安裝 Pandoc，並用更新後的 `PATH` 重啟 Yi |
+| PDF engine not found | 安裝 TeX，確認 `xelatex --version` |
+| `journal.cls` not found | 將類別檔放入套件並加入 TeX 搜尋路徑 |
+| Template variable missing | 對照 Pandoc 對應 writer 的變數 |
+| Filter could not start | 安裝濾鏡環境或從 defaults 移除 |
+| Local picture missing | 使用套件相對路徑與 `assets` 圖片 |
+
+## 安全性與信任
+
+範本是可執行的轉換設定，可能含 Pandoc 濾鏡、Lua、LaTeX 類別、套件與字型。只使用可信範本。
+Yi 記錄來源與授權，但不判斷使用權；不自動下載期刊資產、不安裝 TeX、不執行 `tlmgr`、不允許
+PDF defaults 啟用無限制 shell escape，也不會自動改寫任意期刊範例。
+
+## 套件檢查清單
+
+- [ ] `template.json` 存在且 schema 為 1。
+- [ ] `kind`、入口與 `mode` 一致。
+- [ ] 文字範本在正確位置只有一個 `$body$`。
+- [ ] 參照文件可在 Word 或 LibreOffice 開啟。
+- [ ] `assets`、`deliver`、`csl` 路徑都存在。
+- [ ] 相對連結使用 `/` 並指向套件內資源。
+- [ ] `metadata.yaml` 是頂層 YAML 映射。
+- [ ] `defaults.yaml` / `export.yaml` 只含必要設定。
+- [ ] PDF 未啟用 shell escape。
+- [ ] 短代表性筆記驗證成功，實際輸出含所需資產。
