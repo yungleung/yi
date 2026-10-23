@@ -75,7 +75,7 @@
     transform 120ms ease;
 }
 
-.markdown-heading.heading-marker-visible .markdown-heading-marker {
+.markdown-heading:hover .markdown-heading-marker {
   opacity: 1;
   transform: translate(0, -50%);
 }

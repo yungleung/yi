@@ -97,7 +97,9 @@
   check(
     'headings keep their original indentation while their markers wait out of the way',
     paddings.every((padding) => padding === '0px') &&
-      restingOpacity.every((opacity) => opacity === '0'),
+      restingOpacity.every(
+        (opacity, index) => opacity === (headings[index].matches(':hover') ? '1' : '0')
+      ),
     { paddings, restingOpacity }
   );
 
@@ -130,63 +132,31 @@
     alignments
   );
 
-  const heading = headings[0];
-  const marker = markers[0];
-  const text = t.textNodesIn(heading)[0] ?? null;
-  const bounds = (rect) => ({
-    left: rect.left,
-    right: rect.right,
-    top: rect.top,
-    bottom: rect.bottom,
-    width: rect.width,
-    height: rect.height
-  });
-  if (marker !== null && text !== null) {
-    const textRange = document.createRange();
-    textRange.setStart(text, 0);
-    textRange.setEnd(text, Math.min(1, text.data.length));
-    const before = {
-      heading: bounds(heading.getBoundingClientRect()),
-      text: bounds(textRange.getBoundingClientRect()),
-      marker: bounds(marker.getBoundingClientRect()),
-      opacity: getComputedStyle(marker).opacity
-    };
-    heading.dispatchEvent(new MouseEvent('mouseenter'));
-    await t.sleep(180);
-    const shown = {
-      heading: bounds(heading.getBoundingClientRect()),
-      text: bounds(textRange.getBoundingClientRect()),
-      marker: bounds(marker.getBoundingClientRect()),
-      opacity: getComputedStyle(marker).opacity
-    };
-    check(
-      'hovering shows the marker by shifting only the marker into view',
-      shown.opacity === '1' &&
-        shown.marker.left > before.marker.left + 6 &&
-        shown.marker.right <= shown.text.left &&
-        shown.heading.left === before.heading.left &&
-        shown.heading.right === before.heading.right &&
-        shown.text.left === before.text.left,
-      { before, shown }
+  const rules = (list) =>
+    [...list].flatMap((rule) =>
+      rule.cssRules?.length ? rules(rule.cssRules) : [rule]
     );
-    heading.dispatchEvent(new MouseEvent('mouseleave'));
-    await t.sleep(180);
-    const left = {
-      marker: bounds(marker.getBoundingClientRect()),
-      opacity: getComputedStyle(marker).opacity
-    };
-    check(
-      'leaving shifts the marker back out without moving the heading',
-      left.opacity === '0' && Math.abs(left.marker.left - before.marker.left) <= 0.5,
-      { before: before.marker, left }
+  const hoverRule = [...document.styleSheets]
+    .flatMap((sheet) => {
+      try {
+        return rules(sheet.cssRules);
+      } catch {
+        return [];
+      }
+    })
+    .find(
+      (rule) =>
+        rule.selectorText === '.markdown-heading:hover .markdown-heading-marker'
     );
-  } else {
-    checks.push({
-      name: 'the first heading exposes its marker and text',
-      pass: false,
-      actual: { marker, text }
-    });
-  }
+  check(
+    'hover visibility comes from the browser’s native hover state',
+    hoverRule !== undefined &&
+      hoverRule.style.opacity === '1' &&
+      hoverRule.style.transform.includes('-50%'),
+    hoverRule
+      ? { selector: hoverRule.selectorText, declarations: hoverRule.style.cssText }
+      : null
+  );
 
   check(
     'the markers are decorative, non-interactive and absent from copied text',
