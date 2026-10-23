@@ -4,7 +4,7 @@
 //! app's export data, relative outputs resolve against the reader's source folder, and PDF runs put
 //! the package and entry folders on TeX's search paths.
 
-use super::TemplateManifest;
+use crate::export::templates::TemplateManifest;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
