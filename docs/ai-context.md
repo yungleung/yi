@@ -857,6 +857,7 @@ at one replaces the document (`test/probes/rebuild-keeps-the-caret.js`).
 npm install
 npm run tauri dev                       # the app (Tauri MCP bridge on 9223)
 npx tsc --noEmit                        # types (strict, noUnusedLocals)
+cargo test                              # Rust tests
 npm run check                           # pure checks, no browser
 npm run probe -- test/probes/<name>.js  # one DOM probe, app must be running
 npm run probe:all                       # probes that need no fixture workspace
@@ -885,18 +886,30 @@ reported before that merge is what changed, which test fails without it and what
 Before claiming a change works:
 
 1. `npx tsc --noEmit` → silent.
-2. `npm run check` → every check passes (`n/n checks passed`, where `n` grows as checks are
+2. `cargo test` → every Rust test passes.
+3. `npm run check` → every check passes (`n/n checks passed`, where `n` grows as checks are
    added — one per pure rule).
-3. Run the probes that touch what you changed; if a probe fails, read
+4. Run the probes that touch what you changed; if a probe fails, read
    `test/README.md` for how probes report. A probe that "timed out" is usually its own
    length: the bridge gives a script **5 s**, and the harness waits for the probe's own
    result from the stash before it restores the session or settings, then recovers it
    (`P21` measured the app's own cost as flat over a whole suite — a load of the 314 KB
    fixture note stayed at ~330 ms, and a bridge call at ~3 ms).
-4. If you changed behaviour, add or update a test that fails without your change and
+5. If you changed behaviour, add or update a test that fails without your change and
    say which one proves it. Pure rules go in `test/checks/`; anything about DOM,
    caret or rendering goes in `test/probes/`.
-5. Keep the house rules above; if a rule has to give, say so in the commit message.
+6. Keep the house rules above; if a rule has to give, say so in the commit message.
+
+**Merging proves the final tree once.** A merge commit's identity does not affect the app;
+its tree does. Start from a clean branch whose tree passed the checks above. If
+`git merge-base --is-ancestor main codex/<branch>` fails, merge `main` into the branch first,
+resolve the integration there, and prove that resulting tree. Run `npm run probe:all` when the
+tree to be merged has not already passed it; a moved `main`, a conflict, or a dependency,
+toolchain, capability or bridge change always requires that full run. Documentation-only
+changes still owe `npx tsc --noEmit`, `cargo test`, and `npm run check`, but do not need
+unrelated application probes. Record `git rev-parse HEAD^{tree}` and compare it after merging;
+when the merge contains that same tree, do not repeat the full suite. If the tree differs, the
+merged result is untested and must run it.
 
 **The fixture is a test's, never the reader's.** The app you develop against is the maintainer's
 own: its config names *their* workspace, bibliography and layout, and its session holds the
