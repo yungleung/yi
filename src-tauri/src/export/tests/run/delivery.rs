@@ -125,7 +125,11 @@ fn latex_delivery_copies_every_asset_not_only_the_class_and_bst() {
     );
     let request = ExportRequest {
         kind: "latex".to_string(),
-        output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+        output_path: dir
+            .join("out")
+            .join("note.tex")
+            .to_string_lossy()
+            .into_owned(),
         ..request_in(&dir)
     };
     deliver_latex_assets(&package, &manifest, &request).unwrap();
@@ -153,7 +157,11 @@ fn a_native_bibliography_replaces_the_package_sample_with_the_cited_export() {
     );
     let request = ExportRequest {
         kind: "latex".to_string(),
-        output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+        output_path: dir
+            .join("out")
+            .join("note.tex")
+            .to_string_lossy()
+            .into_owned(),
         native_bibliography: Some(NativeBibliography {
             path: "references.bib".to_string(),
             text: "@article{cited1965,\n  title={Only the cited work}\n}\n".to_string(),
@@ -178,7 +186,11 @@ fn a_native_bibliography_target_cannot_leave_the_output_folder() {
     let manifest = package_manifest("latex", Vec::new());
     let request = ExportRequest {
         kind: "latex".to_string(),
-        output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+        output_path: dir
+            .join("out")
+            .join("note.tex")
+            .to_string_lossy()
+            .into_owned(),
         native_bibliography: Some(NativeBibliography {
             path: "../outside.bib".to_string(),
             text: "@article{cited1965}\n".to_string(),
@@ -205,9 +217,11 @@ fn native_bibliography_leaves_citeproc_and_the_reader_library_off_the_command_li
     let arguments = named_arguments_for(&dir, &request, kind_of("latex").unwrap());
     assert!(!arguments.contains(&"--bibliography".to_string()));
     assert!(!arguments.contains(&"--csl".to_string()));
-    assert!(!arguments
-        .iter()
-        .any(|argument| argument.starts_with("reference-section-title=")));
+    assert!(
+        !arguments
+            .iter()
+            .any(|argument| argument.starts_with("reference-section-title="))
+    );
 }
 
 #[test]
@@ -216,7 +230,11 @@ fn latex_note_pictures_are_copied_under_the_generated_asset_bundle() {
     fs::create_dir_all(dir.join("input/images")).unwrap();
     fs::write(dir.join("input/images/photo.png"), b"new picture").unwrap();
     fs::create_dir_all(dir.join("out/paper.assets/images")).unwrap();
-    fs::write(dir.join("out/paper.assets/images/photo.png"), b"old picture").unwrap();
+    fs::write(
+        dir.join("out/paper.assets/images/photo.png"),
+        b"old picture",
+    )
+    .unwrap();
     let request = ExportRequest {
         kind: "latex".to_string(),
         output_path: dir.join("out/paper.tex").to_string_lossy().into_owned(),

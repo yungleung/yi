@@ -5,8 +5,8 @@
 //! file is reported rather than overwritten, and a native bibliography carries only the supplied
 //! cited entries.
 
-use super::environment::absolute_output;
 use super::ExportRequest;
+use super::environment::absolute_output;
 use crate::export::kinds::ExportKind;
 use crate::export::templates::TemplateManifest;
 use crate::export::templates::{reference_to, safe_prefix};
@@ -61,10 +61,7 @@ pub(crate) fn deliver_latex_assets(
         if native
             .as_ref()
             .is_some_and(|(bibliography, _)| bibliography.path == name)
-            || request
-                .note_assets
-                .iter()
-                .any(|asset| asset.target == name)
+            || request.note_assets.iter().any(|asset| asset.target == name)
         {
             continue;
         }
@@ -122,10 +119,7 @@ fn safe_bibliography_path(path: &str) -> Result<PathBuf, String> {
     if safe {
         Ok(candidate.to_path_buf())
     } else {
-        Err(crate::i18n::now(
-            "template.badPath",
-            &[("file", path)],
-        ))
+        Err(crate::i18n::now("template.badPath", &[("file", path)]))
     }
 }
 
@@ -173,10 +167,7 @@ fn safe_note_asset_path(path: &str) -> Result<PathBuf, String> {
     if safe {
         Ok(candidate.to_path_buf())
     } else {
-        Err(crate::i18n::now(
-            "template.badPath",
-            &[("file", path)],
-        ))
+        Err(crate::i18n::now("template.badPath", &[("file", path)]))
     }
 }
 

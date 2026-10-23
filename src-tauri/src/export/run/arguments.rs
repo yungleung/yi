@@ -5,8 +5,8 @@
 //! package arguments follow reader arguments where the package must win, and a template id resolves
 //! only through the app's own package library.
 
-use super::environment::absolute_output;
 use super::ExportRequest;
+use super::environment::absolute_output;
 use crate::export::config::ensure_csl_in;
 use crate::export::kinds::{ExportKind, KindTemplate, PAPER_SIZES, TemplateMode};
 use crate::export::templates::TemplateManifest;
@@ -168,10 +168,7 @@ pub(crate) fn pandoc_arguments(
             .filter(|paper| !paper.is_empty());
         if let Some(paper) = paper {
             if !PAPER_SIZES.iter().any(|(_, value)| *value == paper) {
-                return Err(crate::i18n::now(
-                    "export.unknownPaper",
-                    &[("paper", paper)],
-                ));
+                return Err(crate::i18n::now("export.unknownPaper", &[("paper", paper)]));
             }
             arguments.push(OsString::from("--variable"));
             arguments.push(OsString::from(format!("geometry={paper}")));

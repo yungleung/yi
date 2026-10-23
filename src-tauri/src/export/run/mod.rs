@@ -12,22 +12,22 @@ use serde::Serialize;
 use std::fs;
 use std::path::Path;
 
-use super::config::{ensure_defaults_in, export_dir, remote_dir, settings_text, CslStyle};
-use super::kinds::{kind_of, ExportKind};
+use super::config::{CslStyle, ensure_defaults_in, export_dir, remote_dir, settings_text};
+use super::kinds::{ExportKind, kind_of};
 use super::pandoc::{find_pandoc, run_pandoc_with_env};
 
-mod environment;
 mod arguments;
 mod delivery;
+mod environment;
 
 pub(super) use arguments::pandoc_arguments;
 use arguments::resolve_template;
-use delivery::deliver_package_assets;
 pub(super) use delivery::deliver_note_assets;
+use delivery::deliver_package_assets;
 #[cfg(test)]
 pub(super) use delivery::{deliver_html_assets, deliver_latex_assets};
-use environment::{absolute_output, write_note};
 pub(super) use environment::pdf_environment;
+use environment::{absolute_output, write_note};
 
 /// What an export did: whether it wrote the file, and what pandoc said on the way.
 #[derive(Debug, Serialize, Clone)]
@@ -148,9 +148,20 @@ pub fn run_export(
 /// them (`ui/export/preprocess.ts`). Re-serializing that through pandoc would be a second conversion
 /// of a text that is already the answer.
 fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
-    crate::files::write_atomically(Path::new(&request.output_path), &request.text)
-        .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", request.output_path.as_str()), ("reason", &error.to_string())]))?;
-    Ok(ExportOutcome { warnings: Vec::new() })
+    crate::files::write_atomically(Path::new(&request.output_path), &request.text).map_err(
+        |error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[
+                    ("path", request.output_path.as_str()),
+                    ("reason", &error.to_string()),
+                ],
+            )
+        },
+    )?;
+    Ok(ExportOutcome {
+        warnings: Vec::new(),
+    })
 }
 
 /// The whole of an export: pandoc, the kind's own defaults file, and the note written out for it to
@@ -211,7 +222,9 @@ fn export_with_pandoc(
         kind,
         header.as_deref(),
         template_defaults.as_deref(),
-        template.as_ref().map(|(path, manifest)| (path.as_path(), manifest)),
+        template
+            .as_ref()
+            .map(|(path, manifest)| (path.as_path(), manifest)),
         alias.as_ref().map(|(root, _)| root.as_path()),
     )
     .and_then(|arguments| {
@@ -219,9 +232,7 @@ fn export_with_pandoc(
         // it is run in, so a package is that folder. The note, defaults and output are absolute,
         // which is what keeps that current directory from changing what the other paths mean.
         let (working, environment) = match &template {
-            Some((package, manifest)) if kind.kind == "pdf" => {
-                pdf_environment(package, manifest)
-            }
+            Some((package, manifest)) if kind.kind == "pdf" => pdf_environment(package, manifest),
             // A package's filters and metadata files use paths relative to its own root. The note
             // and every destination the app supplies are absolute, so this working directory is
             // the package's own context without changing what any other argument means.
@@ -235,13 +246,8 @@ fn export_with_pandoc(
                 Vec::new(),
             ),
         };
-        run_pandoc_with_env(
-            &pandoc,
-            &arguments,
-            working.as_deref(),
-            &environment,
-        )
-        .map(|warnings| ExportOutcome { warnings })
+        run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment)
+            .map(|warnings| ExportOutcome { warnings })
     })
     .and_then(|outcome| {
         if kind.kind == "odt" {
@@ -253,12 +259,7 @@ fn export_with_pandoc(
             super::html_media::package_html_media(&output)?;
         }
         if let Some((package, manifest)) = &template {
-            deliver_package_assets(
-                package,
-                manifest,
-                request,
-                kind,
-            )?;
+            deliver_package_assets(package, manifest, request, kind)?;
         }
         if kind.kind == "latex" {
             deliver_note_assets(request)?;
@@ -275,4 +276,3 @@ fn export_with_pandoc(
     let _ = fs::remove_dir_all(remote_dir(&dir));
     result
 }
-

@@ -21,7 +21,10 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
         &dir,
         &dir.join("export.pdf.yaml"),
         &dir.join("note-1.md"),
-        &ExportRequest { kind: name, ..request },
+        &ExportRequest {
+            kind: name,
+            ..request
+        },
         kind_of("pdf").unwrap(),
         Some(&header),
         None,
@@ -147,7 +150,10 @@ fn a_selected_package_names_its_entry_style_and_resource_path() {
         .iter()
         .position(|argument| argument == "--template")
         .expect("no template was handed over");
-    assert_eq!(arguments[at + 1], package.join("main.tex").to_string_lossy());
+    assert_eq!(
+        arguments[at + 1],
+        package.join("main.tex").to_string_lossy()
+    );
     let resources = arguments
         .iter()
         .position(|argument| argument == "--resource-path")
@@ -174,7 +180,11 @@ fn package_defaults_override_the_app_defaults_before_explicit_arguments() {
     let package = dir.join("journal");
     fs::create_dir_all(&package).unwrap();
     fs::write(package.join("main.tex"), "$body$").unwrap();
-    fs::write(package.join("export.yaml"), "metadata:\n  marker: package\n").unwrap();
+    fs::write(
+        package.join("export.yaml"),
+        "metadata:\n  marker: package\n",
+    )
+    .unwrap();
     let manifest = crate::export::templates::TemplateManifest {
         schema: 1,
         id: "journal".to_string(),
@@ -277,7 +287,11 @@ fn a_reference_package_is_handed_as_the_binary_pandoc_reads() {
     .iter()
     .map(|argument| argument.to_string_lossy().into_owned())
     .collect::<Vec<String>>();
-    assert!(arguments.iter().any(|argument| argument == "--reference-doc"));
+    assert!(
+        arguments
+            .iter()
+            .any(|argument| argument == "--reference-doc")
+    );
     assert!(!arguments.iter().any(|argument| argument == "--template"));
     let _ = fs::remove_dir_all(&dir);
 }
@@ -316,8 +330,14 @@ fn only_a_kind_that_carries_its_own_name_is_told_what_the_note_is_called() {
     let request = request_in(&dir);
 
     let docx = named_arguments(&dir, &request);
-    assert!(!docx.iter().any(|argument| argument.starts_with("title=")), "{docx:?}");
-    assert!(!docx.iter().any(|argument| argument.starts_with("lang=")), "{docx:?}");
+    assert!(
+        !docx.iter().any(|argument| argument.starts_with("title=")),
+        "{docx:?}"
+    );
+    assert!(
+        !docx.iter().any(|argument| argument.starts_with("lang=")),
+        "{docx:?}"
+    );
 
     let epub = named_arguments_for(&dir, &request, kind_of("epub").unwrap());
     assert!(epub.contains(&"--metadata".to_string()), "{epub:?}");
@@ -327,15 +347,24 @@ fn only_a_kind_that_carries_its_own_name_is_told_what_the_note_is_called() {
     // A page's own name, but no language to declare.
     let html = named_arguments_for(&dir, &request, kind_of("html").unwrap());
     assert!(html.contains(&"title=Going out".to_string()), "{html:?}");
-    assert!(!html.iter().any(|argument| argument.starts_with("lang=")), "{html:?}");
+    assert!(
+        !html.iter().any(|argument| argument.starts_with("lang=")),
+        "{html:?}"
+    );
 
     // And a note the app knows nothing about says nothing: no empty `title=`.
     let mut silent = request_in(&dir);
     silent.title = None;
     silent.language = Some("   ".to_string());
     let epub = named_arguments_for(&dir, &silent, kind_of("epub").unwrap());
-    assert!(!epub.iter().any(|argument| argument.starts_with("title=")), "{epub:?}");
-    assert!(!epub.iter().any(|argument| argument.starts_with("lang=")), "{epub:?}");
+    assert!(
+        !epub.iter().any(|argument| argument.starts_with("title=")),
+        "{epub:?}"
+    );
+    assert!(
+        !epub.iter().any(|argument| argument.starts_with("lang=")),
+        "{epub:?}"
+    );
     let _ = fs::remove_dir_all(&dir);
 }
 
@@ -431,9 +460,11 @@ fn a_page_a_reader_asks_for_is_a_geometry_option() {
         landscape: Some(true),
         ..request
     };
-    assert!(!named_arguments(&dir, &docx)
-        .iter()
-        .any(|argument| argument.starts_with("geometry=")));
+    assert!(
+        !named_arguments(&dir, &docx)
+            .iter()
+            .any(|argument| argument.starts_with("geometry="))
+    );
 
     // And a size this build does not know is refused rather than handed to LaTeX.
     let request = ExportRequest {
@@ -477,24 +508,32 @@ fn a_list_the_reader_does_not_want_is_suppressed_in_metadata() {
         .position(|argument| argument == "suppress-bibliography=true")
         .expect("the list the reader asked away was not suppressed");
     assert_eq!(asked[at - 1], "--metadata");
-    assert!(!asked.iter().any(|argument| argument.starts_with("suppress-bibliography=")
-        && argument != "suppress-bibliography=true"));
+    assert!(
+        !asked
+            .iter()
+            .any(|argument| argument.starts_with("suppress-bibliography=")
+                && argument != "suppress-bibliography=true")
+    );
 
     // Not asked: nothing said.
-    assert!(!named_arguments(&dir, &request_in(&dir))
-        .iter()
-        .any(|argument| argument.starts_with("suppress-bibliography=")));
+    assert!(
+        !named_arguments(&dir, &request_in(&dir))
+            .iter()
+            .any(|argument| argument.starts_with("suppress-bibliography="))
+    );
     // Asked, but with no library: nothing to suppress.
-    assert!(!named_arguments(
-        &dir,
-        &ExportRequest {
-            suppress_references: true,
-            bibliography: None,
-            ..request_in(&dir)
-        }
-    )
-    .iter()
-    .any(|argument| argument.starts_with("suppress-bibliography=")));
+    assert!(
+        !named_arguments(
+            &dir,
+            &ExportRequest {
+                suppress_references: true,
+                bibliography: None,
+                ..request_in(&dir)
+            }
+        )
+        .iter()
+        .any(|argument| argument.starts_with("suppress-bibliography="))
+    );
     let _ = fs::remove_dir_all(&dir);
 }
 
@@ -510,7 +549,8 @@ fn the_kind_whose_output_would_be_the_note_itself_names_it_otherwise() {
 /// asset is stored as `css/…`, so the delivery step has to know both.
 #[test]
 fn a_relative_reference_keeps_the_prefix_the_template_wrote() {
-    let page = r#"<link href="template/css/template.css"><script src="template/js/template.js"></script>"#;
+    let page =
+        r#"<link href="template/css/template.css"><script src="template/js/template.js"></script>"#;
     assert_eq!(
         reference_to(page, "css/template.css").as_deref(),
         Some("template/css/template.css")
@@ -520,7 +560,10 @@ fn a_relative_reference_keeps_the_prefix_the_template_wrote() {
         Some("template/js/template.js")
     );
     assert_eq!(reference_to(page, "css/missing.css"), None);
-    assert_eq!(reference_to(r#"<img src="https://example/x.png">"#, "x.png"), None);
+    assert_eq!(
+        reference_to(r#"<img src="https://example/x.png">"#, "x.png"),
+        None
+    );
     assert_eq!(reference_to(r#"<img src="../../x.png">"#, "x.png"), None);
 }
 
@@ -559,4 +602,3 @@ fn a_folder_package_keeps_its_original_folder_name_as_an_alias() {
         vec!["template".to_string(), "yuki".to_string()]
     );
 }
-
