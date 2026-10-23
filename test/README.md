@@ -113,6 +113,8 @@ the preview card, the label's own edits, and the shapes a definition is written 
 `footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,
 `footnote-label-rebuild`, `footnote-label-edge`), description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
+`wrapped-line-left` — a left arrow from a soft-wrapped line's start draws the caret at the visual
+line above's right edge,
 `click-away-deselects` — Select All leaves the document selected, and a click outside takes the
 selection away with the caret so the next keystroke writes nothing —
 `select-across-blocks` — a drag that crosses a block boundary keeps the selection it made, while a

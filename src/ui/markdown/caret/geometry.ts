@@ -21,6 +21,24 @@ export function caretRect(range: Range): { left: number; top: number; height: nu
     if (rect.height > 0) {
       return { left: rect.left, top: rect.top, height: rect.height };
     }
+    // A collapsed range at a soft-wrap boundary can have no rectangle at all: WebKit gives an
+    // empty rect for the collapsed space that ends the visual line above. Anchor it to the
+    // nearest visible glyph before that boundary, so stepping left from the next line lands at
+    // the previous line's right edge rather than the paragraph's start.
+    const previousGlyph = boundaryGlyphRect(container as Text, range.startOffset, -1);
+    if (previousGlyph) {
+      return {
+        left: previousGlyph.right,
+        top: previousGlyph.top,
+        height: previousGlyph.height
+      };
+    }
+    // At the start of a text node there is no glyph before the boundary; the first visible glyph
+    // is the line's left edge instead.
+    const nextGlyph = boundaryGlyphRect(container as Text, range.startOffset, 1);
+    if (nextGlyph) {
+      return { left: nextGlyph.left, top: nextGlyph.top, height: nextGlyph.height };
+    }
     // Degenerate collapsed rect (rare): anchor at the text node's own box.
     const nodeRange = document.createRange();
     nodeRange.selectNodeContents(container);
@@ -83,6 +101,54 @@ export function caretRect(range: Range): { left: number; top: number; height: nu
     top: box.top + padTop,
     height: box.height > 0 ? box.height : estimateLineHeight(element)
   };
+}
+
+/**
+ * The nearest visible character rectangle before or after a zero-width boundary. A wrapped space,
+ * a newline or another non-painting character can have no rectangle of its own, so the search
+ * continues in the requested direction until a painted character is found.
+ */
+function boundaryGlyphRect(text: Text, offset: number, direction: -1 | 1): DOMRect | null {
+  let cursor = Math.max(0, Math.min(offset, text.data.length));
+  while (direction < 0 ? cursor > 0 : cursor < text.data.length) {
+    const start = direction < 0 ? previousCharacterStart(text.data, cursor) : cursor;
+    const end = direction < 0 ? cursor : nextCharacterEnd(text.data, cursor);
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, end);
+    const rects = [...range.getClientRects()].filter((rect) => rect.height > 0);
+    if (rects.length > 0) {
+      return direction < 0 ? rects[rects.length - 1] : rects[0];
+    }
+    cursor = direction < 0 ? start : end;
+  }
+  return null;
+}
+
+/** The start of the code point immediately before `offset`. */
+function previousCharacterStart(text: string, offset: number): number {
+  const end = Math.max(0, Math.min(offset, text.length));
+  if (end >= 2) {
+    const low = text.charCodeAt(end - 1);
+    const high = text.charCodeAt(end - 2);
+    if (low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff) {
+      return end - 2;
+    }
+  }
+  return Math.max(0, end - 1);
+}
+
+/** The end of the code point immediately after `offset`. */
+function nextCharacterEnd(text: string, offset: number): number {
+  const start = Math.max(0, Math.min(offset, text.length));
+  if (start < text.length - 1) {
+    const high = text.charCodeAt(start);
+    const low = text.charCodeAt(start + 1);
+    if (high >= 0xd800 && high <= 0xdbff && low >= 0xdc00 && low <= 0xdfff) {
+      return start + 2;
+    }
+  }
+  return Math.min(text.length, start + 1);
 }
 
 /**

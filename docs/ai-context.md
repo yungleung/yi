@@ -775,6 +775,14 @@ a line lands one character in from the node's end (`caret/navigation.ts: endOfPr
 the end itself is the line the caret is already on. `fence-source-caret.js` holds both through the
 editor.
 
+**A soft wrap is a visual line without a newline character.** Stepping left from the first character
+of a wrapped line can name the collapsed space that ended the line above; WebKit can give that
+collapsed range no rectangle at all. The caret geometry therefore searches from the zero-sized
+boundary to the nearest character that paints, taking its right edge when stepping back and its left
+edge when stepping forward (`caret/geometry.ts: boundaryGlyphRect`). A Left arrow from the second
+visual line lands at the first line's real right edge rather than at the paragraph's top-left;
+`wrapped-line-left.js` holds it.
+
 **An empty line is a box, not a character.** A blank paragraph, an empty list item, an empty table
 cell and an empty fenced body all hold an *empty* text node: the space they used to hold was a
 character the reader could select and copy, and the document never had it. What gives each of them a
