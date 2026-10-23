@@ -58,6 +58,24 @@
   position: relative;
 }
 
+/* A heading block owns the gutter in which its level markers sit. The negative margin and equal
+   padding leave every child at its original x-position while extending the block's content-
+   visibility box far enough left that the marker and its hover target remain hit-testable. */
+.markdown-heading-block {
+  margin-inline-start: calc(-1.5rem * var(--md-page-scale));
+  padding-inline-start: calc(1.5rem * var(--md-page-scale));
+}
+
+/* Keep the heading hovered while the pointer moves through the gutter where its marker sits.
+   The target belongs to the heading but is absolute, so it changes neither indentation nor the
+   line box; the marker itself stays non-interactive. */
+.markdown-heading-hover-target {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(-1.5rem * var(--md-page-scale));
+  width: calc(1.5rem * var(--md-page-scale));
+}
+
 .markdown-heading-marker {
   position: absolute;
   inset-inline-start: calc(-1.5rem * var(--md-page-scale));

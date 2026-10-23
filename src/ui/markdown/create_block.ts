@@ -119,6 +119,11 @@ class BlockView implements BlockComponent {
 
   private renderParsed(node: BlockNode, children: RootContent[]): HTMLElement {
     const element = this.container(node);
+    // The heading's level marker sits outside its own content box. The block owns that gutter so
+    // content-visibility does not clip the marker or its hover target (`styles.css`).
+    if (children.some((child) => child.type === 'heading')) {
+      element.classList.add('markdown-heading-block');
+    }
     appendChildren(element, children);
     return element;
   }

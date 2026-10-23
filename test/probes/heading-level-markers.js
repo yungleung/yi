@@ -1,8 +1,9 @@
 /**
  * Heading level markers: every heading carries the supplied h1-h6 glyph in a fixed-size left
- * gutter, and the decoration never enters the document or takes a pointer.
+ * gutter, and its invisible hover target keeps that gutter part of the heading.
  *
- * @covers src/ui/markdown/nodes/heading.ts, src/ui/markdown/nodes/heading_marker.ts,
+ * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/heading.ts,
+ *   src/ui/markdown/nodes/heading_hover.ts, src/ui/markdown/nodes/heading_marker.ts,
  *   src/styles.css
  */
 (async () => {
@@ -130,6 +131,36 @@
         Math.abs(row.markerCenter - row.textCenter) <= 1.5
     ),
     alignments
+  );
+
+  const gutterHits = headings.map((heading, index) => {
+    const rect = heading.getBoundingClientRect();
+    const textRect = (() => {
+      const text = t.textNodesIn(heading)[0] ?? null;
+      if (text === null) {
+        return null;
+      }
+      const range = document.createRange();
+      range.setStart(text, 0);
+      range.setEnd(text, Math.min(1, text.data.length));
+      return range.getBoundingClientRect();
+    })();
+    if (textRect === null) {
+      return null;
+    }
+    const hit = document.elementFromPoint(
+      rect.left - 12 * scale,
+      textRect.top + textRect.height / 2
+    );
+    return {
+      hit: hit ? `${hit.tagName}.${String(hit.className)}` : null,
+      insideHeading: hit ? heading.contains(hit) : false
+    };
+  });
+  check(
+    'the marker’s gutter remains part of the heading’s hover surface',
+    gutterHits.every((row) => row?.insideHeading === true),
+    gutterHits
   );
 
   const rules = (list) =>
