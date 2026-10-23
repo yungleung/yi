@@ -21,6 +21,7 @@ writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   consentFrom,
   versionMessage,
+  versionTitle,
   versionLocation,
   versionStamp,
   versionedNow,
@@ -117,6 +118,21 @@ check(
   'a comment of nothing but spaces is no comment',
   versionMessage('A note', new Date(2026, 9, 1, 9, 5), '   '),
   { subject: 'A note · 2026-10-01 09:05', body: null }
+);
+check(
+  'a history row shows the title without the stamp the commit subject carries',
+  versionTitle('A note · 2026-10-01 20:15'),
+  'A note'
+);
+check(
+  'a subject without the app stamp is left as it was written',
+  versionTitle('A note without a stamp'),
+  'A note without a stamp'
+);
+check(
+  'only the final app stamp is hidden',
+  versionTitle('A note · 2026-10-01 20:15 remains in the title · 2026-10-02 09:30'),
+  'A note · 2026-10-01 20:15 remains in the title'
 );
 /** One version row, for the cases about what a list is. */
 const row = { hash: 'abc', at: 1790855254, subject: 'A note · 2026-10-01 20:15', body: '' };

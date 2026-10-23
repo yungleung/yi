@@ -217,9 +217,11 @@ Pressing the button reads once and opens `ui/versioning/version_history_modal.ts
 history is `ready` and holds at least one version. A note with no file, no repository, no versions,
 or an unreadable history opens nothing; the status button already says there is nothing to show.
 The modal is modelled on the template editor: a centred panel, a history sidebar on the left, and
-the selected version's diff in the right column. Rows show the stamp, message and comment, newest
-first; the newest is selected on open. Choosing another row changes the selection and the right
-column without closing the modal. The living list is `services/versions.ts`: it reads through
+the selected version's diff in the right column. Rows show the stamp once above a subject containing
+the title alone; the app-written ` · stamp` suffix remains in Git's subject but is hidden from this
+row. Rows also show the comment, newest first; the newest is selected on open. Choosing another row
+changes the selection and the right column without closing the modal. The living list is
+`services/versions.ts`: it reads through
 `src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
 workspace or the answer changes, and when the modal opens or a version is saved. `saveVersion()`
 awaits the read after a successful commit, so the status stamp changes before the action returns.

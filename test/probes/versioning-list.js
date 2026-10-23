@@ -147,8 +147,8 @@
     check(
       'the history sidebar lists the note’s versions, the newest first',
       rows.length === 2 &&
-        subjectOf(rows[0]) === 'The note · 2026-10-01 20:16' &&
-        subjectOf(rows[1]) === 'The note · 2026-10-01 20:15',
+        subjectOf(rows[0]) === 'The note' &&
+        subjectOf(rows[1]) === 'The note',
       rows.map(subjectOf)
     );
     check(

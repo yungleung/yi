@@ -15,7 +15,7 @@
 import { eventManager } from '../../services/event_manager';
 import { t } from '../../services/i18n';
 import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versions';
-import { versionStamp, type Version } from '../../services/versioning';
+import { versionStamp, versionTitle, type Version } from '../../services/versioning';
 import { BaseComponent } from '../component';
 import { VersionDiffView } from './version_diff_view';
 
@@ -186,7 +186,7 @@ export class VersionHistoryModal extends BaseComponent {
     const subject = document.createElement('span');
     subject.className = 'mt-0.5 block text-xs';
     subject.setAttribute('data-version-subject', 'true');
-    subject.textContent = version.subject;
+    subject.textContent = versionTitle(version.subject);
     row.append(stamp, subject);
     if (version.body.trim() !== '') {
       const comment = document.createElement('p');

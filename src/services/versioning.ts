@@ -162,6 +162,11 @@ export function versionStamp(at: number): string {
   return `${date} ${two(when.getHours())}:${two(when.getMinutes())}`;
 }
 
+/** The title a history row shows, without the stamp appended to the commit subject. */
+export function versionTitle(subject: string): string {
+  return subject.replace(/ · \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, '');
+}
+
 /**
  * The message a version carries: the note's own name and the minute it was asked for as the
  * subject — so `git log --oneline` reads like the reader's own list of notes, and the app's own

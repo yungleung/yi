@@ -642,6 +642,9 @@ elements) unless it says otherwise.
   its changed-line jump moved the whole modal and hid the sidebar. `saveVersion()` now awaits the
   history reread after the commit; the diff owns its flex display and scroll area and moves only its
   own scroll position. `versioning-save` and `versioning-diff-large` hold both fixes.
+  The history row also renders its stamp once: `versionTitle()` removes the app-written
+  ` · stamp` suffix from the displayed Git subject, while the commit subject itself is unchanged.
+  `check-versioning.mjs` and `versioning-list` hold the display rule.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the

@@ -317,7 +317,8 @@ answering both content types and the fetched copies gone at the end),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the history modal's two columns, the newest row
-selected, and the comment under its own row and no other; `versioning-list-empty` — the four states
+selected with its title shown separately from the stamp, and the comment under its own row and no
+other; `versioning-list-empty` — the four states
 that open no modal, the last by pointing the git seam at a git that is not there),
 seeing a version and going back to it (`versioning-diff` — the modal's row press replacing the
 right column: the whole note as lines, the changed one marked on both sides, the first change in
