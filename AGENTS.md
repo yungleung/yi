@@ -51,6 +51,11 @@ brief — read it first; this file is the short version and the non-negotiables.
   it, and commit it on the branch. Landing it on `main` is the maintainer's call — a merge waits
   for them to ask for it, in that turn. What is reported before that is what changed, which test
   fails without it, and what was measured.
+- **Prove the final tree once.** Before a merge, run `npx tsc --noEmit`, `cargo test`,
+  `npm run check`, and the probes affected by the change. Run `npm run probe:all` when the
+  tree to be merged has not already passed it — especially after `main` moved, a conflict,
+  or a dependency, toolchain, capability or bridge change. A new merge commit does not justify
+  repeating the full suite when its tree hash is the one that already passed.
 - Behaviour changes need a test that fails without them; say which one proves it.
 - Commit style: `type(scope): subject`, lower case, imperative.
 - Update `docs/ai-context.md` when a rule, path or command changes — it is the entry
