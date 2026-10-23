@@ -2,11 +2,12 @@
  * The third kind: a `.tex` the reader compiles themselves.
  *
  * LaTeX is the kind where the *file the document refers to* matters most, because the pictures are
- * only referred to (`self-contained: false`, Zettlr's own setting — `\includegraphics` with the
- * path the app resolved, not the bytes): what the reader's LaTeX finds is what the app wrote down,
- * so this probe uses a picture whose *name* holds a space, a `#` and a `%` — the three characters
- * that mean something else in either language — and then reads the path back out of the `.tex`,
- * un-escapes it, and checks that the file is there. The other half of a LaTeX export is that it is
+ * only referred to (`self-contained: false`, Zettlr's own setting — `\includegraphics` names a
+ * portable relative path and the app copies the bytes beside the `.tex`): what the reader's LaTeX
+ * finds is what the app wrote down, so this probe uses a picture whose *name* holds a space, a `#`
+ * and a `%` — the three characters that mean something else in either language — and then reads the
+ * path back out of the `.tex`, un-escapes it, and checks that the file is there. The other half of a
+ * LaTeX export is that it is
  * a *whole* document (`\documentclass` and `\begin{document}`: `export.latex.yaml` says
  * `standalone: true` outright, because Zettlr's file is one only through a side effect of
  * `title-prefix` — measured), and that the citations became a reference list in the page's style.
@@ -218,16 +219,17 @@
       await files.writeTextAtomically(settings, shipped);
     }
 
-    // The picture: the path pandoc wrote down, un-escaped, is the file the app found.
+    // The picture: the relative path pandoc wrote down, un-escaped, is the file the app copied.
     // `\pandocbounded{\includegraphics[keepaspectratio,alt={shot}]{the path}}` — the first brace
     // group after the options is the file the writer was handed.
     const written_path = /\\includegraphics\[[^\]]*\]\{([^{}]*)\}/.exec(tex)?.[1] ?? null;
     const unescaped =
       written_path === null ? null : written_path.replace(/\\([#$%&_{}])/g, '$1').trim();
-    const there = unescaped === null ? null : await exists(unescaped);
+    const portable = `note.assets/${picture}`;
+    const there = unescaped === null ? null : await exists(`${folder}/${unescaped}`);
     check(
-      'and the picture it refers to is the file the app resolved — spaces, # and % and all',
-      unescaped === `${folder}/${picture}` && there === true,
+      'and the picture it refers to is the portable file beside the source — spaces, # and % and all',
+      unescaped === portable && there === true,
       { written: written_path, unescaped, there }
     );
     check(

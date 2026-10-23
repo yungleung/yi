@@ -1,0 +1,5 @@
+standalone: true
+pdf-engine: xelatex
+highlight-style: pygments
+metadata:
+  subject: Example PDF export

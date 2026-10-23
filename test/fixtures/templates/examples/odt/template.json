@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "example-odt",
+  "name": "Example OpenDocument reference",
+  "kind": "odt",
+  "mode": "reference-doc",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/odt",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": null,
+  "reference_doc": "reference.odt",
+  "csl": null,
+  "assets": [
+    "college-cover.png",
+    "college-cover.svg",
+    "example.svg",
+    "references.bib"
+  ],
+  "deliver": []
+}

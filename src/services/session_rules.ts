@@ -220,6 +220,34 @@ export function openInto(
   return reachable({ ...state, current: opened.id, documents: [...documents, opened] });
 }
 
+/**
+ * Replaces a read-only reference with the copy bundled in this run.
+ *
+ * A reference has a stable id, so a session file can restore yesterday's guide under the same id.
+ * The fresh text and title replace that copy; a different document with the id is left alone.
+ */
+export function replaceReference(
+  state: SessionState,
+  incoming: IncomingDocument,
+  id: string
+): SessionState {
+  const existing = state.documents.find((document) => document.id === id);
+  if (!existing) {
+    return openInto(state, incoming, id, false);
+  }
+  if (!existing.readOnly) {
+    return state;
+  }
+  const fresh = openDocument(incoming, id);
+  return {
+    ...state,
+    current: id,
+    documents: state.documents.map((document) =>
+      document.id === id ? { ...fresh, stacked: document.stacked } : document
+    )
+  };
+}
+
 /** Puts a document into the stack, or takes it out again. */
 export function setStacked(state: SessionState, id: string, stacked: boolean): SessionState {
   return {

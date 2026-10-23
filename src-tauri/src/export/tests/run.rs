@@ -19,6 +19,8 @@
             suppress_references: false,
             template_id: None,
             self_contained: false,
+            native_bibliography: None,
+            note_assets: Vec::new(),
         }
     }
 
@@ -733,6 +735,153 @@
         deliver_latex_assets(&package, &manifest, &request).unwrap();
         assert!(dir.join("out/journal.cls").is_file());
         assert!(dir.join("out/img/logo.png").is_file());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_native_bibliography_replaces_the_package_sample_with_the_cited_export() {
+        let dir = scratch("latex-native-bibliography");
+        let package = dir.join("package");
+        fs::create_dir_all(package.join("bibliography")).unwrap();
+        fs::create_dir_all(package.join("figures")).unwrap();
+        fs::write(package.join("references.bib"), "sample-only").unwrap();
+        fs::write(package.join("bibliography/apsrev4-2.bst"), "bst").unwrap();
+        fs::write(package.join("figures/spectrum.pdf"), b"pdf").unwrap();
+        let manifest = package_manifest(
+            "latex",
+            vec![
+                "references.bib".to_string(),
+                "bibliography/apsrev4-2.bst".to_string(),
+                "figures/spectrum.pdf".to_string(),
+            ],
+        );
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+            native_bibliography: Some(NativeBibliography {
+                path: "references.bib".to_string(),
+                text: "@article{cited1965,\n  title={Only the cited work}\n}\n".to_string(),
+            }),
+            ..request_in(&dir)
+        };
+        deliver_latex_assets(&package, &manifest, &request).unwrap();
+        assert_eq!(
+            fs::read_to_string(dir.join("out/references.bib")).unwrap(),
+            "@article{cited1965,\n  title={Only the cited work}\n}\n"
+        );
+        assert!(dir.join("out/bibliography/apsrev4-2.bst").is_file());
+        assert!(dir.join("out/figures/spectrum.pdf").is_file());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_native_bibliography_target_cannot_leave_the_output_folder() {
+        let dir = scratch("latex-bibliography-path");
+        let package = dir.join("package");
+        fs::create_dir_all(&package).unwrap();
+        let manifest = package_manifest("latex", Vec::new());
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out").join("note.tex").to_string_lossy().into_owned(),
+            native_bibliography: Some(NativeBibliography {
+                path: "../outside.bib".to_string(),
+                text: "@article{cited1965}\n".to_string(),
+            }),
+            ..request_in(&dir)
+        };
+        assert!(deliver_latex_assets(&package, &manifest, &request).is_err());
+        assert!(!dir.join("outside.bib").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn native_bibliography_leaves_citeproc_and_the_reader_library_off_the_command_line() {
+        let dir = scratch("latex-native-arguments");
+        fs::write(dir.join("library.bib"), "@article{smith2020}\n").unwrap();
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            native_bibliography: Some(NativeBibliography {
+                path: "references.bib".to_string(),
+                text: "@article{smith2020}\n".to_string(),
+            }),
+            ..request_in(&dir)
+        };
+        let arguments = named_arguments_for(&dir, &request, kind_of("latex").unwrap());
+        assert!(!arguments.contains(&"--bibliography".to_string()));
+        assert!(!arguments.contains(&"--csl".to_string()));
+        assert!(!arguments
+            .iter()
+            .any(|argument| argument.starts_with("reference-section-title=")));
+    }
+
+    #[test]
+    fn latex_note_pictures_are_copied_under_the_generated_asset_bundle() {
+        let dir = scratch("latex-note-images");
+        fs::create_dir_all(dir.join("input/images")).unwrap();
+        fs::write(dir.join("input/images/photo.png"), b"new picture").unwrap();
+        fs::create_dir_all(dir.join("out/paper.assets/images")).unwrap();
+        fs::write(dir.join("out/paper.assets/images/photo.png"), b"old picture").unwrap();
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out/paper.tex").to_string_lossy().into_owned(),
+            note_assets: vec![NoteAsset {
+                source: dir
+                    .join("input/images/photo.png")
+                    .to_string_lossy()
+                    .into_owned(),
+                target: "paper.assets/images/photo.png".to_string(),
+            }],
+            ..request_in(&dir)
+        };
+        deliver_note_assets(&request).unwrap();
+        assert_eq!(
+            fs::read(dir.join("out/paper.assets/images/photo.png")).unwrap(),
+            b"new picture"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_note_picture_wins_over_the_template_picture_at_its_relative_path() {
+        let dir = scratch("latex-note-image-wins");
+        let package = dir.join("package");
+        fs::create_dir_all(package.join("figures")).unwrap();
+        fs::write(package.join("figures/spectrum.pdf"), b"template picture").unwrap();
+        fs::write(dir.join("spectrum.pdf"), b"note picture").unwrap();
+        let manifest = package_manifest("latex", vec!["figures/spectrum.pdf".to_string()]);
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out/paper.tex").to_string_lossy().into_owned(),
+            note_assets: vec![NoteAsset {
+                source: dir.join("spectrum.pdf").to_string_lossy().into_owned(),
+                target: "figures/spectrum.pdf".to_string(),
+            }],
+            ..request_in(&dir)
+        };
+        deliver_latex_assets(&package, &manifest, &request).unwrap();
+        deliver_note_assets(&request).unwrap();
+        assert_eq!(
+            fs::read(dir.join("out/figures/spectrum.pdf")).unwrap(),
+            b"note picture"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_note_picture_target_must_stay_in_its_generated_bundle() {
+        let dir = scratch("latex-note-image-path");
+        fs::write(dir.join("photo.png"), b"picture").unwrap();
+        let request = ExportRequest {
+            kind: "latex".to_string(),
+            output_path: dir.join("out/paper.tex").to_string_lossy().into_owned(),
+            note_assets: vec![NoteAsset {
+                source: dir.join("photo.png").to_string_lossy().into_owned(),
+                target: "../outside/photo.png".to_string(),
+            }],
+            ..request_in(&dir)
+        };
+        assert!(deliver_note_assets(&request).is_err());
+        assert!(!dir.join("outside/photo.png").exists());
         let _ = fs::remove_dir_all(&dir);
     }
 use super::*;

@@ -124,7 +124,7 @@ reader asks.
 
 Single file:
 
-- `.tex` and `.html` → a text template (an HTML file may serve the HTML or EPUB kind).
+- `.tex`, `.html` and `.xhtml` → a text template (HTML serves the HTML kind; XHTML proposes EPUB).
 - `.docx`, `.odt` → a reference document.
 - `.csl` → a citation style for a package that also has an entry; a lone `.csl` is refused with
   "a style is part of a template package, not a template".

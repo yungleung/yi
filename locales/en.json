@@ -81,6 +81,8 @@
   "export.replaceConfig": "Replace with the shipped file",
   "export.replaceQuestion": "Replace your copy of {path} with the one this build ships? Anything you changed in it is lost.",
   "export.noReferences": "No reference list",
+  "export.bibliographyRequired": "This template writes a BibTeX source file. Select a bibliography in Settings → Citation before exporting.",
+  "export.bibliographyMissing": "These cited keys are not in the selected bibliography: {keys}",
   "export.paper": "Page size",
   "export.paperOwn": "The settings file's own",
   "export.orientation": "Orientation",

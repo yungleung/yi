@@ -76,6 +76,11 @@ export interface ExportAnswers {
    */
   rasterised?: (destination: string) => string | null;
   /**
+   * The portable destination for the file an image resolved to. LaTeX source exports use this so
+   * the `.tex` never contains a machine-specific absolute path; other kinds leave it undefined.
+   */
+  imageTarget?: (file: string, destination: string) => string;
+  /**
    * How the citations are written, for kinds whose conversion is the app's *own* (`markdown`): every
    * other kind leaves `[@key]` as written and lets pandoc's citeproc render it, and such a kind has
    * no citeproc behind it. So the app renders what it already knows how to render — the words a
@@ -181,7 +186,8 @@ async function imageRewrites(tree: Walkable, answers: ExportAnswers): Promise<Re
       (await resolvedFile(image.url, answers)) ??
       (await remoteFile(image.url, answers, fetched));
     if (file !== null) {
-      rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, file) });
+      const target = answers.imageTarget?.(file, image.url) ?? file;
+      rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, target) });
     }
   }
   return rewrites;

@@ -9,18 +9,19 @@
  * The Help menu's item reaches this through the command registry (`menu.ts` names the command);
  * `main.ts` also calls `openTutorial` once on a first start with nothing restored.
  *
- * May import: the session, the tutorial's text and the command registry. Upholds: one way to open
- * the tutorial, and no second copy of what it says.
+ * May import: the shared reference flow, the tutorial's text and the command registry. Upholds: one
+ * way to open the tutorial, and no second copy of what it says.
  */
 
 import { documentSession } from '../../services/session';
 import { registerCommand } from '../markdown/commands/registry';
+import { openReferenceDocument } from '../reference_document';
 import { tutorialText } from './tutorial_text';
 import { shouldOpenTutorial } from './tutorial_rules';
 
 /** Puts the tutorial on screen. It is already open? Bringing it forward is the session's answer. */
 export async function openTutorial(): Promise<void> {
-  await documentSession.openFile({ path: null, content: tutorialText(), readOnly: true });
+  await openReferenceDocument(tutorialText());
 }
 
 /** The first-start half: a first start with nothing restored opens it, and nothing else does. */

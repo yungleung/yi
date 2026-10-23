@@ -1,0 +1,7 @@
+standalone: true
+toc: true
+toc-depth: 2
+shift-heading-level-by: 0
+metadata:
+  subject: Example OpenDocument export
+  toc-title: Contents

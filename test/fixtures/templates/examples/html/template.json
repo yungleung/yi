@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "example-html",
+  "name": "Example HTML template",
+  "kind": "html",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "test/fixtures/templates/examples/html",
+    "source": null,
+    "license": "CC0-1.0"
+  },
+  "template": "template.html",
+  "reference_doc": null,
+  "csl": null,
+  "assets": [
+    "assets/site.css",
+    "assets/site.js"
+  ],
+  "deliver": []
+}

@@ -45,6 +45,7 @@ import {
   openDecision,
   openInto,
   parseSession,
+  replaceReference,
   restore as restoreDocument,
   serializeSession,
   setPath,
@@ -184,6 +185,29 @@ class DocumentSession {
     // and its view, whichever answer the reader gave.
     this.capture();
     this.state = openInto(this.state, incoming, id, keep);
+    const opened = this.current();
+    if (opened) {
+      this.show(opened);
+    }
+    this.announce();
+    await this.persist();
+  }
+
+  /**
+   * Opens a bundled read-only reference, replacing a restored copy when the guide changed.
+   *
+   * A reference has a stable id, so `openFile` would otherwise answer `alreadyOpen` and leave the
+   * old text from the session file on screen. The fresh bundled text is the authority.
+   */
+  async openReference(incoming: IncomingDocument): Promise<void> {
+    const id = keyFor(incoming.path, incoming.content, () => `${this.run}-${++this.madeKeys}`);
+    const existing = this.state.documents.find((document) => document.id === id);
+    if (!existing || !existing.readOnly) {
+      await this.openFile(incoming);
+      return;
+    }
+    this.capture();
+    this.state = replaceReference(this.state, incoming, id);
     const opened = this.current();
     if (opened) {
       this.show(opened);

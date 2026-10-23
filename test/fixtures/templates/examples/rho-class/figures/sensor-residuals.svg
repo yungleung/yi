@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
+  <rect width="720" height="360" fill="#ffffff"/>
+  <g stroke="#d7d9d7" stroke-width="1">
+    <path d="M72 48H684M72 112H684M72 176H684M72 240H684M72 304H684"/>
+    <path d="M72 48V304M194 48V304M316 48V304M438 48V304M560 48V304M684 48V304"/>
+  </g>
+  <g fill="none" stroke-width="3">
+    <path stroke="#6e8f77" d="M72 196C102 166 132 232 164 178S226 122 258 170 320 228 352 174 414 126 446 162 508 218 540 176 604 130 636 162 668 190 684 174"/>
+    <path stroke="#a8b8ad" stroke-dasharray="7 5" d="M72 214C106 224 136 188 168 210S230 246 262 202 324 168 356 206 418 234 450 194 512 160 544 204 606 226 638 190 670 184 684 196"/>
+  </g>
+  <g stroke="#243a2a" stroke-width="2">
+    <path d="M72 304H684"/>
+    <path d="M72 48V304"/>
+  </g>
+  <g fill="#4e6153" font-family="Arial, sans-serif" font-size="16">
+    <text x="76" y="30">Common-mode residual</text>
+    <text x="582" y="336">time (h)</text>
+    <text x="14" y="52">4</text>
+    <text x="14" y="180">0</text>
+    <text x="10" y="308">-4</text>
+  </g>
+  <g fill="#1f4d2d" font-family="Arial, sans-serif" font-size="14">
+    <line x1="480" y1="26" x2="508" y2="26" stroke="#6e8f77" stroke-width="3"/>
+    <text x="516" y="31">calibrated</text>
+    <line x1="610" y1="26" x2="638" y2="26" stroke="#a8b8ad" stroke-width="3" stroke-dasharray="7 5"/>
+    <text x="646" y="31">raw</text>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+ieee.csl is the IEEE Citation Style Language style maintained by the Citation Style Language
+project and its listed contributors.
+
+Source: https://github.com/citation-style-language/styles/blob/master/ieee.csl
+Licence: CC-BY-SA-3.0
+https://creativecommons.org/licenses/by-sa/3.0/
+
+The file is redistributed unchanged. Its full contributor list and licence declaration are inside
+the CSL file.

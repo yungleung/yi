@@ -75,6 +75,13 @@ document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command 
 `check-tutorial.mjs` holds the language and first-start rules, and `tutorial.js` /
 `tutorial-first-start.js` hold the app behavior.
 
+**Help → Documentation** (`F1`) opens the bundled English template-authoring guide
+`src/ui/documentation/documentation.en.md` through the same pathless read-only reference rule
+(`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
+file without a session question. The guide includes Pandoc and TeX installation requirements and
+points to the seven complete packages under `test/fixtures/templates/examples/`, including the
+CC BY 4.0 Rho Class PDF article and its required attribution.
+
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
 window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a
@@ -443,6 +450,13 @@ year and no name, and the list is appended under the heading the app asks for. *
 is metadata, not a variable** — a `variables:` line leaves the list exactly where it was (measured) —
 so a reader who wants the keys resolved and no list writes a `metadata:` block in their settings file.
 
+**An ODT contents field is made visible before either office suite opens it.** Pandoc writes
+`text:table-of-content-source` and its title but leaves the generated `text:index-body` empty.
+LibreOffice may refresh that field; OnlyOffice displays no contents at all until a body exists.
+After Pandoc succeeds, `src-tauri/src/export/odt_toc.rs` reads the heading bookmarks it wrote and
+caches level-one/two entries in the field, preserving `mimetype` as the first ZIP entry. The note is
+not edited and no TOC is authored in Markdown; `toc: true` remains the package's instruction.
+
 **A template is a package under the app's export data, not a note.** The folder is
 `<app data>/export/templates/<id>/`; `template.json` is the app's manifest — schema, id, name, export
 kind, `template`/`wrapper`/`reference-doc` mode, provenance and licence, one entry, the CSL and the
@@ -451,9 +465,12 @@ display name (`-2`, `-3` on collision); it is edited through the details form, a
 read-only view in the package editor. A package belongs to one export kind. `assets` are every other
 file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
 export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
-file the template names travels too.
+file the template names travels too. Pictures the note itself names are made portable by
+`src/ui/export/latex_images.ts` and copied by `run.rs`: a local picture that replaces a package asset
+keeps the same relative path and its bytes win, while other local pictures go under
+`<output-stem>.assets/`; Pandoc never sees an absolute note path in the finished `.tex`.
 
-Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan.rs` reads a single file, a
+Import is **inspect, then confirm**. `src-tauri/src/export/templates/scan/mod.rs` reads a single file, a
 folder or a zip without copying: a `.tex`/`.html` is a text template, a `.docx`/`.odt` a reference
 document, a lone `.csl` is refused, and a lone defaults file is refused in favour of the defaults
 panel. A folder or zip is walked recursively, dot-entries ignored, and the main `.tex` chosen by
@@ -470,6 +487,23 @@ refused, as are symlinks, more than 2,000 files or 200 MB. `createDefault` is th
 writes the same shape, from `pandoc --print-default-template` or
 `--print-default-data-file=reference.docx`.
 
+The Rust scan and package facades keep the caller-facing paths stable while their children own one
+rule each:
+
+```text
+scan/archive.rs       ZIP safety and extraction
+scan/detection.rs     entry, kind and mode detection
+scan/source.rs        file/folder listing, limits and copies
+scan/wrapper.rs       complete-document conversion
+package/import.rs     creation, import and details mutation
+package/library.rs    discovery, summaries and resolution
+package/editor.rs     code-panel file access
+package/alias.rs      export-time alias staging
+package/storage.rs    package paths, naming and file classification
+```
+
+`scan/mod.rs` and `package/mod.rs` remain the stable orchestration and IPC-facing boundaries.
+
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
 row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
@@ -483,11 +517,30 @@ JavaScript and pictures when ticked. HTML's target is a bundle folder: `/notes/n
 `/notes/note/note.html`, with `note.assets/` and the template's files inside it. When the box is
 off, the page keeps relative links. The bundle always receives the package's whole asset tree,
 whether or not the page also embedded those files; web URLs stay URLs.
+The distinction between the manifest CSL and a `csl` entry in package defaults is the precedence
+the order above creates: a package default is loaded before the reader's explicit `--csl`, while
+the manifest CSL is appended afterward. A template that must enforce its own citation style names
+the file in `template.json`; one that should follow Settings → Citation leaves the manifest `csl`
+null. Do not add a second citeproc filter merely to change style: Yi already supplies citeproc, and
+running it twice duplicates references.
 `ExportRequest.self_contained` becomes an explicit `--embed-resources=true|false`, so an older
 reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pack.rs` rewrites
 chapter links to an `assets/` folder, copies the package's web resources there and declares them in
 `content.opf`. DOCX, ODT and PDF are containers and need no sidecars. The app never runs TeX's
 unrestricted shell escape or `tlmgr`, and it does not download journal kits.
+
+**A native-BibTeX LaTeX package receives a cited-only bibliography from Settings → Citation.**
+`src/ui/export/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`
+target and a filter list that does not contain `citeproc` (the example also sets
+`cite-method: natbib`). It reads citation keys through the same Markdown parser the editor uses,
+filters the selected BibTeX or CSL-JSON library, and converts the result to BibTeX. The shared
+`src/citations/library.ts` owns the `citation-key`-then-`id` rule for both editor formatting and
+this export. `ExportRequest.native_bibliography` carries the generated text and relative target;
+`run.rs` omits the ordinary `--bibliography`/`--csl` citeproc arguments, refuses a target outside
+the output folder, skips the package's sample file, and writes the generated `.bib` beside the
+`.tex`. Missing cited keys and a missing citation-tab selection are reported rather than silently
+falling back. `export-template-native-bibliography.js` drives both a `.bib` and CSL-JSON selection
+through the running app and proves uncited works do not reach the source tree.
 
 The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
@@ -499,7 +552,8 @@ details, duplicate, remove), the confirmation is `import_dialog.ts`, and the man
 by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
 `export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
 `export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
-`export-template-pdf.js`.
+`export-template-pdf.js`; `export-template-native-bibliography.js` covers cited-only BibTeX source
+packaging, and `template-examples.js` validates and exports the seven authoring examples.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

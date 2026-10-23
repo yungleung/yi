@@ -34,37 +34,15 @@
  * replacement on the card (`export-config-replace.js`). What this holds is the file this build ships.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { rolldown } from 'rolldown';
+import { epubcheckJar, have, runEpubcheck } from './support/epubcheck.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const defaults = join(root, 'src-tauri/assets/export/export.epub.yaml');
-
-/** Whether a program answers at all — the one thing a skip is decided by. */
-const have = (program, argument) => spawnSync(program, [argument], { encoding: 'utf8' }).error === undefined;
-
-/** The epubcheck jar: the one `YI_EPUBCHECK` names, else the newest under the cache folder. */
-function epubcheckJar() {
-  const named = process.env.YI_EPUBCHECK;
-  if (named !== undefined && named !== '') {
-    return existsSync(named) ? named : null;
-  }
-  const cache = join(homedir(), '.cache/yi-tools/epubcheck');
-  if (!existsSync(cache)) {
-    return null;
-  }
-  const versions = readdirSync(cache).sort();
-  for (const version of versions.reverse()) {
-    const jar = join(cache, version, 'epubcheck.jar');
-    if (existsSync(jar)) {
-      return jar;
-    }
-  }
-  return null;
-}
 
 const missing = [];
 if (!have('pandoc', '--version')) {
@@ -145,20 +123,17 @@ if (built.error !== undefined || built.status !== 0) {
 }
 
 if (failures.length === 0) {
-  const checked = spawnSync('java', ['-jar', jar, bookPath], { encoding: 'utf8', timeout: 300_000 });
-  const verdict = `${checked.stdout ?? ''}${checked.stderr ?? ''}`;
-  const complaints = verdict.split('\n').filter((line) => /^(ERROR|FATAL)\(/.test(line));
-  const counts = verdict.split('\n').find((line) => line.startsWith('Messages:')) ?? '';
-  if (checked.status !== 0 || complaints.length > 0) {
+  const checked = runEpubcheck(bookPath);
+  if (!checked.ok) {
     failures.push(
       [
         'epubcheck did not pass the book the app writes',
-        ...complaints.map((line) => `  ${line}`),
-        counts !== '' ? `  ${counts}` : `  epubcheck said nothing: ${checked.error?.message ?? `exit ${checked.status}`}`
+        ...checked.complaints.map((line) => `  ${line}`),
+        checked.counts !== '' ? `  ${checked.counts}` : '  epubcheck said nothing'
       ].join('\n')
     );
   } else {
-    console.log(`epubcheck on the book this build writes: ${counts}`);
+    console.log(`epubcheck on the book this build writes: ${checked.counts}`);
   }
 }
 

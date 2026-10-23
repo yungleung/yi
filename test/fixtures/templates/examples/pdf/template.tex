@@ -1,0 +1,19 @@
+\documentclass{article}
+\usepackage{example}
+\usepackage{booktabs}
+\usepackage{graphicx}
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \and $endfor$}
+$endif$
+\begin{document}
+$if(title)$
+\maketitle
+$endif$
+$body$
+\end{document}

@@ -1,0 +1,17 @@
+title: Dissertation title
+subtitle: A Dissertation in Template Design
+author:
+  - "Author: John"
+  - "Institution: Example College"
+  - "Instructor: Professor Jane Scholar"
+date: "Date: October 22, 2026"
+abstract: |
+  **Abstract**\
+  This dissertation examines how a carefully designed reference document\
+  carries academic structure without obscuring the author's words.\
+  **Keywords:** academic writing, document design, ODT, reference documents
+lang: en
+keywords:
+  - academic writing
+  - document design
+  - ODT

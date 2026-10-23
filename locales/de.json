@@ -81,6 +81,8 @@
   "export.replaceConfig": "Durch die mitgelieferte Datei ersetzen",
   "export.replaceQuestion": "Ihre Kopie von {path} durch die in diesem Build mitgelieferte ersetzen? Was Sie darin geändert haben, geht verloren.",
   "export.noReferences": "Keine Literaturliste",
+  "export.bibliographyRequired": "Diese Vorlage schreibt eine BibTeX-Quelldatei. Wählen Sie vor dem Export unter Einstellungen → Zitieren eine Bibliografie aus.",
+  "export.bibliographyMissing": "Diese zitierten Schlüssel fehlen in der ausgewählten Bibliografie: {keys}",
   "export.paper": "Papierformat",
   "export.paperOwn": "Wie in den Einstellungen",
   "export.orientation": "Ausrichtung",

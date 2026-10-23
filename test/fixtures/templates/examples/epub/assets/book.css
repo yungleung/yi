@@ -1,0 +1,423 @@
+@charset "UTF-8";
+
+:root {
+  --paper: #f3eee2;
+  --ink: #20201d;
+  --muted: #716d63;
+  --rule: #b7ad9a;
+  --rust: #9d4f35;
+  --night: #1e2526;
+  --night-ink: #f1ead9;
+}
+
+html {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  font-size: 1em;
+  line-height: 1.62;
+  text-rendering: optimizeLegibility;
+}
+
+p {
+  margin: 0 0 0.72em;
+  orphans: 3;
+  widows: 3;
+}
+
+em {
+  font-style: italic;
+}
+
+strong {
+  font-weight: 700;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.cover-page {
+  padding: 0;
+  background: var(--night);
+}
+
+.cover {
+  box-sizing: border-box;
+  min-height: 95vh;
+  padding: 7% 9% 6%;
+  color: var(--night-ink);
+  background:
+    radial-gradient(circle at 20% 12%, rgb(157 79 53 / 28%), transparent 38%),
+    var(--night);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.cover-press,
+.press,
+.edition,
+.byline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.73em;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cover-press {
+  color: #c9c0ad;
+}
+
+.cover-art {
+  width: min(82%, 28em);
+  margin: 2.5em auto 1.2em;
+}
+
+.cover-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cover-room,
+.cover-chair-back {
+  fill: none;
+  stroke: #d6cbb4;
+  stroke-width: 4;
+}
+
+.cover-window {
+  fill: rgb(211 201 179 / 8%);
+  stroke: #b8ae9b;
+  stroke-width: 3;
+}
+
+.cover-chair {
+  fill: #374241;
+}
+
+.cover-cat-body,
+.cover-cat-head,
+.cover-cat-ear {
+  fill: var(--rust);
+}
+
+.cover-cat-tail {
+  fill: none;
+  stroke: var(--rust);
+  stroke-linecap: round;
+  stroke-width: 19;
+}
+
+.cover-thread {
+  fill: none;
+  stroke: #d6cbb4;
+  stroke-dasharray: 5 10;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.cover-copy {
+  margin-top: auto;
+}
+
+.cover-kicker {
+  margin: 0 0 0.45em;
+  color: #c9c0ad;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.cover-title {
+  max-width: 8em;
+  margin: 0;
+  color: #fffaf0;
+  font-size: 3.35em;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.cover-subtitle {
+  margin: 0.75em 0 0;
+  color: #d8cfbd;
+  font-size: 1em;
+  font-style: italic;
+}
+
+.cover-author {
+  margin: 1.6em 0 0;
+  padding-top: 1em;
+  border-top: 1px solid rgb(241 234 217 / 35%);
+  color: #eee5d3;
+  font-size: 0.92em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.frontmatter-page {
+  background: var(--paper);
+}
+
+.titlepage,
+.imprint-page,
+.dedication-page {
+  box-sizing: border-box;
+  min-height: 86vh;
+  padding: 12% 10%;
+}
+
+.titlepage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  break-after: page;
+  page-break-after: always;
+}
+
+.press {
+  color: var(--rust);
+}
+
+.edition {
+  margin-top: 0.6em;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.title-ornament,
+.chapter-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75em;
+  margin: 2.4em auto;
+  color: var(--rust);
+}
+
+.title-ornament span,
+.chapter-ornament span {
+  width: 4em;
+  height: 1px;
+  background: var(--rule);
+}
+
+.title-ornament b,
+.chapter-ornament b {
+  font-weight: 400;
+}
+
+.book-title {
+  max-width: 9em;
+  margin: 0 auto;
+  font-size: 3em;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+.book-subtitle {
+  margin: 1em 0 0;
+  color: var(--muted);
+  font-size: 1.15em;
+  font-style: italic;
+}
+
+.byline {
+  margin-top: 3.5em;
+}
+
+.book-author {
+  margin: 0.35em 0 0;
+  font-size: 1.18em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.imprint-page,
+.dedication-page {
+  padding-top: 18%;
+  break-before: page;
+  page-break-before: always;
+}
+
+.imprint-page h2 {
+  margin: 0 0 2em;
+  color: var(--rust);
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.imprint-page p {
+  max-width: 28em;
+  margin-right: auto;
+  margin-left: auto;
+  color: var(--muted);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-size: 0.8em;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.imprint-page .isbn {
+  margin: 1.6em auto;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.9em;
+  letter-spacing: 0.08em;
+}
+
+.dedication-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.dedication-page .dedication {
+  max-width: 20em;
+  font-size: 1.3em;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.dedication-page .dedication p {
+  margin: 0;
+  text-align: center;
+}
+
+.chapter-page {
+  background: var(--paper);
+}
+
+.chapter {
+  box-sizing: border-box;
+  max-width: 34em;
+  margin: 0 auto;
+  padding: 7% 7% 10%;
+}
+
+.chapter-ornament {
+  margin: 0 auto 3.6em;
+}
+
+.chapter h1 {
+  margin: 0 0 2.2em;
+  color: var(--ink);
+  font-size: 2.05em;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.chapter h1 + p {
+  text-indent: 0;
+}
+
+.chapter h1 + p::first-letter {
+  float: left;
+  margin: 0.08em 0.12em 0 0;
+  color: var(--rust);
+  font-size: 3.3em;
+  line-height: 0.78;
+}
+
+.chapter p {
+  text-align: justify;
+  text-indent: 1.4em;
+}
+
+.chapter hr {
+  width: 28%;
+  margin: 2.4em auto;
+  border: 0;
+  color: var(--rust);
+  text-align: center;
+}
+
+.chapter hr::after {
+  content: "◇";
+  font-size: 1em;
+}
+
+body[epub\:type="frontmatter"] {
+  padding: 7% 8%;
+}
+
+#toc {
+  max-width: 32em;
+  margin: 0 auto;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+#toc h1 {
+  margin: 0 0 2em;
+  color: var(--rust);
+  font-size: 1.7em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#toc ol {
+  padding: 0;
+  list-style: none;
+}
+
+#toc li {
+  margin: 0;
+  padding: 0.85em 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#toc a {
+  color: var(--ink);
+  font-size: 1.1em;
+  text-decoration: none;
+}
+
+#toc a::after {
+  content: "  ›";
+  color: var(--rust);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #252522;
+    --ink: #eee8dc;
+    --muted: #b9b1a4;
+    --rule: #625c52;
+  }
+
+  .cover {
+    background:
+      radial-gradient(circle at 20% 12%, rgb(157 79 53 / 32%), transparent 38%),
+      #171b1c;
+  }
+}

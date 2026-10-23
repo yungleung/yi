@@ -169,7 +169,12 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
 
     let help_submenu = SubmenuBuilder::new(app, t(language, "menu.help", &[]))
         .text("tutorial", t(language, "menu.help.tutorial", &[]))
-        .text("documentation", t(language, "menu.help.documentation", &[]))
+        .item(
+            &MenuItemBuilder::new(t(language, "menu.help.documentation", &[]))
+                .accelerator("F1")
+                .id("documentation")
+                .build(app)?,
+        )
         .text("report_issue", t(language, "menu.help.reportIssue", &[]))
         .text(
             "check_for_updates",

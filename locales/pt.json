@@ -81,6 +81,8 @@
   "export.replaceConfig": "Substituir pelo arquivo incluído",
   "export.replaceQuestion": "Substituir a sua cópia de {path} pela incluída nesta versão? O que alterou perde-se.",
   "export.noReferences": "Sem lista de referências",
+  "export.bibliographyRequired": "Este modelo gera um ficheiro de origem BibTeX. Selecione uma bibliografia em Definições → Citações antes de exportar.",
+  "export.bibliographyMissing": "Estas chaves citadas não existem na bibliografia selecionada: {keys}",
   "export.paper": "Tamanho do papel",
   "export.paperOwn": "O do arquivo de configurações",
   "export.orientation": "Orientação",

@@ -26,9 +26,11 @@ import {
   exportFontFor,
   exportKinds,
   namedFonts,
-  runExport
+  runExport,
+  type NoteAsset
 } from '../../api/export';
-import { exportTemplates } from '../../api/templates';
+import { readBibliography } from '../../api/bibliography';
+import { exportTemplates, readTemplateFile, type TemplateSummary } from '../../api/templates';
 import { bibliographyManager } from '../../services/bibliography';
 import { configManager } from '../../services/config_manager';
 import { documentTitle, readFrontmatterLang } from '../../services/document_identity';
@@ -51,6 +53,12 @@ import {
 } from './picture_hint';
 import { exportSource } from './preprocess';
 import { forgetRasters, rasterPictures } from './raster_picture';
+import { portableLatexImage } from './latex_images';
+import {
+  citedKeys,
+  nativeBibliographyTarget,
+  packageCitedBibliography
+} from './native_bibliography';
 
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {
@@ -121,6 +129,32 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     return;
   }
   const outputPath = answer.outputPath;
+  const selectedBibliography = await bibliographyPath();
+  // The card may create or import a package after it opened, so its answer is resolved against
+  // the library as it stands now rather than the list the card first drew.
+  const selectedTemplates = answer.templateId === null ? templates : await exportTemplates();
+  const selectedPackage = selectedTemplates.find(
+    (candidate) => candidate.manifest?.id === answer.templateId
+  );
+  const noteAssets: NoteAsset[] = [];
+  const imageTargets = new Map<string, string>();
+  const imageTarget =
+    first.kind === 'latex'
+      ? (file: string, destination: string) => {
+          const plan = portableLatexImage({
+            destination,
+            resolved: file,
+            outputPath,
+            packageRoot: selectedPackage?.path ?? null,
+            packageAssets: selectedPackage?.manifest?.assets ?? [],
+            targets: imageTargets
+          });
+          if (plan.asset !== null) {
+            noteAssets.push(plan.asset);
+          }
+          return plan.path;
+        }
+      : undefined;
 
   /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
   const unfetched: string[] = [];
@@ -183,6 +217,7 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         return fetchedPicture(url, unfetched);
       },
       rasterised: (destination) => drawn.get(destination) ?? null,
+      imageTarget,
       // Pandoc's citeproc renders the citations of every kind it writes; the kind the app writes
       // itself has none, so for it the app renders what it already knows — the words a citation
       // reads as in the page (`bibliography.format`) — and lists the works it names under them.
@@ -205,13 +240,20 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // heading, the note's name standing in it when the note writes none (`book_body.ts`). Every
     // other kind's body is the note's own text.
     const body = first.names_its_body ? bodyWithItsName(prepared, title) : prepared;
+    const nativeBibliography = await nativeBibliographyFor(
+      first.kind,
+      answer.templateId,
+      selectedTemplates,
+      text,
+      selectedBibliography
+    );
     const outcome = await runExport({
       kind: first.kind,
       text: body,
       output_path: outputPath,
       resource_paths: await resourcePaths(folder),
       source_dir: note?.path ? parentFolder(note.path) : null,
-      bibliography: await bibliographyPath(),
+      bibliography: selectedBibliography,
       csl: bibliographyManager.cslForExport(),
       references: t('export.references'),
       title,
@@ -223,7 +265,12 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       // The citations resolved either way: this is only about the list at the end of the document.
       suppress_references: answer.suppressReferences,
       template_id: answer.templateId,
-      self_contained: answer.selfContained
+      self_contained: answer.selfContained,
+      native_bibliography:
+        nativeBibliography === null
+          ? null
+          : { path: nativeBibliography.path, text: nativeBibliography.text },
+      note_assets: noteAssets
     });
     const written = fileName(outputPath);
     showHint(
@@ -241,6 +288,11 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         new Error(unfetched.slice(0, 4).map((url) => t('export.pictureNotFetched', { url })).join('\n'))
       );
     }
+    if (nativeBibliography !== null && nativeBibliography.missing.length > 0) {
+      outcome.warnings.push(
+        t('export.bibliographyMissing', { keys: nativeBibliography.missing.join(', ') })
+      );
+    }
     // Pandoc's own warnings, in its own words: what it could not fetch, what it could not resolve.
     // A document that is missing a piece is not a failure — the file is there — but the reader is
     // owed the reason rather than the hole.
@@ -253,6 +305,50 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // The pictures this run drew are the run's files and nothing else's: pandoc has read them by now.
     await forgetRasters();
   }
+}
+
+interface NativeBibliographyPlan {
+  path: string;
+  text: string;
+  missing: string[];
+}
+
+/**
+ * A selected LaTeX package can ask the app for portable BibTeX instead of citeproc. Its defaults
+ * opt in, the Markdown says which keys are cited, and the selected citation library is authoritative.
+ */
+async function nativeBibliographyFor(
+  kind: string,
+  templateId: string | null,
+  templates: TemplateSummary[],
+  markdown: string,
+  selected: string | null
+): Promise<NativeBibliographyPlan | null> {
+  if (kind !== 'latex' || templateId === null) {
+    return null;
+  }
+  const template = templates.find((candidate) => candidate.manifest?.id === templateId);
+  if (template === undefined) {
+    return null;
+  }
+  const names = new Set(template.files.map((file) => file.name));
+  const defaultsName = ['export.yaml', 'defaults.yaml'].find((name) => names.has(name));
+  if (defaultsName === undefined) {
+    return null;
+  }
+  const target = nativeBibliographyTarget(await readTemplateFile(templateId, defaultsName));
+  if (target === null) {
+    return null;
+  }
+  const keys = citedKeys(markdown);
+  if (selected === null) {
+    if (keys.length > 0) {
+      throw new Error(t('export.bibliographyRequired'));
+    }
+    return { path: target, text: '', missing: [] };
+  }
+  const packaged = packageCitedBibliography(await readBibliography(), keys);
+  return { path: target, text: packaged.text, missing: packaged.missing };
 }
 
 /**

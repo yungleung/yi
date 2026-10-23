@@ -1,0 +1,36 @@
+title: Seeing Structure in a Noisy Sky
+author:
+  - name: Mira Chen
+    affiliation: Department of Physics, Northshore University
+    email: mira.chen@northshore.example
+    affil: a
+    affil-note: "*,a"
+  - name: Elias Ward
+    affiliation: Institute for Observational Science, Kestrel College
+    email: elias.ward@kestrel.example
+    affil: b
+    affil-note: b
+  - name: Noor Patel
+    affiliation: Laboratory for Data Astronomy, Lakeview University
+    email: noor.patel@lakeview.example
+    affil: c
+    affil-note: c
+date: Manuscript prepared 23 October 2026
+abstract: |
+  Small observatories increasingly combine inexpensive sensors with careful
+  statistical design. We describe a reproducible workflow for separating a
+  weak sky signal from correlated instrumental drift, and show how uncertainty
+  budgets change when calibration observations are shared across detectors.
+keywords:
+  - sensor calibration
+  - time-domain astronomy
+  - uncertainty
+doctype: Research Article
+journal-name: Open Research Letters
+journal: Northshore University
+journal-date: October 2026
+volume: 8
+issue: 2
+corresponding-email: mira.chen@northshore.example
+corresponding-note: "*"
+docinfo: This article was prepared with the Rho Class template. Template design by Guillermo Jimenez, used under CC BY 4.0.

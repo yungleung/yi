@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="$lang$">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>$pagetitle$</title>
+    $if(description)$
+    <meta name="description" content="$description$">
+    $endif$
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <header class="blog-header border-bottom">
+      <div class="container py-4 py-lg-5">
+        <div class="row align-items-end g-4">
+          <div class="col-lg-9">
+            <p class="text-uppercase small fw-semibold letter-spacing mb-2">Yi technical notes</p>
+            <h1 class="display-5 fw-semibold mb-3">$title$</h1>
+            $if(subtitle)$
+            <p class="lead text-secondary mb-3">$subtitle$</p>
+            $endif$
+            <p class="post-meta mb-0">
+              $if(author)$
+              <span>$for(author)$$author$$sep$, $endfor$</span>
+              $endif$
+              $if(date)$
+              <span aria-hidden="true">·</span>
+              <time datetime="$date$">$date$</time>
+              $endif$
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container py-4 py-lg-5">
+      <div class="row g-4 g-lg-5">
+        $if(toc)$
+        <aside class="col-lg-3 blog-sidebar">
+          <div class="toc-sticky">
+            <p class="toc-kicker text-uppercase small fw-semibold mb-2">On this page</p>
+            <nav id="TOC" role="doc-toc" aria-label="Contents">
+              $if(toc-title)$
+              <h2 class="toc-title h6">$toc-title$</h2>
+              $endif$
+              $table-of-contents$
+            </nav>
+          </div>
+        </aside>
+        $endif$
+
+        <main class="$if(toc)$col-lg-9$else$col-12$endif$">
+          <article class="blog-article">
+            $body$
+          </article>
+        </main>
+      </div>
+    </div>
+
+    <footer class="blog-footer border-top">
+      <div class="container py-4 small text-secondary">
+        $if(keywords)$
+        <div class="d-flex flex-wrap gap-2 mb-2" aria-label="Topics">
+          $for(keywords)$
+          <span class="topic">$keywords$</span>
+          $endfor$
+        </div>
+        $endif$
+        <p class="mb-0">Built as an example Yi HTML template.</p>
+      </div>
+    </footer>
+
+    <script src="assets/site.js"></script>
+  </body>
+</html>

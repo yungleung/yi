@@ -1,0 +1,108 @@
+\documentclass[9pt,a4paper,twocolumn,twoside]{rho-class/rho}
+\usepackage[english]{babel}
+\usepackage{longtable}
+\providecommand{\pandocbounded}[1]{#1}
+
+% Pandoc's citeproc output uses this compact reference-list contract.
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+\let\@cite@ofmt\@firstofone
+\def\@biblabel#1{}
+\def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2]
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+\setlength{\emergencystretch}{3em}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% Yi renders Markdown blockquotes as LaTeX's quote environment. Rho's Note
+% treatment is the closest supported Markdown shape to the original callout.
+\renewenvironment{quote}{\begin{note}}{\end{note}}
+
+$if(doctype)$
+\doctype{$doctype$}
+$endif$
+
+\title{$title$}
+
+$for(author)$
+$if(author.name)$
+\author[$if(author.affil-note)$$author.affil-note$$else$$author.affil$$endif$]{$author.name$}
+$endif$
+$endfor$
+
+$for(author)$
+$if(author.affiliation)$
+\affil[$if(author.affil)$$author.affil$$endif$]{$author.affiliation$}
+$endif$
+$endfor$
+
+$if(date)$
+\dates{$date$}
+$endif$
+
+$if(corresponding-email)$
+\corres{$if(corresponding-note)$\textsuperscript{$corresponding-note$}$endif$Corresponding author: \href{mailto:$corresponding-email$}{$corresponding-email$}}
+$endif$
+
+$if(docinfo)$
+\docinfo{$docinfo$}
+$endif$
+
+$if(journal-name)$
+\journalname{$journal-name$}
+$endif$
+$if(journal)$
+\journal{$journal$}
+$endif$
+$if(journal-date)$
+\theday{$journal-date$}
+$endif$
+$if(volume)$
+\vol{$volume$}
+$endif$
+$if(issue)$
+\no{$issue$}
+$endif$
+
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+$if(keywords)$
+\keywords{$for(keywords)$$keywords$$sep$, $endfor$}
+$endif$
+
+\begin{document}
+
+$if(title)$
+\maketitle
+$endif$
+
+$body$
+
+\end{document}

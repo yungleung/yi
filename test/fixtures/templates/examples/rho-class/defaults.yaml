@@ -1,0 +1,8 @@
+standalone: true
+pdf-engine: pdflatex
+shift-heading-level-by: 0
+highlight-style: pygments
+filters:
+  - table.lua
+metadata:
+  reference-section-title: References

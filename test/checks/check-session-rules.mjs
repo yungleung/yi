@@ -38,6 +38,7 @@ const {
   openInto,
   parseSession,
   reachable,
+  replaceReference,
   restore,
   serializeSession,
   setPath,
@@ -216,6 +217,28 @@ check(
   'and the push setting does not push it',
   openDecision(tutorialEdited, { id: 'other' }, true),
   'open'
+);
+const refreshedReference = replaceReference(
+  tutorialEdited,
+  {
+    path: null,
+    content: '---\nid: yi-tutorial\ntitle: Welcome again\n---\n\nFresh bundle text.\n',
+    readOnly: true
+  },
+  'yi-tutorial'
+);
+check(
+  'a restored reference is replaced by the fresh bundled copy',
+  {
+    content: currentDocument(refreshedReference)?.content,
+    title: currentDocument(refreshedReference)?.title,
+    readOnly: currentDocument(refreshedReference)?.readOnly
+  },
+  {
+    content: '---\nid: yi-tutorial\ntitle: Welcome again\n---\n\nFresh bundle text.\n',
+    title: 'Welcome again',
+    readOnly: true
+  }
 );
 
 // An edit its file does not have is what the question is for…
