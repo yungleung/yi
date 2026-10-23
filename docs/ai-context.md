@@ -578,6 +578,12 @@ document's total height under the reader), and a document opens at the top of it
 over from the note before it. A probe that measures one layout should ask for it
 (`t.useLayout('page')`) rather than inherit whichever one the reader left behind.
 
+Every heading names its level in a decorative left gutter (`nodes/heading_marker.ts`): the supplied
+h1-h6 SVG is fixed at `calc(1rem * var(--md-page-scale))`, so it follows the page scale without
+growing with the heading's type. The marker is `aria-hidden`, has no pointer events and contains no
+text, leaving the heading's source, copying and caret offsets untouched. `heading-level-markers.js`
+holds all six glyphs, sizes, alignment and typing.
+
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
 reader scrolls back, and a caret whose block was dropped is placed again once it is there — but
