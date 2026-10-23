@@ -466,7 +466,7 @@ read-only view in the package editor. A package belongs to one export kind. `ass
 file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
 export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
 file the template names travels too. Pictures the note itself names are made portable by
-`src/ui/export/latex_images.ts` and copied by `run.rs`: a local picture that replaces a package asset
+`src/ui/export/latex_images.ts` and copied by `run/delivery.rs`: a local picture that replaces a package asset
 keeps the same relative path and its bytes win, while other local pictures go under
 `<output-stem>.assets/`; Pandoc never sees an absolute note path in the finished `.tex`.
 
@@ -505,7 +505,7 @@ package/storage.rs    package paths, naming and file classification
 `scan/mod.rs` and `package/mod.rs` remain the stable orchestration and IPC-facing boundaries.
 
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
-row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run.rs`
+row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run/arguments.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
 folder as the first `--resource-path`. A PDF run works from the entry file's folder, so a sample's
@@ -536,7 +536,7 @@ target and a filter list that does not contain `citeproc` (the example also sets
 filters the selected BibTeX or CSL-JSON library, and converts the result to BibTeX. The shared
 `src/citations/library.ts` owns the `citation-key`-then-`id` rule for both editor formatting and
 this export. `ExportRequest.native_bibliography` carries the generated text and relative target;
-`run.rs` omits the ordinary `--bibliography`/`--csl` citeproc arguments, refuses a target outside
+`run/delivery.rs` omits the ordinary `--bibliography`/`--csl` citeproc arguments, refuses a target outside
 the output folder, skips the package's sample file, and writes the generated `.bib` beside the
 `.tex`. Missing cited keys and a missing citation-tab selection are reported rather than silently
 falling back. `export-template-native-bibliography.js` drives both a `.bib` and CSL-JSON selection
