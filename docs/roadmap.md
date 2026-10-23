@@ -645,6 +645,16 @@ elements) unless it says otherwise.
   The history row also renders its stamp once: `versionTitle()` removes the app-written
   ` · stamp` suffix from the displayed Git subject, while the commit subject itself is unchanged.
   `check-versioning.mjs` and `versioning-list` hold the display rule.
+- **Headings show their level beside the text.** `heading_marker.ts` holds the six supplied SVGs;
+  `heading.ts` attaches one to each rendered h1-h6 and adds the invisible target from
+  `heading_hover.ts` that keeps the marker gutter part of the heading. `create_block.ts` expands
+  the block's hit area into that gutter with cancelling margin and padding, and `styles.css` hides
+  the glyph beyond the left margin before the heading's native `:hover` state moves it in. Heading
+  indentation and text geometry remain unchanged. The marker is decorative and takes no pointer,
+  text or caret width. Its size stays at `calc(1rem * var(--md-page-scale))` across every heading
+  depth. The full-width layout reserves that gutter in its left padding instead of letting the
+  scroller clip it. `heading-level-markers.js` holds all six paths, gutter hit-testing, hover
+  geometry, both layouts, scaling and typing.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the

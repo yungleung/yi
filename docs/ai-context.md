@@ -565,8 +565,9 @@ fitPage` — the sheet, its margin and its type take one `--page-scale`, capped 
 narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
 layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
 as it was before the page, switched by the status bar's layout button (`view:togglePage`) and
-remembered in the app config (`editor_layout`). Four consequences worth knowing before you
-touch it:
+remembered in the app config (`editor_layout`); its left padding is `2.5rem`, the original `1rem`
+margin plus the `1.5rem` marker gutter, while its right margin stays `1rem`. Four consequences
+worth knowing before you touch it:
 the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
 the page's type size is `calc(1rem * var(--page-scale))` on `.prose.markdown-page` (the
 `.prose` in that selector is what beats the plugin's own `font-size: 1rem`), the whole
@@ -577,6 +578,17 @@ document's total height under the reader), and a document opens at the top of it
 (`setContent`) because a fixed sheet is taller than the pane, so nothing clamps a scroll left
 over from the note before it. A probe that measures one layout should ask for it
 (`t.useLayout('page')`) rather than inherit whichever one the reader left behind.
+
+Every heading names its level in a decorative left margin (`nodes/heading_marker.ts`): the supplied
+h1-h6 SVG is fixed at `calc(1rem * var(--md-page-scale))`, so it follows the page scale without
+growing with the heading's type. `nodes/heading_hover.ts` supplies an invisible target in that
+gutter, while `create_block.ts` marks and `styles.css` expands the containing block into it with a
+cancelling negative margin and equal padding; this keeps WebKit's `content-visibility` hit area over
+the marker without moving any content. The browser's native heading `:hover` state then slides the
+glyph into view; only the marker's opacity and transform change, so heading indentation and text
+geometry do not move. The marker is `aria-hidden`, has no pointer events and contains no text,
+leaving the heading's source, copying and caret offsets untouched. `heading-level-markers.js` holds
+all six glyphs, sizes, gutter hit-testing, hover geometry, full-width gutter room and typing.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

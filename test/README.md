@@ -331,7 +331,10 @@ stack as a document of its own),
 the
 page (`a4-page` — 210 mm of sheet, a 25 mm margin, centred on the theme's desk, the measure
 the reader gets, the smaller page a narrower pane is given instead of a sideways scroll, and
-the whole rhythm coming down with it; `page-layout-toggle` — the status bar button's two
+the whole rhythm coming down with it; `heading-level-markers` — all six heading levels carry
+their supplied hidden glyph at one page-scaled size; hovering shifts only the glyph into the
+left margin, leaving heading indentation and text still, without entering the text or taking
+its pointer; `page-layout-toggle` — the status bar button's two
 layouts, driven by pressing it), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
