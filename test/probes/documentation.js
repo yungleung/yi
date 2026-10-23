@@ -101,6 +101,16 @@
     );
     const rendered = t.prose();
     check(
+      'it links to Pandoc’s reference-document workflow and shows both commands',
+      text.includes('### Start from Pandoc’s reference document') &&
+        text.includes('(https://pandoc.org/MANUAL.html#option--reference-doc)') &&
+        text.includes(
+          'pandoc -o custom-reference.docx --print-default-data-file reference.docx'
+        ) &&
+        text.includes('pandoc -o custom-reference.odt --print-default-data-file reference.odt'),
+      { length: text.length }
+    );
+    check(
       'the guide renders its headings, tables and examples',
       rendered.querySelectorAll('h2, h3').length >= 4 &&
         rendered.querySelectorAll('table').length >= 1 &&
