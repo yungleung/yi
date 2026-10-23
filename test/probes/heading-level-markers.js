@@ -90,6 +90,17 @@
     halfSizes
   );
 
+  const paddings = headings.map((heading) => getComputedStyle(heading).paddingInlineStart);
+  const restingOpacity = markers.map((marker) =>
+    marker === null ? null : getComputedStyle(marker).opacity
+  );
+  check(
+    'headings keep their original indentation while their markers wait out of the way',
+    paddings.every((padding) => padding === '0px') &&
+      restingOpacity.every((opacity) => opacity === '0'),
+    { paddings, restingOpacity }
+  );
+
   const alignments = headings.map((heading, index) => {
     const marker = markers[index];
     const text = t.textNodesIn(heading)[0] ?? null;
@@ -118,6 +129,64 @@
     ),
     alignments
   );
+
+  const heading = headings[0];
+  const marker = markers[0];
+  const text = t.textNodesIn(heading)[0] ?? null;
+  const bounds = (rect) => ({
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height
+  });
+  if (marker !== null && text !== null) {
+    const textRange = document.createRange();
+    textRange.setStart(text, 0);
+    textRange.setEnd(text, Math.min(1, text.data.length));
+    const before = {
+      heading: bounds(heading.getBoundingClientRect()),
+      text: bounds(textRange.getBoundingClientRect()),
+      marker: bounds(marker.getBoundingClientRect()),
+      opacity: getComputedStyle(marker).opacity
+    };
+    heading.dispatchEvent(new PointerEvent('pointerenter'));
+    await t.sleep(180);
+    const shown = {
+      heading: bounds(heading.getBoundingClientRect()),
+      text: bounds(textRange.getBoundingClientRect()),
+      marker: bounds(marker.getBoundingClientRect()),
+      opacity: getComputedStyle(marker).opacity
+    };
+    check(
+      'hovering shows the marker by shifting only the marker into view',
+      shown.opacity === '1' &&
+        shown.marker.left > before.marker.left + 6 &&
+        shown.marker.right <= shown.text.left &&
+        shown.heading.left === before.heading.left &&
+        shown.heading.right === before.heading.right &&
+        shown.text.left === before.text.left,
+      { before, shown }
+    );
+    heading.dispatchEvent(new PointerEvent('pointerleave'));
+    await t.sleep(180);
+    const left = {
+      marker: bounds(marker.getBoundingClientRect()),
+      opacity: getComputedStyle(marker).opacity
+    };
+    check(
+      'leaving shifts the marker back out without moving the heading',
+      left.opacity === '0' && Math.abs(left.marker.left - before.marker.left) <= 0.25,
+      { before: before.marker, left }
+    );
+  } else {
+    checks.push({
+      name: 'the first heading exposes its marker and text',
+      pass: false,
+      actual: { marker, text }
+    });
+  }
 
   check(
     'the markers are decorative, non-interactive and absent from copied text',

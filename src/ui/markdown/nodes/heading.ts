@@ -16,6 +16,12 @@ export class Heading extends EditableNodeComponent {
     const depth = Math.min(Math.max(node.depth ?? 1, 1), 6) as HeadingLevel;
     super('heading', node, document.createElement('h' + depth), 'markdown-heading min-w-0');
     this.element.appendChild(headingMarker(depth));
+    this.element.addEventListener('pointerenter', () => {
+      this.element.classList.add('heading-marker-visible');
+    });
+    this.element.addEventListener('pointerleave', () => {
+      this.element.classList.remove('heading-marker-visible');
+    });
     appendChildren(this.element, node.children);
   }
 }

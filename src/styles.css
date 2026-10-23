@@ -52,24 +52,32 @@
   margin-bottom: var(--md-space-heading-tight-after);
 }
 
-/* A heading names its level in a fixed gutter. The marker is drawn at one page-scaled rem for
-   every level, so an h1's large type does not make its glyph larger than an h6's. */
+/* A heading keeps its original indentation. On hover, its fixed-size level marker shifts in from
+   the margin; the heading and its text never move. */
 .prose .markdown-heading {
   position: relative;
-  padding-inline-start: calc(1.5rem * var(--md-page-scale));
 }
 
 .markdown-heading-marker {
   position: absolute;
-  inset-inline-start: 0;
+  inset-inline-start: calc(-1.5rem * var(--md-page-scale));
   top: 0.5lh;
   display: flex;
   width: calc(1rem * var(--md-page-scale));
   height: calc(1rem * var(--md-page-scale));
   color: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
+  opacity: 0;
   pointer-events: none;
   user-select: none;
-  transform: translateY(-50%);
+  transform: translate(calc(-0.5rem * var(--md-page-scale)), -50%);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.markdown-heading.heading-marker-visible .markdown-heading-marker {
+  opacity: 1;
+  transform: translate(0, -50%);
 }
 
 .markdown-heading-marker svg {

@@ -646,10 +646,11 @@ elements) unless it says otherwise.
   ` · stamp` suffix from the displayed Git subject, while the commit subject itself is unchanged.
   `check-versioning.mjs` and `versioning-list` hold the display rule.
 - **Headings show their level beside the text.** `heading_marker.ts` holds the six supplied SVGs;
-  `heading.ts` attaches one to each rendered h1-h6 and `styles.css` puts it in a fixed page-scaled
-  gutter. The marker is decorative and takes no pointer, text or caret width. Its size stays at
-  `calc(1rem * var(--md-page-scale))` across every heading depth, so an h1's larger type does not
-  enlarge the glyph. `heading-level-markers.js` holds all six paths, alignment, scaling and typing.
+  `heading.ts` attaches one to each rendered h1-h6 and tracks pointer entry/leave on the heading;
+  `styles.css` hides it beyond the left margin and moves only the marker in on hover. Heading
+  indentation and text geometry remain unchanged. The marker is decorative and takes no pointer,
+  text or caret width. Its size stays at `calc(1rem * var(--md-page-scale))` across every heading
+  depth. `heading-level-markers.js` holds all six paths, hover geometry, scaling and typing.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the
