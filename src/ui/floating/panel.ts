@@ -1,6 +1,6 @@
 /**
  * A panel that hangs from the button that opened it, inside that button's own `relative` host: the
- * stack, the table picker, and the status bar's versions.
+ * stack and the table picker.
  *
  * `absolute` rather than `fixed`, because a panel belongs to its toolbar: it moves with it, and it
  * never floats over a part of the page it has nothing to do with. It closes on Escape (from the
@@ -21,8 +21,7 @@ export interface PanelOptions {
   className: string;
   /**
    * Which way it hangs. `below` is the titlebar's own way and the default; `above` is for a button
-   * at the *bottom* of the window — the status bar's versions button — where below is off-screen,
-   * measured: a panel hung under it sat four pixels past the window's edge and nobody could see it.
+   * at the *bottom* of the window, where a panel below it would be off-screen.
    */
   side?: 'below' | 'above';
 }

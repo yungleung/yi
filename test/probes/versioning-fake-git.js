@@ -27,7 +27,7 @@
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { versionDiffView } = await t.app('/src/ui/versioning/version_diff_view.ts');
+  const { VersionDiffView } = await t.app('/src/ui/versioning/version_diff_view.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -150,15 +150,18 @@
     );
 
     // And what a restore does to the repository: it reads the version (`show`) and writes the
-    // *file* — no add, no commit, no checkout, nothing. The sheet is driven directly, because with
-    // the recorder answering nothing there is no history to build a panel from.
+    // *file* — no add, no commit, no checkout, nothing. The diff pane is driven directly, because
+    // with the recorder answering nothing there is no history to build a modal from.
     const linesBefore = (await read(`${folder}/argv.log`)).trim().split('\n').length;
+    const versionDiffView = new VersionDiffView();
+    versionDiffView.mount(document.body, () => {});
     await versionDiffView.show({ revision: 'abc123', path: 'note.md', stamp: 'x' });
     const diffLines = [...document.querySelectorAll('[data-version-diff-line]')].length;
     document.querySelector('[data-version-diff-restore]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
     await t.sleep(400);
+    versionDiffView.element.remove();
     const afterLines = (await read(`${folder}/argv.log`)).trim().split('\n').slice(linesBefore);
     check(
       'and a restore reads the version and runs no git write at all',

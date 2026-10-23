@@ -1,11 +1,11 @@
 /**
- * The panel: the versions of the note on screen, newest first, with a comment under its own row.
+ * The history modal: the versions on the left, newest first, and the selected diff on the right.
  *
  * The versions are made by the app's own command (`commitPaths`) against a real repository in a
- * folder of the probe's own, and the panel is opened by pressing the button the reader presses —
+ * folder of the probe's own, and the modal is opened by pressing the button the reader presses —
  * so what is asserted is the list a reader would see, not a shape built for the test.
  *
- * @covers src/ui/versioning/versions_panel.ts, src/services/versions.ts
+ * @covers src/ui/versioning/version_history_modal.ts, src/services/versions.ts
  */
 (async () => {
   const t = window.__t;
@@ -15,6 +15,7 @@
   const { initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
   const { versionsOfDocument } = await t.app('/src/services/versions.ts');
+  const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -33,9 +34,9 @@
     await pending;
     await t.sleep(140);
   };
-  /** Whether the panel is showing: nothing between the list and the page is hidden. */
-  const panelUp = () => {
-    let node = document.querySelector('[data-version-list]');
+  /** Whether the modal is showing: neither it nor an ancestor is hidden. */
+  const modalUp = () => {
+    let node = document.querySelector('[data-version-history]');
     if (node === null) {
       return false;
     }
@@ -51,7 +52,7 @@
     document.querySelector('[data-version-status]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
-    for (let attempt = 0; attempt < 40 && !panelUp(); attempt += 1) {
+    for (let attempt = 0; attempt < 40 && !modalUp(); attempt += 1) {
       await t.sleep(40);
     }
     await t.sleep(200);
@@ -82,63 +83,98 @@
     const rows = [...document.querySelectorAll('[data-version-row]')];
     const subjectOf = (row) => row.querySelector('[data-version-subject]')?.textContent ?? null;
     const commentOf = (row) => row.querySelector('[data-version-comment-text]')?.textContent ?? null;
-    // Where it is, not just whether it is unhidden: the status bar is the bottom strip of the
-    // window, so a panel hung below it would be off-screen with every class saying otherwise.
-    const host = document.querySelector('[data-version-list]')?.closest('.absolute');
-    const hostRect = host?.getBoundingClientRect();
-    const buttonRect = document.querySelector('[data-version-status]')?.getBoundingClientRect();
-    const middle =
-      hostRect === undefined || hostRect === null
-        ? null
-        : {
-            x: Math.round(hostRect.left + hostRect.width / 2),
-            y: Math.round(hostRect.top + hostRect.height / 2)
-          };
-    const overThePanel = middle === null ? null : document.elementFromPoint(middle.x, middle.y);
+    const modal = document.querySelector('[data-version-history]');
+    const panel = document.querySelector('[data-version-history-panel]');
+    const listPane = document.querySelector('[data-version-history-list]');
+    const diff = document.querySelector('[data-version-diff]');
+    const modalRect = modal?.getBoundingClientRect();
+    const panelRect = panel?.getBoundingClientRect();
+    const listRect = listPane?.getBoundingClientRect();
+    const diffRect = diff?.getBoundingClientRect();
     check(
-      'and it opens above the button, inside the window, with nothing over it',
-      hostRect !== undefined &&
-        hostRect !== null &&
-        buttonRect !== undefined &&
-        buttonRect !== null &&
-        hostRect.top >= 0 &&
-        hostRect.bottom <= window.innerHeight &&
-        hostRect.bottom <= buttonRect.top + 1 &&
-        overThePanel !== null &&
-        host?.contains(overThePanel) === true,
+      'pressing the status button opens a centered history modal',
+      modalUp() &&
+        modal?.classList.contains('fixed') === true &&
+        modalRect !== undefined &&
+        modalRect !== null &&
+        panelRect !== undefined &&
+        panelRect !== null &&
+        panelRect.left >= 0 &&
+        panelRect.top >= 0 &&
+        panelRect.right <= window.innerWidth &&
+        panelRect.bottom <= window.innerHeight &&
+        document.querySelector('[data-version-history-title]')?.textContent ===
+          words('version.history.title'),
       {
-        host: hostRect ? { top: Math.round(hostRect.top), bottom: Math.round(hostRect.bottom) } : null,
-        button: buttonRect ? { top: Math.round(buttonRect.top) } : null,
-        window: { height: window.innerHeight },
-        overThePanel: overThePanel?.getAttributeNames?.() ?? null
+        panel: panelRect
+          ? {
+              left: Math.round(panelRect.left),
+              top: Math.round(panelRect.top),
+              right: Math.round(panelRect.right),
+              bottom: Math.round(panelRect.bottom)
+            }
+          : null,
+        window: { width: window.innerWidth, height: window.innerHeight },
+        title: document.querySelector('[data-version-history-title]')?.textContent ?? null
       }
     );
-    // The list is capped by the room above the button, so a shorter window cannot push the panel's
-    // top past the window's edge (`tauri.conf.json` sets no minimum height).
-    const list = document.querySelector('[data-version-list]');
-    const cap = Number.parseInt(list?.style.maxHeight ?? '', 10);
     check(
-      'and its height is the room above it, not the list’s own cap',
-      Number.isFinite(cap) &&
-        cap + 8 <= Math.round((hostRect?.bottom ?? 0) + 1) &&
-        (hostRect?.top ?? -1) >= 0,
-      { cap, hostBottom: hostRect ? Math.round(hostRect.bottom) : null }
+      'and the modal holds a history sidebar beside the selected diff',
+      listRect !== undefined &&
+        listRect !== null &&
+        diffRect !== undefined &&
+        diffRect !== null &&
+        listRect.right <= diffRect.left + 1 &&
+        Math.abs(listRect.top - diffRect.top) <= 1 &&
+        diffRect.right <= (panelRect?.right ?? 0) + 1,
+      {
+        list: listRect
+          ? {
+              left: Math.round(listRect.left),
+              right: Math.round(listRect.right),
+              top: Math.round(listRect.top)
+            }
+          : null,
+        diff: diffRect
+          ? {
+              left: Math.round(diffRect.left),
+              right: Math.round(diffRect.right),
+              top: Math.round(diffRect.top)
+            }
+          : null
+      }
     );
     check(
-      'the panel lists the note’s versions, the newest first',
+      'the history sidebar lists the note’s versions, the newest first',
       rows.length === 2 &&
         subjectOf(rows[0]) === 'The note · 2026-10-01 20:16' &&
         subjectOf(rows[1]) === 'The note · 2026-10-01 20:15',
       rows.map(subjectOf)
     );
     check(
-      'and marks the newest one, with its comment under it and under no other',
+      'and selects the newest one, with its comment under it and under no other',
       rows[0]?.getAttribute('data-version-latest') === 'true' &&
+        rows[0]?.getAttribute('data-version-selected') === 'true' &&
+        rows[0]?.getAttribute('aria-pressed') === 'true' &&
         commentOf(rows[0]) === 'why I rewrote it' &&
         commentOf(rows[1]) === null,
       {
         latest: rows[0]?.getAttribute('data-version-latest') ?? null,
+        selected: rows[0]?.getAttribute('data-version-selected') ?? null,
+        pressed: rows[0]?.getAttribute('aria-pressed') ?? null,
         comments: rows.map(commentOf)
+      }
+    );
+    check(
+      'and the right column already shows the selected version’s diff',
+      diff !== null &&
+        !diff.classList.contains('hidden') &&
+        (document.querySelector('[data-version-diff-title]')?.textContent ?? '').includes(
+          rows[0]?.querySelector('[data-version-stamp]')?.textContent ?? ''
+        ),
+      {
+        title: document.querySelector('[data-version-diff-title]')?.textContent ?? null,
+        latest: rows[0]?.querySelector('[data-version-stamp]')?.textContent ?? null
       }
     );
     check(
@@ -160,6 +196,18 @@
           row.classList.contains('hover:bg-base-300')
       ),
       rows.map((row) => ({ cursor: getComputedStyle(row).cursor, className: row.className }))
+    );
+    document.querySelector('[data-version-history-close]')?.click();
+    await t.sleep(120);
+    check(
+      'and its close button dismisses the modal and returns the keyboard to the note',
+      modal?.classList.contains('hidden') === true &&
+        document.activeElement !== null &&
+        t.scroller().contains(document.activeElement),
+      {
+        hidden: modal?.classList.contains('hidden') ?? null,
+        active: document.activeElement?.className ?? null
+      }
     );
   } finally {
     await config(); // no-op, so the finally always has something to await first

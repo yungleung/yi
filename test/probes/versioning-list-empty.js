@@ -1,12 +1,12 @@
 /**
- * What the panel says instead of a list, in each of the four states it can be in.
+ * The four states in which the history button has nothing to open.
  *
- * A reader who has agreed to versions but has nothing to see is owed the reason: their note has no
- * file yet, nothing has made a repository here, this note has no versions, or the read itself
- * failed. Each one is walked here — the last by pointing the app's git seam at a git that is not
- * there, which is the only way a probe can make a read fail.
+ * A reader who has agreed to versions but has nothing to see gets no modal: their note has no file
+ * yet, nothing has made a repository here, this note has no versions, or the read itself failed.
+ * Each one is walked here — the last by pointing the app's git seam at a git that is not there,
+ * which is the only way a probe can make a read fail.
  *
- * @covers src/ui/versioning/versions_panel.ts, src/services/versions.ts
+ * @covers src/ui/versioning/version_history_modal.ts, src/services/versions.ts
  */
 (async () => {
   const t = window.__t;
@@ -16,7 +16,6 @@
   const { pointAtGit, initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
   const { versionsOfDocument } = await t.app('/src/services/versions.ts');
-  const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -35,11 +34,7 @@
     await pending;
     await t.sleep(140);
   };
-  const panelUp = () => {
-    let node = document.querySelector('[data-version-list]');
-    if (node === null) {
-      return false;
-    }
+  const surfaceUp = (node) => {
     while (node !== null) {
       if (node.classList?.contains('hidden')) {
         return false;
@@ -48,27 +43,28 @@
     }
     return true;
   };
-  /** Opens the panel if it is closed, and reads the sentence it is showing. */
-  const sentence = async () => {
-    if (!panelUp()) {
-      document.querySelector('[data-version-status]')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true })
-      );
-      for (let attempt = 0; attempt < 40 && !panelUp(); attempt += 1) {
-        await t.sleep(40);
-      }
-    }
-    await t.sleep(150);
-    const said = document.querySelector('[data-version-empty]');
-    return {
-      state: said?.getAttribute('data-version-state') ?? null,
-      words: said?.textContent ?? null
-    };
+  const historySurfaceUp = () => {
+    return [...document.querySelectorAll(
+      '[data-version-history], [data-version-list], [data-version-empty]'
+    )].some(surfaceUp);
+  };
+  /** Presses the button and answers whether the modal stayed away. */
+  const staysClosed = async () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await t.sleep(80);
+    document.querySelector('[data-version-status]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await t.sleep(250);
+    return !historySurfaceUp();
   };
   const settle = async () => {
     await versionsOfDocument.reread();
     await t.sleep(120);
-    return await sentence();
+    return {
+      state: versionsOfDocument.current().kind,
+      closed: await staysClosed()
+    };
   };
 
   const before = await config();
@@ -88,8 +84,8 @@
     await open(null, 'A note with no file.\n');
     const noFile = await settle();
     check(
-      'a note with no file says so',
-      noFile.state === 'no-file' && noFile.words === words('version.noFile'),
+      'a note with no file opens no history modal',
+      noFile.state === 'no-file' && noFile.closed,
       noFile
     );
 
@@ -97,9 +93,8 @@
     await open(note, 'The note.\n');
     const noRepository = await settle();
     check(
-      'a workspace nothing has made a repository in says so',
-      noRepository.state === 'no-repository' &&
-        noRepository.words === words('version.noRepository'),
+      'a workspace nothing has made a repository in opens no history modal',
+      noRepository.state === 'no-repository' && noRepository.closed,
       noRepository
     );
 
@@ -109,8 +104,8 @@
     await commitPaths(folder, [other], 'Another note', APP_IDENTITY);
     const empty = await settle();
     check(
-      'a note with no versions of its own says so',
-      empty.state === 'ready' && empty.words === words('version.empty'),
+      'a note with no versions of its own opens no history modal',
+      empty.state === 'ready' && empty.closed,
       empty
     );
 
@@ -118,8 +113,8 @@
     await pointAtGit(`${folder}/git-that-is-not-there`);
     const unreadable = await settle();
     check(
-      'and a read that fails says that instead of pretending there are none',
-      unreadable.state === 'unreadable' && unreadable.words === words('version.unreadable'),
+      'and a read that fails opens no history modal',
+      unreadable.state === 'unreadable' && unreadable.closed,
       unreadable
     );
   } finally {

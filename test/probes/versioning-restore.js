@@ -7,7 +7,8 @@
  * what puts the old text in the stack. What the restore does to the repository is
  * `versioning-fake-git.js`'s business: it runs `show` and nothing else.
  *
- * @covers src/services/session.ts (openVersion), src/ui/versioning/version_diff_view.ts
+ * @covers src/services/session.ts (openVersion), src/ui/versioning/version_history_modal.ts,
+ *   src/ui/versioning/version_diff_view.ts
  */
 (async () => {
   const t = window.__t;
@@ -81,7 +82,7 @@
     );
     await t.sleep(200);
     // One question, and its cancel does nothing at all — the reader who pressed the button by
-    // mistake is back where they were, sheet and all.
+    // mistake is back where they were, modal and all.
     const asked = () => {
       const card = document.querySelector('[data-prompt]');
       return card !== null && !card.classList.contains('hidden') ? card : null;
@@ -99,14 +100,15 @@
     );
     asked()?.querySelector('[data-prompt-no]')?.click();
     await t.sleep(200);
-    const sheetStillUp = document.querySelector('[data-version-diff]')?.classList.contains('hidden') === false;
+    const historyStillUp =
+      document.querySelector('[data-version-history]')?.classList.contains('hidden') === false;
     check(
-      'and cancelling it changes nothing: the file, the text and the sheet are as they were',
-      sheetStillUp &&
+      'and cancelling it changes nothing: the file, the text and the modal are as they were',
+      historyStillUp &&
         (await read(note)) === 'one\nTWO\nthree\n' &&
         session.documentSession.current()?.content.startsWith('X') === true,
       {
-        sheetStillUp,
+        historyStillUp,
         file: await read(note),
         content: session.documentSession.current()?.content.slice(0, 12) ?? null
       }

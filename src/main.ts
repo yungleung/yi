@@ -33,7 +33,6 @@ import { registerExportCommand } from './ui/export/export_flow';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/tutorial_flow';
 import { registerDocumentationCommand } from './ui/documentation/documentation_flow';
 import { VersionStatus } from './ui/versioning/version_status';
-import { versionDiffView } from './ui/versioning/version_diff_view';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
@@ -82,7 +81,7 @@ function createAppShell(): MarkdownEditor {
   const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
-  const versionStatus = new VersionStatus();
+  const versionStatus = new VersionStatus(() => editor.focusText());
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
@@ -90,9 +89,6 @@ function createAppShell(): MarkdownEditor {
   resizeHandle.mount(contentShell.element);
   editor.mount(contentShell.element);
   contentShell.mount(root);
-  // The versions sheet is a mode over the editor's area, and the keyboard goes back to the text
-  // when it closes — the one thing it needs from the editor, given by name.
-  versionDiffView.mount(contentShell.element, () => editor.focusText());
   statusBar.mount(root);
   // What the app tells the reader: the cards listen for `MESSAGE_EVENT` from here on.
   installMessages();

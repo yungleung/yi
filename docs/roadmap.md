@@ -630,6 +630,14 @@ elements) unless it says otherwise.
   has no diff library) and `cargo test` **35/35**; the probes are `versioning-diff` (the whole note,
   the marks, the first change in view, the keyboard with the sheet) and `versioning-restore` (the
   file, the document, the stack, *Saved*), beside the thirteen the versioning slices left.
+- **Version history is one modal, not a popover followed by a sheet.** The status button now reads
+  the history before opening anything: an empty, missing, unreadable or repository-less history
+  leaves the page unchanged. A real history opens `version_history_modal.ts`, shaped like the
+  template editor with the list on the left and the diff on the right. The newest row is selected
+  first, and pressing another row updates the right column without closing the modal. The modal
+  owns Escape and the keyboard; closing returns the keyboard to the editor. `versioning-list`,
+  `versioning-list-empty` and `versioning-diff` hold the new geometry, selection and no-empty-modal
+  rules.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the

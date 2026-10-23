@@ -315,12 +315,13 @@ and as the app's own markdown (both URLs kept, because that file outlives the ru
 answering both content types and the fetched copies gone at the end),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
-stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
-the comment under its own row and no other; `versioning-list-empty` — the four things it says
-instead of a list, the last by pointing the git seam at a git that is not there),
-seeing a version and going back to it (`versioning-diff` — a row press opens the sheet: the whole
-note as lines, the changed one marked on both sides, the first change in view, the keyboard with the
-sheet rather than the text behind it, and Escape closing it with nothing changed;
+stamp where they agreed; `versioning-list` — the history modal's two columns, the newest row
+selected, and the comment under its own row and no other; `versioning-list-empty` — the four states
+that open no modal, the last by pointing the git seam at a git that is not there),
+seeing a version and going back to it (`versioning-diff` — the modal's row press replacing the
+right column: the whole note as lines, the changed one marked on both sides, the first change in
+view, the keyboard with the modal rather than the text behind it, and Escape closing it with nothing
+changed;
 `versioning-restore` — *Restore This Version* asking the session's own question, the file holding
 the version's text, the document on screen being it and *Saved*, and what was there kept in the
 stack as a document of its own),
