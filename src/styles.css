@@ -221,6 +221,12 @@
     0 12px 32px color-mix(in oklab, var(--color-base-content) 10%, transparent);
 }
 
+/* The full-width column keeps its original outer margin and adds the heading marker's gutter to
+   the left. Without that room the scroller's overflow clip cuts the marker in half. */
+.markdown-scroller[data-layout='auto'] {
+  padding-inline-start: calc(1rem + 1.5rem);
+}
+
 /* The full-width column is the editor's whole surface, and it is *opaque* for the same reason the
    sheet is: the system's text seam is painted behind the page (`composition_input.ts`), and what it
    draws natively — the focus ring of a focused field, the underline over a word an input method is

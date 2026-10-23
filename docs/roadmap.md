@@ -652,8 +652,9 @@ elements) unless it says otherwise.
   the glyph beyond the left margin before the heading's native `:hover` state moves it in. Heading
   indentation and text geometry remain unchanged. The marker is decorative and takes no pointer,
   text or caret width. Its size stays at `calc(1rem * var(--md-page-scale))` across every heading
-  depth. `heading-level-markers.js` holds all six paths, gutter hit-testing, hover geometry,
-  scaling and typing.
+  depth. The full-width layout reserves that gutter in its left padding instead of letting the
+  scroller clip it. `heading-level-markers.js` holds all six paths, gutter hit-testing, hover
+  geometry, both layouts, scaling and typing.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the

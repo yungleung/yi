@@ -5,10 +5,10 @@
  * count) and draws the layout the editor is in — a sheet while it is a page, a frame while the
  * words take the whole width — and pressing it runs `view:togglePage`. This drives the real
  * button and measures both layouts: what the page is (210 mm of sheet, a 25 mm margin, a desk
- * under it), what the column is (as wide as the pane, no sheet and no desk, and the 16px type
- * at 24px a line it always had), that the button's icon, name and `aria-pressed` say which is
- * on, that the bar it sits in is not much taller than it was for it, and that a click still
- * types where it landed after the switch.
+ * under it), what the column is (the pane's width inside its outer and marker-gutter margins, no
+ * sheet and no desk, and the 16px type at 24px a line it always had), that the button's icon, name
+ * and `aria-pressed` say which is on, that the bar it sits in is not much taller than it was for
+ * it, and that a click still types where it landed after the switch.
  *
  * `a4-page.js` holds the page's own geometry and the way it scales to a narrow pane; this
  * holds the switch between the two layouts.
@@ -46,6 +46,8 @@
 
   const scroller = () => document.querySelector('.markdown-scroller');
   const sheet = () => t.prose();
+  const AUTO_PADDING_LEFT = 40;
+  const AUTO_PADDING_RIGHT = 16;
   const layoutButton = () =>
     [...document.querySelectorAll('button')].find((button) =>
       ['A4 page', 'Full width'].includes(button.getAttribute('aria-label') ?? '')
@@ -116,21 +118,22 @@
     { layout: page.layout, width: page.width, padding: page.padding }
   );
 
-  // A press takes the sheet away: the column is as wide as the pane, there is no desk, and
-  // every measurement is the document's own again.
+  // A press takes the sheet away: the column fills the pane inside its margins, there is no desk,
+  // and every measurement is the document's own again.
   await press();
   const auto = look();
   check(
-    'a press leaves the column as wide as the pane, with no sheet and no desk',
+    'a press leaves the column in the pane margins, with no sheet and no desk',
     auto.layout === 'auto' &&
-      auto.width === 1000 - 2 * 16 &&
+      auto.width === 1000 - AUTO_PADDING_LEFT - AUTO_PADDING_RIGHT &&
       auto.padding === '0px' &&
       auto.border === '0px' &&
-      auto.deskPadding === '16px',
+      auto.deskPadding ===
+        `${AUTO_PADDING_RIGHT}px ${AUTO_PADDING_RIGHT}px ${AUTO_PADDING_RIGHT}px ${AUTO_PADDING_LEFT}px`,
     {
       layout: auto.layout,
       width: auto.width,
-      expected: 1000 - 2 * 16,
+      expected: 1000 - AUTO_PADDING_LEFT - AUTO_PADDING_RIGHT,
       padding: auto.padding,
       border: auto.border,
       deskPadding: auto.deskPadding

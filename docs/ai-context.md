@@ -565,8 +565,9 @@ fitPage` — the sheet, its margin and its type take one `--page-scale`, capped 
 narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
 layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
 as it was before the page, switched by the status bar's layout button (`view:togglePage`) and
-remembered in the app config (`editor_layout`). Four consequences worth knowing before you
-touch it:
+remembered in the app config (`editor_layout`); its left padding is `2.5rem`, the original `1rem`
+margin plus the `1.5rem` marker gutter, while its right margin stays `1rem`. Four consequences
+worth knowing before you touch it:
 the root's `max-width` has to be `none` or the typography plugin caps the sheet at `65ch`,
 the page's type size is `calc(1rem * var(--page-scale))` on `.prose.markdown-page` (the
 `.prose` in that selector is what beats the plugin's own `font-size: 1rem`), the whole
@@ -587,7 +588,7 @@ the marker without moving any content. The browser's native heading `:hover` sta
 glyph into view; only the marker's opacity and transform change, so heading indentation and text
 geometry do not move. The marker is `aria-hidden`, has no pointer events and contains no text,
 leaving the heading's source, copying and caret offsets untouched. `heading-level-markers.js` holds
-all six glyphs, sizes, gutter hit-testing, hover geometry and typing.
+all six glyphs, sizes, gutter hit-testing, hover geometry, full-width gutter room and typing.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

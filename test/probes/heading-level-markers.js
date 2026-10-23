@@ -35,6 +35,7 @@
   const source = Array.from({ length: 6 }, (_, index) => `${'#'.repeat(index + 1)} Level ${index + 1}`).join(
     '\n\n'
   );
+  await t.useLayout('page');
   await t.load(`${source}\n`);
   const headings = [...t.prose().querySelectorAll('h1,h2,h3,h4,h5,h6')];
   const markers = headings.map((heading) =>
@@ -214,5 +215,29 @@
     typed === `${source}!\n`,
     typed
   );
+
+  await t.useLayout('auto');
+  await t.sleep(120);
+  const autoScroller = document.querySelector('.markdown-scroller');
+  const autoClip = autoScroller.getBoundingClientRect();
+  const autoHeadings = [...t.prose().querySelectorAll('h1,h2,h3,h4,h5,h6')];
+  const autoMarkers = autoHeadings.map((heading) => {
+    const marker = heading.querySelector(':scope > [data-heading-marker]');
+    return marker === null
+      ? null
+      : {
+          left: marker.getBoundingClientRect().left,
+          right: marker.getBoundingClientRect().right
+        };
+  });
+  check(
+    'the full-width layout reserves the whole marker gutter',
+    autoMarkers.every(
+      (marker) =>
+        marker !== null && marker.left >= autoClip.left && marker.right <= autoClip.right
+    ),
+    { clip: { left: autoClip.left, right: autoClip.right }, markers: autoMarkers }
+  );
+
   return { checks, failed: checks.filter((item) => !item.pass).map((item) => item.name) };
 })()
