@@ -24,7 +24,7 @@
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
+  const { APP_IDENTITY, versionStamp } = await t.app('/src/services/versioning.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -147,6 +147,16 @@
     check('asking for a version asks what to call it, and an empty answer is allowed', commentAsked, {
       asked: commentAsked
     });
+    const [latest] = await versioning.versioningHistory(workspace, note, 1);
+    const status = document.querySelector('[data-version-status-label]')?.textContent ?? null;
+    check(
+      'saving a version updates the status button before the action returns',
+      latest !== undefined &&
+        status === versionStamp(latest.at) &&
+        document.querySelector('[data-version-status]')?.getAttribute('data-version-state') ===
+          'ready',
+      { status, expected: latest === undefined ? null : versionStamp(latest.at) }
+    );
     check(
       'the note on screen is in the repository: committing it again has nothing to do',
       await alreadyCommitted(note, 'a second time'),

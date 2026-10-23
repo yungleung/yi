@@ -133,20 +133,22 @@
     await pending;
     await t.sleep(150);
     const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withText.length);
+    const commitAt = saved.findIndex((line) => line.includes(' commit -m note · '));
+    const saving = commitAt < 4 ? [] : saved.slice(commitAt - 4, commitAt + 1);
     check(
       'and a version saved with a comment is committed with the comment as its body',
-      // The save's own five calls are the last five: the status bar's own list may have read the
-      // facts for the document before them, which is its business and not this probe's.
-      saved.length >= 5 &&
-        saved[saved.length - 5].includes(' config --get user.name') &&
-        saved[saved.length - 4].includes(' config --get user.email') &&
-        saved[saved.length - 3].endsWith(' init') &&
-        saved[saved.length - 2].includes(` add -- ${note}`) &&
+      // The action's own five calls end at its commit. The status bar's history reread follows the
+      // commit now, so it is deliberately not part of this sequence.
+      saving.length === 5 &&
+        saving[0].includes(' config --get user.name') &&
+        saving[1].includes(' config --get user.email') &&
+        saving[2].endsWith(' init') &&
+        saving[3].includes(` add -- ${note}`) &&
         // The subject is the document's own title — the file's name, for a note with no frontmatter
         // — and the stamp, exactly as it always was; the comment is the second message.
-        saved[saved.length - 1].includes(` commit -m note · `) &&
-        saved[saved.length - 1].includes(' -m why this version -- '),
-      saved
+        saving[4].includes(` commit -m note · `) &&
+        saving[4].includes(' -m why this version -- '),
+      { saving, after: saved.slice(commitAt + 1) }
     );
 
     // And what a restore does to the repository: it reads the version (`show`) and writes the

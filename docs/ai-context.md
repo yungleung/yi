@@ -221,7 +221,9 @@ the selected version's diff in the right column. Rows show the stamp, message an
 first; the newest is selected on open. Choosing another row changes the selection and the right
 column without closing the modal. The living list is `services/versions.ts`: it reads through
 `src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
-workspace or the answer changes, and when the modal opens or a version is saved. The read is the
+workspace or the answer changes, and when the modal opens or a version is saved. `saveVersion()`
+awaits the read after a successful commit, so the status stamp changes before the action returns.
+The read is the
 git vocabulary's **fourth call and its first read** —
 `git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`, through the same
 `run_git` — and the never-list is unchanged. Saving a version asks what to call it first
