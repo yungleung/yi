@@ -14,6 +14,7 @@
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
   const registry = await t.app('/src/ui/markdown/commands/registry.ts');
+  const i18n = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -24,6 +25,7 @@
   const notePath = `${folder}/note.md`;
   const note = '# A note after the documentation\n\nIts own text.\n';
   const before = await invoke('get_config');
+  const wasLanguage = i18n.language();
   try {
     try {
       await files.deleteEntry(folder);
@@ -34,6 +36,7 @@
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
+    i18n.setLanguage('en');
 
     check(
       'the Documentation command is registered',
@@ -126,6 +129,36 @@
       rendered.querySelectorAll('img').length === 0,
       rendered.querySelectorAll('img').length
     );
+    const languageGuides = [
+      ['ja', 'Yi ドキュメント'],
+      ['zh-Hans', 'Yi 文档'],
+      ['zh-Hant', 'Yi 文件說明'],
+      ['de', 'Yi-Dokumentation'],
+      ['fr', 'Documentation de Yi'],
+      ['es', 'Documentación de Yi'],
+      ['pt', 'Documentação do Yi']
+    ];
+    for (const [code, title] of languageGuides) {
+      i18n.setLanguage(code);
+      await invoke('plugin:event|emit', { event: 'documentation' });
+      await sleep(120);
+      const localized = session.documentSession.current();
+      const localizedText = await t.raw();
+      check(
+        `Documentation opens the ${code} guide with its own title`,
+        localized?.title === title &&
+          localized?.readOnly === true &&
+          localizedText.includes(`lang: ${code}`) &&
+          localizedText.includes('https://pandoc.org/MANUAL.html#option--reference-doc'),
+        {
+          title: localized?.title ?? null,
+          lang: localizedText.match(/^lang: (.+)$/m)?.[1] ?? null
+        }
+      );
+    }
+    i18n.setLanguage('en');
+    await invoke('plugin:event|emit', { event: 'documentation' });
+    await sleep(180);
     // A restored reference may be an older copy than the bundle that shipped with this run.
     const stale = session.documentSession.current();
     if (stale !== null) stale.content += '\nSTALE DOCUMENTATION\n';
@@ -182,6 +215,7 @@
     } catch {
       // Nothing to tidy.
     }
+    i18n.setLanguage(wasLanguage);
     await t.restoreWorkspace(before);
   }
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

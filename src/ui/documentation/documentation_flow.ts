@@ -10,10 +10,11 @@
 
 import { registerCommand } from '../markdown/commands/registry';
 import { openReferenceDocument } from '../reference_document';
+import { language } from '../../services/i18n';
 import { documentationText } from './documentation_text';
 
 export async function openDocumentation(): Promise<void> {
-  await openReferenceDocument(documentationText());
+  await openReferenceDocument(documentationText(language()));
 }
 
 export function registerDocumentationCommand(): void {

@@ -67,6 +67,12 @@ if (existsSync(file)) {
     /reference\.docx/.test(text) && /reference\.odt/.test(text)
   );
   check(
+    'it links to Pandoc’s reference-document workflow and shows both commands',
+    text.includes('https://pandoc.org/MANUAL.html#option--reference-doc') &&
+      text.includes('pandoc -o custom-reference.docx --print-default-data-file reference.docx') &&
+      text.includes('pandoc -o custom-reference.odt --print-default-data-file reference.odt')
+  );
+  check(
     'native LaTeX bibliography packaging is explained',
     /cite-method: natbib/.test(text) &&
       /bibliography: references\.bib/.test(text) &&
@@ -159,6 +165,52 @@ if (existsSync(file)) {
   check(
     'it contains no unfinished placeholders',
     !/\b(?:TODO|TBD|FIXME)\b/.test(text)
+  );
+}
+
+const localized = [
+  ['ja', 'Japanese', 'Yi ドキュメント'],
+  ['zh-Hans', 'Simplified Chinese', 'Yi 文档'],
+  ['zh-Hant', 'Traditional Chinese', 'Yi 文件說明'],
+  ['de', 'German', 'Yi-Dokumentation'],
+  ['fr', 'French', 'Documentation de Yi'],
+  ['es', 'Spanish', 'Documentación de Yi'],
+  ['pt', 'Portuguese', 'Documentação do Yi']
+];
+for (const [code, name, title] of localized) {
+  const localizedFile = `src/ui/documentation/documentation.${code}.md`;
+  check(`the ${name} Documentation guide exists`, existsSync(localizedFile));
+  if (!existsSync(localizedFile)) continue;
+  const text = readFileSync(localizedFile, 'utf8');
+  check(
+    `the ${name} guide has localized identity and title`,
+    text.includes('id: yi-documentation') &&
+      text.includes(`title: ${title}`) &&
+      new RegExp(`^lang: ${code.replace('-', '\\-')}$`, 'm').test(text)
+  );
+  check(
+    `the ${name} guide covers every template kind and safety boundary`,
+    ['$body$', 'reference.docx', 'reference.odt', 'tlmgr'].every((needle) =>
+      text.includes(needle)
+    ) && /shell[\s-]*(?:escape|Erweiterung)|extension shell/i.test(text)
+  );
+  check(
+    `the ${name} guide links to Pandoc and keeps both reference commands`,
+    text.includes('https://pandoc.org/MANUAL.html#option--reference-doc') &&
+      text.includes('pandoc -o custom-reference.docx --print-default-data-file reference.docx') &&
+      text.includes('pandoc -o custom-reference.odt --print-default-data-file reference.odt')
+  );
+  check(
+    `the ${name} guide retains the complete authoring structure`,
+    (text.match(/^#{2,4} /gm) ?? []).length >= 18 &&
+      ['HTML', 'LaTeX', 'PDF', 'EPUB', 'Word', 'OpenDocument'].every((kind) =>
+        text.includes(kind)
+      ) &&
+      text.includes('test/fixtures/templates/examples')
+  );
+  check(
+    `the ${name} guide has balanced code fences and no unfinished placeholders`,
+    (text.match(/^```/gm) ?? []).length % 2 === 0 && !/\b(?:TODO|TBD|FIXME)\b/.test(text)
   );
 }
 
