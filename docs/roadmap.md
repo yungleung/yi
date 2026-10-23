@@ -637,7 +637,11 @@ elements) unless it says otherwise.
   first, and pressing another row updates the right column without closing the modal. The modal
   owns Escape and the keyboard; closing returns the keyboard to the editor. `versioning-list`,
   `versioning-list-empty` and `versioning-diff` hold the new geometry, selection and no-empty-modal
-  rules.
+  rules. The reader then found two follow-ups: saving did not refresh the status button until
+  something else reread the history, and a diff taller than the panel had no bounded scroller, so
+  its changed-line jump moved the whole modal and hid the sidebar. `saveVersion()` now awaits the
+  history reread after the commit; the diff owns its flex display and scroll area and moves only its
+  own scroll position. `versioning-save` and `versioning-diff-large` hold both fixes.
 - **`insert-rule.js`'s `atTheEnd` check.** Closed: it no longer reproduces. The probe's own
   `caretUnderRule` check — unchanged since it was written — is green on `main` today (measured:
   the caret at y 282 under the rule's own bottom, and `"failed": []`), so the caret a rule at the

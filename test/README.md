@@ -183,7 +183,8 @@ folder it made itself, and what it says about `~/Library/CloudStorage` without a
 answer; `versioning-fake-git` — every argument the app hands git, watched by a git that only
 records (`probes/fake-git.sh`, committed because a probe cannot set an executable bit);
 `versioning-save` — the question a workspace nobody has answered for is asked, the answer remembered
-with its path, and the note committed; `versioning-staged` — a file the reader had staged is still
+with its path, the note committed, and the status button stamped before the action returns;
+`versioning-staged` — a file the reader had staged is still
 there to commit after a version of another note; `versioning-consent` — the answer that is *no*,
 nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
 — a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
@@ -321,7 +322,8 @@ that open no modal, the last by pointing the git seam at a git that is not there
 seeing a version and going back to it (`versioning-diff` — the modal's row press replacing the
 right column: the whole note as lines, the changed one marked on both sides, the first change in
 view, the keyboard with the modal rather than the text behind it, and Escape closing it with nothing
-changed;
+changed; `versioning-diff-large` — a long diff keeps the modal inside the window, the history row
+visible beside it, and scrolls only the right column;
 `versioning-restore` — *Restore This Version* asking the session's own question, the file holding
 the version's text, the document on screen being it and *Saved*, and what was there kept in the
 stack as a document of its own),

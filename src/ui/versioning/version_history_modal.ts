@@ -78,7 +78,7 @@ export class VersionHistoryModal extends BaseComponent {
     this.list.setAttribute('data-version-list', 'true');
     history.appendChild(this.list);
     const right = document.createElement('div');
-    right.className = 'flex min-w-0 flex-1 flex-col';
+    right.className = 'flex min-h-0 min-w-0 flex-1 flex-col';
     this.diff.mount(right, () => this.close());
     body.append(history, right);
     this.panel.append(header, body);

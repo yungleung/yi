@@ -62,7 +62,7 @@ export class VersionDiffView {
     header.append(this.title, this.restore);
 
     this.body = document.createElement('div');
-    this.body.className = 'flex-1 overflow-auto px-3 py-2';
+    this.body.className = 'min-h-0 flex-1 overflow-auto px-3 py-2';
     this.body.setAttribute('data-version-diff-body', 'true');
     this.said = document.createElement('p');
     this.said.className = 'text-sm opacity-70';
@@ -146,16 +146,19 @@ export class VersionDiffView {
     this.showing = null;
     this.versionText = null;
     this.element.classList.add('hidden');
+    this.element.classList.remove('flex');
     this.clear();
   }
 
   private open(): void {
     this.element.classList.remove('hidden');
+    this.element.classList.add('flex');
     this.element.focus();
   }
 
   private clear(): void {
     this.body.replaceChildren();
+    this.body.scrollTop = 0;
     this.said.hidden = true;
     this.said.textContent = '';
     this.restore.hidden = true;
@@ -198,8 +201,20 @@ export class VersionDiffView {
       rows.appendChild(row);
     }
     this.body.appendChild(rows);
-    this.body
-      .querySelector('[data-version-diff-kind="removed"], [data-version-diff-kind="added"]')
-      ?.scrollIntoView({ block: 'center' });
+    const changed = this.body.querySelector<HTMLElement>(
+      '[data-version-diff-kind="removed"], [data-version-diff-kind="added"]'
+    );
+    if (changed !== null) {
+      // Scroll only the diff pane. `scrollIntoView` also scrolls any ancestor it can, which moved
+      // the whole modal and hid the history sidebar when the diff was taller than the panel.
+      const bodyRect = this.body.getBoundingClientRect();
+      const changedRect = changed.getBoundingClientRect();
+      this.body.scrollTop = Math.max(
+        0,
+        changedRect.top -
+          bodyRect.top -
+          Math.round((this.body.clientHeight - changedRect.height) / 2)
+      );
+    }
   }
 }
