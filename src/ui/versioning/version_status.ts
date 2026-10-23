@@ -3,11 +3,11 @@
  *
  * It is there exactly when the reader has agreed to versions in this workspace — `versionsVisible`,
  * read from the config, so a workspace they said no to never runs git — and hidden otherwise; what
- * it *says* comes from `services/versions.ts` and nothing else. A press opens the panel under it
- * (`versions_panel.ts`, added next), which is the only thing that reads again.
+ * it *says* comes from `services/versions.ts` and nothing else. A press opens the history modal
+ * (`version_history_modal.ts`) only when there is at least one version to show.
  *
  * May import: the versions service, the config, the events, the catalogue, the toolbar base and the
- * panel. Upholds: one fact on screen — the newest version and when — drawn from the service.
+ * modal. Upholds: one fact on screen — the newest version and when — drawn from the service.
  */
 
 import { configManager } from '../../services/config_manager';
@@ -18,7 +18,7 @@ import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { versionedNow, versionStamp, versionsVisible } from '../../services/versioning';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { STATUS_BUTTON, Toolbar } from '../toolbar/toolbar';
-import { VersionsPanel } from './versions_panel';
+import { VersionHistoryModal } from './version_history_modal';
 
 /** The reader's own glyph: a note's version. */
 const VERSION_ICON =
@@ -30,12 +30,11 @@ const VERSION_ICON =
 export class VersionStatus extends Toolbar {
   private readonly button: HTMLButtonElement;
   private readonly label: HTMLSpanElement;
-  private readonly panel: VersionsPanel;
+  private readonly history: VersionHistoryModal;
 
-  constructor() {
-    // `relative`, so the panel hangs under the button rather than somewhere in the page.
-    super(['relative', 'flex', 'items-center', 'gap-1']);
-    this.panel = new VersionsPanel();
+  constructor(onClose: () => void = () => {}) {
+    super(['flex', 'items-center', 'gap-1']);
+    this.history = new VersionHistoryModal(onClose);
 
     this.button = document.createElement('button');
     this.button.type = 'button';
@@ -53,8 +52,8 @@ export class VersionStatus extends Toolbar {
       event.preventDefault();
       event.stopPropagation();
     });
-    this.button.addEventListener('click', () => this.panel.toggle());
-    this.element.append(this.button, this.panel.element);
+    this.button.addEventListener('click', () => void this.history.open());
+    this.element.appendChild(this.button);
 
     void eventManager.on(VERSIONS_CHANGED, () => this.render());
     // What is *on screen* is what the label is about, so a keystroke can change it.
@@ -73,7 +72,7 @@ export class VersionStatus extends Toolbar {
     // `[data-version-status]` has to be the thing that says whether the reader agreed.
     this.button.classList.toggle('hidden', !shown);
     if (!shown) {
-      this.panel.close();
+      this.history.close();
       return;
     }
     this.button.title = t('version.button');

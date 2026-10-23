@@ -419,8 +419,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /**
    * Puts the keyboard back in the text.
    *
-   * A mode laid over the editor — the versions sheet — keeps the keyboard while it is open, and
-   * this is the one way back; the caret itself is the session's and does not move for it.
+   * A modal over the editor — the version history — keeps the keyboard while it is open, and this
+   * is the one way back; the caret itself is the session's and does not move for it.
    */
   focusText(): void {
     // Already there: focusing again is a no-op to the letter of the spec, but it is a native

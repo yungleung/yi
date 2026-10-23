@@ -183,7 +183,8 @@ folder it made itself, and what it says about `~/Library/CloudStorage` without a
 answer; `versioning-fake-git` — every argument the app hands git, watched by a git that only
 records (`probes/fake-git.sh`, committed because a probe cannot set an executable bit);
 `versioning-save` — the question a workspace nobody has answered for is asked, the answer remembered
-with its path, and the note committed; `versioning-staged` — a file the reader had staged is still
+with its path, the note committed, and the status button stamped before the action returns;
+`versioning-staged` — a file the reader had staged is still
 there to commit after a version of another note; `versioning-consent` — the answer that is *no*,
 nothing written or made, and the General tab's switch asking the same question; `versioning-repository`
 — a repository the reader already has, used as it stands; `versioning-outer` — a folder *inside* one,
@@ -315,12 +316,15 @@ and as the app's own markdown (both URLs kept, because that file outlives the ru
 answering both content types and the fetched copies gone at the end),
 the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
-stamp where they agreed; `versioning-list` — the panel's rows, newest first, the newest marked and
-the comment under its own row and no other; `versioning-list-empty` — the four things it says
-instead of a list, the last by pointing the git seam at a git that is not there),
-seeing a version and going back to it (`versioning-diff` — a row press opens the sheet: the whole
-note as lines, the changed one marked on both sides, the first change in view, the keyboard with the
-sheet rather than the text behind it, and Escape closing it with nothing changed;
+stamp where they agreed; `versioning-list` — the history modal's two columns, the newest row
+selected with its title shown separately from the stamp, and the comment under its own row and no
+other; `versioning-list-empty` — the four states
+that open no modal, the last by pointing the git seam at a git that is not there),
+seeing a version and going back to it (`versioning-diff` — the modal's row press replacing the
+right column: the whole note as lines, the changed one marked on both sides, the first change in
+view, the keyboard with the modal rather than the text behind it, and Escape closing it with nothing
+changed; `versioning-diff-large` — a long diff keeps the modal inside the window, the history row
+visible beside it, and scrolls only the right column;
 `versioning-restore` — *Restore This Version* asking the session's own question, the file holding
 the version's text, the document on screen being it and *Saved*, and what was there kept in the
 stack as a document of its own),

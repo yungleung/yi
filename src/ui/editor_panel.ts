@@ -184,8 +184,8 @@ export class MarkdownEditor extends BaseComponent {
   }
 
   /**
-   * Puts the keyboard back in the text — the way back from a mode laid over the editor (the
-   * versions sheet). The caret is the session's and does not move for it.
+   * Puts the keyboard back in the text — the way back from a modal over the editor (the version
+   * history). The caret is the session's and does not move for it.
    */
   focusText(): void {
     this.innerEditor.focusText();

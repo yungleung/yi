@@ -27,7 +27,7 @@
   const session = await t.app('/src/services/session.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { versionDiffView } = await t.app('/src/ui/versioning/version_diff_view.ts');
+  const { VersionDiffView } = await t.app('/src/ui/versioning/version_diff_view.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -133,32 +133,37 @@
     await pending;
     await t.sleep(150);
     const saved = (await read(`${folder}/argv.log`)).trim().split('\n').slice(withText.length);
+    const commitAt = saved.findIndex((line) => line.includes(' commit -m note · '));
+    const saving = commitAt < 4 ? [] : saved.slice(commitAt - 4, commitAt + 1);
     check(
       'and a version saved with a comment is committed with the comment as its body',
-      // The save's own five calls are the last five: the status bar's own list may have read the
-      // facts for the document before them, which is its business and not this probe's.
-      saved.length >= 5 &&
-        saved[saved.length - 5].includes(' config --get user.name') &&
-        saved[saved.length - 4].includes(' config --get user.email') &&
-        saved[saved.length - 3].endsWith(' init') &&
-        saved[saved.length - 2].includes(` add -- ${note}`) &&
+      // The action's own five calls end at its commit. The status bar's history reread follows the
+      // commit now, so it is deliberately not part of this sequence.
+      saving.length === 5 &&
+        saving[0].includes(' config --get user.name') &&
+        saving[1].includes(' config --get user.email') &&
+        saving[2].endsWith(' init') &&
+        saving[3].includes(` add -- ${note}`) &&
         // The subject is the document's own title — the file's name, for a note with no frontmatter
         // — and the stamp, exactly as it always was; the comment is the second message.
-        saved[saved.length - 1].includes(` commit -m note · `) &&
-        saved[saved.length - 1].includes(' -m why this version -- '),
-      saved
+        saving[4].includes(` commit -m note · `) &&
+        saving[4].includes(' -m why this version -- '),
+      { saving, after: saved.slice(commitAt + 1) }
     );
 
     // And what a restore does to the repository: it reads the version (`show`) and writes the
-    // *file* — no add, no commit, no checkout, nothing. The sheet is driven directly, because with
-    // the recorder answering nothing there is no history to build a panel from.
+    // *file* — no add, no commit, no checkout, nothing. The diff pane is driven directly, because
+    // with the recorder answering nothing there is no history to build a modal from.
     const linesBefore = (await read(`${folder}/argv.log`)).trim().split('\n').length;
+    const versionDiffView = new VersionDiffView();
+    versionDiffView.mount(document.body, () => {});
     await versionDiffView.show({ revision: 'abc123', path: 'note.md', stamp: 'x' });
     const diffLines = [...document.querySelectorAll('[data-version-diff-line]')].length;
     document.querySelector('[data-version-diff-restore]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
     await t.sleep(400);
+    versionDiffView.element.remove();
     const afterLines = (await read(`${folder}/argv.log`)).trim().split('\n').slice(linesBefore);
     check(
       'and a restore reads the version and runs no git write at all',

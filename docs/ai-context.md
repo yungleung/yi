@@ -207,39 +207,42 @@ own comment under it — is what the app's own list of versions shows.
 a button (`ui/versioning/version_status.ts`) that is there exactly when the reader agreed to
 versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
 never runs git — and hidden otherwise, showing the newest version's stamp
-(`services/versioning.ts: versionStamp`). Pressing it opens the panel **above** it — the status bar
-is the bottom strip of the window, so a panel hanging below it is off-screen, which is a parameter
-of the kind (`panel.ts: side`) rather than a mode —
-and the button's own word is the *state*: the newest version's stamp when what is on screen is that
-version, and `version.unversioned` ("Not in a version") when it is not (`versionedNow`: the newest
-version's text, read once with the history, against what the editor holds — so a keystroke changes
-it), or "No versions yet" when there is nothing to compare with at all.
-(`versions_panel.ts`): one row per version, newest first — the stamp, the message, and the comment
-under it — and *nothing in it acts*, because restoring a version is out of this slice's scope
-(`docs/roadmap.md`). Both draw from `services/versions.ts`, the living list: it reads through
-`src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
-workspace or the answer changes, and when a panel opens or a version is saved; it can say
-`no-file`, `no-repository`, `ready` or `unreadable`, and the panel turns those into the four
-sentences a reader gets instead of a list. The read is the git vocabulary's **fourth call and its
-first read** — `git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`,
-through the same `run_git` — and the never-list is unchanged. Saving a version asks what to call it
-first (`version_comment_dialog.ts`, a card with **no native twin**: no system surface answers with
-a line of text), and the subject stays exactly what it was while the comment becomes the commit's
-body.
+(`services/versioning.ts: versionStamp`). The button's own word is the *state*: the newest version's
+stamp when what is on screen is that version, and `version.unversioned` ("Not in a version") when it
+is not (`versionedNow`: the newest version's text, read once with the history, against what the
+editor holds — so a keystroke changes it), or "No versions yet" when there is nothing to compare
+with at all.
 
-**A version can be seen and gone back to.** A press on a row of the versions panel opens the
-sheet (`ui/versioning/version_diff_view.ts`): the whole note as one row per line, drawn from
+Pressing the button reads once and opens `ui/versioning/version_history_modal.ts` only when the
+history is `ready` and holds at least one version. A note with no file, no repository, no versions,
+or an unreadable history opens nothing; the status button already says there is nothing to show.
+The modal is modelled on the template editor: a centred panel, a history sidebar on the left, and
+the selected version's diff in the right column. Rows show the stamp once above a subject containing
+the title alone; the app-written ` · stamp` suffix remains in Git's subject but is hidden from this
+row. Rows also show the comment, newest first; the newest is selected on open. Choosing another row
+changes the selection and the right column without closing the modal. The living list is
+`services/versions.ts`: it reads through
+`src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
+workspace or the answer changes, and when the modal opens or a version is saved. `saveVersion()`
+awaits the read after a successful commit, so the status stamp changes before the action returns.
+The read is the
+git vocabulary's **fourth call and its first read** —
+`git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`, through the same
+`run_git` — and the never-list is unchanged. Saving a version asks what to call it first
+(`version_comment_dialog.ts`, a card with **no native twin**: no system surface answers with a line
+of text), and the subject stays exactly what it was while the comment becomes the commit's body.
+
+**A version can be seen and gone back to.** The right column is
+`ui/versioning/version_diff_view.ts`: the whole note as one row per line, drawn from
 `services/text_diff.ts` (the equal ends trimmed only to compute the change; the middle walked for
 its longest common subsequence, removals before additions; past a cap the change is *named* — the
-rule answers a count and the catalogue says the sentence), opening at the first change. The sheet is
-a **mode**, not a floating surface: it covers the editor's area and keeps the keyboard while it is
-open, because `FloatingSurface`'s rule — never take the focus — is right for a question asked
-mid-gesture and wrong for this, where a keystroke reaching a document nobody can see is worse than a
-modal; closing it hands the keyboard back (`markdown_editor.ts: focusText`, and the scroller carries
-`tabindex="-1"` because WebKit only makes a scroll container focusable when it has something to
-scroll). Its one action is *Restore This Version*: **one question with a cancel that changes
-nothing** (*restore this version?*, through the app's own `ui/prompt.ts`, so Escape is the cautious
-answer, naming the version and saying nothing is committed), then
+rule answers a count and the catalogue says the sentence), opening at the first change. The modal
+keeps the keyboard while it is open; closing it with Escape or its ✕ hands the keyboard back
+(`markdown_editor.ts: focusText`, and the scroller carries `tabindex="-1"` because WebKit only
+makes a scroll container focusable when it has something to scroll). Its one action is *Restore
+This Version*: **one question with a cancel that changes nothing** (*restore this version?*,
+through the app's own `ui/prompt.ts`, so Escape is the cautious answer, naming the version and
+saying nothing is committed), then
 `documentSession.openVersion(path, content)` — the file is written with the app's atomic write and
 the document adopts that text, at its top. Three facts about it: a document with a file is keyed by
 its **path**, so a restore replaces *that* document's text rather than opening another; **nothing is

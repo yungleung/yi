@@ -29,6 +29,7 @@ import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
+import { versionsOfDocument } from '../../services/versions';
 import {
   APP_IDENTITY,
   consentFrom,
@@ -128,6 +129,9 @@ export async function saveVersion(
       plan.use === 'theirs' ? null : APP_IDENTITY,
       message.body
     );
+    // The commit is the fact the status bar and history modal draw from. Read it before this action
+    // returns, so the reader sees the version they just made without waiting for another event.
+    await versionsOfDocument.reread();
   } catch (error) {
     notify('Saving a version', error);
   }
