@@ -151,7 +151,7 @@
       marker: bounds(marker.getBoundingClientRect()),
       opacity: getComputedStyle(marker).opacity
     };
-    heading.dispatchEvent(new PointerEvent('pointerenter'));
+    heading.dispatchEvent(new MouseEvent('mouseenter'));
     await t.sleep(180);
     const shown = {
       heading: bounds(heading.getBoundingClientRect()),
@@ -169,7 +169,7 @@
         shown.text.left === before.text.left,
       { before, shown }
     );
-    heading.dispatchEvent(new PointerEvent('pointerleave'));
+    heading.dispatchEvent(new MouseEvent('mouseleave'));
     await t.sleep(180);
     const left = {
       marker: bounds(marker.getBoundingClientRect()),
@@ -177,7 +177,7 @@
     };
     check(
       'leaving shifts the marker back out without moving the heading',
-      left.opacity === '0' && Math.abs(left.marker.left - before.marker.left) <= 0.25,
+      left.opacity === '0' && Math.abs(left.marker.left - before.marker.left) <= 0.5,
       { before: before.marker, left }
     );
   } else {

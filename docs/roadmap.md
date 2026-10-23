@@ -646,7 +646,7 @@ elements) unless it says otherwise.
   ` · stamp` suffix from the displayed Git subject, while the commit subject itself is unchanged.
   `check-versioning.mjs` and `versioning-list` hold the display rule.
 - **Headings show their level beside the text.** `heading_marker.ts` holds the six supplied SVGs;
-  `heading.ts` attaches one to each rendered h1-h6 and tracks pointer entry/leave on the heading;
+  `heading.ts` attaches one to each rendered h1-h6 and tracks `mouseenter`/`mouseleave` on the heading;
   `styles.css` hides it beyond the left margin and moves only the marker in on hover. Heading
   indentation and text geometry remain unchanged. The marker is decorative and takes no pointer,
   text or caret width. Its size stays at `calc(1rem * var(--md-page-scale))` across every heading
