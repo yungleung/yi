@@ -20,6 +20,11 @@ use super::pandoc::{find_pandoc, run_pandoc_with_env};
 use super::templates::TemplateManifest;
 use super::templates::{reference_to, safe_prefix};
 
+mod environment;
+
+use environment::{absolute_output, write_note};
+pub(super) use environment::pdf_environment;
+
 /// What an export did: whether it wrote the file, and what pandoc said on the way.
 #[derive(Debug, Serialize, Clone)]
 pub struct ExportOutcome {
@@ -115,21 +120,6 @@ pub struct ExportRequest {
     #[serde(default)]
     pub note_assets: Vec<NoteAsset>,
 }
-/// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
-/// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
-fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
-    let scratch = dir.join("tmp");
-    fs::create_dir_all(&scratch)
-        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &scratch.display().to_string()), ("reason", &error.to_string())]))?;
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|since| since.as_nanos())
-        .unwrap_or(0);
-    let path = scratch.join(format!("note-{}-{stamp}.md", std::process::id()));
-    fs::write(&path, text).map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
-    Ok(path)
-}
-
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
 pub fn run_export(
     app: tauri::AppHandle,
@@ -189,7 +179,7 @@ fn export_with_pandoc(
         Some((package, manifest)) => {
             let root = dir
                 .join("tmp")
-                .join(format!("template-resources-{}", nanos()));
+                .join(format!("template-resources-{}", environment::nanos()));
             let names = super::templates::stage_alias(package, manifest, &root)?;
             Some((root, names))
         }
@@ -785,56 +775,3 @@ fn copy_asset(source: &Path, target: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn nanos() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|since| since.as_nanos())
-        .unwrap_or(0)
-}
-
-/// The output path as the run means it. Pandoc is run in the package folder for a PDF, so a
-/// relative destination from a caller has to become the one the reader saw.
-fn absolute_output(path: &str, source_dir: Option<&str>) -> PathBuf {
-    let path = PathBuf::from(path);
-    if path.is_absolute() {
-        return path;
-    }
-    let base = source_dir
-        .map(PathBuf::from)
-        .or_else(|| std::env::current_dir().ok())
-        .unwrap_or_default();
-    base.join(path)
-}
-
-/// A PDF template entry may live in `samples/` while its class lives at the package root. Run TeX
-/// from the entry's own folder so relative pictures and inputs resolve, and put both folders on the
-/// TeX/BibTeX search paths so the package's class and bibliography files still resolve.
-pub(super) fn pdf_environment(
-    package: &Path,
-    manifest: &TemplateManifest,
-) -> (Option<PathBuf>, Vec<(&'static str, OsString)>) {
-    let entry = super::templates::manifest_file(package, manifest.entry());
-    let working = entry.parent().unwrap_or(package).to_path_buf();
-    let separator = if cfg!(windows) { ';' } else { ':' };
-    let mut value = format!(
-        "{}{separator}{}{separator}",
-        package.display(),
-        working.display()
-    );
-    if let Ok(existing) = std::env::var("TEXINPUTS") {
-        if !existing.is_empty() {
-            value.push_str(&format!("{existing}{separator}"));
-        }
-    }
-    let texinputs = OsString::from(value.clone());
-    let bibinputs = OsString::from(value.clone());
-    let bstinputs = OsString::from(value);
-    (
-        Some(working),
-        vec![
-            ("TEXINPUTS", texinputs),
-            ("BIBINPUTS", bibinputs),
-            ("BSTINPUTS", bstinputs),
-        ],
-    )
-}
