@@ -36,6 +36,7 @@ import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
+import type { AstHeading } from '../ast';
 import { hasSourceMode } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
@@ -206,6 +207,12 @@ function sourceRangeIn(
       const marker = markerShape(label);
       return offset < position.start.offset + marker.end
         ? { start: position.start.offset, end: position.start.offset + marker.end }
+        : null;
+    }
+    if (node.type === 'heading') {
+      const attributes = (node as AstHeading).headingAttributes;
+      return attributes && end !== undefined && offset <= end
+        ? { start: attributes.from, end: attributes.to }
         : null;
     }
     const children = (node as { children?: RootContent[] }).children;

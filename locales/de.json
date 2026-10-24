@@ -203,6 +203,7 @@
   "completion.empty": "Hier gibt es nichts anzubieten.",
   "link.openFailed": "{name} konnte nicht geöffnet werden: {message}",
   "wikilink.notFound": "Keine Notiz mit dem Namen „{target}“.",
+  "heading.notFound": "Keine Überschrift hat die ID „{id}“.",
   "wikilink.openFailed": "Die Notiz „{target}“ konnte nicht geöffnet werden: {message}",
   "newNote.title": "Neues Markdown",
   "newNote.folder": "Ordner",

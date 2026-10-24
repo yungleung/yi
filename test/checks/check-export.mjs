@@ -183,6 +183,19 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const crossreferences =
+    '# Start\n\n' +
+    'See [Methods](#methods).\n\n' +
+    '## Methods {#methods .unnumbered data-owner=demo}\n';
+  const { rendered } = await render(crossreferences);
+  check(
+    'native fragment links and heading attributes are handed on character for character',
+    rendered,
+    crossreferences
+  );
+}
+
+{
   const { rendered } = await render('A fence only:\n\n```\n[[target]]\n```\n', {
     titles: { target: 'Nope' }
   });

@@ -164,7 +164,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       citation: (source, cached) =>
         cached ? bibliographyManager.formatCached(source) : bibliographyManager.format(source),
       wikilinkTitle: (target) => documentManager.getTitle(target),
-      imageSources: (destination) => imageSourceCandidates(destination)
+      imageSources: (destination) => imageSourceCandidates(destination),
+      headingId: (from) =>
+        this.state.headingTargets().find((target) => target.from === from)?.id ?? null
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
     // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
@@ -247,7 +249,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       (event) => routeFootnoteClick(this.context, event),
       true
     );
-    this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
+    this.contentView.addEventListener('click', (event) => routeLinkClick(this.context, event), true);
     this.contentView.addEventListener('click', (event) => routeWikilinkClick(event), true);
     // Where the pointer goes down, for the click that may end a drag: a drag-selection
     // crosses blocks, and the click it ends with lands on the page, not on a node (see

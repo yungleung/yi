@@ -82,6 +82,30 @@ Wikilinks resolve inside the workspace: [[虚无与生发]] renders the target�
 [[Language and Thought]] falls back to the frontmatter title,
 [[虚无与生发|My Custom Title]] uses the explicit title, and [[nonexistent-note]] stays as typed.
 
+## Heading cross-references
+
+Jump to [automatic heading IDs](#automatic-heading-ids),
+[the repeated heading](#automatic-heading-ids-1),
+[custom heading attributes](#reading-methods), or
+[a setext heading](#setext-heading).
+
+### Automatic heading IDs
+
+Pandoc derives this section’s ID from its text.
+
+### Automatic heading IDs
+
+This repeated title receives the suffix `-1`.
+
+### Reading methods {#reading-methods .unnumbered data-owner=demo}
+
+Move the caret into this heading to edit its ID, class, and key/value attribute.
+
+Setext heading with attributes {#setext-heading .unnumbered}
+===========================================================
+
+ATX and setext headings preserve trailing Pandoc attributes.
+
 ---
 
 This demo shows GitHub-flavored markdown features such as task lists, autolinks, tables, and fenced code blocks.

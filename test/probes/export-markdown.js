@@ -53,7 +53,16 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.processed.md`;
-  const note = ['# Going out', '', 'A link to [[other|an alias]], and a citation [@smith2020].', ''].join('\n');
+  const note = [
+    '# Going out',
+    '',
+    'A link to [[other|an alias]], and a citation [@smith2020].',
+    '',
+    'An internal [heading reference](#heading-target).',
+    '',
+    '## Heading target {#heading-target .unnumbered}',
+    ''
+  ].join('\n');
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -149,6 +158,15 @@
       // precedes it — and the family's `shift-heading-level-by: 1` would have made it an `##`.
       /^# Going out$/m.test(plain) && !/^#{2,} Going out$/m.test(plain),
       { heading: /^#+ Going out/m.exec(plain)?.[0] ?? null }
+    );
+    check(
+      'and native heading links and attributes survive processed Markdown',
+      plain.includes('[heading reference](#heading-target)') &&
+        plain.includes('## Heading target {#heading-target .unnumbered}'),
+      {
+        link: plain.includes('[heading reference](#heading-target)'),
+        heading: /^## Heading target.*$/m.exec(plain)?.[0] ?? null
+      }
     );
 
     // And a reader may ask for the citations resolved with **no list** — the card's own box. For this

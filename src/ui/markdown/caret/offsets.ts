@@ -52,7 +52,8 @@ export const SOURCE_SELECTOR = [
   '.markdown-strong-source',
   '.markdown-emphasis-source',
   '.markdown-delete-source',
-  '.markdown-inline-code-source'
+  '.markdown-inline-code-source',
+  '.markdown-heading-attributes-source'
 ].join(', ');
 
 /** The caret's location in the document, or null when it cannot be mapped. */
@@ -172,6 +173,21 @@ export function documentOffsetAt(
     .find((b) => String(b.lineStart) === blockElement.dataset.lineStart);
   if (!block) {
     return null;
+  }
+
+  // An empty heading renders no text node, but its markers are still characters in the
+  // document. A position on the heading element means the place after those markers;
+  // mapping it through an empty rendering fails, and the next typed marker would vanish.
+  if (
+    (blockElement.matches('.markdown-heading') ||
+      blockElement.querySelector('.markdown-heading') !== null) &&
+    (blockElement.textContent ?? '').length === 0
+  ) {
+    return {
+      block,
+      offset: block.charEnd,
+      blockOffset: block.charEnd - block.charStart
+    };
   }
 
   const renderedOffset = textOffsetInElement(blockElement, containerNode, positionOffset);

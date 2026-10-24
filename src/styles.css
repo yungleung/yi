@@ -98,6 +98,11 @@
   transform: translate(0, -50%);
 }
 
+.markdown-heading-marker-empty {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
 .markdown-heading-marker svg {
   display: block;
   width: 100%;
@@ -426,11 +431,16 @@ body {
 .markdown-strong-source,
 .markdown-emphasis-source,
 .markdown-delete-source,
-.markdown-inline-code-source {
+.markdown-inline-code-source,
+.markdown-heading-attributes-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
   border-radius: 0.25rem;
   background-color: var(--color-base-200);
+}
+
+.markdown-heading-attributes-source {
+  margin-inline-start: 0.25em;
 }
 
 /* Math sources can span multiple lines (display mode `$$…$$`). */
@@ -447,7 +457,8 @@ body {
 .markdown-strong-source,
 .markdown-emphasis-source,
 .markdown-delete-source,
-.markdown-inline-code-source {
+.markdown-inline-code-source,
+.markdown-heading-attributes-source {
   white-space: pre-wrap;
 }
 

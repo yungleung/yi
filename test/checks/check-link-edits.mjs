@@ -21,7 +21,13 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-link-edits-'));
 const file = join(directory, 'link_edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { linkInsertion, clipboardDestination, isOpenableUrl, isFilePath } = await import(file);
+const {
+  linkInsertion,
+  clipboardDestination,
+  isOpenableUrl,
+  isFilePath,
+  isSameDocumentFragment
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -129,6 +135,11 @@ check(
   [isFilePath('#fragment'), isFilePath('//example.com/a.md'), isFilePath(''), isFilePath('   ')],
   [false, false, false, false]
 );
+
+check('a local fragment is a heading target', isSameDocumentFragment('#methods'), true);
+check('an encoded local fragment is a heading target', isSameDocumentFragment('#C%20Methods'), true);
+check('an external file fragment is not', isSameDocumentFragment('note.md#methods'), false);
+check('an empty fragment is not a target', isSameDocumentFragment('#'), false);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

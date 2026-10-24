@@ -24,7 +24,7 @@
  * a line — the substitution keeps the text and the parse in step.
  */
 
-import { startsBlock } from './markers';
+import { delimiterOnlyHeadingLine, startsBlock } from './markers';
 
 import { isBlankItemLine } from './lines';
 
@@ -41,6 +41,11 @@ export function withVisibleTrailingSpaces(text: string): string {
       // A blank item's trailing space is the marker's own delimiter: rewriting
       // it would stop the line from parsing as an item.
       if (isBlankItemLine(line)) {
+        return line;
+      }
+      // An ATX marker's delimiter space is what turns the typed `#` characters
+      // into a heading. Rewriting it would leave the line a paragraph.
+      if (delimiterOnlyHeadingLine.test(line)) {
         return line;
       }
       const isLastLine = index === lines.length - 1;

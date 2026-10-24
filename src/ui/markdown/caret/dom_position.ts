@@ -147,7 +147,11 @@ export function domPositionAtOffset(
     }
   }
   if (blockElement.textContent?.length === 0) {
-    return { node: blockElement, offset: 0 };
+    // An empty heading still has a heading element to anchor beside. Using the
+    // block wrapper makes a collapsed caret look like a block-edge drag to the
+    // range reader, which resolves it before the heading's own offset rule.
+    const heading = blockElement.querySelector<HTMLElement>('.markdown-heading');
+    return { node: heading ?? blockElement, offset: 0 };
   }
   // Widgets and other untagged positions fall back to the rendered-offset
   // model, which approximates the widget lengths.

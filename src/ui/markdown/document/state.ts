@@ -31,6 +31,7 @@ import {
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
+import { headingIndex, type HeadingTarget } from './heading_index';
 import { TextStore } from './text_store';
 
 /** Parsed blocks kept before the oldest is dropped. */
@@ -67,6 +68,8 @@ export class MarkdownEditorState {
   private labelsVersion = 0;
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
+  /** Heading targets for the current text, computed only when navigation asks. */
+  private cachedHeadings: readonly HeadingTarget[] | null = null;
 
   constructor(text = '') {
     this.text = new TextStore(text);
@@ -82,6 +85,12 @@ export class MarkdownEditorState {
   /** The document's blocks, in document order. */
   getBlocks(): readonly MarkdownBlock[] {
     return this.blocks;
+  }
+
+  /** Every heading target in the current document, resolved lazily and cached. */
+  headingTargets(): readonly HeadingTarget[] {
+    this.cachedHeadings ??= headingIndex(this.getText());
+    return this.cachedHeadings;
   }
 
   /**
@@ -177,6 +186,7 @@ export class MarkdownEditorState {
     const previous = this.blocks;
     apply();
     this.cachedText = null;
+    this.cachedHeadings = null;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
     // The labels follow the edit rather than being thrown away with it: reading
     // every definition in the document is a scan per keystroke on a note with

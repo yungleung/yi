@@ -203,6 +203,7 @@
   "completion.empty": "這裡沒有可選項目。",
   "link.openFailed": "無法開啟{name}：{message}",
   "wikilink.notFound": "沒有名為「{target}」的筆記。",
+  "heading.notFound": "沒有 ID 為「{id}」的標題。",
   "wikilink.openFailed": "無法開啟筆記「{target}」：{message}",
   "newNote.title": "新增 Markdown",
   "newNote.folder": "檔案夾",
