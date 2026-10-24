@@ -174,6 +174,21 @@ export function documentOffsetAt(
     return null;
   }
 
+  // An empty heading renders no text node, but its markers are still characters in the
+  // document. A position on the heading element means the place after those markers;
+  // mapping it through an empty rendering fails, and the next typed marker would vanish.
+  if (
+    (blockElement.matches('.markdown-heading') ||
+      blockElement.querySelector('.markdown-heading') !== null) &&
+    (blockElement.textContent ?? '').length === 0
+  ) {
+    return {
+      block,
+      offset: block.charEnd,
+      blockOffset: block.charEnd - block.charStart
+    };
+  }
+
   const renderedOffset = textOffsetInElement(blockElement, containerNode, positionOffset);
   if (renderedOffset === null) {
     return null;
