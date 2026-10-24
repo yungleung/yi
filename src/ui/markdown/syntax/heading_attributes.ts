@@ -13,12 +13,16 @@
 
 /** A trailing Pandoc attribute block, in heading-source coordinates. */
 export interface HeadingAttributeBlock {
-  /** Start of the separating whitespace before `{`, inclusive. */
+  /** Start of `{`, after the separating whitespace. */
   from: number;
   /** End just after `}`, exclusive. */
   to: number;
   /** The exact source from {@link from} to {@link to}. */
   source: string;
+  /** Start of the whitespace separator that the parser removes from the title. */
+  separatorFrom: number;
+  /** The exact whitespace between the heading text and `{`. */
+  separator: string;
   /** The explicit identifier (`#id`), or null. */
   id: string | null;
   /** Class names (`.class`), in source order. */
@@ -54,11 +58,13 @@ export function readHeadingAttributes(source: string): HeadingAttributeBlock | n
   if (parsed === null) {
     return null;
   }
-  const from = trimSpacesBack(source, open);
+  const separatorFrom = trimSpacesBack(source, open);
   return {
-    from,
+    from: open,
     to: trimmedEnd,
-    source: source.slice(from, trimmedEnd),
+    source: source.slice(open, trimmedEnd),
+    separatorFrom,
+    separator: source.slice(separatorFrom, open),
     ...parsed
   };
 }

@@ -434,6 +434,10 @@ body {
   background-color: var(--color-base-200);
 }
 
+.markdown-heading-attributes-source {
+  margin-inline-start: 0.25em;
+}
+
 /* Math sources can span multiple lines (display mode `$$…$$`). */
 /* Revealed sources are the document's own text: the runs of spaces in them are
    the author's characters, so they are laid out as written rather than

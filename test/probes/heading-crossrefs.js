@@ -94,7 +94,7 @@
 
   const custom = await reach('#methods', 'h2');
   check('a custom ID reaches its heading', custom.heading, 'Methods');
-  check('and reveals the custom attributes at the target', custom.attributesShown, ' {#methods .unnumbered}');
+  check('and reveals the custom attributes at the target', custom.attributesShown, '{#methods .unnumbered}');
   check('and focuses the custom heading', custom.caretOnHeading, true);
 
   const setext = await reach('#setext-title', 'h1');
@@ -102,7 +102,7 @@
   check(
     'and reveals the setext attributes at the target',
     setext.attributesShown,
-    ' {#setext-title .unnumbered}'
+    '{#setext-title .unnumbered}'
   );
   check('and command-click focuses it', setext.caretOnHeading, true);
 

@@ -63,7 +63,8 @@ const stringifyProcessor = unified()
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
-        return `${'#'.repeat(depth)} ${content}${node.headingAttributes?.source ?? ''}\n`;
+        const attributes = node.headingAttributes;
+        return `${'#'.repeat(depth)} ${content}${attributes ? attributes.separator + attributes.source : ''}\n`;
       },
       descriptionlist(node: any, _parent: any, state: any, info: any): string {
         return state.containerFlow(node, info);

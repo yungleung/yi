@@ -23,13 +23,27 @@
 
   await t.click(heading, 0.5);
   await t.sleep(250);
-  const source = t.prose().querySelector('.markdown-heading-attributes-source');
+  let source = t.prose().querySelector('.markdown-heading-attributes-source');
   check(
     'attributes appear inside the heading',
     source?.textContent ?? null,
-    ' {#methods .unnumbered}'
+    '{#methods .unnumbered}'
   );
 
+  const sourceLeft = source?.getBoundingClientRect().left ?? null;
+  t.key('ArrowLeft');
+  await t.sleep(250);
+  check(
+    'one left from the attributes leaves their block',
+    sourceLeft !== null && (t.caretRect()?.x ?? sourceLeft) < sourceLeft - 2,
+    true
+  );
+
+  await t.load('# Before\n\n## Methods {#methods .unnumbered}\n\nAfter\n');
+  heading = t.prose().querySelector('h2');
+  await t.click(heading, 0.5);
+  await t.sleep(250);
+  source = t.prose().querySelector('.markdown-heading-attributes-source');
   if (source) {
     await t.click(source, 0.4);
     t.key('x');
@@ -38,7 +52,7 @@
   const typed = await t.raw();
   check(
     'typing lands in the attribute source',
-    typed.includes('## Methods {#methodxs .unnumbered}'),
+    typed.includes('## Methods {#methodsx .unnumbered}'),
     true
   );
 

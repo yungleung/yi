@@ -53,7 +53,7 @@ function separateHeadingAttributes(tree: Root, file: VFile): void {
       return;
     }
     heading.headingAttributes = attributes;
-    removeTrailingText(heading, start + attributes.from);
+    removeTrailingText(heading, start + attributes.separatorFrom);
   }
 
   /**

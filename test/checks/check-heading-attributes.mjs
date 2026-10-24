@@ -42,13 +42,15 @@ check(
     const found = readHeadingAttributes('## Methods {#methods .unnumbered data-owner=demo}');
     return found && {
       source: found.source,
+      separator: found.separatorFrom,
       id: found.id,
       classes: found.classes,
       attributes: found.attributes
     };
   })(),
   {
-    source: ' {#methods .unnumbered data-owner=demo}',
+    source: '{#methods .unnumbered data-owner=demo}',
+    separator: '## Methods'.length,
     id: 'methods',
     classes: ['unnumbered'],
     attributes: { 'data-owner': 'demo' }

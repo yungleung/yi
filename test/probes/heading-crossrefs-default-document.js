@@ -61,7 +61,7 @@
   check(
     'the custom heading reveals all three attribute kinds',
     source?.textContent ?? null,
-    ' {#reading-methods .unnumbered data-owner=demo}'
+    '{#reading-methods .unnumbered data-owner=demo}'
   );
 
   commandClick(t.prose().querySelector('a.markdown-link[href="#setext-heading"]'));
