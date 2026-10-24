@@ -249,7 +249,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       (event) => routeFootnoteClick(this.context, event),
       true
     );
-    this.contentView.addEventListener('click', (event) => routeLinkClick(event), true);
+    this.contentView.addEventListener('click', (event) => routeLinkClick(this.context, event), true);
     this.contentView.addEventListener('click', (event) => routeWikilinkClick(event), true);
     // Where the pointer goes down, for the click that may end a drag: a drag-selection
     // crosses blocks, and the click it ends with lands on the page, not on a node (see

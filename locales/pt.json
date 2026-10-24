@@ -203,6 +203,7 @@
   "completion.empty": "Nada a oferecer aqui.",
   "link.openFailed": "Não foi possível abrir {name}: {message}",
   "wikilink.notFound": "Nenhuma nota chamada “{target}”.",
+  "heading.notFound": "Nenhum título tem o id «{id}».",
   "wikilink.openFailed": "Não foi possível abrir a nota “{target}”: {message}",
   "newNote.title": "Novo Markdown",
   "newNote.folder": "Pasta",

@@ -57,6 +57,16 @@ export function isOpenableUrl(href: string): boolean {
 }
 
 /**
+ * Whether a destination names a heading in the current document.
+ *
+ * A path-qualified fragment names another file and keeps the file-link route.
+ */
+export function isSameDocumentFragment(destination: string): boolean {
+  const text = destination.trim();
+  return /^#[^#]+$/.test(text);
+}
+
+/**
  * Whether a destination names a *file* the app may open, rather than a URL or a place in this page.
  *
  * A link can point at a note: the one beside the note being read, or one written from the root of

@@ -21,6 +21,11 @@ export interface Message {
 /** Emitted with a `Message` whenever the app has something to say. */
 export const MESSAGE_EVENT = 'message';
 
+/** Shows a message the app has already worded for the reader. */
+export function showMessage(text: string): void {
+  void eventManager.emit(MESSAGE_EVENT, { text } satisfies Message);
+}
+
 /**
  * Something needs the reader's attention: the backend's own sentence reaches them, and the
  * diagnosis stays in the console under the context the caller names.
@@ -28,5 +33,5 @@ export const MESSAGE_EVENT = 'message';
 export function notify(context: string, error: unknown): void {
   const text = error instanceof Error ? error.message : String(error);
   console.error(`${context}:`, error);
-  void eventManager.emit(MESSAGE_EVENT, { text } satisfies Message);
+  showMessage(text);
 }

@@ -23,8 +23,9 @@ import { tableMenuModel } from '../table/table_menu_model';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
+import { jumpToHeading } from './editing/headings';
 import { placeCaretFromPointer } from './editing/pointer';
-import { isFilePath, isOpenableUrl } from './syntax/link_edits';
+import { isFilePath, isOpenableUrl, isSameDocumentFragment } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
 import { toggleTask } from './editing/text_commands';
 import { openLinkDestination, openWikilinkTarget } from './link_opens';
@@ -118,7 +119,7 @@ export function routePointerClick(context: EditorContext, event: MouseEvent): vo
  * destination that is none of these — a `mailto:`, a `#fragment`, an empty href — keeps the plain
  * click, because opening the source is the only thing left that it can mean.
  */
-export function routeLinkClick(event: MouseEvent): void {
+export function routeLinkClick(context: EditorContext, event: MouseEvent): void {
   if (!event.metaKey && !event.ctrlKey) {
     return;
   }
@@ -129,6 +130,12 @@ export function routeLinkClick(event: MouseEvent): void {
     return;
   }
   const href = anchor.getAttribute('href') ?? '';
+  if (isSameDocumentFragment(href)) {
+    event.preventDefault();
+    event.stopPropagation();
+    jumpToHeading(context, href);
+    return;
+  }
   if (!isOpenableUrl(href)) {
     if (isFilePath(href)) {
       event.preventDefault();

@@ -1,9 +1,8 @@
 /**
  * What each gesture on a link does: ⌘-click (Ctrl-click) opens the URL in the
  * default browser through the app's opener, a plain click opens the link as its own
- * source for editing, and a destination that names no file *and* no URL — a `#fragment`,
- * an empty href — keeps the plain click, because opening its source is the only thing
- * left that it can mean.
+ * source for editing. A `#fragment` command-click asks the editor for a heading in
+ * this document, while a plain click still opens the link's source.
  *
  * A *path* is the app's own to open instead (`syntax/link_edits.ts: isFilePath`), which this
  * probe holds from the browser's side: a path is never handed to the opener, and its source does
@@ -113,8 +112,9 @@
 
   // 3. Two destinations that name no file *and* no URL.
   //
-  // A `#fragment` is a place in this page, so the browser is asked for nothing and the plain
-  // click's behaviour stands, because opening the source is the only thing left that it can mean.
+  // A `#fragment` is a place in this document. The command-click asks the heading
+  // navigator for it, and never the browser or the link's source. An empty href is still
+  // inert, so its plain-click behavior is unchanged.
   // A *path* is different: it is the app's to open now (`syntax/link_edits.ts: isFilePath`), so a
   // ⌘-click on one is the editor's own and its source does *not* open — `link-opens-a-note.js`
   // holds what happens instead, in a note whose links really are files.
@@ -125,12 +125,22 @@
     await t.sleep(300);
     check('a fragment is not opened', !opened(recorder), recorder.calls);
     check(
-      'and its source opens instead, which is the only thing it can mean',
-      source()?.textContent === '[frag](#here)',
+      'and its source does not open: the click asks for a heading',
+      source() === null,
       source()?.textContent ?? null
+    );
+    check(
+      'and the missing heading is named',
+      [...document.querySelectorAll('[data-message-text]')].some((element) =>
+        element.textContent?.includes('here')
+      ),
+      true
     );
   } finally {
     recorder.stop();
+    for (const close of [...document.querySelectorAll('[data-message-close]')]) {
+      close.click();
+    }
   }
 
   await t.load('See [rel](notes/a.md) here.\n');

@@ -203,6 +203,7 @@
   "completion.empty": "Rien à proposer ici.",
   "link.openFailed": "Impossible d’ouvrir {name} : {message}",
   "wikilink.notFound": "Aucune note nommée « {target} ».",
+  "heading.notFound": "Aucun titre n’a l’identifiant « {id} ».",
   "wikilink.openFailed": "Impossible d’ouvrir la note « {target} » : {message}",
   "newNote.title": "Nouveau Markdown",
   "newNote.folder": "Dossier",
