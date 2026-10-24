@@ -19,11 +19,27 @@
 
   await t.load(
     '# Figures\n\n' +
+      'An inline ![tiny](https://placehold.co/40x20/png) sits with this text.\n\n' +
       '![Opening](https://placehold.co/200x80/png)\n\n' +
       'See [#fig:model].\n\n' +
       '![Model overview](https://placehold.co/200x80/png){#fig:model .wide width=80%}\n'
   );
   const figures = [...t.prose().querySelectorAll('figure.markdown-figure')];
+  const inline = t.prose().querySelector('p img');
+  const inlineStyle = inline === null ? null : getComputedStyle(inline);
+  const inlineRect = inline?.getBoundingClientRect() ?? null;
+  const followingText = inline?.nextElementSibling;
+  const followingRect = followingText?.getBoundingClientRect() ?? null;
+  const sharesLine =
+    inlineRect !== null &&
+    followingRect !== null &&
+    followingRect.left >= inlineRect.right - 1 &&
+    followingRect.top < inlineRect.bottom &&
+    followingRect.bottom > inlineRect.top;
+  check('an inline image stays inside its paragraph', inline?.closest('figure') ?? null, null);
+  check('and is laid out in the text line', inlineStyle?.display ?? null, 'inline-block');
+  check('and shares its line with the following text', sharesLine, true);
+  check('without figure caption margins', [inlineStyle?.marginTop, inlineStyle?.marginBottom], ['0px', '0px']);
   check('both implicit figures render', figures.length, 2);
   check(
     'the unlabeled figure consumes Figure 1',

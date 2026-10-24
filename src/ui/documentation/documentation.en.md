@@ -122,7 +122,8 @@ labeled figure. Only a figure with an explicit ID can be referenced.
 
 The attribute block follows Pandoc image syntax. Yi applies only the ID to its editor DOM and keeps
 classes and other attributes for export. Images inside a paragraph remain inline images: they are
-not captioned, numbered, or referenceable.
+laid out on the same line as the surrounding words, and are not captioned, numbered, or
+referenceable.
 
 ⌘-click or Ctrl-click a figure reference to reveal and focus the figure. A plain click on the figure
 opens its complete image Markdown for editing.
