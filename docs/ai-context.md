@@ -589,6 +589,8 @@ glyph into view; only the marker's opacity and transform change, so heading inde
 geometry do not move. The marker is `aria-hidden`, has no pointer events and contains no text,
 leaving the heading's source, copying and caret offsets untouched. `heading-level-markers.js` holds
 all six glyphs, sizes, gutter hit-testing, hover geometry, full-width gutter room and typing.
+An empty heading keeps its marker visible without hover because it has no title text to show its
+level; `markdown-heading-marker-empty` is the single state for that case.
 
 **A heading attribute block is source, not title text.** `syntax/heading_attributes.ts` reads the
 trailing Pandoc `{#id .class key=value}` block on ATX and setext headings;

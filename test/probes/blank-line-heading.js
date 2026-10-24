@@ -32,7 +32,19 @@
 
   t.key(' ');
   await t.sleep(300);
-  check('the delimiter space turns the line into a heading', t.prose().querySelector('h2') !== null, true);
+  const emptyHeading = t.prose().querySelector('h2');
+  const emptyMarker = emptyHeading?.querySelector('[data-heading-marker]');
+  check('the delimiter space turns the line into a heading', emptyHeading !== null, true);
+  check(
+    'the empty heading shows its level marker',
+    emptyMarker?.getAttribute('data-heading-marker') ?? null,
+    '2'
+  );
+  check(
+    'and the level marker is visible',
+    emptyMarker === null ? null : getComputedStyle(emptyMarker).opacity,
+    '1'
+  );
 
   for (const key of ['H', 'e', 'a', 'd']) {
     t.key(key);

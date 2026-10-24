@@ -109,7 +109,9 @@ model empty paragraphs, list items, and table cells already use, and it is what
 allows the user to type the first `#`, continue typing heading markers, add the
 required space, and then type the heading text. Until that delimiter space is
 typed, the `#` characters render as ordinary paragraph text rather than an
-invisible empty heading; the space is the transition to heading rendering.
+invisible empty heading; the space is the transition to heading rendering. The
+empty heading keeps its level marker visible until title text exists, so the
+reader can see which heading level the delimiter space created.
 
 ## Navigation
 

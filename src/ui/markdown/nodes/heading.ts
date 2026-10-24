@@ -29,7 +29,11 @@ export class Heading extends EditableNodeComponent {
     if (id) {
       this.element.id = id;
     }
-    this.element.append(headingHoverTarget(), headingMarker(depth));
+    const marker = headingMarker(depth);
+    if (node.children.length === 0) {
+      marker.classList.add('markdown-heading-marker-empty');
+    }
+    this.element.append(headingHoverTarget(), marker);
     appendChildren(this.element, node.children);
     const attributes = node.headingAttributes;
     if (attributes && isShownSourceRange(attributes.from, attributes.to)) {
