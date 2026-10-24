@@ -70,6 +70,10 @@
     '# Going out',
     '',
     `A note with an alias: [[other|an alias]], a citation [@smith2020], and a picture: ![icon](${checkout}src-tauri/icons/icon.png).`,
+    '',
+    'See [#fig:demo] for the figure.',
+    '',
+    `![Example figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -233,6 +237,19 @@
       'and the picture the note shows is inside it, not left as its own description',
       latin.includes('word/media/'),
       { media: latin.includes('word/media/') }
+    );
+    const documentXml =
+      bytes === null ? '' : (await t.zipEntry(bytes, 'word/document.xml')) ?? '';
+    check(
+      'and a figure keeps a bookmark, numbered caption, and automatic link',
+      documentXml.includes('<w:bookmarkStart') &&
+        documentXml.includes('Figure 1. Example figure') &&
+        documentXml.includes('>Figure 1</w:t>'),
+      {
+        bookmark: documentXml.includes('<w:bookmarkStart'),
+        caption: documentXml.includes('Figure 1. Example figure'),
+        link: documentXml.includes('>Figure 1</w:t>')
+      }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');
     check(

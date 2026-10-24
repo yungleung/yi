@@ -599,9 +599,19 @@ range on the heading, and the heading serializer writes it back. `nodes/heading.
 ID and reveals the attributes while the caret is anywhere in that heading. `document/heading_index.ts`
 caches every heading target for the current text, using `syntax/pandoc_identifiers.ts` for automatic
 IDs and Pandoc's numeric suffix for duplicates. ⌘-click or Ctrl-click on `[text](#id)` reaches
-`editing/headings.ts`, which reveals the target block and focuses the heading without changing
+`editing/references.ts`, which reveals the target block and focuses it without changing
 `location.hash`. `heading-attributes.js`, `heading-crossrefs.js` and
 `heading-crossrefs-default-document.js` hold the rendering, navigation and fixture behavior.
+
+**`[#id]` is an automatic reference, and a standalone captioned image is a figure.** The remark
+transformer `plugins/remark-auto-references.ts` splits `[#id]` from ordinary text while preserving
+offsets; `nodes/auto_reference.ts` renders the target's inferred label. `document/reference_index.ts`
+owns document order, IDs, duplicate resolution, heading targets, and figure numbering. Figures with a
+non-empty alt are recognized after all parser repairs by `syntax/figures.ts`; their Pandoc attributes
+stay in the source while normal rendering shows the image, caption, and computed number. Export
+rewrites automatic references to ordinary links and normalizes figure targets for ODT and LaTeX.
+`auto-references.js`, `figure-rendering.js`, and `figure-crossrefs-default-document.js` hold the app
+behavior.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

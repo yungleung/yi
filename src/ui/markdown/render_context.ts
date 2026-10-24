@@ -27,6 +27,10 @@ export interface RenderContext {
   imageSources(destination: string): string[];
   /** The resolved Pandoc identifier for a heading starting at this document offset. */
   headingId(from: number): string | null;
+  /** The visible text of an automatic reference, and whether its target exists. */
+  referenceText(id: string): { text: string; resolved: boolean };
+  /** The localized figure label at this document offset, or null. */
+  figureLabelAt(from: number): string | null;
 }
 
 /** What a rendering gets when the app has said nothing. */
@@ -34,7 +38,9 @@ const nothing: RenderContext = {
   citation: (_source, _cached) => null,
   wikilinkTitle: async (_target) => null,
   imageSources: (_destination) => [],
-  headingId: (_from) => null
+  headingId: (_from) => null,
+  referenceText: (id) => ({ text: `#${id}`, resolved: false }),
+  figureLabelAt: (_from) => null
 };
 
 let current: RenderContext = nothing;

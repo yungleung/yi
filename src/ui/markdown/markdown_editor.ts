@@ -18,6 +18,7 @@ import { eventManager } from '../../services/event_manager';
 import type { AppEventName } from '../../services/app_events';
 import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
 import { documentManager } from '../../services/document_manager';
+import { t } from '../../services/i18n';
 import { imageSourceCandidates } from '../image/image_urls';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
@@ -72,6 +73,7 @@ import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
 import { runCommand, setEditingAllowed, type CommandId } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
+import { firstReference, referenceLabel } from './document/reference_index';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
 
@@ -166,7 +168,21 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       wikilinkTitle: (target) => documentManager.getTitle(target),
       imageSources: (destination) => imageSourceCandidates(destination),
       headingId: (from) =>
-        this.state.headingTargets().find((target) => target.from === from)?.id ?? null
+        this.state.headingTargets().find((target) => target.from === from)?.id ?? null,
+      referenceText: (id) => {
+        const target = firstReference(this.state.referenceEntries(), id);
+        return target
+          ? { text: referenceLabel(target, (key) => t(key)), resolved: true }
+          : { text: `#${id}`, resolved: false };
+      },
+      figureLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'figure' && entry.from === from
+        );
+        return target?.number == null
+          ? null
+          : `${t('reference.figure')} ${target.number}`;
+      }
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
     // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its

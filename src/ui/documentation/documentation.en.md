@@ -106,6 +106,31 @@ Keep explicit heading IDs unique. Pandoc leaves duplicate explicit IDs unchanged
 follows the first matching heading. Both heading attributes and internal links are valid Pandoc
 Markdown, so Pandoc exports and the processed Markdown export preserve them.
 
+### Figures
+
+A standalone image with non-empty alt text is a figure. Its alt text is its caption, and every
+figure receives a number in document order:
+
+```markdown
+See [#fig:sample] or the [sample figure](#fig:sample).
+
+![A sample image](images/sample.png){#fig:sample .wide width=80%}
+```
+
+When one unlabeled figure appears before it, `[#fig:sample]` displays “Figure 2” and links to the
+labeled figure. Only a figure with an explicit ID can be referenced.
+
+The attribute block follows Pandoc image syntax. Yi applies only the ID to its editor DOM and keeps
+classes and other attributes for export. Images inside a paragraph remain inline images: they are
+not captioned, numbered, or referenceable.
+
+⌘-click or Ctrl-click a figure reference to reveal and focus the figure. A plain click on the figure
+opens its complete image Markdown for editing.
+
+Rendered HTML, EPUB, Word, and ODT exports receive a numbered caption and a format-appropriate
+bookmark. LaTeX and PDF use the native figure counter. Processed Markdown emits an HTML `<figure>`
+with an ID and numbered `<figcaption>` so common Markdown readers can display it.
+
 ## Export a note
 
 **File → Export** offers these kinds:

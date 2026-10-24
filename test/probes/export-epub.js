@@ -70,6 +70,10 @@
     '# Going out',
     '',
     `A picture from the web: ![shot](${url}), and a citation [@smith2020].`,
+    '',
+    'See [#fig:demo] for the figure.',
+    '',
+    `![Example figure](${url}){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -207,6 +211,20 @@
           pages
         }
       );
+    check(
+      'a figure keeps its HTML anchor, caption, and automatic link in the chapter',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="fig:demo"') &&
+          /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(chapter) &&
+          chapter.includes('href="ch001.xhtml#fig:demo">Figure 1</a>')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="fig:demo"'),
+        caption: /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(chapter),
+        link: chapter.includes('href="ch001.xhtml#fig:demo">Figure 1</a>')
+      }))
+    );
     }
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(

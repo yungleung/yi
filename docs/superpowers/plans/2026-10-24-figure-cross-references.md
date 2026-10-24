@@ -53,7 +53,7 @@ Rules:
 - skip an escaped `\[#id]`;
 - report source-relative offsets for the whole `[#id]` and inner ID.
 
-- [ ] **Step 1: Write failing checks**
+- [x] **Step 1: Write failing checks**
 
 ```js
 check('a reference reports its source and id', autoReferenceSpans('See [#fig:model].'), [
@@ -64,15 +64,15 @@ check('empty references stay text', autoReferenceSpans('[#]'), []);
 check('line breaks end the search', autoReferenceSpans('[#fig:\nmodel]'), []);
 ```
 
-- [ ] **Step 2: Run the check and verify it fails**
+- [x] **Step 2: Run the check and verify it fails**
 
 Run `node test/checks/check-auto-references.mjs`.
 
-- [ ] **Step 3: Implement the pure scanner and pass the check**
+- [x] **Step 3: Implement the pure scanner and pass the check**
 
 Run the check again and then `npm run check`.
 
-- [ ] **Step 4: Add the remark transformer and node**
+- [x] **Step 4: Add the remark transformer and node**
 
 Create `src/ui/markdown/plugins/remark-auto-references.ts`, augment mdast with
 `autoReference`, and split text nodes into text/reference/text children while
@@ -82,7 +82,7 @@ stringifier.
 Create `src/ui/markdown/nodes/auto_reference.ts` as a revealable inline node.
 Its normal form is an `<a href="#id">`; its source form is `[#id]`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/auto_references.ts \
@@ -133,18 +133,18 @@ export function referenceLabel(
 ): string;
 ```
 
-- [ ] **Step 1: Write failing index checks**
+- [x] **Step 1: Write failing index checks**
 
 Test heading IDs, duplicates, title fallback, and an inserted duplicate changing
 which heading is canonical. Use the existing `check-heading-index.mjs` loader.
 
-- [ ] **Step 2: Implement the index and state cache**
+- [x] **Step 2: Implement the index and state cache**
 
 Reuse heading parsing and Pandoc ID generation. Add
 `MarkdownEditorState.referenceEntries()`. Keep `headingTargets()` as a filtered
 compatibility view.
 
-- [ ] **Step 3: Add render-context answers**
+- [x] **Step 3: Add render-context answers**
 
 Extend `RenderContext`:
 
@@ -156,7 +156,7 @@ In `markdown_editor.ts`, resolve through `state.referenceEntries()` and localize
 kind labels. A heading returns its title. Unknown references return `#id` with
 `resolved: false`.
 
-- [ ] **Step 4: Prove auto-reference rendering**
+- [x] **Step 4: Prove auto-reference rendering**
 
 Create `test/probes/auto-references.js`:
 
@@ -165,7 +165,7 @@ Create `test/probes/auto-references.js`:
 - command-click reaches the heading;
 - an unknown reference is visibly unresolved and does not navigate.
 
-- [ ] **Step 5: Run checks and probes**
+- [x] **Step 5: Run checks and probes**
 
 ```bash
 node test/checks/check-auto-references.mjs
@@ -175,7 +175,7 @@ npm run check
 npm run probe -- --with-workspace --fixture default-document.md test/probes/auto-references.js
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/document/reference_index.ts \
@@ -215,12 +215,12 @@ interface FigureNode {
 export function restoreFigures(tree: Root, markdown: string): void;
 ```
 
-- [ ] **Step 1: Extract shared Pandoc attribute tokens**
+- [x] **Step 1: Extract shared Pandoc attribute tokens**
 
 Move token scanning/parsing out of `heading_attributes.ts` into a pure
 `pandoc_attributes.ts`. Keep heading behavior unchanged and run its checks.
 
-- [ ] **Step 2: Write failing figure checks**
+- [x] **Step 2: Write failing figure checks**
 
 Cover:
 
@@ -234,22 +234,22 @@ shape('![Caption](a.png){#fig:a .wide width=80%}\n') === 'figure(image)'
 Also assert the parsed ID/classes/attributes, malformed trailing braces, image
 title preservation, and exact serialization.
 
-- [ ] **Step 3: Implement `restoreFigures`**
+- [x] **Step 3: Implement `restoreFigures`**
 
 Run it after all existing parser repairs. It replaces a paragraph containing only
 one non-empty-alt image and optional valid attributes with one `figure` node.
 It must skip inline images, images in links, empty-alt images, and code.
 
-- [ ] **Step 4: Serialize the figure**
+- [x] **Step 4: Serialize the figure**
 
 Add a stringify handler that writes the stored native source exactly.
 
-- [ ] **Step 5: Extend the reference index**
+- [x] **Step 5: Extend the reference index**
 
 Collect figures in document order and assign `Figure 1`, `Figure 2`, including
 figures without IDs. Only entries with IDs are referencable.
 
-- [ ] **Step 6: Run checks**
+- [x] **Step 6: Run checks**
 
 ```bash
 node test/checks/check-figures.mjs
@@ -258,7 +258,7 @@ node test/checks/check-reference-index.mjs
 npm run check
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/pandoc_attributes.ts \
@@ -291,7 +291,7 @@ git commit -m "feat(markdown): parse figure targets"
   Markdown plus attributes.
 - Normal rendering is `<figure id="…"><img><figcaption>Figure N. Caption</figcaption></figure>`.
 
-- [ ] **Step 1: Write the failing probe**
+- [x] **Step 1: Write the failing probe**
 
 Load:
 
@@ -311,25 +311,25 @@ Assert:
 - clicking elsewhere restores the rendered figure;
 - the caption remains visible when the image fails to load.
 
-- [ ] **Step 2: Implement the figure component**
+- [x] **Step 2: Implement the figure component**
 
 Use the existing image render context for URL candidates. Render the generated
 number as chrome, not selectable document text. Render alt text in the caption.
 Only the ID reaches the element.
 
-- [ ] **Step 3: Add source mode**
+- [x] **Step 3: Add source mode**
 
 Register `figure` as a source-showing node. Its shown source is the full
 `![alt](destination){attributes}` text so its image and attributes remain one
 editable unit. Use source offsets tagged on the span.
 
-- [ ] **Step 4: Re-render refs on numbering changes**
+- [x] **Step 4: Re-render refs on numbering changes**
 
 Include a reference-index version in the parse/render key for blocks containing
 automatic references or figures. Inserting a figure above must update later
 figure and reference text without editing those blocks.
 
-- [ ] **Step 5: Run targeted probes**
+- [x] **Step 5: Run targeted probes**
 
 ```bash
 npm run probe -- --with-workspace --fixture default-document.md test/probes/figure-rendering.js
@@ -338,7 +338,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/imag
 npm run probe -- --with-workspace --fixture default-document.md test/probes/insert-image.js
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/nodes/figure.ts src/ui/markdown/create_node.ts \
@@ -369,7 +369,7 @@ git commit -m "feat(editor): render numbered figures"
   resolved HTML form for processed Markdown.
 - Auto refs are rewritten before Pandoc sees the source.
 
-- [ ] **Step 1: Add failing export checks**
+- [x] **Step 1: Add failing export checks**
 
 For input:
 
@@ -392,19 +392,19 @@ See [Figure 1](#fig:model).
 
 Expect Pandoc-target exports to wrap the native figure and avoid a duplicate ID.
 
-- [ ] **Step 2: Implement the processed-Markdown HTML renderer**
+- [x] **Step 2: Implement the processed-Markdown HTML renderer**
 
 Use the resolved image path, HTML escaping, `data-*` mapping, and the shared
 number. This output is presentation-oriented and not re-imported as a Yi figure.
 
-- [ ] **Step 3: Implement Pandoc target normalization**
+- [x] **Step 3: Implement Pandoc target normalization**
 
 For non-Markdown kinds, remove the native image ID and wrap the figure in an
 ID-bearing `Div`. Prefix the alt/caption with `Figure N.` except for LaTeX/PDF.
 Generated LaTeX keeps the native figure counter and emits `\hyperref` through
 the already rewritten ordinary link.
 
-- [ ] **Step 4: Run checks and export probes**
+- [x] **Step 4: Run checks and export probes**
 
 ```bash
 node test/checks/check-export.mjs
@@ -418,7 +418,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/expo
 npm run probe -- --with-workspace --fixture default-document.md test/probes/export-epub.js
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/export/preprocess.ts test/checks/check-export.mjs \
@@ -440,7 +440,7 @@ git commit -m "feat(export): render figure references"
 - Modify: `docs/architecture.md`
 - Create: `test/probes/figure-crossrefs-default-document.js`
 
-- [ ] **Step 1: Add the fixture examples**
+- [x] **Step 1: Add the fixture examples**
 
 Include:
 
@@ -449,12 +449,12 @@ Include:
 - an inline image that consumes no number;
 - manual and automatic links to the labeled figure.
 
-- [ ] **Step 2: Document the feature**
+- [x] **Step 2: Document the feature**
 
 Explain implicit-figure recognition, explicit IDs, caption/number behavior,
 `[text](#id)` versus `[#id]`, navigation, and processed/rendered export behavior.
 
-- [ ] **Step 3: Run final checks and the full probe suite**
+- [x] **Step 3: Run final checks and the full probe suite**
 
 ```bash
 npx tsc --noEmit
@@ -463,7 +463,7 @@ npm run check
 npm run probe:all
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add test/fixtures/workspace/default-document.md \

@@ -16,6 +16,7 @@
 import type { InlineMath as InlineMathNode, Math as MathNode } from 'mdast-util-math';
 import type {
   AstBlockquote,
+  AstAutoReference,
   AstBreak,
   AstCitation,
   AstCode,
@@ -26,6 +27,7 @@ import type {
   AstEmphasis,
   AstFootnoteDefinition,
   AstFootnoteReference,
+  AstFigure,
   AstHeading,
   AstHtml,
   AstImage,
@@ -60,6 +62,8 @@ import { Emphasis } from './nodes/emphasis';
 import { Strong } from './nodes/strong';
 import { Delete } from './nodes/delete';
 import { Link } from './nodes/link';
+import { AutoReference } from './nodes/auto_reference';
+import { Figure } from './nodes/figure';
 import { Image } from './nodes/image';
 import { Citation } from './nodes/citation';
 import { Wikilink } from './nodes/wikilink';
@@ -91,6 +95,12 @@ registerComponent('emphasis', (node) => new Emphasis(node as AstEmphasis), true)
 registerComponent('strong', (node) => new Strong(node as AstStrong), true);
 registerComponent('delete', (node) => new Delete(node as AstDelete), true);
 registerComponent('link', (node) => new Link(node as AstLink), true);
+registerComponent(
+  'autoReference',
+  (node) => new AutoReference(node as AstAutoReference),
+  true
+);
+registerComponent('figure', (node) => new Figure(node as AstFigure), true);
 registerComponent('image', (node) => new Image(node as AstImage), true);
 registerComponent('citation', (node) => new Citation(node as AstCitation), true);
 registerComponent('wikilink', (node) => new Wikilink(node as AstWikilink), true);

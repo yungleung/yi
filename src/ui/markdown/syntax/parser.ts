@@ -24,9 +24,11 @@ import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
 import { restoreSpacedDestinations } from './spaced_destinations';
+import { restoreFigures } from './figures';
 import { frontmatterForParsers } from './markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
+import { remarkAutoReferences } from '../plugins/remark-auto-references';
 import { remarkHeadingAttributes } from '../plugins/remark-heading-attributes';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
 
@@ -38,6 +40,7 @@ const parseProcessor = unified()
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
+  .use(remarkAutoReferences)
   .use(remarkHeadingAttributes)
   .use(remarkWikilink);
 
@@ -49,6 +52,7 @@ const fragmentProcessor = unified()
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
+  .use(remarkAutoReferences)
   .use(remarkHeadingAttributes)
   .use(remarkWikilink);
 
@@ -60,6 +64,12 @@ const stringifyProcessor = unified()
     closeAtx: true,
     listItemIndent: 'one',
     handlers: {
+      autoReference(node: any): string {
+        return String(node.value ?? `[#${node.id}]`);
+      },
+      figure(node: any): string {
+        return `${String(node.source ?? '').trimEnd()}\n`;
+      },
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
@@ -95,6 +105,7 @@ export function parseMarkdown(markdown: string): Root {
   restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);
   restoreSpacedDestinations(root, markdown);
+  restoreFigures(root, markdown);
   return root;
 }
 

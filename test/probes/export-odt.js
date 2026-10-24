@@ -64,6 +64,10 @@
     '# Going out',
     '',
     `A picture: ![icon](${checkout}src-tauri/icons/32x32.png), and a citation [@smith2020].`,
+    '',
+    'See [#fig:demo] for the figure.',
+    '',
+    `![Example figure](${checkout}src-tauri/icons/32x32.png){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -153,6 +157,18 @@
       'with the note’s picture in the odt’s own media folder',
       latin.includes('Pictures/'),
       { pictures: latin.includes('Pictures/') }
+    );
+    const content = bytes === null ? '' : (await t.zipEntry(bytes, 'content.xml')) ?? '';
+    check(
+      'a figure keeps its target and numbered caption in the ODT section',
+      content.includes('text:section text:name="fig:demo"') &&
+        content.includes('xlink:href="#fig:demo"') &&
+        content.includes('Figure 1. Example figure'),
+      {
+        section: content.includes('text:section text:name="fig:demo"'),
+        link: content.includes('xlink:href="#fig:demo"'),
+        caption: content.includes('Figure 1. Example figure')
+      }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(

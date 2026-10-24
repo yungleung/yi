@@ -61,6 +61,10 @@
     'An internal [heading reference](#heading-target).',
     '',
     '## Heading target {#heading-target .unnumbered}',
+    '',
+    'See [#fig:demo] for the picture.',
+    '',
+    `![Example figure](${window.__probePaths.checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -166,6 +170,17 @@
       {
         link: plain.includes('[heading reference](#heading-target)'),
         heading: /^## Heading target.*$/m.exec(plain)?.[0] ?? null
+      }
+    );
+    check(
+      'and figures become numbered HTML with an automatic-reference link',
+      plain.includes('See [Figure 1](#fig:demo)') &&
+        plain.includes('<figure id="fig:demo" class="wide">') &&
+        plain.includes('<figcaption>Figure 1. Example figure</figcaption>'),
+      {
+        link: plain.includes('See [Figure 1](#fig:demo)'),
+        figure: /<figure[^>]*id="fig:demo"[^>]*>/.exec(plain)?.[0] ?? null,
+        caption: /<figcaption>.*<\/figcaption>/.exec(plain)?.[0] ?? null
       }
     );
 

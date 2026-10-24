@@ -425,6 +425,8 @@ body {
 .markdown-link-source,
 .markdown-citation-source,
 .markdown-wikilink-source,
+.markdown-auto-reference-source,
+.markdown-figure-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -451,6 +453,8 @@ body {
 .markdown-image-source,
 .markdown-citation-source,
 .markdown-wikilink-source,
+.markdown-auto-reference-source,
+.markdown-figure-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -465,6 +469,31 @@ body {
 .markdown-list-placeholder {
   display: inline-block;
   min-width: 0.5em;
+}
+
+.markdown-auto-reference-unresolved {
+  color: var(--color-error);
+  text-decoration-style: dotted;
+}
+
+.markdown-figure {
+  margin-block: 1rem;
+  text-align: center;
+}
+
+.markdown-figure img {
+  max-width: 100%;
+}
+
+.markdown-figure-caption {
+  margin-top: 0.5rem;
+  font-size: 0.875em;
+  color: var(--color-base-content);
+}
+
+.markdown-figure-number {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.

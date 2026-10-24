@@ -2,7 +2,7 @@
  * The default fixture demonstrates every heading cross-reference form.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/editing/headings.ts
+ *   src/ui/markdown/editing/references.ts
  * @fixture test/fixtures/workspace/default-document.md
  */
 (async () => {

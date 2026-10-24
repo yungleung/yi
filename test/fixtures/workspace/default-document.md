@@ -63,7 +63,13 @@ Term two
 
 ## Images and separators
 
-![A sample image](https://placehold.co/200x80/png)
+See [#fig:sample] or the [sample figure](#fig:sample).
+
+![An unlabeled figure](https://placehold.co/200x80/png)
+
+![A sample image](https://placehold.co/200x80/png){#fig:sample .wide}
+
+An inline image ![a tiny inline image](https://placehold.co/40x20/png) does not advance the figure sequence.
 
 ## Citations
 

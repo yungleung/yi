@@ -23,7 +23,7 @@ import { tableMenuModel } from '../table/table_menu_model';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
-import { jumpToHeading } from './editing/headings';
+import { jumpToReference } from './editing/references';
 import { placeCaretFromPointer } from './editing/pointer';
 import { isFilePath, isOpenableUrl, isSameDocumentFragment } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
@@ -133,7 +133,7 @@ export function routeLinkClick(context: EditorContext, event: MouseEvent): void 
   if (isSameDocumentFragment(href)) {
     event.preventDefault();
     event.stopPropagation();
-    jumpToHeading(context, href);
+    jumpToReference(context, href);
     return;
   }
   if (!isOpenableUrl(href)) {

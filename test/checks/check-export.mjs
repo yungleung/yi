@@ -77,6 +77,8 @@ function workspace({ titles = {}, files = [], document: documentFolder = '/notes
 const render = async (text, answers = {}) => {
   const notes = workspace(answers);
   const rendered = await exportSource(text, {
+    kind: answers.kind ?? 'latex',
+    translate: (key) => (key === 'reference.figure' ? 'Figure' : key),
     titleOf: notes.titleOf,
     bases: notes.bases,
     exists: notes.exists,
@@ -192,6 +194,59 @@ const render = async (text, answers = {}) => {
     'native fragment links and heading attributes are handed on character for character',
     rendered,
     crossreferences
+  );
+}
+
+{
+  const figure =
+    'See [#fig:model].\n\n' +
+    '![Model overview](shot.png){#fig:model .wide owner=demo}\n';
+  const { rendered } = await render(figure, {
+    kind: 'markdown',
+    files: ['/notes/shot.png']
+  });
+  check(
+    'processed markdown renders a figure as HTML with its number and target',
+    rendered,
+    'See [Figure 1](#fig:model).\n\n' +
+      '<figure id="fig:model" class="wide" data-owner="demo">\n' +
+      '  <img src="/notes/shot.png" alt="Model overview">\n' +
+      '  <figcaption>Figure 1. Model overview</figcaption>\n' +
+      '</figure>\n'
+  );
+}
+
+{
+  const figure =
+    'See [#fig:model].\n\n' +
+    '![Model overview](shot.png){#fig:model .wide owner=demo}\n';
+  const { rendered } = await render(figure, {
+    kind: 'html',
+    files: ['/notes/shot.png']
+  });
+  check(
+    'Pandoc-written figure formats get one target wrapper and a numbered caption',
+    rendered,
+    'See [Figure 1](#fig:model).\n\n' +
+      '::: {#fig:model}\n' +
+      '![Figure 1. Model overview](/notes/shot.png){.wide owner="demo"}\n' +
+      ':::\n'
+  );
+}
+
+{
+  const figure =
+    'See [#fig:model].\n\n' +
+    '![Model overview](shot.png){#fig:model .wide owner=demo}\n';
+  const { rendered } = await render(figure, {
+    kind: 'latex',
+    files: ['/notes/shot.png']
+  });
+  check(
+    'LaTeX keeps the native numbered figure and removes no ID',
+    rendered,
+    'See [Figure 1](#fig:model).\n\n' +
+      '![Model overview](/notes/shot.png){#fig:model .wide owner="demo"}\n'
   );
 }
 

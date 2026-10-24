@@ -72,6 +72,10 @@
     '',
     `A citation [@smith2020], and a picture: ![icon](${checkout}src-tauri/icons/icon.png).`,
     '',
+    'See [#fig:demo] for the figure.',
+    '',
+    `![Demo figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
     '```md',
     '[[still code]]',
     '```',
@@ -203,6 +207,17 @@
       'and an image’s destination written as the file it names, so pandoc embeds what the page showed',
       prepared.includes(`![icon](${checkout}src-tauri/icons/icon.png)`),
       prepared.split('\n').find((line) => line.startsWith('A citation'))?.trim()
+    );
+    check(
+      'a figure is wrapped once and receives its number for a non-LaTeX writer',
+      prepared.includes('See [Figure 1](#fig:demo)') &&
+        prepared.includes('::: {#fig:demo}') &&
+        prepared.includes(
+          `![Figure 1. Demo figure](${checkout}src-tauri/icons/icon.png){.wide}`
+        ),
+      prepared
+        .split('\n')
+        .filter((line) => line.includes('fig:demo') || line.includes('Demo figure'))
     );
 
     // --- the app's own scratch -----------------------------------------------------------------
