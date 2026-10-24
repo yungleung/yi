@@ -55,6 +55,7 @@ Tasks 2–7 run on `codex/heading-cross-references`.
 
 - Create: `test/probes/blank-line-heading.js`
 - Modify: `src/ui/markdown/caret/offsets.ts`
+- Modify: `src/ui/markdown/caret/dom_position.ts`
 - Test: `test/probes/blank-line-heading.js`
 
 **Interfaces:**
@@ -158,7 +159,8 @@ Expected: every probe reports an empty `failed` array.
 - [ ] **Step 6: Commit the separate bug fix**
 
 ```bash
-git add src/ui/markdown/caret/offsets.ts test/probes/blank-line-heading.js
+git add src/ui/markdown/caret/offsets.ts src/ui/markdown/caret/dom_position.ts \
+  test/probes/blank-line-heading.js
 git commit -m "fix(editor): type headings on empty lines"
 ```
 

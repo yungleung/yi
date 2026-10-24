@@ -65,6 +65,42 @@ Useful commands include:
 | Undo | ⌘Z or Ctrl+Z |
 | Documentation | F1 |
 
+## Cross-references and heading attributes
+
+Internal links use ordinary Markdown link syntax. A destination beginning with `#` names a heading in
+the current document:
+
+```markdown
+See [Reading methods](#reading-methods).
+```
+
+⌘-click or Ctrl-click the link to reveal and focus that heading. A plain click still opens the
+link's Markdown for editing. A link to another document, such as `note.md#reading-methods`, remains
+a file link.
+
+When a heading has no explicit ID, Pandoc derives one from its text: formatting is removed,
+whitespace becomes `-`, letters are lowercased, and punctuation other than `_`, `-`, and `.` is
+removed. Text before the first letter is discarded, and punctuation-only headings use `section`.
+Repeated automatic IDs receive `-1`, `-2`, and so on.
+
+ATX and setext headings may end with a Pandoc attribute block separated from the title by
+whitespace:
+
+```markdown
+### Reading methods {#reading-methods .unnumbered data-owner=demo}
+
+Setext heading {#setext-heading .unnumbered}
+===========================================
+```
+
+`#reading-methods` supplies the link target. Yi leaves `.unnumbered` and `data-owner=demo` for
+Pandoc without applying them to the editor's own layout. Heading attributes stay hidden while the
+caret is elsewhere and become editable when the caret enters the heading.
+
+Keep explicit heading IDs unique. Pandoc leaves duplicate explicit IDs unchanged and warns; Yi
+follows the first matching heading. Both heading attributes and internal links are valid Pandoc
+Markdown, so Pandoc exports and the processed Markdown export preserve them.
+
 ## Export a note
 
 **File → Export** offers these kinds:

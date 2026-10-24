@@ -21,7 +21,7 @@ shape (the tree, the class families, and which convention each check enforces).
 
 | Layer | Files | Job |
 | --- | --- | --- |
-| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing |
+| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading attributes and Pandoc identifiers |
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
 | Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
@@ -589,6 +589,17 @@ glyph into view; only the marker's opacity and transform change, so heading inde
 geometry do not move. The marker is `aria-hidden`, has no pointer events and contains no text,
 leaving the heading's source, copying and caret offsets untouched. `heading-level-markers.js` holds
 all six glyphs, sizes, gutter hit-testing, hover geometry, full-width gutter room and typing.
+
+**A heading attribute block is source, not title text.** `syntax/heading_attributes.ts` reads the
+trailing Pandoc `{#id .class key=value}` block on ATX and setext headings;
+`plugins/remark-heading-attributes.ts` removes it from rendered children while keeping its exact
+range on the heading, and the heading serializer writes it back. `nodes/heading.ts` applies only the
+ID and reveals the attributes while the caret is anywhere in that heading. `document/heading_index.ts`
+caches every heading target for the current text, using `syntax/pandoc_identifiers.ts` for automatic
+IDs and Pandoc's numeric suffix for duplicates. ⌘-click or Ctrl-click on `[text](#id)` reaches
+`editing/headings.ts`, which reveals the target block and focuses the heading without changing
+`location.hash`. `heading-attributes.js`, `heading-crossrefs.js` and
+`heading-crossrefs-default-document.js` hold the rendering, navigation and fixture behavior.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
