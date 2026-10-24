@@ -195,22 +195,42 @@ A missing target keeps the current behavior from the shared specification.
 
 ### Processed Markdown
 
-- preserve the native image and attributes;
-- rewrite `[#fig:id]` to `[Figure N](#fig:id)`;
-- leave the image's caption unchanged;
-- do not prepend the number to the image alt text.
+Processed Markdown is the reader-facing fallback, so it emits rendered HTML
+instead of relying on Pandoc's implicit-figure extension:
 
-Processed Markdown remains semantic Pandoc Markdown. A Pandoc-aware consumer
-renders the figure number from the implicit figure; prefixing it in the source
-would cause a second number when that Markdown is converted again.
+```html
+<figure id="fig:model">
+  <img src="/workspace/images/model.png" alt="Model overview">
+  <figcaption>Figure 2. Model overview</figcaption>
+</figure>
+```
 
-For example:
+The same pass rewrites `[#fig:id]` to an ordinary link:
 
 ```markdown
 See [Figure 2](#fig:model).
-
-![Model overview](images/model.png){#fig:model .class width=80%}
 ```
+
+Rules:
+
+- resolve the image destination with the existing image-export rules;
+- HTML-escape the caption and attribute values;
+- write the shared computed figure number into the caption;
+- put the figure ID on the `<figure>` element;
+- omit `id` for an unlabeled figure;
+- map Pandoc class attributes to the HTML `class` attribute;
+- map Pandoc key/value attributes to `data-*` attributes, matching Pandoc's HTML
+  writer;
+- write the non-empty alt text as both the image alt and the figure caption.
+
+This output intentionally favors display in common Markdown editors over
+round-trip conversion. Re-importing the processed file treats it as raw HTML,
+not as a Yi figure. Pandoc-backed export kinds continue to receive native image
+figure syntax and never this HTML fallback.
+
+Some Markdown renderers sanitize raw HTML or remove `id` attributes. In those
+renderers the figure content may still appear while the fragment target does
+not; Yi cannot override the host renderer's security policy.
 
 ### Pandoc-backed exports
 
@@ -233,8 +253,8 @@ This wrapper:
 For rendered non-LaTeX exports, the caption receives `Figure N.` because Pandoc
 does not number captions in HTML, EPUB, DOCX, or ODT. For LaTeX/PDF, Pandoc's
 native figure counter supplies the number, so the caption is not prefixed.
-Processed Markdown is the exception described above: it preserves native figure
-semantics instead of inserting presentation numbers.
+Processed Markdown uses the explicit HTML figure described above and likewise
+contains the visible number.
 
 Automatic references become ordinary `[Figure N](#fig:model)` links before
 Pandoc runs. LaTeX therefore receives:

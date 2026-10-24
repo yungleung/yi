@@ -253,10 +253,10 @@ automatic references:
 
 Each element specification owns the placement and styling of that label.
 
-Processed Markdown preserves native semantic source instead of inserting
-presentation numbers. If a figure or table is numbered by a later Pandoc
-conversion, the automatic-reference link already carries the same computed
-number and no target-side prefix is added.
+Processed Markdown uses presentation-oriented fallbacks where an element
+specification needs one for common Markdown readers. Pandoc-backed exports keep
+native semantic source so their target-specific numbering and conversion
+continue to work.
 
 ## Error handling
 
