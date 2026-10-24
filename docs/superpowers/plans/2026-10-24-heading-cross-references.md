@@ -969,7 +969,7 @@ git commit -m "docs(markdown): show heading cross-references"
 **Files:**
 
 - Modify: `test/checks/check-export.mjs`
-- Modify: `test/probes/export-kinds.js`
+- Modify: `test/probes/export-markdown.js`
 - Modify: `test/probes/export-pandoc-arguments.js`
 - Verify: `src/ui/export/preprocess.ts` requires no rewrite
 
@@ -1000,10 +1000,10 @@ regression guard for the rule that preprocessing must not touch these nodes.
 
 - [ ] **Step 2: Add the app export assertion**
 
-Extend `export-kinds.js` to write the cross-reference Markdown document through
+Extend `export-markdown.js` to write the cross-reference Markdown document through
 the Markdown export command and read the target file. Assert its text equals the
-expected export text, including `[Methods](#methods)` and
-`{#methods .unnumbered data-owner=demo}`.
+expected export text, including `[heading reference](#heading-target)` and
+`{#heading-target .unnumbered}`.
 
 - [ ] **Step 3: Run export checks**
 
@@ -1042,7 +1042,7 @@ declaring the feature complete.
 - [ ] **Step 7: Commit export coverage**
 
 ```bash
-git add test/checks/check-export.mjs test/probes/export-kinds.js \
+git add test/checks/check-export.mjs test/probes/export-markdown.js \
   test/probes/export-pandoc-arguments.js
 git commit -m "test(export): retain heading cross-references"
 ```
