@@ -4,7 +4,7 @@
  * The gesture must stay inside the editor, resolve automatic, duplicate, custom
  * and setext heading IDs, and report a missing target without moving the page.
  *
- * @covers src/ui/markdown/click_routing.ts, src/ui/markdown/editing/headings.ts,
+ * @covers src/ui/markdown/click_routing.ts, src/ui/markdown/editing/references.ts,
  *   src/ui/markdown/document/heading_index.ts
  * @fixture test/fixtures/workspace/default-document.md
  */

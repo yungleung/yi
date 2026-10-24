@@ -425,6 +425,8 @@ body {
 .markdown-link-source,
 .markdown-citation-source,
 .markdown-wikilink-source,
+.markdown-auto-reference-source,
+.markdown-figure-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -451,6 +453,8 @@ body {
 .markdown-image-source,
 .markdown-citation-source,
 .markdown-wikilink-source,
+.markdown-auto-reference-source,
+.markdown-figure-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -467,6 +471,33 @@ body {
   min-width: 0.5em;
 }
 
+.markdown-auto-reference-unresolved {
+  color: var(--color-error);
+  text-decoration-style: dotted;
+}
+
+.markdown-figure {
+  margin-block: 1rem;
+  text-align: center;
+}
+
+.prose .markdown-figure > img.markdown-node {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+.markdown-figure-caption {
+  margin-top: 0.5rem;
+  font-size: 0.875em;
+  color: var(--color-base-content);
+}
+
+.markdown-figure-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.
    An empty inline-block measures as nothing, and WebKit then paints the new block *without* the
    marker an item draws outside its content box: the bullet the reader has just made is missing
@@ -478,14 +509,16 @@ body {
   content: '\200b';
 }
 
-/* An image the note shows. It takes the width its own file has, sits in the middle of the
-   column, and carries a corner rounded the way the page's own blocks are — the corner is the
-   cue that says where the picture ends, since its edges can be any colour at all. The radius
-   is written in the page's scale, like every other measurement on the sheet, so a page drawn
-   smaller has a smaller corner. */
+/* A paragraph image is a word-sized object in the text line, while a standalone image is the
+   block child of its figure above. Both take the width their own file has and carry a corner
+   rounded the way the page's own blocks are — the corner is the cue that says where the picture
+   ends, since its edges can be any colour at all. The radius is written in the page's scale,
+   like every other measurement on the sheet, so a page drawn smaller has a smaller corner. */
 .prose img.markdown-node {
-  display: block;
-  margin-inline: auto;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0.125em;
+  vertical-align: middle;
   border-radius: calc(0.375rem * var(--md-page-scale));
 }
 

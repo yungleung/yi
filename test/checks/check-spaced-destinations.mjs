@@ -89,7 +89,7 @@ const firstLink = (markdown, field) => links(markdown)[0]?.[field] ?? null;
 const firstImage = (markdown, field) => images(markdown)[0]?.[field] ?? null;
 
 // The line a reader writes: the file's own name, spaces and all.
-check('an image whose path has spaces is an image', shape('![shot](my shot.png)\n'), 'paragraph(image)');
+check('an image whose path has spaces is a figure', shape('![shot](my shot.png)\n'), 'figure(image)');
 check('and the path is the file it names', firstImage('![shot](my shot.png)\n', 'url'), 'my shot.png');
 check(
   'and its alt text is what stands between the brackets',
@@ -138,7 +138,7 @@ check(
 check(
   'a line after the image is untouched',
   shape('![shot](my shot.png)\n\nmore text\n'),
-  'paragraph(image),paragraph(text)'
+  'figure(image),paragraph(text)'
 );
 
 // What the author escaped is not this repair's to read, and neither is code: those characters are

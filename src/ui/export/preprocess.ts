@@ -40,8 +40,15 @@ import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
 import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
-import { spansOfType, type Walkable } from './node_spans';
+import { spansOfType, type Span, type Walkable } from './node_spans';
 import { isWebDestination } from './picture_hint';
+import type { FigureNode } from '../markdown/syntax/figures';
+import {
+  firstReference,
+  referenceIndex,
+  referenceLabel,
+  type ReferenceEntry
+} from '../markdown/document/reference_index';
 
 /** The title of the document a wikilink names, or null when nothing in the workspace answers. */
 export type TitleLookup = (target: string) => Promise<string | null>;
@@ -59,6 +66,10 @@ export interface ImageBases {
 
 /** What the pre-process has to ask the app: the rules' answers, and nothing else. */
 export interface ExportAnswers {
+  /** The export kind whose portability rules this run follows. */
+  kind: string;
+  /** Reads the app's localized words used by generated reference text and captions. */
+  translate(key: string): string;
   titleOf: TitleLookup;
   bases: ImageBases;
   exists: FileExists;
@@ -114,11 +125,16 @@ interface Rewrite {
  */
 export async function exportSource(text: string, answers: ExportAnswers): Promise<string> {
   const tree = parseMarkdown(text) as unknown as Walkable;
+  const references = referenceIndex(text);
+  const figures = spansOfType(tree, 'figure');
   const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
+  const fetched = new Map<string, string | null>();
   const rewritten = applyRewrites(text, [
+    ...autoReferenceRewrites(tree, references, answers),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
-    ...(await imageRewrites(tree, answers)),
+    ...(await figureRewrites(figures, references, answers, fetched)),
+    ...(await imageRewrites(tree, answers, fetched, figures)),
     ...(cited ?? []).map((span) => ({
       start: span.start,
       end: span.end,
@@ -169,28 +185,111 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
   }));
 }
 
+/** Automatic references, as ordinary links with the target's inferred text. */
+function autoReferenceRewrites(
+  tree: Walkable,
+  references: readonly ReferenceEntry[],
+  answers: ExportAnswers
+): Rewrite[] {
+  return spansOfType(tree, 'autoReference').map((span) => {
+    const node = span.node as { id: string };
+    const target = firstReference(references, node.id);
+    const text = target
+      ? referenceLabel(target, (key) => answers.translate(key))
+      : `#${node.id}`;
+    return {
+      start: span.start,
+      end: span.end,
+      text: `[${escapeLinkText(text)}](#${encodeFragment(node.id)})`
+    };
+  });
+}
+
+/** Figures, as processed-Markdown HTML or native Pandoc Markdown. */
+async function figureRewrites(
+  figures: readonly Span[],
+  references: readonly ReferenceEntry[],
+  answers: ExportAnswers,
+  fetched: Map<string, string | null>
+): Promise<Rewrite[]> {
+  const rewrites: Rewrite[] = [];
+  for (const span of figures) {
+    const figure = span.node as unknown as FigureNode;
+    const image = figure.children[0];
+    const destination = await imageDestination(image, answers, fetched);
+    const target = destination === null ? image.url : answers.imageTarget?.(destination, image.url) ?? destination;
+    const entry = references.find(
+      (candidate) => candidate.kind === 'figure' && candidate.from === span.start
+    );
+    const number = entry?.number ?? null;
+    const label = number === null ? null : `${answers.translate('reference.figure')} ${number}`;
+    if (answers.kind === 'markdown') {
+      rewrites.push({
+        start: span.start,
+        end: span.end,
+        text: figureHtml(figure, image, target, label)
+      });
+      continue;
+    }
+    const caption = label === null || answers.kind === 'latex' || answers.kind === 'pdf'
+      ? image.alt ?? ''
+      : `${label}. ${image.alt ?? ''}`;
+    const imageText = destination === null
+      ? imageMarkdownUnchanged({ ...image, alt: caption }, target)
+      : imageMarkdown({ ...image, alt: caption }, target);
+    const markdown =
+      imageText +
+      figureAttributes(figure, answers.kind === 'latex' || answers.kind === 'pdf');
+    rewrites.push({
+      start: span.start,
+      end: span.end,
+      text: figure.id && answers.kind !== 'latex' && answers.kind !== 'pdf'
+        ? `::: {#${figure.id}}\n${markdown}\n:::`
+        : markdown
+    });
+  }
+  return rewrites;
+}
+
 /**
  * Every image whose destination names a file that is there, as that file's own absolute path. A
  * destination that names no *file* (a web URL, a scheme of its own) is left as written, and so is
  * one whose file cannot be found: pandoc says so itself, and a note that shows a broken image
  * exports as a broken image rather than as something the app invented.
  */
-async function imageRewrites(tree: Walkable, answers: ExportAnswers): Promise<Rewrite[]> {
+async function imageRewrites(
+  tree: Walkable,
+  answers: ExportAnswers,
+  fetched: Map<string, string | null>,
+  figures: readonly Span[]
+): Promise<Rewrite[]> {
   const rewrites: Rewrite[] = [];
   // One URL is one download, however many times a note names it.
-  const fetched = new Map<string, string | null>();
   for (const span of spansOfType(tree, 'image')) {
+    if (figures.some((figure) => span.start >= figure.start && span.end <= figure.end)) {
+      continue;
+    }
     const image = span.node as AstImage;
-    const file =
-      answers.rasterised?.(image.url) ??
-      (await resolvedFile(image.url, answers)) ??
-      (await remoteFile(image.url, answers, fetched));
-    if (file !== null) {
-      const target = answers.imageTarget?.(file, image.url) ?? file;
+    const destination = await imageDestination(image, answers, fetched);
+    if (destination !== null) {
+      const target = answers.imageTarget?.(destination, image.url) ?? destination;
       rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, target) });
     }
   }
   return rewrites;
+}
+
+/** The local file an image resolves to, or null when its destination stays as written. */
+async function imageDestination(
+  image: AstImage,
+  answers: ExportAnswers,
+  fetched: Map<string, string | null>
+): Promise<string | null> {
+  return (
+    answers.rasterised?.(image.url) ??
+    (await resolvedFile(image.url, answers)) ??
+    (await remoteFile(image.url, answers, fetched))
+  );
 }
 
 /** The local file a picture on the web was fetched to, or null when it names no such picture. */
@@ -228,6 +327,86 @@ function imageMarkdown(image: AstImage, file: string): string {
   const alt = (image.alt ?? '').replace(/[[\]]/g, '\\$&');
   const title = image.title == null ? '' : ` "${image.title.replace(/"/g, '\\"')}"`;
   return `![${alt}](${encodedPath(file)}${title})`;
+}
+
+/** An image whose destination is already a readable Markdown destination. */
+function imageMarkdownUnchanged(image: AstImage, destination: string): string {
+  const alt = (image.alt ?? '').replace(/[[\]]/g, '\\$&');
+  const title = image.title == null ? '' : ` "${image.title.replace(/"/g, '\\"')}"`;
+  return `![${alt}](${destination}${title})`;
+}
+
+/** A processed-Markdown figure that common Markdown readers can display. */
+function figureHtml(
+  figure: FigureNode,
+  image: AstImage,
+  destination: string,
+  label: string | null
+): string {
+  const attributes = [
+    ...(figure.id === null ? [] : [`id="${escapeHtml(figure.id)}"`]),
+    ...(figure.classes.length === 0 ? [] : [`class="${escapeHtml(figure.classes.join(' '))}"`]),
+    ...Object.entries(figure.attributes).map(
+      ([key, value]) => `data-${htmlAttributeName(key)}="${escapeHtml(value)}"`
+    )
+  ];
+  const imageUrl = /^[a-z][a-z0-9+.-]*:/i.test(destination)
+    ? escapeHtml(destination)
+    : escapeHtml(encodedPath(destination));
+  const title = image.title == null ? '' : ` title="${escapeHtml(image.title)}"`;
+  const caption = label === null
+    ? String(image.alt ?? '')
+    : `${label}. ${String(image.alt ?? '')}`;
+  return [
+    `<figure${attributes.length === 0 ? '' : ` ${attributes.join(' ')}`}>`,
+    `  <img src="${imageUrl}" alt="${escapeHtml(image.alt ?? '')}"${title}>`,
+    `  <figcaption>${escapeHtml(caption)}</figcaption>`,
+    '</figure>'
+  ].join('\n');
+}
+
+/** Figure attributes written in Pandoc's native image spelling. */
+function figureAttributes(figure: FigureNode, includeId: boolean): string {
+  const tokens = [
+    ...(includeId && figure.id !== null ? [`#${figure.id}`] : []),
+    ...figure.classes.map((name) => `.${name}`),
+    ...Object.entries(figure.attributes).map(
+      ([key, value]) => `${key}="${attributeValue(value)}"`
+    )
+  ];
+  return tokens.length === 0
+    ? ''
+    : `${figure.attribute?.separator ?? ''}{${tokens.join(' ')}}`;
+}
+
+/** Escape text used as an ordinary Markdown link label. */
+function escapeLinkText(text: string): string {
+  return text.replace(/[\\[\]]/g, (character) => `\\${character}`);
+}
+
+/** Escape one fragment identifier for a Markdown destination. */
+function encodeFragment(id: string): string {
+  return encodeURI(id);
+}
+
+/** HTML text and quoted attribute escaping. */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** A Pandoc key mapped into an HTML data-attribute name. */
+function htmlAttributeName(key: string): string {
+  const safe = key.replace(/[^A-Za-z0-9_.:-]/g, '-');
+  return safe === '' ? 'value' : safe;
+}
+
+/** A quoted Pandoc attribute value. */
+function attributeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 /**

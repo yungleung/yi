@@ -9,7 +9,9 @@
  * shape the parser produces.
  */
 import type { CitationNode } from './plugins/remark-citation';
+import type { AutoReferenceNode } from './plugins/remark-auto-references';
 import type { HeadingAttributeBlock } from './syntax/heading_attributes';
+import type { FigureNode } from './syntax/figures';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 
@@ -20,7 +22,9 @@ declare module 'mdast' {
   }
 
   interface RootContentMap {
+    autoReference: AutoReferenceNode;
     citation: CitationNode;
+    figure: FigureNode;
     descriptionlist: DescriptionList;
     descriptionterm: DescriptionTerm;
     descriptiondetails: DescriptionDetails;
@@ -28,6 +32,7 @@ declare module 'mdast' {
   }
 
   interface PhrasingContentMap {
+    autoReference: AutoReferenceNode;
     citation: CitationNode;
     wikilink: WikilinkNode;
   }

@@ -69,6 +69,10 @@
     `A picture: ![shot](${picture}), and a citation [@smith2020].`,
     '',
     'And 简体中文 beside it.',
+    '',
+    'See [#fig:demo] for the numbered figure.',
+    '',
+    `![Demo figure](${picture}){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -243,6 +247,17 @@
         heading:
           /\\(?:chapter|section|subsection)\*\{References\}/.exec(tex)?.[0] ?? null,
         entry: tex.includes('Smith, J. (2020)')
+      }
+    );
+    check(
+      'a figure keeps its numeric target and its automatic reference becomes hyperref text',
+      /\\label\{fig:demo\}/.test(tex) &&
+        /\\hyperref\[fig:demo\]\{Figure 1\}/.test(tex) &&
+        /\\caption\{Demo figure\}/.test(tex),
+      {
+        label: /\\label\{fig:demo\}/.exec(tex)?.[0] ?? null,
+        link: /\\hyperref\[fig:demo\]\{[^}]*\}/.exec(tex)?.[0] ?? null,
+        caption: /\\caption\{[^}]*\}/.exec(tex)?.[0] ?? null
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

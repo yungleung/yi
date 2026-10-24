@@ -31,7 +31,8 @@ import {
 import { parseMarkdown } from '../syntax/parser';
 import { blockParseInput } from './blocks';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
-import { headingIndex, type HeadingTarget } from './heading_index';
+import type { HeadingTarget } from './heading_index';
+import { referenceIndex, type ReferenceEntry } from './reference_index';
 import { TextStore } from './text_store';
 
 /** Parsed blocks kept before the oldest is dropped. */
@@ -68,8 +69,12 @@ export class MarkdownEditorState {
   private labelsVersion = 0;
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
-  /** Heading targets for the current text, computed only when navigation asks. */
+  /** Shared targets for the current text, computed only when navigation asks. */
+  private cachedReferences: readonly ReferenceEntry[] | null = null;
+  /** Heading projection of the shared target index. */
   private cachedHeadings: readonly HeadingTarget[] | null = null;
+  /** Moves every rendering that displays a target-derived caption or label. */
+  private referencesVersion = 0;
 
   constructor(text = '') {
     this.text = new TextStore(text);
@@ -87,9 +92,23 @@ export class MarkdownEditorState {
     return this.blocks;
   }
 
+  /** Every reference target and numbered object in the current document. */
+  referenceEntries(): readonly ReferenceEntry[] {
+    this.cachedReferences ??= referenceIndex(this.getText());
+    return this.cachedReferences;
+  }
+
   /** Every heading target in the current document, resolved lazily and cached. */
   headingTargets(): readonly HeadingTarget[] {
-    this.cachedHeadings ??= headingIndex(this.getText());
+    this.cachedHeadings ??= this.referenceEntries()
+      .filter((entry) => entry.kind === 'heading')
+      .map((entry) => ({
+        id: entry.id!,
+        from: entry.from,
+        to: entry.to,
+        title: entry.title,
+        explicit: entry.explicit
+      }));
     return this.cachedHeadings;
   }
 
@@ -112,7 +131,10 @@ export class MarkdownEditorState {
    */
   parseKey(block: MarkdownBlock): string {
     const key = blockContentKey(block);
-    return containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
+    const labeled = containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
+    return block.text.includes('[#') || /(?:^|\n)[ \t]*!\[/.test(block.text)
+      ? `${labeled}:references@${this.referencesVersion}`
+      : labeled;
   }
 
   /**
@@ -187,6 +209,8 @@ export class MarkdownEditorState {
     apply();
     this.cachedText = null;
     this.cachedHeadings = null;
+    this.cachedReferences = null;
+    this.referencesVersion += 1;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
     // The labels follow the edit rather than being thrown away with it: reading
     // every definition in the document is a scan per keystroke on a note with

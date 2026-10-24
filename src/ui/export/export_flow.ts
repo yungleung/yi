@@ -201,6 +201,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       }
     }
     const prepared = await exportSource(text, {
+      kind: first.kind,
+      translate: (key) => t(key),
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,

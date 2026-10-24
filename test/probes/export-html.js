@@ -58,6 +58,10 @@
     '# Going out',
     '',
     `A picture from the web: ![shot](${url}), math $e^{i\\pi}$, and a citation [@smith2020].`,
+    '',
+    'See [#fig:demo] for the figure.',
+    '',
+    `![Example figure](${url}){#fig:demo .wide}`,
     ''
   ].join('\n');
 
@@ -181,6 +185,17 @@
         citation: page.includes('(Smith, 2020)'),
         heading: page.includes('>References<'),
         entry: page.includes('Smith, J. (2020)')
+      }
+    );
+    check(
+      'a figure keeps its HTML target and numbered caption',
+      /<div id="fig:demo">/.test(page) &&
+        /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(page) &&
+        page.includes('href="#fig:demo">Figure 1</a>'),
+      {
+        target: /<div id="fig:demo">/.exec(page)?.[0] ?? null,
+        caption: /<figcaption[^>]*>[^<]*/.exec(page)?.[0] ?? null,
+        link: /<a href="#fig:demo">[^<]*/.exec(page)?.[0] ?? null
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
