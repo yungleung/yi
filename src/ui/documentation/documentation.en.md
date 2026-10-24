@@ -81,7 +81,9 @@ a file link.
 When a heading has no explicit ID, Pandoc derives one from its text: formatting is removed,
 whitespace becomes `-`, letters are lowercased, and punctuation other than `_`, `-`, and `.` is
 removed. Text before the first letter is discarded, and punctuation-only headings use `section`.
-Repeated automatic IDs receive `-1`, `-2`, and so on.
+Repeated automatic IDs receive `-1`, `-2`, and so on. IDs are recalculated in document order after
+edits: if you insert another heading with the same title above an existing one, the new first heading
+gets the base ID and the later heading receives `-1`.
 
 ATX and setext headings may end with a Pandoc attribute block separated from the title by
 whitespace:
@@ -96,6 +98,9 @@ Setext heading {#setext-heading .unnumbered}
 `#reading-methods` supplies the link target. Yi leaves `.unnumbered` and `data-owner=demo` for
 Pandoc without applying them to the editor's own layout. Heading attributes stay hidden while the
 caret is elsewhere and become editable when the caret enters the heading.
+
+While typing an ATX heading, its `#` characters remain visible until the delimiter space is typed;
+the rendered heading begins at that space.
 
 Keep explicit heading IDs unique. Pandoc leaves duplicate explicit IDs unchanged and warns; Yi
 follows the first matching heading. Both heading attributes and internal links are valid Pandoc

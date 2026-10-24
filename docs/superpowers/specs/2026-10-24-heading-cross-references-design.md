@@ -51,7 +51,8 @@ content. It parses:
 - the identifier (`#id`);
 - classes (`.class`);
 - key/value attributes (`key=value`, with Pandoc's quoted and escaped spelling);
-- the exact raw range of the attribute block.
+- the exact raw range of the braces, plus the separator whitespace the parser
+  removes from the heading title.
 
 Malformed or non-trailing braces stay ordinary heading text. The rule applies to
 ATX headings and setext headings.
@@ -79,6 +80,10 @@ An explicit identifier is used as written. Pandoc leaves duplicate explicit IDs
 duplicated and warns; Yi will resolve a fragment to the first matching explicit
 heading. The user documentation will say that heading IDs should be unique.
 
+The index is recalculated in document order after every text change. Inserting a
+heading with the same title above an existing one therefore makes the new first
+heading the base ID and gives the later heading the numeric suffix.
+
 The index is parser-backed and cached by document text. It is computed lazily when
 navigation first needs it, so ordinary editing does not pay for indexing every
 heading. The implementation will measure the initial lookup on the fixture
@@ -102,7 +107,9 @@ A heading with no title text must still hold a caret. Its renderer supplies an
 addressable empty text position at the heading content start. This is the same
 model empty paragraphs, list items, and table cells already use, and it is what
 allows the user to type the first `#`, continue typing heading markers, add the
-required space, and then type the heading text.
+required space, and then type the heading text. Until that delimiter space is
+typed, the `#` characters render as ordinary paragraph text rather than an
+invisible empty heading; the space is the transition to heading rendering.
 
 ## Navigation
 

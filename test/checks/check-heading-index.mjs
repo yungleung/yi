@@ -64,6 +64,11 @@ check(
   targets[0].from
 );
 check(
+  'inserting a duplicate above recalculates IDs in document order',
+  headingIndex('# Same\n\n# New\n\n# Same\n').map((target) => target.id),
+  ['same', 'new', 'same-1']
+);
+check(
   'a setext title excludes its attributes',
   targets[3].title,
   'Title'
