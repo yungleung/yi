@@ -82,13 +82,15 @@ The completed reference node is rendered as a link, but its source remains
 
 ## Target model
 
-One document-level index owns every reference target:
+One document-level index owns every reference target and every unlabeled object
+that consumes a number:
 
 ```ts
 type ReferenceKind = 'heading' | 'figure' | 'listing' | 'table' | 'equation' | 'list';
 
-interface ReferenceTarget {
-  id: string;
+interface ReferenceEntry {
+  /** Null for a numbered object that has no explicit reference target. */
+  id: string | null;
   kind: ReferenceKind;
   /** Source range used for navigation and target editing. */
   from: number;
@@ -117,16 +119,31 @@ The index:
 The existing heading index becomes one source for this generic index. Heading
 targets remain automatic where Pandoc generates their IDs.
 
-All other target kinds require an explicit ID.
+All non-heading objects require an explicit ID to be referencable. A figure or
+table may still consume a number without an ID; such an entry cannot be the
+destination of a cross-reference.
 
 ## Numbering
 
-Only explicitly targetable objects consume visible numbers. An unlabeled figure,
-code block, table, equation, or list is not part of that kind's reference
-sequence.
+Number eligibility follows the object's semantic role rather than merely whether
+it has an ID:
 
-This rule gives source order without silently turning every demonstration code
-fence or exploratory math block into a numbered object.
+- every implicit Pandoc figure consumes a figure number, labeled or not;
+- every captioned table consumes a table number, labeled or not;
+- a code block consumes a listing number only when explicitly marked as a
+  target;
+- an equation consumes an equation number only when explicitly marked as a
+  target;
+- a list consumes a list number only when explicitly marked as a target.
+
+This matches Pandoc's LaTeX behavior for captioned figures and tables while
+avoiding turning every demonstration fence, exploratory formula, or ordinary
+list into a numbered object.
+
+Pandoc's non-LaTeX writers do not add numbers to captioned figures or tables.
+Yi therefore displays the shared computed number in its editor and in exported
+HTML, EPUB, DOCX, and ODT captions. LaTeX/PDF uses its native float counters, and
+the numbering policy must keep those counters aligned with the shared index.
 
 Numbers are document-global in the first release:
 
@@ -136,7 +153,7 @@ Numbers are document-global in the first release:
 - equations: `Equation (1)`, `Equation (2)`;
 - lists: `List 1`, `List 2`.
 
-Inserting or removing a numbered target recalculates every later number and
+Inserting or removing a numbered object recalculates every later number and
 every automatic reference. A block containing an automatic reference must
 re-render when its resolved text changes, even when that block's own source did
 not.
@@ -287,6 +304,6 @@ attribute-bearing block before the kinds that need caption or wrapper work.
 - plural references and ranges;
 - per-row equation references;
 - chapter-relative or configurable numbering;
-- automatic numbering of unlabeled targets;
+- automatic IDs for unlabeled non-heading targets;
 - inserting a package dependency such as `cleveref`;
 - changing user-supplied LaTeX inside a math block.
