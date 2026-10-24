@@ -729,16 +729,17 @@ remembers where the pointer went down and refuses the caret for a gesture that b
 a few pixels and left a selection; a margin click the pointer merely jittered through still places
 one (`test/probes/select-across-blocks.js`).
 
-**A delimiter line typed on its own opens the block it names**, and **a bare list marker is the
-character rather than an item**. `editing/fence_open.ts` writes both delimiter lines at once — with
+**A delimiter line typed on its own opens the block it names**, and **a bare block marker is the
+character rather than markup**. `editing/fence_open.ts` writes both delimiter lines at once — with
 the blank lines markdown needs around them — and puts the caret on the blank line between them,
 where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
 (`editing/language_picker.ts`), `$$` needs no such thing, and `---` is frontmatter *only* on the
 note's very first line, where it would otherwise be a thematic break. That frontmatter is YAML,
 closed by `---` or its `...` end marker; `+++` is ordinary text, not a fence. `syntax/bare_markers.ts` is
 the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
-paragraph line, as a setext underline, so the repair makes it text — the delimiter space is what
-starts an item (`- `) — and the line above is never swallowed. Each rule has its check
+paragraph line, as a setext underline, while a lone `#` is an empty heading. The repair makes those
+characters text; the delimiter space is what starts an item (`- `) or heading (`# `), and the line
+above a bare `-` is never swallowed. Each rule has its check
 (`check-fence-open.mjs`, `check-bare-markers.mjs`) and its probe (`fence-open-typing.js`,
 `bare-marker-typing.js`).
 

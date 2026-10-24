@@ -127,6 +127,12 @@ export const listItemMarker = /^\s*(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\])?\s*$/;
 /** A line holding a list marker with nothing after it, not even the delimiter's own space. */
 export const bareMarkerLine = /^ {0,3}(?:[-+*]|\d+[.)])$/;
 
+/** A heading marker with no delimiter space: the characters are not a heading yet. */
+export const bareHeadingLine = /^ {0,3}#{1,6}$/;
+
+/** A heading marker with only its delimiter whitespace: the empty heading has begun. */
+export const delimiterOnlyHeadingLine = /^ {0,3}#{1,6}[ \t]+$/;
+
 /** The marker a thematic break is written with, on a line of its own. */
 export const thematicBreakMarker = '---';
 

@@ -1,22 +1,23 @@
 /**
- * A bare list marker is text.
+ * A bare block marker is text.
  *
  * markdown reads `-` as an item on its own — the marker needs no delimiter space when it is the
  * whole line — and reads it as a setext heading's underline when a paragraph line sits above it,
  * which folds that paragraph into a heading. The author typing `-` is writing the character: the
  * item begins at the space that follows it (`- `), and until then what the rendering shows has to
  * be the character itself. This repair says so, for the two shapes markdown makes of it: the list
- * of one empty item becomes a paragraph holding the marker, and the heading a bare underline made
- * of the paragraph above it becomes that paragraph plus the marker's own text.
+ * of one empty item becomes a paragraph holding the marker, the heading a bare underline made of
+ * the paragraph above it becomes that paragraph plus the marker's own text, and an ATX heading
+ * marker without its delimiter space is the `#` characters the author is typing.
  *
  * May import: the marker rules (`./markers`) and the line spans beside them (`./lines`). Upholds:
- * one fact about markdown syntax has one home — that a marker-only line under a paragraph is a
- * setext heading, and that the bare marker is the character rather than an item — so a typed `-`
- * cannot become a list, and no line above it can be swallowed.
+ * one fact about markdown syntax has one home — that marker-only lines need their delimiter space
+ * before they become a list or ATX heading, and that a bare `-` under a paragraph is not a setext
+ * underline — so typing a marker never hides the characters being typed.
  */
 
 import type { Root } from 'mdast';
-import { bareMarkerLine } from './markers';
+import { bareHeadingLine, bareMarkerLine } from './markers';
 import { lineSpanAt } from './lines';
 
 /** A node that may hold block children, with the position the repair needs. */
@@ -86,6 +87,15 @@ function markerTextLine(markdown: string, node: Container): MarkerText | null {
   }
   if (node.type !== 'heading') {
     return null;
+  }
+  const headingText = markdown.slice(start, end).replace(/\r?\n$/, '');
+  if (bareHeadingLine.test(headingText)) {
+    return {
+      start,
+      end: start + headingText.length,
+      marker: headingText.trimStart(),
+      paragraphEnd: null
+    };
   }
   const line = lineSpanAt(markdown, Math.max(0, end - 1));
   // The heading has to keep some content above the marker line: that text is what markdown

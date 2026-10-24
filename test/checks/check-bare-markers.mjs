@@ -57,6 +57,10 @@ const texts = (markdown) => {
 // A bare marker is the character itself, wherever markdown would have made markup of it.
 check('a bare bullet is text', shape('-\n'), 'paragraph(text)');
 check('a bare ordered marker too', shape('1.\n'), 'paragraph(text)');
+check('a bare heading marker is text', shape('#\n'), 'paragraph(text)');
+check('and so are several heading markers', shape('##\n'), 'paragraph(text)');
+check('the heading begins only when its delimiter space arrives', shape('## \n'), 'heading');
+check('and a bare heading marker keeps its own characters', texts('##\n'), ['##']);
 check('an indented bare marker is text, and the marker is what is rendered', [
   shape('  -\n'),
   texts('  -\n')
