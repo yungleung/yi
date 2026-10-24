@@ -3,10 +3,10 @@
 ## Problem
 
 Yi has no way to create a durable internal reference to a heading. Pandoc already
-supports the syntax this needs: headings may end with an attribute block, and an
-internal link is written `[text](#id)`. This feature supports ATX headings only.
-Yi currently treats the attribute block as part of the visible heading, does not
-give headings IDs, and does nothing useful for a command-click on a fragment.
+supports the syntax this needs: ATX and setext headings may end with an attribute
+block, and an internal link is written `[text](#id)`. Yi currently treats the
+attribute block as part of the visible heading, does not give headings IDs, and
+does nothing useful for a command-click on a fragment.
 
 There is also a typing bug blocking the smallest heading gesture. On an empty body
 line, typing `#` turns the line into an empty heading, after which the caret cannot
@@ -53,22 +53,8 @@ content. It parses:
 - key/value attributes (`key=value`, with Pandoc's quoted and escaped spelling);
 - the exact raw range of the attribute block.
 
-Malformed or non-trailing braces stay ordinary heading text. Heading attributes
-apply only to ATX headings.
-
-Setext headings are disabled in the parser rather than merely excluded from the
-attribute rule. Remark's CommonMark parser enables the micromark
-`setextUnderline` construct by default. Yi will add one parser extension that
-disables it in both the main and fragment parsing pipelines. Consequently:
-
-- `Title\n=====` is a paragraph whose second line is literal text;
-- `Text\n---` is a paragraph followed by a thematic break;
-- ATX headings and the existing bare-marker repairs continue to work.
-
-The parser changes and the existing checks for bare markers and empty list items
-must be updated together, because those repairs currently rely on how the
-CommonMark parser initially recognises a setext heading. The user documentation
-will state that Yi does not support setext headings.
+Malformed or non-trailing braces stay ordinary heading text. The rule applies to
+ATX headings and setext headings.
 
 The parser removes the attribute block from the heading node's rendered children
 and retains its parsed values and source range on the heading. Its serializer emits
@@ -155,7 +141,7 @@ syntax design.
 - a repeated automatic heading and its numeric suffix;
 - a custom heading ID;
 - a class and key/value attribute;
-- ATX heading attributes;
+- ATX and setext heading attributes;
 - same-document links to each kind of target.
 
 The fixture remains valid Pandoc Markdown and keeps its existing content. New
@@ -171,9 +157,7 @@ the new syntax, index, caret, and navigation homes.
 
 Node checks will cover:
 
-- attribute recognition on ATX headings;
-- disabled setext parsing, with `Title\n=====` as a paragraph and `Text\n---`
-  as a paragraph plus a thematic break;
+- attribute recognition on ATX and setext headings;
 - rejection of malformed, non-final, and unseparated braces;
 - parsing IDs, classes, quoted values, and escapes;
 - serialization preserving the attribute source;
@@ -192,7 +176,8 @@ caret placement, scrolling, and click behavior:
   once, add a space and title, and verify the resulting heading and caret;
 - attributes hidden while the caret is outside a heading, visible and editable
   while it is inside, using exact click and typing positions;
-- command-click navigation to an automatic ID, duplicate suffix, and custom ID;
+- command-click navigation to an automatic ID, duplicate suffix, custom ID, and
+  setext heading;
 - navigation to a target outside the mounted viewport without changing
   `location.hash`;
 - unresolved fragments leaving the document in place and showing the message;
