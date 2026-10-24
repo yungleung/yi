@@ -61,6 +61,11 @@ Rules:
 Every implicit figure receives a visible number, whether or not it has an ID.
 Only figures with an ID can be reference destinations.
 
+Every implicit figure also shows its caption: the non-empty alt text is the
+figure caption. There is no separate “figure without a visible caption” form
+inside this rule. A standalone image with empty alt is not an implicit figure
+and receives neither a caption nor a number.
+
 ## Parser model
 
 The parser creates a `figure` block-level node from a standalone attributed
@@ -192,8 +197,20 @@ A missing target keeps the current behavior from the shared specification.
 
 - preserve the native image and attributes;
 - rewrite `[#fig:id]` to `[Figure N](#fig:id)`;
-- prepend the computed figure number to captions so the output is numbered
-  without another conversion step.
+- leave the image's caption unchanged;
+- do not prepend the number to the image alt text.
+
+Processed Markdown remains semantic Pandoc Markdown. A Pandoc-aware consumer
+renders the figure number from the implicit figure; prefixing it in the source
+would cause a second number when that Markdown is converted again.
+
+For example:
+
+```markdown
+See [Figure 2](#fig:model).
+
+![Model overview](images/model.png){#fig:model .class width=80%}
+```
 
 ### Pandoc-backed exports
 
@@ -213,9 +230,11 @@ This wrapper:
 - becomes an ODT section;
 - becomes a LaTeX label at the figure boundary and an `\hyperref` target.
 
-For non-LaTeX exports, the caption receives `Figure N.` because Pandoc does not
-number captions in HTML, EPUB, DOCX, or ODT. For LaTeX/PDF, Pandoc's native
-figure counter supplies the number, so the caption is not prefixed.
+For rendered non-LaTeX exports, the caption receives `Figure N.` because Pandoc
+does not number captions in HTML, EPUB, DOCX, or ODT. For LaTeX/PDF, Pandoc's
+native figure counter supplies the number, so the caption is not prefixed.
+Processed Markdown is the exception described above: it preserves native figure
+semantics instead of inserting presentation numbers.
 
 Automatic references become ordinary `[Figure N](#fig:model)` links before
 Pandoc runs. LaTeX therefore receives:

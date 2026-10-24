@@ -242,7 +242,8 @@ its wrapper could create anchors.
 
 ### Targets in visible output
 
-The target must visibly carry the same number used by automatic references:
+In rendered exports, the target must visibly carry the same number used by
+automatic references:
 
 - figure and table captions gain their localized type and number;
 - code blocks and lists show a localized label;
@@ -251,6 +252,11 @@ The target must visibly carry the same number used by automatic references:
   must match the shared index.
 
 Each element specification owns the placement and styling of that label.
+
+Processed Markdown preserves native semantic source instead of inserting
+presentation numbers. If a figure or table is numbered by a later Pandoc
+conversion, the automatic-reference link already carries the same computed
+number and no target-side prefix is added.
 
 ## Error handling
 
