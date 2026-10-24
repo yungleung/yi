@@ -54,8 +54,21 @@ content. It parses:
 - the exact raw range of the attribute block.
 
 Malformed or non-trailing braces stay ordinary heading text. Heading attributes
-apply only to ATX headings. Setext headings and attribute-like text at the end of
-their title line are outside this feature and receive no special parsing.
+apply only to ATX headings.
+
+Setext headings are disabled in the parser rather than merely excluded from the
+attribute rule. Remark's CommonMark parser enables the micromark
+`setextUnderline` construct by default. Yi will add one parser extension that
+disables it in both the main and fragment parsing pipelines. Consequently:
+
+- `Title\n=====` is a paragraph whose second line is literal text;
+- `Text\n---` is a paragraph followed by a thematic break;
+- ATX headings and the existing bare-marker repairs continue to work.
+
+The parser changes and the existing checks for bare markers and empty list items
+must be updated together, because those repairs currently rely on how the
+CommonMark parser initially recognises a setext heading. The user documentation
+will state that Yi does not support setext headings.
 
 The parser removes the attribute block from the heading node's rendered children
 and retains its parsed values and source range on the heading. Its serializer emits
@@ -158,7 +171,9 @@ the new syntax, index, caret, and navigation homes.
 
 Node checks will cover:
 
-- attribute recognition on ATX headings, including rejection on setext headings;
+- attribute recognition on ATX headings;
+- disabled setext parsing, with `Title\n=====` as a paragraph and `Text\n---`
+  as a paragraph plus a thematic break;
 - rejection of malformed, non-final, and unseparated braces;
 - parsing IDs, classes, quoted values, and escapes;
 - serialization preserving the attribute source;
