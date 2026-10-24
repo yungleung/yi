@@ -9,10 +9,16 @@
  * shape the parser produces.
  */
 import type { CitationNode } from './plugins/remark-citation';
+import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 
 declare module 'mdast' {
+  interface Heading {
+    /** The exact trailing Pandoc attribute block, removed from rendered children. */
+    headingAttributes?: HeadingAttributeBlock;
+  }
+
   interface RootContentMap {
     citation: CitationNode;
     descriptionlist: DescriptionList;

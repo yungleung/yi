@@ -27,6 +27,7 @@ import { restoreSpacedDestinations } from './spaced_destinations';
 import { frontmatterForParsers } from './markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
+import { remarkHeadingAttributes } from '../plugins/remark-heading-attributes';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
 
 const parseProcessor = unified()
@@ -37,6 +38,7 @@ const parseProcessor = unified()
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
+  .use(remarkHeadingAttributes)
   .use(remarkWikilink);
 
 /** Re-parses a description detail's raw content with the full pipeline. */
@@ -47,6 +49,7 @@ const fragmentProcessor = unified()
   .use(remarkMath)
   .use(remarkFrontmatter, ['yaml'])
   .use(remarkCitation)
+  .use(remarkHeadingAttributes)
   .use(remarkWikilink);
 
 const stringifyProcessor = unified()
@@ -57,6 +60,11 @@ const stringifyProcessor = unified()
     closeAtx: true,
     listItemIndent: 'one',
     handlers: {
+      heading(node: any, _parent: any, state: any, info: any): string {
+        const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
+        const content = state.containerPhrasing(node, info);
+        return `${'#'.repeat(depth)} ${content}${node.headingAttributes?.source ?? ''}\n`;
+      },
       descriptionlist(node: any, _parent: any, state: any, info: any): string {
         return state.containerFlow(node, info);
       },
@@ -79,8 +87,9 @@ const stringifyProcessor = unified()
   .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
-  const tree = parseProcessor.parse(frontmatterForParsers(markdown)) as Root;
-  const root = parseProcessor.runSync(tree) as Root;
+  const prepared = frontmatterForParsers(markdown);
+  const tree = parseProcessor.parse(prepared) as Root;
+  const root = parseProcessor.runSync(tree, prepared) as Root;
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);
@@ -332,7 +341,7 @@ function reparseDescriptionContent(
   definitions: ReadonlySet<string>
 ): void {
   const withContext = withFootnoteDefinitions(source, definitions);
-  const root = fragmentProcessor.runSync(fragmentProcessor.parse(withContext)) as Root;
+  const root = fragmentProcessor.runSync(fragmentProcessor.parse(withContext), withContext) as Root;
   const children = root.children
     .filter((child) => isOwnNode(child, source.length))
     .flatMap((child) => (child.type === 'paragraph' ? (child.children ?? []) : [child]));
