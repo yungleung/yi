@@ -63,7 +63,7 @@ Tasks 2–7 run on `codex/heading-cross-references`.
 - Consumes: `documentOffsetAt(state, container, positionOffset): CaretLocation | null`
 - Produces: the same function, now mapping a caret in a rendered empty heading to the heading's raw end.
 
-- [ ] **Step 1: Create the failing Tauri probe**
+- [x] **Step 1: Create the failing Tauri probe**
 
 ```js
 /**
@@ -103,7 +103,7 @@ Tasks 2–7 run on `codex/heading-cross-references`.
 })()
 ```
 
-- [ ] **Step 2: Run the probe and verify it fails**
+- [x] **Step 2: Run the probe and verify it fails**
 
 Run:
 
@@ -113,7 +113,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/blan
 
 Expected: FAIL because the second `#` does not reach the raw document or the final heading title is not `Head`.
 
-- [ ] **Step 3: Map an empty heading's element position to its raw end**
+- [x] **Step 3: Map an empty heading's element position to its raw end**
 
 In `src/ui/markdown/caret/offsets.ts`, immediately before the generic empty-block-element fallback:
 
@@ -134,7 +134,7 @@ if (
 }
 ```
 
-- [ ] **Step 4: Run the probe and verify it passes**
+- [x] **Step 4: Run the probe and verify it passes**
 
 Run:
 
@@ -144,7 +144,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/blan
 
 Expected: all checks pass; the raw document is `## Head` and the rendered heading is level two.
 
-- [ ] **Step 5: Run focused regression probes**
+- [x] **Step 5: Run focused regression probes**
 
 Run:
 
@@ -156,7 +156,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/type
 
 Expected: every probe reports an empty `failed` array.
 
-- [ ] **Step 6: Commit the separate bug fix**
+- [x] **Step 6: Commit the separate bug fix**
 
 ```bash
 git add src/ui/markdown/caret/offsets.ts src/ui/markdown/caret/dom_position.ts \
@@ -199,7 +199,7 @@ export function readHeadingAttributes(source: string): HeadingAttributeBlock | n
 - Adds `HeadingAttributeBlock | undefined` as `headingAttributes` on mdast `Heading`.
 - Consumes `parseMarkdown(source): Root` and `serializeMarkdown(tree): string`.
 
-- [ ] **Step 1: Write failing Node checks**
+- [x] **Step 1: Write failing Node checks**
 
 Create `test/checks/check-heading-attributes.mjs` with the same rolldown loader used by `check-parser.mjs`, then:
 
@@ -269,7 +269,7 @@ if (failures.length > 0) {
 console.log('heading attributes: all checks passed');
 ```
 
-- [ ] **Step 2: Run the check and verify it fails**
+- [x] **Step 2: Run the check and verify it fails**
 
 ```bash
 node test/checks/check-heading-attributes.mjs
@@ -277,7 +277,7 @@ node test/checks/check-heading-attributes.mjs
 
 Expected: FAIL because `heading_attributes.ts` does not exist.
 
-- [ ] **Step 3: Implement the pure attribute reader**
+- [x] **Step 3: Implement the pure attribute reader**
 
 `src/ui/markdown/syntax/heading_attributes.ts` identifies the heading content line:
 
@@ -321,7 +321,7 @@ Implement `headingContentEnd`, `trimSpacesBack`, `matchingOpenBrace`, and
 `parseAttributeTokens` as local helpers in the same module. They are pure
 string functions and have no DOM imports.
 
-- [ ] **Step 4: Attach attributes in the parser**
+- [x] **Step 4: Attach attributes in the parser**
 
 Create `remark-heading-attributes.ts`. Its transformer walks headings, takes each
 heading's raw range from `node.position`, calls `readHeadingAttributes(raw)`, stores
@@ -344,7 +344,7 @@ declare module 'mdast' {
 }
 ```
 
-- [ ] **Step 5: Run the attribute checks**
+- [x] **Step 5: Run the attribute checks**
 
 ```bash
 node test/checks/check-heading-attributes.mjs
@@ -352,7 +352,7 @@ node test/checks/check-heading-attributes.mjs
 
 Expected: `heading attributes: all checks passed`.
 
-- [ ] **Step 6: Run parser and property checks**
+- [x] **Step 6: Run parser and property checks**
 
 ```bash
 npm run check
@@ -360,7 +360,7 @@ npm run check
 
 Expected: every existing check plus `check-heading-attributes.mjs` passes.
 
-- [ ] **Step 7: Commit parser support**
+- [x] **Step 7: Commit parser support**
 
 ```bash
 git add src/ui/markdown/syntax/heading_attributes.ts \
@@ -402,7 +402,7 @@ export function headingIndex(markdown: string): HeadingTarget[];
 - `MarkdownEditorState.headingTargets(): readonly HeadingTarget[]` returns a
   cached index invalidated by every text update.
 
-- [ ] **Step 1: Write failing ID and index checks**
+- [x] **Step 1: Write failing ID and index checks**
 
 Create `test/checks/check-heading-index.mjs` using the parser-check loader. Test:
 
@@ -433,7 +433,7 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run the check and verify it fails**
+- [x] **Step 2: Run the check and verify it fails**
 
 ```bash
 node test/checks/check-heading-index.mjs
@@ -441,7 +441,7 @@ node test/checks/check-heading-index.mjs
 
 Expected: FAIL because the ID and index modules do not exist.
 
-- [ ] **Step 3: Implement Pandoc identifiers**
+- [x] **Step 3: Implement Pandoc identifiers**
 
 In `pandoc_identifiers.ts`, implement the published Pandoc rules over the
 heading's plain text:
@@ -458,7 +458,7 @@ export function pandocHeadingId(text: string): string {
 }
 ```
 
-- [ ] **Step 4: Implement the parser-backed index**
+- [x] **Step 4: Implement the parser-backed index**
 
 In `heading_index.ts`, call `parseMarkdown(markdown)`, walk every heading in
 document order, collect its plain child text, and choose
@@ -490,7 +490,7 @@ export function firstHeadingTarget(
 }
 ```
 
-- [ ] **Step 5: Cache the index in editor state**
+- [x] **Step 5: Cache the index in editor state**
 
 Add `private cachedHeadings: readonly HeadingTarget[] | null = null` to
 `MarkdownEditorState`. Clear it in `updateText` after the text changes. Add:
@@ -502,7 +502,7 @@ headingTargets(): readonly HeadingTarget[] {
 }
 ```
 
-- [ ] **Step 6: Run ID, index, and document checks**
+- [x] **Step 6: Run ID, index, and document checks**
 
 ```bash
 node test/checks/check-heading-index.mjs
@@ -511,7 +511,7 @@ npm run check
 
 Expected: all checks pass.
 
-- [ ] **Step 7: Commit the index**
+- [x] **Step 7: Commit the index**
 
 ```bash
 git add src/ui/markdown/syntax/pandoc_identifiers.ts \
@@ -545,7 +545,7 @@ git commit -m "feat(markdown): index pandoc heading ids"
 - `sourceRangeIn` maps a caret anywhere inside a heading with attributes to that
   attribute block's range.
 
-- [ ] **Step 1: Write the failing Tauri probe**
+- [x] **Step 1: Write the failing Tauri probe**
 
 Create `test/probes/heading-attributes.js`:
 
@@ -594,7 +594,7 @@ Create `test/probes/heading-attributes.js`:
 })()
 ```
 
-- [ ] **Step 2: Run the probe and verify it fails**
+- [x] **Step 2: Run the probe and verify it fails**
 
 ```bash
 npm run probe -- --with-workspace --fixture default-document.md test/probes/heading-attributes.js
@@ -602,7 +602,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/head
 
 Expected: FAIL because attributes are rendered as heading text and no custom ID exists.
 
-- [ ] **Step 3: Resolve and apply the ID**
+- [x] **Step 3: Resolve and apply the ID**
 
 Add `headingId(from: number): string | null` to `RenderContext`, returning `null`
 from the default context. In `markdown_editor.ts`, install:
@@ -617,7 +617,7 @@ rendering block's `charStart` to the heading node's block-relative start and ask
 `renderContext().headingId(from)`. Set `this.element.id` only when an ID is
 resolved.
 
-- [ ] **Step 4: Render attribute source conditionally**
+- [x] **Step 4: Render attribute source conditionally**
 
 When `node.headingAttributes` exists and
 `isShownSourceRange(attributes.from, attributes.to)` is true, append:
@@ -635,7 +635,7 @@ Add `.markdown-heading-attributes-source` to `SOURCE_SELECTOR` in `offsets.ts`.
 Add CSS with `white-space: pre-wrap` and the same source styling used by other
 revealed source spans.
 
-- [ ] **Step 5: Make a heading's caret show only its attributes**
+- [x] **Step 5: Make a heading's caret show only its attributes**
 
 In `editing/context.ts: sourceRangeIn`, before registry lookup:
 
@@ -651,14 +651,14 @@ if (node.type === 'heading') {
 
 Do not register the whole heading as a source-mode node.
 
-- [ ] **Step 6: Verify caret mapping in both directions**
+- [x] **Step 6: Verify caret mapping in both directions**
 
 `domPositionAtOffset` already prefers source spans tagged with `SOURCE_FROM`.
 Add a check to the probe that deletes one character from the ID and then uses
 Left/Right across the attribute span; the caret must remain visible and the raw
 text must change only at the chosen character.
 
-- [ ] **Step 7: Run the heading-attribute probe**
+- [x] **Step 7: Run the heading-attribute probe**
 
 ```bash
 npm run probe -- --with-workspace --fixture default-document.md test/probes/heading-attributes.js
@@ -666,7 +666,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/head
 
 Expected: every check passes, including visibility toggling and exact editing.
 
-- [ ] **Step 8: Run related caret probes**
+- [x] **Step 8: Run related caret probes**
 
 ```bash
 npm run probe -- --with-workspace --fixture default-document.md test/probes/heading-level-markers.js
@@ -676,7 +676,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/type
 
 Expected: all pass.
 
-- [ ] **Step 9: Commit heading rendering**
+- [x] **Step 9: Commit heading rendering**
 
 ```bash
 git add src/ui/markdown/nodes/heading.ts src/ui/markdown/editing/context.ts \
@@ -717,7 +717,7 @@ git commit -m "feat(editor): reveal heading attributes at the caret"
 - `showMessage(text: string): void` is the one non-error entry point for a
   localized message.
 
-- [ ] **Step 1: Write failing fragment-classification checks**
+- [x] **Step 1: Write failing fragment-classification checks**
 
 Extend `check-link-edits.mjs`:
 
@@ -728,7 +728,7 @@ check('an external file fragment is not', isSameDocumentFragment('note.md#method
 check('an empty fragment is not a target', isSameDocumentFragment('#'), false);
 ```
 
-- [ ] **Step 2: Write the failing Tauri navigation probe**
+- [x] **Step 2: Write the failing Tauri navigation probe**
 
 Create `test/probes/heading-crossrefs.js` with documents covering:
 
@@ -755,7 +755,7 @@ Dispatch complete `click` events with `metaKey: true` and assert:
   containing `missing`.
 - `note.md#methods` does not resolve as a heading.
 
-- [ ] **Step 3: Run the checks and verify they fail**
+- [x] **Step 3: Run the checks and verify they fail**
 
 ```bash
 node test/checks/check-link-edits.mjs
@@ -764,7 +764,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/head
 
 Expected: the fragment checks fail because the classifier and navigator do not exist.
 
-- [ ] **Step 4: Implement fragment classification**
+- [x] **Step 4: Implement fragment classification**
 
 In `syntax/link_edits.ts`:
 
@@ -775,7 +775,7 @@ export function isSameDocumentFragment(destination: string): boolean {
 }
 ```
 
-- [ ] **Step 5: Implement heading navigation**
+- [x] **Step 5: Implement heading navigation**
 
 `editing/headings.ts`:
 
@@ -800,7 +800,7 @@ export function jumpToHeading(context: EditorContext, destination: string): bool
 The function returns true for both a successful jump and a handled missing
 target, so the webview never follows the fragment.
 
-- [ ] **Step 6: Route fragment clicks**
+- [x] **Step 6: Route fragment clicks**
 
 Before URL/file handling in `routeLinkClick`:
 
@@ -815,7 +815,7 @@ if (isSameDocumentFragment(href)) {
 
 Pass `EditorContext` into `routeLinkClick` from `markdown_editor.ts`.
 
-- [ ] **Step 7: Add the localized message**
+- [x] **Step 7: Add the localized message**
 
 Add this exported wrapper in `services/messages.ts` and call it from `notify`:
 
@@ -833,7 +833,7 @@ Add `heading.notFound` to every locale:
 
 Translate the sentence in each existing locale rather than copying English.
 
-- [ ] **Step 8: Run navigation checks and probes**
+- [x] **Step 8: Run navigation checks and probes**
 
 ```bash
 node test/checks/check-link-edits.mjs
@@ -846,7 +846,7 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/link
 Expected: all pass; the existing fragment expectation in `link-cmd-click.js`
 is updated to assert a heading jump instead of source opening.
 
-- [ ] **Step 9: Commit navigation**
+- [x] **Step 9: Commit navigation**
 
 ```bash
 git add src/ui/markdown/editing/headings.ts src/ui/markdown/click_routing.ts \
@@ -875,7 +875,7 @@ git commit -m "feat(editor): jump to heading cross-references"
 - Produces a user-visible example whose headings, IDs, duplicate suffix, and
   links are exercised against the actual default fixture.
 
-- [ ] **Step 1: Add the fixture section**
+- [x] **Step 1: Add the fixture section**
 
 Append before the final demonstration sentence:
 
@@ -905,7 +905,7 @@ Setext heading with attributes {#setext-heading .unnumbered}
 ATX and setext headings preserve trailing Pandoc attributes.
 ```
 
-- [ ] **Step 2: Add the user guide**
+- [x] **Step 2: Add the user guide**
 
 Add `## Cross-references and heading attributes` to
 `src/ui/documentation/documentation.en.md`, covering:
@@ -920,7 +920,7 @@ Add `## Cross-references and heading attributes` to
 - ⌘-click and Ctrl-click navigation;
 - native retention in Pandoc and processed-Markdown exports.
 
-- [ ] **Step 3: Prove the fixture end to end**
+- [x] **Step 3: Prove the fixture end to end**
 
 Create `test/probes/heading-crossrefs-default-document.js` that runs against
 `window.__probeDoc` and asserts:
@@ -931,7 +931,7 @@ Create `test/probes/heading-crossrefs-default-document.js` that runs against
 - command-click reaches each destination;
 - the three attribute kinds appear when the custom heading has the caret.
 
-- [ ] **Step 4: Update project documentation**
+- [x] **Step 4: Update project documentation**
 
 Update `test/README.md` with the new probes and checks. Update
 `docs/ai-context.md` and `docs/architecture.md` to name:
@@ -941,7 +941,7 @@ Update `test/README.md` with the new probes and checks. Update
 - `document/heading_index.ts` as the cached document index;
 - `editing/headings.ts` as the navigation command.
 
-- [ ] **Step 5: Run documentation and fixture probes**
+- [x] **Step 5: Run documentation and fixture probes**
 
 ```bash
 npm run probe -- --with-workspace --fixture default-document.md test/probes/default-document.js
@@ -952,7 +952,7 @@ npm run check
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit fixture and user documentation**
+- [x] **Step 6: Commit fixture and user documentation**
 
 ```bash
 git add test/fixtures/workspace/default-document.md \
@@ -978,7 +978,7 @@ git commit -m "docs(markdown): show heading cross-references"
 - Consumes `exportSource(text, answers)`.
 - Produces evidence that neither heading attributes nor fragment links are rewritten.
 
-- [ ] **Step 1: Add a failing export unit check**
+- [x] **Step 1: Add a failing export unit check**
 
 In `check-export.mjs`, add:
 
@@ -998,14 +998,14 @@ check(
 Expected before implementation: this check may already pass. Keep it as a
 regression guard for the rule that preprocessing must not touch these nodes.
 
-- [ ] **Step 2: Add the app export assertion**
+- [x] **Step 2: Add the app export assertion**
 
 Extend `export-markdown.js` to write the cross-reference Markdown document through
 the Markdown export command and read the target file. Assert its text equals the
 expected export text, including `[heading reference](#heading-target)` and
 `{#heading-target .unnumbered}`.
 
-- [ ] **Step 3: Run export checks**
+- [x] **Step 3: Run export checks**
 
 ```bash
 node test/checks/check-export.mjs
@@ -1015,13 +1015,13 @@ npm run probe -- --with-workspace --fixture default-document.md test/probes/expo
 
 Expected: all pass.
 
-- [ ] **Step 4: Restart the app from the final branch**
+- [x] **Step 4: Restart the app from the final branch**
 
 Stop the old `npm run tauri dev`, switch to the final feature branch, start
 `npm run tauri dev`, and confirm the port 9223 bridge responds before running
 more probes.
 
-- [ ] **Step 5: Run the complete verification**
+- [x] **Step 5: Run the complete verification**
 
 ```bash
 npx tsc --noEmit
@@ -1033,13 +1033,13 @@ npm run probe:all
 Expected: type check silent, Rust tests pass, every Node check passes, and every
 probe has an empty `failed` array.
 
-- [ ] **Step 6: Measure first heading-index lookup on the fixture**
+- [x] **Step 6: Measure first heading-index lookup on the fixture**
 
 Run the final default-document probe with timing and record the first
 command-click latency. If it exceeds 100 ms, optimize `headingIndex` before
 declaring the feature complete.
 
-- [ ] **Step 7: Commit export coverage**
+- [x] **Step 7: Commit export coverage**
 
 ```bash
 git add test/checks/check-export.mjs test/probes/export-markdown.js \
@@ -1047,7 +1047,7 @@ git add test/checks/check-export.mjs test/probes/export-markdown.js \
 git commit -m "test(export): retain heading cross-references"
 ```
 
-- [ ] **Step 8: Report without merging**
+- [x] **Step 8: Report without merging**
 
 Report:
 
