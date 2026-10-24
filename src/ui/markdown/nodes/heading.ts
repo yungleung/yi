@@ -11,12 +11,34 @@ import { EditableNodeComponent } from './editable_node';
 import { headingHoverTarget } from './heading_hover';
 import { headingMarker, type HeadingLevel } from './heading_marker';
 import type { AstHeading } from '../ast';
+import { isShownSourceRange, renderingBlock } from '../source_mode';
+import { renderContext } from '../render_context';
+import { SOURCE_FROM, setOffset } from '../offset_tags';
 
 export class Heading extends EditableNodeComponent {
   constructor(node: AstHeading) {
     const depth = Math.min(Math.max(node.depth ?? 1, 1), 6) as HeadingLevel;
     super('heading', node, document.createElement('h' + depth), 'markdown-heading min-w-0');
+    const block = renderingBlock();
+    const positionStart = node.position?.start.offset;
+    const from =
+      block && positionStart !== undefined ? block.charStart + positionStart : null;
+    const id =
+      node.headingAttributes?.id ??
+      (from === null ? null : renderContext().headingId(from));
+    if (id) {
+      this.element.id = id;
+    }
     this.element.append(headingHoverTarget(), headingMarker(depth));
     appendChildren(this.element, node.children);
+    const attributes = node.headingAttributes;
+    if (attributes && isShownSourceRange(attributes.from, attributes.to)) {
+      const source = document.createElement('span');
+      source.className =
+        'markdown-heading-attributes-source markdown-source-view markdown-node';
+      setOffset(source, SOURCE_FROM, attributes.from);
+      source.textContent = attributes.source;
+      this.element.appendChild(source);
+    }
   }
 }

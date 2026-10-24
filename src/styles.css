@@ -426,7 +426,8 @@ body {
 .markdown-strong-source,
 .markdown-emphasis-source,
 .markdown-delete-source,
-.markdown-inline-code-source {
+.markdown-inline-code-source,
+.markdown-heading-attributes-source {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
   border-radius: 0.25rem;
@@ -447,7 +448,8 @@ body {
 .markdown-strong-source,
 .markdown-emphasis-source,
 .markdown-delete-source,
-.markdown-inline-code-source {
+.markdown-inline-code-source,
+.markdown-heading-attributes-source {
   white-space: pre-wrap;
 }
 

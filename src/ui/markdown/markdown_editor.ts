@@ -164,7 +164,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       citation: (source, cached) =>
         cached ? bibliographyManager.formatCached(source) : bibliographyManager.format(source),
       wikilinkTitle: (target) => documentManager.getTitle(target),
-      imageSources: (destination) => imageSourceCandidates(destination)
+      imageSources: (destination) => imageSourceCandidates(destination),
+      headingId: (from) =>
+        this.state.headingTargets().find((target) => target.from === from)?.id ?? null
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
     // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its

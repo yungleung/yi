@@ -52,7 +52,8 @@ export const SOURCE_SELECTOR = [
   '.markdown-strong-source',
   '.markdown-emphasis-source',
   '.markdown-delete-source',
-  '.markdown-inline-code-source'
+  '.markdown-inline-code-source',
+  '.markdown-heading-attributes-source'
 ].join(', ');
 
 /** The caret's location in the document, or null when it cannot be mapped. */
