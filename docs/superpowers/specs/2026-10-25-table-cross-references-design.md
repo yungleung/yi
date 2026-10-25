@@ -16,6 +16,9 @@ It adds:
 - consistent targets, captions, and numbering in every export kind;
 - a contract for template-package Lua filters that rewrite tables.
 
+It also fixes the existing table-caret boundary bug: a caret after the final
+table row must never be redirected into the nearest table cell.
+
 The table editor already exists. Its creation, cell editing, context menu,
 alignment, row and column operations, and keyboard traversal are not redesigned
 here.
@@ -43,6 +46,17 @@ The supported source is a GFM pipe table followed by a Pandoc caption line:
 
 Pandoc accepts no blank line or one blank line between the table and its
 caption. Yi accepts both and treats the table and caption as one editor block.
+
+The logical source has up to three independently addressable parts:
+
+```text
+pipe-table lines
+optional blank separator
+caption line
+```
+
+The caption is not edited through a table cell, and the optional separator is
+not an artifact of the table's last cell.
 
 A table is captioned when its caption line has either:
 
@@ -132,6 +146,11 @@ The node retains the original table rows, alignments, cell contents, and source
 positions. Serialization returns the exact source; it does not normalize pipe
 spacing, caption whitespace, or attribute order.
 
+The block grouping includes at most one blank line between the table and
+caption. Two or more blank lines leave the caption as ordinary following source.
+An edit that changes that separation re-splits the block without changing the
+caret's document offset.
+
 A caption with no parsable attributes has `id = null` and an empty attribute
 list. A valid attribute block without an ID still retains its classes and
 key/value attributes.
@@ -142,16 +161,17 @@ A captioned table renders as:
 
 ```html
 <div class="markdown-table-block" id="tbl:data">
+  <table class="markdown-table">…</table>
+  <div class="markdown-table-blank" aria-hidden="true"></div>
   <div class="markdown-table-caption" role="caption">
     <span class="markdown-table-label">Table 1.</span>
     Data from the first run
   </div>
-  <table class="markdown-table">…</table>
 </div>
 ```
 
-The caption is displayed above the table, matching Pandoc's HTML and LaTeX
-layout.
+The caption is displayed below the table, following its source position. Export
+writers remain free to place native captions according to their own templates.
 
 The table wrapper:
 
@@ -176,10 +196,26 @@ The caption is not a second editable copy of the source. A plain click on it
 reveals the caption line as source, where the caption and attributes can be
 edited.
 
+When the source has a blank separator, the renderer gives that separator a real
+blank-line box at the table block's end. It is the same kind of caret-addressable
+empty line used elsewhere in the editor and contains no document character.
+Typing ordinary text there breaks the table-caption association and produces an
+ordinary paragraph; typing a valid `: Caption` line there creates the caption.
+
 ## Source mode and caret behavior
 
 Table cells keep their existing WYSIWYG editing behavior. Entering a cell does
 not replace the table with its raw source.
+
+The optional separator and the caption are lines of their own. A caret on the
+separator maps to that blank line, never to the nearest table cell. A caret in
+the caption maps through the caption source, never through a cell.
+
+The table-cell mapper is bounded by the table's own source. An offset at the end
+of the last row may resolve to that row's final cell; every offset on the next
+line must fall through to the separator or caption mapper. "Nearest cell"
+selection is allowed only among cells whose line spans contain or touch the
+offset, never for arbitrary text following the table.
 
 The caption line has its own revealable source:
 
@@ -195,6 +231,22 @@ The caption line has its own revealable source:
 - one Left from the first character of the trailing attribute block exits the
   attribute source;
 - the separating space before the attribute block is not a separate caret stop.
+
+Both caption forms are editable:
+
+- a caption directly after the table is reached by clicking the rendered
+  caption;
+- a caption after one blank separator is reached by clicking either the blank
+  line or the rendered caption;
+- deleting the separator while the caption source is active joins the caption
+  directly to the table;
+- adding one blank line keeps the caption recognized but changes its source
+  range.
+
+`Enter` in the last table cell keeps its existing behavior: it creates an empty
+line after the table and puts the caret there. Each subsequent keystroke remains
+on that line. It does not re-enter the final cell, and a second blank line ends
+the caption association instead of creating an ambiguous caption.
 
 The table's ID applies whether the caption source is open or closed. The caption
 label remains generated chrome and never becomes a document offset.
@@ -412,7 +464,11 @@ LaTeX/PDF number remains the package counter's value.
 ## Errors and edge cases
 
 - A table with no following caption line is not numbered.
+- An empty line after the table belongs to that line, not to the last table
+  cell.
 - A colon line with no caption and no ID remains ordinary source text.
+- Two or more blank lines prevent a following `: …` line from attaching as a
+  table caption.
 - Malformed trailing attributes remain visible caption text and create no ID.
 - A caption-only table is numbered but not referencable.
 - An ID-only table is numbered and referencable.
@@ -447,10 +503,14 @@ Pure checks will cover:
 
 Tauri probes will cover:
 
-- rendered caption and number above a table;
+- rendered caption and number below a table;
 - caption-only, ID-only, and captioned-table cases;
 - caption source editing and hidden attributes outside it;
 - one-step caret exit from the attribute block;
+- typing on a blank line after a table stays on that line and changes only that
+  line's source;
+- typing a valid caption after the table creates the caption association;
+- clicking and editing captions with both no separator and one blank separator;
 - table-cell editing remaining unchanged;
 - command-click navigation to the first header cell across virtualization;
 - live renumbering and automatic-reference updates;
