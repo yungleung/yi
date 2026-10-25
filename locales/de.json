@@ -204,7 +204,6 @@
   "link.openFailed": "{name} konnte nicht geöffnet werden: {message}",
   "wikilink.notFound": "Keine Notiz mit dem Namen „{target}“.",
   "reference.notFound": "Kein Verweisziel hat die ID „{id}“.",
-  "reference.figure": "Abbildung",
   "wikilink.openFailed": "Die Notiz „{target}“ konnte nicht geöffnet werden: {message}",
   "newNote.title": "Neues Markdown",
   "newNote.folder": "Ordner",

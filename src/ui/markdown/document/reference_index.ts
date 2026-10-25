@@ -13,8 +13,14 @@
 import type { Heading, RootContent } from 'mdast';
 import { parseMarkdown } from '../syntax/parser';
 import { pandocHeadingId } from '../syntax/pandoc_identifiers';
+import {
+  referenceKindText,
+  referenceVocabularyFromTree,
+  type NumberedReferenceKind,
+  type ReferenceStyle
+} from '../syntax/reference_vocabulary';
 
-/** A target kind with a localized reference name. */
+/** A target kind with a document-configured reference name. */
 export type ReferenceKind = 'heading' | 'figure';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
@@ -25,12 +31,19 @@ export interface ReferenceEntry {
   to: number;
   number: number | null;
   title: string;
+  /** The document-owned kind word used by an automatic reference. */
+  label: string;
+  /** Literal text placed before a numbered kind's sequential number. */
+  numberPrefix: string;
+  /** Where navigation places the caret; null uses `from`. */
+  caretAt: number | null;
   explicit: boolean;
 }
 
 /** Build all referenceable and number-consuming targets. */
 export function referenceIndex(markdown: string): ReferenceEntry[] {
   const tree = parseMarkdown(markdown);
+  const vocabulary = referenceVocabularyFromTree(tree);
   const used = new Set<string>();
   let figureNumber = 0;
   const entries: ReferenceEntry[] = [];
@@ -77,6 +90,9 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       to: end,
       number: null,
       title,
+      label: title,
+      numberPrefix: '',
+      caretAt: start,
       explicit: explicit !== null
     });
   }
@@ -103,6 +119,9 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       to: end,
       number: figureNumber,
       title: String(image.alt ?? '').trim(),
+      label: vocabulary.figure.label,
+      numberPrefix: vocabulary.figure.prefix,
+      caretAt: start,
       explicit: figure.id !== null
     });
   }
@@ -118,14 +137,16 @@ export function firstReference(
 
 /** The visible text of an automatic reference. */
 export function referenceLabel(
-  entry: ReferenceEntry,
-  translate: (key: string) => string
+  entry: ReferenceEntry
 ): string {
   if (entry.kind === 'heading' || entry.number === null) {
     return entry.title;
   }
-  const kind = translate(`reference.${entry.kind}`);
-  return `${kind} ${entry.number}`;
+  return referenceKindText(
+    entry.kind as NumberedReferenceKind,
+    entry.number,
+    { label: entry.label, prefix: entry.numberPrefix } satisfies ReferenceStyle
+  );
 }
 
 /** The plain text Pandoc's identifier rule reads from a heading's inline children. */

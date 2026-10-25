@@ -78,7 +78,6 @@ const render = async (text, answers = {}) => {
   const notes = workspace(answers);
   const rendered = await exportSource(text, {
     kind: answers.kind ?? 'latex',
-    translate: (key) => (key === 'reference.figure' ? 'Figure' : key),
     titleOf: notes.titleOf,
     bases: notes.bases,
     exists: notes.exists,

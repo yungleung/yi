@@ -66,7 +66,7 @@ check(
 );
 check(
   'a heading automatic reference displays its title',
-  referenceLabel(entries[0], () => 'unused'),
+  referenceLabel(entries[0]),
   'Start'
 );
 
@@ -88,7 +88,7 @@ check(
 );
 check(
   'a figure automatic reference also spells its localized kind',
-  referenceLabel(withFigures.find((entry) => entry.id === 'fig:one'), () => 'Figure'),
+  referenceLabel(withFigures.find((entry) => entry.id === 'fig:one')),
   'Figure 1'
 );
 
