@@ -179,6 +179,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
           (entry) => entry.kind === 'figure' && entry.from === from
         );
         return target?.number == null ? null : referenceLabel(target);
+      },
+      listingLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'listing' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
       }
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
