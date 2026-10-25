@@ -88,7 +88,7 @@ The caption is plain text, not Markdown. It may contain escaped spaces, quotes,
 `#`, and `}` according to Pandoc's attribute grammar. The caption source remains
 inside the opening fence.
 
-There is no new frontmatter setting. Listing numbering is always ID-driven:
+There is no new listing-numbering policy setting. Numbering is always ID-driven:
 
 ```text
 ID + caption      -> Listing N, targetable
@@ -245,9 +245,9 @@ See [the parsing example](#lst:first).
 Caption-only listings cannot be referenced because they have no ID. A duplicate
 ID follows the shared first-match and duplicate-invalid behavior.
 
-The listing label uses the shared automatic-reference label policy. This feature
-does not define a document-language policy, add per-document label metadata, or
-choose label wording independently of the shared reference layer.
+The listing label comes from the shared `reference-labels.listing` frontmatter
+value. When that value is absent or invalid, it falls back to the English word
+`Listing`. Yi's interface language does not affect it.
 
 ## Navigation
 
@@ -446,7 +446,9 @@ Node checks will cover:
 - malformed opening fences;
 - qualification of ordinary, caption-only, ID-only, and full listings;
 - document-order numbering of ID-bearing listings only;
-- reference labels and duplicate resolution;
+- `reference-labels.listing`, trimming, invalid-value fallback, and the English
+  `Listing` default;
+- duplicate resolution;
 - source serialization without normalization;
 - non-LaTeX export wrappers for all four source cases;
 - processed Markdown HTML escaping and target placement;
@@ -487,6 +489,8 @@ The user documentation will explain every case and consequence:
 - both supported opening-fence spellings;
 - the distinct roles of ID and caption;
 - why an ID produces `Listing N`;
+- how `reference-labels.listing` changes that word, and why absent or invalid
+  values fall back to English `Listing`;
 - why a caption without an ID is visible but unnumbered;
 - how numbering changes when listings are inserted or reordered;
 - manual links versus `[#lst:id]`;
@@ -498,10 +502,14 @@ The user documentation will explain every case and consequence:
 - why idiomatic LaTeX highlighting is needed for native visible listing
   captions and counters;
 - what happens under ordinary LaTeX highlighting;
-- that no frontmatter setting or extra LaTeX package is required by Yi itself.
+- that label wording uses frontmatter rather than Yi's interface language;
+- that no numbering-policy frontmatter or extra LaTeX package is required by Yi
+  itself.
 
 `test/fixtures/workspace/default-document.md` will include:
 
+- a `reference-labels.listing` override demonstrating that the label belongs to
+  the document rather than Yi's interface language;
 - an ordinary code block;
 - a caption-only code block before the numbered sequence;
 - an ID-only listing;

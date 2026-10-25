@@ -113,7 +113,8 @@ The figure element:
 - receives only the explicit ID;
 - keeps the existing image maximum-width behavior;
 - renders its caption from the image alt text;
-- displays the localized, document-computed number even when it has no ID;
+- displays the frontmatter-configured label and document-computed number even
+  when it has no ID;
 - has a stable layout while the image loads;
 - keeps an existing failed-image fallback path.
 
@@ -286,6 +287,8 @@ Node checks will cover:
 - malformed and non-final attribute blocks;
 - source serialization;
 - figure numbering with labeled and unlabeled figures;
+- `reference-labels.figure`, its `Figure` fallback, and its independence from
+  the interface language;
 - duplicate IDs and first-match resolution;
 - automatic-reference rewriting.
 
@@ -317,6 +320,8 @@ The user documentation will explain:
 - what makes an image a figure;
 - how to add a figure ID;
 - how figure numbering works;
+- how `reference-labels.figure` changes the visible label, with `Figure` as its
+  English fallback;
 - the difference between `[text](#id)` and `[#id]`;
 - command-click navigation;
 - cross-format export behavior.

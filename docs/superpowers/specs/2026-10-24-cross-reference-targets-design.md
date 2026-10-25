@@ -165,7 +165,42 @@ Headings do not gain synthetic section numbers in this release. An automatic
 reference to a heading displays the heading's title, matching its existing link
 semantics.
 
-All type words and number formatting are localized.
+### Reference labels
+
+The words used for target kinds belong to the document, not to the application
+interface. A note may name them in its frontmatter:
+
+```yaml
+reference-labels:
+  figure: Figure
+  listing: Listing
+  table: Table
+  equation: Equation
+  list: List
+```
+
+These labels drive editor captions, automatic-reference text, and exports.
+Yi's interface language must not change them.
+
+Defaults apply per key when `reference-labels`, its mapping, or one of its
+values is missing:
+
+```text
+figure   -> Figure
+listing  -> Listing
+table    -> Table
+equation -> Equation
+list     -> List
+```
+
+A value must be a non-empty scalar string after trimming surrounding whitespace.
+An empty, non-scalar, or otherwise invalid value falls back to that key's
+English default. Unknown keys are ignored. A malformed `reference-labels`
+mapping falls back to all defaults; it does not create a reference error.
+
+Number formatting and placement remain Yi's shared rules. For example,
+`listing: Code excerpt` produces `Code excerpt 1`, while the default produces
+`Listing 1`.
 
 ## Source syntax by target kind
 
@@ -245,8 +280,8 @@ its wrapper could create anchors.
 In rendered exports, the target must visibly carry the same number used by
 automatic references:
 
-- figure and table captions gain their localized type and number;
-- code blocks and lists show a localized label;
+- figure and table captions gain their configured type and number;
+- code blocks and lists show their configured label;
 - equations show the number in their display layout;
 - LaTeX/PDF may use native float/counter numbering, but its numbering sequence
   must match the shared index.
@@ -274,7 +309,8 @@ Shared checks will cover:
 - parsing `[#id]`, escaping, empty IDs, and literal regions;
 - target indexing and document-order numbering;
 - duplicate IDs and first-match resolution;
-- localized automatic-reference text;
+- configured reference labels, per-key English fallback, and independence from
+  the interface language;
 - reference-text invalidation and re-rendering after edits;
 - export rewriting to ordinary links;
 - unresolved-reference fallback.
