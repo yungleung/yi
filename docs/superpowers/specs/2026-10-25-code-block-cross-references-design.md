@@ -245,18 +245,9 @@ See [the parsing example](#lst:first).
 Caption-only listings cannot be referenced because they have no ID. A duplicate
 ID follows the shared first-match and duplicate-invalid behavior.
 
-The localized word is added as `reference.listing` in every shipped language:
-
-```text
-en: Listing
-de: Listing
-es: Listado
-fr: Liste
-ja: リスト
-pt: Listagem
-zh-Hans: 代码清单
-zh-Hant: 程式碼清單
-```
+The listing label uses the shared automatic-reference label policy. This feature
+does not define a document-language policy, add per-document label metadata, or
+choose label wording independently of the shared reference layer.
 
 ## Navigation
 
@@ -380,6 +371,11 @@ add its generated caption paragraph there.
 The user controls whether `listings` is used through `syntax-highlighting` in
 the export defaults or template package. Yi does not force
 `syntax-highlighting: idiomatic`.
+
+The preprocessor does not read `syntax-highlighting` from the export defaults or
+a template package. It rewrites the LaTeX/PDF source by listing shape only. The
+same export source is produced for both highlighting modes; Pandoc decides how
+much of that source is visible.
 
 With idiomatic highlighting:
 
