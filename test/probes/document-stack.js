@@ -98,7 +98,7 @@
   check(
     'a file clicked in the tree is the document on screen, and the one before it was asked about',
     asked &&
-      page().startsWith('GitHub-flavored markdown demo') &&
+      page().includes('GitHub-flavored markdown demo') &&
       status('document-saved') === 'Saved' &&
       status('document-stacked') === 'Not stacked' &&
       session.documentSession.stack().length === 1,

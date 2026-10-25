@@ -21,7 +21,7 @@ shape (the tree, the class families, and which convention each check enforces).
 
 | Layer | Files | Job |
 | --- | --- | --- |
-| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading attributes and Pandoc identifiers |
+| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading attributes, Pandoc identifiers, table source, and table captions |
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
 | Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
@@ -606,12 +606,24 @@ IDs and Pandoc's numeric suffix for duplicates. ⌘-click or Ctrl-click on `[tex
 **`[#id]` is an automatic reference, and a standalone captioned image is a figure.** The remark
 transformer `plugins/remark-auto-references.ts` splits `[#id]` from ordinary text while preserving
 offsets; `nodes/auto_reference.ts` renders the target's inferred label. `document/reference_index.ts`
-owns document order, IDs, duplicate resolution, heading targets, and figure numbering. Figures with a
-non-empty alt are recognized after all parser repairs by `syntax/figures.ts`; their Pandoc attributes
-stay in the source while normal rendering shows the image, caption, and computed number. Export
-rewrites automatic references to ordinary links and normalizes figure targets for ODT and LaTeX.
-`auto-references.js`, `figure-rendering.js`, and `figure-crossrefs-default-document.js` hold the app
-behavior.
+owns document order, IDs, duplicate resolution, heading targets, figure numbering, and captioned
+table numbering. Figures with a non-empty alt are recognized after all parser repairs by
+`syntax/figures.ts`; their Pandoc attributes stay in the source while normal rendering shows the
+image, caption, and computed number. `auto-references.js`, `figure-rendering.js`, and
+`figure-crossrefs-default-document.js` hold the app behavior.
+
+**A captioned pipe table owns its optional separator and its following `: …` line.** The table
+source mapper is bounded by the pipe rows, so a caret after the table never resolves to its last
+cell. `syntax/table_captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
+block, and preserves the exact table/caption source on the table node. `create_block.ts` groups the
+three lines; `nodes/table_caption.ts` numbers the caption and reveals the complete line for editing.
+`document/reference_index.ts` counts every captioned table but targets only one with an ID. The
+non-LaTeX lowering lives in `ui/export/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
+`\yiTableRef`, written by `ui/export/reference_header.ts` and the run-local Rust header file.
+Shipped LaTeX/PDF templates expand `$header-includes$`, and their table filters preserve the caption
+and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editing probes, and
+`table-crossrefs-default-document.js` hold the editor behavior; the export probes hold each kind,
+and `export-pdf-table-template.js` proves the package counter contract.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

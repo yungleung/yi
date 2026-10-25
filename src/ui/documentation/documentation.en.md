@@ -132,6 +132,121 @@ Rendered HTML, EPUB, Word, and ODT exports receive a numbered caption and a form
 bookmark. LaTeX and PDF use the native figure counter. Processed Markdown emits an HTML `<figure>`
 with an ID and numbered `<figcaption>` so common Markdown readers can display it.
 
+### Tables
+
+Yi keeps the ordinary GitHub-flavored pipe table and adds a Pandoc caption line after it. The
+caption begins with a colon and one or more spaces:
+
+```markdown
+| Metric | Value |
+| --- | ---: |
+| alpha | 1 |
+
+: Results {#tbl:results .margin data-owner=demo}
+```
+
+No blank line or one blank line may separate the table from its caption. Two blank lines end the
+table; a following colon line then belongs to the next block. The caption may contain inline
+Markdown. Its trailing Pandoc attribute block supplies the reference ID, classes, and key/value
+attributes. Leave a space between the caption text and the attribute block.
+
+Every captioned table consumes one table number in document order. A table without a caption has
+no table number and no target. The three referencable-looking forms behave differently:
+
+```markdown
+| A | B |
+| --- | --- |
+| one | two |
+
+: A caption without an ID
+
+| A | B |
+| --- | --- |
+| three | four |
+
+: {#tbl:target}
+
+| A | B |
+| --- | --- |
+| five | six |
+
+: Labeled table {#tbl:named}
+```
+
+The first table is numbered but cannot be referenced. The second is numbered and is a reference
+target even though its visible caption contains only the generated number. The third has both a
+visible caption and a target. `.margin`, `.wide`, and other classes stay in the source for Pandoc
+and template packages; Yi applies only the ID to its editor DOM.
+
+Use an automatic reference when Yi should infer the visible words, or a normal Markdown link when
+you want your own words:
+
+```markdown
+See [#tbl:named] for the measurements.
+See [the measured values](#tbl:named) for the same table.
+```
+
+The automatic form displays the configured label and number, such as `Table 3`. ⌘-click or
+Ctrl-click either form to reveal the table and place the caret in its first header cell. The
+browser location hash is not changed. An ordinary click on the generated caption opens the complete
+`: …` caption line for editing, including the attribute block.
+
+The optional separator is a real editable line. Put the caret on it to add or remove the blank
+line. `Enter` in the final table cell leaves the table and puts the caret after it; subsequent
+typing stays on that line rather than returning to the last cell.
+
+#### Table labels and prefixes
+
+The default label is `Table` and the default prefix is empty. Set either in the note's frontmatter:
+
+```yaml
+---
+reference-labels:
+  table: Data table
+reference-number-prefixes:
+  table: "2-"
+---
+```
+
+With these values, the first captioned table displays `Data table 2-1`. A missing or blank value
+falls back to English defaults. The prefix is literal text. Yi does not infer a chapter or section
+number because an export template may shift heading levels; use the template when numbering must
+follow the document's own structure.
+
+#### Table export
+
+The source remains Pandoc Markdown in every Pandoc-backed export:
+
+- HTML and EPUB receive the native table, ID, attributes, and a visible numbered caption.
+- Word and ODT receive a `Div` with the table ID so Pandoc writes a bookmark or named section. The
+  visible caption carries the number, and classes and key/value attributes remain on that caption.
+- LaTeX and PDF keep the native caption and label. Automatic table references become
+  `\yiTableRef{id}`, which prints the document's `\tablename` and reads the final number with
+  `\ref`. A template or class can therefore redefine `\thetable` and retain control of numbering.
+- Processed Markdown writes the table as semantic HTML with `<table>`, `<caption>`, the target ID,
+  alignment, classes, and `data-*` attributes. Common Markdown readers display it. Re-importing that
+  file treats the table as raw HTML, not as a Yi pipe table.
+
+Manual table links remain ordinary `\hyperref` links in LaTeX and PDF, so their author-written text
+is preserved. Automatic references to headings and figures keep their existing behavior.
+
+`.margin` does not place a table in a margin by itself. Yi ships no margin-table Lua filter, keeps
+no separate margin-table sequence, and adds no margin styles. A template package can implement
+that layout with its own class, filter, and table environment.
+
+For a LaTeX or PDF text template, expand Pandoc's header variable in the preamble:
+
+```tex
+$if(header-includes)$
+$header-includes$
+$endif$
+```
+
+A Lua filter that rewrites a table must preserve both the caption and the identifier, causing
+normal `\caption{…}` and `\label{…}` output. Do not hard-code the visible number, use
+`\caption*` for a numbered table, or replace the shared LaTeX table counter with a separate one.
+The included template examples show the expected filter shape.
+
 ## Export a note
 
 **File → Export** offers these kinds:

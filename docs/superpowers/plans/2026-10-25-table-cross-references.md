@@ -1,6 +1,6 @@
 # Table Cross-References Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add captioned table targets, automatic references, editable captions, and consistent export behavior without changing table-cell editing or owning margin-table layout.
 
@@ -37,7 +37,7 @@
 - Consumes: `readTableSource(text: string, at?: number): TableSource | null`
 - Produces: `TableSource.from: number`, `TableSource.to: number`, and `locateCell(source, offset): TableCellSpan | null` returning null outside `[from, to]`.
 
-- [ ] **Step 1: Write the failing pure test**
+- [x] **Step 1: Write the failing pure test**
 
 Add to `test/checks/check-table-source.mjs`:
 
@@ -55,13 +55,13 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run the pure test and verify RED**
+- [x] **Step 2: Run the pure test and verify RED**
 
 Run: `node test/checks/check-table-source.mjs`
 
 Expected: FAIL because `bounded.to` and the outside-offset rule do not exist.
 
-- [ ] **Step 3: Add the bounded source range**
+- [x] **Step 3: Add the bounded source range**
 
 In `src/ui/markdown/syntax/table_source.ts`, extend `TableSource`:
 
@@ -92,13 +92,13 @@ if (offset < source.from || offset > source.to) {
 }
 ```
 
-- [ ] **Step 4: Run the pure test and verify GREEN**
+- [x] **Step 4: Run the pure test and verify GREEN**
 
 Run: `node test/checks/check-table-source.mjs`
 
 Expected: `table source: all checks passed`.
 
-- [ ] **Step 5: Write the failing app probe**
+- [x] **Step 5: Write the failing app probe**
 
 Create `test/probes/table-blank-line-typing.js`:
 
@@ -132,13 +132,13 @@ Create `test/probes/table-blank-line-typing.js`:
 })()
 ```
 
-- [ ] **Step 6: Run the probe and verify RED**
+- [x] **Step 6: Run the probe and verify RED**
 
 Run: `npm run probe -- test/probes/table-blank-line-typing.js`
 
 Expected: the character is written into the final table cell instead of line 4.
 
-- [ ] **Step 7: Run the probe and focused regression set after the fix**
+- [x] **Step 7: Run the probe and focused regression set after the fix**
 
 Run:
 
@@ -150,7 +150,7 @@ npm run probe -- test/probes/table-enter-exit-caret.js
 
 Expected: all three probes pass.
 
-- [ ] **Step 8: Update the probe index and commit**
+- [x] **Step 8: Update the probe index and commit**
 
 Add `table-blank-line-typing` under the table probes in `test/README.md`.
 
@@ -189,7 +189,7 @@ export function tableCaptionLine(line: string, from: number): TableCaptionData |
 export function isTableCaptionLine(line: string): boolean;
 ```
 
-- [ ] **Step 1: Write the failing caption-parser check**
+- [x] **Step 1: Write the failing caption-parser check**
 
 Create `test/checks/check-table-captions.mjs` using the same Rolldown harness as `check-table-source.mjs`. Include:
 
@@ -212,13 +212,13 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run the check and verify RED**
+- [x] **Step 2: Run the check and verify RED**
 
 Run: `node test/checks/check-table-captions.mjs`
 
 Expected: module import fails because `table_captions.ts` does not exist.
 
-- [ ] **Step 3: Implement the pure caption parser**
+- [x] **Step 3: Implement the pure caption parser**
 
 `table_caption_line` must:
 
@@ -229,13 +229,13 @@ Expected: module import fails because `table_captions.ts` does not exist.
 - return null when both caption text and ID are empty;
 - shift all ranges by the supplied absolute `from`.
 
-- [ ] **Step 4: Run the check and verify GREEN**
+- [x] **Step 4: Run the check and verify GREEN**
 
 Run: `node test/checks/check-table-captions.mjs`
 
 Expected: `table captions: all checks passed`.
 
-- [ ] **Step 5: Register the check and commit**
+- [x] **Step 5: Register the check and commit**
 
 Add `check-table-captions` to `test/run-checks.mjs`.
 
@@ -277,7 +277,7 @@ export interface TableCaptionNode {
 export function restoreTableCaptions(tree: Root, markdown: string): void;
 ```
 
-- [ ] **Step 1: Write failing parser checks**
+- [x] **Step 1: Write failing parser checks**
 
 Extend `check-table-captions.mjs` to parse and inspect:
 
@@ -302,7 +302,7 @@ check('two blank lines do not attach', distant.children[0].tableCaption ?? null,
 
 Add block checks asserting one paragraph block covers `table\n\n: Caption`.
 
-- [ ] **Step 2: Run checks and verify RED**
+- [x] **Step 2: Run checks and verify RED**
 
 Run:
 
@@ -313,7 +313,7 @@ node test/checks/check-blocks.mjs
 
 Expected: caption nodes are absent and the separated form is split across blocks.
 
-- [ ] **Step 3: Implement parser repair**
+- [x] **Step 3: Implement parser repair**
 
 Add `restoreTableCaptions(root, markdown)` after `restoreFigures` in `parseMarkdown`.
 
@@ -334,7 +334,7 @@ table(node: any): string {
 }
 ```
 
-- [ ] **Step 4: Group blocks across one separator**
+- [x] **Step 4: Group blocks across one separator**
 
 When a paragraph block contains a table and is followed by one blank line and a
 valid caption line, consume the blank and caption into the same paragraph block.
@@ -346,7 +346,7 @@ Do not group zero or two blank lines:
 
 The re-split path must produce the same grouping by using the same helper.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -358,7 +358,7 @@ npm run check
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/table_captions.ts src/ui/markdown/syntax/parser.ts src/ui/markdown/syntax/table_source.ts src/ui/markdown/ast.ts src/ui/markdown/mdast.d.ts src/ui/markdown/document/blocks.ts test/checks/check-table-captions.mjs test/checks/check-blocks.mjs
@@ -413,7 +413,7 @@ caretAt: number | null;
 tableLabelAt(from: number): string | null;
 ```
 
-- [ ] **Step 1: Write the failing vocabulary check**
+- [x] **Step 1: Write the failing vocabulary check**
 
 Cover:
 
@@ -428,19 +428,19 @@ check('empty labels fall back', ..., { label: 'Table', prefix: '' });
 check('the app locale is not read', ...);
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `node test/checks/check-reference-vocabulary.mjs`
 
 Expected: module does not exist.
 
-- [ ] **Step 3: Implement the shared vocabulary**
+- [x] **Step 3: Implement the shared vocabulary**
 
 Use the frontmatter YAML parser, accept scalar label/prefix values, fall back
 per key to `Figure`, `Table`, `Equation`, `List`, `Listing` and empty prefixes,
 and ignore unknown keys.
 
-- [ ] **Step 4: Write the failing table-index test**
+- [x] **Step 4: Write the failing table-index test**
 
 In `check-reference-index.mjs`:
 
@@ -461,7 +461,7 @@ check(
 );
 ```
 
-- [ ] **Step 5: Implement indexing**
+- [x] **Step 5: Implement indexing**
 
 Walk each sibling list. When a `table` carries `tableCaption`:
 
@@ -476,7 +476,7 @@ Update the state's reference key so a table-caption block re-renders when
 `referencesVersion` changes. Add `tableLabelAt` to the render context and wire
 it in `markdown_editor.ts` using the shared index.
 
-- [ ] **Step 6: Verify GREEN**
+- [x] **Step 6: Verify GREEN**
 
 Run:
 
@@ -489,7 +489,7 @@ npm run check
 
 Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/reference_vocabulary.ts src/ui/markdown/document/reference_index.ts src/ui/markdown/document/state.ts src/ui/markdown/render_context.ts src/ui/markdown/markdown_editor.ts src/ui/markdown/editing/references.ts src/ui/export/preprocess.ts test/checks/check-reference-vocabulary.mjs test/checks/check-reference-index.mjs test/checks/check-export.mjs test/run-checks.mjs locales
@@ -514,7 +514,7 @@ git commit -m "feat(crossrefs): index captioned tables"
 - Consumes: `AstTableCaption`, `renderContext().tableLabelAt(from)`
 - Produces: `.markdown-table-caption`, `.markdown-table-number`, `.markdown-table-caption-source`, and a table block with the caption ID.
 
-- [ ] **Step 1: Write failing rendering/caret probes**
+- [x] **Step 1: Write failing rendering/caret probes**
 
 `table-caption-editing.js` must load:
 
@@ -539,7 +539,7 @@ Assert:
 `table-caption-crossrefs.js` asserts `[#tbl:results]` renders `Table 1` and
 Command-click lands in the first header cell.
 
-- [ ] **Step 2: Run probes and verify RED**
+- [x] **Step 2: Run probes and verify RED**
 
 Run:
 
@@ -550,7 +550,7 @@ npm run probe -- test/probes/table-caption-crossrefs.js
 
 Expected: no caption node or rendering exists.
 
-- [ ] **Step 3: Implement the caption component**
+- [x] **Step 3: Implement the caption component**
 
 Create a `TableCaption` revealable component over the table's `tableCaption` data:
 
@@ -564,7 +564,7 @@ Create a `TableCaption` revealable component over the table's `tableCaption` dat
 Rendering the caption is part of the table block, so no registry entry or
 top-level `tableCaption` AST child is required.
 
-- [ ] **Step 4: Apply the table target and optional separator**
+- [x] **Step 4: Apply the table target and optional separator**
 
 In `create_block.ts`:
 
@@ -577,7 +577,7 @@ In `create_block.ts`:
 In `nodes/table.ts`, retain all existing cell roles and `data-table-cell`
 offsets; only skip the swallowed caption row after parser repair.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -591,7 +591,7 @@ npm run probe -- test/probes/table-enter-exit-caret.js
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/nodes/table_caption.ts src/ui/markdown/create_node.ts src/ui/markdown/registry.ts src/ui/markdown/nodes/table.ts src/ui/markdown/create_block.ts src/styles.css test/probes/table-caption-editing.js test/probes/table-caption-crossrefs.js
@@ -615,7 +615,7 @@ git commit -m "feat(editor): render table captions"
 - Consumes: table/caption nodes and `referenceIndex`
 - Produces: captioned Pandoc source for HTML/EPUB, wrapped targets for DOCX/ODT, and HTML table fallback for processed Markdown.
 
-- [ ] **Step 1: Add failing pure export checks**
+- [x] **Step 1: Add failing pure export checks**
 
 Add cases to `check-export.mjs` for:
 
@@ -643,13 +643,13 @@ Expected outputs:
 - DOCX/ODT: one `::: {#tbl:x .table-target}` wrapper around the captioned table;
 - ordinary tables left unchanged.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `node test/checks/check-export.mjs`
 
 Expected: table caption cases are absent or unchanged.
 
-- [ ] **Step 3: Implement the non-LaTeX lowering**
+- [x] **Step 3: Implement the non-LaTeX lowering**
 
 Add a `tableRewrites` pass to `exportSource`.
 
@@ -663,7 +663,7 @@ Use one helper that:
 - renders processed Markdown as an HTML table;
 - passes `.margin` and other attributes through.
 
-- [ ] **Step 4: Update export probes**
+- [x] **Step 4: Update export probes**
 
 Each export probe must assert:
 
@@ -673,7 +673,7 @@ Each export probe must assert:
 - a caption-only table has no target;
 - `.margin` is preserved but not interpreted.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -688,7 +688,7 @@ npm run probe -- test/probes/export-markdown.js
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/export/preprocess.ts test/checks/check-export.mjs test/probes/export-html.js test/probes/export-epub.js test/probes/export-docx.js test/probes/export-odt.js test/probes/export-markdown.js
@@ -717,7 +717,7 @@ git commit -m "feat(export): render table references"
 - Consumes: table vocabulary and export kind
 - Produces: `referenceHeader(markdown: string): string`, a run-specific `reference-header.tex`, and `\yiTableRef{id}` in LaTeX/PDF export source.
 
-- [ ] **Step 1: Write the failing pure tests**
+- [x] **Step 1: Write the failing pure tests**
 
 In `check-reference-header.mjs`, assert:
 
@@ -740,7 +740,7 @@ In `check-export.mjs`, assert automatic table refs become
 `\yiTableRef{tbl:x}` for `latex` and `pdf`, while other kinds get ordinary
 `[Table N](#tbl:x)` links.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run:
 
@@ -751,7 +751,7 @@ node test/checks/check-export.mjs
 
 Expected: header module does not exist and table refs retain the old link form.
 
-- [ ] **Step 3: Implement the header and request plumbing**
+- [x] **Step 3: Implement the header and request plumbing**
 
 Generate the header in the webview for LaTeX/PDF, pass it through `ExportRequest`,
 write it into the run folder, and append it with `--include-in-header`.
@@ -763,7 +763,7 @@ The header must:
 - define `\yiTableRef`;
 - leave every other target kind's export behavior unchanged.
 
-- [ ] **Step 4: Implement native table source**
+- [x] **Step 4: Implement native table source**
 
 For LaTeX/PDF:
 
@@ -772,7 +772,7 @@ For LaTeX/PDF:
 - let all captioned tables increment the table counter;
 - lower automatic table references to `\yiTableRef{id}`.
 
-- [ ] **Step 5: Test a template counter and filter contract**
+- [x] **Step 5: Test a template counter and filter contract**
 
 Use the existing complete LaTeX example package. Add a test filter that rewrites
 `Table` to `table*` and preserves:
@@ -787,7 +787,7 @@ Export a table with an ID and assert both `\caption` and `\label` are present.
 Set `\renewcommand{\thetable}{X-\arabic{table}}` in a test template and assert
 the compiled PDF reference resolves to `X-1`.
 
-- [ ] **Step 6: Verify GREEN**
+- [x] **Step 6: Verify GREEN**
 
 Run:
 
@@ -800,7 +800,7 @@ npm run probe -- test/probes/export-pdf.js
 
 Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/export/reference_header.ts src-tauri/src/export/reference_header.rs src/ui/export/export_flow.ts src-tauri/src/export/mod.rs src-tauri/src/export/run/mod.rs src-tauri/src/export/run/arguments.rs src/api/export.ts src-tauri/src/export/tests/run/arguments.rs test/checks/check-reference-header.mjs test/checks/check-export.mjs test/probes/export-latex.js test/probes/export-pdf.js
@@ -824,7 +824,7 @@ git commit -m "feat(export): resolve table references in latex"
 - Consumes: all earlier tasks
 - Produces: user-facing documentation, fixture examples, and a default-document probe.
 
-- [ ] **Step 1: Expand the fixture**
+- [x] **Step 1: Expand the fixture**
 
 Add to `default-document.md`:
 
@@ -864,7 +864,7 @@ Attributes and margin placement belong to the source and template:
 : Results {#tbl:results .margin data-owner=demo}
 ```
 
-- [ ] **Step 2: Write the failing default-document probe**
+- [x] **Step 2: Write the failing default-document probe**
 
 Assert:
 
@@ -874,7 +874,7 @@ Assert:
 - the `.margin` class is not applied in the editor;
 - Command-click reaches the first header cell.
 
-- [ ] **Step 3: Run the probe and verify RED**
+- [x] **Step 3: Run the probe and verify RED**
 
 Run:
 
@@ -884,7 +884,7 @@ npm run probe -- --fixture default-document.md test/probes/table-crossrefs-defau
 
 Expected: failure until the fixture and implementation are complete.
 
-- [ ] **Step 4: Document every user-visible case**
+- [x] **Step 4: Document every user-visible case**
 
 Document:
 
@@ -897,7 +897,7 @@ Document:
 - `.margin` delegation to templates;
 - the Lua-filter caption/label contract.
 
-- [ ] **Step 5: Update architecture and test indexes**
+- [x] **Step 5: Update architecture and test indexes**
 
 Record:
 
@@ -906,7 +906,7 @@ Record:
 - `yiTableRef` in the generated LaTeX header;
 - the new checks and probes in `test/README.md`.
 
-- [ ] **Step 6: Run focused and full verification**
+- [x] **Step 6: Run focused and full verification**
 
 Run:
 
@@ -925,7 +925,7 @@ npm run probe:all
 
 Expected: compiler, Rust, checks, and all runnable probes pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/documentation/documentation.en.md test/fixtures/workspace/default-document.md test/probes/table-crossrefs-default-document.js test/probes/table-caption-editing.js test/README.md docs/architecture.md docs/ai-context.md
@@ -936,15 +936,15 @@ git commit -m "docs(tables): document table cross-references"
 
 ## Final Review Checklist
 
-- [ ] Every captioned table consumes one number; only ID-bearing tables are targets.
-- [ ] Caption-only, ID-only, and captioned tables render and export correctly.
-- [ ] Direct and one-blank caption forms are editable as separate lines.
-- [ ] A blank line after a table never maps to the nearest cell.
-- [ ] Table numbering and every automatic reference update after an earlier insertion.
-- [ ] Command-click reaches the first header cell across virtualization.
-- [ ] `.margin` is preserved but never interpreted by Yi.
-- [ ] No Lua filter is shipped for margin placement.
-- [ ] Template-rewritten tables keep caption and label.
-- [ ] LaTeX/PDF references follow the package's `\thetable`.
-- [ ] Processed Markdown displays an HTML table with caption and target.
-- [ ] Documentation, fixture, checks, probes, and indexes cover every case.
+- [x] Every captioned table consumes one number; only ID-bearing tables are targets.
+- [x] Caption-only, ID-only, and captioned tables render and export correctly.
+- [x] Direct and one-blank caption forms are editable as separate lines.
+- [x] A blank line after a table never maps to the nearest cell.
+- [x] Table numbering and every automatic reference update after an earlier insertion.
+- [x] Command-click reaches the first header cell across virtualization.
+- [x] `.margin` is preserved but never interpreted by Yi.
+- [x] No Lua filter is shipped for margin placement.
+- [x] Template-rewritten tables keep caption and label.
+- [x] LaTeX/PDF references follow the package's `\thetable`.
+- [x] Processed Markdown displays an HTML table with caption and target.
+- [x] Documentation, fixture, checks, probes, and indexes cover every case.

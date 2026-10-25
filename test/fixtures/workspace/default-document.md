@@ -1,3 +1,10 @@
+---
+reference-labels:
+  table: Data table
+reference-number-prefixes:
+  table: "2-"
+---
+
 # GitHub-flavored markdown demo
 
 This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~~strikethrough~~.
@@ -35,6 +42,32 @@ function greet(name: string) {
 | --- | --- | --- |
 | Alpha | Beta | Gamma |
 | Delta | Epsilon | Zeta |
+
+See [#tbl:results] or [the results table](#tbl:results).
+
+An ordinary table has no caption and consumes no table number. A caption-only table is numbered:
+
+| Step | Result |
+| --- | --- |
+| Build | Clean |
+
+: A caption-only table
+
+An ID-only caption is a reference target:
+
+| A | B |
+| --- | --- |
+| one | two |
+
+: {#tbl:target}
+
+Attributes and margin placement remain source for Pandoc and template packages:
+
+| Name | Value |
+| --- | --- |
+| alpha | one |
+
+: Results {#tbl:results .margin data-owner=demo}
 
 ## Math expressions
 
