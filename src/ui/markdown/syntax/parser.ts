@@ -25,6 +25,7 @@ import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
 import { restoreSpacedDestinations } from './spaced_destinations';
 import { restoreFigures } from './figures';
+import { restoreListings } from './listings';
 import { frontmatterForParsers } from './markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
@@ -70,6 +71,9 @@ const stringifyProcessor = unified()
       figure(node: any): string {
         return `${String(node.source ?? '').trimEnd()}\n`;
       },
+      listing(node: any): string {
+        return `${String(node.source ?? '').trimEnd()}\n`;
+      },
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
@@ -106,6 +110,7 @@ export function parseMarkdown(markdown: string): Root {
   restoreEmptyItems(root, markdown);
   restoreSpacedDestinations(root, markdown);
   restoreFigures(root, markdown);
+  restoreListings(root, markdown);
   return root;
 }
 

@@ -33,6 +33,7 @@ export type {
   ThematicBreak as AstThematicBreak
 } from 'mdast';
 import type { FigureNode } from './syntax/figures';
+import type { ListingNode } from './syntax/listings';
 
 /**
  * Custom node types registered into mdast via `mdast.d.ts`. The augmentation
@@ -42,6 +43,7 @@ import type { FigureNode } from './syntax/figures';
 export type AstCitation = RootContentMap['citation'];
 export type AstAutoReference = RootContentMap['autoReference'];
 export type AstFigure = FigureNode;
+export type AstListing = ListingNode;
 export type AstWikilink = RootContentMap['wikilink'];
 export type AstDescriptionList = RootContentMap['descriptionlist'];
 export type AstDescriptionTerm = RootContentMap['descriptionterm'];

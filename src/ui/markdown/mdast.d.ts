@@ -12,6 +12,7 @@ import type { CitationNode } from './plugins/remark-citation';
 import type { AutoReferenceNode } from './plugins/remark-auto-references';
 import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { FigureNode } from './syntax/figures';
+import type { ListingNode } from './syntax/listings';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 
@@ -25,6 +26,7 @@ declare module 'mdast' {
     autoReference: AutoReferenceNode;
     citation: CitationNode;
     figure: FigureNode;
+    listing: ListingNode;
     descriptionlist: DescriptionList;
     descriptionterm: DescriptionTerm;
     descriptiondetails: DescriptionDetails;
