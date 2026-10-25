@@ -79,6 +79,9 @@ const stringifyProcessor = unified()
       table(node: any): string {
         return `${String(node.source ?? '')}\n`;
       },
+      tableCaption(node: any): string {
+        return `${String(node.source ?? '')}\n`;
+      },
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
@@ -180,6 +183,8 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
     table.tableCaption = captionNode(
       attachment.caption,
       attachment.separatorFrom !== null,
+      attachment.tableFrom,
+      attachment.separatorFrom,
       labels
     );
     let next = index + 1;
@@ -199,6 +204,8 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
   function captionNode(
     data: TableCaptionData,
     separated: boolean,
+    tableFrom: number,
+    separatorFrom: number | null,
     definitions: ReadonlySet<string>
   ): TableCaptionNode {
     const withContext = withFootnoteDefinitions(data.caption, definitions);
@@ -228,6 +235,8 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
       children: caption,
       source: data.source,
       captionData: data,
+      tableFrom,
+      separatorFrom,
       separated,
       position: {
         start: { offset: data.captionFrom },

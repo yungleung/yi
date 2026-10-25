@@ -427,6 +427,7 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
+.markdown-table-caption-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -455,6 +456,7 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
+.markdown-table-caption-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -496,6 +498,35 @@ body {
 .markdown-figure-number {
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* A table caption follows its table like the source it is written as. The optional
+   separator keeps an editable line of its own, and the caption can reveal that complete
+   `: …` line while the table itself remains editable cell by cell. */
+.markdown-table-block {
+  display: block;
+}
+
+.markdown-table-caption {
+  margin-top: 0.25rem;
+  text-align: center;
+  font-size: 0.875em;
+}
+
+.markdown-table-caption-source {
+  display: block;
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.markdown-table-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prose-tight p.markdown-table-blank {
+  min-height: var(--md-line);
+  margin: 0;
 }
 
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.

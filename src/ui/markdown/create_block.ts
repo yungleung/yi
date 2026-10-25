@@ -15,6 +15,7 @@ import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
+import { TableCaption } from './nodes/table_caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
 import { highlightCode } from './nodes/code_highlight';
@@ -125,7 +126,43 @@ class BlockView implements BlockComponent {
       element.classList.add('markdown-heading-block');
     }
     appendChildren(element, children);
+    const table = children.find((child) => child.type === 'table');
+    const caption = table?.type === 'table' ? table.tableCaption : undefined;
+    if (caption) {
+      element.classList.add('markdown-table-block');
+      if (caption.id !== null) {
+        element.id = caption.id;
+      }
+      if (caption.separatorFrom !== null) {
+        element.appendChild(this.tableSeparator(caption.separatorFrom));
+      }
+      element.appendChild(new TableCaption(caption).element);
+    }
     return element;
+  }
+
+  /** The one blank line Pandoc allows between a table and its caption. */
+  private tableSeparator(from: number): HTMLElement {
+    const paragraph = document.createElement('p');
+    paragraph.className = 'markdown-node markdown-empty-line markdown-table-blank';
+    const placeholder = document.createElement('span');
+    placeholder.className = 'markdown-empty-line-placeholder markdown-node';
+    setOffset(placeholder, TEXT_FROM, from);
+    placeholder.appendChild(document.createTextNode(''));
+    paragraph.appendChild(placeholder);
+    paragraph.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const text = placeholder.firstChild;
+      if (!text) {
+        return;
+      }
+      const caret = document.createRange();
+      caret.setStart(text, 0);
+      caret.collapse(true);
+      showCaret(caret);
+      (this.element.closest('.prose') as HTMLElement | null)?.focus({ preventScroll: true });
+    });
+    return paragraph;
   }
 
   /**

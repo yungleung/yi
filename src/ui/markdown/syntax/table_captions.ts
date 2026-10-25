@@ -50,6 +50,10 @@ export interface TableCaptionNode {
   children: RootContent[];
   source: string;
   captionData: TableCaptionData;
+  /** The table's block-relative start: the key the shared index numbers it by. */
+  tableFrom: number;
+  /** Block-relative start of the optional blank separator. */
+  separatorFrom: number | null;
   separated: boolean;
   position: {
     start: { offset: number };

@@ -202,6 +202,12 @@ function sourceRangeIn(
     if (showsSource(node.type)) {
       return end === undefined ? null : { start: position.start.offset, end };
     }
+    if (node.type === 'table' && node.tableCaption) {
+      const caption = node.tableCaption.captionData;
+      return offset >= caption.captionFrom && offset <= caption.captionTo
+        ? { start: caption.captionFrom, end: caption.captionTo }
+        : null;
+    }
     if (node.type === 'footnoteDefinition') {
       const label = String((node as { label?: string }).label ?? '');
       const marker = markerShape(label);
