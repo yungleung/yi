@@ -141,16 +141,16 @@ class BlockView implements BlockComponent {
     return element;
   }
 
-  /** The one blank line Pandoc allows between a table and its caption. */
+  /** The normal block gap that also names Pandoc's one allowed separator line. */
   private tableSeparator(from: number): HTMLElement {
-    const paragraph = document.createElement('p');
-    paragraph.className = 'markdown-node markdown-empty-line markdown-table-blank';
+    const separator = document.createElement('div');
+    separator.className = 'markdown-table-blank';
     const placeholder = document.createElement('span');
     placeholder.className = 'markdown-empty-line-placeholder markdown-node';
     setOffset(placeholder, TEXT_FROM, from);
     placeholder.appendChild(document.createTextNode(''));
-    paragraph.appendChild(placeholder);
-    paragraph.addEventListener('click', (event) => {
+    separator.appendChild(placeholder);
+    separator.addEventListener('click', (event) => {
       event.stopPropagation();
       const text = placeholder.firstChild;
       if (!text) {
@@ -162,7 +162,7 @@ class BlockView implements BlockComponent {
       showCaret(caret);
       (this.element.closest('.prose') as HTMLElement | null)?.focus({ preventScroll: true });
     });
-    return paragraph;
+    return separator;
   }
 
   /**
