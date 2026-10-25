@@ -191,9 +191,13 @@ Ctrl-click either form to reveal the table and place the caret in its first head
 browser location hash is not changed. An ordinary click on the generated caption opens the complete
 `: …` caption line for editing, including the attribute block.
 
-The optional separator is a real editable line. Put the caret on it to add or remove the blank
-line. `Enter` in the final table cell leaves the table and puts the caret after it; subsequent
-typing stays on that line rather than returning to the last cell.
+The optional separator is source syntax and is not rendered as an empty line. The table and caption
+look identical whether the source is joined directly or separated by one blank line. To add or
+remove that source blank line, open the caption source and put the caret at its start; `Enter` adds
+the separator and `Backspace` removes it.
+
+`Enter` in the final table cell leaves the table and puts the caret after it; subsequent typing
+stays on that line rather than returning to the last cell.
 
 #### Table labels and prefixes
 

@@ -47,16 +47,17 @@ The supported source is a GFM pipe table followed by a Pandoc caption line:
 Pandoc accepts no blank line or one blank line between the table and its
 caption. Yi accepts both and treats the table and caption as one editor block.
 
-The logical source has up to three independently addressable parts:
+The logical source has up to three parts:
 
 ```text
 pipe-table lines
-optional blank separator
+optional source-only blank separator
 caption line
 ```
 
 The caption is not edited through a table cell, and the optional separator is
-not an artifact of the table's last cell.
+not an artifact of the table's last cell. The separator is source syntax, not a
+rendered empty-line element.
 
 A table is captioned when its caption line has either:
 
@@ -196,20 +197,18 @@ The caption is not a second editable copy of the source. A plain click on it
 reveals the caption line as source, where the caption and attributes can be
 edited.
 
-When the source has a blank separator, the renderer gives that separator a real
-blank-line box at the table block's end. It is the same kind of caret-addressable
-empty line used elsewhere in the editor and contains no document character.
-Typing ordinary text there breaks the table-caption association and produces an
-ordinary paragraph; typing a valid `: Caption` line there creates the caption.
+The source separator is not rendered. It contributes no visible line box and no
+DOM node, so the table and caption have the same spacing whether their source is
+joined directly or separated by one blank line.
 
 ## Source mode and caret behavior
 
 Table cells keep their existing WYSIWYG editing behavior. Entering a cell does
 not replace the table with its raw source.
 
-The optional separator and the caption are lines of their own. A caret on the
-separator maps to that blank line, never to the nearest table cell. A caret in
-the caption maps through the caption source, never through a cell.
+The optional separator is retained in the source and in block grouping but has
+no editor DOM node. A caret in the caption maps through the caption source, never
+through a cell.
 
 The table-cell mapper is bounded by the table's own source. An offset at the end
 of the last row may resolve to that row's final cell; every offset on the next
@@ -236,12 +235,11 @@ Both caption forms are editable:
 
 - a caption directly after the table is reached by clicking the rendered
   caption;
-- a caption after one blank separator is reached by clicking either the blank
-  line or the rendered caption;
-- deleting the separator while the caption source is active joins the caption
-  directly to the table;
-- adding one blank line keeps the caption recognized but changes its source
-  range.
+- a caption after one source separator is reached by the same rendered caption;
+- at the start of the revealed caption source, `Backspace` removes the source
+  separator and joins the caption directly to the table;
+- at the same position, `Enter` adds one source separator while keeping the
+  caption recognized.
 
 `Enter` in the last table cell keeps its existing behavior: it creates an empty
 line after the table and puts the caret there. Each subsequent keystroke remains

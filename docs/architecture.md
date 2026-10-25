@@ -59,7 +59,7 @@ taking — is `docs/structure.md`.
 | Automatic cross-references | `syntax/auto_references.ts` scans `[#id]`, `plugins/remark-auto-references.ts` creates the inline node, and `nodes/auto_reference.ts` renders the resolved target text |
 | Reference targets and numbering | `document/reference_index.ts` owns document order, heading IDs, figure and captioned-table numbering, duplicates, and display labels; `document/state.ts: referenceEntries` caches it for the current text |
 | Figures | `syntax/figures.ts` recognizes Pandoc implicit figures and separates trailing attributes; `nodes/figure.ts` renders the image, number, caption, and complete source view |
-| Table captions and export | `nodes/table_caption.ts` renders and reveals a caption; `create_block.ts` groups the table, optional separator, and caption; `ui/export/table_rewrites.ts` lowers non-LaTeX output through `table_html.ts`; `ui/export/reference_header.ts` defines the LaTeX/PDF counter macro |
+| Table captions and export | `nodes/table_caption.ts` renders and reveals a caption; `create_block.ts` groups the table, source-only separator, and caption without rendering the blank separator; `ui/export/table_rewrites.ts` lowers non-LaTeX output through `table_html.ts`; `ui/export/reference_header.ts` defines the LaTeX/PDF counter macro |
 
 `test/checks/syntax-home.mjs` fails if any of those facts is defined anywhere else.
 

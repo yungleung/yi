@@ -616,7 +616,9 @@ image, caption, and computed number. `auto-references.js`, `figure-rendering.js`
 source mapper is bounded by the pipe rows, so a caret after the table never resolves to its last
 cell. `syntax/table_captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
 block, and preserves the exact table/caption source on the table node. `create_block.ts` groups the
-three lines; `nodes/table_caption.ts` numbers the caption and reveals the complete line for editing.
+three lines but renders no node for the optional separator, so a direct and separated caption have
+the same appearance; `nodes/table_caption.ts` numbers the caption and reveals the complete line for
+editing. At the caption source's start, `Enter` adds the separator and `Backspace` removes it.
 `document/reference_index.ts` counts every captioned table but targets only one with an ID. The
 non-LaTeX lowering lives in `ui/export/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
 `\yiTableRef`, written by `ui/export/reference_header.ts` and the run-local Rust header file.

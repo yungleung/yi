@@ -513,10 +513,6 @@ body {
   font-size: 0.875em;
 }
 
-.markdown-table-blank + .markdown-table-caption {
-  margin-top: 0;
-}
-
 .markdown-table-caption-source {
   display: block;
   margin-top: 0.25rem;
@@ -526,20 +522,6 @@ body {
 .markdown-table-number {
   font-weight: 600;
   white-space: nowrap;
-}
-
-/* The table and its caption share one block. Their source separator is therefore the normal
-   paragraph gap, not a second visible line; the empty span below it keeps the document offset
-   and the caret target. */
-.markdown-table-blank {
-  height: var(--md-space-paragraph);
-  line-height: 0;
-  cursor: text;
-}
-
-.markdown-table-blank > span {
-  display: block;
-  height: 100%;
 }
 
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.

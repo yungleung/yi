@@ -104,8 +104,9 @@ while the caret is elsewhere and its own text, delimiters and all, while the car
 blank line under the block; `placeholder-boxes` — a blank paragraph, an empty list item, an empty
 table cell and an empty fenced body hold no character, keep their line, and put the caret on it;
 `list-marker-ink` — a list's bullet or number stands off the page it is drawn on, in both themes),
-tables (`table-caption-editing` — a caption below its table, its optional separator, source reveal,
-label, target ID, and direct/one-blank forms; `table-caption-crossrefs` — configured labels and
+tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that
+can be added or removed from the caption source boundary, source reveal, label, target ID, and
+direct/one-blank forms; `table-caption-crossrefs` — configured labels and
 prefixes, automatic-reference text, and command-click into the first header cell;
 `table-crossrefs-default-document` — the fixture's caption-only, ID-only, and labeled tables,
 manual and automatic links, unapplied `.margin`, and navigation; `table-blank-line-typing` — a

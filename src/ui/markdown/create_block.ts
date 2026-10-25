@@ -133,36 +133,9 @@ class BlockView implements BlockComponent {
       if (caption.id !== null) {
         element.id = caption.id;
       }
-      if (caption.separatorFrom !== null) {
-        element.appendChild(this.tableSeparator(caption.separatorFrom));
-      }
       element.appendChild(new TableCaption(caption).element);
     }
     return element;
-  }
-
-  /** The normal block gap that also names Pandoc's one allowed separator line. */
-  private tableSeparator(from: number): HTMLElement {
-    const separator = document.createElement('div');
-    separator.className = 'markdown-table-blank';
-    const placeholder = document.createElement('span');
-    placeholder.className = 'markdown-empty-line-placeholder markdown-node';
-    setOffset(placeholder, TEXT_FROM, from);
-    placeholder.appendChild(document.createTextNode(''));
-    separator.appendChild(placeholder);
-    separator.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const text = placeholder.firstChild;
-      if (!text) {
-        return;
-      }
-      const caret = document.createRange();
-      caret.setStart(text, 0);
-      caret.collapse(true);
-      showCaret(caret);
-      (this.element.closest('.prose') as HTMLElement | null)?.focus({ preventScroll: true });
-    });
-    return separator;
   }
 
   /**
