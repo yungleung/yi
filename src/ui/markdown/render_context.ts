@@ -31,6 +31,8 @@ export interface RenderContext {
   referenceText(id: string): { text: string; resolved: boolean };
   /** The localized figure label at this document offset, or null. */
   figureLabelAt(from: number): string | null;
+  /** The configured table label at this document offset, or null. */
+  tableLabelAt(from: number): string | null;
 }
 
 /** What a rendering gets when the app has said nothing. */
@@ -40,7 +42,8 @@ const nothing: RenderContext = {
   imageSources: (_destination) => [],
   headingId: (_from) => null,
   referenceText: (id) => ({ text: `#${id}`, resolved: false }),
-  figureLabelAt: (_from) => null
+  figureLabelAt: (_from) => null,
+  tableLabelAt: (_from) => null
 };
 
 let current: RenderContext = nothing;

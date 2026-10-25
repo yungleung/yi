@@ -68,8 +68,6 @@ export interface ImageBases {
 export interface ExportAnswers {
   /** The export kind whose portability rules this run follows. */
   kind: string;
-  /** Reads the app's localized words used by generated reference text and captions. */
-  translate(key: string): string;
   titleOf: TitleLookup;
   bases: ImageBases;
   exists: FileExists;
@@ -131,7 +129,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
   const rewritten = applyRewrites(text, [
-    ...autoReferenceRewrites(tree, references, answers),
+    ...autoReferenceRewrites(tree, references),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...(await imageRewrites(tree, answers, fetched, figures)),
@@ -188,14 +186,13 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
 /** Automatic references, as ordinary links with the target's inferred text. */
 function autoReferenceRewrites(
   tree: Walkable,
-  references: readonly ReferenceEntry[],
-  answers: ExportAnswers
+  references: readonly ReferenceEntry[]
 ): Rewrite[] {
   return spansOfType(tree, 'autoReference').map((span) => {
     const node = span.node as { id: string };
     const target = firstReference(references, node.id);
     const text = target
-      ? referenceLabel(target, (key) => answers.translate(key))
+      ? referenceLabel(target)
       : `#${node.id}`;
     return {
       start: span.start,
@@ -221,8 +218,7 @@ async function figureRewrites(
     const entry = references.find(
       (candidate) => candidate.kind === 'figure' && candidate.from === span.start
     );
-    const number = entry?.number ?? null;
-    const label = number === null ? null : `${answers.translate('reference.figure')} ${number}`;
+    const label = entry === undefined ? null : referenceLabel(entry);
     if (answers.kind === 'markdown') {
       rewrites.push({
         start: span.start,

@@ -132,7 +132,9 @@ export class MarkdownEditorState {
   parseKey(block: MarkdownBlock): string {
     const key = blockContentKey(block);
     const labeled = containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
-    return block.text.includes('[#') || /(?:^|\n)[ \t]*!\[/.test(block.text)
+    return block.text.includes('[#') ||
+      /(?:^|\n)[ \t]*!\[/.test(block.text) ||
+      /(?:^|\n):\s+/.test(block.text)
       ? `${labeled}:references@${this.referencesVersion}`
       : labeled;
   }

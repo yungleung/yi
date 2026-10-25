@@ -29,5 +29,5 @@ export function jumpToReference(context: EditorContext, destination: string): bo
     return true;
   }
   context.renderer.revealOffset(target.from);
-  return restoreCaret(context, target.from);
+  return restoreCaret(context, target.caretAt ?? target.from);
 }

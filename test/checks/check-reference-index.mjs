@@ -92,6 +92,42 @@ check(
   'Figure 1'
 );
 
+const withTables = referenceIndex(
+  '| A |\n| --- |\n| 1 |\n: First caption\n\n' +
+    '| B |\n| --- |\n| 2 |\n\n: Second caption {#tbl:second}\n\n' +
+    '| C |\n| --- |\n| 3 |\n'
+);
+check(
+  'every captioned table is numbered in document order',
+  withTables
+    .filter((entry) => entry.kind === 'table')
+    .map((entry) => [entry.id, entry.number, entry.title]),
+  [
+    [null, 1, 'First caption'],
+    ['tbl:second', 2, 'Second caption']
+  ]
+);
+check(
+  'a table automatic reference uses the document label',
+  referenceLabel(withTables.find((entry) => entry.id === 'tbl:second')),
+  'Table 2'
+);
+check(
+  'an ID-only table is a numbered target',
+  referenceIndex('| A |\n| --- |\n| 1 |\n: {#tbl:id}\n').find(
+    (entry) => entry.kind === 'table'
+  )?.number,
+  1
+);
+
+const configuredTables = referenceIndex(
+  '---\nreference-labels:\n  table: Data table\nreference-number-prefixes:\n  table: "2-"\n---\n\n' +
+    '| A | B |\n| --- | --- |\n| 1 | 2 |\n: Results {#tbl:x}\n'
+);
+const configuredTable = configuredTables.find((entry) => entry.kind === 'table');
+check('a table uses its configured label and prefix', referenceLabel(configuredTable), 'Data table 2-1');
+check('a table target starts at its first header cell', configuredTable?.caretAt, 90);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

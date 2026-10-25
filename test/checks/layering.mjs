@@ -17,7 +17,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 
 const syntaxDirectory = 'src/ui/markdown/syntax';
 const markdownDirectory = 'src/ui/markdown';
-const parserLibraries = /^(?:unified|remark-[\w.-]+|mdast[\w./-]*|micromark[\w./-]*)$/;
+const parserLibraries = /^(?:unified|remark-[\w.-]+|mdast[\w./-]*|micromark[\w./-]*|yaml)$/;
 
 const files = readdirSync(syntaxDirectory)
   .filter((name) => name.endsWith('.ts'))

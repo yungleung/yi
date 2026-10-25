@@ -18,7 +18,6 @@ import { eventManager } from '../../services/event_manager';
 import type { AppEventName } from '../../services/app_events';
 import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
 import { documentManager } from '../../services/document_manager';
-import { t } from '../../services/i18n';
 import { imageSourceCandidates } from '../image/image_urls';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
@@ -172,16 +171,20 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       referenceText: (id) => {
         const target = firstReference(this.state.referenceEntries(), id);
         return target
-          ? { text: referenceLabel(target, (key) => t(key)), resolved: true }
+          ? { text: referenceLabel(target), resolved: true }
           : { text: `#${id}`, resolved: false };
       },
       figureLabelAt: (from) => {
         const target = this.state.referenceEntries().find(
           (entry) => entry.kind === 'figure' && entry.from === from
         );
-        return target?.number == null
-          ? null
-          : `${t('reference.figure')} ${target.number}`;
+        return target?.number == null ? null : referenceLabel(target);
+      },
+      tableLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'table' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
       }
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
