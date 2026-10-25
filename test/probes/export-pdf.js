@@ -171,8 +171,18 @@
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
       { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
     );
-    const page =
-      pdf === null ? '' : (await t.pdfText(pdf)).normalize('NFKC').replace(/\s+/g, '');
+    let page = '';
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const current = await bytesOf(target);
+      page =
+        current === null
+          ? ''
+          : (await t.pdfText(current)).normalize('NFKC').replace(/\s+/g, '');
+      if (page.includes('Diagram2-1') && page.includes('Codeexcerpt2-1')) {
+        break;
+      }
+      await sleep(100);
+    }
     check(
       'document labels and literal prefixes reach native PDF captions',
       page.includes('Diagram2-1') && page.includes('Codeexcerpt2-1'),
