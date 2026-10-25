@@ -18,6 +18,8 @@
   const source = ': Results {#tbl:results .margin owner=demo}';
   await t.load(
     '# Table\n\n' +
+      'Before\n\n\n' +
+      'After\n\n' +
       '| A | B |\n' +
       '| --- | --- |\n' +
       '| 1 | 2 |\n\n' +
@@ -25,11 +27,31 @@
   );
   const block = t.blocks().find((element) => element.textContent.includes('Results'));
   const caption = block?.querySelector('.markdown-table-caption');
+  const ordinaryBlank = t.prose().querySelector('.markdown-blank p.markdown-empty-line');
+  const tableBlank = caption?.previousElementSibling;
+  const ordinaryBlankBlock = ordinaryBlank?.closest('.markdown-block') ?? null;
+  const ordinaryBlankNext = ordinaryBlankBlock?.nextElementSibling ?? null;
+  const ordinaryGap =
+    ordinaryBlankBlock === null || ordinaryBlankNext === null
+      ? null
+      : Math.round(
+          ordinaryBlankNext.getBoundingClientRect().top -
+            ordinaryBlankBlock.getBoundingClientRect().bottom
+        );
+  const tableGap =
+    tableBlank === null || caption === null
+      ? null
+      : Math.round(caption.getBoundingClientRect().top - tableBlank.getBoundingClientRect().bottom);
   check('the table and caption are one block', block?.classList.contains('markdown-table-block') ?? false, true);
   check('the block carries the target ID', block?.id ?? null, 'tbl:results');
   check('the caption carries its generated label', caption?.querySelector('.markdown-table-number')?.textContent ?? null, 'Table 1.');
   check('the caption carries its text', caption?.textContent?.trim() ?? null, 'Table 1. Results');
   check('the optional separator has a line box', (caption?.previousElementSibling?.getBoundingClientRect().height ?? 0) > 0, true);
+  check(
+    'the caption follows the separator at the same gap as a block after a blank line',
+    tableGap,
+    ordinaryGap
+  );
   check('unrelated classes are not applied to the editor DOM', block?.classList.contains('margin') ?? true, false);
 
   if (caption) {

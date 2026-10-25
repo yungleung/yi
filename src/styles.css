@@ -513,6 +513,10 @@ body {
   font-size: 0.875em;
 }
 
+.markdown-table-blank + .markdown-table-caption {
+  margin-top: 0;
+}
+
 .markdown-table-caption-source {
   display: block;
   margin-top: 0.25rem;
@@ -524,9 +528,10 @@ body {
   white-space: nowrap;
 }
 
-.prose-tight p.markdown-table-blank {
-  min-height: var(--md-line);
-  margin: 0;
+/* The table and its caption share one block, so there is no block boundary to absorb a
+   paragraph's bottom margin. The separator's line box is the blank itself. */
+.prose-tight p.markdown-empty-line.markdown-table-blank {
+  margin-bottom: 0;
 }
 
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.
