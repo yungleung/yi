@@ -212,7 +212,6 @@ fn nanos() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write as _;
 
     fn temp_dir() -> std::path::PathBuf {
         let folder = std::env::temp_dir().join(format!(

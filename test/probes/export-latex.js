@@ -73,6 +73,24 @@
     'See [#fig:demo] for the numbered figure.',
     '',
     `![Demo figure](${picture}){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
     ''
   ].join('\n');
 
@@ -258,6 +276,30 @@
         label: /\\label\{fig:demo\}/.exec(tex)?.[0] ?? null,
         link: /\\hyperref\[fig:demo\]\{[^}]*\}/.exec(tex)?.[0] ?? null,
         caption: /\\caption\{[^}]*\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'a table keeps its native caption and label while its reference uses the package counter',
+      tex.includes('\\yiTableRef{tbl:results}') &&
+        /\\label\{tbl:results\}/.test(tex) &&
+        /\\caption\{Results\}/.test(tex) &&
+        /\\caption\{Numbered without an ID\}/.test(tex) &&
+        /\\label\{tbl:only\}/.test(tex),
+      {
+        reference: tex.includes('\\yiTableRef{tbl:results}'),
+        label: /\\label\{tbl:results\}/.exec(tex)?.[0] ?? null,
+        caption: /\\caption\{Results\}/.exec(tex)?.[0] ?? null,
+        captionOnly: /\\caption\{Numbered without an ID\}/.exec(tex)?.[0] ?? null,
+        idOnly: /\\label\{tbl:only\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'the table-reference header is part of the exported LaTeX document',
+      tex.includes('\\providecommand{\\yiTableRef}[1]') &&
+        tex.includes('\\renewcommand{\\tablename}{Table}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiTableRef}[1]'),
+        label: tex.includes('\\renewcommand{\\tablename}{Table}')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

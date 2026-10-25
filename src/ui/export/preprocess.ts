@@ -132,7 +132,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
   const rewritten = applyRewrites(text, [
-    ...autoReferenceRewrites(tree, references),
+    ...autoReferenceRewrites(tree, references, answers.kind),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...(await imageRewrites(tree, answers, fetched, figures, tables)),
@@ -190,11 +190,22 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
 /** Automatic references, as ordinary links with the target's inferred text. */
 function autoReferenceRewrites(
   tree: Walkable,
-  references: readonly ReferenceEntry[]
+  references: readonly ReferenceEntry[],
+  kind: string
 ): Rewrite[] {
   return spansOfType(tree, 'autoReference').map((span) => {
     const node = span.node as { id: string };
     const target = firstReference(references, node.id);
+    if (
+      target?.kind === 'table' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiTableRef{${latexLabel(node.id)}}`
+      };
+    }
     const text = target
       ? referenceLabel(target)
       : `#${node.id}`;
@@ -204,6 +215,11 @@ function autoReferenceRewrites(
       text: `[${escapeLinkText(text)}](#${encodeFragment(node.id)})`
     };
   });
+}
+
+/** An identifier used as one LaTeX label argument. */
+function latexLabel(id: string): string {
+  return id.replace(/\\/g, '\\textbackslash{}').replace(/}/g, '\\}');
 }
 
 /** Figures, as processed-Markdown HTML or native Pandoc Markdown. */

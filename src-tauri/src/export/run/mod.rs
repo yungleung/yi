@@ -123,6 +123,9 @@ pub struct ExportRequest {
     /// Pictures the note refers to, copied into a generated bundle beside a LaTeX source.
     #[serde(default)]
     pub note_assets: Vec<NoteAsset>,
+    /// The generated TeX header for table references, or the empty string.
+    #[serde(default)]
+    pub reference_header: String,
 }
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
 pub fn run_export(
@@ -213,6 +216,9 @@ fn export_with_pandoc(
             crate::fonts::bundled::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
+    let reference_header =
+        super::reference_header::write_reference_header(&dir, &request.reference_header)?;
+    let headers: Vec<_> = header.iter().chain(reference_header.iter()).cloned().collect();
     let note = write_note(&dir, &request.text)?;
     let result = pandoc_arguments(
         &dir,
@@ -220,7 +226,7 @@ fn export_with_pandoc(
         &note,
         request,
         kind,
-        header.as_deref(),
+        &headers,
         template_defaults.as_deref(),
         template
             .as_ref()
@@ -270,6 +276,9 @@ fn export_with_pandoc(
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.
     let _ = fs::remove_file(&note);
+    if let Some(header) = &reference_header {
+        let _ = fs::remove_file(header);
+    }
     if let Some((root, _)) = &alias {
         let _ = fs::remove_dir_all(root);
     }

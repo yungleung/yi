@@ -34,6 +34,9 @@ function Table(tbl)
   if caption ~= '' then
     lines[#lines + 1] = '\\caption{' .. caption .. '}'
   end
+  if tbl.attr.identifier ~= '' then
+    lines[#lines + 1] = '\\label{' .. tbl.attr.identifier .. '}'
+  end
   lines[#lines + 1] = '\\begin{tabular}{' .. table.concat(spec) .. '}'
   lines[#lines + 1] = '\\toprule'
 

@@ -50,8 +50,25 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  const note =
-    '# Going out\n\nA short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].\n';
+  const note = [
+    '---',
+    'reference-number-prefixes:',
+    '  table: X-',
+    '---',
+    '',
+    '# Going out',
+    '',
+    'A short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].',
+    '',
+    'See [#tbl:results] for the table.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results}',
+    ''
+  ].join('\n');
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -96,7 +113,7 @@
     await show(notePath, note);
     check(
       'the note the probe opened is the document on screen',
-      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      (document.querySelector('.prose')?.textContent ?? '').includes('Going out'),
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
@@ -138,6 +155,16 @@
       'and a real PDF comes out, through the TeX engine the settings file names',
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
       { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
+    );
+    const text = pdf === null ? '' : await t.pdfText(pdf);
+    check(
+      'and the automatic reference and caption use the note’s literal table prefix',
+      text.includes('SeeTableX-1forthetable.') && text.includes('TableX-1:Results'),
+      {
+        text,
+        reference: /SeeTable[^f]+forthetable\./.exec(text)?.[0] ?? null,
+        caption: /Table[^:]+:Results/.exec(text)?.[0] ?? null
+      }
     );
 
   } finally {

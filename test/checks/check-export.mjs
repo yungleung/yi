@@ -318,6 +318,40 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(table, { kind });
+    check(
+      `${kind} automatic table references use the native counter`,
+      rendered,
+      'See \\yiTableRef{tbl:results}.\n\n' +
+        '| Name | Result |\n' +
+        '| --- | --- |\n' +
+        '| alpha | one |\n\n' +
+        ': Results {#tbl:results .margin owner=demo}\n'
+    );
+  }
+}
+
+{
+  const manual =
+    'See [the results](#tbl:results).\n\n' +
+    '| A |\n' +
+    '| --- |\n' +
+    '| 1 |\n' +
+    ': Results {#tbl:results}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(manual, { kind });
+    check(`${kind} keeps an author's manual table link text`, rendered, manual);
+  }
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';

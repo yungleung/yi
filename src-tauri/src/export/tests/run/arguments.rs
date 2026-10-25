@@ -26,7 +26,7 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
             ..request
         },
         kind_of("pdf").unwrap(),
-        Some(&header),
+        &[header.clone()],
         None,
         None,
         None,
@@ -42,6 +42,45 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
     assert_eq!(arguments[at + 1], header.to_string_lossy());
     // And nothing stands in for the settings file: it is still named, as it always was.
     assert!(arguments.contains(&dir.join("export.pdf.yaml").to_string_lossy().into_owned()));
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Font and table headers are separate run files, and both reach Pandoc in the order the window
+/// built them: the shipped faces first, then the note's table-reference contract.
+#[test]
+fn every_generated_header_reaches_pandoc_in_order() {
+    let dir = scratch("headers");
+    let request = request_in(&dir);
+    let font = dir.join("pdf-fonts.tex");
+    let table = dir.join("reference-header.tex");
+    let arguments = pandoc_arguments(
+        &dir,
+        &dir.join("export.pdf.yaml"),
+        &dir.join("note-1.md"),
+        &request,
+        kind_of("pdf").unwrap(),
+        &[font.clone(), table.clone()],
+        None,
+        None,
+        None,
+    )
+    .unwrap()
+    .iter()
+    .map(|argument| argument.to_string_lossy().into_owned())
+    .collect::<Vec<String>>();
+    let headers = arguments
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| *index > 0 && arguments[index - 1] == "--include-in-header")
+        .map(|(_, argument)| argument.clone())
+        .collect::<Vec<String>>();
+    assert_eq!(
+        headers,
+        vec![
+            font.to_string_lossy().into_owned(),
+            table.to_string_lossy().into_owned()
+        ]
+    );
     let _ = fs::remove_dir_all(&dir);
 }
 
@@ -137,7 +176,7 @@ fn a_selected_package_names_its_entry_style_and_resource_path() {
         &dir.join("note-1.md"),
         &request,
         kind_of("latex").unwrap(),
-        None,
+        &[],
         None,
         Some((&package, &manifest)),
         None,
@@ -216,7 +255,7 @@ fn package_defaults_override_the_app_defaults_before_explicit_arguments() {
         &dir.join("note-1.md"),
         &request,
         kind_of("latex").unwrap(),
-        None,
+        &[],
         Some(&package_defaults),
         Some((&package, &manifest)),
         None,
@@ -278,7 +317,7 @@ fn a_reference_package_is_handed_as_the_binary_pandoc_reads() {
         &dir.join("note-1.md"),
         &request,
         kind_of("docx").unwrap(),
-        None,
+        &[],
         None,
         Some((&package, &manifest)),
         None,
@@ -478,7 +517,7 @@ fn a_page_a_reader_asks_for_is_a_geometry_option() {
         &dir.join("note-1.md"),
         &request,
         kind_of("pdf").unwrap(),
-        None,
+        &[],
         None,
         None,
         None,

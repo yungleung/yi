@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 
 /// The whole of what the app asks pandoc for: the kind's own defaults file, the destination, the
 /// folders a relative destination is resolved against, the library and the style the citations came
-/// from, the header that wires in the fonts this build ships (`fonts::bundled`), and the note itself.
+/// from, the run's generated headers, and the note itself.
 ///
 /// The header goes on the command line rather than into the reader's defaults file: pandoc *adds* a
 /// `--include-in-header` to whatever that file lists (measured), so the reader's own file is still
@@ -26,7 +26,7 @@ pub(crate) fn pandoc_arguments(
     note: &Path,
     request: &ExportRequest,
     kind: &ExportKind,
-    header: Option<&Path>,
+    headers: &[PathBuf],
     package_defaults: Option<&Path>,
     template: Option<(&Path, &TemplateManifest)>,
     alias_root: Option<&Path>,
@@ -41,7 +41,7 @@ pub(crate) fn pandoc_arguments(
     }
     arguments.push(OsString::from("--output"));
     arguments.push(output.into_os_string());
-    if let Some(header) = header {
+    for header in headers {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
     }
