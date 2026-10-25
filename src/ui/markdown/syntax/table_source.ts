@@ -43,6 +43,10 @@ export interface TableRow {
 }
 
 export interface TableSource {
+  /** The first character of the header row. */
+  from: number;
+  /** The last character of the final row. */
+  to: number;
   /** The header row, then the body rows: the delimiter line is not a row. */
   rows: TableRow[];
   delimiter: { start: number; end: number };
@@ -235,6 +239,8 @@ export function readTableSource(text: string, at?: number): TableSource | null {
     rows.push(buildRow(lineIndex, lineIndex - header - 1, 'body'));
   }
   return {
+    from: rows[0].start,
+    to: rows[rows.length - 1].end,
     rows,
     delimiter: { start: spans[header + 1].start, end: spans[header + 1].end },
     columns: delimiterRanges.length,
@@ -248,12 +254,15 @@ export function rowAt(source: TableSource, row: number): TableRow | null {
 }
 
 /**
- * The cell whose inner range holds `offset`, or — when the offset falls
- * between cells, on a pipe or past the table's end — the cell nearest to it.
- * "Nearest" rather than "first": an offset just past the last cell belongs to
- * that cell, not to the one at the other end of the table.
+ * The cell whose inner range holds `offset`, or — when the offset falls on a
+ * pipe or between two cells in the same table — the cell nearest to it.
+ * "Nearest" rather than "first" keeps boundary positions on the side of the
+ * table they belong to. Offsets before or after the table have no cell.
  */
 export function locateCell(source: TableSource, offset: number): TableCellSpan | null {
+  if (offset < source.from || offset > source.to) {
+    return null;
+  }
   let nearest: TableCellSpan | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const row of source.rows) {

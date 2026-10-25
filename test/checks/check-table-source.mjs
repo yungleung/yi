@@ -87,6 +87,20 @@ check(
   1
 );
 
+const bounded = readTableSource('| a | b |\n| --- | --- |\n| 1 | 2 |');
+check('the source exposes where the table begins', bounded.from, 0);
+check('the source exposes where the table ends', bounded.to, 33);
+check(
+  'an offset after the table has no cell',
+  locateCell(bounded, bounded.to + 1),
+  null
+);
+check(
+  'the last row end still belongs to its cell',
+  locateCell(bounded, bounded.to)?.row,
+  1
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
