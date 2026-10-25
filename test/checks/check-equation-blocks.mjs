@@ -21,6 +21,7 @@ await bundle.close();
 const file = join(directory, 'equation_blocks.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
+  equationsForParsers,
   innerEquationBody,
   latexEquationBody,
   readDisplayMath,
@@ -119,6 +120,28 @@ check(
   latexEquationBody(readEquationBody('x'), 'eq:plain'),
   '\\begin{equation}\nx\n\\label{eq:plain}\n\\end{equation}'
 );
+
+const parserInput =
+  '[$$\nx\n$$]{#eq:x}\n\n' +
+  '![After](after.png){#fig:after}\n';
+const safeInput = equationsForParsers(parserInput);
+check('parser input keeps every source offset', safeInput.length, parserInput.length);
+check(
+  'parser input leaves display math where the wrapper was',
+  safeInput,
+  ' $$\nx\n$$        \n\n![After](after.png){#fig:after}\n'
+);
+for (const [name, literal] of [
+  ['fenced code', '```md\n[$$\nx\n$$]{#eq:x}\n```\n'],
+  ['display math', '$$\n[$$\nx\n$$]{#eq:x}\n$$\n'],
+  ['frontmatter', '---\nsample: |\n  [$$\n  x\n  $$]{#eq:x}\n---\n']
+]) {
+  check(
+    `${name} keeps wrapper characters as literal source`,
+    equationsForParsers(literal),
+    literal
+  );
+}
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

@@ -27,11 +27,29 @@ export class Equation extends EditableNodeComponent {
       document.createElement('div'),
       'markdown-equation-view markdown-display-math overflow-x-auto'
     );
-    this.bodyEnd = source.mathTo;
+    this.bodyEnd = entryOffset(source);
     this.element.innerHTML = renderKatexHtml(math, true);
   }
 
   override placeCaretAt(): void {
     enterSourceOf(this.element, this.bodyEnd);
   }
+}
+
+/** The end of the environment's last content line, or the plain formula's end. */
+function entryOffset(source: EquationBlockSource): number {
+  const environment = source.body.environment;
+  if (environment === null) {
+    return source.mathTo;
+  }
+  const closing = `\\end{${environment}${source.body.starred ? '*' : ''}}`;
+  const at = source.math.lastIndexOf(closing);
+  if (at < 0) {
+    return source.mathTo;
+  }
+  let end = at;
+  while (end > 0 && /\s/.test(source.math[end - 1] ?? '')) {
+    end -= 1;
+  }
+  return source.mathFrom + end;
 }

@@ -627,6 +627,19 @@ and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editi
 `table-crossrefs-default-document.js` hold the editor behavior; the export probes hold each kind,
 and `export-pdf-table-template.js` proves the package counter contract.
 
+**A labeled equation is one bracketed display-math block, never one target per
+environment row.** `syntax/equation_blocks.ts` owns `[$$…$$]{…#id}` parsing,
+the `[$$` autocomplete skeleton, and the environment matrix. Plain or
+environment math is lowered before KaTeX so no native automatic tag can depend
+on virtualization. `create_block.ts` and `nodes/equation.ts` render one Yi
+label and reveal the complete wrapper; `document/reference_index.ts` indexes
+only labeled blocks. `ui/export/equation_rewrites.ts` gives HTML/EPUB/DOCX/ODT a
+single target and label, `equation_html.ts` writes processed-Markdown MathML,
+and LaTeX/PDF get one outer `equation` with `\yiEquationRef`. The default
+fixture contains every matrix row with and without an ID;
+`equation-matrix-default-document.js`, `equation-rendering.js`,
+`equation-crossrefs.js`, and `export-pdf-equation-template.js` hold the feature.
+
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
 reader scrolls back, and a caret whose block was dropped is placed again once it is there — but

@@ -251,6 +251,128 @@ normal `\caption{…}` and `\label{…}` output. Do not hard-code the visible nu
 `\caption*` for a numbered table, or replace the shared LaTeX table counter with a separate one.
 The included template examples show the expected filter shape.
 
+### Equations
+
+Ordinary display math remains ordinary Markdown:
+
+```markdown
+$$
+E = mc^2
+$$
+```
+
+It renders as a formula but has no target and no equation number.
+
+A targetable equation wraps the complete display-math block in a Pandoc bracketed Span:
+
+```markdown
+[$$
+E = mc^2
+$$]{#eq:energy}
+```
+
+The attribute block belongs after `$$]`; it may contain classes and key/value attributes:
+
+```markdown
+[$$
+\begin{aligned}
+E &= mc^2\\
+p &= mv
+\end{aligned}
+$$]{#eq:relations .wide data-owner=demo}
+```
+
+`$${#eq:energy}` is not a target. Pandoc reads `{#eq:energy}` as math content. The final
+`[$$…$$]{#id}` form is the supported syntax.
+
+Typing `[$$` at the start of an empty line creates:
+
+```markdown
+[$$
+
+$$]{}
+```
+
+The caret lands on the formula body. The empty `{}` is the attribute placeholder; attach an ID to
+make the equation targetable.
+
+#### Equation environments and IDs
+
+KaTeX supports the following equation-related forms. Every row behaves as shown both with and
+without an ID:
+
+| Source body | No ID | With `#eq:id` |
+| --- | --- | --- |
+| Plain formula | Unnumbered; no target | One number and target |
+| `equation` | Native number suppressed | One target; body used inside the generated equation |
+| `equation*` | Already unnumbered | One target |
+| `align` | Row numbers suppressed | `aligned` inside one generated equation |
+| `align*` | Already unnumbered | `aligned` inside one generated equation |
+| `aligned` | Already unnumbered | Existing inner layout inside one generated equation |
+| `gather` | Row numbers suppressed | `gathered` inside one generated equation |
+| `gather*` | Already unnumbered | `gathered` inside one generated equation |
+| `gathered` | Already unnumbered | Existing inner layout inside one generated equation |
+| `alignat` | Row numbers suppressed | `alignedat` inside one generated equation |
+| `alignat*` | Already unnumbered | `alignedat` inside one generated equation |
+| `alignedat` | Already unnumbered | Existing inner layout inside one generated equation |
+| `split` | Already unnumbered | Existing inner layout inside one generated equation |
+
+One display-math block is one target regardless of how many rows its environment contains.
+Individual-row references are outside this release.
+
+#### Equation references and labels
+
+Use an automatic reference when Yi should infer the label:
+
+```markdown
+See [#eq:energy].
+```
+
+The default display text is `Equation (1)`. A manual link remains ordinary Markdown:
+
+```markdown
+See [the energy relation](#eq:energy).
+```
+
+Its text is author-controlled. `[text]{#id}` is a bracketed Span, not a link, and is not a reference
+form.
+
+The equation label and literal number prefix come from the note's frontmatter:
+
+```yaml
+reference-labels:
+  equation: Formula
+reference-number-prefixes:
+  equation: "2-"
+```
+
+With those values, the first equation displays `Formula (2-1)`. A missing or blank value falls back
+to `Equation` and an empty prefix.
+
+Clicking the rendered equation reveals the complete `[$$…$$]{…}` source. ⌘-click or Ctrl-click an
+automatic or manual reference to reveal the equation and place the caret at the start of its formula
+body. The browser location hash is not changed.
+
+#### Equation export
+
+Native equation-environment numbering is suppressed in the editor and every export:
+
+- HTML receives an unnumbered KaTeX body and one visible Yi number.
+- EPUB receives one ID-bearing target and one visible number, even if its template later selects
+  KaTeX or MathJax.
+- Word and ODT receive an ID-bearing target, one visible number, and a formula without row numbers.
+- LaTeX and PDF receive exactly one generated outer `equation`; multi-row user environments are
+  lowered to `aligned`, `gathered`, or `alignedat` inside it.
+- Processed Markdown emits an ID-bearing HTML block containing KaTeX-generated MathML and one
+  visible number.
+
+An automatic LaTeX/PDF equation reference becomes `\yiEquationRef{id}` and reads the document's
+final `\theequation`. A template can therefore redefine the equation counter without conflicting
+with Yi's visible numbering.
+
+Explicit author `\tag{…}` is not Yi numbering. It remains author-controlled math content and is not
+part of automatic equation-reference resolution.
+
 ## Export a note
 
 **File → Export** offers these kinds:

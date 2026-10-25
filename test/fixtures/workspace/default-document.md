@@ -1,8 +1,10 @@
 ---
 reference-labels:
   table: Data table
+  equation: Formula
 reference-number-prefixes:
   table: "2-"
+  equation: "2-"
 ---
 
 # GitHub-flavored markdown demo
@@ -79,6 +81,229 @@ $$
 \frac{d}{dx}(\sin x) = \cos x \\ \frac{d}{dx}(\cos x) = -\sin x \\
 e^{i 2\pi} = 1
 $$
+
+## Equation cross-references
+
+The display formula above is the “no environment, no ID” case: standard display math with no
+equation target. See [#eq:plain] or [the first labeled formula](#eq:plain).
+
+No environment, with an ID:
+
+[$$
+e_0 = 1
+$$]{#eq:plain}
+
+`equation` without an ID:
+
+$$
+\begin{equation}
+e_1 = 1
+\end{equation}
+$$
+
+`equation` with an ID:
+
+[$$
+\begin{equation}
+e_2 = 1
+\end{equation}
+$$]{#eq:equation}
+
+`equation*` without an ID:
+
+$$
+\begin{equation*}
+e_3 = 1
+\end{equation*}
+$$
+
+`equation*` with an ID:
+
+[$$
+\begin{equation*}
+e_4 = 1
+\end{equation*}
+$$]{#eq:equation-star}
+
+`align` without an ID:
+
+$$
+\begin{align}
+a_1 &= 1\\
+a_2 &= 2
+\end{align}
+$$
+
+`align` with an ID:
+
+[$$
+\begin{align}
+a_3 &= 1\\
+a_4 &= 2
+\end{align}
+$$]{#eq:align}
+
+`align*` without an ID:
+
+$$
+\begin{align*}
+a_5 &= 1\\
+a_6 &= 2
+\end{align*}
+$$
+
+`align*` with an ID:
+
+[$$
+\begin{align*}
+a_7 &= 1\\
+a_8 &= 2
+\end{align*}
+$$]{#eq:align-star}
+
+`aligned` without an ID:
+
+$$
+\begin{aligned}
+a_9 &= 1\\
+a_{10} &= 2
+\end{aligned}
+$$
+
+`aligned` with an ID:
+
+[$$
+\begin{aligned}
+a_{11} &= 1\\
+a_{12} &= 2
+\end{aligned}
+$$]{#eq:aligned}
+
+`gather` without an ID:
+
+$$
+\begin{gather}
+g_1 = 1\\
+g_2 = 2
+\end{gather}
+$$
+
+`gather` with an ID:
+
+[$$
+\begin{gather}
+g_3 = 1\\
+g_4 = 2
+\end{gather}
+$$]{#eq:gather}
+
+`gather*` without an ID:
+
+$$
+\begin{gather*}
+g_5 = 1\\
+g_6 = 2
+\end{gather*}
+$$
+
+`gather*` with an ID:
+
+[$$
+\begin{gather*}
+g_7 = 1\\
+g_8 = 2
+\end{gather*}
+$$]{#eq:gather-star}
+
+`gathered` without an ID:
+
+$$
+\begin{gathered}
+g_9 = 1\\
+g_{10} = 2
+\end{gathered}
+$$
+
+`gathered` with an ID:
+
+[$$
+\begin{gathered}
+g_{11} = 1\\
+g_{12} = 2
+\end{gathered}
+$$]{#eq:gathered}
+
+`alignat` without an ID:
+
+$$
+\begin{alignat}{2}
+b_1 &= 1 &\quad c_1 &= 2\\
+b_2 &= 3 &\quad c_2 &= 4
+\end{alignat}
+$$
+
+`alignat` with an ID:
+
+[$$
+\begin{alignat}{2}
+b_3 &= 1 &\quad c_3 &= 2\\
+b_4 &= 3 &\quad c_4 &= 4
+\end{alignat}
+$$]{#eq:alignat}
+
+`alignat*` without an ID:
+
+$$
+\begin{alignat*}{2}
+b_5 &= 1 &\quad c_5 &= 2\\
+b_6 &= 3 &\quad c_6 &= 4
+\end{alignat*}
+$$
+
+`alignat*` with an ID:
+
+[$$
+\begin{alignat*}{2}
+b_7 &= 1 &\quad c_7 &= 2\\
+b_8 &= 3 &\quad c_8 &= 4
+\end{alignat*}
+$$]{#eq:alignat-star}
+
+`alignedat` without an ID:
+
+$$
+\begin{alignedat}{2}
+b_9 &= 1 &\quad c_9 &= 2\\
+b_{10} &= 3 &\quad c_{10} &= 4
+\end{alignedat}
+$$
+
+`alignedat` with an ID:
+
+[$$
+\begin{alignedat}{2}
+b_{11} &= 1 &\quad c_{11} &= 2\\
+b_{12} &= 3 &\quad c_{12} &= 4
+\end{alignedat}
+$$]{#eq:alignedat}
+
+`split` without an ID:
+
+$$
+\begin{split}
+s_1 &= 1\\
+s_2 &= 2
+\end{split}
+$$
+
+`split` with an ID:
+
+[$$
+\begin{split}
+s_3 &= 1\\
+s_4 &= 2
+\end{split}
+$$]{#eq:split}
 
 ## Footnotes and definition lists
 

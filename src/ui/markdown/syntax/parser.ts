@@ -32,6 +32,7 @@ import {
 } from './table_captions';
 import { readTableSource } from './table_source';
 import { frontmatterForParsers } from './markers';
+import { equationsForParsers } from './equation_blocks';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkAutoReferences } from '../plugins/remark-auto-references';
@@ -110,7 +111,7 @@ const stringifyProcessor = unified()
   .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
-  const prepared = frontmatterForParsers(markdown);
+  const prepared = equationsForParsers(frontmatterForParsers(markdown));
   const tree = parseProcessor.parse(prepared) as Root;
   const root = parseProcessor.runSync(tree, prepared) as Root;
   fixDescriptionPositions(root, markdown);

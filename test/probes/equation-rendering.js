@@ -52,6 +52,13 @@
     t.prose().querySelector('.markdown-equation-source')?.textContent ?? null,
     '[$$\n\\begin{align}\nx&=1\\\\\ny&=2\n\\end{align}\n$$]{#eq:align .wide}'
   );
+  t.key('!');
+  await t.sleep(250);
+  check(
+    'typing edits the equation source at its body end',
+    (await t.raw()).includes('y&=2!'),
+    true
+  );
 
   await t.load('$$\n\\begin{align}\ny&=2\\\\\nz&=3\n\\end{align}\n$$\n');
   check(

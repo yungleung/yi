@@ -149,6 +149,24 @@ check(
 );
 check('an equation target starts at its formula body', equationEntries[0]?.caretAt, 95);
 
+const equationBeforeFigure = referenceIndex(
+  '[$$\nx=1\n$$]{#eq:before}\n\n' +
+    '![After](after.png){#fig:after}\n'
+);
+check(
+  'a labeled equation does not hide a following figure from the index',
+  equationBeforeFigure.map((entry) => [entry.kind, entry.id, entry.number]),
+  [
+    ['equation', 'eq:before', 1],
+    ['figure', 'fig:after', 1]
+  ]
+);
+check(
+  'the figure after an equation keeps its visible number',
+  referenceLabel(equationBeforeFigure.find((entry) => entry.kind === 'figure')),
+  'Figure 1'
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

@@ -216,26 +216,40 @@ $$]
 {#id .class key=value}
 ```
 
-The parser stores:
+The block splitter keeps the wrapper as one `equation` block. The pure equation
+syntax reader exposes:
 
 ```ts
-interface EquationNode {
-  type: 'equation';
+interface EquationBlockSource {
   id: string | null;
   classes: string[];
   attributes: Record<string, string>;
   attribute: PandocAttributeBlock | null;
   math: string;
-  environment: EquationBody;
+  body: EquationBody;
   source: string;
-  position: { start: { offset: number }; end: { offset: number } };
+  from: number;
+  to: number;
+  mathFrom: number;
+  mathTo: number;
 }
 ```
 
-The wrapper participates in the document AST before the reference index runs.
-Serialization returns the exact source and does not reconstruct it.
+The reference index derives equation entries from the document's equation
+blocks, so the wrapper does not depend on remark's bracket-span parsing.
+Ordinary `$$…$$` blocks remain ordinary math nodes.
 
-An unlabeled block remains an ordinary `math` node.
+The full-document parse still needs a safe projection for the wrapper. Remark
+otherwise reads the closing `$$` as the opening delimiter of a formula that
+consumes every later block. `equationsForParsers` replaces the wrapper's opening
+bracket and its closing bracket plus attributes with spaces. The projected text
+has exactly the same length and line boundaries, so remark sees ordinary display
+math and every later mdast position still names the original source offset.
+Fenced code, frontmatter, existing display math, and terminating HTML blocks are
+left untouched.
+
+The wrapper's source is never reconstructed: block geometry and editing use the
+exact document slice.
 
 ## Rendering
 

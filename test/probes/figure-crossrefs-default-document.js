@@ -35,7 +35,15 @@
         clientY: box.top + box.height / 2
       })
     );
-    await t.sleep(300);
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      if (
+        t.prose().querySelector('.markdown-figure-source') !== null &&
+        t.caretRect() !== null
+      ) {
+        break;
+      }
+      await t.sleep(100);
+    }
   }
   const source = t.prose().querySelector('.markdown-figure-source');
   const caret = t.caretRect();

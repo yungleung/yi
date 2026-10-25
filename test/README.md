@@ -29,6 +29,7 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
+| `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
 | `check-epub-valid.mjs` | The book the app writes, held to W3C's `epubcheck`: `pandoc` over the note `ui/export/book_body.ts` prepares (the app's own rule, bundled rather than retyped) with the *shipped* `export.epub.yaml` and the note's name as the book's title, then the validator over what comes out — the shape whose two `Duplicate ID "going-out"` errors either half of the fix alone leaves behind (the file's old `shift-heading-level-by: 1`, or the note handed over with no level-1 heading written in), and which the file's `0` *and* that rule together take away. It **skips with a line naming what is missing** when `pandoc`, `java` or the jar is not on the machine (`YI_EPUBCHECK` names a jar anywhere else), so `npm run check` stays green without them; it is also the one check that spends seconds rather than milliseconds, on the JVM the validator runs in |
 | `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list. Captioned tables cover every writer: native numbered captions for HTML/EPUB, target wrappers for DOCX/ODT, semantic HTML for processed Markdown, and `\yiTableRef` for LaTeX/PDF |
@@ -37,8 +38,8 @@ methodology; this file is the index and the conventions.
 | `check-heading-attributes.mjs` | Pandoc heading attributes on ATX and setext headings: separation from the title, quoted and escaped values, malformed braces left as text, and exact serialization |
 | `check-heading-index.mjs` | Pandoc automatic identifiers, Unicode, fallback and duplicate suffixes, explicit IDs staying literal, same-document target order, and first-match lookup |
 | `check-auto-references.mjs` | Yi's `[#id]` source spelling: IDs, multiple references, escapes, empty forms, and line boundaries |
-| `check-reference-header.mjs` | The generated LaTeX/PDF table header (`ui/export/reference_header.ts`): document labels and literal prefixes, LaTeX escaping, no counter override without a prefix, no header without a captioned table, and the portable `\yiTableRef` macro |
-| `check-reference-index.mjs` | Shared heading, figure, and captioned-table targets; document-order numbering; first-match duplicate resolution; labels and literal prefixes; and inferred reference text |
+| `check-reference-header.mjs` | The generated LaTeX/PDF target header (`ui/export/reference_header.ts`): table and equation labels and literal prefixes, LaTeX escaping, no counter override without a prefix, no header without a target, and the portable `\yiTableRef`/`\yiEquationRef` macros |
+| `check-reference-index.mjs` | Shared heading, figure, captioned-table, and labeled-equation targets; document-order numbering; first-match duplicate resolution; labels and literal prefixes; inferred reference text; and later targets surviving an equation's full-document parse |
 | `check-reference-vocabulary.mjs` | Document-configured labels and literal number prefixes, English fallback, scalar validation, and no dependency on the app's active locale |
 | `check-figures.mjs` | Pandoc implicit-figure recognition, image attribute parsing, inline and empty-alt exclusions, malformed attributes, and source serialization |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
@@ -78,7 +79,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and forty-seven probes (`probe:all` runs 218 and skips 29, each skip for the reason its
+two hundred and fifty-one probes (`probe:all` runs 222 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -112,7 +113,11 @@ prefixes, automatic-reference text, and command-click into the first header cell
 manual and automatic links, unapplied `.margin`, and navigation; `table-blank-line-typing` — a
 line after the table keeps its own caret instead of resolving to the last cell;
 `table-cell-typing` and `table-enter-exit-caret` — existing cell editing and exit behavior stay
-unchanged), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
+unchanged), equations (`equation-rendering` — plain and labeled formulas, one Yi number,
+suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;
+`equation-crossrefs` — configured labels, automatic/manual links, and navigation to the formula
+body; `equation-matrix-default-document` — all 13 environment/plain rows with and without IDs,
+including numbering and native-tag suppression), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
@@ -220,13 +225,14 @@ target is the bundle folder `note/`);
 the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
 names), a captioned table's bookmark/number/link relationship, the hint that says so, and Escape
-writing nothing at all; `export-refused` —
+writing nothing at all, plus a labeled equation's bookmark, visible number, and formula; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
 `export-odt` — the second kind: the menu's odt item opens its card and the target's extension is that
 kind's own, the configuration file it names is that kind's own, and what comes out is a valid ODF
 (`mimetype` first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which
 is a row, an asset and a menu item — plus a table's named section, visible number, and link;
+the same probe also holds a labeled equation's named section and number;
 `export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
 target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
@@ -309,6 +315,8 @@ the compiled page's reference and caption follow a literal `reference-number-pre
 `export-pdf-table-template` — a copied Rho package redefines `\thetable`, its Lua filter rewrites
 the table, and the compiled page proves the filter kept `\caption`/`\label` while `\yiTableRef`
 read `R-1` from the package counter;
+`export-pdf-equation-template` — a copied Rho package redefines `\theequation`; the compiled page
+proves automatic equation references and the displayed equation both use the package's `R-1`;
 `export-pdf-page` — the page the card offers for that kind: both fields open on the settings file's own
 and come out A4 portrait, letter + landscape comes out 792 x 612 points read from the page's own
 `/MediaBox`, another kind is offered no page row at all, and the reader's settings file is untouched
@@ -332,7 +340,8 @@ asked for it and none is needed): the note as every other export is handed it, w
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
 reads as, the works it names appended under the app's own heading, and the note's own headings left
 at their own levels — while captioned tables become numbered, aligned HTML tables with IDs,
-classes, attributes, and `<caption>`;
+classes, attributes, and `<caption>`, and labeled equations become ID-bearing MathML blocks with
+one visible equation number;
 `export-web-image` — the picture a note names on the web: the app fetches it with `reqwest` from the
 local HTTP fixture (a redirect to a real PNG), follows the redirect, hands pandoc a local file, and
 the document that comes out has `word/media/` in it and no fetched copy left behind;
