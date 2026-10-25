@@ -145,7 +145,8 @@ Yi therefore displays the shared computed number in its editor and in exported
 HTML, EPUB, DOCX, and ODT captions. LaTeX/PDF uses its native float counters, and
 the numbering policy must keep those counters aligned with the shared index.
 
-Numbers are document-global in the first release:
+Numbers are document-global in the first release. With no configured prefix,
+their default spelling is:
 
 - figures: `Figure 1`, `Figure 2`;
 - tables: `Table 1`, `Table 2`;
@@ -158,8 +159,9 @@ every automatic reference. A block containing an automatic reference must
 re-render when its resolved text changes, even when that block's own source did
 not.
 
-Chapter-relative numbering, custom prefixes, and paper/book numbering styles
-are later features. The target model does not depend on them.
+Dynamic chapter-relative numbering and paper/book numbering styles are later
+features. Users may configure a literal number prefix per kind, as described
+below.
 
 Headings do not gain synthetic section numbers in this release. An automatic
 reference to a heading displays the heading's title, matching its existing link
@@ -201,6 +203,39 @@ mapping falls back to all defaults; it does not create a reference error.
 Number formatting and placement remain Yi's shared rules. For example,
 `listing: Code excerpt` produces `Code excerpt 1`, while the default produces
 `Listing 1`.
+
+### Reference number prefixes
+
+A note may prepend literal text to a target kind's sequential number:
+
+```yaml
+reference-number-prefixes:
+  figure: "2-"
+  listing: "A."
+  table: ""
+  equation: "2-"
+  list: ""
+```
+
+The number token is the prefix concatenated directly with the computed number.
+The label and number are then composed by the shared formatting rule:
+
+```text
+effective number = prefix + sequential number
+figure/listing/table/list = configured label + " " + effective number
+equation = configured label + " (" + effective number + ")"
+```
+
+Thus `figure: Figure` with prefix `2-` produces `Figure 2-1`.
+
+Prefixes default to the empty string per key. A value is used literally after
+validating that it is a scalar; Yi does not infer chapter, section, heading, or
+other dynamic values because heading-level shifting makes that inference
+unreliable. An invalid or non-scalar value falls back to the empty prefix.
+Unknown keys are ignored.
+
+The effective number drives editor captions, automatic references, processed
+Markdown, and every rendered export.
 
 ## Source syntax by target kind
 
@@ -275,6 +310,37 @@ Therefore each element exporter must provide one normalized block target:
 An element exporter must not emit duplicate IDs when both the native object and
 its wrapper could create anchors.
 
+### LaTeX counter prefixes
+
+When a figure, table, equation, or listing prefix is non-empty, the LaTeX/PDF
+run overrides that kind's native counter representation after template setup.
+The generated header uses `\AtBeginDocument` so a template's own definitions
+cannot silently restore an unprefixed number after Yi writes its override.
+
+Conceptually the generated definitions are:
+
+```latex
+\AtBeginDocument{%
+  \renewcommand{\thefigure}{\detokenize{2-}\arabic{figure}}%
+  \renewcommand{\thetable}{\detokenize{2-}\arabic{table}}%
+  \renewcommand{\theequation}{\detokenize{2-}\arabic{equation}}%
+}
+```
+
+The listing override is emitted only when a native listing counter exists:
+
+```latex
+\AtBeginDocument{%
+  \ifdefined\thelstlisting
+    \renewcommand{\thelstlisting}{\detokenize{2-}\arabic{lstlisting}}%
+  \fi
+}
+```
+
+An empty prefix emits no override and leaves the template's native numbering
+untouched. Lists have no native Pandoc object counter, so their prefixed labels
+remain Yi-generated.
+
 ### Targets in visible output
 
 In rendered exports, the target must visibly carry the same number used by
@@ -299,6 +365,7 @@ continue to work.
 - Duplicate ID: first target resolves; every duplicate is marked invalid.
 - Target without a supported ID syntax: not indexed or numbered.
 - Invalid attributes: remain ordinary source text.
+- Invalid label or prefix values fall back per key as specified above.
 - Missing number: automatic reference falls back to the target title.
 - Export with an unresolved reference: writes `[#id](#id)`.
 
@@ -311,8 +378,11 @@ Shared checks will cover:
 - duplicate IDs and first-match resolution;
 - configured reference labels, per-key English fallback, and independence from
   the interface language;
+- literal number prefixes, per-key empty-prefix fallback, and label/number
+  composition;
 - reference-text invalidation and re-rendering after edits;
 - export rewriting to ordinary links;
+- generated LaTeX counter overrides for each native target kind;
 - unresolved-reference fallback.
 
 Shared Tauri probes will cover:
@@ -345,7 +415,7 @@ attribute-bearing block before the kinds that need caption or wrapper work.
 - cross-document references;
 - plural references and ranges;
 - per-row equation references;
-- chapter-relative or configurable numbering;
+- dynamic chapter-relative numbering and arbitrary number formatting;
 - automatic IDs for unlabeled non-heading targets;
 - inserting a package dependency such as `cleveref`;
 - changing user-supplied LaTeX inside a math block.

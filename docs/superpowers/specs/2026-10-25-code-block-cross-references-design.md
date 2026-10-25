@@ -166,6 +166,11 @@ The visible caption area follows these cases:
 - caption without ID: the caption only;
 - neither: no caption element.
 
+The examples above assume the default empty prefix. The actual label consists
+of the configured wording, one space, the literal prefix, and the sequential
+number. With `listing: Code excerpt` and a prefix of `2-`, the first identified
+listing is `Code excerpt 2-1`.
+
 The listing label is generated chrome and contributes no source offsets. The
 caption text is presentation of the opening-fence attribute and is not an
 editable second copy.
@@ -248,6 +253,11 @@ ID follows the shared first-match and duplicate-invalid behavior.
 The listing label comes from the shared `reference-labels.listing` frontmatter
 value. When that value is absent or invalid, it falls back to the English word
 `Listing`. Yi's interface language does not affect it.
+
+The number comes from `reference-number-prefixes.listing`, a literal string that
+is prepended directly to the sequential number. Its default and per-key fallback
+are both the empty string. Yi never infers the prefix from a chapter, section, or
+heading level.
 
 ## Navigation
 
@@ -394,6 +404,12 @@ With idiomatic highlighting:
 The private zero-width caption is never added to the document text and is absent
 from source mode. It exists only in the temporary export source.
 
+When `reference-number-prefixes.listing` is non-empty and a native listing
+counter exists, LaTeX/PDF override `\thelstlisting` after template setup so the
+visible native caption uses the same prefix as Yi's automatic references. An
+empty prefix emits no override. The exact shared rule is in the cross-reference
+target specification.
+
 With ordinary non-idiomatic LaTeX highlighting:
 
 - Pandoc still receives the same export source;
@@ -415,6 +431,9 @@ listing would otherwise have no valid label.
 | `#id` only | `Listing N.` | `Listing N.` | Native counter advances; `Listing N` prefix, no caption text |
 | `caption` only | Caption without label | Caption without label | Unnumbered native title |
 | Neither | Ordinary code | Ordinary code | Ordinary code |
+
+The matrix assumes default labels and empty prefixes. Configured labels and
+prefixes replace the visible `Listing N` word and number token in every case.
 
 The reference index's number and the visible non-LaTeX label always agree. In
 idiomatic LaTeX/PDF, the export bridge keeps Pandoc's native listing counter in
@@ -448,12 +467,16 @@ Node checks will cover:
 - document-order numbering of ID-bearing listings only;
 - `reference-labels.listing`, trimming, invalid-value fallback, and the English
   `Listing` default;
+- `reference-number-prefixes.listing`, literal composition, and empty-prefix
+  fallback;
 - duplicate resolution;
 - source serialization without normalization;
 - non-LaTeX export wrappers for all four source cases;
 - processed Markdown HTML escaping and target placement;
 - LaTeX export for all four source cases, including the zero-width
-  ID-only bridge and caption-to-title caption-only bridge.
+  ID-only bridge and caption-to-title caption-only bridge;
+- generated LaTeX listing-counter overrides for non-empty prefixes and no
+  override for an empty prefix.
 
 Tauri probes will cover:
 
@@ -478,6 +501,8 @@ Export probes will cover:
 - ODT named sections and visible captions;
 - LaTeX labels, `\hyperref`, native captions, and mixed ID-only/captioned
   counter order;
+- configured labels and literal prefixes in rendered and native listing
+  captions;
 - PDF output with idiomatic highlighting;
 - unchanged output when a listing has neither ID nor caption;
 - caption-only and ID-only cases in every export kind.
@@ -491,6 +516,8 @@ The user documentation will explain every case and consequence:
 - why an ID produces `Listing N`;
 - how `reference-labels.listing` changes that word, and why absent or invalid
   values fall back to English `Listing`;
+- how `reference-number-prefixes.listing` adds literal text before the number,
+  including a `Code excerpt 2-1` example and the empty-prefix default;
 - why a caption without an ID is visible but unnumbered;
 - how numbering changes when listings are inserted or reordered;
 - manual links versus `[#lst:id]`;
@@ -510,6 +537,7 @@ The user documentation will explain every case and consequence:
 
 - a `reference-labels.listing` override demonstrating that the label belongs to
   the document rather than Yi's interface language;
+- a `reference-number-prefixes.listing` override demonstrating literal prefixing;
 - an ordinary code block;
 - a caption-only code block before the numbered sequence;
 - an ID-only listing;
@@ -522,7 +550,7 @@ The user documentation will explain every case and consequence:
 - cross-document listing references;
 - plural references and ranges;
 - automatic IDs for unlabeled listings;
-- chapter-relative or configurable listing numbering;
+- dynamic chapter-relative listing numbering and arbitrary number formatting;
 - a frontmatter numbering-policy switch;
 - rich Markdown captions inside the fence attribute;
 - nested listings;
