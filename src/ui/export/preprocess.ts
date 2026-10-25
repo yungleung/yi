@@ -45,6 +45,7 @@ import { isWebDestination } from './picture_hint';
 import type { FigureNode } from '../markdown/syntax/figures';
 import { escapeHtml, htmlAttributeName } from './html';
 import { tableRewrites } from './table_rewrites';
+import { equationRewrites } from './equation_rewrites';
 import {
   firstReference,
   referenceIndex,
@@ -136,6 +137,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...(await imageRewrites(tree, answers, fetched, figures, tables)),
+    ...equationRewrites(text, references, answers.kind),
     ...tableRewrites(tree, references, answers.kind),
     ...(cited ?? []).map((span) => ({
       start: span.start,
@@ -204,6 +206,16 @@ function autoReferenceRewrites(
         start: span.start,
         end: span.end,
         text: `\\yiTableRef{${latexLabel(node.id)}}`
+      };
+    }
+    if (
+      target?.kind === 'equation' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiEquationRef{${latexLabel(node.id)}}`
       };
     }
     const text = target

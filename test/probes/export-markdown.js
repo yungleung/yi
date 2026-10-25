@@ -83,6 +83,19 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:plain] and [#eq:system].',
+    '',
+    '[$$',
+    'E=mc^2',
+    '$$]{#eq:plain}',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system .wide}',
     ''
   ].join('\n');
 
@@ -226,6 +239,33 @@
         idOnly: plain.includes('<caption>Table 3.</caption>'),
         target: plain.includes('<table id="tbl:only">'),
         emptyTarget: plain.includes('<table id="">')
+      }
+    );
+    check(
+      'and labeled equations become MathML with one target and one number each',
+      plain.includes(
+        'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
+      ) &&
+        plain.includes('<div id="eq:plain" class="equation-target">') &&
+        plain.includes('<div id="eq:system" class="equation-target wide">') &&
+        plain.includes('<span class="equation-number">Equation (1)</span>') &&
+        plain.includes('<span class="equation-number">Equation (2)</span>') &&
+        plain.includes('annotation encoding="application/x-tex">\\begin{aligned}'),
+      {
+        references: plain
+          .split('\n')
+          .filter((line) => line.includes('Equation'))
+          .slice(0, 8),
+        links: plain.includes(
+          'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
+        ),
+        plain: plain.includes('<div id="eq:plain" class="equation-target">'),
+        align: plain.includes('<div id="eq:system" class="equation-target wide">'),
+        labels:
+          plain.includes('Equation (1)') && plain.includes('Equation (2)'),
+        annotation: plain.includes(
+          'annotation encoding="application/x-tex">\\begin{aligned}'
+        )
       }
     );
 

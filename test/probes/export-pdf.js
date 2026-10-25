@@ -54,6 +54,7 @@
     '---',
     'reference-number-prefixes:',
     '  table: X-',
+    '  equation: E-',
     '---',
     '',
     '# Going out',
@@ -67,6 +68,15 @@
     '| alpha | 1 |',
     '',
     ': Results {#tbl:results}',
+    '',
+    'See [#eq:system] for the equation.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -154,7 +164,14 @@
     check(
       'and a real PDF comes out, through the TeX engine the settings file names',
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
-      { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
+      {
+        wrote,
+        size: pdf?.length ?? 0,
+        start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)),
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
+      }
     );
     const text = pdf === null ? '' : await t.pdfText(pdf);
     check(
@@ -164,6 +181,14 @@
         text,
         reference: /SeeTable[^f]+forthetable\./.exec(text)?.[0] ?? null,
         caption: /Table[^:]+:Results/.exec(text)?.[0] ?? null
+      }
+    );
+    check(
+      'and the equation reference follows the native equation counter',
+      text.includes('Equation(E-1)') && text.includes('(E-1)'),
+      {
+        reference: /Equation\([^)]+\)/.exec(text)?.[0] ?? null,
+        text
       }
     );
 

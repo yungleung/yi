@@ -86,6 +86,15 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -210,6 +219,17 @@
         captionOnly: content.includes('Table 2. Numbered without an ID'),
         idOnly: content.includes('Table 3.'),
         section: content.includes('text:section text:name="tbl:only"')
+      }
+    );
+    check(
+      'a labeled equation keeps a named section and one visible number',
+      content.includes('text:section text:name="eq:system"') &&
+        content.includes('Equation (1)') &&
+        content.includes('xlink:href="#eq:system"'),
+      {
+        section: content.includes('text:section text:name="eq:system"'),
+        label: content.includes('Equation (1)'),
+        link: content.includes('xlink:href="#eq:system"')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

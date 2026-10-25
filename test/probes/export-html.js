@@ -80,6 +80,21 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system .wide owner=demo}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -238,6 +253,29 @@
         captionOnly: page.includes('Table 2. Numbered without an ID'),
         idOnly: page.includes('Table 3.'),
         target: page.includes('id="tbl:only"')
+      }
+    );
+    check(
+      'a labeled equation keeps its target, one visible number, and unnumbered rows',
+      page.includes('id="eq:system"') &&
+        page.includes('Equation (1)') &&
+        page.includes('begin{aligned}') &&
+        !page.includes('\\begin{align}'),
+      {
+        target: page.includes('id="eq:system"'),
+        label: page.includes('Equation (1)'),
+        aligned: page.includes('begin{aligned}'),
+        numberedAlign: page.includes('\\begin{align}'),
+        equationContext: page.match(/.{0,120}Equation.{0,120}/)?.[0] ?? null
+      }
+    );
+    check(
+      'an unlabeled equation environment is also unnumbered',
+      page.includes('begin{gather*}') && !page.includes('\\begin{gather}'),
+      {
+        starred: page.includes('begin{gather*}'),
+        numbered: page.includes('\\begin{gather}'),
+        gatherContext: page.match(/.{0,120}begin\{gather.{0,120}/)?.[0] ?? null
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

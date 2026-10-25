@@ -91,6 +91,15 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:system] for the equation system.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -300,6 +309,30 @@
       {
         macro: tex.includes('\\providecommand{\\yiTableRef}[1]'),
         label: tex.includes('\\renewcommand{\\tablename}{Table}')
+      }
+    );
+    check(
+      'a labeled equation becomes one native equation with a counter-backed reference',
+      tex.includes('\\yiEquationRef{eq:system}') &&
+        (tex.match(/\\begin\{equation\}/g) ?? []).length === 1 &&
+        tex.includes('\\begin{aligned}') &&
+        !tex.includes('\\begin{align}') &&
+        tex.includes('\\label{eq:system}'),
+      {
+        reference: tex.includes('\\yiEquationRef{eq:system}'),
+        equations: (tex.match(/\\begin\{equation\}/g) ?? []).length,
+        aligned: tex.includes('\\begin{aligned}'),
+        numberedAlign: tex.includes('\\begin{align}'),
+        label: tex.includes('\\label{eq:system}')
+      }
+    );
+    check(
+      'the equation-reference macro is in the generated header',
+      tex.includes('\\providecommand{\\yiEquationRef}[1]') &&
+        tex.includes('\\renewcommand{\\equationname}{Equation}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiEquationRef}[1]'),
+        label: tex.includes('\\renewcommand{\\equationname}{Equation}')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

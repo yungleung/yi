@@ -53,6 +53,16 @@ export interface EquationBlockSource {
   mathTo: number;
 }
 
+/** One ordinary display-math block and its inner body range. */
+export interface DisplayMathSource {
+  math: string;
+  body: EquationBody;
+  from: number;
+  to: number;
+  mathFrom: number;
+  mathTo: number;
+}
+
 /** Read one complete labeled display-math block, or null for ordinary source. */
 export function readEquationBlock(source: string, from = 0): EquationBlockSource | null {
   if (!source.startsWith('[$$')) {
@@ -114,6 +124,28 @@ export function isEquationOpening(line: string): boolean {
 export function closesEquation(line: string): boolean {
   const trimmed = line.trim();
   return /^\$\$\](?:\{.*\})?$/.test(trimmed);
+}
+
+/** Read an ordinary `$$…$$` block, including the same-line form. */
+export function readDisplayMath(source: string, from = 0): DisplayMathSource | null {
+  const leading = source.length - source.trimStart().length;
+  const open = source.indexOf('$$', leading);
+  const close = source.lastIndexOf('$$');
+  if (open !== leading || close <= open + 1) {
+    return null;
+  }
+  const raw = source.slice(open + 2, close);
+  const leadingNewline = raw.startsWith('\r\n') ? 2 : raw.startsWith('\n') ? 1 : 0;
+  const trailingNewline = raw.endsWith('\r\n') ? 2 : raw.endsWith('\n') ? 1 : 0;
+  const math = raw.slice(leadingNewline, raw.length - trailingNewline);
+  return {
+    math,
+    body: readEquationBody(math),
+    from,
+    to: from + source.length,
+    mathFrom: from + open + 2 + leadingNewline,
+    mathTo: from + close - trailingNewline
+  };
 }
 
 /** Classify the one supported environment in a math body. */

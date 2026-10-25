@@ -70,6 +70,33 @@ check(
   referenceHeader('# No tables\n'),
   ''
 );
+const equationHeader = referenceHeader(
+  '---\n' +
+    'reference-labels:\n' +
+    '  equation: Formula\n' +
+    'reference-number-prefixes:\n' +
+    '  equation: "A-"\n' +
+    '---\n\n' +
+    '[$$\nx=1\n$$]{#eq:x}\n'
+);
+check(
+  'equation metadata reaches its own native counter',
+  equationHeader.includes(
+    '\\AtBeginDocument{%\n' +
+      '  \\renewcommand{\\equationname}{Formula}%\n' +
+      '  \\renewcommand{\\theequation}{\\mbox{A-}\\arabic{equation}}%\n' +
+      '}'
+  ),
+  true
+);
+check(
+  'the equation macro is generated only when an equation exists',
+  [
+    equationHeader.includes('\\providecommand{\\yiEquationRef}[1]'),
+    equationHeader.includes('\\providecommand{\\yiTableRef}[1]')
+  ],
+  [true, false]
+);
 check(
   'LaTeX syntax in a literal prefix is escaped',
   referenceHeader(

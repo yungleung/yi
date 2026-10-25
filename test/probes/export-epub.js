@@ -92,6 +92,15 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -271,6 +280,20 @@
         captionOnly: chapter.includes('Table 2. Numbered without an ID'),
         idOnly: chapter.includes('Table 3.'),
         target: chapter.includes('id="tbl:only"')
+      }))
+    );
+    check(
+      'a labeled equation keeps one anchor and one visible number',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="eq:system"') &&
+          chapter.includes('Equation (1)') &&
+          !chapter.includes('eqn-num')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="eq:system"'),
+        label: chapter.includes('Equation (1)'),
+        native: chapter.includes('eqn-num')
       }))
     );
     }

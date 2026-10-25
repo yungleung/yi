@@ -94,6 +94,15 @@
     '| --- |',
     '| target |',
     ': {#tbl:only}',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -305,6 +314,17 @@
           tableThreeAnchor !== null && documentXml.includes(`w:name="${tableThreeAnchor}"`),
         captionOnlyLink: internalLinks.some((link) => link.text === 'Table 2'),
         anchors: internalLinks
+      }
+    );
+    check(
+      'a labeled equation keeps one bookmark, visible number, and aligned formula',
+      documentXml.includes('Equation (1)') &&
+        documentXml.includes('m:oMathPara') &&
+        internalLinks.some((link) => link.text === 'Equation (1)'),
+      {
+        label: documentXml.includes('Equation (1)'),
+        math: documentXml.includes('m:oMathPara'),
+        links: internalLinks
       }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');

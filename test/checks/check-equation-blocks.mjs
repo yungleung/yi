@@ -23,6 +23,7 @@ writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   innerEquationBody,
   latexEquationBody,
+  readDisplayMath,
   readEquationBlock,
   readEquationBody,
   unnumberedEquationBody
@@ -47,6 +48,11 @@ check('empty attributes are unlabeled', readEquationBlock('[$$\nx\n$$]{}')?.id, 
 check('opening attributes are not supported', readEquationBlock('$${#eq:x}\nx=1\n$$'), null);
 check('prose before a wrapper is not one', readEquationBlock('before [$$\nx\n$$]{}'), null);
 check('prose after attributes is not one', readEquationBlock('[$$\nx\n$$]{} after'), null);
+check(
+  'ordinary display math has its own body range',
+  [readDisplayMath('$$\nx\n$$')?.math, readDisplayMath('$$\nx\n$$')?.mathFrom],
+  ['x', 3]
+);
 check(
   'TeX braces do not hide the wrapper attributes',
   readEquationBlock('[$$\n\\begin{align}\nx&=1\\\\\ny&=2\n\\end{align}\n$$]{#eq:align .wide}')?.id,

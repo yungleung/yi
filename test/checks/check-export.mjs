@@ -352,6 +352,122 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const equation =
+    'See [#eq:system].\n\n' +
+    '[$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$]{#eq:system .wide owner=demo}\n';
+  const { rendered } = await render(equation, { kind: 'html' });
+  check(
+    'HTML lowers a labeled environment to one target and one visible equation number',
+    rendered,
+    'See [Equation (1)](#eq:system).\n\n' +
+      '::: {#eq:system .equation-target .wide owner="demo"}\n' +
+      '$$\n' +
+      '\\begin{aligned}\n' +
+      'x&=1\\\\\n' +
+      'y&=2\n' +
+      '\\end{aligned}\n' +
+      '$$\n\n' +
+      'Equation (1)\n' +
+      ':::\n'
+  );
+}
+
+{
+  const equation =
+    'See [#eq:system].\n\n' +
+    '[$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$]{#eq:system}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(equation, { kind });
+    check(
+      `${kind} uses one native equation and a counter-backed reference`,
+      rendered,
+      'See \\yiEquationRef{eq:system}.\n\n' +
+        '$$\n' +
+        '\\begin{equation}\n' +
+        '\\begin{aligned}\n' +
+        'x&=1\\\\\n' +
+        'y&=2\n' +
+        '\\end{aligned}\n' +
+        '\\label{eq:system}\n' +
+        '\\end{equation}\n' +
+        '$$\n'
+    );
+  }
+}
+
+{
+  const align =
+    '$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$\n';
+  const { rendered } = await render(align, { kind: 'html' });
+  check(
+    'an unlabeled environment is handed on with its native numbering suppressed',
+    rendered,
+    '$$\n' +
+      '\\begin{align*}\n' +
+      'x&=1\\\\\n' +
+      'y&=2\n' +
+      '\\end{align*}\n' +
+      '$$\n'
+  );
+}
+
+{
+  const equations =
+    'See [#eq:system].\n\n' +
+    '[$$\n\\begin{align}\nx&=1\n\\end{align}\n$$]{#eq:system}\n\n' +
+    '$$\n\\begin{gather}\nu=v\n\\end{gather}\n$$\n';
+  const { rendered } = await render(equations, { kind: 'html' });
+  check(
+    'a labeled equation does not hide a following unlabeled environment lowering',
+    rendered.includes('\\begin{gather*}') && !rendered.includes('\\begin{gather}\n'),
+    true
+  );
+}
+
+{
+  const wrapped = '[$$\nE=mc^2\n$$]{}\n';
+  const { rendered } = await render(wrapped, { kind: 'docx' });
+  check(
+    'an empty attribute wrapper is removed when there is no target',
+    rendered,
+    '$$\nE=mc^2\n$$\n'
+  );
+}
+
+{
+  const equation =
+    'See [#eq:plain].\n\n' +
+    '[$$\nE=mc^2\n$$]{#eq:plain}\n';
+  const { rendered } = await render(equation, { kind: 'markdown' });
+  check(
+    'processed Markdown emits an equation target containing MathML',
+    [
+      rendered.includes('See [Equation (1)](#eq:plain).'),
+      rendered.includes('<div id="eq:plain" class="equation-target">'),
+      rendered.includes('<math xmlns="http://www.w3.org/1998/Math/MathML"'),
+      rendered.includes('annotation encoding="application/x-tex">E=mc^2</annotation>'),
+      rendered.includes('<span class="equation-number">Equation (1)</span>')
+    ],
+    [true, true, true, true, true]
+  );
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';
