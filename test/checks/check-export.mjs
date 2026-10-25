@@ -217,6 +217,107 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| :--- | ---: |\n' +
+    '| *alpha* | `x & y` |\n\n' +
+    ': **Results** {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'markdown' });
+  check(
+    'processed Markdown renders a captioned table as numbered, aligned HTML',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '<table id="tbl:results" class="margin" data-owner="demo">\n' +
+      '  <caption>Table 1. <strong>Results</strong></caption>\n' +
+      '  <thead>\n' +
+      '    <tr>\n' +
+      '      <th style="text-align: left">Name</th>\n' +
+      '      <th style="text-align: right">Result</th>\n' +
+      '    </tr>\n' +
+      '  </thead>\n' +
+      '  <tbody>\n' +
+      '    <tr>\n' +
+      '      <td style="text-align: left"><em>alpha</em></td>\n' +
+      '      <td style="text-align: right"><code>x &amp; y</code></td>\n' +
+      '    </tr>\n' +
+      '  </tbody>\n' +
+      '</table>\n'
+  );
+}
+
+{
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'html' });
+  check(
+    'HTML gets Pandoc’s native table with only the visible number added to its caption',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '| Name | Result |\n' +
+      '| --- | --- |\n' +
+      '| alpha | one |\n\n' +
+      ': Table 1. Results {#tbl:results .margin owner=demo}\n'
+  );
+}
+
+{
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'docx' });
+  check(
+    'DOCX wraps an identified table and moves its ID off the visible caption',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '::: {#tbl:results .table-target}\n' +
+      '| Name | Result |\n' +
+      '| --- | --- |\n' +
+      '| alpha | one |\n\n' +
+      ': Table 1. Results {.margin owner="demo"}\n' +
+      ':::\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n: Only a caption\n';
+  const { rendered } = await render(table, { kind: 'epub' });
+  check(
+    'a caption without an ID is numbered but has no target',
+    rendered,
+    '| A |\n| --- |\n| 1 |\n: Table 1. Only a caption\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n: {#tbl:only}\n';
+  const { rendered } = await render(table, { kind: 'odt' });
+  check(
+    'an ID without caption still gets a target and a visible number',
+    rendered,
+    '::: {#tbl:only .table-target}\n' +
+      '| A |\n' +
+      '| --- |\n' +
+      '| 1 |\n' +
+      ': Table 1.\n' +
+      ':::\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n';
+  const { rendered } = await render(table, { kind: 'docx' });
+  check('an ordinary table is left unchanged', rendered, table);
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';

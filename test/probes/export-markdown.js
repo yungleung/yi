@@ -65,6 +65,24 @@
     'See [#fig:demo] for the picture.',
     '',
     `![Example figure](${window.__probePaths.checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| *alpha* | `one` |',
+    '',
+    ': **Results** {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
     ''
   ].join('\n');
 
@@ -181,6 +199,33 @@
         link: plain.includes('See [Figure 1](#fig:demo)'),
         figure: /<figure[^>]*id="fig:demo"[^>]*>/.exec(plain)?.[0] ?? null,
         caption: /<figcaption>.*<\/figcaption>/.exec(plain)?.[0] ?? null
+      }
+    );
+    check(
+      'and captioned tables become numbered, aligned HTML with their target and class',
+      plain.includes('See [Table 1](#tbl:results)') &&
+        plain.includes('<table id="tbl:results" class="margin" data-owner="demo">') &&
+        plain.includes('<caption>Table 1. <strong>Results</strong></caption>') &&
+        plain.includes('<th style="text-align: right">Value</th>') &&
+        plain.includes('<td style="text-align: right"><code>one</code></td>'),
+      {
+        link: plain.includes('See [Table 1](#tbl:results)'),
+        table: /<table[^>]*id="tbl:results"[^>]*>/.exec(plain)?.[0] ?? null,
+        caption: /<caption>.*<\/caption>/.exec(plain)?.[0] ?? null,
+        aligned: plain.includes('<th style="text-align: right">Value</th>')
+      }
+    );
+    check(
+      'and caption-only and ID-only tables stay numbered, with only the ID a target',
+      plain.includes('<caption>Table 2. Numbered without an ID</caption>') &&
+        plain.includes('<caption>Table 3.</caption>') &&
+        plain.includes('<table id="tbl:only">') &&
+        !plain.includes('<table id="">'),
+      {
+        captionOnly: plain.includes('<caption>Table 2. Numbered without an ID</caption>'),
+        idOnly: plain.includes('<caption>Table 3.</caption>'),
+        target: plain.includes('<table id="tbl:only">'),
+        emptyTarget: plain.includes('<table id="">')
       }
     );
 

@@ -68,6 +68,24 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${checkout}src-tauri/icons/32x32.png){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
     ''
   ].join('\n');
 
@@ -168,6 +186,30 @@
         section: content.includes('text:section text:name="fig:demo"'),
         link: content.includes('xlink:href="#fig:demo"'),
         caption: content.includes('Figure 1. Example figure')
+      }
+    );
+    check(
+      'a table keeps its named section, visible number, and automatic link',
+      content.includes('text:section text:name="tbl:results"') &&
+        content.includes('Table 1. Results') &&
+        content.includes('xlink:href="#tbl:results"') &&
+        content.includes('>Table 1<'),
+      {
+        section: content.includes('text:section text:name="tbl:results"'),
+        caption: content.includes('Table 1. Results'),
+        link: content.includes('xlink:href="#tbl:results"'),
+        label: content.includes('>Table 1<')
+      }
+    );
+    check(
+      'caption-only tables have a number and ID-only tables have a named section',
+      content.includes('Table 2. Numbered without an ID') &&
+        content.includes('Table 3.') &&
+        content.includes('text:section text:name="tbl:only"'),
+      {
+        captionOnly: content.includes('Table 2. Numbered without an ID'),
+        idOnly: content.includes('Table 3.'),
+        section: content.includes('text:section text:name="tbl:only"')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

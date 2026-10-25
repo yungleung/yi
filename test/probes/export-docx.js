@@ -74,6 +74,26 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    'See [#tbl:only] for the target-only table.',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
     ''
   ].join('\n');
 
@@ -240,6 +260,13 @@
     );
     const documentXml =
       bytes === null ? '' : (await t.zipEntry(bytes, 'word/document.xml')) ?? '';
+    const internalLinks = [...documentXml.matchAll(
+      /<w:hyperlink w:anchor="([^"]+)">.*?<w:t[^>]*>([^<]+)<\/w:t>.*?<\/w:hyperlink>/gs
+    )].map((match) => ({ anchor: match[1], text: match[2] }));
+    const anchorFor = (text) =>
+      internalLinks.find((link) => link.text === text)?.anchor ?? null;
+    const tableOneAnchor = anchorFor('Table 1');
+    const tableThreeAnchor = anchorFor('Table 3');
     check(
       'and a figure keeps a bookmark, numbered caption, and automatic link',
       documentXml.includes('<w:bookmarkStart') &&
@@ -249,6 +276,35 @@
         bookmark: documentXml.includes('<w:bookmarkStart'),
         caption: documentXml.includes('Figure 1. Example figure'),
         link: documentXml.includes('>Figure 1</w:t>')
+      }
+    );
+    check(
+      'and a table keeps its bookmark, visible number, and automatic link',
+      documentXml.includes('Table 1. Results') &&
+        tableOneAnchor !== null &&
+        documentXml.includes(`w:name="${tableOneAnchor}"`),
+      {
+        caption: documentXml.includes('Table 1. Results'),
+        link: tableOneAnchor !== null,
+        bookmark:
+          tableOneAnchor !== null && documentXml.includes(`w:name="${tableOneAnchor}"`),
+        anchor: tableOneAnchor
+      }
+    );
+    check(
+      'caption-only tables have a number and ID-only tables have a bookmark',
+      documentXml.includes('Table 2. Numbered without an ID') &&
+        documentXml.includes('Table 3.') &&
+        tableThreeAnchor !== null &&
+        documentXml.includes(`w:name="${tableThreeAnchor}"`) &&
+        !internalLinks.some((link) => link.text === 'Table 2'),
+      {
+        captionOnly: documentXml.includes('Table 2. Numbered without an ID'),
+        idOnly: documentXml.includes('Table 3.'),
+        bookmark:
+          tableThreeAnchor !== null && documentXml.includes(`w:name="${tableThreeAnchor}"`),
+        captionOnlyLink: internalLinks.some((link) => link.text === 'Table 2'),
+        anchors: internalLinks
       }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');

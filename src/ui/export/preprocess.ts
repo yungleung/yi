@@ -43,6 +43,8 @@ import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
 import { spansOfType, type Span, type Walkable } from './node_spans';
 import { isWebDestination } from './picture_hint';
 import type { FigureNode } from '../markdown/syntax/figures';
+import { escapeHtml, htmlAttributeName } from './html';
+import { tableRewrites } from './table_rewrites';
 import {
   firstReference,
   referenceIndex,
@@ -125,6 +127,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const tree = parseMarkdown(text) as unknown as Walkable;
   const references = referenceIndex(text);
   const figures = spansOfType(tree, 'figure');
+  const tables = spansOfType(tree, 'table');
   const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
@@ -132,7 +135,8 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
     ...autoReferenceRewrites(tree, references),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
-    ...(await imageRewrites(tree, answers, fetched, figures)),
+    ...(await imageRewrites(tree, answers, fetched, figures, tables)),
+    ...tableRewrites(tree, references, answers.kind),
     ...(cited ?? []).map((span) => ({
       start: span.start,
       end: span.end,
@@ -257,12 +261,21 @@ async function imageRewrites(
   tree: Walkable,
   answers: ExportAnswers,
   fetched: Map<string, string | null>,
-  figures: readonly Span[]
+  figures: readonly Span[],
+  tables: readonly Span[]
 ): Promise<Rewrite[]> {
   const rewrites: Rewrite[] = [];
   // One URL is one download, however many times a note names it.
   for (const span of spansOfType(tree, 'image')) {
     if (figures.some((figure) => span.start >= figure.start && span.end <= figure.end)) {
+      continue;
+    }
+    // Processed Markdown renders its table itself; an image rewrite inside that
+    // replacement would fetch an asset whose path the HTML renderer then discards.
+    if (
+      answers.kind === 'markdown' &&
+      tables.some((table) => span.start >= table.start && span.end <= table.end)
+    ) {
       continue;
     }
     const image = span.node as AstImage;
@@ -383,21 +396,6 @@ function escapeLinkText(text: string): string {
 /** Escape one fragment identifier for a Markdown destination. */
 function encodeFragment(id: string): string {
   return encodeURI(id);
-}
-
-/** HTML text and quoted attribute escaping. */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** A Pandoc key mapped into an HTML data-attribute name. */
-function htmlAttributeName(key: string): string {
-  const safe = key.replace(/[^A-Za-z0-9_.:-]/g, '-');
-  return safe === '' ? 'value' : safe;
 }
 
 /** A quoted Pandoc attribute value. */

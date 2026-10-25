@@ -74,6 +74,24 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${url}){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
     ''
   ].join('\n');
 
@@ -223,6 +241,36 @@
         target: chapter.includes('id="fig:demo"'),
         caption: /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(chapter),
         link: chapter.includes('href="ch001.xhtml#fig:demo">Figure 1</a>')
+      }))
+    );
+    check(
+      'a captioned table keeps its anchor, visible number, link, and class',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="tbl:results"') &&
+          chapter.includes('Table 1. Results') &&
+          chapter.includes('class="margin"') &&
+          chapter.includes('href="ch001.xhtml#tbl:results">Table 1</a>')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="tbl:results"'),
+        caption: chapter.includes('Table 1. Results'),
+        margin: chapter.includes('class="margin"'),
+        link: chapter.includes('href="ch001.xhtml#tbl:results">Table 1</a>')
+      }))
+    );
+    check(
+      'caption-only and ID-only tables keep their number and target behavior',
+      texts.some(
+        (chapter) =>
+          chapter.includes('Table 2. Numbered without an ID') &&
+          chapter.includes('Table 3.') &&
+          chapter.includes('id="tbl:only"')
+      ),
+      texts.map((chapter) => ({
+        captionOnly: chapter.includes('Table 2. Numbered without an ID'),
+        idOnly: chapter.includes('Table 3.'),
+        target: chapter.includes('id="tbl:only"')
       }))
     );
     }
