@@ -26,6 +26,7 @@ const {
   latexEquationBody,
   readDisplayMath,
   readEquationBlock,
+  readEquationBlockSource,
   readEquationBody,
   unnumberedEquationBody
 } = await import(file);
@@ -46,9 +47,24 @@ check('display-math wrapper body', block?.math, 'x=1');
 check('display-math wrapper source', block?.source, source);
 check('display-math wrapper range', [block?.from, block?.to], [0, source.length]);
 check('empty attributes are unlabeled', readEquationBlock('[$$\nx\n$$]{}')?.id, null);
+check(
+  'empty attributes accept trailing whitespace',
+  readEquationBlock('[$$\nx\n$$]{} \t')?.id,
+  null
+);
+check(
+  'class-only attributes accept trailing whitespace',
+  readEquationBlock('[$$\nx\n$$]{.wide} \t')?.classes,
+  ['wide']
+);
 check('opening attributes are not supported', readEquationBlock('$${#eq:x}\nx=1\n$$'), null);
 check('prose before a wrapper is not one', readEquationBlock('before [$$\nx\n$$]{}'), null);
 check('prose after attributes is not one', readEquationBlock('[$$\nx\n$$]{} after'), null);
+check(
+  'an unfinished attribute token still has editable equation source',
+  readEquationBlockSource('[$$\nx\n$$]{.wide #}')?.math,
+  'x'
+);
 check(
   'ordinary display math has its own body range',
   [readDisplayMath('$$\nx\n$$')?.math, readDisplayMath('$$\nx\n$$')?.mathFrom],

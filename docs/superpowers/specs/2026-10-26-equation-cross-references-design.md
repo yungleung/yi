@@ -239,6 +239,12 @@ The reference index derives equation entries from the document's equation
 blocks, so the wrapper does not depend on remark's bracket-span parsing.
 Ordinary `$$…$$` blocks remain ordinary math nodes.
 
+An ID is optional for display. The strict reader produces a target only when
+the attributes are well formed; the editor's structural reader still returns
+the formula, exact source, and source ranges while an attribute token is
+unfinished. The block therefore remains visible until the author completes or
+leaves the attribute.
+
 The full-document parse still needs a safe projection for the wrapper. Remark
 otherwise reads the closing `$$` as the opening delimiter of a formula that
 consumes every later block. `equationsForParsers` replaces the wrapper's opening
@@ -272,7 +278,9 @@ counters from depending on which virtualized blocks happen to be mounted.
 Clicking the rendered formula reveals the complete bracketed block, including
 `[$$`, `$$]`, and the attributes. While the caret is inside, the dimensions and
 source geometry are the same kind as display math. Leaving restores the KaTeX
-rendering and label.
+rendering and label. The revealed source is itself an editable node: a click
+inside a formula line resolves to the character clicked, rather than
+approximating the formula's rendered glyphs.
 
 The block applies only the ID to its editor DOM. It does not apply arbitrary
 classes.

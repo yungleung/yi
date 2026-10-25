@@ -15,7 +15,9 @@ import type { BlockNode } from '../document/blocks';
 import { enterSourceOf } from '../source_mode';
 import type { EquationBlockSource } from '../syntax/equation_blocks';
 import { EditableNodeComponent } from './editable_node';
+import { highlightLatex } from './latex_highlight';
 import { renderKatexHtml } from './math';
+import { TEXT_FROM, setOffset } from '../offset_tags';
 
 export class Equation extends EditableNodeComponent {
   private readonly bodyEnd: number;
@@ -33,6 +35,20 @@ export class Equation extends EditableNodeComponent {
 
   override placeCaretAt(): void {
     enterSourceOf(this.element, this.bodyEnd);
+  }
+}
+
+/** The equation's complete wrapper as its exact, clickable source text. */
+export class EquationSource extends EditableNodeComponent {
+  constructor(block: BlockNode) {
+    super(
+      'equationSource',
+      block as unknown as AstNode,
+      document.createElement('pre'),
+      'markdown-equation-source markdown-display-math markdown-source-text overflow-x-auto'
+    );
+    setOffset(this.element, TEXT_FROM, 0);
+    this.element.innerHTML = highlightLatex(block.text);
   }
 }
 

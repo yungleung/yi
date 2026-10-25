@@ -29,7 +29,7 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
-| `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
+| `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
 | `check-epub-valid.mjs` | The book the app writes, held to W3C's `epubcheck`: `pandoc` over the note `ui/export/book_body.ts` prepares (the app's own rule, bundled rather than retyped) with the *shipped* `export.epub.yaml` and the note's name as the book's title, then the validator over what comes out — the shape whose two `Duplicate ID "going-out"` errors either half of the fix alone leaves behind (the file's old `shift-heading-level-by: 1`, or the note handed over with no level-1 heading written in), and which the file's `0` *and* that rule together take away. It **skips with a line naming what is missing** when `pandoc`, `java` or the jar is not on the machine (`YI_EPUBCHECK` names a jar anywhere else), so `npm run check` stays green without them; it is also the one check that spends seconds rather than milliseconds, on the JVM the validator runs in |
 | `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list. Captioned tables cover every writer: native numbered captions for HTML/EPUB, target wrappers for DOCX/ODT, semantic HTML for processed Markdown, and `\yiTableRef` for LaTeX/PDF |
@@ -79,7 +79,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and fifty-one probes (`probe:all` runs 222 and skips 29, each skip for the reason its
+two hundred and fifty-two probes (`probe:all` runs 223 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -117,7 +117,8 @@ unchanged), equations (`equation-rendering` — plain and labeled formulas, one 
 suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;
 `equation-crossrefs` — configured labels, automatic/manual links, and navigation to the formula
 body; `equation-matrix-default-document` — all 13 environment/plain rows with and without IDs,
-including numbering and native-tag suppression), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
+including numbering and native-tag suppression; `equation-source-editing` — unlabeled rendering,
+exact source-line clicks, and unfinished attributes), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document

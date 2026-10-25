@@ -70,8 +70,33 @@ export interface DisplayMathSource {
   mathTo: number;
 }
 
-/** Read one complete labeled display-math block, or null for ordinary source. */
+/** Read one complete equation block whose final attributes are well formed. */
 export function readEquationBlock(source: string, from = 0): EquationBlockSource | null {
+  const read = readEquationWrapper(source, from);
+  return read?.attributesValid ? read.block : null;
+}
+
+/**
+ * Read the editor's structural equation wrapper even while an attribute token
+ * is unfinished. A malformed tail has no target or classes, but its formula and
+ * exact source remain visible until the author finishes the attribute.
+ */
+export function readEquationBlockSource(
+  source: string,
+  from = 0
+): EquationBlockSource | null {
+  return readEquationWrapper(source, from)?.block ?? null;
+}
+
+interface ReadEquationWrapper {
+  block: EquationBlockSource;
+  attributesValid: boolean;
+}
+
+function readEquationWrapper(
+  source: string,
+  from: number
+): ReadEquationWrapper | null {
   if (!source.startsWith('[$$')) {
     return null;
   }
@@ -80,45 +105,65 @@ export function readEquationBlock(source: string, from = 0): EquationBlockSource
     return null;
   }
   const tail = source.slice(close + 3);
-  let attribute: PandocAttributeBlock | null = null;
-  if (tail !== '{}') {
-    const parsed = attributeBlockAtEnd(tail, tail.length, false);
-    if (parsed === null || parsed.from !== 0 || parsed.to !== tail.length) {
-      return null;
-    }
-    attribute = {
-      ...parsed,
-      from: from + close + 3,
-      to: from + close + 3 + parsed.to
-    };
-  } else {
-    attribute = {
-      id: null,
-      classes: [],
-      attributes: {},
-      from: from + close + 3,
-      to: from + source.length,
-      source: '{}',
-      separatorFrom: from + close + 3,
-      separator: ''
-    };
+  const attributesText = tail.trimEnd();
+  if (attributesText !== '' && !attributesText.startsWith('{')) {
+    return null;
   }
+  const attribute = readEquationAttributes(tail, from + close + 3);
+  const attributesValid = attributesText === '' || attribute !== null;
   const raw = source.slice(3, close);
   const leading = raw.startsWith('\r\n') ? 2 : raw.startsWith('\n') ? 1 : 0;
   const trailing = raw.endsWith('\r\n') ? 2 : raw.endsWith('\n') ? 1 : 0;
   const math = raw.slice(leading, raw.length - trailing);
   return {
-    id: attribute.id,
-    classes: attribute.classes,
-    attributes: attribute.attributes,
-    attribute,
-    math,
-    body: readEquationBody(math),
-    source,
-    from,
-    to: from + source.length,
-    mathFrom: from + 3 + leading,
-    mathTo: from + close - trailing
+    attributesValid,
+    block: {
+      id: attribute?.id ?? null,
+      classes: attribute?.classes ?? [],
+      attributes: attribute?.attributes ?? {},
+      attribute,
+      math,
+      body: readEquationBody(math),
+      source,
+      from,
+      to: from + source.length,
+      mathFrom: from + 3 + leading,
+      mathTo: from + close - trailing
+    }
+  };
+}
+
+/**
+ * The final attribute block, allowing an empty `{}` and trailing spaces an
+ * author is still typing. The block source owns those spaces; the attribute
+ * range owns only the braces and their tokens.
+ */
+function readEquationAttributes(
+  tail: string,
+  from: number
+): PandocAttributeBlock | null {
+  const end = tail.trimEnd().length;
+  const attributes = tail.slice(0, end);
+  if (/^\{\s*\}$/.test(attributes)) {
+    return {
+      id: null,
+      classes: [],
+      attributes: {},
+      from,
+      to: from + end,
+      source: attributes,
+      separatorFrom: from,
+      separator: ''
+    };
+  }
+  const parsed = attributeBlockAtEnd(tail, end, false);
+  if (parsed === null || parsed.from !== 0 || parsed.to !== end) {
+    return null;
+  }
+  return {
+    ...parsed,
+    from: from + parsed.from,
+    to: from + parsed.to
   };
 }
 
@@ -130,7 +175,7 @@ export function isEquationOpening(line: string): boolean {
 /** Whether a line closes a labeled block and begins its final attribute block. */
 export function closesEquation(line: string): boolean {
   const trimmed = line.trim();
-  return /^\$\$\](?:\{.*\})?$/.test(trimmed);
+  return /^\$\$\](?:\{.*)?$/.test(trimmed);
 }
 
 /**

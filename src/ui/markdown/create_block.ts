@@ -15,7 +15,7 @@ import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
-import { Equation } from './nodes/equation';
+import { Equation, EquationSource } from './nodes/equation';
 import { TableCaption } from './nodes/table_caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
@@ -23,7 +23,10 @@ import { highlightCode } from './nodes/code_highlight';
 import { highlightFrontmatter } from './nodes/frontmatter_highlight';
 import { highlightLatex } from './nodes/latex_highlight';
 import { fenceLanguage } from './syntax/markers';
-import { innerEquationBody, readEquationBlock } from './syntax/equation_blocks';
+import {
+  innerEquationBody,
+  readEquationBlockSource
+} from './syntax/equation_blocks';
 import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.
@@ -70,7 +73,7 @@ class BlockView implements BlockComponent {
 
   /** A labeled equation: KaTeX, one Yi label, or the complete wrapper as source. */
   private renderEquation(node: BlockNode): HTMLElement {
-    const source = readEquationBlock(node.text);
+    const source = readEquationBlockSource(node.text);
     const element = this.container(node);
     if (source === null) {
       return this.renderParsed(node, []);
@@ -80,12 +83,7 @@ class BlockView implements BlockComponent {
       element.id = source.id;
     }
     if (isSourceBlock(node)) {
-      const pre = document.createElement('pre');
-      pre.className =
-        'markdown-equation-source markdown-display-math markdown-source-text overflow-x-auto';
-      setOffset(pre, TEXT_FROM, 0);
-      pre.innerHTML = highlightLatex(node.text);
-      element.appendChild(pre);
+      element.appendChild(new EquationSource(node).element);
       return element;
     }
     element.appendChild(

@@ -271,6 +271,9 @@ E = mc^2
 $$]{#eq:energy}
 ```
 
+An ID is optional for display. `[$$…$$]{}` and `[$$…$$]{.wide}` render normally but cannot be
+referenced; add `#eq:id` when the formula needs a target.
+
 The attribute block belongs after `$$]`; it may contain classes and key/value attributes:
 
 ```markdown
@@ -352,6 +355,11 @@ to `Equation` and an empty prefix.
 Clicking the rendered equation reveals the complete `[$$…$$]{…}` source. ⌘-click or Ctrl-click an
 automatic or manual reference to reveal the equation and place the caret at the start of its formula
 body. The browser location hash is not changed.
+
+While the complete source is shown, clicking a formula line places the caret at the character
+clicked. The equation stays visible while an attribute token is unfinished, such as `{.wide #}`, or
+while text is appended after its closing brace. Leaving the source renders the formula again; an
+attribute without an ID simply leaves it untargetable.
 
 #### Equation export
 
