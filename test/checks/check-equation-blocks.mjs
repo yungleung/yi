@@ -47,6 +47,11 @@ check('empty attributes are unlabeled', readEquationBlock('[$$\nx\n$$]{}')?.id, 
 check('opening attributes are not supported', readEquationBlock('$${#eq:x}\nx=1\n$$'), null);
 check('prose before a wrapper is not one', readEquationBlock('before [$$\nx\n$$]{}'), null);
 check('prose after attributes is not one', readEquationBlock('[$$\nx\n$$]{} after'), null);
+check(
+  'TeX braces do not hide the wrapper attributes',
+  readEquationBlock('[$$\n\\begin{align}\nx&=1\\\\\ny&=2\n\\end{align}\n$$]{#eq:align .wide}')?.id,
+  'eq:align'
+);
 
 const wrap = (name, argument = '') =>
   `\\begin{${name}}${argument}\nx\n\\end{${name}}`;

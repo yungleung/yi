@@ -15,6 +15,7 @@ import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
+import { Equation } from './nodes/equation';
 import { TableCaption } from './nodes/table_caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
@@ -22,6 +23,8 @@ import { highlightCode } from './nodes/code_highlight';
 import { highlightFrontmatter } from './nodes/frontmatter_highlight';
 import { highlightLatex } from './nodes/latex_highlight';
 import { fenceLanguage } from './syntax/markers';
+import { innerEquationBody, readEquationBlock } from './syntax/equation_blocks';
+import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
@@ -55,12 +58,48 @@ class BlockView implements BlockComponent {
     this.element = withRenderFrame(node, () =>
       node.kind === 'blank'
         ? this.renderBlank(node)
+        : node.kind === 'equation'
+          ? this.renderEquation(node)
         : isSourceBlock(node)
           ? this.renderSource(node)
           : hasBodyView(node.kind)
             ? this.renderFenceBody(node)
             : this.renderParsed(node, children)
     );
+  }
+
+  /** A labeled equation: KaTeX, one Yi label, or the complete wrapper as source. */
+  private renderEquation(node: BlockNode): HTMLElement {
+    const source = readEquationBlock(node.text);
+    const element = this.container(node);
+    if (source === null) {
+      return this.renderParsed(node, []);
+    }
+    element.classList.add('markdown-equation-block');
+    if (source.id !== null) {
+      element.id = source.id;
+    }
+    if (isSourceBlock(node)) {
+      const pre = document.createElement('pre');
+      pre.className =
+        'markdown-equation-source markdown-display-math markdown-source-text overflow-x-auto';
+      setOffset(pre, TEXT_FROM, 0);
+      pre.innerHTML = highlightLatex(node.text);
+      element.appendChild(pre);
+      return element;
+    }
+    element.appendChild(
+      new Equation(node, source, innerEquationBody(source.body)).element
+    );
+    const label = renderContext().equationLabelAt(node.charStart + source.from);
+    if (label !== null) {
+      const number = document.createElement('span');
+      number.className = 'markdown-equation-number';
+      number.setAttribute('data-chrome', 'true');
+      number.textContent = label;
+      element.appendChild(number);
+    }
+    return element;
   }
 
   /**

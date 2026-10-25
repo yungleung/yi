@@ -18,6 +18,7 @@ export type BlockKind =
   | 'fencedCode'
   | 'indentedCode'
   | 'displayMath'
+  | 'equation'
   | 'html'
   | 'descriptionList'
   | 'paragraph'
@@ -35,6 +36,7 @@ export function isRawRendered(kind: BlockKind): boolean {
     kind === 'fencedCode' ||
     kind === 'indentedCode' ||
     kind === 'displayMath' ||
+    kind === 'equation' ||
     kind === 'html'
   );
 }
@@ -61,7 +63,12 @@ export function hasSourceMode(kind: BlockKind): boolean {
  * is not one: it has no delimiter to keep a line for.
  */
 export function isFenced(kind: BlockKind): boolean {
-  return kind === 'frontmatter' || kind === 'fencedCode' || kind === 'displayMath';
+  return (
+    kind === 'frontmatter' ||
+    kind === 'fencedCode' ||
+    kind === 'displayMath' ||
+    kind === 'equation'
+  );
 }
 
 /**

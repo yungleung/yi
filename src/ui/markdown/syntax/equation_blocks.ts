@@ -65,11 +65,15 @@ export function readEquationBlock(source: string, from = 0): EquationBlockSource
   const tail = source.slice(close + 3);
   let attribute: PandocAttributeBlock | null = null;
   if (tail !== '{}') {
-    const parsed = attributeBlockAtEnd(source, source.length, false);
-    if (parsed === null || parsed.from !== close + 3) {
+    const parsed = attributeBlockAtEnd(tail, tail.length, false);
+    if (parsed === null || parsed.from !== 0 || parsed.to !== tail.length) {
       return null;
     }
-    attribute = { ...parsed, from: from + parsed.from, to: from + parsed.to };
+    attribute = {
+      ...parsed,
+      from: from + close + 3,
+      to: from + close + 3 + parsed.to
+    };
   } else {
     attribute = {
       id: null,

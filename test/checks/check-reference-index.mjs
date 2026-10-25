@@ -128,6 +128,27 @@ const configuredTable = configuredTables.find((entry) => entry.kind === 'table')
 check('a table uses its configured label and prefix', referenceLabel(configuredTable), 'Data table 2-1');
 check('a table target starts at its first header cell', configuredTable?.caretAt, 90);
 
+const equationDoc =
+  '---\nreference-labels:\n  equation: Formula\nreference-number-prefixes:\n  equation: "2-"\n---\n\n' +
+  '[$$\nx=1\n$$]{#eq:first}\n\n' +
+  '[$$\ny=2\n$$]{}\n\n' +
+  '[$$\nz=3\n$$]{#eq:third}\n';
+const equationEntries = referenceIndex(equationDoc).filter((entry) => entry.kind === 'equation');
+check(
+  'only labeled equations enter the index',
+  equationEntries.map((entry) => [entry.id, entry.number, entry.title]),
+  [
+    ['eq:first', 1, ''],
+    ['eq:third', 2, '']
+  ]
+);
+check(
+  'an equation uses the configured label and prefix',
+  referenceLabel(equationEntries[0]),
+  'Formula (2-1)'
+);
+check('an equation target starts at its formula body', equationEntries[0]?.caretAt, 95);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

@@ -41,6 +41,7 @@ import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 import { isTableCaptionLine } from '../syntax/table_captions';
 import { readTableSource } from '../syntax/table_source';
+import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
 import { BlockIndex, type BlockEntry } from './block_index';
 import { isRawRendered, type BlockKind } from './block_kinds';
 import type { DocumentEdit } from './history';
@@ -447,6 +448,30 @@ function* blocksFrom(
       continue;
     }
 
+    // Labeled display math: `[$$` through `$$]…`, one block including its attributes.
+    if (isEquationOpening(first.text)) {
+      let close = -1;
+      for (let scan = j; scan < lines.length; scan += 1) {
+        if (closesEquation(lines[scan].text)) {
+          close = scan;
+          break;
+        }
+      }
+      if (close >= 0) {
+        const last = lines[close];
+        yield makeBlock(
+          'equation',
+          text,
+          lineStart,
+          last.number,
+          charStart,
+          last.end
+        );
+        i = close + 1;
+        continue;
+      }
+    }
+
     // Display math: `$$` on its own line through the closing `$$`.
     if (first.text.trimStart().startsWith('$$')) {
       kind = 'displayMath';
@@ -532,6 +557,7 @@ function* blocksFrom(
       j < lines.length &&
       lines[j].text.trim() !== '' &&
       openingFence(lines[j].text) === null &&
+      !isEquationOpening(lines[j].text) &&
       !lines[j].text.trimStart().startsWith('$$')
     ) {
       lineEnd = lines[j].number;

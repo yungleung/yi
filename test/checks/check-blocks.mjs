@@ -55,6 +55,16 @@ const cases = [
   ['a fence that interrupts a paragraph is a block of its own', 'text\n```\ncode\n```\nafter\n', 'paragraph@1 fencedCode@2 paragraph@5'],
   ['and its language is kept', 'text\n```js\nlet x = 1;\n```\nafter\n', 'paragraph@1 fencedCode@2 paragraph@5'],
   ['display math that interrupts one too', 'text\n$$\nx\n$$\nafter\n', 'paragraph@1 displayMath@2 paragraph@5'],
+  [
+    'labeled display math',
+    '[$$\nx\n$$]{#eq:x}\n',
+    'equation@1'
+  ],
+  [
+    'labeled display math interrupts a paragraph',
+    'text\n[$$\nx\n$$]{#eq:x}\nafter\n',
+    'paragraph@1 equation@2 paragraph@5'
+  ],
   ['two formulas under one paragraph are two blocks', 'a\n$$\nx\n$$\n$$\ny\n$$\nb\n', 'paragraph@1 displayMath@2 displayMath@5 paragraph@8'],
   // The same two with the blank lines markdown's own reading does not need: unchanged.
   ['a fence with blank lines around it is what it was', 'text\n\n```\ncode\n```\n\nafter\n', 'paragraph@1 fencedCode@3 paragraph@7'],

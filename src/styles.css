@@ -156,8 +156,27 @@
 }
 
 .markdown-display-math,
+.markdown-equation-source,
 .markdown-source-text {
   margin-block: calc(1rem * var(--md-page-scale));
+}
+
+.markdown-equation-block {
+  position: relative;
+}
+
+.markdown-equation-view .katex-display {
+  margin: 0;
+}
+
+.markdown-equation-number {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875em;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* A note is set smaller than the text that carries its marker, and its label keeps a
@@ -428,6 +447,7 @@ body {
 .markdown-auto-reference-source,
 .markdown-figure-source,
 .markdown-table-caption-source,
+.markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -457,6 +477,7 @@ body {
 .markdown-auto-reference-source,
 .markdown-figure-source,
 .markdown-table-caption-source,
+.markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,

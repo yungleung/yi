@@ -20,9 +20,11 @@ import {
   type ReferenceStyle
 } from '../syntax/reference_vocabulary';
 import type { TableCaptionNode } from '../syntax/table_captions';
+import { readEquationBlock } from '../syntax/equation_blocks';
+import { splitBlocks } from './blocks';
 
 /** A target kind with a document-configured reference name. */
-export type ReferenceKind = 'heading' | 'figure' | 'table';
+export type ReferenceKind = 'heading' | 'figure' | 'table' | 'equation';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
 export interface ReferenceEntry {
@@ -46,11 +48,36 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
   const tree = parseMarkdown(markdown);
   const vocabulary = referenceVocabularyFromTree(tree);
   const used = new Set<string>();
+  const equationTargets = splitBlocks(markdown)
+    .filter((block) => block.kind === 'equation')
+    .flatMap((block) => {
+      const equation = readEquationBlock(block.text);
+      return equation?.id === null || equation === null
+        ? []
+        : [{ block, equation, id: equation.id, from: block.charStart }];
+    });
   let figureNumber = 0;
   let tableNumber = 0;
   const entries: ReferenceEntry[] = [];
   walk(tree.children);
-  return entries;
+  let equationNumber = 0;
+  for (const { block, equation, id } of equationTargets) {
+    equationNumber += 1;
+    used.add(id);
+    entries.push({
+      id,
+      kind: 'equation',
+      from: block.charStart,
+      to: block.charEnd,
+      number: equationNumber,
+      title: '',
+      label: vocabulary.equation.label,
+      numberPrefix: vocabulary.equation.prefix,
+      caretAt: block.charStart + equation.mathFrom,
+      explicit: true
+    });
+  }
+  return entries.sort((one, other) => one.from - other.from);
 
   function walk(children: readonly RootContent[]): void {
     for (const child of children) {
@@ -81,7 +108,10 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       const base = pandocHeadingId(title);
       id = base;
       let suffix = 1;
-      while (used.has(id)) {
+      while (
+        used.has(id) ||
+        equationTargets.some((target) => target.id === id && target.from < start)
+      ) {
         id = `${base}-${suffix}`;
         suffix += 1;
       }
