@@ -24,6 +24,7 @@ fn request_in(dir: &Path) -> ExportRequest {
         self_contained: false,
         native_bibliography: None,
         note_assets: Vec::new(),
+        reference_header: None,
     }
 }
 
@@ -38,6 +39,7 @@ fn named_arguments_for(dir: &Path, request: &ExportRequest, kind: &ExportKind) -
         &dir.join("note-1.md"),
         request,
         kind,
+        None,
         None,
         None,
         None,

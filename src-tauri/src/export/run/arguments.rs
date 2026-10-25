@@ -27,6 +27,7 @@ pub(crate) fn pandoc_arguments(
     request: &ExportRequest,
     kind: &ExportKind,
     header: Option<&Path>,
+    reference_header: Option<&Path>,
     package_defaults: Option<&Path>,
     template: Option<(&Path, &TemplateManifest)>,
     alias_root: Option<&Path>,
@@ -42,6 +43,10 @@ pub(crate) fn pandoc_arguments(
     arguments.push(OsString::from("--output"));
     arguments.push(output.into_os_string());
     if let Some(header) = header {
+        arguments.push(OsString::from("--include-in-header"));
+        arguments.push(header.as_os_str().to_os_string());
+    }
+    if let Some(header) = reference_header {
         arguments.push(OsString::from("--include-in-header"));
         arguments.push(header.as_os_str().to_os_string());
     }

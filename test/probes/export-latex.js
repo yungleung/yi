@@ -73,6 +73,20 @@
     'See [#fig:demo] for the numbered figure.',
     '',
     `![Demo figure](${picture}){#fig:demo .wide}`,
+    '',
+    'See [#lst:id-only] and [#lst:full]. A caption-only block follows:',
+    '',
+    '```python {caption="Caption only"}',
+    'print(0)',
+    '```',
+    '',
+    '```python {#lst:id-only}',
+    'print(1)',
+    '```',
+    '',
+    '```python {#lst:full caption="Example listing"}',
+    'print(2)',
+    '```',
     ''
   ].join('\n');
 
@@ -189,6 +203,9 @@
       const written = shipped.replace(
         '\nvariables: {}\n',
         '\nvariables:\n  CJKmainfont: "A reader\'s font"\n'
+      ).replace(
+        '\nhighlight-style: pygments\n',
+        '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
       );
       check(
         'the reader’s line goes into their own settings file, where pandoc reads it',
@@ -217,6 +234,21 @@
         {
           package: named.includes('\\usepackage{xeCJK}'),
           font: /\\setCJKmainfont\[\]\{[^}]*\}/.exec(named)?.[0] ?? null
+        }
+      );
+      check(
+        'native listings keep ID-driven order under idiomatic highlighting',
+        named.includes('title={Caption only}') &&
+          named.includes('caption={\\hspace{0pt}}') &&
+          named.includes('caption={Example listing}') &&
+          /\\hyperref\[lst:id-only\]\{Listing 1\}/.test(named) &&
+          /\\hyperref\[lst:full\]\{Listing 2\}/.test(named),
+        {
+          captionOnly: named.includes('title={Caption only}'),
+          idOnly: named.includes('caption={\\hspace{0pt}}'),
+          full: named.includes('caption={Example listing}'),
+          idLink: /\\hyperref\[lst:id-only\]\{[^}]*\}/.exec(named)?.[0] ?? null,
+          fullLink: /\\hyperref\[lst:full\]\{[^}]*\}/.exec(named)?.[0] ?? null
         }
       );
     } finally {

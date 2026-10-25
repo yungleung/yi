@@ -52,6 +52,7 @@ import {
   isWebDestination
 } from './picture_hint';
 import { exportSource } from './preprocess';
+import { referenceHeader } from './reference_header';
 import { forgetRasters, rasterPictures } from './raster_picture';
 import { portableLatexImage } from './latex_images';
 import {
@@ -241,6 +242,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     // heading, the note's name standing in it when the note writes none (`book_body.ts`). Every
     // other kind's body is the note's own text.
     const body = first.names_its_body ? bodyWithItsName(prepared, title) : prepared;
+    const referenceHeaderText =
+      first.kind === 'latex' || first.kind === 'pdf' ? referenceHeader(text) : null;
     const nativeBibliography = await nativeBibliographyFor(
       first.kind,
       answer.templateId,
@@ -271,7 +274,8 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         nativeBibliography === null
           ? null
           : { path: nativeBibliography.path, text: nativeBibliography.text },
-      note_assets: noteAssets
+      note_assets: noteAssets,
+      reference_header: referenceHeaderText
     });
     const written = fileName(outputPath);
     showHint(

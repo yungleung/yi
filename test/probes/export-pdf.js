@@ -46,12 +46,34 @@
   };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
+  const checkout = window.__probePaths.checkout;
   const folderName = `yi-probe-export-pdf-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  const note =
-    '# Going out\n\nA short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].\n';
+  const note = [
+    '---',
+    'reference-labels:',
+    '  figure: Diagram',
+    '  listing: Code excerpt',
+    'reference-number-prefixes:',
+    '  figure: "2-"',
+    '  listing: "2-"',
+    '---',
+    '',
+    '# Going out',
+    '',
+    'A short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].',
+    '',
+    'See [#fig:demo] and [#lst:demo].',
+    '',
+    `![Example figure](${checkout}src-tauri/icons/32x32.png){#fig:demo}`,
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    ''
+  ].join('\n');
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -83,6 +105,8 @@
   };
 
   const before = await invoke('get_config');
+  const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+  const configBefore = await bytesOf(config);
   try {
     try {
       await files.deleteEntry(folder);
@@ -92,11 +116,19 @@
     await files.createEntry(home, folderName, false);
     await files.createEntry(folder, 'note.md', true);
     await files.writeTextAtomically(notePath, note);
+    const settings = new TextDecoder().decode(configBefore ?? new Uint8Array());
+    await files.writeTextAtomically(
+      config,
+      settings.replace(
+        '\nhighlight-style: pygments\n',
+        '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
+      )
+    );
     await t.openWorkspace(folder);
     await show(notePath, note);
     check(
       'the note the probe opened is the document on screen',
-      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      (document.querySelector('.prose')?.textContent ?? '').includes('Going out'),
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
@@ -139,8 +171,22 @@
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
       { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
     );
+    const page =
+      pdf === null ? '' : (await t.pdfText(pdf)).normalize('NFKC').replace(/\s+/g, '');
+    check(
+      'document labels and literal prefixes reach native PDF captions',
+      page.includes('Diagram2-1') && page.includes('Codeexcerpt2-1'),
+      {
+        figure: page.includes('Diagram2-1'),
+        listing: page.includes('Codeexcerpt2-1'),
+        page: page.slice(0, 180)
+      }
+    );
 
   } finally {
+    if (configBefore !== null) {
+      await files.writeTextAtomically(config, new TextDecoder().decode(configBefore));
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

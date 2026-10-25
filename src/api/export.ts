@@ -113,6 +113,8 @@ export interface ExportRequest {
   native_bibliography: NativeBibliography | null;
   /** Local pictures referenced by a LaTeX source, copied into the output source tree. */
   note_assets: NoteAsset[];
+  /** LaTeX caption-name and counter overrides generated from the reference vocabulary. */
+  reference_header: string | null;
 }
 
 /** The kinds this build ships, and where pandoc is. Reads only: nothing is written by asking. */

@@ -297,6 +297,45 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const full =
+    '```python {#lst:full caption="Example"}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(full, { kind: 'latex' });
+  check('LaTeX leaves a fully captioned listing unchanged', rendered, full);
+}
+
+{
+  const idOnly =
+    '```python {#lst:one}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(idOnly, { kind: 'latex' });
+  check(
+    'LaTeX gives an ID-only listing a zero-width native caption',
+    rendered,
+    '```{#lst:one .python caption="\u200b"}\n' +
+      'print(1)\n' +
+      '```\n'
+  );
+}
+
+{
+  const captionOnly =
+    '```python {caption="Example *literal*"}\n' +
+    'print(0)\n' +
+    '```\n';
+  const { rendered } = await render(captionOnly, { kind: 'pdf' });
+  check(
+    'LaTeX turns a caption-only block into an unnumbered native title',
+    rendered,
+    '```{.python title="Example *literal*"}\n' +
+      'print(0)\n' +
+      '```\n'
+  );
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';

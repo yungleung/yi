@@ -123,6 +123,9 @@ pub struct ExportRequest {
     /// Pictures the note refers to, copied into a generated bundle beside a LaTeX source.
     #[serde(default)]
     pub note_assets: Vec<NoteAsset>,
+    /// The webview-prepared LaTeX overrides for target labels and number prefixes.
+    #[serde(default)]
+    pub reference_header: Option<String>,
 }
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
 pub fn run_export(
@@ -213,6 +216,11 @@ fn export_with_pandoc(
             crate::fonts::bundled::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
+    let reference_header = request
+        .reference_header
+        .as_deref()
+        .map(|source| super::reference_header::write_header(&dir, source))
+        .transpose()?;
     let note = write_note(&dir, &request.text)?;
     let result = pandoc_arguments(
         &dir,
@@ -221,6 +229,7 @@ fn export_with_pandoc(
         request,
         kind,
         header.as_deref(),
+        reference_header.as_deref(),
         template_defaults.as_deref(),
         template
             .as_ref()
