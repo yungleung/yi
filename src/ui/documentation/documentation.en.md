@@ -65,7 +65,7 @@ Useful commands include:
 | Undo | ⌘Z or Ctrl+Z |
 | Documentation | F1 |
 
-## Cross-references and heading attributes
+## Cross-references and target attributes
 
 Internal links use ordinary Markdown link syntax. A destination beginning with `#` names a heading in
 the current document:
@@ -106,6 +106,114 @@ Keep explicit heading IDs unique. Pandoc leaves duplicate explicit IDs unchanged
 follows the first matching heading. Both heading attributes and internal links are valid Pandoc
 Markdown, so Pandoc exports and the processed Markdown export preserve them.
 
+### Reference labels and number prefixes
+
+Figure, listing, table, equation and list labels belong to the note, not to Yi's interface
+language. Set them in frontmatter when you want wording other than the English defaults:
+
+```yaml
+reference-labels:
+  figure: Diagram
+  listing: Code excerpt
+  table: Table
+  equation: Equation
+  list: List
+```
+
+Missing keys still use English: `Figure`, `Listing`, `Table`, `Equation` and `List`. A value must
+be text; an empty, list, mapping or other invalid value falls back for that key alone. Yi does not
+change reference labels when you change the application language.
+
+You can also prepend literal text to a kind's sequential number:
+
+```yaml
+reference-number-prefixes:
+  figure: "2-"
+  listing: "A."
+```
+
+The prefix is concatenated directly with the number. These settings produce `Diagram 2-1` and
+`Code excerpt A.2`. Quote values when YAML could read the punctuation differently. Prefixes are
+literal: Yi does not derive them from a chapter, section or heading level. Missing or invalid
+prefixes are empty.
+
+These choices affect the editor, `[#id]` references, processed Markdown and every export. A
+non-empty prefix overrides the corresponding native LaTeX/PDF counter. The header also makes native
+LaTeX captions use the configured figure, table and listing words, rather than the template's
+language.
+
+### Code listings
+
+A fenced code block becomes a listing when its opening fence has an ID, a `caption`, or both.
+Pandoc's two usual spellings are supported:
+
+~~~markdown
+```python {#lst:minimal}
+print(1)
+```
+~~~
+
+~~~markdown
+```{#lst:sample .python caption="A captioned example" .numberLines startFrom=7}
+print("sample")
+```
+~~~
+
+Only an explicit ID consumes a `Listing` number and creates a reference target:
+
+```markdown
+See [#lst:sample] or [the captioned listing](#lst:sample).
+```
+
+`[#lst:sample]` displays the configured label and number. With the defaults it reads `Listing 1`.
+The manual link keeps the author's words. A new listing above another renumbers the later target
+and all automatic references without rewriting the source.
+
+A `caption` without an ID is visible but unnumbered and cannot be referenced:
+
+~~~markdown
+```python {caption="An unnumbered example"}
+print(0)
+```
+~~~
+
+An ID without a caption displays only the generated listing label:
+
+~~~markdown
+```python {#lst:minimal}
+print(1)
+```
+~~~
+
+Other Pandoc attributes stay on the inner code block for export. The generated caption appears
+below the code. The opening fence and all its attributes are hidden while the caret is elsewhere
+and become editable when the caret enters the block. ⌘-click or Ctrl-click a listing reference to
+reveal the complete fence with the caret on the first code line; typing there edits code rather
+than accidentally changing the ID or caption.
+
+`.numberLines`, `.number-lines` and `startFrom` number source lines. They do not create a listing
+number. The editor does not currently draw that gutter; Pandoc-backed exports preserve the
+attributes.
+
+Rendered HTML and EPUB contain an identified listing block with a visible caption. Word and ODT
+contain a bookmark or named section and the same visible text. Processed Markdown contains an HTML
+`<figure>` with the ID and `<figcaption>`, so common Markdown readers can show the target and caption;
+it does not reproduce Pandoc's source-line-number column.
+
+LaTeX and PDF honor the `syntax-highlighting` setting in the export defaults or selected template:
+
+- An ID and caption become a native numbered listing.
+- An ID without a caption receives a zero-width native caption, which keeps the native counter
+  aligned while displaying only the normal `Listing N` prefix.
+- A caption without an ID becomes an unnumbered native listing title.
+- With ordinary non-idiomatic highlighting, Pandoc does not visibly typeset code captions or
+  titles. Choose `syntax-highlighting: idiomatic` in the relevant settings file when you want
+  visible native listing captions and a native counter.
+
+The classes `.listing` and `.listing-caption` let an HTML/EPUB template and a DOCX/ODT reference
+document style the generated caption. No extra LaTeX package or Yi-specific frontmatter switch is
+required.
+
 ### Figures
 
 A standalone image with non-empty alt text is a figure. Its alt text is its caption, and every
@@ -117,8 +225,9 @@ See [#fig:sample] or the [sample figure](#fig:sample).
 ![A sample image](images/sample.png){#fig:sample .wide width=80%}
 ```
 
-When one unlabeled figure appears before it, `[#fig:sample]` displays “Figure 2” and links to the
-labeled figure. Only a figure with an explicit ID can be referenced.
+When one unlabeled figure appears before it, `[#fig:sample]` displays the second configured figure
+label and links to the labeled figure. With the English defaults it reads `Figure 2`. Only a figure
+with an explicit ID can be referenced.
 
 The attribute block follows Pandoc image syntax. Yi applies only the ID to its editor DOM and keeps
 classes and other attributes for export. Images inside a paragraph remain inline images: they are
@@ -129,8 +238,9 @@ referenceable.
 opens its complete image Markdown for editing.
 
 Rendered HTML, EPUB, Word, and ODT exports receive a numbered caption and a format-appropriate
-bookmark. LaTeX and PDF use the native figure counter. Processed Markdown emits an HTML `<figure>`
-with an ID and numbered `<figcaption>` so common Markdown readers can display it.
+bookmark. LaTeX and PDF use the native figure counter with the configured label and optional prefix.
+Processed Markdown emits an HTML `<figure>` with an ID and numbered `<figcaption>` so common Markdown
+readers can display it.
 
 ## Export a note
 

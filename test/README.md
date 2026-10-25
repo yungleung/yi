@@ -37,8 +37,11 @@ methodology; this file is the index and the conventions.
 | `check-heading-attributes.mjs` | Pandoc heading attributes on ATX and setext headings: separation from the title, quoted and escaped values, malformed braces left as text, and exact serialization |
 | `check-heading-index.mjs` | Pandoc automatic identifiers, Unicode, fallback and duplicate suffixes, explicit IDs staying literal, same-document target order, and first-match lookup |
 | `check-auto-references.mjs` | Yi's `[#id]` source spelling: IDs, multiple references, escapes, empty forms, and line boundaries |
-| `check-reference-index.mjs` | Shared heading/figure targets, document-order numbering, first-match duplicate resolution, and inferred reference text |
+| `check-reference-vocabulary.mjs` | Document-owned labels and literal number prefixes, per-key English/empty fallbacks, and interface-language independence |
+| `check-reference-index.mjs` | Shared heading/figure/listing targets, document-order numbering, first-match duplicate resolution, and inferred reference text |
 | `check-figures.mjs` | Pandoc implicit-figure recognition, image attribute parsing, inline and empty-alt exclusions, malformed attributes, and source serialization |
+| `check-code-fences.mjs` | Both Pandoc fenced-code attribute forms, language classes, captions, malformed attributes, and body offsets |
+| `check-reference-header.mjs` | Native LaTeX label names and literal counter-prefix overrides |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
 | `check-latex-images.mjs` | Where pictures go in a LaTeX source tree (`ui/export/latex_images.ts`): package pictures keep their relative path, a note picture may replace a package asset, and other or unsafe destinations are reduced to unique relative files under `<output>.assets/` |
@@ -159,7 +162,7 @@ the `contain-intrinsic-size` fallback, which is what a reader sees as the paragr
 the page under it moving), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
-`link-cmd-click` — ⌘-click opens URLs in the browser, a plain click opens the source, and a same-document fragment asks the reference navigator while an empty href remains inert; `auto-references` — `[#id]` infers a heading title, reveals its source, navigates, and marks an unknown target unresolved; `blank-line-heading` — bare `#` characters stay visible until their delimiter space starts the heading, whose level marker remains visible while it is empty; `heading-crossrefs` — automatic, duplicate, custom and setext IDs reach distant virtualized headings without changing the hash, missing targets are named, and plain clicks still edit source; `heading-crossrefs-default-document` — the shipped demo's links and all three attribute kinds; `heading-attributes` — attributes hidden outside a heading, editable inside it, with only the ID applied to the DOM and one Left leaving the source block; `figure-rendering` — implicit figures, captions, inferred numbers, explicit IDs, source editing, and exclusion of arbitrary classes; `figure-crossrefs-default-document` — the shipped figure example; `link-opens-a-note` — a link whose destination is a *path*: ⌘-click opens the note it names, beside the note being read or written from the root of the workspace, in either spelling, and says which path failed when there is nothing there —
+`link-cmd-click` — ⌘-click opens URLs in the browser, a plain click opens the source, and a same-document fragment asks the reference navigator while an empty href remains inert; `auto-references` — `[#id]` infers a heading title, reveals its source, navigates, and marks an unknown target unresolved; `blank-line-heading` — bare `#` characters stay visible until their delimiter space starts the heading, whose level marker remains visible while it is empty; `heading-crossrefs` — automatic, duplicate, custom and setext IDs reach distant virtualized headings without changing the hash, missing targets are named, and plain clicks still edit source; `heading-crossrefs-default-document` — the shipped demo's links and all three attribute kinds; `heading-attributes` — attributes hidden outside a heading, editable inside it, with only the ID applied to the DOM and one Left leaving the source block; `figure-rendering` — implicit figures, captions, inferred numbers, explicit IDs, source editing, and exclusion of arbitrary classes; `figure-crossrefs-default-document` — the shipped figure example with configured label and prefix; `listing-rendering` — caption-only, ID-only and fully attributed listings, generated labels, source mode and code bodies; `listing-crossrefs` — listing navigation lands on the first code line and follows document labels/prefixes; `listing-crossrefs-default-document` — the shipped listing examples; `link-opens-a-note` — a link whose destination is a *path*: ⌘-click opens the note it names, beside the note being read or written from the root of the workspace, in either spelling, and says which path failed when there is nothing there —
 `link-click-stays-in-the-window` — the harness's own stand-in, with a ⌘-click still reaching the
 app and asking for the URL while the window stays where it was) and images
 (`insert-image` — the button, a URL, a path and a `file://` URL from the clipboard, a
@@ -223,7 +226,9 @@ resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}
 the kind's own font rule in both of its halves: a `.tex` of a CJK note carries **no** font setup as the
 file comes (naming a font the reader's machine may not have would fail their compile where the card's
 hint merely warns), and carries `\usepackage{xeCJK}` with the name for the length of one export where
-the reader has written one into their own copy;
+the reader has written one into their own copy. It also exports listings under idiomatic
+highlighting: a caption-only title does not advance the counter, an ID-only listing advances it
+through a zero-width native caption, and a fully captioned listing follows;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
 (pandoc's default template and reference document, and a validation that names a deleted entry),
@@ -290,7 +295,9 @@ drew it). It fails if the app ever stops handing the reader's file to pandoc as 
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the three probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
-result out of the page's stash; there is nothing to split, since the overrun *is* one export);
+result out of the page's stash; there is nothing to split, since the overrun *is* one export). It
+also proves document-configured figure and listing labels plus literal `2-` prefixes in the
+compiled page;
 `export-pdf-page` — the page the card offers for that kind: both fields open on the settings file's own
 and come out A4 portrait, letter + landscape comes out 792 x 612 points read from the page's own
 `/MediaBox`, another kind is offered no page row at all, and the reader's settings file is untouched
@@ -313,7 +320,8 @@ as they are, and no PNG), with the pictures a run drew gone when it ends;
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
 reads as, the works it names appended under the app's own heading, and the note's own headings left
-at their own levels;
+at their own levels; figures and listings become identified HTML with visible captions, and every
+automatic reference is resolved to an ordinary link;
 `export-web-image` — the picture a note names on the web: the app fetches it with `reqwest` from the
 local HTTP fixture (a redirect to a real PNG), follows the redirect, hands pandoc a local file, and
 the document that comes out has `word/media/` in it and no fetched copy left behind;
