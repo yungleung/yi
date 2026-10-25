@@ -65,6 +65,12 @@
     'See [#fig:demo] for the picture.',
     '',
     `![Example figure](${window.__probePaths.checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     ''
   ].join('\n');
 
@@ -181,6 +187,17 @@
         link: plain.includes('See [Figure 1](#fig:demo)'),
         figure: /<figure[^>]*id="fig:demo"[^>]*>/.exec(plain)?.[0] ?? null,
         caption: /<figcaption>.*<\/figcaption>/.exec(plain)?.[0] ?? null
+      }
+    );
+    check(
+      'and listings become numbered HTML with an automatic-reference link',
+      plain.includes('See [Listing 1](#lst:demo)') &&
+        plain.includes('<figure id="lst:demo" class="listing">') &&
+        plain.includes('<figcaption>Listing 1. Example listing</figcaption>'),
+      {
+        link: plain.includes('See [Listing 1](#lst:demo)'),
+        listing: /<figure[^>]*id="lst:demo"[^>]*>/.exec(plain)?.[0] ?? null,
+        caption: /<figcaption>Listing 1\. Example listing<\/figcaption>/.exec(plain)?.[0] ?? null
       }
     );
 

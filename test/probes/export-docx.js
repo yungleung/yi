@@ -74,6 +74,12 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     ''
   ].join('\n');
 
@@ -249,6 +255,17 @@
         bookmark: documentXml.includes('<w:bookmarkStart'),
         caption: documentXml.includes('Figure 1. Example figure'),
         link: documentXml.includes('>Figure 1</w:t>')
+      }
+    );
+    check(
+      'and a listing keeps a bookmark, caption, and automatic link',
+      documentXml.includes('Listing 1. Example listing') &&
+        documentXml.includes('>Listing 1</w:t>') &&
+        (documentXml.match(/<w:bookmarkStart/g) ?? []).length >= 2,
+      {
+        caption: documentXml.includes('Listing 1. Example listing'),
+        link: documentXml.includes('>Listing 1</w:t>'),
+        bookmarks: (documentXml.match(/<w:bookmarkStart/g) ?? []).length
       }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');

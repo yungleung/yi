@@ -62,6 +62,12 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${url}){#fig:demo .wide}`,
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     ''
   ].join('\n');
 
@@ -196,6 +202,17 @@
         target: /<div id="fig:demo">/.exec(page)?.[0] ?? null,
         caption: /<figcaption[^>]*>[^<]*/.exec(page)?.[0] ?? null,
         link: /<a href="#fig:demo">[^<]*/.exec(page)?.[0] ?? null
+      }
+    );
+    check(
+      'a listing keeps its HTML target and visible caption',
+      page.includes('id="lst:demo"') &&
+        page.includes('Listing 1. Example listing') &&
+        page.includes('href="#lst:demo">Listing 1</a>'),
+      {
+        target: /<div id="lst:demo"[^>]*>/.exec(page)?.[0] ?? null,
+        caption: page.includes('Listing 1. Example listing'),
+        link: page.includes('href="#lst:demo">Listing 1</a>')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

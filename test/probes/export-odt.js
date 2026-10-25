@@ -68,6 +68,12 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${checkout}src-tauri/icons/32x32.png){#fig:demo .wide}`,
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     ''
   ].join('\n');
 
@@ -168,6 +174,17 @@
         section: content.includes('text:section text:name="fig:demo"'),
         link: content.includes('xlink:href="#fig:demo"'),
         caption: content.includes('Figure 1. Example figure')
+      }
+    );
+    check(
+      'a listing keeps its target and visible caption in the ODT section',
+      content.includes('text:section text:name="lst:demo"') &&
+        content.includes('xlink:href="#lst:demo"') &&
+        content.includes('Listing 1. Example listing'),
+      {
+        section: content.includes('text:section text:name="lst:demo"'),
+        link: content.includes('xlink:href="#lst:demo"'),
+        caption: content.includes('Listing 1. Example listing')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

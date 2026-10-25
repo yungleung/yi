@@ -74,6 +74,12 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${url}){#fig:demo .wide}`,
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     ''
   ].join('\n');
 
@@ -223,6 +229,20 @@
         target: chapter.includes('id="fig:demo"'),
         caption: /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(chapter),
         link: chapter.includes('href="ch001.xhtml#fig:demo">Figure 1</a>')
+      }))
+    );
+    check(
+      'a listing keeps its anchor, caption, and automatic link in the chapter',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="lst:demo"') &&
+          chapter.includes('Listing 1. Example listing') &&
+          chapter.includes('href="ch001.xhtml#lst:demo">Listing 1</a>')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="lst:demo"'),
+        caption: chapter.includes('Listing 1. Example listing'),
+        link: chapter.includes('href="ch001.xhtml#lst:demo">Listing 1</a>')
       }))
     );
     }

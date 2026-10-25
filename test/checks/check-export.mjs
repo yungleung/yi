@@ -216,6 +216,87 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const listing =
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one caption="Example" .wide owner=demo}\n' +
+    'print("<x>")\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'markdown' });
+  check(
+    'processed markdown renders a listing as identified HTML',
+    rendered,
+    'See [Listing 1](#lst:one).\n\n' +
+      '<figure id="lst:one" class="listing wide" data-owner="demo">\n' +
+      '  <pre><code class="language-python">print(&quot;&lt;x&gt;&quot;)</code></pre>\n' +
+      '  <figcaption>Listing 1. Example</figcaption>\n' +
+      '</figure>\n'
+  );
+}
+
+{
+  const listing =
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one caption="Example" .numberLines startFrom=7}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'html' });
+  check(
+    'Pandoc formats move the target to a listing wrapper',
+    rendered,
+    'See [Listing 1](#lst:one).\n\n' +
+      '::: {#lst:one .listing}\n' +
+      '```{.python .numberLines startFrom="7"}\n' +
+      'print(1)\n' +
+      '```\n\n' +
+      '::: {.listing-caption}\n' +
+      'Listing 1. Example\n' +
+      ':::\n' +
+      ':::\n'
+  );
+}
+
+{
+  const listing =
+    '```python {caption="Unnumbered *literal*"}\n' +
+    'print(0)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'docx' });
+  check(
+    'a caption-only block is visible without consuming a listing number',
+    rendered,
+    '::: {.listing}\n' +
+      '```{.python}\n' +
+      'print(0)\n' +
+      '```\n\n' +
+      '::: {.listing-caption}\n' +
+      'Unnumbered \\*literal\\*\n' +
+      ':::\n' +
+      ':::\n'
+  );
+}
+
+{
+  const listing =
+    '---\n' +
+    'reference-labels:\n' +
+    '  listing: Code excerpt\n' +
+    'reference-number-prefixes:\n' +
+    '  listing: "2-"\n' +
+    '---\n\n' +
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'markdown' });
+  check(
+    'configured listing labels and prefixes reach Markdown',
+    rendered.includes('See [Code excerpt 2-1](#lst:one).') &&
+      rendered.includes('<figcaption>Code excerpt 2-1.</figcaption>'),
+    true
+  );
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';

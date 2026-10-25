@@ -37,6 +37,7 @@
  */
 
 import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
+import type { ListingNode } from '../markdown/syntax/listings';
 import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
@@ -125,6 +126,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const tree = parseMarkdown(text) as unknown as Walkable;
   const references = referenceIndex(text);
   const figures = spansOfType(tree, 'figure');
+  const listings = spansOfType(tree, 'listing');
   const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
@@ -132,6 +134,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
     ...autoReferenceRewrites(tree, references),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
+    ...listingRewrites(listings, references, answers),
     ...(await imageRewrites(tree, answers, fetched, figures)),
     ...(cited ?? []).map((span) => ({
       start: span.start,
@@ -245,6 +248,31 @@ async function figureRewrites(
     });
   }
   return rewrites;
+}
+
+/** Listings, as portable HTML or as Pandoc-native source with one target wrapper. */
+function listingRewrites(
+  listings: readonly Span[],
+  references: readonly ReferenceEntry[],
+  answers: ExportAnswers
+): Rewrite[] {
+  return listings.map((span) => {
+    const listing = span.node as unknown as ListingNode;
+    const entry = references.find(
+      (candidate) => candidate.kind === 'listing' && candidate.from === span.start
+    );
+    const label = entry === undefined ? null : referenceLabel(entry);
+    return {
+      start: span.start,
+      end: span.end,
+      text:
+        answers.kind === 'markdown'
+          ? listingHtml(listing, label)
+          : answers.kind === 'latex' || answers.kind === 'pdf'
+            ? latexListing(listing)
+            : pandocListing(listing, label)
+    };
+  });
 }
 
 /**
@@ -373,6 +401,100 @@ function figureAttributes(figure: FigureNode, includeId: boolean): string {
   return tokens.length === 0
     ? ''
     : `${figure.attribute?.separator ?? ''}{${tokens.join(' ')}}`;
+}
+
+/** A processed-Markdown listing all common Markdown readers can draw. */
+function listingHtml(listing: ListingNode, label: string | null): string {
+  const classes = [
+    'listing',
+    ...listing.classes.filter((name) => name !== listing.language)
+  ];
+  const attributes = [
+    ...(listing.id === null ? [] : [`id="${escapeHtml(listing.id)}"`]),
+    `class="${escapeHtml([...new Set(classes)].join(' '))}"`,
+    ...Object.entries(listing.attributes)
+      .filter(([key]) => key !== 'caption')
+      .map(([key, value]) => `data-${htmlAttributeName(key)}="${escapeHtml(value)}"`)
+  ];
+  const language =
+    listing.language === null ? '' : ` class="language-${escapeHtml(listing.language)}"`;
+  const caption = listingCaptionText(label, listing.caption);
+  return [
+    `<figure ${attributes.join(' ')}>`,
+    `  <pre><code${language}>${escapeHtml(listing.value)}</code></pre>`,
+    `  <figcaption>${escapeHtml(caption ?? '')}</figcaption>`,
+    '</figure>'
+  ].join('\n');
+}
+
+/** A listing wrapped in one Pandoc Div so every non-LaTeX writer keeps its target and caption. */
+function pandocListing(listing: ListingNode, label: string | null): string {
+  const wrapper = [
+    ...(listing.id === null ? [] : [`#${listing.id}`]),
+    '.listing'
+  ];
+  const caption = listingCaptionText(label, listing.caption);
+  return [
+    `::: {${wrapper.join(' ')}}`,
+    fencedListing(listing, [], [], false),
+    '',
+    '::: {.listing-caption}',
+    escapeMarkdownText(caption ?? ''),
+    ':::',
+    ':::'
+  ].join('\n');
+}
+
+/** A LaTeX/PDF listing whose shape keeps native counters aligned with Yi's target sequence. */
+function latexListing(listing: ListingNode): string {
+  if (listing.id !== null && listing.caption !== null) {
+    return listing.source;
+  }
+  if (listing.id !== null) {
+    return fencedListing(listing, [['caption', '\u200b']]);
+  }
+  return fencedListing(listing, [['title', listing.caption ?? '']], ['caption', 'title']);
+}
+
+/** A canonical fenced block with only the attributes its caller asks to replace. */
+function fencedListing(
+  listing: ListingNode,
+  extra: Array<[string, string]>,
+  omit: readonly string[] = [],
+  includeId = true
+): string {
+  const classes = [...new Set(listing.classes)];
+  const attributes = Object.entries(listing.attributes).filter(
+    ([key]) => !omit.includes(key) && key !== 'caption'
+  );
+  const tokens = [
+    ...(listing.id === null || !includeId ? [] : [`#${listing.id}`]),
+    ...classes.map((name) => `.${name}`),
+    ...attributes.map(([key, value]) => `${key}="${attributeValue(value)}"`),
+    ...extra.map(([key, value]) => `${key}="${attributeValue(value)}"`)
+  ];
+  const fence = '`'.repeat(Math.max(3, longestBacktickRun(listing.value) + 1));
+  const info = tokens.length === 0 ? '' : `{${tokens.join(' ')}}`;
+  const body = listing.value.endsWith('\n') ? listing.value : `${listing.value}\n`;
+  return `${fence}${info}\n${body}${fence}`;
+}
+
+/** The caption line shared by editor and rendered exports. */
+function listingCaptionText(label: string | null, caption: string | null): string | null {
+  if (label === null) {
+    return caption;
+  }
+  return caption === null ? `${label}.` : `${label}. ${caption}`;
+}
+
+/** Keep an opening-fence command from being closed by a backtick run in its body. */
+function longestBacktickRun(value: string): number {
+  return Math.max(0, ...(value.match(/`+/g) ?? []).map((run) => run.length));
+}
+
+/** Escape document text placed in a generated Markdown caption paragraph. */
+function escapeMarkdownText(text: string): string {
+  return text.replace(/([\\`*_[\]{}<>#+\-!|])/g, '\\$1');
 }
 
 /** Escape text used as an ordinary Markdown link label. */
