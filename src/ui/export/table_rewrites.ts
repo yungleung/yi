@@ -108,4 +108,3 @@ function wordCaption(label: string, caption: TableCaptionNode): string {
 function attributeValue(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
-
