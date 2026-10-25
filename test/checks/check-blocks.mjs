@@ -63,7 +63,18 @@ const cases = [
   ['frontmatter closed by ---', '---\na: b\n---\n\nbody\n', 'frontmatter@1 paragraph@5'],
   ['and one closed by ...', '---\na: b\n...\n\nbody\n', 'frontmatter@1 paragraph@5'],
   ['the first closing marker ends it', '---\na: b\n---\n\nbody\n...\n', 'frontmatter@1 paragraph@5'],
-  ['+++ is not a frontmatter fence', '+++\na = 1\n+++\n\nbody\n', 'paragraph@1 paragraph@5']
+  ['+++ is not a frontmatter fence', '+++\na = 1\n+++\n\nbody\n', 'paragraph@1 paragraph@5'],
+  ['a direct table caption stays in the table block', '| A |\n| --- |\n| 1 |\n: Caption\n', 'paragraph@1'],
+  [
+    'one blank line keeps its caption in the table block',
+    '| A |\n| --- |\n| 1 |\n\n: Caption\n',
+    'paragraph@1'
+  ],
+  [
+    'two blank lines leave a caption as ordinary following source',
+    '| A |\n| --- |\n| 1 |\n\n\n: Caption\n',
+    'paragraph@1 blank@5 paragraph@6'
+  ]
 ];
 
 let failures = 0;

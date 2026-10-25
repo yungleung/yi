@@ -4,7 +4,7 @@
 
 **Goal:** Add captioned table targets, automatic references, editable captions, and consistent export behavior without changing table-cell editing or owning margin-table layout.
 
-**Architecture:** A pure caption parser recognizes the table's optional separation line and caption source. Parser repair attaches that caption to the table node; the shared reference index numbers every captioned table and gives an ID-bearing caption its target. The editor renders the caption as a revealable sibling inside the table block, while export adapters rewrite captions, targets, and LaTeX references for each writer.
+**Architecture:** A pure caption parser recognizes the table's optional separation line and caption source. Parser repair stores that caption on the table node; the shared reference index numbers every captioned table and gives an ID-bearing caption its target. The editor renders the caption as its own revealable line inside the table block, while export adapters rewrite captions, targets, and LaTeX references for each writer.
 
 **Tech Stack:** TypeScript, unified/remark/mdast, Tauri, Pandoc, XeLaTeX, Node checks, Tauri MCP probes.
 
@@ -286,18 +286,18 @@ const direct = parseMarkdown(
   '| A |\n| --- |\n| 1 |\n: Results {#tbl:x .margin}\n'
 );
 check('direct caption is not a table row', direct.children[0].children.length, 2);
-check('direct caption follows the table', direct.children.map((n) => n.type), ['table', 'tableCaption']);
-check('caption identity survives parsing', direct.children[1].id, 'tbl:x');
+check('direct caption stays on the table', direct.children.map((n) => n.type), ['table']);
+check('caption identity survives parsing', direct.children[0].tableCaption.id, 'tbl:x');
 
 const separated = parseMarkdown(
   '| A |\n| --- |\n| 1 |\n\n: Results {#tbl:x}\n'
 );
-check('one blank separator is accepted', separated.children.map((n) => n.type), ['table', 'tableCaption']);
+check('one blank separator is accepted', separated.children[0].tableCaption?.id, 'tbl:x');
 
 const distant = parseMarkdown(
   '| A |\n| --- |\n| 1 |\n\n\n: Not this table\n'
 );
-check('two blank lines do not attach', distant.children.some((n) => n.type === 'tableCaption'), false);
+check('two blank lines do not attach', distant.children[0].tableCaption ?? null, null);
 ```
 
 Add block checks asserting one paragraph block covers `table\n\n: Caption`.
@@ -319,18 +319,18 @@ Add `restoreTableCaptions(root, markdown)` after `restoreFigures` in `parseMarkd
 
 The repair must:
 
-- inspect a `table` node followed immediately by either a `tableCaption` candidate or no more than one blank line and a caption line;
+- inspect a `table` node followed immediately by either a caption line or no more than one blank line and a caption line;
 - handle remark swallowing a no-blank caption as a final one-cell table row;
 - remove that swallowed row;
 - remove the paragraph/list nodes created for a separated caption;
-- append one `tableCaption` sibling with exact source positions;
+- store one `tableCaption` property on the table with exact source positions;
 - leave the table untouched when the caption is malformed or separated by two blanks.
 
-Add a stringifier handler:
+Keep the caption inside the table's source for serialization, and add:
 
 ```ts
-tableCaption(node: any): string {
-  return `${String(node.source ?? '').trimEnd()}\n`;
+table(node: any): string {
+  return `${String(node.source ?? '')}\n`;
 }
 ```
 
@@ -384,7 +384,7 @@ git commit -m "feat(markdown): attach captions to tables"
 - Modify: locale JSON files only to remove unused `reference.figure` if no other use remains.
 
 **Interfaces:**
-- Consumes: parsed `table` followed by `tableCaption`
+- Consumes: a parsed `table` carrying `tableCaption`
 - Produces:
 
 ```ts
@@ -463,7 +463,7 @@ check(
 
 - [ ] **Step 5: Implement indexing**
 
-Walk each sibling list. When a `table` is followed by `tableCaption`:
+Walk each sibling list. When a `table` carries `tableCaption`:
 
 - increment `tableNumber`;
 - create an entry for every caption, ID or not;
@@ -552,7 +552,7 @@ Expected: no caption node or rendering exists.
 
 - [ ] **Step 3: Implement the caption component**
 
-Create a `TableCaption` revealable component over the `tableCaption` node:
+Create a `TableCaption` revealable component over the table's `tableCaption` data:
 
 - render a `<div class="markdown-table-caption" role="caption">`;
 - append a generated `[data-chrome]` label from `tableLabelAt`;
@@ -561,7 +561,8 @@ Create a `TableCaption` revealable component over the `tableCaption` node:
 - source range is the whole caption line excluding the newline;
 - leaving restores the rendering.
 
-Register it with `registerComponent('tableCaption', ..., true)`.
+Rendering the caption is part of the table block, so no registry entry or
+top-level `tableCaption` AST child is required.
 
 - [ ] **Step 4: Apply the table target and optional separator**
 

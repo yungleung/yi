@@ -12,6 +12,7 @@ import type { CitationNode } from './plugins/remark-citation';
 import type { AutoReferenceNode } from './plugins/remark-auto-references';
 import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { FigureNode } from './syntax/figures';
+import type { TableCaptionNode } from './syntax/table_captions';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 
@@ -29,6 +30,13 @@ declare module 'mdast' {
     descriptionterm: DescriptionTerm;
     descriptiondetails: DescriptionDetails;
     wikilink: WikilinkNode;
+  }
+
+  interface Table {
+    /** The exact source of a parsed table, when it belongs to a caption pair. */
+    source?: string;
+    /** The caption attached to this table. */
+    tableCaption?: TableCaptionNode;
   }
 
   interface PhrasingContentMap {

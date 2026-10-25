@@ -39,6 +39,8 @@ import {
 } from '../syntax/markers';
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
+import { isTableCaptionLine } from '../syntax/table_captions';
+import { readTableSource } from '../syntax/table_source';
 import { BlockIndex, type BlockEntry } from './block_index';
 import { isRawRendered, type BlockKind } from './block_kinds';
 import type { DocumentEdit } from './history';
@@ -535,6 +537,38 @@ function* blocksFrom(
       lineEnd = lines[j].number;
       charEnd = lines[j].end;
       j += 1;
+    }
+
+    // Pandoc's table caption may sit directly below the last row or after one
+    // blank line. Keep that caption in the table's block so the two are parsed
+    // together. Two or more blank lines end the association; the colon line is
+    // then ordinary source and must not be consumed by description-list repair.
+    if (j < lines.length && lines[j].text.trim() === '') {
+      let captionLine = j;
+      while (captionLine < lines.length && lines[captionLine].text.trim() === '') {
+        captionLine += 1;
+      }
+      const tableText = text.slice(charStart, lines[j].start);
+      const table = readTableSource(tableText);
+      const isWholeTable =
+        table !== null && table.from === 0 && tableText.slice(table.to).trim() === '';
+      if (
+        isWholeTable &&
+        captionLine < lines.length &&
+        isTableCaptionLine(lines[captionLine].text.trimStart())
+      ) {
+        const blankLines = captionLine - j;
+        if (blankLines === 1) {
+          lineEnd = lines[captionLine].number;
+          charEnd = lines[captionLine].end;
+          i = captionLine + 1;
+          yield makeBlock('paragraph', text, lineStart, lineEnd, charStart, charEnd);
+          continue;
+        }
+        i = j;
+        yield makeBlock('paragraph', text, lineStart, lineEnd, charStart, charEnd);
+        continue;
+      }
     }
 
     // Loose lists may contain blank lines between items (and indented item

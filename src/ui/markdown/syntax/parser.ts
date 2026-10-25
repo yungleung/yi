@@ -25,6 +25,12 @@ import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
 import { restoreSpacedDestinations } from './spaced_destinations';
 import { restoreFigures } from './figures';
+import {
+  tableCaptionAfterTable,
+  type TableCaptionData,
+  type TableCaptionNode
+} from './table_captions';
+import { readTableSource } from './table_source';
 import { frontmatterForParsers } from './markers';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
@@ -70,6 +76,9 @@ const stringifyProcessor = unified()
       figure(node: any): string {
         return `${String(node.source ?? '').trimEnd()}\n`;
       },
+      table(node: any): string {
+        return `${String(node.source ?? '')}\n`;
+      },
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
@@ -106,7 +115,126 @@ export function parseMarkdown(markdown: string): Root {
   restoreEmptyItems(root, markdown);
   restoreSpacedDestinations(root, markdown);
   restoreFigures(root, markdown);
+  restoreTableCaptions(root, markdown);
   return root;
+}
+
+/**
+ * Attaches a following caption line to a parsed GFM table.
+ *
+ * Remark reads a directly adjacent `: caption` as one more table row. A caption
+ * after one blank line becomes a paragraph. Both are repaired here from the raw
+ * source. Two blank lines leave the colon line ordinary Markdown.
+ */
+function restoreTableCaptions(tree: Root, markdown: string): void {
+  const definitions = footnoteLabels(markdown);
+  visit(tree.children);
+
+  function visit(children: RootContent[]): void {
+    for (let index = 0; index < children.length; index += 1) {
+      const child = children[index] as RootContent & {
+        children?: RootContent[];
+        position?: NodePosition;
+      };
+      if (child.type === 'table') {
+        attachCaption(children, index, child, definitions);
+      }
+      if (Array.isArray(child.children)) {
+        visit(child.children);
+      }
+    }
+  }
+
+  function attachCaption(
+    children: RootContent[],
+    index: number,
+    table: RootContent & {
+      children?: RootContent[];
+      position?: NodePosition;
+      source?: string;
+      tableCaption?: TableCaptionNode;
+    },
+    labels: ReadonlySet<string>
+  ): void {
+    const start = table.position?.start.offset;
+    const end = table.position?.end.offset;
+    if (start === undefined || end === undefined) {
+      return;
+    }
+    const attachment = tableCaptionAfterTable(markdown, start);
+    if (attachment === null) {
+      table.source = markdown.slice(start, end);
+      return;
+    }
+    const source = readTableSource(markdown.slice(start));
+    if (source === null || !Array.isArray(table.children)) {
+      table.source = markdown.slice(start, end);
+      return;
+    }
+    table.children.splice(source.rows.length);
+    table.position = {
+      start: { offset: start },
+      end: { offset: attachment.caption.captionTo }
+    };
+    table.source = markdown.slice(start, attachment.caption.captionTo);
+    table.tableCaption = captionNode(
+      attachment.caption,
+      attachment.separatorFrom !== null,
+      labels
+    );
+    let next = index + 1;
+    while (next < children.length) {
+      const position = (children[next] as { position?: NodePosition }).position;
+      if (
+        position === undefined ||
+        position.start.offset < attachment.caption.captionFrom ||
+        position.end.offset > attachment.caption.captionTo
+      ) {
+        break;
+      }
+      children.splice(next, 1);
+    }
+  }
+
+  function captionNode(
+    data: TableCaptionData,
+    separated: boolean,
+    definitions: ReadonlySet<string>
+  ): TableCaptionNode {
+    const withContext = withFootnoteDefinitions(data.caption, definitions);
+    const parsed = fragmentProcessor.runSync(
+      fragmentProcessor.parse(withContext),
+      withContext
+    ) as Root;
+    const caption = parsed.children
+      .filter((child) => isOwnNode(child, data.caption.length))
+      .flatMap((child) =>
+        child.type === 'paragraph' ? (child.children ?? []) : [child]
+      ) as RootContent[];
+    for (const child of caption) {
+      walk(child, (node) => {
+        const position = (node as { position?: NodePosition }).position;
+        if (position) {
+          position.start.offset += data.textFrom;
+          position.end.offset += data.textFrom;
+        }
+      });
+    }
+    return {
+      type: 'tableCaption',
+      id: data.id,
+      classes: data.classes,
+      attributes: data.attributes,
+      children: caption,
+      source: data.source,
+      captionData: data,
+      separated,
+      position: {
+        start: { offset: data.captionFrom },
+        end: { offset: data.captionTo }
+      }
+    };
+  }
 }
 
 /**

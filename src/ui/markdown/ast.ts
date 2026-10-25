@@ -33,6 +33,7 @@ export type {
   ThematicBreak as AstThematicBreak
 } from 'mdast';
 import type { FigureNode } from './syntax/figures';
+import type { TableCaptionNode } from './syntax/table_captions';
 
 /**
  * Custom node types registered into mdast via `mdast.d.ts`. The augmentation
@@ -48,4 +49,4 @@ export type AstDescriptionTerm = RootContentMap['descriptionterm'];
 export type AstDescriptionDetails = RootContentMap['descriptiondetails'];
 
 /** Any node shape the renderer may encounter. */
-export type AstNode = Root | RootContent;
+export type AstNode = Root | RootContent | TableCaptionNode;
