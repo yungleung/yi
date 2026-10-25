@@ -626,7 +626,9 @@ the caption below it. Export rewrites automatic references to ordinary links, lo
 listings to identified Divs or processed-HTML figures, and leaves LaTeX/PDF with native listing
 shapes plus a generated label/counter header. `auto-references.js`, `figure-rendering.js`,
 `listing-rendering.js`, `listing-crossrefs.js`, and their default-document probes hold the app
-behavior.
+behavior. `listing-source-horizontal-caret.js` holds the source box's own horizontal scroll:
+typing or deleting near the end of a long opening fence rebuilds the highlighted `pre`, so the
+restored caret must scroll that box back to the caret rather than leave it beyond the visible edge.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

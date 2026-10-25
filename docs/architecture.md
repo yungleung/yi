@@ -401,6 +401,14 @@ reached in a way the next person can copy:
 | What a block is worth in pixels | `block_sizes.ts` | a case in `test/checks/check-block-sizes.mjs` |
 | Which blocks are mounted | `viewport_window.ts` | the same |
 
+The caret's scroll rule has a second axis inside highlighted source. An edit rebuilds
+the fenced block, so its `pre` is new and starts with `scrollLeft` at zero; a caret
+restored at the end of a long fence line would otherwise be outside that box even
+though the page's vertical position is right. `caret/span.ts: scrollCaretIntoView`
+therefore scrolls the nearest horizontally scrollable source around the caret's range,
+then repositions the span because it is drawn beside the prose host rather than inside
+the source (`test/probes/listing-source-horizontal-caret.js`).
+
 The registry (`registry.ts`) is the one place that says which node types exist, so
 the renderer can stay a consumer of that table rather than a second list of what
 markdown means. The recipes that use these points are `docs/adding-a-node.md` and

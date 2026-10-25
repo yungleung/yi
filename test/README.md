@@ -354,6 +354,9 @@ layouts, driven by pressing it), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
 
+`listing-source-horizontal-caret` holds the source box's horizontal scroll across
+both typing and deleting at the end of a long fenced-code opening line.
+
 `npm run probe:all` prints every probe's name and result as it goes, which is the
 live index; the newest probes carry a header naming what they cover:
 

@@ -225,17 +225,62 @@ function ensureLayoutWatcher(host: HTMLElement): void {
  */
 function scrollCaretIntoView(caret: HTMLElement): void {
   const scroller = caret.closest('.overflow-auto') as HTMLElement | null;
-  if (!scroller) {
+  const caretBox = caret.getBoundingClientRect();
+  if (scroller) {
+    const scrollerRect = scroller.getBoundingClientRect();
+    const margin = 8;
+    if (caretBox.top < scrollerRect.top + margin) {
+      scroller.scrollTop += caretBox.top - scrollerRect.top - margin;
+    } else if (caretBox.bottom > scrollerRect.bottom - margin) {
+      scroller.scrollTop += caretBox.bottom - scrollerRect.bottom + margin;
+    }
+  }
+  scrollCaretHorizontallyIntoView(caret, rangeOf()?.startContainer ?? null);
+}
+
+/**
+ * Brings a caret in a wide source line back into its own box.
+ *
+ * A block showing highlighted source is rebuilt after each keystroke, which replaces the `pre`
+ * and resets its horizontal scroll. A caret restored near the end of a long fence line then sits
+ * outside the visible box even though the page's vertical scroll is already right. The range,
+ * rather than the caret span, names the source box: the span is positioned beside the prose host
+ * so that it can draw across the page.
+ */
+function scrollCaretHorizontallyIntoView(caret: HTMLElement, container: Node | null): void {
+  const source = horizontalSourceAround(container);
+  if (source === null) {
     return;
   }
   const caretBox = caret.getBoundingClientRect();
-  const scrollerRect = scroller.getBoundingClientRect();
+  const sourceBox = source.getBoundingClientRect();
   const margin = 8;
-  if (caretBox.top < scrollerRect.top + margin) {
-    scroller.scrollTop += caretBox.top - scrollerRect.top - margin;
-  } else if (caretBox.bottom > scrollerRect.bottom - margin) {
-    scroller.scrollTop += caretBox.bottom - scrollerRect.bottom + margin;
+  let moved = false;
+  if (caretBox.left < sourceBox.left + margin) {
+    source.scrollLeft += caretBox.left - sourceBox.left - margin;
+    moved = true;
+  } else if (caretBox.left > sourceBox.right - margin) {
+    source.scrollLeft += caretBox.left - sourceBox.right + margin;
+    moved = true;
   }
+  if (moved) {
+    // The caret span is positioned beside the prose host, not inside the source box, so moving
+    // the box's scroll leaves the span at its old page coordinate until it reads the range again.
+    reposition();
+  }
+}
+
+/** The highlighted source box around a caret, when its text is wider than that box. */
+function horizontalSourceAround(container: Node | null): HTMLElement | null {
+  const start = container instanceof Element ? container : container?.parentElement;
+  const source = start?.closest<HTMLElement>('.markdown-source-text') ?? null;
+  if (source === null) {
+    return null;
+  }
+  const overflow = getComputedStyle(source).overflowX;
+  return (overflow === 'auto' || overflow === 'scroll') && source.scrollWidth > source.clientWidth
+    ? source
+    : null;
 }
 
 /** Takes the span away, cancelling whatever was pending for it. */
