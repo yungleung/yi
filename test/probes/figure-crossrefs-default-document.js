@@ -20,9 +20,13 @@
 
   const reference = t.prose().querySelector('[data-auto-reference="fig:sample"]');
   const figure = t.prose().querySelector('figure[id="fig:sample"]');
-  check('the figure reference resolves to Figure 2', reference?.textContent ?? null, 'Figure 2');
-  check('the labeled figure renders its caption', figure?.querySelector('figcaption')?.textContent?.trim() ?? null, 'Figure 2. A sample image');
-  check('the inline image does not become a figure', t.prose().querySelectorAll('figure').length, 2);
+  check('the figure reference resolves to Figure 2-2', reference?.textContent ?? null, 'Figure 2-2');
+  check('the labeled figure renders its caption', figure?.querySelector('figcaption')?.textContent?.trim() ?? null, 'Figure 2-2. A sample image');
+  check(
+    'the inline image does not become a figure',
+    t.prose().querySelectorAll('figure.markdown-figure').length,
+    2
+  );
 
   if (reference) {
     const box = reference.getBoundingClientRect();

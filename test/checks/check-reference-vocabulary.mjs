@@ -47,9 +47,11 @@ check(
 const configured = referenceVocabularyFromFrontmatter(`
 reference-labels:
   figure: Diagram
+  listing: Code excerpt
   table: Data table
 reference-number-prefixes:
   figure: "2-"
+  listing: "A."
   table: "A."
 `);
 check('labels and prefixes are read together', configured.table, {
@@ -60,6 +62,15 @@ check(
   'a table number is the label, one space, prefix, and number',
   referenceNumberText('table', 2, configured),
   'Data table A.2'
+);
+check('figure labels and prefixes share the same map', configured.figure, {
+  label: 'Diagram',
+  prefix: '2-'
+});
+check(
+  'a listing number is the label, one space, prefix, and number',
+  referenceNumberText('listing', 1, configured),
+  'Code excerpt A.1'
 );
 check(
   'an equation keeps its shared parentheses',
@@ -98,13 +109,26 @@ check(
 );
 check(
   'a whitespace-only label falls back',
+  referenceVocabularyFromFrontmatter('reference-labels:\n  figure: "   "\n').figure.label,
+  'Figure'
+);
+check(
+  'a whitespace-only table label falls back',
   referenceVocabularyFromFrontmatter('reference-labels:\n  table: "   "\n').table.label,
   'Table'
 );
 check(
+  'a non-empty prefix keeps the spelling the author chose',
+  referenceVocabularyFromFrontmatter(`
+reference-number-prefixes:
+  figure: " A "
+`).figure.prefix,
+  ' A '
+);
+check(
   'unknown keys are ignored',
-  referenceVocabularyFromFrontmatter('reference-labels:\n  chart: Chart\n').table.label,
-  'Table'
+  referenceVocabularyFromFrontmatter('reference-labels:\n  chart: Chart\n').listing.label,
+  'Listing'
 );
 
 if (failures.length > 0) {

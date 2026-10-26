@@ -102,6 +102,12 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -350,6 +356,21 @@
     );
     const equationText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(
       (match) => match[1]
+    );
+    const listingAnchor = anchorFor('Listing 1');
+    check(
+      'a listing keeps a bookmark, caption, and automatic link',
+      documentXml.includes('Listing 1. Example listing') &&
+        internalLinks.some((link) => link.text === 'Listing 1') &&
+        listingAnchor !== null &&
+        documentXml.includes(`w:name="${listingAnchor}"`),
+      {
+        caption: documentXml.includes('Listing 1. Example listing'),
+        link: internalLinks.some((link) => link.text === 'Listing 1'),
+        bookmark:
+          listingAnchor !== null && documentXml.includes(`w:name="${listingAnchor}"`),
+        anchor: listingAnchor
+      }
     );
     check(
       'a labeled equation keeps one bookmark, visible number, and aligned formula',

@@ -24,7 +24,13 @@ import { readEquationBlock } from '../syntax/equation_blocks';
 import { splitBlocks } from './blocks';
 
 /** A target kind with a document-configured reference name. */
-export type ReferenceKind = 'heading' | 'figure' | 'table' | 'equation' | 'list';
+export type ReferenceKind =
+  | 'heading'
+  | 'figure'
+  | 'listing'
+  | 'table'
+  | 'equation'
+  | 'list';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
 export interface ReferenceEntry {
@@ -57,6 +63,7 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         : [{ block, equation, id: equation.id, from: block.charStart }];
     });
   let figureNumber = 0;
+  let listingNumber = 0;
   let listNumber = 0;
   let tableNumber = 0;
   const entries: ReferenceEntry[] = [];
@@ -86,6 +93,8 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         addHeading(child);
       } else if (child.type === 'figure') {
         addFigure(child);
+      } else if (child.type === 'listing') {
+        addListing(child);
       } else if (child.type === 'table') {
         addTable(child);
       } else if (child.type === 'list') {
@@ -160,6 +169,36 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       numberPrefix: vocabulary.figure.prefix,
       caretAt: start,
       explicit: figure.id !== null
+    });
+  }
+
+  function addListing(listing: RootContent & {
+    type: 'listing';
+    id: string | null;
+    caption: string | null;
+    bodyStart: number;
+  }): void {
+    if (listing.id === null) {
+      return;
+    }
+    const start = listing.position?.start.offset;
+    const end = listing.position?.end.offset;
+    if (start === undefined || end === undefined) {
+      return;
+    }
+    listingNumber += 1;
+    used.add(listing.id);
+    entries.push({
+      id: listing.id,
+      kind: 'listing',
+      from: start,
+      to: end,
+      number: listingNumber,
+      title: listing.caption ?? '',
+      label: vocabulary.listing.label,
+      numberPrefix: vocabulary.listing.prefix,
+      caretAt: start + listing.bodyStart,
+      explicit: true
     });
   }
 

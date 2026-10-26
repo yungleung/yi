@@ -71,7 +71,7 @@ check(
 );
 check(
   'a heading automatic reference displays its title',
-  referenceLabel(entries[0], () => 'unused'),
+  referenceLabel(entries[0]),
   'Start'
 );
 
@@ -93,7 +93,7 @@ check(
 );
 check(
   'a figure automatic reference also spells its localized kind',
-  referenceLabel(withFigures.find((entry) => entry.id === 'fig:one'), () => 'Figure'),
+  referenceLabel(withFigures.find((entry) => entry.id === 'fig:one')),
   'Figure 1'
 );
 
@@ -213,6 +213,47 @@ check(
   'the figure after an equation keeps its visible number',
   referenceLabel(equationBeforeFigure.find((entry) => entry.kind === 'figure')),
   'Figure 1'
+);
+
+const listingMarkdown = `---
+reference-labels:
+  listing: Code excerpt
+reference-number-prefixes:
+  listing: "A."
+---
+
+\`\`\`python {caption="Unnumbered"}
+print(0)
+\`\`\`
+
+\`\`\`python {#lst:one}
+print(1)
+\`\`\`
+
+\`\`\`python {#lst:two caption="Second"}
+print(2)
+\`\`\`
+`;
+const withListings = referenceIndex(listingMarkdown);
+check(
+  'only identified listings consume listing numbers',
+  withListings
+    .filter((entry) => entry.kind === 'listing')
+    .map((entry) => [entry.id, entry.number, entry.title]),
+  [
+    ['lst:one', 1, ''],
+    ['lst:two', 2, 'Second']
+  ]
+);
+check(
+  'a listing automatic reference uses the document label and prefix',
+  referenceLabel(withListings.find((entry) => entry.id === 'lst:two')),
+  'Code excerpt A.2'
+);
+check(
+  'a listing caret starts on its first body line',
+  withListings.find((entry) => entry.id === 'lst:one')?.caretAt,
+  listingMarkdown.indexOf('print(1)')
 );
 
 if (failures.length > 0) {

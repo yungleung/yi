@@ -123,7 +123,7 @@ pub struct ExportRequest {
     /// Pictures the note refers to, copied into a generated bundle beside a LaTeX source.
     #[serde(default)]
     pub note_assets: Vec<NoteAsset>,
-    /// The generated TeX header for table references, or the empty string.
+    /// The generated TeX header for references, or the empty string.
     #[serde(default)]
     pub reference_header: String,
 }

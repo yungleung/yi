@@ -1,9 +1,13 @@
 ---
 reference-labels:
+  figure: Figure
+  listing: Code excerpt
   table: Data table
   equation: Formula
   list: Procedure
 reference-number-prefixes:
+  figure: "2-"
+  listing: "2-"
   table: "2-"
   equation: "2-"
   list: "3-"
@@ -38,6 +42,28 @@ This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~
 function greet(name: string) {
   console.log(`Hello, ${name}`);
 }
+```
+
+## Code listings
+
+See [#lst:minimal] or [the captioned listing](#lst:sample).
+
+A caption without an ID is visible but does not enter the listing sequence:
+
+```python {caption="An unnumbered example"}
+print(0)
+```
+
+An ID alone creates a numbered target:
+
+```python {#lst:minimal}
+print(1)
+```
+
+A caption and other Pandoc attributes may be combined:
+
+```python {#lst:sample caption="A captioned example" .numberLines startFrom=7}
+print("sample")
 ```
 
 ## Tables

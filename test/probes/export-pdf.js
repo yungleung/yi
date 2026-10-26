@@ -52,7 +52,12 @@
   const target = `${folder}/note.pdf`;
   const note = [
     '---',
+    'reference-labels:',
+    '  figure: Diagram',
+    '  listing: Code excerpt',
     'reference-number-prefixes:',
+    '  figure: "2-"',
+    '  listing: "2-"',
     '  table: X-',
     '  equation: E-',
     '  list: L-',
@@ -61,6 +66,14 @@
     '# Going out',
     '',
     'A short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].',
+    '',
+    'See [#fig:demo] and [#lst:demo].',
+    '',
+    `![Example figure](${window.__probePaths.checkout}src-tauri/icons/32x32.png){#fig:demo}`,
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
     '',
     'See [#tbl:results] for the table.',
     '',
@@ -118,6 +131,18 @@
   };
 
   const before = await invoke('get_config');
+  const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+  const configBefore = await bytesOf(config);
+  const settings = configBefore === null ? '' : new TextDecoder().decode(configBefore);
+  if (settings !== '') {
+    await files.writeTextAtomically(
+      config,
+      settings.replace(
+        '\nhighlight-style: pygments\n',
+        '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
+      )
+    );
+  }
   try {
     try {
       await files.deleteEntry(folder);
@@ -183,6 +208,15 @@
     );
     const text = pdf === null ? '' : await t.pdfText(pdf);
     check(
+      'document labels and literal prefixes reach native figure and listing captions',
+      text.includes('Diagram2-1') && text.includes('Codeexcerpt2-1'),
+      {
+        figure: text.includes('Diagram2-1'),
+        listing: text.includes('Codeexcerpt2-1'),
+        text: text.slice(0, 180)
+      }
+    );
+    check(
       'and the automatic reference and caption use the note’s literal table prefix',
       text.includes('SeeTableX-1forthetable.') && text.includes('TableX-1:Results'),
       {
@@ -210,6 +244,9 @@
     );
 
   } finally {
+    if (configBefore !== null) {
+      await files.writeTextAtomically(config, new TextDecoder().decode(configBefore));
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

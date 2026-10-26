@@ -35,6 +35,7 @@ export type {
 import type { FigureNode } from './syntax/figures';
 import type { TableCaptionNode } from './syntax/table_captions';
 import type { ListCaptionNode } from './syntax/list_captions';
+import type { ListingNode } from './syntax/listings';
 
 /**
  * Custom node types registered into mdast via `mdast.d.ts`. The augmentation
@@ -44,6 +45,7 @@ import type { ListCaptionNode } from './syntax/list_captions';
 export type AstCitation = RootContentMap['citation'];
 export type AstAutoReference = RootContentMap['autoReference'];
 export type AstFigure = FigureNode;
+export type AstListing = ListingNode;
 export type AstWikilink = RootContentMap['wikilink'];
 export type AstDescriptionList = RootContentMap['descriptionlist'];
 export type AstDescriptionTerm = RootContentMap['descriptionterm'];

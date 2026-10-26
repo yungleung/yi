@@ -91,6 +91,12 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
     'See [#eq:plain] and [#eq:system].',
     '',
     '[$$',
@@ -267,6 +273,20 @@
         tag: listTarget?.tagName ?? null,
         items: listTarget?.querySelectorAll('ul > li').length ?? 0,
         caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null
+      }
+    );
+    const listingDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const listingTarget = listingDocument.querySelector('#lst\\:demo');
+    check(
+      'and listings become numbered HTML with an automatic-reference link',
+      plain.includes('See [Listing 1](#lst:demo)') &&
+        listingTarget?.querySelector('figcaption')?.textContent?.trim() ===
+          'Listing 1. Example listing' &&
+        listingTarget?.querySelector('pre code')?.textContent?.includes('print(1)') === true,
+      {
+        link: plain.includes('See [Listing 1](#lst:demo)'),
+        listing: listingTarget?.tagName ?? null,
+        caption: listingTarget?.querySelector('figcaption')?.textContent?.trim() ?? null
       }
     );
     const equationDocument = new DOMParser().parseFromString(plain, 'text/html');

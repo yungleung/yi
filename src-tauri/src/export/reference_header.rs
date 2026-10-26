@@ -1,8 +1,8 @@
-//! The generated TeX header for table references.
+//! Writes the webview-generated LaTeX reference-label header into an export run.
 //!
-//! The window decides the visible table word, literal prefix, and portable
-//! reference macro from the note's own metadata. This module owns the run-local
-//! file Pandoc receives through `--include-in-header`.
+//! The window owns the meaning of the document's reference vocabulary; Rust
+//! only puts the prepared source in the run's temporary folder and hands it to
+//! Pandoc. An empty header writes no file.
 //!
 //! May import: the filesystem, the app's atomic writer, and its localized
 //! errors. Upholds: an empty header writes no file, and a non-empty one has a
@@ -11,7 +11,7 @@
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Write the generated table header when there is one, and answer its path.
+/// Write the generated reference header when there is one, and answer its path.
 pub(super) fn write_reference_header(
     directory: &Path,
     text: &str,

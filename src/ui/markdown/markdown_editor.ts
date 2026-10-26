@@ -184,6 +184,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         );
         return target?.number == null ? null : referenceLabel(target);
       },
+      listingLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'listing' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
+      },
       tableLabelAt: (from) => {
         const target = this.state.referenceEntries().find(
           (entry) => entry.kind === 'table' && entry.from === from

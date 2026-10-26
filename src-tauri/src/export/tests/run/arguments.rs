@@ -16,6 +16,7 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
     let dir = scratch("header");
     let request = request_in(&dir);
     let header = dir.join("pdf-fonts.tex");
+    let reference_header = dir.join("reference-header.tex");
     let name = "pdf".to_string();
     let arguments = pandoc_arguments(
         &dir,
@@ -26,7 +27,7 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
             ..request
         },
         kind_of("pdf").unwrap(),
-        &[header.clone()],
+        &[header.clone(), reference_header.clone()],
         None,
         None,
         None,
@@ -40,6 +41,13 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
         .position(|argument| argument == "--include-in-header")
         .expect("the header is not in the arguments");
     assert_eq!(arguments[at + 1], header.to_string_lossy());
+    let counter_at = arguments
+        .iter()
+        .skip(at + 2)
+        .position(|argument| argument == "--include-in-header")
+        .map(|offset| offset + at + 2)
+        .expect("the counter-prefix header is not in the arguments");
+    assert_eq!(arguments[counter_at + 1], reference_header.to_string_lossy());
     // And nothing stands in for the settings file: it is still named, as it always was.
     assert!(arguments.contains(&dir.join("export.pdf.yaml").to_string_lossy().into_owned()));
     let _ = fs::remove_dir_all(&dir);

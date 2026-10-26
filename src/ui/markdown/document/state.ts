@@ -34,6 +34,7 @@ import { History, type DocumentEdit, type EditKind, type EditMark } from './hist
 import type { HeadingTarget } from './heading_index';
 import { referenceIndex, type ReferenceEntry } from './reference_index';
 import { TextStore } from './text_store';
+import { listingFenceData } from '../syntax/code_fences';
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
@@ -132,9 +133,12 @@ export class MarkdownEditorState {
   parseKey(block: MarkdownBlock): string {
     const key = blockContentKey(block);
     const labeled = containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
-    return block.text.includes('[#') ||
+    const referenceSensitive =
+      block.text.includes('[#') ||
       /(?:^|\n)[ \t]*!\[/.test(block.text) ||
-      /(?:^|\n):\s+/.test(block.text)
+      /(?:^|\n):\s+/.test(block.text) ||
+      (block.kind === 'fencedCode' && listingFenceData(block.text) !== null);
+    return referenceSensitive
       ? `${labeled}:references@${this.referencesVersion}`
       : labeled;
   }

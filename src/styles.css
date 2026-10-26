@@ -525,6 +525,21 @@ body {
   white-space: nowrap;
 }
 
+.markdown-listing {
+  margin: 0;
+  text-align: left;
+}
+
+.markdown-listing-block {
+  scroll-margin-top: 1rem;
+}
+
+.markdown-listing-caption {
+  margin-top: 0.5rem;
+  color: var(--color-base-content);
+  font-size: 0.875em;
+}
+
 /* A caption follows its owner like the source it is written as. The optional separator
    keeps an editable line of its own, and either caption can reveal that complete `: …`
    line across the row while its table or list remains editable. */
@@ -549,6 +564,7 @@ body {
   white-space: pre-wrap;
 }
 
+.markdown-listing-label,
 .markdown-caption-number {
   font-weight: 600;
   white-space: nowrap;
@@ -562,7 +578,6 @@ body {
 .markdown-list-block > .markdown-caption {
   text-align: left;
 }
-
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.
    An empty inline-block measures as nothing, and WebKit then paints the new block *without* the
    marker an item draws outside its content box: the bullet the reader has just made is missing

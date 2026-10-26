@@ -7,6 +7,12 @@
  */
 (async () => {
   const t = window.__t;
+  const read = await window.__TAURI_INTERNALS__.invoke('plugin:fs|read_text_file', {
+    path: `${window.__probePaths.checkout}test/fixtures/workspace/default-document.md`
+  });
+  await t.load(
+    new TextDecoder().decode(read instanceof ArrayBuffer ? read : Uint8Array.from(read))
+  );
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -28,9 +34,14 @@
     );
   };
 
-  const heading = [...t.prose().querySelectorAll('h2')].find(
-    (candidate) => candidate.textContent === 'Tables'
-  );
+  let heading = null;
+  for (let fraction = 0.1; heading === null && fraction <= 1; fraction += 0.1) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
+    heading = [...t.prose().querySelectorAll('h2')].find(
+      (candidate) => candidate.textContent === 'Tables'
+    );
+  }
   heading?.scrollIntoView({ block: 'start' });
   await t.sleep(400);
 

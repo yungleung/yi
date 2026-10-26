@@ -88,6 +88,12 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -295,6 +301,18 @@
         items: listTarget?.querySelectorAll('ul > li').length ?? 0,
         caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null,
         link: page.includes('href="#list:steps"')
+      }
+    );
+    const listingTarget = pageDocument.querySelector('[id="lst:demo"]');
+    check(
+      'a listing keeps its HTML target, visible caption, and automatic link',
+      listingTarget !== null &&
+        listingTarget.textContent?.includes('Listing 1. Example listing') === true &&
+        page.includes('href="#lst:demo">Listing 1</a>'),
+      {
+        target: listingTarget?.tagName ?? null,
+        caption: listingTarget?.textContent?.includes('Listing 1. Example listing') ?? false,
+        link: page.includes('href="#lst:demo">Listing 1</a>')
       }
     );
     const equationTarget = pageDocument.querySelector('[id="eq:system"]');

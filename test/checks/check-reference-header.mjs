@@ -1,9 +1,9 @@
 /**
- * Checks the LaTeX header that makes table references follow the document's own counter.
+ * Checks the LaTeX header that aligns native captions and Yi's reference macros.
  *
- * The header carries the document-configured table word and literal prefix, while
- * `\yiTableRef` reads the final number through `\ref` rather than carrying Yi's
- * precomputed value into the source.
+ * Native figure, table and listing counters follow the document's labels and
+ * literal prefixes. Table, equation and list automatic references use portable
+ * macros whose final numbers come from LaTeX.
  */
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -29,21 +29,23 @@ const check = (name, actual, expected) => {
   if (a !== e) failures.push(`${name}\n  expected ${e}\n  actual   ${a}`);
 };
 
-const markdown =
+check('a note with no numbered targets emits no header', referenceHeader('# No targets\n'), '');
+
+const tableHeader = referenceHeader(
   '---\n' +
-  'reference-labels:\n' +
-  '  table: Data table\n' +
-  'reference-number-prefixes:\n' +
-  '  table: "2-"\n' +
-  '---\n\n' +
-  '| A |\n' +
-  '| --- |\n' +
-  '| 1 |\n' +
-  ': Results {#tbl:x}\n';
-const header = referenceHeader(markdown);
+    'reference-labels:\n' +
+    '  table: Data table\n' +
+    'reference-number-prefixes:\n' +
+    '  table: "2-"\n' +
+    '---\n\n' +
+    '| A |\n' +
+    '| --- |\n' +
+    '| 1 |\n' +
+    ': Results {#tbl:x}\n'
+);
 check(
   'the table word and literal prefix follow document metadata',
-  header.includes(
+  tableHeader.includes(
     '\\AtBeginDocument{%\n' +
       '  \\renewcommand{\\tablename}{Data table}%\n' +
       '  \\renewcommand{\\thetable}{\\mbox{2-}\\arabic{table}}%\n' +
@@ -52,30 +54,65 @@ check(
   true
 );
 check(
-  'the portable reference goes through the native counter',
-  header.includes(
+  'the portable table reference goes through the native counter',
+  tableHeader.includes(
     '\\providecommand{\\yiTableRef}[1]{%\n' +
       '  \\hyperref[#1]{\\tablename~\\ref*{#1}}%\n' +
       '}'
   ),
   true
 );
-check(
-  'an empty prefix leaves the native table counter unchanged',
-  referenceHeader('| A |\n| --- |\n| 1 |\n: Results\n').includes('\\renewcommand{\\thetable}'),
-  false
+
+const figureHeader = referenceHeader(
+  '---\n' +
+    'reference-labels:\n' +
+    '  figure: Diagram\n' +
+    'reference-number-prefixes:\n' +
+    '  figure: "A-"\n' +
+    '---\n\n' +
+    '![Picture](one.png){#fig:one}\n'
 );
 check(
-  'a note with no captioned table has no table header',
-  referenceHeader('# No tables\n'),
-  ''
+  'figure captions use their configured native counter',
+  figureHeader.includes('\\renewcommand{\\figurename}{Diagram}%') &&
+    figureHeader.includes('\\renewcommand{\\thefigure}{\\mbox{A-}\\arabic{figure}}%'),
+  true
 );
+
+const listingHeader = referenceHeader(
+  '---\n' +
+    'reference-labels:\n' +
+    '  listing: Code excerpt\n' +
+    'reference-number-prefixes:\n' +
+    '  listing: "B-"\n' +
+    '---\n\n' +
+    '```python {#lst:one}\nprint(1)\n```\n'
+);
+check(
+  'listing captions override listings only when that package defines them',
+  listingHeader.includes(
+    '  \\ifdefined\\lstlistingname\n' +
+      '    \\renewcommand{\\lstlistingname}{Code excerpt}%\n' +
+      '  \\fi'
+  ),
+  true
+);
+check(
+  'listing prefixes override the native counter only when it exists',
+  listingHeader.includes(
+    '  \\ifdefined\\thelstlisting\n' +
+      '    \\renewcommand{\\thelstlisting}{\\mbox{B-}\\arabic{lstlisting}}%\n' +
+      '  \\fi'
+  ),
+  true
+);
+
 const equationHeader = referenceHeader(
   '---\n' +
     'reference-labels:\n' +
     '  equation: Formula\n' +
     'reference-number-prefixes:\n' +
-    '  equation: "A-"\n' +
+    '  equation: "C-"\n' +
     '---\n\n' +
     '[$$\nx=1\n$$]{#eq:x}\n'
 );
@@ -84,7 +121,7 @@ check(
   equationHeader.includes(
     '\\AtBeginDocument{%\n' +
       '  \\renewcommand{\\equationname}{Formula}%\n' +
-      '  \\renewcommand{\\theequation}{\\mbox{A-}\\arabic{equation}}%\n' +
+      '  \\renewcommand{\\theequation}{\\mbox{C-}\\arabic{equation}}%\n' +
       '}'
   ),
   true
@@ -96,22 +133,6 @@ check(
     equationHeader.includes('\\providecommand{\\yiTableRef}[1]')
   ],
   [true, false]
-);
-check(
-  'LaTeX syntax in a literal prefix is escaped',
-  referenceHeader(
-    '---\nreference-number-prefixes:\n  table: "A&B"\n---\n\n' +
-      '| A |\n| --- |\n| 1 |\n: Results\n'
-  ).includes('\\mbox{A\\&B}\\arabic{table}'),
-  true
-);
-check(
-  'a backslash in a literal prefix is an escaped text command',
-  referenceHeader(
-    '---\nreference-number-prefixes:\n  table: \'A\\B\'\n---\n\n' +
-      '| A |\n| --- |\n| 1 |\n: Results\n'
-  ).includes('\\mbox{A\\textbackslash{}B}\\arabic{table}'),
-  true
 );
 
 const listHeader = referenceHeader(
@@ -149,10 +170,22 @@ check(
   ),
   true
 );
+
 check(
-  'a note without a captioned list emits no list header',
-  referenceHeader('- ordinary\n'),
-  ''
+  'LaTeX syntax in a literal prefix is escaped',
+  referenceHeader(
+    '---\nreference-number-prefixes:\n  table: "A&B"\n---\n\n' +
+      '| A |\n| --- |\n| 1 |\n: Results\n'
+  ).includes('\\mbox{A\\&B}\\arabic{table}'),
+  true
+);
+check(
+  'a backslash in a literal prefix is an escaped text command',
+  referenceHeader(
+    '---\nreference-number-prefixes:\n  table: \'A\\B\'\n---\n\n' +
+      '| A |\n| --- |\n| 1 |\n: Results\n'
+  ).includes('\\mbox{A\\textbackslash{}B}\\arabic{table}'),
+  true
 );
 
 if (failures.length > 0) {

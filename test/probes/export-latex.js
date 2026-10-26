@@ -99,6 +99,20 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:id-only] and [#lst:full]. A caption-only block follows:',
+    '',
+    '```python {caption="Caption only"}',
+    'print(0)',
+    '```',
+    '',
+    '```python {#lst:id-only}',
+    'print(1)',
+    '```',
+    '',
+    '```python {#lst:full caption="Example listing"}',
+    'print(2)',
+    '```',
+    '',
     'See [#eq:system] for the equation system.',
     '',
     '[$$',
@@ -142,6 +156,11 @@
   const settings = (await invoke('export_config_path', { kind: 'latex' })) ?? '';
   const settingsBefore = await readText(settings).catch(() => null);
   await invoke('export_restore_config', { kind: 'latex' });
+    const idiomaticSettings = (await readText(settings)).replace(
+      '\nhighlight-style: pygments\n',
+      '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
+    );
+    await files.writeTextAtomically(settings, idiomaticSettings);
   try {
     try {
       await files.deleteEntry(folder);
@@ -340,6 +359,21 @@
         macro: tex.includes('\\providecommand{\\yiListRef}[1]'),
         hook: tex.includes('\\providecommand{\\yiListCounterSetup}{}'),
         counter: tex.includes('\\newcounter{yilist}')
+      }
+    );
+    check(
+      'native listings keep ID-driven order under idiomatic highlighting',
+      tex.includes('title={Caption only}') &&
+        tex.includes('caption={\\hspace{0pt}}') &&
+        tex.includes('caption={Example listing}') &&
+        /\\hyperref\[lst:id-only\]\{Listing 1\}/.test(tex) &&
+        /\\hyperref\[lst:full\]\{Listing 2\}/.test(tex),
+      {
+        captionOnly: tex.includes('title={Caption only}'),
+        idOnly: tex.includes('caption={\\hspace{0pt}}'),
+        full: tex.includes('caption={Example listing}'),
+        idLink: /\\hyperref\[lst:id-only\]\{[^}]*\}/.exec(tex)?.[0] ?? null,
+        fullLink: /\\hyperref\[lst:full\]\{[^}]*\}/.exec(tex)?.[0] ?? null
       }
     );
     check(

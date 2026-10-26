@@ -52,9 +52,9 @@ import {
   isWebDestination
 } from './picture_hint';
 import { exportSource } from './preprocess';
+import { referenceHeader } from './reference_header';
 import { forgetRasters, rasterPictures } from './raster_picture';
 import { portableLatexImage } from './latex_images';
-import { referenceHeader } from './reference_header';
 import {
   citedKeys,
   nativeBibliographyTarget,

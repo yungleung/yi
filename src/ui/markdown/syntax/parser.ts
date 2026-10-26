@@ -36,6 +36,7 @@ import {
   type ListCaptionNode
 } from './list_captions';
 import { readTableSource } from './table_source';
+import { restoreListings } from './listings';
 import { frontmatterForParsers } from './markers';
 import { equationsForParsers } from './equation_blocks';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
@@ -80,6 +81,9 @@ const stringifyProcessor = unified()
         return String(node.value ?? `[#${node.id}]`);
       },
       figure(node: any): string {
+        return `${String(node.source ?? '').trimEnd()}\n`;
+      },
+      listing(node: any): string {
         return `${String(node.source ?? '').trimEnd()}\n`;
       },
       table(node: any): string {
@@ -130,6 +134,7 @@ export function parseMarkdown(markdown: string): Root {
   restoreEmptyItems(root, markdown);
   restoreSpacedDestinations(root, markdown);
   restoreFigures(root, markdown);
+  restoreListings(root, markdown);
   restoreTableCaptions(root, markdown);
   restoreListCaptions(root, markdown);
   return root;

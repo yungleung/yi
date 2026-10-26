@@ -94,6 +94,12 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -244,6 +250,17 @@
         section: content.includes('text:section text:name="list:steps"'),
         caption: /List 1\. Steps/.test(contentText),
         link: content.includes('xlink:href="#list:steps"')
+      }
+    );
+    check(
+      'a listing keeps its target, visible caption, and automatic link in the ODT section',
+      content.includes('text:section text:name="lst:demo"') &&
+        content.includes('xlink:href="#lst:demo"') &&
+        content.includes('Listing 1. Example listing'),
+      {
+        section: content.includes('text:section text:name="lst:demo"'),
+        link: content.includes('xlink:href="#lst:demo"'),
+        caption: content.includes('Listing 1. Example listing')
       }
     );
     check(

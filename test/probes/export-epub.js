@@ -100,6 +100,12 @@
     '',
     ': Steps {#list:steps .wide owner=demo}',
     '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -253,6 +259,20 @@
           actual: listLayouts,
           linked: texts.some((text) => /href="[^"]*#list:steps"/.test(text))
         }
+      );
+      check(
+        'a listing keeps its anchor, caption, and automatic link in the chapter',
+        texts.some(
+          (text) =>
+            text.includes('id="lst:demo"') &&
+            text.includes('Listing 1. Example listing') &&
+            /href="[^"]*#lst:demo">Listing 1<\/a>/.test(text)
+        ),
+        texts.map((text) => ({
+          target: text.includes('id="lst:demo"'),
+          caption: text.includes('Listing 1. Example listing'),
+          link: /href="[^"]*#lst:demo">Listing 1<\/a>/.test(text)
+        }))
       );
       const chapter = texts.join('\n');
       check(
