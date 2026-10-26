@@ -112,6 +112,26 @@ check('a typed `$$` closes itself off', typed(formula, 7, '$').text, 'text\n\n$$
 check('and the caret goes to the blank line', typed(formula, 7, '$').caret, 'text\n\n$$\n'.length);
 check('with the kind', typed(formula, 7, '$').kind, 'displayMath');
 
+// `[$$` opens one labeled display-math span, with an empty attribute placeholder.
+const labeled = typed('[$]\n\ntail\n', 2, '$');
+check(
+  'typing `[$$` opens labeled display math',
+  labeled.text,
+  '[$$\n\n$$]{}\n\ntail\n'
+);
+check('and the caret lands on the formula body', labeled.caret, '[$$\n'.length);
+check('with the equation kind', labeled.kind, 'equation');
+check(
+  'the three typed characters `[$$` open it too',
+  typed('[$', 2, '$').text,
+  '[$$\n\n$$]{}\n\n'
+);
+check(
+  'a pasted `[$$` opens the same block',
+  typed('', 0, '[$$').text,
+  '[$$\n\n$$]{}\n\n'
+);
+
 // What is not a delimiter line of its own stays ordinary typing.
 check('a delimiter made in front of text is not one', typed('x``', 1, '`').kind, null);
 check('a delimiter typed over a selection is not one', typed('``', 0, '`').kind, null);
@@ -119,6 +139,7 @@ check('and neither is a delimiter in the middle of its own line', typed('--', 1,
 check('a character that does not finish the delimiter is not one', typed('``', 2, 'x').kind, null);
 check('a bare marker is not a fence', typed('', 0, '-').kind, null);
 check('and neither is a longer run of dashes', typed('----', 4, '-').kind, null);
+check('labeled math typed in prose is not a block', typed('say [$]', 5, '$').kind, null);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

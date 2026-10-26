@@ -30,7 +30,10 @@ import { chooseLanguage } from './language_picker';
 import type { BlockKind } from '../document/block_kinds';
 
 /** The blocks a typed delimiter opens. */
-export type FenceOpenKind = Extract<BlockKind, 'frontmatter' | 'fencedCode' | 'displayMath'>;
+export type FenceOpenKind = Extract<
+  BlockKind,
+  'frontmatter' | 'fencedCode' | 'displayMath' | 'equation'
+>;
 
 /** What typing the last character of a delimiter line writes, in the document's own offsets. */
 export interface FenceOpen {
@@ -55,6 +58,25 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
   }
   const caret = Math.max(0, Math.min(at, text.length));
   const line = lineSpanAt(text, caret);
+  const lineText = text.slice(line.start, line.end);
+  const within = caret - line.start;
+  const completed =
+    lineText.slice(0, within) + typed + lineText.slice(within);
+  const labeledEquation =
+    completed === '[$$' ||
+    completed === '[$$]' ||
+    (lineText === '' && typed === '[$$');
+  if (labeledEquation) {
+    const { leading } = blockPadding(text, line.start);
+    const { trailing } = blockPadding(text, line.end);
+    return {
+      kind: 'equation',
+      from: line.start,
+      to: line.end,
+      replacement: `${leading}[$$\n\n$$]{}${trailing}`,
+      caret: line.start + leading.length + '[$$\n'.length
+    };
+  }
   // What was typed is on this line, at its end: a delimiter typed over a selection, or in front of
   // text already there, is not a line of its own.
   if (caret !== line.end) {

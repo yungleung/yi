@@ -15,12 +15,19 @@ import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
+import { Equation, EquationSource } from './nodes/equation';
+import { Caption } from './nodes/caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
 import { highlightCode } from './nodes/code_highlight';
 import { highlightFrontmatter } from './nodes/frontmatter_highlight';
 import { highlightLatex } from './nodes/latex_highlight';
-import { fenceLanguage } from './syntax/markers';
+import {
+  innerEquationBody,
+  readEquationBlockSource
+} from './syntax/equation_blocks';
+import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code_fences';
+import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
@@ -54,12 +61,43 @@ class BlockView implements BlockComponent {
     this.element = withRenderFrame(node, () =>
       node.kind === 'blank'
         ? this.renderBlank(node)
+        : node.kind === 'equation'
+          ? this.renderEquation(node)
         : isSourceBlock(node)
           ? this.renderSource(node)
           : hasBodyView(node.kind)
             ? this.renderFenceBody(node)
             : this.renderParsed(node, children)
     );
+  }
+
+  /** A labeled equation: KaTeX, one Yi number, or the complete wrapper as source. */
+  private renderEquation(node: BlockNode): HTMLElement {
+    const source = readEquationBlockSource(node.text);
+    const element = this.container(node);
+    if (source === null) {
+      return this.renderParsed(node, []);
+    }
+    element.classList.add('markdown-equation-block');
+    if (source.id !== null) {
+      element.id = source.id;
+    }
+    if (isSourceBlock(node)) {
+      element.appendChild(new EquationSource(node).element);
+      return element;
+    }
+    element.appendChild(
+      new Equation(node, source, innerEquationBody(source.body)).element
+    );
+    const numberText = renderContext().equationNumberAt(node.charStart + source.from);
+    if (numberText !== null) {
+      const number = document.createElement('span');
+      number.className = 'markdown-equation-number';
+      number.setAttribute('data-chrome', 'true');
+      number.textContent = numberText;
+      element.appendChild(number);
+    }
+    return element;
   }
 
   /**
@@ -71,6 +109,7 @@ class BlockView implements BlockComponent {
   private renderSource(node: BlockNode): HTMLElement {
     const kind = fenceKind(node);
     const element = this.container(node);
+    this.markListing(element, node);
     element.appendChild(
       new FenceText(
         node,
@@ -125,6 +164,26 @@ class BlockView implements BlockComponent {
       element.classList.add('markdown-heading-block');
     }
     appendChildren(element, children);
+    const table = children.find((child) => child.type === 'table');
+    const caption = table?.type === 'table' ? table.tableCaption : undefined;
+    if (caption) {
+      element.classList.add('markdown-table-block');
+      if (caption.id !== null) {
+        element.id = caption.id;
+      }
+      element.appendChild(new Caption(caption, 'table').element);
+    }
+    const list = children.find(
+      (child) => child.type === 'list' && child.listCaption !== undefined
+    );
+    const listCaption = list?.type === 'list' ? list.listCaption : undefined;
+    if (listCaption) {
+      element.classList.add('markdown-list-block');
+      if (listCaption.id !== null) {
+        element.id = listCaption.id;
+      }
+      element.appendChild(new Caption(listCaption, 'list').element);
+    }
     return element;
   }
 
@@ -140,11 +199,64 @@ class BlockView implements BlockComponent {
   private renderFenceBody(node: BlockNode): HTMLElement {
     const kind = fenceKind(node);
     const element = this.container(node);
-    element.appendChild(
-      new FenceText(node, { ...kind, className: `${kind.className} ${OVERFLOW_CLASS}` }).element
-    );
+    const listing = node.kind === 'fencedCode' ? listingFenceData(node.text) : null;
+    const body = new FenceText(
+      node,
+      { ...kind, className: `${kind.className} ${OVERFLOW_CLASS}` }
+    ).element;
+    if (listing === null) {
+      element.appendChild(body);
+    } else {
+      this.markListing(element, node);
+      const figure = document.createElement('figure');
+      figure.className = 'markdown-listing';
+      figure.appendChild(body);
+      const caption = this.listingCaption(node, listing);
+      if (caption !== null) {
+        figure.appendChild(caption);
+      }
+      element.appendChild(figure);
+    }
     element.appendChild(this.label(kind, node));
     return element;
+  }
+
+  /** Apply only a listing's target ID; its other attributes remain export metadata. */
+  private markListing(element: HTMLElement, node: BlockNode): void {
+    if (node.kind !== 'fencedCode') {
+      return;
+    }
+    const listing = listingFenceData(node.text);
+    if (listing === null) {
+      return;
+    }
+    element.classList.add('markdown-listing-block');
+    if (listing.id !== null) {
+      element.id = listing.id;
+    }
+  }
+
+  /** The generated number and the caption text read from the opening fence. */
+  private listingCaption(node: BlockNode, listing: CodeFenceData): HTMLElement | null {
+    const number = renderContext().listingLabelAt(node.charStart);
+    if (number === null && listing.caption === null) {
+      return null;
+    }
+    const caption = document.createElement('figcaption');
+    caption.className = 'markdown-listing-caption';
+    if (number !== null) {
+      const label = document.createElement('span');
+      label.className = 'markdown-listing-label';
+      label.textContent = `${number}.`;
+      caption.appendChild(label);
+      if (listing.caption !== null) {
+        caption.appendChild(document.createTextNode(' '));
+      }
+    }
+    if (listing.caption !== null) {
+      caption.appendChild(document.createTextNode(listing.caption));
+    }
+    return caption;
   }
 
   /**
@@ -202,7 +314,7 @@ function fenceKind(node: BlockNode): FenceKind {
     };
   }
   if (node.kind === 'fencedCode') {
-    const language = fenceLanguage(firstLine(node.text));
+    const language = codeFenceData(node.text).language ?? '';
     return {
       className: 'markdown-fenced-code',
       language,
@@ -219,10 +331,4 @@ function fenceKind(node: BlockNode): FenceKind {
     label: 'latex',
     choosesLanguage: false
   };
-}
-
-/** A block's first line, where a fence names its language. */
-function firstLine(text: string): string {
-  const breakAt = text.indexOf('\n');
-  return breakAt < 0 ? text : text.slice(0, breakAt);
 }

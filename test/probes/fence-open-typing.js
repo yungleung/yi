@@ -115,6 +115,22 @@
   await t.sleep(250);
   check('and the caret was on the blank line between the fences', await t.raw(), '$$\nQ\n$$\n\nhello world\n');
 
+  // `[$$` opens a labeled display-math span with an editable attribute placeholder.
+  await emptyFirstLine();
+  await type(['[', '$', '$']);
+  check(
+    'a typed `[$$` makes a closed labeled equation',
+    await t.raw(),
+    '[$$\n\n$$]{}\n\nhello world\n'
+  );
+  t.key('Q');
+  await t.sleep(250);
+  check(
+    'and the caret was on the labeled equation body line',
+    await t.raw(),
+    '[$$\nQ\n$$]{}\n\nhello world\n'
+  );
+
   // Anything else is ordinary typing.
   await emptyFirstLine();
   await type(['-', '-']);

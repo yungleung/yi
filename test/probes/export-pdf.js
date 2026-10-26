@@ -50,8 +50,56 @@
   const folder = `${home}/${folderName}`;
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.pdf`;
-  const note =
-    '# Going out\n\nA short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].\n';
+  const note = [
+    '---',
+    'reference-labels:',
+    '  figure: Diagram',
+    '  listing: Code excerpt',
+    'reference-number-prefixes:',
+    '  figure: "2-"',
+    '  listing: "2-"',
+    '  table: X-',
+    '  equation: E-',
+    '  list: L-',
+    '---',
+    '',
+    '# Going out',
+    '',
+    'A short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].',
+    '',
+    'See [#fig:demo] and [#lst:demo].',
+    '',
+    `![Example figure](${window.__probePaths.checkout}src-tauri/icons/32x32.png){#fig:demo}`,
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
+    'See [#tbl:results] for the table.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps}',
+    '',
+    'See [#eq:system] for the equation.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
+    ''
+  ].join('\n');
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {
@@ -83,6 +131,18 @@
   };
 
   const before = await invoke('get_config');
+  const config = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
+  const configBefore = await bytesOf(config);
+  const settings = configBefore === null ? '' : new TextDecoder().decode(configBefore);
+  if (settings !== '') {
+    await files.writeTextAtomically(
+      config,
+      settings.replace(
+        '\nhighlight-style: pygments\n',
+        '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
+      )
+    );
+  }
   try {
     try {
       await files.deleteEntry(folder);
@@ -96,7 +156,7 @@
     await show(notePath, note);
     check(
       'the note the probe opened is the document on screen',
-      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      (document.querySelector('.prose')?.textContent ?? '').includes('Going out'),
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
@@ -137,10 +197,56 @@
     check(
       'and a real PDF comes out, through the TeX engine the settings file names',
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',
-      { wrote, size: pdf?.length ?? 0, start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)) }
+      {
+        wrote,
+        size: pdf?.length ?? 0,
+        start: pdf === null ? null : String.fromCharCode(...pdf.slice(0, 5)),
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
+      }
+    );
+    const text = pdf === null ? '' : await t.pdfText(pdf);
+    check(
+      'document labels and literal prefixes reach native figure and listing captions',
+      text.includes('Diagram2-1') && text.includes('Codeexcerpt2-1'),
+      {
+        figure: text.includes('Diagram2-1'),
+        listing: text.includes('Codeexcerpt2-1'),
+        text: text.slice(0, 180)
+      }
+    );
+    check(
+      'and the automatic reference and caption use the note’s literal table prefix',
+      text.includes('SeeTableX-1forthetable.') && text.includes('TableX-1:Results'),
+      {
+        text,
+        reference: /SeeTable[^f]+forthetable\./.exec(text)?.[0] ?? null,
+        caption: /Table[^:]+:Results/.exec(text)?.[0] ?? null
+      }
+    );
+    check(
+      'and the equation reference follows the native equation counter',
+      text.includes('Equation(E-1)') && text.includes('(E-1)'),
+      {
+        reference: /Equation\([^)]+\)/.exec(text)?.[0] ?? null,
+        text
+      }
+    );
+    check(
+      'and the list reference and caption follow the list object counter',
+      text.includes('SeeListL-1fortheprocedure.') && text.includes('ListL-1.Steps'),
+      {
+        reference: /SeeList[^f]+fortheprocedure\./.exec(text)?.[0] ?? null,
+        caption: /List[^.]+\.Steps/.exec(text)?.[0] ?? null,
+        text
+      }
     );
 
   } finally {
+    if (configBefore !== null) {
+      await files.writeTextAtomically(config, new TextDecoder().decode(configBefore));
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

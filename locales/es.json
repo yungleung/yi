@@ -204,7 +204,6 @@
   "link.openFailed": "No se pudo abrir {name}: {message}",
   "wikilink.notFound": "No hay ninguna nota llamada «{target}».",
   "reference.notFound": "Ningún destino de referencia tiene el id «{id}».",
-  "reference.figure": "Figura",
   "wikilink.openFailed": "No se pudo abrir la nota «{target}»: {message}",
   "newNote.title": "Markdown nuevo",
   "newNote.folder": "Carpeta",

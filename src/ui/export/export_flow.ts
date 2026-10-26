@@ -52,6 +52,7 @@ import {
   isWebDestination
 } from './picture_hint';
 import { exportSource } from './preprocess';
+import { referenceHeader } from './reference_header';
 import { forgetRasters, rasterPictures } from './raster_picture';
 import { portableLatexImage } from './latex_images';
 import {
@@ -202,7 +203,6 @@ export async function exportNote(text: string, asked: string | null = null): Pro
     }
     const prepared = await exportSource(text, {
       kind: first.kind,
-      translate: (key) => t(key),
       titleOf: (target) => documentManager.getTitle(target),
       bases: imageBases(),
       exists: fileExists,
@@ -272,7 +272,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
         nativeBibliography === null
           ? null
           : { path: nativeBibliography.path, text: nativeBibliography.text },
-      note_assets: noteAssets
+      note_assets: noteAssets,
+      reference_header:
+        first.kind === 'latex' || first.kind === 'pdf' ? referenceHeader(text) : ''
     });
     const written = fileName(outputPath);
     showHint(

@@ -49,11 +49,15 @@ function Table(tbl)
   local pieces = {
     "\\begin{table*}[t]",
     "\\caption{" .. caption .. "}",
+    tbl.attr.identifier ~= "" and ("\\label{" .. tbl.attr.identifier .. "}") or "",
     "\\begin{ruledtabular}",
     "\\begin{tabular}{" .. table.concat(columns) .. "}",
     "\\toprule",
     table.remove(rows, 1)
   }
+  if pieces[3] == "" then
+    table.remove(pieces, 3)
+  end
   if #rows > 0 then
     pieces[#pieces + 1] = "\\midrule"
     for _, value in ipairs(rows) do

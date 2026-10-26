@@ -65,6 +65,56 @@
     'See [#fig:demo] for the picture.',
     '',
     `![Example figure](${window.__probePaths.checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| *alpha* | `one` |',
+    '',
+    ': **Results** {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
+    'See [#eq:plain] and [#eq:system].',
+    '',
+    '[$$',
+    'E=mc^2',
+    '$$]{#eq:plain}',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system .wide}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -181,6 +231,135 @@
         link: plain.includes('See [Figure 1](#fig:demo)'),
         figure: /<figure[^>]*id="fig:demo"[^>]*>/.exec(plain)?.[0] ?? null,
         caption: /<figcaption>.*<\/figcaption>/.exec(plain)?.[0] ?? null
+      }
+    );
+    check(
+      'and captioned tables become numbered, aligned HTML with their target and class',
+      plain.includes('See [Table 1](#tbl:results)') &&
+        plain.includes('<table id="tbl:results" class="margin" data-owner="demo">') &&
+        plain.includes('<caption>Table 1. <strong>Results</strong></caption>') &&
+        plain.includes('<th style="text-align: right">Value</th>') &&
+        plain.includes('<td style="text-align: right"><code>one</code></td>'),
+      {
+        link: plain.includes('See [Table 1](#tbl:results)'),
+        table: /<table[^>]*id="tbl:results"[^>]*>/.exec(plain)?.[0] ?? null,
+        caption: /<caption>.*<\/caption>/.exec(plain)?.[0] ?? null,
+        aligned: plain.includes('<th style="text-align: right">Value</th>')
+      }
+    );
+    check(
+      'and caption-only and ID-only tables stay numbered, with only the ID a target',
+      plain.includes('<caption>Table 2. Numbered without an ID</caption>') &&
+        plain.includes('<caption>Table 3.</caption>') &&
+        plain.includes('<table id="tbl:only">') &&
+        !plain.includes('<table id="">'),
+      {
+        captionOnly: plain.includes('<caption>Table 2. Numbered without an ID</caption>'),
+        idOnly: plain.includes('<caption>Table 3.</caption>'),
+        target: plain.includes('<table id="tbl:only">'),
+        emptyTarget: plain.includes('<table id="">')
+      }
+    );
+    const listDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const listTarget = listDocument.querySelector('#list\\:steps');
+    check(
+      'and a captioned list becomes targeted HTML with its numbered caption',
+      plain.includes('See [List 1](#list:steps)') &&
+        listTarget?.tagName === 'DIV' &&
+        listTarget.querySelectorAll('ul > li').length === 2 &&
+        listTarget.querySelector('.list-caption')?.textContent?.trim() === 'List 1. Steps',
+      {
+        link: plain.includes('See [List 1](#list:steps)'),
+        tag: listTarget?.tagName ?? null,
+        items: listTarget?.querySelectorAll('ul > li').length ?? 0,
+        caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null
+      }
+    );
+    const listingDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const listingTarget = listingDocument.querySelector('#lst\\:demo');
+    check(
+      'and listings become numbered HTML with an automatic-reference link',
+      plain.includes('See [Listing 1](#lst:demo)') &&
+        listingTarget?.querySelector('figcaption')?.textContent?.trim() ===
+          'Listing 1. Example listing' &&
+        listingTarget?.querySelector('pre code')?.textContent?.includes('print(1)') === true,
+      {
+        link: plain.includes('See [Listing 1](#lst:demo)'),
+        listing: listingTarget?.tagName ?? null,
+        caption: listingTarget?.querySelector('figcaption')?.textContent?.trim() ?? null
+      }
+    );
+    const equationDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const equationLayouts = [...equationDocument.querySelectorAll('table.equation-layout')].map(
+      (table) => {
+        const cells = table.querySelectorAll('tbody > tr > td');
+        const numberStyle = cells[1]?.getAttribute('style') ?? '';
+        return {
+          target: table.closest('.equation-target')?.id ?? null,
+          cells: cells.length,
+          number: cells[1]?.textContent?.trim() ?? null,
+          minWidth: numberStyle.includes('min-width: 4em'),
+          leftAligned: numberStyle.includes('text-align: left')
+        };
+      }
+    );
+    const expectedEquationLayouts = [
+      {
+        target: 'eq:plain',
+        cells: 2,
+        number: '(1)',
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: 'eq:system',
+        cells: 2,
+        number: '(2)',
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        cells: 2,
+        number: '',
+        minWidth: true,
+        leftAligned: true
+      }
+    ];
+    check(
+      'and all display equations become MathML in the shared reserved-cell layout',
+      plain.includes(
+        'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
+      ) &&
+        plain.includes('<div id="eq:plain" class="equation-target equation-layout">') &&
+        plain.includes(
+          '<div id="eq:system" class="equation-target equation-layout wide">'
+        ) &&
+        plain.includes('<span class="equation-number">(1)</span>') &&
+        plain.includes('<span class="equation-number">(2)</span>') &&
+        plain.includes('annotation encoding="application/x-tex">\\begin{aligned}'),
+      {
+        references: plain
+          .split('\n')
+          .filter((line) => line.includes('Equation'))
+          .slice(0, 8),
+        links: plain.includes(
+          'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
+        ),
+        layouts:
+          JSON.stringify(equationLayouts) === JSON.stringify(expectedEquationLayouts),
+        plain: plain.includes(
+          '<div id="eq:plain" class="equation-target equation-layout">'
+        ),
+        align: plain.includes(
+          '<div id="eq:system" class="equation-target equation-layout wide">'
+        ),
+        numbers:
+          plain.includes('<span class="equation-number">(1)</span>') &&
+          plain.includes('<span class="equation-number">(2)</span>'),
+        annotation: plain.includes(
+          'annotation encoding="application/x-tex">\\begin{aligned}'
+        )
       }
     );
 

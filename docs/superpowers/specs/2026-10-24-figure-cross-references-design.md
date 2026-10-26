@@ -113,7 +113,8 @@ The figure element:
 - receives only the explicit ID;
 - keeps the existing image maximum-width behavior;
 - renders its caption from the image alt text;
-- displays the localized, document-computed number even when it has no ID;
+- displays the frontmatter-configured label followed by the prefix and
+  document-computed number even when it has no ID;
 - has a stable layout while the image loads;
 - keeps an existing failed-image fallback path.
 
@@ -286,6 +287,10 @@ Node checks will cover:
 - malformed and non-final attribute blocks;
 - source serialization;
 - figure numbering with labeled and unlabeled figures;
+- `reference-labels.figure`, its `Figure` fallback, and its independence from
+  the interface language;
+- `reference-number-prefixes.figure`, including empty-prefix fallback and
+  `Figure 2-1` composition;
 - duplicate IDs and first-match resolution;
 - automatic-reference rewriting.
 
@@ -308,6 +313,7 @@ Export probes will cover:
 - ODT section targets;
 - LaTeX label and `\hyperref`;
 - PDF compilation;
+- configured prefixes in rendered captions and native LaTeX counters;
 - preservation of classes and key/value attributes.
 
 ## Documentation and fixture
@@ -317,6 +323,10 @@ The user documentation will explain:
 - what makes an image a figure;
 - how to add a figure ID;
 - how figure numbering works;
+- how `reference-labels.figure` changes the visible label, with `Figure` as its
+  English fallback;
+- how `reference-number-prefixes.figure` adds literal text before the sequential
+  number and how an empty prefix leaves native LaTeX numbering untouched;
 - the difference between `[text](#id)` and `[#id]`;
 - command-click navigation;
 - cross-format export behavior.
@@ -325,6 +335,7 @@ The user documentation will explain:
 
 - an unlabeled figure that advances the sequence;
 - a labeled figure with class and key/value attributes;
+- a literal figure number prefix;
 - an inline image that does not advance the sequence;
 - manual and automatic references to the labeled figure.
 
@@ -341,4 +352,4 @@ layer from the general cross-reference specification.
 - automatic figure IDs;
 - cross-document references;
 - applying arbitrary figure classes to Yi's editor DOM;
-- configurable numbering styles.
+- dynamic numbering styles and arbitrary number formatting.

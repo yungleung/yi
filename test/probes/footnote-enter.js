@@ -4,6 +4,10 @@
  */
 (async () => {
   const t = window.__t;
+  await t.load(
+    'A sentence with a footnote.[^1]\n\n' +
+      '[^1]: This is the footnote content rendered as a definition-style note.\n'
+  );
   const footnote = t.blocks().find((b) => b.textContent.includes('footnote content'));
   const node = t.textNodesIn(footnote).find((n) => n.data.includes('footnote content'));
   footnote.scrollIntoView({ block: 'center' });

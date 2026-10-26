@@ -16,6 +16,7 @@ mod kinds;
 mod odt_toc;
 mod pandoc;
 mod pictures;
+mod reference_header;
 mod run;
 mod search;
 pub mod templates;

@@ -19,7 +19,7 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
-| `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
+| `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/book_body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
 | `check-documentation.mjs` | The bundled Documentation guide and its native F1 menu entry: stable identity, read-only source, install instructions for Pandoc, TeX Live, MacTeX and MiKTeX, package-authoring chapters, security limits, fixture-package pointer and no unfinished placeholders |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
@@ -29,21 +29,26 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
+| `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
 | `check-epub-valid.mjs` | The book the app writes, held to W3C's `epubcheck`: `pandoc` over the note `ui/export/book_body.ts` prepares (the app's own rule, bundled rather than retyped) with the *shipped* `export.epub.yaml` and the note's name as the book's title, then the validator over what comes out — the shape whose two `Duplicate ID "going-out"` errors either half of the fix alone leaves behind (the file's old `shift-heading-level-by: 1`, or the note handed over with no level-1 heading written in), and which the file's `0` *and* that rule together take away. It **skips with a line naming what is missing** when `pandoc`, `java` or the jar is not on the machine (`YI_EPUBCHECK` names a jar anywhere else), so `npm run check` stays green without them; it is also the one check that spends seconds rather than milliseconds, on the JVM the validator runs in |
-| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list |
+| `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list. Captioned tables and lists cover every writer: shared caption and target behavior for HTML/EPUB/DOCX/ODT, semantic HTML for processed Markdown, and the native LaTeX/PDF reference macros |
 | `check-export-font.mjs` | The card's font hint (`ui/export/font_hint.ts`): which characters of a note no font its settings name can draw — the covered set written down **character by character**, because the blocks are irregular (measured: `ə` draws and `ʃ ɐ ʰ` do not; `← ↑ → ↓` draw and `↔` does not; `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not; `♪` draws and `♭ ✓ ☺ ★ ☆` do not; `Δ Ω` draw and `α β γ` do not), `CJKmainfont` answering for CJK punctuation, kana and Han and **not** Hangul, `mainfont` for anything its font has — and that a character inside `$…$` is left alone, because a formula is set with the maths font |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-heading-attributes.mjs` | Pandoc heading attributes on ATX and setext headings: separation from the title, quoted and escaped values, malformed braces left as text, and exact serialization |
 | `check-heading-index.mjs` | Pandoc automatic identifiers, Unicode, fallback and duplicate suffixes, explicit IDs staying literal, same-document target order, and first-match lookup |
 | `check-auto-references.mjs` | Yi's `[#id]` source spelling: IDs, multiple references, escapes, empty forms, and line boundaries |
-| `check-reference-index.mjs` | Shared heading/figure targets, document-order numbering, first-match duplicate resolution, and inferred reference text |
+| `check-reference-header.mjs` | The generated LaTeX/PDF target header: native figure, table and listing labels/prefixes, table/equation/list counter macros, LaTeX escaping, and the `yilist` setup hook |
+| `check-reference-index.mjs` | Shared heading, figure, listing, captioned-table, captioned-list, and labeled-equation targets; document-order numbering; first-match duplicate resolution; labels and literal prefixes; inferred reference text; and later targets surviving an equation's full-document parse |
+| `check-reference-vocabulary.mjs` | Document-configured labels and literal number prefixes for every target kind, English/empty fallback, scalar validation, and interface-language independence |
 | `check-figures.mjs` | Pandoc implicit-figure recognition, image attribute parsing, inline and empty-alt exclusions, malformed attributes, and source serialization |
+| `check-code-fences.mjs` | Both Pandoc fenced-code attribute forms, language classes, captions, malformed attributes, and body offsets |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
 | `check-latex-images.mjs` | Where pictures go in a LaTeX source tree (`ui/export/latex_images.ts`): package pictures keep their relative path, a note picture may replace a package asset, and other or unsafe destinations are reduced to unique relative files under `<output>.assets/` |
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
+| `check-list-captions.mjs` | A list's following `: …` caption line: direct and one-blank attachment, base indentation, ID-only and caption-only forms, trailing Pandoc attributes, malformed attributes left as text, and exact ranges |
 | `check-math-source.mjs` | Which source is shown, and where a click enters it |
 | `check-fence-edits.mjs` | Where a write inside a fenced block lands: a character typed at either edge of a body goes *in* the body, one with no content line gets a line of its own, `Enter` leaves a blank content line rather than a caret on a delimiter, and choosing a language rewrites the opening fence's own line |
 | `check-bare-markers.mjs` | What the parser makes of a marker-only line (`syntax/bare_markers.ts`): an empty item when the marker has its delimiter space (`- `), text when it has not (`-`), and never a setext heading that swallows the paragraph above it |
@@ -57,8 +62,9 @@ methodology; this file is the index and the conventions.
 | `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
 | `check-text-diff.mjs` | Two texts as the whole document in one line stream (`services/text_diff.ts`): equal texts, an insertion, a deletion, a rewrite, an empty side, a trailing newline, the equal ends carried, and a change past the cap answered as a `replaced` count rather than guessed at |
 | `check-table-edits.mjs` | Table row/column commands and alignment |
+| `check-table-captions.mjs` | A table's following `: …` caption line: zero or one blank separator, inline text, ID-only and caption-only forms, trailing Pandoc attributes, malformed attributes left as text, parser attachment, and exact serialization |
 | `check-table-menu.mjs` | The table menu's model: what each entry does to the source |
-| `check-table-source.mjs` | Reading and writing a table's raw source |
+| `check-table-source.mjs` | Reading and writing a table's raw source, and a mapper bounded by the table so a following line never resolves to its final cell |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
 | `check-template-examples.mjs` | One complete, readable template package for each export kind under `test/fixtures/templates/examples/`: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
@@ -75,7 +81,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and thirty-two of them (`probe:all` runs 203 and skips 29, each skip for the reason its
+two hundred and fifty-three probes (`probe:all` runs 224 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -101,8 +107,26 @@ while the caret is elsewhere and its own text, delimiters and all, while the car
 blank line under the block; `placeholder-boxes` — a blank paragraph, an empty list item, an empty
 table cell and an empty fenced body hold no character, keep their line, and put the caret on it;
 `list-marker-ink` — a list's bullet or number stands off the page it is drawn on, in both themes),
-tables
-(`table-*`), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
+`list-caption-editing` — a list caption below its list, the optional source separator, source reveal,
+label, target ID, attributes, direct/one-blank forms, and unchanged item editing;
+`list-crossrefs` — configured list labels and prefixes, automatic-reference text, first-item
+navigation, and an empty-item placeholder; `list-default-document` — the fixture's caption-only,
+ID-only, ordered-start, task and nested list cases, manual and automatic links, and navigation;
+tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that
+can be added or removed from the caption source boundary, source reveal, label, target ID, and
+direct/one-blank forms; `table-caption-crossrefs` — configured labels and
+prefixes, automatic-reference text, and command-click into the first header cell;
+`table-crossrefs-default-document` — the fixture's caption-only, ID-only, and labeled tables,
+manual and automatic links, unapplied `.margin`, and navigation; `table-blank-line-typing` — a
+line after the table keeps its own caret instead of resolving to the last cell;
+`table-cell-typing` and `table-enter-exit-caret` — existing cell editing and exit behavior stay
+unchanged), equations (`equation-rendering` — plain and labeled formulas, one Yi number,
+suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;
+`equation-crossrefs` — configured labels, automatic/manual links, and navigation to the formula
+body; `equation-matrix-default-document` — all 13 environment/plain rows with and without IDs,
+including numbering and native-tag suppression; `equation-source-editing` — unlabeled rendering,
+exact source-line clicks, and unfinished attributes; `equation-empty-navigation` — Left from the
+following line enters an empty equation's source), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
@@ -159,7 +183,7 @@ the `contain-intrinsic-size` fallback, which is what a reader sees as the paragr
 the page under it moving), links (`insert-link` — the button, the clipboard destination and the
 caret in the title; `insert-link-clipboard` — a clipboard that offers no URL and one the
 app cannot read at all, either way with the webview's clipboard never asked;
-`link-cmd-click` — ⌘-click opens URLs in the browser, a plain click opens the source, and a same-document fragment asks the reference navigator while an empty href remains inert; `auto-references` — `[#id]` infers a heading title, reveals its source, navigates, and marks an unknown target unresolved; `blank-line-heading` — bare `#` characters stay visible until their delimiter space starts the heading, whose level marker remains visible while it is empty; `heading-crossrefs` — automatic, duplicate, custom and setext IDs reach distant virtualized headings without changing the hash, missing targets are named, and plain clicks still edit source; `heading-crossrefs-default-document` — the shipped demo's links and all three attribute kinds; `heading-attributes` — attributes hidden outside a heading, editable inside it, with only the ID applied to the DOM and one Left leaving the source block; `figure-rendering` — implicit figures, captions, inferred numbers, explicit IDs, source editing, and exclusion of arbitrary classes; `figure-crossrefs-default-document` — the shipped figure example; `link-opens-a-note` — a link whose destination is a *path*: ⌘-click opens the note it names, beside the note being read or written from the root of the workspace, in either spelling, and says which path failed when there is nothing there —
+`link-cmd-click` — ⌘-click opens URLs in the browser, a plain click opens the source, and a same-document fragment asks the reference navigator while an empty href remains inert; `auto-references` — `[#id]` infers a heading title, reveals its source, navigates, and marks an unknown target unresolved; `blank-line-heading` — bare `#` characters stay visible until their delimiter space starts the heading, whose level marker remains visible while it is empty; `heading-crossrefs` — automatic, duplicate, custom and setext IDs reach distant virtualized headings without changing the hash, missing targets are named, and plain clicks still edit source; `heading-crossrefs-default-document` — the shipped demo's links and all three attribute kinds; `heading-attributes` — attributes hidden outside a heading, editable inside it, with only the ID applied to the DOM and one Left leaving the source block; `figure-rendering` — implicit figures, captions, inferred numbers, explicit IDs, source editing, and exclusion of arbitrary classes; `figure-crossrefs-default-document` — the shipped figure example with configured label and prefix; `listing-rendering` — caption-only, ID-only and fully attributed listings, generated labels, source mode and code bodies; `listing-crossrefs` — listing navigation lands on the first code line and follows document labels/prefixes; `listing-crossrefs-default-document` — the shipped listing examples; `link-opens-a-note` — a link whose destination is a *path*: ⌘-click opens the note it names, beside the note being read or written from the root of the workspace, in either spelling, and says which path failed when there is nothing there —
 `link-click-stays-in-the-window` — the harness's own stand-in, with a ⌘-click still reaching the
 app and asking for the URL while the window stays where it was) and images
 (`insert-image` — the button, a URL, a path and a `file://` URL from the clipboard, a
@@ -209,13 +233,18 @@ target is the bundle folder `note/`);
 `export-docx` — the File menu's *Export* item for the docx, end to end: the card, the target field,
 the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
-names), the hint that says so, and Escape writing nothing at all; `export-refused` —
+names), a captioned table's bookmark/number/link relationship, the hint that says so, and Escape
+writing nothing at all, plus captioned lists with shared full-width wrappers, captions, bookmarks,
+and automatic links, and labeled/unlabeled equations sharing full-width one-row two-cell tables;
+`export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
 `export-odt` — the second kind: the menu's odt item opens its card and the target's extension is that
 kind's own, the configuration file it names is that kind's own, and what comes out is a valid ODF
 (`mimetype` first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which
-is a row, an asset and a menu item;
+is a row, an asset and a menu item — plus a table's named section, visible number, and link;
+the same probe also holds a labeled equation's named section, the shared full-width formula table,
+and a captioned list's named section and visible caption;
 `export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
 target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
@@ -223,7 +252,11 @@ resolved — plus the citations as `(Smith, 2020)` over a `\section*{References}
 the kind's own font rule in both of its halves: a `.tex` of a CJK note carries **no** font setup as the
 file comes (naming a font the reader's machine may not have would fail their compile where the card's
 hint merely warns), and carries `\usepackage{xeCJK}` with the name for the length of one export where
-the reader has written one into their own copy;
+the reader has written one into their own copy; its captioned tables keep native `\caption` and
+`\label`, automatic references become `\yiTableRef`, and captioned lists use the namespaced
+`yilist` counter with `\yiListRef`. Under idiomatic highlighting, a caption-only listing title
+does not advance the counter, an ID-only listing advances it through a zero-width native caption,
+and a fully captioned listing follows;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
 (pandoc's default template and reference document, and a validation that names a deleted entry),
@@ -257,13 +290,17 @@ nothing;
 `export-html` — the fourth: the card's Self-contained box is off by default and the target is a
 bundle folder whose `note.html` is read back; a web picture stays the URL the note wrote instead of
 becoming an app temporary; the heading is shifted the way the file says, the math is marked for
-KaTeX (a CDN script and stylesheet), and the citations become a headed `References` list;
+KaTeX (a CDN script and stylesheet), and the citations become a headed `References` list; a
+captioned table keeps its ID, numbered caption, class, and automatic link; labeled and unlabeled
+equations share one borderless layout-table row with formula and a left-aligned reserved cell;
 `export-html-local-assets` — the bundle's contents: the note's local picture is copied to
 `note.assets/`, a web picture stays its URL, and Yuki's `template/` tree travels beside the page;
 `export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
-the navigation and the chapter's `References` list are all values it asserts;
+the navigation and the chapter's `References` list are all values it asserts — as are a captioned
+table's anchor, visible number, automatic link, and preserved `.margin` class, and labeled and
+unlabeled equations sharing adjacent formula and reserved-number cells;
 `export-font-hint` — the card's font hint: a note written in characters this export cannot draw is said
 so in the app's own words, with the characters it is written in and the settings file beside it. This
 build ships a face per script, so Chinese, Korean and Greek are quiet and stay quiet; what is left is a
@@ -290,7 +327,16 @@ drew it). It fails if the app ever stops handing the reader's file to pandoc as 
 `export-pdf` — the sixth: the card for a PDF (its own target, the settings file it names) and a real
 `%PDF-` through the TeX engine that file names — one of the three probes that always outrun the
 bridge's five seconds, because a single TeX run is four of them (the harness says so and reads the
-result out of the page's stash; there is nothing to split, since the overrun *is* one export);
+result out of the page's stash; there is nothing to split, since the overrun *is* one export) —
+the compiled page's table, equation and list references and captions follow their literal prefixes,
+and document-configured figure and listing labels reach the native PDF captions;
+`export-pdf-table-template` — a copied Rho package redefines `\thetable`, its Lua filter rewrites
+the table, and the compiled page proves the filter kept `\caption`/`\label` while `\yiTableRef`
+read `R-1` from the package counter;
+`export-pdf-equation-template` — a copied Rho package redefines `\theequation`; the compiled page
+proves automatic equation references and the displayed equation both use the package's `R-1`;
+`export-pdf-list-template` — a copied book template implements `\yiListCounterSetup`; lists in two
+chapters compile as `1.1` and `2.1`, and automatic references follow those chapter-local values;
 `export-pdf-page` — the page the card offers for that kind: both fields open on the settings file's own
 and come out A4 portrait, letter + landscape comes out 792 x 612 points read from the page's own
 `/MediaBox`, another kind is offered no page row at all, and the reader's settings file is untouched
@@ -313,7 +359,9 @@ as they are, and no PNG), with the pictures a run drew gone when it ends;
 asked for it and none is needed): the note as every other export is handed it, written as
 `note.processed.md` (never over the note), with the wikilink rendered, the citation as the words it
 reads as, the works it names appended under the app's own heading, and the note's own headings left
-at their own levels;
+at their own levels; figures, listings and captioned tables become identified HTML with visible
+captions, labeled equations become ID-bearing MathML blocks, captioned lists preserve task boxes,
+nested lists and numbered captions, and every automatic reference is resolved to an ordinary link;
 `export-web-image` — the picture a note names on the web: the app fetches it with `reqwest` from the
 local HTTP fixture (a redirect to a real PNG), follows the redirect, hands pandoc a local file, and
 the document that comes out has `word/media/` in it and no fetched copy left behind;
@@ -345,6 +393,9 @@ its pointer; `page-layout-toggle` — the status bar button's two
 layouts, driven by pressing it), the
 fixture workspace (`fixture-*`), and the real
 documents (`real-doc-math`, `real-docs`).
+
+`listing-source-horizontal-caret` holds the source box's horizontal scroll across
+both typing and deleting at the end of a long fenced-code opening line.
 
 `npm run probe:all` prints every probe's name and result as it goes, which is the
 live index; the newest probes carry a header naming what they cover:

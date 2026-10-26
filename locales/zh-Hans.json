@@ -204,7 +204,6 @@
   "link.openFailed": "无法打开{name}：{message}",
   "wikilink.notFound": "没有名为“{target}”的笔记。",
   "reference.notFound": "没有 ID 为“{id}”的引用目标。",
-  "reference.figure": "图",
   "wikilink.openFailed": "无法打开笔记“{target}”：{message}",
   "newNote.title": "新建 Markdown",
   "newNote.folder": "文件夹",

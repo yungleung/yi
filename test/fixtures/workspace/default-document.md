@@ -1,3 +1,18 @@
+---
+reference-labels:
+  figure: Figure
+  listing: Code excerpt
+  table: Data table
+  equation: Formula
+  list: Procedure
+reference-number-prefixes:
+  figure: "2-"
+  listing: "2-"
+  table: "2-"
+  equation: "2-"
+  list: "3-"
+---
+
 # GitHub-flavored markdown demo
 
 This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~~strikethrough~~.
@@ -29,12 +44,87 @@ function greet(name: string) {
 }
 ```
 
+## Code listings
+
+See [#lst:minimal] or [the captioned listing](#lst:sample).
+
+A caption without an ID is visible but does not enter the listing sequence:
+
+```python {caption="An unnumbered example"}
+print(0)
+```
+
+An ID alone creates a numbered target:
+
+```python {#lst:minimal}
+print(1)
+```
+
+A caption and other Pandoc attributes may be combined:
+
+```python {#lst:sample caption="A captioned example" .numberLines startFrom=7}
+print("sample")
+```
+
 ## Tables
 
 | Column 1 | Column 2 | Column 3 |
 | --- | --- | --- |
 | Alpha | Beta | Gamma |
 | Delta | Epsilon | Zeta |
+
+See [#tbl:results] or [the results table](#tbl:results).
+
+An ordinary table has no caption and consumes no table number. A caption-only table is numbered:
+
+| Step | Result |
+| --- | --- |
+| Build | Clean |
+
+: A caption-only table
+
+An ID-only caption is a reference target:
+
+| A | B |
+| --- | --- |
+| one | two |
+
+: {#tbl:target}
+
+Attributes and margin placement remain source for Pandoc and template packages:
+
+| Name | Value |
+| --- | --- |
+| alpha | one |
+
+: Results {#tbl:results .margin data-owner=demo}
+
+## List cross-references
+
+A caption-only bullet list is numbered but has no target:
+
+- First check
+- Second check
+
+: Preliminary checks
+
+An ID-only ordered list keeps its item start and has a target:
+
+3. Build the note
+4. Test the export
+
+: {#list:ordered}
+
+A captioned task list may contain nested items and export attributes:
+
+- [x] Draft the note
+- [ ] Review the result
+  - Inspect citations
+  - Check every export
+
+: Release steps {#list:steps .wide data-owner=demo}
+
+See [#list:steps] or [the release steps](#list:steps).
 
 ## Math expressions
 
@@ -46,6 +136,229 @@ $$
 \frac{d}{dx}(\sin x) = \cos x \\ \frac{d}{dx}(\cos x) = -\sin x \\
 e^{i 2\pi} = 1
 $$
+
+## Equation cross-references
+
+The display formula above is the “no environment, no ID” case: standard display math with no
+equation target. See [#eq:plain] or [the first labeled formula](#eq:plain).
+
+No environment, with an ID:
+
+[$$
+e_0 = 1
+$$]{#eq:plain}
+
+`equation` without an ID:
+
+$$
+\begin{equation}
+e_1 = 1
+\end{equation}
+$$
+
+`equation` with an ID:
+
+[$$
+\begin{equation}
+e_2 = 1
+\end{equation}
+$$]{#eq:equation}
+
+`equation*` without an ID:
+
+$$
+\begin{equation*}
+e_3 = 1
+\end{equation*}
+$$
+
+`equation*` with an ID:
+
+[$$
+\begin{equation*}
+e_4 = 1
+\end{equation*}
+$$]{#eq:equation-star}
+
+`align` without an ID:
+
+$$
+\begin{align}
+a_1 &= 1\\
+a_2 &= 2
+\end{align}
+$$
+
+`align` with an ID:
+
+[$$
+\begin{align}
+a_3 &= 1\\
+a_4 &= 2
+\end{align}
+$$]{#eq:align}
+
+`align*` without an ID:
+
+$$
+\begin{align*}
+a_5 &= 1\\
+a_6 &= 2
+\end{align*}
+$$
+
+`align*` with an ID:
+
+[$$
+\begin{align*}
+a_7 &= 1\\
+a_8 &= 2
+\end{align*}
+$$]{#eq:align-star}
+
+`aligned` without an ID:
+
+$$
+\begin{aligned}
+a_9 &= 1\\
+a_{10} &= 2
+\end{aligned}
+$$
+
+`aligned` with an ID:
+
+[$$
+\begin{aligned}
+a_{11} &= 1\\
+a_{12} &= 2
+\end{aligned}
+$$]{#eq:aligned}
+
+`gather` without an ID:
+
+$$
+\begin{gather}
+g_1 = 1\\
+g_2 = 2
+\end{gather}
+$$
+
+`gather` with an ID:
+
+[$$
+\begin{gather}
+g_3 = 1\\
+g_4 = 2
+\end{gather}
+$$]{#eq:gather}
+
+`gather*` without an ID:
+
+$$
+\begin{gather*}
+g_5 = 1\\
+g_6 = 2
+\end{gather*}
+$$
+
+`gather*` with an ID:
+
+[$$
+\begin{gather*}
+g_7 = 1\\
+g_8 = 2
+\end{gather*}
+$$]{#eq:gather-star}
+
+`gathered` without an ID:
+
+$$
+\begin{gathered}
+g_9 = 1\\
+g_{10} = 2
+\end{gathered}
+$$
+
+`gathered` with an ID:
+
+[$$
+\begin{gathered}
+g_{11} = 1\\
+g_{12} = 2
+\end{gathered}
+$$]{#eq:gathered}
+
+`alignat` without an ID:
+
+$$
+\begin{alignat}{2}
+b_1 &= 1 &\quad c_1 &= 2\\
+b_2 &= 3 &\quad c_2 &= 4
+\end{alignat}
+$$
+
+`alignat` with an ID:
+
+[$$
+\begin{alignat}{2}
+b_3 &= 1 &\quad c_3 &= 2\\
+b_4 &= 3 &\quad c_4 &= 4
+\end{alignat}
+$$]{#eq:alignat}
+
+`alignat*` without an ID:
+
+$$
+\begin{alignat*}{2}
+b_5 &= 1 &\quad c_5 &= 2\\
+b_6 &= 3 &\quad c_6 &= 4
+\end{alignat*}
+$$
+
+`alignat*` with an ID:
+
+[$$
+\begin{alignat*}{2}
+b_7 &= 1 &\quad c_7 &= 2\\
+b_8 &= 3 &\quad c_8 &= 4
+\end{alignat*}
+$$]{#eq:alignat-star}
+
+`alignedat` without an ID:
+
+$$
+\begin{alignedat}{2}
+b_9 &= 1 &\quad c_9 &= 2\\
+b_{10} &= 3 &\quad c_{10} &= 4
+\end{alignedat}
+$$
+
+`alignedat` with an ID:
+
+[$$
+\begin{alignedat}{2}
+b_{11} &= 1 &\quad c_{11} &= 2\\
+b_{12} &= 3 &\quad c_{12} &= 4
+\end{alignedat}
+$$]{#eq:alignedat}
+
+`split` without an ID:
+
+$$
+\begin{split}
+s_1 &= 1\\
+s_2 &= 2
+\end{split}
+$$
+
+`split` with an ID:
+
+[$$
+\begin{split}
+s_3 &= 1\\
+s_4 &= 2
+\end{split}
+$$]{#eq:split}
 
 ## Footnotes and definition lists
 

@@ -16,6 +16,10 @@ import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 import { enterSourceOf } from '../source_mode';
 import { onNearViewport } from '../lazy';
 import { highlightLatex } from './latex_highlight';
+import {
+  readEquationBody,
+  unnumberedEquationBody
+} from '../syntax/equation_blocks';
 
 /**
  * KaTeX output is a pure function of the source, so render once per unique
@@ -36,7 +40,7 @@ export function cachedMath(value: string, displayMode: boolean): string | undefi
   return katexCache.get(`${displayMode ? 'd' : 'i'}:${value}`);
 }
 
-function renderKatex(value: string, displayMode: boolean): string {
+export function renderKatexHtml(value: string, displayMode: boolean): string {
   const key = `${displayMode ? 'd' : 'i'}:${value}`;
   const cached = katexCache.get(key);
   if (cached !== undefined) {
@@ -56,7 +60,7 @@ function renderMathElement(element: HTMLElement): void {
   const value = element.dataset.math ?? '';
   const display = element.dataset.display === 'true';
   try {
-    element.innerHTML = renderKatex(value, display);
+    element.innerHTML = renderKatexHtml(value, display);
     element.classList.remove('markdown-math-placeholder');
   } catch {
     // Keep the raw formula as the placeholder when KaTeX fails.
@@ -132,9 +136,10 @@ export class DisplayMath extends EditableNodeComponent {
   constructor(node: MathNode) {
     super('math', node, document.createElement('div'), 'markdown-display-math overflow-x-auto');
     this.element.classList.add('markdown-math-placeholder');
-    this.element.dataset.math = node.value;
+    const math = unnumberedEquationBody(readEquationBody(node.value));
+    this.element.dataset.math = math;
     this.element.dataset.display = 'true';
-    renderOrDefer(this.element, node.value, true);
+    renderOrDefer(this.element, math, true);
   }
 
   /**

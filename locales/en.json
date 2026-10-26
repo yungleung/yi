@@ -204,7 +204,6 @@
   "link.openFailed": "Failed to open {name}: {message}",
   "wikilink.notFound": "No note named “{target}”.",
   "reference.notFound": "No cross-reference target has the id “{id}”.",
-  "reference.figure": "Figure",
   "wikilink.openFailed": "Failed to open the note “{target}”: {message}",
   "newNote.title": "New Markdown",
   "newNote.folder": "Folder",

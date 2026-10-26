@@ -37,12 +37,17 @@
  */
 
 import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
+import type { ListingNode } from '../markdown/syntax/listings';
 import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
 import { spansOfType, type Span, type Walkable } from './node_spans';
 import { isWebDestination } from './picture_hint';
 import type { FigureNode } from '../markdown/syntax/figures';
+import { escapeHtml, htmlAttributeName } from './html';
+import { tableRewrites } from './table_rewrites';
+import { equationRewrites } from './equation_rewrites';
+import { listRewrites } from './list_rewrites';
 import {
   firstReference,
   referenceIndex,
@@ -68,8 +73,6 @@ export interface ImageBases {
 export interface ExportAnswers {
   /** The export kind whose portability rules this run follows. */
   kind: string;
-  /** Reads the app's localized words used by generated reference text and captions. */
-  translate(key: string): string;
   titleOf: TitleLookup;
   bases: ImageBases;
   exists: FileExists;
@@ -127,14 +130,20 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const tree = parseMarkdown(text) as unknown as Walkable;
   const references = referenceIndex(text);
   const figures = spansOfType(tree, 'figure');
+  const tables = spansOfType(tree, 'table');
+  const listings = spansOfType(tree, 'listing');
   const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
   const rewritten = applyRewrites(text, [
-    ...autoReferenceRewrites(tree, references, answers),
+    ...autoReferenceRewrites(tree, references, answers.kind),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
-    ...(await imageRewrites(tree, answers, fetched, figures)),
+    ...listingRewrites(listings, references, answers),
+    ...(await imageRewrites(tree, answers, fetched, figures, tables)),
+    ...equationRewrites(text, references, answers.kind),
+    ...listRewrites(tree, references, answers.kind),
+    ...tableRewrites(tree, references, answers.kind),
     ...(cited ?? []).map((span) => ({
       start: span.start,
       end: span.end,
@@ -189,13 +198,43 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
 function autoReferenceRewrites(
   tree: Walkable,
   references: readonly ReferenceEntry[],
-  answers: ExportAnswers
+  kind: string
 ): Rewrite[] {
   return spansOfType(tree, 'autoReference').map((span) => {
     const node = span.node as { id: string };
     const target = firstReference(references, node.id);
+    if (
+      target?.kind === 'table' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiTableRef{${latexLabel(node.id)}}`
+      };
+    }
+    if (
+      target?.kind === 'equation' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiEquationRef{${latexLabel(node.id)}}`
+      };
+    }
+    if (
+      target?.kind === 'list' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiListRef{${latexLabel(node.id)}}`
+      };
+    }
     const text = target
-      ? referenceLabel(target, (key) => answers.translate(key))
+      ? referenceLabel(target)
       : `#${node.id}`;
     return {
       start: span.start,
@@ -203,6 +242,11 @@ function autoReferenceRewrites(
       text: `[${escapeLinkText(text)}](#${encodeFragment(node.id)})`
     };
   });
+}
+
+/** An identifier used as one LaTeX label argument. */
+function latexLabel(id: string): string {
+  return id.replace(/\\/g, '\\textbackslash{}').replace(/}/g, '\\}');
 }
 
 /** Figures, as processed-Markdown HTML or native Pandoc Markdown. */
@@ -221,8 +265,7 @@ async function figureRewrites(
     const entry = references.find(
       (candidate) => candidate.kind === 'figure' && candidate.from === span.start
     );
-    const number = entry?.number ?? null;
-    const label = number === null ? null : `${answers.translate('reference.figure')} ${number}`;
+    const label = entry === undefined ? null : referenceLabel(entry);
     if (answers.kind === 'markdown') {
       rewrites.push({
         start: span.start,
@@ -251,6 +294,31 @@ async function figureRewrites(
   return rewrites;
 }
 
+/** Listings, as portable HTML or as Pandoc-native source with one target wrapper. */
+function listingRewrites(
+  listings: readonly Span[],
+  references: readonly ReferenceEntry[],
+  answers: ExportAnswers
+): Rewrite[] {
+  return listings.map((span) => {
+    const listing = span.node as unknown as ListingNode;
+    const entry = references.find(
+      (candidate) => candidate.kind === 'listing' && candidate.from === span.start
+    );
+    const label = entry === undefined ? null : referenceLabel(entry);
+    return {
+      start: span.start,
+      end: span.end,
+      text:
+        answers.kind === 'markdown'
+          ? listingHtml(listing, label)
+          : answers.kind === 'latex' || answers.kind === 'pdf'
+            ? latexListing(listing)
+            : pandocListing(listing, label)
+    };
+  });
+}
+
 /**
  * Every image whose destination names a file that is there, as that file's own absolute path. A
  * destination that names no *file* (a web URL, a scheme of its own) is left as written, and so is
@@ -261,12 +329,21 @@ async function imageRewrites(
   tree: Walkable,
   answers: ExportAnswers,
   fetched: Map<string, string | null>,
-  figures: readonly Span[]
+  figures: readonly Span[],
+  tables: readonly Span[]
 ): Promise<Rewrite[]> {
   const rewrites: Rewrite[] = [];
   // One URL is one download, however many times a note names it.
   for (const span of spansOfType(tree, 'image')) {
     if (figures.some((figure) => span.start >= figure.start && span.end <= figure.end)) {
+      continue;
+    }
+    // Processed Markdown renders its table itself; an image rewrite inside that
+    // replacement would fetch an asset whose path the HTML renderer then discards.
+    if (
+      answers.kind === 'markdown' &&
+      tables.some((table) => span.start >= table.start && span.end <= table.end)
+    ) {
       continue;
     }
     const image = span.node as AstImage;
@@ -379,6 +456,100 @@ function figureAttributes(figure: FigureNode, includeId: boolean): string {
     : `${figure.attribute?.separator ?? ''}{${tokens.join(' ')}}`;
 }
 
+/** A processed-Markdown listing all common Markdown readers can draw. */
+function listingHtml(listing: ListingNode, label: string | null): string {
+  const classes = [
+    'listing',
+    ...listing.classes.filter((name) => name !== listing.language)
+  ];
+  const attributes = [
+    ...(listing.id === null ? [] : [`id="${escapeHtml(listing.id)}"`]),
+    `class="${escapeHtml([...new Set(classes)].join(' '))}"`,
+    ...Object.entries(listing.attributes)
+      .filter(([key]) => key !== 'caption')
+      .map(([key, value]) => `data-${htmlAttributeName(key)}="${escapeHtml(value)}"`)
+  ];
+  const language =
+    listing.language === null ? '' : ` class="language-${escapeHtml(listing.language)}"`;
+  const caption = listingCaptionText(label, listing.caption);
+  return [
+    `<figure ${attributes.join(' ')}>`,
+    `  <pre><code${language}>${escapeHtml(listing.value)}</code></pre>`,
+    `  <figcaption>${escapeHtml(caption ?? '')}</figcaption>`,
+    '</figure>'
+  ].join('\n');
+}
+
+/** A listing wrapped in one Pandoc Div so every non-LaTeX writer keeps its target and caption. */
+function pandocListing(listing: ListingNode, label: string | null): string {
+  const wrapper = [
+    ...(listing.id === null ? [] : [`#${listing.id}`]),
+    '.listing'
+  ];
+  const caption = listingCaptionText(label, listing.caption);
+  return [
+    `::: {${wrapper.join(' ')}}`,
+    fencedListing(listing, [], [], false),
+    '',
+    '::: {.listing-caption}',
+    escapeMarkdownText(caption ?? ''),
+    ':::',
+    ':::'
+  ].join('\n');
+}
+
+/** A LaTeX/PDF listing whose shape keeps native counters aligned with Yi's target sequence. */
+function latexListing(listing: ListingNode): string {
+  if (listing.id !== null && listing.caption !== null) {
+    return listing.source;
+  }
+  if (listing.id !== null) {
+    return fencedListing(listing, [['caption', '\u200b']]);
+  }
+  return fencedListing(listing, [['title', listing.caption ?? '']], ['caption', 'title']);
+}
+
+/** A canonical fenced block with only the attributes its caller asks to replace. */
+function fencedListing(
+  listing: ListingNode,
+  extra: Array<[string, string]>,
+  omit: readonly string[] = [],
+  includeId = true
+): string {
+  const classes = [...new Set(listing.classes)];
+  const attributes = Object.entries(listing.attributes).filter(
+    ([key]) => !omit.includes(key) && key !== 'caption'
+  );
+  const tokens = [
+    ...(listing.id === null || !includeId ? [] : [`#${listing.id}`]),
+    ...classes.map((name) => `.${name}`),
+    ...attributes.map(([key, value]) => `${key}="${attributeValue(value)}"`),
+    ...extra.map(([key, value]) => `${key}="${attributeValue(value)}"`)
+  ];
+  const fence = '`'.repeat(Math.max(3, longestBacktickRun(listing.value) + 1));
+  const info = tokens.length === 0 ? '' : `{${tokens.join(' ')}}`;
+  const body = listing.value.endsWith('\n') ? listing.value : `${listing.value}\n`;
+  return `${fence}${info}\n${body}${fence}`;
+}
+
+/** The caption line shared by editor and rendered exports. */
+function listingCaptionText(label: string | null, caption: string | null): string | null {
+  if (label === null) {
+    return caption;
+  }
+  return caption === null ? `${label}.` : `${label}. ${caption}`;
+}
+
+/** Keep an opening-fence command from being closed by a backtick run in its body. */
+function longestBacktickRun(value: string): number {
+  return Math.max(0, ...(value.match(/`+/g) ?? []).map((run) => run.length));
+}
+
+/** Escape document text placed in a generated Markdown caption paragraph. */
+function escapeMarkdownText(text: string): string {
+  return text.replace(/([\\`*_[\]{}<>#+\-!|])/g, '\\$1');
+}
+
 /** Escape text used as an ordinary Markdown link label. */
 function escapeLinkText(text: string): string {
   return text.replace(/[\\[\]]/g, (character) => `\\${character}`);
@@ -387,21 +558,6 @@ function escapeLinkText(text: string): string {
 /** Escape one fragment identifier for a Markdown destination. */
 function encodeFragment(id: string): string {
   return encodeURI(id);
-}
-
-/** HTML text and quoted attribute escaping. */
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** A Pandoc key mapped into an HTML data-attribute name. */
-function htmlAttributeName(key: string): string {
-  const safe = key.replace(/[^A-Za-z0-9_.:-]/g, '-');
-  return safe === '' ? 'value' : safe;
 }
 
 /** A quoted Pandoc attribute value. */

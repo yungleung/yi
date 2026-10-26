@@ -204,7 +204,6 @@
   "link.openFailed": "Impossible d’ouvrir {name} : {message}",
   "wikilink.notFound": "Aucune note nommée « {target} ».",
   "reference.notFound": "Aucune cible de référence n’a l’identifiant « {id} ».",
-  "reference.figure": "Figure",
   "wikilink.openFailed": "Impossible d’ouvrir la note « {target} » : {message}",
   "newNote.title": "Nouveau Markdown",
   "newNote.folder": "Dossier",

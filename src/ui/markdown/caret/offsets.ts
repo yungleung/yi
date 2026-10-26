@@ -51,6 +51,8 @@ export const SOURCE_SELECTOR = [
   '.markdown-footnote-source',
   '.markdown-auto-reference-source',
   '.markdown-figure-source',
+  '.markdown-caption-source',
+  '.markdown-equation-source',
   '.markdown-strong-source',
   '.markdown-emphasis-source',
   '.markdown-delete-source',

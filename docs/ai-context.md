@@ -21,7 +21,7 @@ shape (the tree, the class families, and which convention each check enforces).
 
 | Layer | Files | Job |
 | --- | --- | --- |
-| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading attributes and Pandoc identifiers |
+| Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
 | Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
@@ -438,8 +438,16 @@ has no citeproc behind it. Those rules walk the *parse*,
 so a `[[…]]` in a fence or in code, and an image inside one, stay exactly as written. The app's
 scratch note (written under its data folder, because pandoc reads files) is deleted whether pandoc
 succeeded or not — and pandoc's own warnings are **kept** (`ExportOutcome.warnings`) and shown to the
-reader as a message, so a document missing a piece says why instead of leaving a hole. What
-the app may ask pandoc is one list in one place — `--defaults`, `--output`, `--resource-path`, the
+reader as a message, so a document missing a piece says why instead of leaving a hole.
+
+The same pre-process lowers listings: HTML/EPUB/DOCX/ODT get one identified `.listing` Div with a
+visible `.listing-caption` paragraph, processed Markdown gets an HTML figure, and LaTeX/PDF keep
+native fenced shapes. `ui/export/reference_header.ts` writes the document's configured caption
+names and literal counter prefixes into a temporary header, which Rust writes beside the run note
+and passes as a second `--include-in-header`; empty prefixes leave native counters alone, while list
+labels stay Yi-generated.
+
+What the app may ask pandoc is one list in one place — `--defaults`, `--output`, `--resource-path`, the
 **library and CSL style its own citations were formatted from** (`--bibliography`; `--csl`, from
 citation-js's bundled styles, which is why `[@key]` resolves and the reference list is appended in
 the style the page showed), and the note — held by `test/probes/export-pandoc-arguments.js` against
@@ -606,12 +614,71 @@ IDs and Pandoc's numeric suffix for duplicates. ⌘-click or Ctrl-click on `[tex
 **`[#id]` is an automatic reference, and a standalone captioned image is a figure.** The remark
 transformer `plugins/remark-auto-references.ts` splits `[#id]` from ordinary text while preserving
 offsets; `nodes/auto_reference.ts` renders the target's inferred label. `document/reference_index.ts`
-owns document order, IDs, duplicate resolution, heading targets, and figure numbering. Figures with a
-non-empty alt are recognized after all parser repairs by `syntax/figures.ts`; their Pandoc attributes
-stay in the source while normal rendering shows the image, caption, and computed number. Export
-rewrites automatic references to ordinary links and normalizes figure targets for ODT and LaTeX.
-`auto-references.js`, `figure-rendering.js`, and `figure-crossrefs-default-document.js` hold the app
-behavior.
+owns document order, IDs, duplicate resolution, heading, figure, listing, captioned-table,
+captioned-list and labeled-equation targets. `syntax/reference_vocabulary.ts` reads document-owned
+labels and literal prefixes from frontmatter, with English and empty fallbacks and no dependency on
+the app's interface language. Figures with a non-empty alt are recognized after all parser repairs by
+`syntax/figures.ts`; their Pandoc attributes stay in the source while normal rendering shows the
+image, caption, and computed number. `auto-references.js`, `figure-rendering.js`, and
+`figure-crossrefs-default-document.js` hold the app behavior.
+
+**A captioned pipe table owns its optional separator and its following `: …` line.** The table
+source mapper is bounded by the pipe rows, so a caret after the table never resolves to its last
+cell. `syntax/table_captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
+block, and preserves the exact table/caption source on the table node. `create_block.ts` groups the
+three lines but renders no node for the optional separator, so a direct and separated caption have
+the same appearance. The shared `nodes/caption.ts` numbers table and list captions and reveals the
+complete line from any point on its row. At the caption source's start, `Enter` adds the separator
+and `Backspace` removes it.
+`document/reference_index.ts` counts every captioned table but targets only one with an ID. The
+non-LaTeX lowering lives in `ui/export/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
+`\yiTableRef`, written by `ui/export/reference_header.ts` and the run-local Rust header file.
+Shipped LaTeX/PDF templates expand `$header-includes$`, and their table filters preserve the caption
+and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editing probes, and
+`table-crossrefs-default-document.js` hold the editor behavior; the export probes hold each kind,
+and `export-pdf-table-template.js` proves the package counter contract.
+
+**A labeled equation is one bracketed display-math block, never one target per
+environment row.** `syntax/equation_blocks.ts` owns `[$$…$$]{…#id}` parsing,
+the `[$$` autocomplete skeleton, and the environment matrix. An ID is optional
+for display; the structural reader keeps a block visible while its final
+attributes are unfinished. Plain or environment math is lowered before KaTeX so
+no native automatic tag can depend on virtualization. `create_block.ts` and
+`nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
+`document/reference_index.ts` indexes only labeled blocks.
+`ui/export/equation_rewrites.ts` gives every HTML/EPUB/DOCX/ODT display equation
+one full-width row with the formula first and a minimum-width, left-aligned second cell;
+only a label fills that cell. `equation_html.ts` gives processed-Markdown MathML
+the same layout, and LaTeX/PDF get one outer `equation` with `\yiEquationRef`.
+The default fixture contains every
+matrix row with and without an ID;
+`equation-matrix-default-document.js`, `equation-rendering.js`,
+`equation-source-editing.js`, `equation-crossrefs.js`, and
+`export-pdf-equation-template.js` hold the feature.
+
+**A captioned list is a normal list followed by one shared colon caption line.**
+`syntax/caption_lines.ts` owns the grammar for both tables and lists;
+`syntax/list_captions.ts` attaches it only at the list's base indentation and
+masks the line for remark without changing offsets. This keeps a colon after a
+paragraph as definition-list syntax and leaves `:::` free for callouts.
+The same shared `nodes/caption.ts` reveals the caption as its own source while
+list items remain editable. HTML/EPUB/DOCX/ODT all receive one target wrapper
+and numbered caption; processed Markdown renders equivalent list HTML. LaTeX/PDF use the
+namespaced `yilist` object counter and native labels/references, with
+`\yiListCounterSetup` letting a template choose the reset level and
+`\yiListNumber` its base format. The default fixture and the caption, crossref,
+and export probes hold the feature.
+
+**An attributed fenced code block is a listing only when its ID or caption makes it one.**
+`syntax/code_fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/listings.ts`
+creates an ID/caption listing block, while `create_block.ts` keeps the code body editable and
+draws the caption below it. Only an ID consumes a listing number; a caption alone is visible but
+unnumbered. Export rewrites automatic references to ordinary links, lowers non-LaTeX listings to
+identified Divs or processed-HTML figures, and leaves LaTeX/PDF with native listing shapes plus a
+generated label/counter header. `listing-rendering.js`, `listing-crossrefs.js`, and their
+default-document probes hold the editor behavior. `listing-source-horizontal-caret.js` holds the
+source box's own horizontal scroll: typing or deleting near the end of a long opening fence
+rebuilds the highlighted `pre`, so the restored caret must scroll that box back to the caret.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
@@ -856,6 +923,13 @@ report one of its own; where the keyboard goes is one hook (`EditorContext.focus
 command that focuses the page and a command that selects it are then asking for the same thing; and
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
 composition events rather than pretending to type.
+
+The hand-back deliberately blurs the seam for one turn so the input method gets a
+fresh context. App activation can likewise leave the keyboard on the page while the
+editor still owns a live caret. The editor catches a page-targeted key whenever that
+caret exists, so neither a quick burst nor the first key after activating the app is
+lost (`test/probes/typed-text-focus-burst.js`); a click outside removes the caret,
+so losing focus there still writes nothing.
 
 A key the input method routes is the method's, whether a composition is behind it or not: a
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes

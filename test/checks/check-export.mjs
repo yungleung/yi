@@ -217,6 +217,323 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| :--- | ---: |\n' +
+    '| *alpha* | `x & y` |\n\n' +
+    ': **Results** {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'markdown' });
+  check(
+    'processed Markdown renders a captioned table as numbered, aligned HTML',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '<table id="tbl:results" class="margin" data-owner="demo">\n' +
+      '  <caption>Table 1. <strong>Results</strong></caption>\n' +
+      '  <thead>\n' +
+      '    <tr>\n' +
+      '      <th style="text-align: left">Name</th>\n' +
+      '      <th style="text-align: right">Result</th>\n' +
+      '    </tr>\n' +
+      '  </thead>\n' +
+      '  <tbody>\n' +
+      '    <tr>\n' +
+      '      <td style="text-align: left"><em>alpha</em></td>\n' +
+      '      <td style="text-align: right"><code>x &amp; y</code></td>\n' +
+      '    </tr>\n' +
+      '  </tbody>\n' +
+      '</table>\n'
+  );
+}
+
+{
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'html' });
+  check(
+    'HTML gets Pandoc’s native table with only the visible number added to its caption',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '| Name | Result |\n' +
+      '| --- | --- |\n' +
+      '| alpha | one |\n\n' +
+      ': Table 1. Results {#tbl:results .margin owner=demo}\n'
+  );
+}
+
+{
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  const { rendered } = await render(table, { kind: 'docx' });
+  check(
+    'DOCX wraps an identified table and moves its ID off the visible caption',
+    rendered,
+    'See [Table 1](#tbl:results).\n\n' +
+      '::: {#tbl:results .table-target}\n' +
+      '| Name | Result |\n' +
+      '| --- | --- |\n' +
+      '| alpha | one |\n\n' +
+      ': Table 1. Results {.margin owner="demo"}\n' +
+      ':::\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n: Only a caption\n';
+  const { rendered } = await render(table, { kind: 'epub' });
+  check(
+    'a caption without an ID is numbered but has no target',
+    rendered,
+    '| A |\n| --- |\n| 1 |\n: Table 1. Only a caption\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n: {#tbl:only}\n';
+  const { rendered } = await render(table, { kind: 'odt' });
+  check(
+    'an ID without caption still gets a target and a visible number',
+    rendered,
+    '::: {#tbl:only .table-target}\n' +
+      '| A |\n' +
+      '| --- |\n' +
+      '| 1 |\n' +
+      ': Table 1.\n' +
+      ':::\n'
+  );
+}
+
+{
+  const table = '| A |\n| --- |\n| 1 |\n';
+  const { rendered } = await render(table, { kind: 'docx' });
+  check('an ordinary table is left unchanged', rendered, table);
+}
+
+{
+  const table =
+    'See [#tbl:results].\n\n' +
+    '| Name | Result |\n' +
+    '| --- | --- |\n' +
+    '| alpha | one |\n\n' +
+    ': Results {#tbl:results .margin owner=demo}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(table, { kind });
+    check(
+      `${kind} automatic table references use the native counter`,
+      rendered,
+      'See \\yiTableRef{tbl:results}.\n\n' +
+        '| Name | Result |\n' +
+        '| --- | --- |\n' +
+        '| alpha | one |\n\n' +
+        ': Results {#tbl:results .margin owner=demo}\n'
+    );
+  }
+}
+
+{
+  const manual =
+    'See [the results](#tbl:results).\n\n' +
+    '| A |\n' +
+    '| --- |\n' +
+    '| 1 |\n' +
+    ': Results {#tbl:results}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(manual, { kind });
+    check(`${kind} keeps an author's manual table link text`, rendered, manual);
+  }
+}
+
+{
+  const equation =
+    'See [#eq:system].\n\n' +
+    '[$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$]{#eq:system .wide owner=demo}\n';
+  const { rendered } = await render(equation, { kind: 'html' });
+  check(
+    'HTML lowers a labeled environment to a target layout table',
+    rendered,
+    'See [Equation (1)](#eq:system).\n\n' +
+      '<div id="eq:system" class="equation-target equation-layout wide" data-owner="demo">\n' +
+      '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">\n' +
+      '<tbody style="border: none;">\n' +
+      '<tr>\n' +
+      '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">\n\n' +
+      '$$\n' +
+      '\\begin{aligned}\n' +
+      'x&=1\\\\\n' +
+      'y&=2\n' +
+      '\\end{aligned}\n' +
+      '$$\n\n' +
+      '</td>\n' +
+      '<td class="equation-number-cell" style="width: 10%; min-width: 4em; border: none; text-align: left; vertical-align: middle;">\n\n' +
+      '\\(1\\)\n\n' +
+      '</td>\n' +
+      '</tr>\n' +
+      '</tbody>\n' +
+      '</table>\n' +
+      '</div>\n'
+  );
+
+  for (const kind of ['docx', 'odt']) {
+    const { rendered } = await render(equation, { kind });
+    const rows = rendered.split('\n').filter((line) => line.startsWith('| '));
+    check(
+      `${kind} uses a native one-row two-cell equation table`,
+      [
+        rendered.startsWith(
+          'See [Equation (1)](#eq:system).\n\n' +
+            '::: {#eq:system .equation-target .equation-layout .wide owner="demo"}\n'
+        ),
+        rows.length,
+        (rows[0]?.match(/\|/g) ?? []).length,
+        rows[0]?.includes(
+          '$$\\begin{aligned} x&=1\\\\ y&=2 \\end{aligned}$$'
+        ) ?? false,
+        rows[0]?.includes('\\(1\\)') ?? false
+      ],
+      [true, 1, 3, true, true]
+    );
+  }
+}
+
+{
+  const equation =
+    'See [#eq:system].\n\n' +
+    '[$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$]{#eq:system}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(equation, { kind });
+    check(
+      `${kind} uses one native equation and a counter-backed reference`,
+      rendered,
+      'See \\yiEquationRef{eq:system}.\n\n' +
+        '$$\n' +
+        '\\begin{equation}\n' +
+        '\\begin{aligned}\n' +
+        'x&=1\\\\\n' +
+        'y&=2\n' +
+        '\\end{aligned}\n' +
+        '\\label{eq:system}\n' +
+        '\\end{equation}\n' +
+        '$$\n'
+    );
+  }
+}
+
+{
+  const align =
+    '$$\n' +
+    '\\begin{align}\n' +
+    'x&=1\\\\\n' +
+    'y&=2\n' +
+    '\\end{align}\n' +
+    '$$\n';
+  const { rendered } = await render(align, { kind: 'html' });
+  check(
+    'an unlabeled environment is handed on with its native numbering suppressed',
+    rendered,
+    '<div class="equation-layout">\n' +
+      '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">\n' +
+      '<tbody style="border: none;">\n' +
+      '<tr>\n' +
+      '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">\n\n' +
+      '$$\n' +
+      '\\begin{align*}\n' +
+      'x&=1\\\\\n' +
+      'y&=2\n' +
+      '\\end{align*}\n' +
+      '$$\n\n' +
+      '</td>\n' +
+      '<td class="equation-number-cell" style="width: 10%; min-width: 4em; border: none; text-align: left; vertical-align: middle;">\n\n' +
+      '\n\n' +
+      '</td>\n' +
+      '</tr>\n' +
+      '</tbody>\n' +
+      '</table>\n' +
+      '</div>\n'
+  );
+}
+
+{
+  const plain = '$$\nE=mc^2\n$$\n';
+  const { rendered } = await render(plain, { kind: 'html' });
+  check(
+    'plain display math also receives the shared reserved-cell layout',
+    [
+      rendered.startsWith('<div class="equation-layout">\n'),
+      rendered.includes('<td class="equation-math-cell"'),
+      rendered.includes('E=mc^2'),
+      rendered.includes('min-width: 4em; border: none; text-align: left;')
+    ],
+    [true, true, true, true]
+  );
+}
+
+{
+  const equations =
+    'See [#eq:system].\n\n' +
+    '[$$\n\\begin{align}\nx&=1\n\\end{align}\n$$]{#eq:system}\n\n' +
+    '$$\n\\begin{gather}\nu=v\n\\end{gather}\n$$\n';
+  const { rendered } = await render(equations, { kind: 'html' });
+  check(
+    'a labeled equation does not hide a following unlabeled environment lowering',
+    rendered.includes('\\begin{gather*}') && !rendered.includes('\\begin{gather}\n'),
+    true
+  );
+}
+
+{
+  const wrapped = '[$$\nE=mc^2\n$$]{}\n';
+  const { rendered } = await render(wrapped, { kind: 'docx' });
+  check(
+    'an empty attribute wrapper keeps the shared layout without a target',
+    [
+      rendered.startsWith('::: {.equation-layout}\n'),
+      rendered.includes('| $$E=mc^2$$'),
+      (rendered.match(/\|/g) ?? []).length === 3,
+      rendered.includes(': {width=100%}')
+    ],
+    [true, true, true, true]
+  );
+}
+
+{
+  const equation =
+    'See [#eq:plain].\n\n' +
+    '[$$\nE=mc^2\n$$]{#eq:plain}\n';
+  const { rendered } = await render(equation, { kind: 'markdown' });
+  check(
+    'processed Markdown emits an equation target containing MathML',
+    [
+      rendered.includes('See [Equation (1)](#eq:plain).'),
+      rendered.includes('<div id="eq:plain" class="equation-target equation-layout">'),
+      rendered.includes('<table class="equation-layout" role="presentation"'),
+      rendered.includes('min-width: 4em; border: none; text-align: left;'),
+      rendered.includes('<math xmlns="http://www.w3.org/1998/Math/MathML"'),
+      rendered.includes('annotation encoding="application/x-tex">E=mc^2</annotation>'),
+      rendered.includes('<span class="equation-number">(1)</span>')
+    ],
+    [true, true, true, true, true, true, true]
+  );
+}
+
+{
   const figure =
     'See [#fig:model].\n\n' +
     '![Model overview](shot.png){#fig:model .wide owner=demo}\n';
@@ -452,6 +769,202 @@ const render = async (text, answers = {}) => {
     'and a note whose works are listed under nothing gets no list',
     rendered,
     'One «[@a]», again «[@a]», and a fence:\n\n```\n[@notacitation]\n```\n'
+  );
+}
+
+{
+  const list =
+    '- First item\n- Second item\n\n' +
+    ': Steps {#list:steps .wide owner=demo}\n';
+  const expected =
+    ':::: {#list:steps .list-target .wide owner="demo"}\n' +
+    '- First item\n- Second item\n\n' +
+    '::: {.list-caption}\n' +
+    '**List 1.** Steps\n' +
+    ':::\n' +
+    '::::\n';
+  for (const kind of ['html', 'epub', 'docx', 'odt']) {
+    const { rendered } = await render(list, { kind });
+    check(`${kind} gives a captioned list the shared target wrapper`, rendered, expected);
+  }
+
+  const { rendered: processed } = await render(list, { kind: 'markdown' });
+  check(
+    'processed Markdown renders the list and caption as targeted HTML',
+    processed,
+    '<div id="list:steps" class="list-target wide" data-owner="demo">\n' +
+      '  <ul>\n' +
+      '    <li>First item</li>\n' +
+      '    <li>Second item</li>\n' +
+      '  </ul>\n' +
+      '  <div class="list-caption"><span class="list-label">List 1.</span> Steps</div>\n' +
+      '</div>\n'
+  );
+}
+
+{
+  const captionOnly = '- Only item\n: Checks\n';
+  const { rendered } = await render(captionOnly, { kind: 'html' });
+  check(
+    'a caption-only list is numbered without a target ID',
+    rendered,
+    ':::: {.list-target}\n' +
+      '- Only item\n\n' +
+      '::: {.list-caption}\n' +
+      '**List 1.** Checks\n' +
+      ':::\n' +
+      '::::\n'
+  );
+}
+
+{
+  const rich =
+    '- [x] Done\n' +
+    '- [ ] Todo\n' +
+    '  - Nested item\n\n' +
+    ': Tasks {#list:tasks}\n';
+  const { rendered } = await render(rich, { kind: 'markdown' });
+  check(
+    'processed Markdown keeps task boxes and nested lists in a captioned list',
+    [
+      rendered.includes('<li class="task-list-item"><input type="checkbox" disabled checked> Done</li>'),
+      rendered.includes('<li class="task-list-item"><input type="checkbox" disabled> Todo'),
+      rendered.includes('  <ul>'),
+      rendered.includes('<span class="list-label">List 1.</span> Tasks')
+    ],
+    [true, true, true, true]
+  );
+}
+
+{
+  const list = '- First item\n- Second item\n\n: Steps {#list:steps .wide owner=demo}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(list, { kind });
+    check(
+      `${kind} uses the Yi list counter and a native label`,
+      rendered,
+      '::: {.list-layout .wide owner="demo"}\n' +
+        '- First item\n- Second item\n\n' +
+        '`\\phantomsection\\refstepcounter{yilist}\\label{list:steps}' +
+        '\\noindent\\textbf{\\yiListName~\\theyilist.}`{=latex} Steps\n' +
+        ':::\n'
+    );
+  }
+}
+
+{
+  const listing =
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one caption="Example" .wide owner=demo}\n' +
+    'print("<x>")\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'markdown' });
+  check(
+    'processed markdown renders a listing as identified HTML',
+    rendered,
+    'See [Listing 1](#lst:one).\n\n' +
+      '<figure id="lst:one" class="listing wide" data-owner="demo">\n' +
+      '  <pre><code class="language-python">print(&quot;&lt;x&gt;&quot;)</code></pre>\n' +
+      '  <figcaption>Listing 1. Example</figcaption>\n' +
+      '</figure>\n'
+  );
+}
+
+{
+  const listing =
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one caption="Example" .numberLines startFrom=7}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'html' });
+  check(
+    'Pandoc formats move the target to a listing wrapper',
+    rendered,
+    'See [Listing 1](#lst:one).\n\n' +
+      '::: {#lst:one .listing}\n' +
+      '```{.python .numberLines startFrom="7"}\n' +
+      'print(1)\n' +
+      '```\n\n' +
+      '::: {.listing-caption}\n' +
+      'Listing 1. Example\n' +
+      ':::\n' +
+      ':::\n'
+  );
+}
+
+{
+  const listing =
+    '```python {caption="Unnumbered *literal*"}\n' +
+    'print(0)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'docx' });
+  check(
+    'a caption-only block is visible without consuming a listing number',
+    rendered,
+    '::: {.listing}\n' +
+      '```{.python}\n' +
+      'print(0)\n' +
+      '```\n\n' +
+      '::: {.listing-caption}\n' +
+      'Unnumbered \\*literal\\*\n' +
+      ':::\n' +
+      ':::\n'
+  );
+}
+
+{
+  const listing =
+    '---\n' +
+    'reference-labels:\n' +
+    '  listing: Code excerpt\n' +
+    'reference-number-prefixes:\n' +
+    '  listing: "2-"\n' +
+    '---\n\n' +
+    'See [#lst:one].\n\n' +
+    '```python {#lst:one}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(listing, { kind: 'markdown' });
+  check(
+    'configured listing labels and prefixes reach Markdown',
+    rendered.includes('See [Code excerpt 2-1](#lst:one).') &&
+      rendered.includes('<figcaption>Code excerpt 2-1.</figcaption>'),
+    true
+  );
+}
+
+{
+  const full =
+    '```python {#lst:full caption="Example"}\n' +
+    'print(1)\n' +
+    '```\n';
+  const { rendered } = await render(full, { kind: 'latex' });
+  check('LaTeX leaves a fully captioned listing unchanged', rendered, full);
+
+  const idOnly =
+    '```python {#lst:one}\n' +
+    'print(1)\n' +
+    '```\n';
+  const idOnlyRendered = (await render(idOnly, { kind: 'latex' })).rendered;
+  check(
+    'LaTeX gives an ID-only listing a zero-width native caption',
+    idOnlyRendered,
+    '```{#lst:one .python caption="\u200b"}\n' +
+      'print(1)\n' +
+      '```\n'
+  );
+
+  const captionOnly =
+    '```python {caption="Example *literal*"}\n' +
+    'print(0)\n' +
+    '```\n';
+  const captionOnlyRendered = (await render(captionOnly, { kind: 'pdf' })).rendered;
+  check(
+    'LaTeX turns a caption-only block into an unnumbered native title',
+    captionOnlyRendered,
+    '```{.python title="Example *literal*"}\n' +
+      'print(0)\n' +
+      '```\n'
   );
 }
 

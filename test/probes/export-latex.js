@@ -73,6 +73,54 @@
     'See [#fig:demo] for the numbered figure.',
     '',
     `![Demo figure](${picture}){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
+    'See [#lst:id-only] and [#lst:full]. A caption-only block follows:',
+    '',
+    '```python {caption="Caption only"}',
+    'print(0)',
+    '```',
+    '',
+    '```python {#lst:id-only}',
+    'print(1)',
+    '```',
+    '',
+    '```python {#lst:full caption="Example listing"}',
+    'print(2)',
+    '```',
+    '',
+    'See [#eq:system] for the equation system.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
     ''
   ].join('\n');
 
@@ -108,6 +156,11 @@
   const settings = (await invoke('export_config_path', { kind: 'latex' })) ?? '';
   const settingsBefore = await readText(settings).catch(() => null);
   await invoke('export_restore_config', { kind: 'latex' });
+    const idiomaticSettings = (await readText(settings)).replace(
+      '\nhighlight-style: pygments\n',
+      '\nhighlight-style: pygments\nsyntax-highlighting: idiomatic\n'
+    );
+    await files.writeTextAtomically(settings, idiomaticSettings);
   try {
     try {
       await files.deleteEntry(folder);
@@ -258,6 +311,93 @@
         label: /\\label\{fig:demo\}/.exec(tex)?.[0] ?? null,
         link: /\\hyperref\[fig:demo\]\{[^}]*\}/.exec(tex)?.[0] ?? null,
         caption: /\\caption\{[^}]*\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'a table keeps its native caption and label while its reference uses the package counter',
+      tex.includes('\\yiTableRef{tbl:results}') &&
+        /\\label\{tbl:results\}/.test(tex) &&
+        /\\caption\{Results\}/.test(tex) &&
+        /\\caption\{Numbered without an ID\}/.test(tex) &&
+        /\\label\{tbl:only\}/.test(tex),
+      {
+        reference: tex.includes('\\yiTableRef{tbl:results}'),
+        label: /\\label\{tbl:results\}/.exec(tex)?.[0] ?? null,
+        caption: /\\caption\{Results\}/.exec(tex)?.[0] ?? null,
+        captionOnly: /\\caption\{Numbered without an ID\}/.exec(tex)?.[0] ?? null,
+        idOnly: /\\label\{tbl:only\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'the table-reference header is part of the exported LaTeX document',
+      tex.includes('\\providecommand{\\yiTableRef}[1]') &&
+        tex.includes('\\renewcommand{\\tablename}{Table}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiTableRef}[1]'),
+        label: tex.includes('\\renewcommand{\\tablename}{Table}')
+      }
+    );
+    check(
+      'a captioned list uses the Yi counter and a native reference',
+      tex.includes('\\yiListRef{list:steps}') &&
+        tex.includes('\\refstepcounter{yilist}') &&
+        tex.includes('\\label{list:steps}') &&
+        tex.includes('\\yiListName~\\theyilist.'),
+      {
+        reference: tex.includes('\\yiListRef{list:steps}'),
+        counter: tex.includes('\\refstepcounter{yilist}'),
+        label: tex.includes('\\label{list:steps}'),
+        caption: tex.includes('\\yiListName~\\theyilist.')
+      }
+    );
+    check(
+      'the list-reference header is part of the exported LaTeX document',
+      tex.includes('\\providecommand{\\yiListRef}[1]') &&
+        tex.includes('\\providecommand{\\yiListCounterSetup}{}') &&
+        tex.includes('\\newcounter{yilist}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiListRef}[1]'),
+        hook: tex.includes('\\providecommand{\\yiListCounterSetup}{}'),
+        counter: tex.includes('\\newcounter{yilist}')
+      }
+    );
+    check(
+      'native listings keep ID-driven order under idiomatic highlighting',
+      tex.includes('title={Caption only}') &&
+        tex.includes('caption={\\hspace{0pt}}') &&
+        tex.includes('caption={Example listing}') &&
+        /\\hyperref\[lst:id-only\]\{Listing 1\}/.test(tex) &&
+        /\\hyperref\[lst:full\]\{Listing 2\}/.test(tex),
+      {
+        captionOnly: tex.includes('title={Caption only}'),
+        idOnly: tex.includes('caption={\\hspace{0pt}}'),
+        full: tex.includes('caption={Example listing}'),
+        idLink: /\\hyperref\[lst:id-only\]\{[^}]*\}/.exec(tex)?.[0] ?? null,
+        fullLink: /\\hyperref\[lst:full\]\{[^}]*\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'a labeled equation becomes one native equation with a counter-backed reference',
+      tex.includes('\\yiEquationRef{eq:system}') &&
+        (tex.match(/\\begin\{equation\}/g) ?? []).length === 1 &&
+        tex.includes('\\begin{aligned}') &&
+        !tex.includes('\\begin{align}') &&
+        tex.includes('\\label{eq:system}'),
+      {
+        reference: tex.includes('\\yiEquationRef{eq:system}'),
+        equations: (tex.match(/\\begin\{equation\}/g) ?? []).length,
+        aligned: tex.includes('\\begin{aligned}'),
+        numberedAlign: tex.includes('\\begin{align}'),
+        label: tex.includes('\\label{eq:system}')
+      }
+    );
+    check(
+      'the equation-reference macro is in the generated header',
+      tex.includes('\\providecommand{\\yiEquationRef}[1]') &&
+        tex.includes('\\renewcommand{\\equationname}{Equation}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiEquationRef}[1]'),
+        label: tex.includes('\\renewcommand{\\equationname}{Equation}')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

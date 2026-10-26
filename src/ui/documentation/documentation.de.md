@@ -48,6 +48,95 @@ Links, einer Formel oder eines eingezäunten Blocks erscheint dessen Markdown an
 Wichtige Tastenkürzel: ⌘S / Ctrl+S speichern, ⌘N / Ctrl+N neu, ⌘F / Ctrl+F suchen,
 ⇧⌘F / Ctrl+Shift+F ersetzen und F1 für diese Anleitung.
 
+### Listen
+
+Eine vollständige Aufzählungs-, nummerierte oder Aufgabenliste wird zu einem nummerierten
+Listenobjekt, wenn danach eine Beschriftungszeile steht:
+
+```markdown
+1. Probe vorbereiten
+2. Messung ausführen
+
+: Schritte {#list:steps .wide data-owner=demo}
+```
+
+Die Doppelpunktzeile kann direkt nach der Liste oder nach genau einer Leerzeile stehen. Sie verwendet
+dieselbe Beschriftungsgrammatik wie eine Tabelle. Eine Liste nur mit Beschriftung wird nummeriert,
+ist ohne ID aber kein Referenzziel:
+
+```markdown
+: Vorbereitende Prüfungen
+```
+
+Eine Liste nur mit ID hat ein Ziel und eine sichtbare Nummer, aber keinen Beschriftungstext:
+
+```markdown
+: {#list:steps}
+```
+
+Eine gewöhnliche Liste ohne Beschriftungszeile erhält weder eine Listenobjektnummer noch ein Ziel.
+Die Objektnummer ist unabhängig von den Markern `1.`, `2.` innerhalb einer nummerierten Liste.
+
+`[#list:steps]` erzeugt einen automatischen Querverweis; ein normaler Link behält den selbst
+geschriebenen Text:
+
+```markdown
+Siehe [#list:steps].
+Siehe [die Messschritte](#list:steps).
+```
+
+Der voreingestellte automatische Text ist `List 1`, unabhängig von der Sprache dieser Anleitung.
+Wort und literales Zahlenpräfix lassen sich im Frontmatter ändern:
+
+```yaml
+reference-labels:
+  list: Prozedur
+reference-number-prefixes:
+  list: "3-"
+```
+
+Querverweis und sichtbare Beschriftung verwenden dann `Prozedur 3-1`.
+
+HTML, EPUB, Word und ODT erhalten dieselbe Listenstruktur mit Ziel, Beschriftungsposition, Wort,
+Präfix und Nummerierung. Die Writer erzeugen unterschiedliche native Container, das sichtbare
+Verhalten bleibt jedoch gemeinsam. Listenmarker, Aufgabenfelder und verschachtelte Listen bleiben
+unverändert. Vorverarbeitetes Markdown verwendet dieselbe Struktur wie HTML.
+
+⌘-Klick oder Ctrl-Klick auf einen Querverweis zeigt die Liste an und setzt den Cursor in den ersten
+bearbeitbaren Eintrag. Ein Klick auf die gerenderte Beschriftung zeigt die vollständige Quelle
+`: Beschriftung {…}`, in der Text, ID, Klassen und Attribute bearbeitet werden können.
+
+Listen benötigen keinen `:::`-Block im Quelltext. Die Doppelpunktbeschriftung lässt eingezäunte
+DIV-Blöcke für Callouts frei. Ein eingerückter Doppelpunkt innerhalb eines Listeneintrags bleibt
+Inhalt dieses Eintrags; nach einem normalen Absatz behält der Doppelpunkt seine
+Pandoc-Definitionslisten-Bedeutung.
+
+#### Listennummerierung in LaTeX und PDF
+
+LaTeX besitzt keinen nativen Zähler für ein vollständiges Listenobjekt: `enumi`, `enumii` und
+ähnliche Zähler nummerieren Einträge und gelten nur innerhalb einer `enumerate`-Umgebung. Yi gibt
+dem Listenobjekt deshalb den eigenen Namensraum `yilist`; `\label`, `\ref` und `hyperref` bleiben
+die nativen LaTeX-Referenzmechanismen.
+
+Standardmäßig gibt es eine globale Reihenfolge pro Dokument. Eine LaTeX/PDF-Vorlage kann
+Rücksetzebene und Zahlenformat über `\yiListCounterSetup` einstellen. Für Nummerierung pro Kapitel:
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+Yi ruft den Hook bei `\begin{document}` auf und wendet danach Wort und literales Präfix aus der
+Notiz an. `\yiListNumber` steuert die zugrunde liegende Zahl, ohne das Präfix zu entfernen. Soll die
+Listennummerierung genau dem Tabellenzähler der Vorlage folgen, müssen beide Zähler an derselben
+Stelle und mit derselben Rücksetzebene eingerichtet werden; Yi kann die Regeln einer beliebigen
+Klasse nicht automatisch ableiten.
+
 ## Eine Notiz exportieren
 
 | Art | Ausgabe |

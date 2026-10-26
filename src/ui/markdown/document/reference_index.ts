@@ -10,12 +10,27 @@
  * numbers, and duplicate resolution are all derived from that text.
  */
 
-import type { Heading, RootContent } from 'mdast';
+import type { Heading, List, RootContent } from 'mdast';
 import { parseMarkdown } from '../syntax/parser';
 import { pandocHeadingId } from '../syntax/pandoc_identifiers';
+import {
+  referenceKindText,
+  referenceVocabularyFromTree,
+  type NumberedReferenceKind,
+  type ReferenceStyle
+} from '../syntax/reference_vocabulary';
+import type { TableCaptionNode } from '../syntax/table_captions';
+import { readEquationBlock } from '../syntax/equation_blocks';
+import { splitBlocks } from './blocks';
 
-/** A target kind with a localized reference name. */
-export type ReferenceKind = 'heading' | 'figure';
+/** A target kind with a document-configured reference name. */
+export type ReferenceKind =
+  | 'heading'
+  | 'figure'
+  | 'listing'
+  | 'table'
+  | 'equation'
+  | 'list';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
 export interface ReferenceEntry {
@@ -25,17 +40,52 @@ export interface ReferenceEntry {
   to: number;
   number: number | null;
   title: string;
+  /** The document-owned kind word used by an automatic reference. */
+  label: string;
+  /** Literal text placed before a numbered kind's sequential number. */
+  numberPrefix: string;
+  /** Where navigation places the caret; null uses `from`. */
+  caretAt: number | null;
   explicit: boolean;
 }
 
 /** Build all referenceable and number-consuming targets. */
 export function referenceIndex(markdown: string): ReferenceEntry[] {
   const tree = parseMarkdown(markdown);
+  const vocabulary = referenceVocabularyFromTree(tree);
   const used = new Set<string>();
+  const equationTargets = splitBlocks(markdown)
+    .filter((block) => block.kind === 'equation')
+    .flatMap((block) => {
+      const equation = readEquationBlock(block.text);
+      return equation?.id === null || equation === null
+        ? []
+        : [{ block, equation, id: equation.id, from: block.charStart }];
+    });
   let figureNumber = 0;
+  let listingNumber = 0;
+  let listNumber = 0;
+  let tableNumber = 0;
   const entries: ReferenceEntry[] = [];
   walk(tree.children);
-  return entries;
+  let equationNumber = 0;
+  for (const { block, equation, id } of equationTargets) {
+    equationNumber += 1;
+    used.add(id);
+    entries.push({
+      id,
+      kind: 'equation',
+      from: block.charStart,
+      to: block.charEnd,
+      number: equationNumber,
+      title: '',
+      label: vocabulary.equation.label,
+      numberPrefix: vocabulary.equation.prefix,
+      caretAt: block.charStart + equation.mathFrom,
+      explicit: true
+    });
+  }
+  return entries.sort((one, other) => one.from - other.from);
 
   function walk(children: readonly RootContent[]): void {
     for (const child of children) {
@@ -43,6 +93,12 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         addHeading(child);
       } else if (child.type === 'figure') {
         addFigure(child);
+      } else if (child.type === 'listing') {
+        addListing(child);
+      } else if (child.type === 'table') {
+        addTable(child);
+      } else if (child.type === 'list') {
+        addList(child);
       }
       const nested = (child as { children?: RootContent[] }).children;
       if (Array.isArray(nested)) {
@@ -64,7 +120,10 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       const base = pandocHeadingId(title);
       id = base;
       let suffix = 1;
-      while (used.has(id)) {
+      while (
+        used.has(id) ||
+        equationTargets.some((target) => target.id === id && target.from < start)
+      ) {
         id = `${base}-${suffix}`;
         suffix += 1;
       }
@@ -77,6 +136,9 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       to: end,
       number: null,
       title,
+      label: title,
+      numberPrefix: '',
+      caretAt: start,
       explicit: explicit !== null
     });
   }
@@ -103,9 +165,120 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       to: end,
       number: figureNumber,
       title: String(image.alt ?? '').trim(),
+      label: vocabulary.figure.label,
+      numberPrefix: vocabulary.figure.prefix,
+      caretAt: start,
       explicit: figure.id !== null
     });
   }
+
+  function addListing(listing: RootContent & {
+    type: 'listing';
+    id: string | null;
+    caption: string | null;
+    bodyStart: number;
+  }): void {
+    if (listing.id === null) {
+      return;
+    }
+    const start = listing.position?.start.offset;
+    const end = listing.position?.end.offset;
+    if (start === undefined || end === undefined) {
+      return;
+    }
+    listingNumber += 1;
+    used.add(listing.id);
+    entries.push({
+      id: listing.id,
+      kind: 'listing',
+      from: start,
+      to: end,
+      number: listingNumber,
+      title: listing.caption ?? '',
+      label: vocabulary.listing.label,
+      numberPrefix: vocabulary.listing.prefix,
+      caretAt: start + listing.bodyStart,
+      explicit: true
+    });
+  }
+
+  function addTable(
+    table: RootContent & {
+      type: 'table';
+      tableCaption?: TableCaptionNode;
+      children: Array<{
+        children: Array<{
+          position?: { start: { offset?: number } };
+          children?: Array<{ position?: { start: { offset?: number } } }>;
+        }>;
+      }>;
+    }
+  ): void {
+    const caption = table.tableCaption;
+    const start = table.position?.start.offset;
+    const end = caption?.position.end.offset;
+    if (!caption || start === undefined || end === undefined) {
+      return;
+    }
+    tableNumber += 1;
+    if (caption.id !== null) {
+      used.add(caption.id);
+    }
+    entries.push({
+      id: caption.id,
+      kind: 'table',
+      from: start,
+      to: end,
+      number: tableNumber,
+      title: caption.children.map((child) => plainText(child)).join('').trim(),
+      label: vocabulary.table.label,
+      numberPrefix: vocabulary.table.prefix,
+      caretAt:
+        table.children[0]?.children[0]?.children?.[0]?.position?.start.offset ??
+        table.children[0]?.children[0]?.position?.start.offset ??
+        start,
+      explicit: caption.id !== null
+    });
+  }
+
+  function addList(list: List): void {
+    const caption = list.listCaption;
+    const start = list.position?.start.offset;
+    if (!caption || start === undefined) {
+      return;
+    }
+    listNumber += 1;
+    if (caption.id !== null) {
+      used.add(caption.id);
+    }
+    entries.push({
+      id: caption.id,
+      kind: 'list',
+      from: start,
+      to: caption.position.end.offset,
+      number: listNumber,
+      title: caption.children.map((child) => plainText(child)).join('').trim(),
+      label: vocabulary.list.label,
+      numberPrefix: vocabulary.list.prefix,
+      caretAt: firstListContent(list, start),
+      explicit: caption.id !== null
+    });
+  }
+}
+
+/** Where navigation enters the first item's editable content. */
+function firstListContent(list: List, fallback: number): number {
+  const item = list.children[0];
+  const paragraph = item?.children.find((child) => child.type === 'paragraph');
+  const first = paragraph?.children[0] as
+    | { position?: { start: { offset?: number } } }
+    | undefined;
+  return (
+    first?.position?.start.offset ??
+    paragraph?.position?.start.offset ??
+    item?.position?.start.offset ??
+    fallback
+  );
 }
 
 /** The first target with this ID, matching Pandoc's first-match duplicate behavior. */
@@ -118,14 +291,24 @@ export function firstReference(
 
 /** The visible text of an automatic reference. */
 export function referenceLabel(
-  entry: ReferenceEntry,
-  translate: (key: string) => string
+  entry: ReferenceEntry
 ): string {
   if (entry.kind === 'heading' || entry.number === null) {
     return entry.title;
   }
-  const kind = translate(`reference.${entry.kind}`);
-  return `${kind} ${entry.number}`;
+  return referenceKindText(
+    entry.kind as NumberedReferenceKind,
+    entry.number,
+    { label: entry.label, prefix: entry.numberPrefix } satisfies ReferenceStyle
+  );
+}
+
+/** The number shown beside an equation block, without its reference word. */
+export function equationBlockNumber(entry: ReferenceEntry): string | null {
+  if (entry.kind !== 'equation' || entry.number === null) {
+    return null;
+  }
+  return `(${entry.numberPrefix}${entry.number})`;
 }
 
 /** The plain text Pandoc's identifier rule reads from a heading's inline children. */

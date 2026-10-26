@@ -18,7 +18,6 @@ import { eventManager } from '../../services/event_manager';
 import type { AppEventName } from '../../services/app_events';
 import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
 import { documentManager } from '../../services/document_manager';
-import { t } from '../../services/i18n';
 import { imageSourceCandidates } from '../image/image_urls';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
@@ -73,7 +72,11 @@ import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
 import { runCommand, setEditingAllowed, type CommandId } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
-import { firstReference, referenceLabel } from './document/reference_index';
+import {
+  equationBlockNumber,
+  firstReference,
+  referenceLabel
+} from './document/reference_index';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
 
@@ -172,16 +175,38 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       referenceText: (id) => {
         const target = firstReference(this.state.referenceEntries(), id);
         return target
-          ? { text: referenceLabel(target, (key) => t(key)), resolved: true }
+          ? { text: referenceLabel(target), resolved: true }
           : { text: `#${id}`, resolved: false };
       },
       figureLabelAt: (from) => {
         const target = this.state.referenceEntries().find(
           (entry) => entry.kind === 'figure' && entry.from === from
         );
-        return target?.number == null
-          ? null
-          : `${t('reference.figure')} ${target.number}`;
+        return target?.number == null ? null : referenceLabel(target);
+      },
+      listingLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'listing' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
+      },
+      tableLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'table' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
+      },
+      listLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'list' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
+      },
+      equationNumberAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'equation' && entry.from === from
+        );
+        return target === undefined ? null : equationBlockNumber(target);
       }
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
@@ -242,10 +267,31 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.find = new FindController(this.context, this.findBar);
     this.element.appendChild(this.findBar.element);
 
-    this.contentView.addEventListener('keydown', (event) => {
+    const handleKey = (event: KeyboardEvent): void => {
       this.placeCaretForTheTextPath();
       handleEditorKey(event, this.keyHost);
-    });
+    };
+    this.contentView.addEventListener('keydown', handleKey);
+    // Activating the app or regaining IME context can leave the keyboard on the page
+    // while the editor still has a live caret. Such a key is still the reader's and
+    // belongs to the same text path; a click outside has already removed the caret,
+    // so it still writes nothing.
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        const active = document.activeElement;
+        const focusIsPage =
+          active === null || active === document.body || active === document.documentElement;
+        if (
+          focusIsPage &&
+          getCaretRange() !== null &&
+          !(event.target instanceof Node && this.contentView.contains(event.target))
+        ) {
+          handleKey(event);
+        }
+      },
+      true
+    );
     // The routed clicks, in the order they have to run: a checkbox and a footnote
     // marker are handled before a node can place a caret where the click landed, a
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening

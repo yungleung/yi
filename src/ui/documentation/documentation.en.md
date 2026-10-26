@@ -65,7 +65,7 @@ Useful commands include:
 | Undo | ⌘Z or Ctrl+Z |
 | Documentation | F1 |
 
-## Cross-references and heading attributes
+## Cross-references and target attributes
 
 Internal links use ordinary Markdown link syntax. A destination beginning with `#` names a heading in
 the current document:
@@ -106,6 +106,114 @@ Keep explicit heading IDs unique. Pandoc leaves duplicate explicit IDs unchanged
 follows the first matching heading. Both heading attributes and internal links are valid Pandoc
 Markdown, so Pandoc exports and the processed Markdown export preserve them.
 
+### Reference labels and number prefixes
+
+Figure, listing, table, equation and list labels belong to the note, not to Yi's interface
+language. Set them in frontmatter when you want wording other than the English defaults:
+
+```yaml
+reference-labels:
+  figure: Diagram
+  listing: Code excerpt
+  table: Table
+  equation: Equation
+  list: List
+```
+
+Missing keys still use English: `Figure`, `Listing`, `Table`, `Equation` and `List`. A value must
+be text; an empty, list, mapping or other invalid value falls back for that key alone. Yi does not
+change reference labels when you change the application language.
+
+You can also prepend literal text to a kind's sequential number:
+
+```yaml
+reference-number-prefixes:
+  figure: "2-"
+  listing: "A."
+```
+
+The prefix is concatenated directly with the number. These settings produce `Diagram 2-1` and
+`Code excerpt A.2`. Quote values when YAML could read the punctuation differently. Prefixes are
+literal: Yi does not derive them from a chapter, section or heading level. Missing or invalid
+prefixes are empty.
+
+These choices affect the editor, `[#id]` references, processed Markdown and every export. A
+non-empty prefix overrides the corresponding native LaTeX/PDF counter. The header also makes native
+LaTeX captions use the configured figure, table and listing words, rather than the template's
+language.
+
+### Code listings
+
+A fenced code block becomes a listing when its opening fence has an ID, a `caption`, or both.
+Pandoc's two usual spellings are supported:
+
+~~~markdown
+```python {#lst:minimal}
+print(1)
+```
+~~~
+
+~~~markdown
+```{#lst:sample .python caption="A captioned example" .numberLines startFrom=7}
+print("sample")
+```
+~~~
+
+Only an explicit ID consumes a `Listing` number and creates a reference target:
+
+```markdown
+See [#lst:sample] or [the captioned listing](#lst:sample).
+```
+
+`[#lst:sample]` displays the configured label and number. With the defaults it reads `Listing 1`.
+The manual link keeps the author's words. A new listing above another renumbers the later target
+and all automatic references without rewriting the source.
+
+A `caption` without an ID is visible but unnumbered and cannot be referenced:
+
+~~~markdown
+```python {caption="An unnumbered example"}
+print(0)
+```
+~~~
+
+An ID without a caption displays only the generated listing label:
+
+~~~markdown
+```python {#lst:minimal}
+print(1)
+```
+~~~
+
+Other Pandoc attributes stay on the inner code block for export. The generated caption appears
+below the code. The opening fence and all its attributes are hidden while the caret is elsewhere
+and become editable when the caret enters the block. ⌘-click or Ctrl-click a listing reference to
+reveal the complete fence with the caret on the first code line; typing there edits code rather
+than accidentally changing the ID or caption.
+
+`.numberLines`, `.number-lines` and `startFrom` number source lines. They do not create a listing
+number. The editor does not currently draw that gutter; Pandoc-backed exports preserve the
+attributes.
+
+Rendered HTML and EPUB contain an identified listing block with a visible caption. Word and ODT
+contain a bookmark or named section and the same visible text. Processed Markdown contains an HTML
+`<figure>` with the ID and `<figcaption>`, so common Markdown readers can show the target and caption;
+it does not reproduce Pandoc's source-line-number column.
+
+LaTeX and PDF honor the `syntax-highlighting` setting in the export defaults or selected template:
+
+- An ID and caption become a native numbered listing.
+- An ID without a caption receives a zero-width native caption, which keeps the native counter
+  aligned while displaying only the normal `Listing N` prefix.
+- A caption without an ID becomes an unnumbered native listing title.
+- With ordinary non-idiomatic highlighting, Pandoc does not visibly typeset code captions or
+  titles. Choose `syntax-highlighting: idiomatic` in the relevant settings file when you want
+  visible native listing captions and a native counter.
+
+The classes `.listing` and `.listing-caption` let an HTML/EPUB template and a DOCX/ODT reference
+document style the generated caption. No extra LaTeX package or Yi-specific frontmatter switch is
+required.
+
 ### Figures
 
 A standalone image with non-empty alt text is a figure. Its alt text is its caption, and every
@@ -117,8 +225,9 @@ See [#fig:sample] or the [sample figure](#fig:sample).
 ![A sample image](images/sample.png){#fig:sample .wide width=80%}
 ```
 
-When one unlabeled figure appears before it, `[#fig:sample]` displays “Figure 2” and links to the
-labeled figure. Only a figure with an explicit ID can be referenced.
+When one unlabeled figure appears before it, `[#fig:sample]` displays the second configured figure
+label and links to the labeled figure. With the English defaults it reads `Figure 2`. Only a figure
+with an explicit ID can be referenced.
 
 The attribute block follows Pandoc image syntax. Yi applies only the ID to its editor DOM and keeps
 classes and other attributes for export. Images inside a paragraph remain inline images: they are
@@ -129,8 +238,350 @@ referenceable.
 opens its complete image Markdown for editing.
 
 Rendered HTML, EPUB, Word, and ODT exports receive a numbered caption and a format-appropriate
-bookmark. LaTeX and PDF use the native figure counter. Processed Markdown emits an HTML `<figure>`
-with an ID and numbered `<figcaption>` so common Markdown readers can display it.
+bookmark. LaTeX and PDF use the native figure counter with the configured label and optional prefix.
+Processed Markdown emits an HTML `<figure>` with an ID and numbered `<figcaption>` so common Markdown
+readers can display it.
+
+### Tables
+
+Yi keeps the ordinary GitHub-flavored pipe table and adds a Pandoc caption line after it. The
+caption begins with a colon and one or more spaces:
+
+```markdown
+| Metric | Value |
+| --- | ---: |
+| alpha | 1 |
+
+: Results {#tbl:results .margin data-owner=demo}
+```
+
+No blank line or one blank line may separate the table from its caption. Two blank lines end the
+table; a following colon line then belongs to the next block. The caption may contain inline
+Markdown. Its trailing Pandoc attribute block supplies the reference ID, classes, and key/value
+attributes. Leave a space between the caption text and the attribute block.
+
+Every captioned table consumes one table number in document order. A table without a caption has
+no table number and no target. The three referencable-looking forms behave differently:
+
+```markdown
+| A | B |
+| --- | --- |
+| one | two |
+
+: A caption without an ID
+
+| A | B |
+| --- | --- |
+| three | four |
+
+: {#tbl:target}
+
+| A | B |
+| --- | --- |
+| five | six |
+
+: Labeled table {#tbl:named}
+```
+
+The first table is numbered but cannot be referenced. The second is numbered and is a reference
+target even though its visible caption contains only the generated number. The third has both a
+visible caption and a target. `.margin`, `.wide`, and other classes stay in the source for Pandoc
+and template packages; Yi applies only the ID to its editor DOM.
+
+Use an automatic reference when Yi should infer the visible words, or a normal Markdown link when
+you want your own words:
+
+```markdown
+See [#tbl:named] for the measurements.
+See [the measured values](#tbl:named) for the same table.
+```
+
+The automatic form displays the configured label and number, such as `Table 3`. ⌘-click or
+Ctrl-click either form to reveal the table and place the caret in its first header cell. The
+browser location hash is not changed. An ordinary click on the generated caption opens the complete
+`: …` caption line for editing, including the attribute block.
+
+The optional separator is source syntax and is not rendered as an empty line. The table and caption
+look identical whether the source is joined directly or separated by one blank line. To add or
+remove that source blank line, open the caption source and put the caret at its start; `Enter` adds
+the separator and `Backspace` removes it.
+
+`Enter` in the final table cell leaves the table and puts the caret after it; subsequent typing
+stays on that line rather than returning to the last cell.
+
+#### Table labels and prefixes
+
+The default label is `Table` and the default prefix is empty. Set either in the note's frontmatter:
+
+```yaml
+---
+reference-labels:
+  table: Data table
+reference-number-prefixes:
+  table: "2-"
+---
+```
+
+With these values, the first captioned table displays `Data table 2-1`. A missing or blank value
+falls back to English defaults. The prefix is literal text. Yi does not infer a chapter or section
+number because an export template may shift heading levels; use the template when numbering must
+follow the document's own structure.
+
+#### Table export
+
+The source remains Pandoc Markdown in every Pandoc-backed export:
+
+- HTML and EPUB receive the native table, ID, attributes, and a visible numbered caption.
+- Word and ODT receive a `Div` with the table ID so Pandoc writes a bookmark or named section. The
+  visible caption carries the number, and classes and key/value attributes remain on that caption.
+- LaTeX and PDF keep the native caption and label. Automatic table references become
+  `\yiTableRef{id}`, which prints the document's `\tablename` and reads the final number with
+  `\ref`. A template or class can therefore redefine `\thetable` and retain control of numbering.
+- Processed Markdown writes the table as semantic HTML with `<table>`, `<caption>`, the target ID,
+  alignment, classes, and `data-*` attributes. Common Markdown readers display it. Re-importing that
+  file treats the table as raw HTML, not as a Yi pipe table.
+
+Manual table links remain ordinary `\hyperref` links in LaTeX and PDF, so their author-written text
+is preserved. Automatic references to headings and figures keep their existing behavior.
+
+`.margin` does not place a table in a margin by itself. Yi ships no margin-table Lua filter, keeps
+no separate margin-table sequence, and adds no margin styles. A template package can implement
+that layout with its own class, filter, and table environment.
+
+For a LaTeX or PDF text template, expand Pandoc's header variable in the preamble:
+
+```tex
+$if(header-includes)$
+$header-includes$
+$endif$
+```
+
+A Lua filter that rewrites a table must preserve both the caption and the identifier, causing
+normal `\caption{…}` and `\label{…}` output. Do not hard-code the visible number, use
+`\caption*` for a numbered table, or replace the shared LaTeX table counter with a separate one.
+The included template examples show the expected filter shape.
+
+### Equations
+
+Ordinary display math remains ordinary Markdown:
+
+```markdown
+$$
+E = mc^2
+$$
+```
+
+It renders as a formula but has no target and no equation number.
+
+A targetable equation wraps the complete display-math block in a Pandoc bracketed Span:
+
+```markdown
+[$$
+E = mc^2
+$$]{#eq:energy}
+```
+
+An ID is optional for display. `[$$…$$]{}` and `[$$…$$]{.wide}` render normally but cannot be
+referenced; add `#eq:id` when the formula needs a target.
+
+The attribute block belongs after `$$]`; it may contain classes and key/value attributes:
+
+```markdown
+[$$
+\begin{aligned}
+E &= mc^2\\
+p &= mv
+\end{aligned}
+$$]{#eq:relations .wide data-owner=demo}
+```
+
+`$${#eq:energy}` is not a target. Pandoc reads `{#eq:energy}` as math content. The final
+`[$$…$$]{#id}` form is the supported syntax.
+
+Typing `[$$` at the start of an empty line creates:
+
+```markdown
+[$$
+
+$$]{}
+```
+
+The caret lands on the formula body. The empty `{}` is the attribute placeholder; attach an ID to
+make the equation targetable.
+
+#### Equation environments and IDs
+
+KaTeX supports the following equation-related forms. Every row behaves as shown both with and
+without an ID:
+
+| Source body | No ID | With `#eq:id` |
+| --- | --- | --- |
+| Plain formula | Unnumbered; no target | One number and target |
+| `equation` | Native number suppressed | One target; body used inside the generated equation |
+| `equation*` | Already unnumbered | One target |
+| `align` | Row numbers suppressed | `aligned` inside one generated equation |
+| `align*` | Already unnumbered | `aligned` inside one generated equation |
+| `aligned` | Already unnumbered | Existing inner layout inside one generated equation |
+| `gather` | Row numbers suppressed | `gathered` inside one generated equation |
+| `gather*` | Already unnumbered | `gathered` inside one generated equation |
+| `gathered` | Already unnumbered | Existing inner layout inside one generated equation |
+| `alignat` | Row numbers suppressed | `alignedat` inside one generated equation |
+| `alignat*` | Already unnumbered | `alignedat` inside one generated equation |
+| `alignedat` | Already unnumbered | Existing inner layout inside one generated equation |
+| `split` | Already unnumbered | Existing inner layout inside one generated equation |
+
+One display-math block is one target regardless of how many rows its environment contains.
+Individual-row references are outside this release.
+
+#### Equation references and labels
+
+Use an automatic reference when Yi should infer the label:
+
+```markdown
+See [#eq:energy].
+```
+
+The default display text is `Equation (1)`. A manual link remains ordinary Markdown:
+
+```markdown
+See [the energy relation](#eq:energy).
+```
+
+Its text is author-controlled. `[text]{#id}` is a bracketed Span, not a link, and is not a reference
+form.
+
+The equation label and literal number prefix come from the note's frontmatter:
+
+```yaml
+reference-labels:
+  equation: Formula
+reference-number-prefixes:
+  equation: "2-"
+```
+
+With those values, the reference displays `Formula (2-1)`, while the numbered formula itself shows
+only `(2-1)`. A missing or blank value falls back to `Equation` and an empty prefix.
+
+Clicking the rendered equation reveals the complete `[$$…$$]{…}` source. ⌘-click or Ctrl-click an
+automatic or manual reference to reveal the equation and place the caret at the start of its formula
+body. The browser location hash is not changed.
+
+While the complete source is shown, clicking a formula line places the caret at the character
+clicked. The equation stays visible while an attribute token is unfinished, such as `{.wide #}`, or
+while text is appended after its closing brace. Leaving the source renders the formula again; an
+attribute without an ID simply leaves it untargetable.
+
+#### Equation export
+
+Native equation-environment numbering is suppressed in the editor and every export:
+
+- HTML receives every display equation as a borderless one-row, two-cell layout: the formula is
+  first and the number is second. A labeled equation fills the second cell; an unlabeled equation
+  leaves it empty. That cell has a minimum width and is left-aligned. Its table, body, and cells
+  carry no visible border.
+- EPUB receives the same layout for every display equation, even if its template later selects
+  KaTeX or MathJax. Labeled and unlabeled equations reserve the same left-aligned second cell.
+- Word and ODT receive the same native one-row, two-cell table for every display equation. A
+  labeled equation places its number in the second cell; an unlabeled equation reserves it empty.
+  The table spans the page's content width, and neither equation has row numbers of its own.
+- LaTeX and PDF receive exactly one generated outer `equation`; multi-row user environments are
+  lowered to `aligned`, `gathered`, or `alignedat` inside it.
+- Processed Markdown gives every display equation the same two-cell layout around
+  KaTeX-generated MathML. Only a labeled equation puts a number in the second cell.
+
+The visible equation number always has the form `(N)` or `(prefix-N)`. The configured equation
+label appears only in automatic-reference text.
+
+An automatic LaTeX/PDF equation reference becomes `\yiEquationRef{id}` and reads the document's
+final `\theequation`. A template can therefore redefine the equation counter without conflicting
+with Yi's visible numbering.
+
+Explicit author `\tag{…}` is not Yi numbering. It remains author-controlled math content and is not
+part of automatic equation-reference resolution.
+
+### Lists
+
+A completed bullet, ordered, or task list becomes a numbered list object when it is followed by a
+caption line:
+
+```markdown
+1. Prepare the sample
+2. Run the measurement
+
+: Steps {#list:steps .wide data-owner=demo}
+```
+
+The colon line may follow directly after the list or after one blank line. It uses the same caption
+grammar as a table. A caption-only list is numbered but cannot be referenced:
+
+```markdown
+: Preliminary checks
+```
+
+An ID-only list has a target and a visible number but no caption text:
+
+```markdown
+: {#list:steps}
+```
+
+An ordinary list without a caption line has no list-object number and no target. The list-object
+number is separate from the `1.`, `2.` item markers inside an ordered list.
+
+Use `[#list:steps]` for an automatic reference or an ordinary link with your own text:
+
+```markdown
+See [#list:steps].
+See [the measurement steps](#list:steps).
+```
+
+The default automatic text is `List 1`. Configure its word and literal number prefix in frontmatter:
+
+```yaml
+reference-labels:
+  list: Procedure
+reference-number-prefixes:
+  list: "3-"
+```
+
+The reference and visible caption then use `Procedure 3-1`.
+
+HTML, EPUB, Word, and ODT receive the same list target, caption placement, label, prefix, and
+numbering. Their writers produce different native containers, but the visible list-reference
+behavior is shared. Item markers, task checkboxes, and nested lists remain unchanged. Processed
+Markdown uses the same structure as HTML.
+
+Command-click or Ctrl-click a reference to reveal the list and place the caret at its first
+editable item. Clicking the rendered caption reveals the complete `: Caption {…}` source, where the
+caption, ID, classes, and attributes can be edited.
+
+Lists do not require a source `:::` block. The colon caption leaves fenced divs available for
+callouts. An indented colon inside a list item remains ordinary item content, and a colon after a
+non-list paragraph keeps Pandoc's definition-list meaning.
+
+#### List numbering in LaTeX and PDF
+
+LaTeX has no native counter for a whole list object: `enumi`, `enumii`, and similar counters number
+items and are scoped to an `enumerate` environment. Yi therefore gives the list object a namespaced
+`yilist` counter, while labels and references still use LaTeX's native `\label`, `\ref`, and
+`hyperref` mechanisms.
+
+The default is one document-global list sequence. A LaTeX/PDF template can configure the counter's
+reset level and number format through `\yiListCounterSetup`. For chapter-based list numbering:
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+Yi calls the hook at `\begin{document}`, then applies the note's configured label and literal prefix.
+`\yiListNumber` controls the underlying number without removing that prefix. Templates that need
+list numbering to match their table counter must configure both counters with the same reset level;
+Yi cannot infer a class's table reset rules automatically.
 
 ## Export a note
 

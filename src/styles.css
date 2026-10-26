@@ -156,8 +156,31 @@
 }
 
 .markdown-display-math,
+.markdown-equation-source,
 .markdown-source-text {
   margin-block: calc(1rem * var(--md-page-scale));
+}
+
+.markdown-equation-block {
+  position: relative;
+}
+
+.markdown-equation-view .katex-display {
+  margin: 0;
+}
+
+.markdown-equation-navigation {
+  display: inline;
+}
+
+.markdown-equation-number {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875em;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* A note is set smaller than the text that carries its marker, and its label keeps a
@@ -427,6 +450,8 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
+.markdown-caption-source,
+.markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -455,6 +480,8 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
+.markdown-caption-source,
+.markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
 .markdown-thematic-break-source,
@@ -498,6 +525,59 @@ body {
   white-space: nowrap;
 }
 
+.markdown-listing {
+  margin: 0;
+  text-align: left;
+}
+
+.markdown-listing-block {
+  scroll-margin-top: 1rem;
+}
+
+.markdown-listing-caption {
+  margin-top: 0.5rem;
+  color: var(--color-base-content);
+  font-size: 0.875em;
+}
+
+/* A caption follows its owner like the source it is written as. The optional separator
+   keeps an editable line of its own, and either caption can reveal that complete `: …`
+   line across the row while its table or list remains editable. */
+.markdown-table-block {
+  display: block;
+}
+
+.markdown-caption {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+}
+
+.markdown-table-block > .markdown-caption {
+  text-align: center;
+}
+
+.markdown-caption-source {
+  display: block;
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.markdown-listing-label,
+.markdown-caption-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The list and table share the caption row; only its text alignment differs. */
+.markdown-list-block {
+  display: block;
+}
+
+.markdown-list-block > .markdown-caption {
+  text-align: left;
+}
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.
    An empty inline-block measures as nothing, and WebKit then paints the new block *without* the
    marker an item draws outside its content box: the bullet the reader has just made is missing

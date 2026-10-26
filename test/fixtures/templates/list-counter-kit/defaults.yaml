@@ -1,0 +1,4 @@
+standalone: true
+pdf-engine: xelatex
+top-level-division: chapter
+shift-heading-level-by: 0

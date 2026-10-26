@@ -62,6 +62,52 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${url}){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system .wide owner=demo}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -196,6 +242,138 @@
         target: /<div id="fig:demo">/.exec(page)?.[0] ?? null,
         caption: /<figcaption[^>]*>[^<]*/.exec(page)?.[0] ?? null,
         link: /<a href="#fig:demo">[^<]*/.exec(page)?.[0] ?? null
+      }
+    );
+    check(
+      'a captioned table keeps its target, visible number, and template class',
+      page.includes('id="tbl:results"') &&
+        page.includes('Table 1. Results') &&
+        page.includes('class="margin"') &&
+        page.includes('href="#tbl:results">Table 1</a>'),
+      {
+        target: page.includes('id="tbl:results"'),
+        caption: page.includes('Table 1. Results'),
+        margin: page.includes('class="margin"'),
+        link: page.includes('href="#tbl:results">Table 1</a>')
+      }
+    );
+    check(
+      'caption-only and ID-only tables are numbered with the right targets',
+      page.includes('Table 2. Numbered without an ID') &&
+        page.includes('Table 3.') &&
+        page.includes('id="tbl:only"'),
+      {
+        captionOnly: page.includes('Table 2. Numbered without an ID'),
+        idOnly: page.includes('Table 3.'),
+        target: page.includes('id="tbl:only"')
+      }
+    );
+    const equationWithoutReference = page.replace(
+      /<a[^>]*href="#eq:system"[^>]*>[\s\S]*?<\/a>/g,
+      ''
+    );
+    check(
+      'a labeled equation keeps its target, one visible number, and unnumbered rows',
+      equationWithoutReference.includes('(1)') &&
+        page.includes('id="eq:system"') &&
+        page.includes('Equation (1)') &&
+        page.includes('begin{aligned}') &&
+        !page.includes('\\begin{align}'),
+      {
+        target: page.includes('id="eq:system"'),
+        reference: page.includes('Equation (1)'),
+        number: equationWithoutReference.includes('(1)'),
+        aligned: page.includes('begin{aligned}'),
+        numberedAlign: page.includes('\\begin{align}'),
+        equationContext: page.match(/.{0,120}Equation.{0,120}/)?.[0] ?? null
+      }
+    );
+    const pageDocument = new DOMParser().parseFromString(page, 'text/html');
+    const listTarget = pageDocument.querySelector('#list\\:steps');
+    check(
+      'a captioned list keeps one target, its items, and a visible caption',
+      listTarget?.tagName === 'DIV' &&
+        listTarget.querySelectorAll('ul > li').length === 2 &&
+        listTarget.querySelector('.list-caption')?.textContent?.trim() === 'List 1. Steps' &&
+        page.includes('href="#list:steps"'),
+      {
+        tag: listTarget?.tagName ?? null,
+        items: listTarget?.querySelectorAll('ul > li').length ?? 0,
+        caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null,
+        link: page.includes('href="#list:steps"')
+      }
+    );
+    const listingTarget = pageDocument.querySelector('[id="lst:demo"]');
+    check(
+      'a listing keeps its HTML target, visible caption, and automatic link',
+      listingTarget !== null &&
+        listingTarget.textContent?.includes('Listing 1. Example listing') === true &&
+        page.includes('href="#lst:demo">Listing 1</a>'),
+      {
+        target: listingTarget?.tagName ?? null,
+        caption: listingTarget?.textContent?.includes('Listing 1. Example listing') ?? false,
+        link: page.includes('href="#lst:demo">Listing 1</a>')
+      }
+    );
+    const equationTarget = pageDocument.querySelector('[id="eq:system"]');
+    const equationLayout = [
+      ...pageDocument.querySelectorAll('table.equation-layout')
+    ].map((table) => {
+      const body = table.querySelector('tbody');
+      const rows = table.querySelectorAll('tbody > tr');
+      const cells = rows[0]?.children ?? [];
+      const numberStyle = cells[1]?.getAttribute('style') ?? '';
+      return {
+        target: table.closest('.equation-target')?.id ?? null,
+        rows: rows.length,
+        cells: cells.length,
+        equation: cells[0]?.querySelector('math, .math') !== null,
+        number: cells[1]?.textContent?.trim() ?? null,
+        borderless: [table, body, ...cells].every(
+          (element) =>
+            element?.getAttribute('style')?.includes('border: none') ?? false
+        ),
+        minWidth: numberStyle.includes('min-width: 4em'),
+        leftAligned: numberStyle.includes('text-align: left')
+      };
+    });
+    const expectedEquationLayout = [
+      {
+        target: 'eq:system',
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '(1)',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      }
+    ];
+    check(
+      'labeled and unlabeled equations share one borderless row with a left-aligned reserved cell',
+      JSON.stringify(equationLayout) === JSON.stringify(expectedEquationLayout),
+      {
+        actual: equationLayout,
+        expected: expectedEquationLayout
+      }
+    );
+    check(
+      'an unlabeled equation environment is also unnumbered',
+      page.includes('begin{gather*}') && !page.includes('\\begin{gather}'),
+      {
+        starred: page.includes('begin{gather*}'),
+        numbered: page.includes('\\begin{gather}'),
+        gatherContext: page.match(/.{0,120}begin\{gather.{0,120}/)?.[0] ?? null
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

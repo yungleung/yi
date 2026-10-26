@@ -74,6 +74,54 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    'See [#tbl:only] for the target-only table.',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -240,6 +288,17 @@
     );
     const documentXml =
       bytes === null ? '' : (await t.zipEntry(bytes, 'word/document.xml')) ?? '';
+    const internalLinks = [...documentXml.matchAll(
+      /<w:hyperlink w:anchor="([^"]+)">.*?<w:t[^>]*>([^<]+)<\/w:t>.*?<\/w:hyperlink>/gs
+    )].map((match) => ({ anchor: match[1], text: match[2] }));
+    const anchorFor = (text) =>
+      internalLinks.find((link) => link.text === text)?.anchor ?? null;
+    const tableOneAnchor = anchorFor('Table 1');
+    const tableThreeAnchor = anchorFor('Table 3');
+    const listAnchor = anchorFor('List 1');
+    const wordText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
+      .map((match) => match[1])
+      .join('');
     check(
       'and a figure keeps a bookmark, numbered caption, and automatic link',
       documentXml.includes('<w:bookmarkStart') &&
@@ -249,6 +308,115 @@
         bookmark: documentXml.includes('<w:bookmarkStart'),
         caption: documentXml.includes('Figure 1. Example figure'),
         link: documentXml.includes('>Figure 1</w:t>')
+      }
+    );
+    check(
+      'and a table keeps its bookmark, visible number, and automatic link',
+      documentXml.includes('Table 1. Results') &&
+        tableOneAnchor !== null &&
+        documentXml.includes(`w:name="${tableOneAnchor}"`),
+      {
+        caption: documentXml.includes('Table 1. Results'),
+        link: tableOneAnchor !== null,
+        bookmark:
+          tableOneAnchor !== null && documentXml.includes(`w:name="${tableOneAnchor}"`),
+        anchor: tableOneAnchor
+      }
+    );
+    check(
+      'caption-only tables have a number and ID-only tables have a bookmark',
+      documentXml.includes('Table 2. Numbered without an ID') &&
+        documentXml.includes('Table 3.') &&
+        tableThreeAnchor !== null &&
+        documentXml.includes(`w:name="${tableThreeAnchor}"`) &&
+        !internalLinks.some((link) => link.text === 'Table 2'),
+      {
+        captionOnly: documentXml.includes('Table 2. Numbered without an ID'),
+        idOnly: documentXml.includes('Table 3.'),
+        bookmark:
+          tableThreeAnchor !== null && documentXml.includes(`w:name="${tableThreeAnchor}"`),
+        captionOnlyLink: internalLinks.some((link) => link.text === 'Table 2'),
+        anchors: internalLinks
+      }
+    );
+    check(
+      'a captioned list keeps a bookmark, visible caption, and automatic link',
+      wordText.includes('List 1.') &&
+        wordText.includes('Steps') &&
+        listAnchor !== null &&
+        documentXml.includes(`w:name="${listAnchor}"`),
+      {
+        caption: wordText.includes('List 1.') && wordText.includes('Steps'),
+        text: wordText,
+        link: listAnchor !== null,
+        bookmark:
+          listAnchor !== null && documentXml.includes(`w:name="${listAnchor}"`),
+        anchor: listAnchor
+      }
+    );
+    const equationText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(
+      (match) => match[1]
+    );
+    const listingAnchor = anchorFor('Listing 1');
+    check(
+      'a listing keeps a bookmark, caption, and automatic link',
+      documentXml.includes('Listing 1. Example listing') &&
+        internalLinks.some((link) => link.text === 'Listing 1') &&
+        listingAnchor !== null &&
+        documentXml.includes(`w:name="${listingAnchor}"`),
+      {
+        caption: documentXml.includes('Listing 1. Example listing'),
+        link: internalLinks.some((link) => link.text === 'Listing 1'),
+        bookmark:
+          listingAnchor !== null && documentXml.includes(`w:name="${listingAnchor}"`),
+        anchor: listingAnchor
+      }
+    );
+    check(
+      'a labeled equation keeps one bookmark, visible number, and aligned formula',
+      equationText.includes('(1)') &&
+        documentXml.includes('Equation (1)') &&
+        documentXml.includes('m:oMathPara') &&
+        internalLinks.some((link) => link.text === 'Equation (1)'),
+      {
+        reference: internalLinks.some((link) => link.text === 'Equation (1)'),
+        number: equationText.includes('(1)'),
+        math: documentXml.includes('m:oMathPara'),
+        links: internalLinks
+      }
+    );
+    const equationTables = [...documentXml.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)]
+      .map((match) => match[0])
+      .filter((table) => table.includes('m:oMathPara'));
+    const equationLayout = equationTables.map((table) => {
+      const cells = [...table.matchAll(/<w:tc[ >][\s\S]*?<\/w:tc>/g)].map(
+        (match) => match[0]
+      );
+      const widthTag = /<w:tblW[^>]*>/.exec(table)?.[0] ?? '';
+      return [
+        (table.match(/<w:tr[ >]/g) ?? []).length,
+        cells.length,
+        cells[0]?.includes('m:oMathPara') ?? false,
+        cells[1]?.includes('(1)') ?? false,
+        {
+          type: /w:type="([^"]+)"/.exec(widthTag)?.[1] ?? null,
+          width: /w:w="([^"]+)"/.exec(widthTag)?.[1] ?? null
+        }
+      ];
+    });
+    check(
+      'labeled and unlabeled equations use the same full-width one-row two-cell table',
+      JSON.stringify(equationLayout) ===
+        JSON.stringify([
+          [1, 2, true, true, { type: 'pct', width: '5000' }],
+          [1, 2, true, false, { type: 'pct', width: '5000' }]
+        ]),
+      {
+        actual: equationLayout,
+        expected: [
+          [1, 2, true, true, { type: 'pct', width: '5000' }],
+          [1, 2, true, false, { type: 'pct', width: '5000' }]
+        ]
       }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');

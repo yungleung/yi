@@ -74,6 +74,52 @@
     'See [#fig:demo] for the figure.',
     '',
     `![Example figure](${url}){#fig:demo .wide}`,
+    '',
+    'See [#tbl:results] for the data.',
+    '',
+    '| Metric | Value |',
+    '| --- | ---: |',
+    '| alpha | 1 |',
+    '',
+    ': Results {#tbl:results .margin owner=demo}',
+    '',
+    '| Caption only |',
+    '| --- |',
+    '| no target |',
+    ': Numbered without an ID',
+    '',
+    '| ID only |',
+    '| --- |',
+    '| target |',
+    ': {#tbl:only}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
+    'See [#lst:demo] for the listing.',
+    '',
+    '```python {#lst:demo caption="Example listing"}',
+    'print(1)',
+    '```',
+    '',
+    'See [#eq:system] for the equations.',
+    '',
+    '[$$',
+    '\\begin{align}',
+    'x&=1\\\\',
+    'y&=2',
+    '\\end{align}',
+    '$$]{#eq:system}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -190,6 +236,44 @@
       for (const page of pages) {
         texts.push((await t.zipEntry(bytes, page)) ?? '');
       }
+      const listLayouts = texts.flatMap((text) => {
+        const chapter = new DOMParser().parseFromString(text, 'text/html');
+        const target = chapter.querySelector('#list\\:steps');
+        return target === null
+          ? []
+          : [
+              {
+                tag: target.tagName,
+                items: target.querySelectorAll('ul > li').length,
+                caption:
+                  target.querySelector('.list-caption')?.textContent?.trim() ?? null
+              }
+            ];
+      });
+      check(
+        'a captioned list keeps its target, items, and visible caption',
+        JSON.stringify(listLayouts) ===
+          JSON.stringify([{ tag: 'DIV', items: 2, caption: 'List 1. Steps' }]) &&
+          texts.some((text) => /href="[^"]*#list:steps"/.test(text)),
+        {
+          actual: listLayouts,
+          linked: texts.some((text) => /href="[^"]*#list:steps"/.test(text))
+        }
+      );
+      check(
+        'a listing keeps its anchor, caption, and automatic link in the chapter',
+        texts.some(
+          (text) =>
+            text.includes('id="lst:demo"') &&
+            text.includes('Listing 1. Example listing') &&
+            /href="[^"]*#lst:demo">Listing 1<\/a>/.test(text)
+        ),
+        texts.map((text) => ({
+          target: text.includes('id="lst:demo"'),
+          caption: text.includes('Listing 1. Example listing'),
+          link: /href="[^"]*#lst:demo">Listing 1<\/a>/.test(text)
+        }))
+      );
       const chapter = texts.join('\n');
       check(
         'the picture the app fetched from the web is carried in the book, not linked',
@@ -224,6 +308,103 @@
         caption: /<figcaption[^>]*>Figure 1\. Example figure<\/figcaption>/.test(chapter),
         link: chapter.includes('href="ch001.xhtml#fig:demo">Figure 1</a>')
       }))
+    );
+    check(
+      'a captioned table keeps its anchor, visible number, link, and class',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="tbl:results"') &&
+          chapter.includes('Table 1. Results') &&
+          chapter.includes('class="margin"') &&
+          chapter.includes('href="ch001.xhtml#tbl:results">Table 1</a>')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="tbl:results"'),
+        caption: chapter.includes('Table 1. Results'),
+        margin: chapter.includes('class="margin"'),
+        link: chapter.includes('href="ch001.xhtml#tbl:results">Table 1</a>')
+      }))
+    );
+    check(
+      'caption-only and ID-only tables keep their number and target behavior',
+      texts.some(
+        (chapter) =>
+          chapter.includes('Table 2. Numbered without an ID') &&
+          chapter.includes('Table 3.') &&
+          chapter.includes('id="tbl:only"')
+      ),
+      texts.map((chapter) => ({
+        captionOnly: chapter.includes('Table 2. Numbered without an ID'),
+        idOnly: chapter.includes('Table 3.'),
+        target: chapter.includes('id="tbl:only"')
+      }))
+    );
+    check(
+      'a labeled equation keeps one anchor and one visible number',
+      texts.some(
+        (chapter) =>
+          chapter.includes('id="eq:system"') &&
+          chapter.includes('Equation (1)') &&
+          chapter.replace('<a href="#eq:system">Equation (1)</a>', '').includes('(1)') &&
+          !chapter.includes('eqn-num')
+      ),
+      texts.map((chapter) => ({
+        target: chapter.includes('id="eq:system"'),
+        reference: chapter.includes('Equation (1)'),
+        number: chapter
+          .replace('<a href="#eq:system">Equation (1)</a>', '')
+          .includes('(1)'),
+        native: chapter.includes('eqn-num')
+      }))
+    );
+    const equationLayouts = texts.flatMap((text) => {
+      const chapter = new DOMParser().parseFromString(text, 'text/html');
+      return [...chapter.querySelectorAll('table.equation-layout')].map((table) => {
+        const body = table.querySelector('tbody');
+        const rows = table.querySelectorAll('tbody > tr');
+        const cells = rows[0]?.children ?? [];
+        const numberStyle = cells[1]?.getAttribute('style') ?? '';
+        return {
+          target: table.closest('.equation-target')?.id ?? null,
+          rows: rows.length,
+          cells: cells.length,
+          equation: cells[0]?.querySelector('math, .math') !== null,
+          number: cells[1]?.textContent?.trim() ?? null,
+          borderless: [table, body, ...cells].every(
+            (element) =>
+              element?.getAttribute('style')?.includes('border: none') ?? false
+          ),
+          minWidth: numberStyle.includes('min-width: 4em'),
+          leftAligned: numberStyle.includes('text-align: left')
+        };
+      });
+    });
+    const expectedEquationLayout = [
+      {
+        target: 'eq:system',
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '(1)',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      }
+    ];
+    check(
+      'labeled and unlabeled equations share one borderless reserved-cell layout',
+      JSON.stringify(equationLayouts) === JSON.stringify(expectedEquationLayout),
+      { actual: equationLayouts, expected: expectedEquationLayout }
     );
     }
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

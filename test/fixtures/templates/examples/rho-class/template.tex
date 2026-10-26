@@ -41,6 +41,10 @@ $endif$
 % treatment is the closest supported Markdown shape to the original callout.
 \renewenvironment{quote}{\begin{note}}{\end{note}}
 
+$if(header-includes)$
+$header-includes$
+$endif$
+
 $if(doctype)$
 \doctype{$doctype$}
 $endif$

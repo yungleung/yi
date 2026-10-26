@@ -76,7 +76,7 @@
     'a document that is not stacked is asked about, and "yes" keeps it',
     asked &&
       (await t.sleep(0), session.documentSession.stack().some((held) => held.id === first)) &&
-      page().startsWith('GitHub-flavored markdown demo'),
+      page().includes('GitHub-flavored markdown demo'),
     {
       asked,
       held: session.documentSession.stack().map((held) => held.id),
@@ -103,7 +103,7 @@
   const quiet = await openRow('default-document.md', 'no');
   check(
     'a stacked document is replaced without a question',
-    quiet === false && page().startsWith('GitHub-flavored markdown demo'),
+    quiet === false && page().includes('GitHub-flavored markdown demo'),
     { asked: quiet, page: page().slice(0, 24) }
   );
 

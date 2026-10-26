@@ -212,6 +212,21 @@ for (const [code, name, title] of localized) {
     `the ${name} guide has balanced code fences and no unfinished placeholders`,
     (text.match(/^```/gm) ?? []).length % 2 === 0 && !/\b(?:TODO|TBD|FIXME)\b/.test(text)
   );
+  check(
+    `the ${name} guide documents list references and LaTeX counter setup`,
+    [
+      '#list:steps',
+      '[#list:steps]',
+      'reference-labels:',
+      'reference-number-prefixes:',
+      '\\yiListCounterSetup',
+      'yilist',
+      'HTML',
+      'EPUB',
+      'Word',
+      'ODT'
+    ].every((needle) => text.includes(needle))
+  );
 }
 
 if (failures.length > 0) {

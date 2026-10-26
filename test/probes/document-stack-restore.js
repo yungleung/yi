@@ -99,7 +99,7 @@
   // blocks above have been measured. The caret is an offset and is exact.
   check(
     'and the row brings the document and its view back',
-    (t.prose().textContent ?? '').startsWith('GitHub-flavored markdown demo') &&
+    (t.prose().textContent ?? '').includes('GitHub-flavored markdown demo') &&
       Math.abs(back - leftAt) <= 160,
     { scroll: { leftAt, back }, page: (t.prose().textContent ?? '').slice(0, 26) }
   );

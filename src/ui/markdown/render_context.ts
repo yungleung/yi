@@ -31,6 +31,14 @@ export interface RenderContext {
   referenceText(id: string): { text: string; resolved: boolean };
   /** The localized figure label at this document offset, or null. */
   figureLabelAt(from: number): string | null;
+  /** The document-configured listing label at this block offset, or null. */
+  listingLabelAt(from: number): string | null;
+  /** The configured table label at this document offset, or null. */
+  tableLabelAt(from: number): string | null;
+  /** The configured list label at this document offset, or null. */
+  listLabelAt(from: number): string | null;
+  /** The visible equation number at this document offset, or null. */
+  equationNumberAt(from: number): string | null;
 }
 
 /** What a rendering gets when the app has said nothing. */
@@ -40,7 +48,11 @@ const nothing: RenderContext = {
   imageSources: (_destination) => [],
   headingId: (_from) => null,
   referenceText: (id) => ({ text: `#${id}`, resolved: false }),
-  figureLabelAt: (_from) => null
+  figureLabelAt: (_from) => null,
+  listingLabelAt: (_from) => null,
+  tableLabelAt: (_from) => null,
+  listLabelAt: (_from) => null,
+  equationNumberAt: (_from) => null
 };
 
 let current: RenderContext = nothing;
