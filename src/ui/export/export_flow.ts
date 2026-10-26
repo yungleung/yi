@@ -5,9 +5,10 @@
  * text every kind shares (`preprocess.ts` — a wikilink written as the words it renders as, an image
  * as the file it names, and a citation as the words it reads as for the kind the app writes itself),
  * run it, and then say what happened. The *asking* is the card's (`export_dialog.ts`) and the *doing*
- * is Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two and the two
- * kinds of news the app has: a hint for something that worked, which the reader only has to notice,
- * and a message for a failure, which waits for them (`services/hints.ts`, `services/messages.ts`).
+ * is Rust's (`src-tauri/src/export.rs`), so what is left here is the joining of the two, the status
+ * bar's progress while they run (`export_progress.ts`), and the two kinds of news the app has: a
+ * hint for something that worked, which the reader only has to notice, and a message for a failure,
+ * which waits for them (`services/hints.ts`, `services/messages.ts`).
  *
  * The note's text comes from the editor rather than from the session's copy of it: the session
  * captures a document on a debounce, and a reader who exports a sentence they have just written
@@ -45,6 +46,7 @@ import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
 import { bodyWithItsName } from './book_body';
 import { exportDialog } from './export_dialog';
+import type { ExportProgress } from './export_progress';
 import { uncoveredCharacters } from './font_hint';
 import {
   destinationsThatNameNoImage,
@@ -65,13 +67,20 @@ import {
 export interface ExportHost {
   /** The text on screen: the editor's own, which is never older than the session's copy of it. */
   text(): string;
+  /** The status bar's progress port, held for exactly as long as this export runs. */
+  progress: ExportProgress;
 }
 
 /** Registers the File menu's *Export* submenu: one command, and the kind travels as its payload. */
 export function registerExportCommand(host: ExportHost): void {
   registerCommand({
     id: 'file:export',
-    run: (payload) => void exportNote(host.text(), typeof payload === 'string' ? payload : null)
+    run: (payload) =>
+      void exportNote(
+        host.text(),
+        typeof payload === 'string' ? payload : null,
+        host.progress
+      )
   });
 }
 
@@ -81,7 +90,11 @@ export function registerExportCommand(host: ExportHost): void {
  * `asked` is the kind the menu item names, or null when nothing named one — a command run without a
  * payload exports the first kind, which is what the app did before the menu had a submenu.
  */
-export async function exportNote(text: string, asked: string | null = null): Promise<void> {
+export async function exportNote(
+  text: string,
+  asked: string | null = null,
+  progress: ExportProgress | null = null
+): Promise<void> {
   const { pandoc, kinds } = await exportKinds();
   const first = kinds.find((kind) => kind.kind === asked) ?? kinds[0];
   if (first === undefined) {
@@ -129,37 +142,38 @@ export async function exportNote(text: string, asked: string | null = null): Pro
   if (answer === null) {
     return;
   }
-  const outputPath = answer.outputPath;
-  const selectedBibliography = await bibliographyPath();
-  // The card may create or import a package after it opened, so its answer is resolved against
-  // the library as it stands now rather than the list the card first drew.
-  const selectedTemplates = answer.templateId === null ? templates : await exportTemplates();
-  const selectedPackage = selectedTemplates.find(
-    (candidate) => candidate.manifest?.id === answer.templateId
-  );
-  const noteAssets: NoteAsset[] = [];
-  const imageTargets = new Map<string, string>();
-  const imageTarget =
-    first.kind === 'latex'
-      ? (file: string, destination: string) => {
-          const plan = portableLatexImage({
-            destination,
-            resolved: file,
-            outputPath,
-            packageRoot: selectedPackage?.path ?? null,
-            packageAssets: selectedPackage?.manifest?.assets ?? [],
-            targets: imageTargets
-          });
-          if (plan.asset !== null) {
-            noteAssets.push(plan.asset);
-          }
-          return plan.path;
-        }
-      : undefined;
-
-  /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
-  const unfetched: string[] = [];
+  const finishProgress = progress?.begin();
   try {
+    const outputPath = answer.outputPath;
+    const selectedBibliography = await bibliographyPath();
+    // The card may create or import a package after it opened, so its answer is resolved against
+    // the library as it stands now rather than the list the card first drew.
+    const selectedTemplates = answer.templateId === null ? templates : await exportTemplates();
+    const selectedPackage = selectedTemplates.find(
+      (candidate) => candidate.manifest?.id === answer.templateId
+    );
+    const noteAssets: NoteAsset[] = [];
+    const imageTargets = new Map<string, string>();
+    const imageTarget =
+      first.kind === 'latex'
+        ? (file: string, destination: string) => {
+            const plan = portableLatexImage({
+              destination,
+              resolved: file,
+              outputPath,
+              packageRoot: selectedPackage?.path ?? null,
+              packageAssets: selectedPackage?.manifest?.assets ?? [],
+              targets: imageTargets
+            });
+            if (plan.asset !== null) {
+              noteAssets.push(plan.asset);
+            }
+            return plan.path;
+          }
+        : undefined;
+
+    /** The pictures this run could not fetch: the reader is told their URLs, in the app's own words. */
+    const unfetched: string[] = [];
     // The pre-process is the one step every kind shares, and the parser is what says where the
     // wikilinks and the images *are* — a `[[…]]` in a fence, or an image's destination in a code
     // span, is code and stays exactly as written. What it answers with is the app's own reading of
@@ -276,6 +290,9 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       reference_header:
         first.kind === 'latex' || first.kind === 'pdf' ? referenceHeader(text) : ''
     });
+    // The run is over before the success hint appears: the reader never sees "Exporting" beside
+    // "Exported" while the temporary picture files are swept.
+    finishProgress?.();
     const written = fileName(outputPath);
     showHint(
       first.kind === 'html'
@@ -304,10 +321,15 @@ export async function exportNote(text: string, asked: string | null = null): Pro
       notify('Export', new Error(outcome.warnings.slice(0, 4).join('\n')));
     }
   } catch (error) {
+    finishProgress?.();
     notify('Export', error);
   } finally {
-    // The pictures this run drew are the run's files and nothing else's: pandoc has read them by now.
-    await forgetRasters();
+    try {
+      // The pictures this run drew are the run's files and nothing else's: pandoc has read them by now.
+      await forgetRasters();
+    } finally {
+      finishProgress?.();
+    }
   }
 }
 

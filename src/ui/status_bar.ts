@@ -31,6 +31,7 @@ export class StatusBar extends BaseComponent {
     this.leftGroup = this.createGroup('flex', 'items-center', 'gap-1');
     this.rightGroup = this.createGroup('flex', 'items-center', 'gap-1', 'ml-auto');
 
+    this.element.setAttribute('data-status-bar', 'true');
     this.element.append(this.leftGroup, this.rightGroup);
   }
 
