@@ -21,9 +21,7 @@
  *
  * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`) and that view. Upholds:
  * the document text is the only source of truth — nothing is written while a word is
- * being composed, and what commits is the system's own text, once. The field's
- * deliberate unfocused turn is reported so the editor can keep routing keys that
- * arrive before its input context is restored.
+ * being composed, and what commits is the system's own text, once.
  */
 
 import { getCaretRange, onCaretRangeChanged } from '../caret/caret';
@@ -41,11 +39,6 @@ export interface CompositionInput {
    * composition already over and nothing on it to say so (see `markdown_editor.ts`).
    */
   markedText(): boolean;
-  /**
-   * Whether the field has been blurred and is waiting for its deferred refocus.
-   * A key that arrives during this turn still belongs to the editor.
-   */
-  keyboardRegaining(): boolean;
   /**
    * Hands the field the keyboard again — after an edit, and after a click that placed the
    * caret. Both cost the field its input context: the next word would never compose, and
@@ -101,8 +94,6 @@ export function installCompositionInput(
   clip.appendChild(element);
 
   let composing = false;
-  /** Whether the field is between the deliberate blur and its deferred refocus. */
-  let regaining = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
   // The composing text is written into the line at the caret, and the block it lands in has
@@ -245,12 +236,8 @@ export function installCompositionInput(
     if (showingSelection()) {
       return;
     }
-    regaining = true;
     element.blur();
-    requestAnimationFrame(() => {
-      element.focus({ preventScroll: true });
-      regaining = false;
-    });
+    requestAnimationFrame(() => element.focus({ preventScroll: true }));
   };
 
   // A pointer that is down means the reader is working with the page itself — dragging
@@ -292,7 +279,6 @@ export function installCompositionInput(
   return {
     element,
     markedText,
-    keyboardRegaining: () => regaining,
     regainKeyboard
   };
 }

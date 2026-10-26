@@ -266,9 +266,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       handleEditorKey(event, this.keyHost);
     };
     this.contentView.addEventListener('keydown', handleKey);
-    // Regaining IME context needs one unfocused turn. A key can arrive before that
-    // turn ends, when the browser sends it to the body instead of the field; it is
-    // still the reader's keystroke and belongs to the same text path.
+    // Activating the app or regaining IME context can leave the keyboard on the page
+    // while the editor still has a live caret. Such a key is still the reader's and
+    // belongs to the same text path; a click outside has already removed the caret,
+    // so it still writes nothing.
     window.addEventListener(
       'keydown',
       (event) => {
@@ -276,8 +277,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         const focusIsPage =
           active === null || active === document.body || active === document.documentElement;
         if (
-          this.composition.keyboardRegaining() &&
           focusIsPage &&
+          getCaretRange() !== null &&
           !(event.target instanceof Node && this.contentView.contains(event.target))
         ) {
           handleKey(event);
