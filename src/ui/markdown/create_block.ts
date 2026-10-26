@@ -17,6 +17,7 @@ import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
 import { Equation, EquationSource } from './nodes/equation';
 import { TableCaption } from './nodes/table_caption';
+import { ListCaption } from './nodes/list_caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
 import { highlightCode } from './nodes/code_highlight';
@@ -171,6 +172,17 @@ class BlockView implements BlockComponent {
         element.id = caption.id;
       }
       element.appendChild(new TableCaption(caption).element);
+    }
+    const list = children.find(
+      (child) => child.type === 'list' && child.listCaption !== undefined
+    );
+    const listCaption = list?.type === 'list' ? list.listCaption : undefined;
+    if (listCaption) {
+      element.classList.add('markdown-list-block');
+      if (listCaption.id !== null) {
+        element.id = listCaption.id;
+      }
+      element.appendChild(new ListCaption(listCaption).element);
     }
     return element;
   }

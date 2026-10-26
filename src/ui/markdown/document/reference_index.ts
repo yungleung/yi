@@ -10,7 +10,7 @@
  * numbers, and duplicate resolution are all derived from that text.
  */
 
-import type { Heading, RootContent } from 'mdast';
+import type { Heading, List, RootContent } from 'mdast';
 import { parseMarkdown } from '../syntax/parser';
 import { pandocHeadingId } from '../syntax/pandoc_identifiers';
 import {
@@ -24,7 +24,7 @@ import { readEquationBlock } from '../syntax/equation_blocks';
 import { splitBlocks } from './blocks';
 
 /** A target kind with a document-configured reference name. */
-export type ReferenceKind = 'heading' | 'figure' | 'table' | 'equation';
+export type ReferenceKind = 'heading' | 'figure' | 'table' | 'equation' | 'list';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
 export interface ReferenceEntry {
@@ -57,6 +57,7 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         : [{ block, equation, id: equation.id, from: block.charStart }];
     });
   let figureNumber = 0;
+  let listNumber = 0;
   let tableNumber = 0;
   const entries: ReferenceEntry[] = [];
   walk(tree.children);
@@ -87,6 +88,8 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         addFigure(child);
       } else if (child.type === 'table') {
         addTable(child);
+      } else if (child.type === 'list') {
+        addList(child);
       }
       const nested = (child as { children?: RootContent[] }).children;
       if (Array.isArray(nested)) {
@@ -198,6 +201,45 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       explicit: caption.id !== null
     });
   }
+
+  function addList(list: List): void {
+    const caption = list.listCaption;
+    const start = list.position?.start.offset;
+    if (!caption || start === undefined) {
+      return;
+    }
+    listNumber += 1;
+    if (caption.id !== null) {
+      used.add(caption.id);
+    }
+    entries.push({
+      id: caption.id,
+      kind: 'list',
+      from: start,
+      to: caption.position.end.offset,
+      number: listNumber,
+      title: caption.children.map((child) => plainText(child)).join('').trim(),
+      label: vocabulary.list.label,
+      numberPrefix: vocabulary.list.prefix,
+      caretAt: firstListContent(list, start),
+      explicit: caption.id !== null
+    });
+  }
+}
+
+/** Where navigation enters the first item's editable content. */
+function firstListContent(list: List, fallback: number): number {
+  const item = list.children[0];
+  const paragraph = item?.children.find((child) => child.type === 'paragraph');
+  const first = paragraph?.children[0] as
+    | { position?: { start: { offset?: number } } }
+    | undefined;
+  return (
+    first?.position?.start.offset ??
+    paragraph?.position?.start.offset ??
+    item?.position?.start.offset ??
+    fallback
+  );
 }
 
 /** The first target with this ID, matching Pandoc's first-match duplicate behavior. */

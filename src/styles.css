@@ -451,6 +451,7 @@ body {
 .markdown-auto-reference-source,
 .markdown-figure-source,
 .markdown-table-caption-source,
+.markdown-list-caption-source,
 .markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
@@ -481,6 +482,7 @@ body {
 .markdown-auto-reference-source,
 .markdown-figure-source,
 .markdown-table-caption-source,
+.markdown-list-caption-source,
 .markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
@@ -545,6 +547,31 @@ body {
 }
 
 .markdown-table-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A caption follows its list as the source says. The blank separator has no
+   element; the caption itself reveals the complete `: …` line while editing. */
+.markdown-list-block {
+  display: block;
+}
+
+.markdown-list-caption {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  text-align: left;
+  font-size: 0.875em;
+}
+
+.markdown-list-caption-source {
+  display: block;
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.markdown-list-number {
   font-weight: 600;
   white-space: nowrap;
 }

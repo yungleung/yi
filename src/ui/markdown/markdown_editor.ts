@@ -190,6 +190,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         );
         return target?.number == null ? null : referenceLabel(target);
       },
+      listLabelAt: (from) => {
+        const target = this.state.referenceEntries().find(
+          (entry) => entry.kind === 'list' && entry.from === from
+        );
+        return target?.number == null ? null : referenceLabel(target);
+      },
       equationNumberAt: (from) => {
         const target = this.state.referenceEntries().find(
           (entry) => entry.kind === 'equation' && entry.from === from

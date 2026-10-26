@@ -52,6 +52,7 @@ export const SOURCE_SELECTOR = [
   '.markdown-auto-reference-source',
   '.markdown-figure-source',
   '.markdown-table-caption-source',
+  '.markdown-list-caption-source',
   '.markdown-equation-source',
   '.markdown-strong-source',
   '.markdown-emphasis-source',

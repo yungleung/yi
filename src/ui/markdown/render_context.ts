@@ -33,6 +33,8 @@ export interface RenderContext {
   figureLabelAt(from: number): string | null;
   /** The configured table label at this document offset, or null. */
   tableLabelAt(from: number): string | null;
+  /** The configured list label at this document offset, or null. */
+  listLabelAt(from: number): string | null;
   /** The visible equation number at this document offset, or null. */
   equationNumberAt(from: number): string | null;
 }
@@ -46,6 +48,7 @@ const nothing: RenderContext = {
   referenceText: (id) => ({ text: `#${id}`, resolved: false }),
   figureLabelAt: (_from) => null,
   tableLabelAt: (_from) => null,
+  listLabelAt: (_from) => null,
   equationNumberAt: (_from) => null
 };
 
