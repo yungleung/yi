@@ -55,6 +55,7 @@
     'reference-number-prefixes:',
     '  table: X-',
     '  equation: E-',
+    '  list: L-',
     '---',
     '',
     '# Going out',
@@ -68,6 +69,13 @@
     '| alpha | 1 |',
     '',
     ': Results {#tbl:results}',
+    '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps}',
     '',
     'See [#eq:system] for the equation.',
     '',
@@ -188,6 +196,15 @@
       text.includes('Equation(E-1)') && text.includes('(E-1)'),
       {
         reference: /Equation\([^)]+\)/.exec(text)?.[0] ?? null,
+        text
+      }
+    );
+    check(
+      'and the list reference and caption follow the list object counter',
+      text.includes('SeeListL-1fortheprocedure.') && text.includes('ListL-1.Steps'),
+      {
+        reference: /SeeList[^f]+fortheprocedure\./.exec(text)?.[0] ?? null,
+        caption: /List[^.]+\.Steps/.exec(text)?.[0] ?? null,
         text
       }
     );

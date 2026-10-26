@@ -114,6 +114,47 @@ check(
   true
 );
 
+const listHeader = referenceHeader(
+  '---\n' +
+    'reference-labels:\n' +
+    '  list: Procedure\n' +
+    'reference-number-prefixes:\n' +
+    '  list: "3-"\n' +
+    '---\n\n' +
+    '- first\n- second\n\n: Steps {#list:steps}\n'
+);
+check(
+  'list metadata reaches its namespaced object counter',
+  listHeader.includes(
+    '\\@ifundefined{c@yilist}{\\newcounter{yilist}}{}\n' +
+      '\\makeatother\n' +
+      '\\providecommand{\\yiListNumber}{\\arabic{yilist}}\n' +
+      '\\renewcommand{\\theyilist}{\\yiListNumber}\n' +
+      '\\providecommand{\\yiListName}{List}\n' +
+      '\\providecommand{\\yiListCounterSetup}{}\n' +
+      '\\AtBeginDocument{%\n' +
+      '  \\yiListCounterSetup\n' +
+      '  \\renewcommand{\\yiListName}{Procedure}%\n' +
+      '  \\renewcommand{\\theyilist}{\\mbox{3-}\\yiListNumber}%\n' +
+      '}'
+  ),
+  true
+);
+check(
+  'the list reference uses the native reference machinery',
+  listHeader.includes(
+    '\\providecommand{\\yiListRef}[1]{%\n' +
+      '  \\hyperref[#1]{\\yiListName~\\ref*{#1}}%\n' +
+      '}'
+  ),
+  true
+);
+check(
+  'a note without a captioned list emits no list header',
+  referenceHeader('- ordinary\n'),
+  ''
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

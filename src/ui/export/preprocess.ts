@@ -220,6 +220,16 @@ function autoReferenceRewrites(
         text: `\\yiEquationRef{${latexLabel(node.id)}}`
       };
     }
+    if (
+      target?.kind === 'list' &&
+      (kind === 'latex' || kind === 'pdf')
+    ) {
+      return {
+        start: span.start,
+        end: span.end,
+        text: `\\yiListRef{${latexLabel(node.id)}}`
+      };
+    }
     const text = target
       ? referenceLabel(target)
       : `#${node.id}`;

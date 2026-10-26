@@ -817,6 +817,22 @@ const render = async (text, answers = {}) => {
   );
 }
 
+{
+  const list = '- First item\n- Second item\n\n: Steps {#list:steps .wide owner=demo}\n';
+  for (const kind of ['latex', 'pdf']) {
+    const { rendered } = await render(list, { kind });
+    check(
+      `${kind} uses the Yi list counter and a native label`,
+      rendered,
+      '::: {.list-layout .wide owner="demo"}\n' +
+        '- First item\n- Second item\n\n' +
+        '`\\phantomsection\\refstepcounter{yilist}\\label{list:steps}' +
+        '\\noindent\\textbf{\\yiListName~\\theyilist.}`{=latex} Steps\n' +
+        ':::\n'
+    );
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

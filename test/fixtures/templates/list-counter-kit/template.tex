@@ -1,0 +1,21 @@
+\documentclass{book}
+\usepackage{fontspec}
+\usepackage{hyperref}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+
+$if(header-includes)$
+$header-includes$
+$endif$
+
+\begin{document}
+$body$
+\end{document}

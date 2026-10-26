@@ -2,8 +2,8 @@
  * Lowers captioned lists for each export kind.
  *
  * HTML, EPUB, DOCX, and ODT share one target wrapper and visible caption.
- * Processed Markdown uses semantic HTML. LaTeX and PDF are left for the
- * writer-specific counter lowering.
+ * Processed Markdown uses semantic HTML; LaTeX/PDF use the namespaced list
+ * counter through native labels and references.
  *
  * May import: the parse walk, reference index, caption metadata, and list HTML
  * renderer. Upholds: ordinary lists remain byte-for-byte unchanged and each
@@ -34,9 +34,6 @@ export function listRewrites(
   references: readonly ReferenceEntry[],
   kind: string
 ): ListRewrite[] {
-  if (kind === 'latex' || kind === 'pdf') {
-    return [];
-  }
   const rewrites: ListRewrite[] = [];
   for (const span of spansOfType(tree, 'list')) {
     const list = span.node as unknown as CaptionedList;
@@ -54,6 +51,14 @@ export function listRewrites(
       rewrites.push({ start: span.start, end: span.end, text: listHtml(list, referenceLabel(entry)) });
       continue;
     }
+    if (kind === 'latex' || kind === 'pdf') {
+      rewrites.push({
+        start: span.start,
+        end: span.end,
+        text: latexList(list, caption)
+      });
+      continue;
+    }
     rewrites.push({
       start: span.start,
       end: span.end,
@@ -61,6 +66,35 @@ export function listRewrites(
     });
   }
   return rewrites;
+}
+
+/** One LaTeX list target and caption while preserving Markdown caption content. */
+function latexList(
+  list: CaptionedList,
+  caption: ListCaptionNode
+): string {
+  const bodyEnd = caption.captionData.captionFrom - (list.position?.start.offset ?? 0);
+  const body = String(list.source ?? '').slice(0, bodyEnd).trimEnd();
+  const tokens = [
+    '.list-layout',
+    ...caption.classes.map((name) => `.${name}`),
+    ...Object.entries(caption.attributes).map(
+      ([key, value]) => `${key}="${attributeValue(value)}"`
+    )
+  ];
+  const labelCommand =
+    caption.id === null ? '' : `\\label{${latexLabel(caption.id)}}`;
+  const raw =
+    `\\phantomsection\\refstepcounter{yilist}${labelCommand}` +
+    `\\noindent\\textbf{\\yiListName~\\theyilist.}`;
+  const text = caption.captionData.caption;
+  return [
+    `::: {${tokens.join(' ')}}`,
+    body,
+    '',
+    `\`${raw}\`{=latex}${text === '' ? '' : ` ${text}`}`,
+    ':::'
+  ].join('\n');
 }
 
 /** One shared non-LaTeX list wrapper and visible caption. */
@@ -94,6 +128,11 @@ function wrappedList(
 /** Literal configured text inside Markdown emphasis. */
 function markdownText(text: string): string {
   return text.replace(/[\\`*_[\]<>]/g, '\\$&');
+}
+
+/** One identifier used as a LaTeX label argument. */
+function latexLabel(id: string): string {
+  return id.replace(/\\/g, '\\textbackslash{}').replace(/}/g, '\\}');
 }
 
 /** A quoted Pandoc attribute value. */

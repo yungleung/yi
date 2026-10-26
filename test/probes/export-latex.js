@@ -92,6 +92,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:system] for the equation system.',
     '',
     '[$$',
@@ -309,6 +316,30 @@
       {
         macro: tex.includes('\\providecommand{\\yiTableRef}[1]'),
         label: tex.includes('\\renewcommand{\\tablename}{Table}')
+      }
+    );
+    check(
+      'a captioned list uses the Yi counter and a native reference',
+      tex.includes('\\yiListRef{list:steps}') &&
+        tex.includes('\\refstepcounter{yilist}') &&
+        tex.includes('\\label{list:steps}') &&
+        tex.includes('\\yiListName~\\theyilist.'),
+      {
+        reference: tex.includes('\\yiListRef{list:steps}'),
+        counter: tex.includes('\\refstepcounter{yilist}'),
+        label: tex.includes('\\label{list:steps}'),
+        caption: tex.includes('\\yiListName~\\theyilist.')
+      }
+    );
+    check(
+      'the list-reference header is part of the exported LaTeX document',
+      tex.includes('\\providecommand{\\yiListRef}[1]') &&
+        tex.includes('\\providecommand{\\yiListCounterSetup}{}') &&
+        tex.includes('\\newcounter{yilist}'),
+      {
+        macro: tex.includes('\\providecommand{\\yiListRef}[1]'),
+        hook: tex.includes('\\providecommand{\\yiListCounterSetup}{}'),
+        counter: tex.includes('\\newcounter{yilist}')
       }
     );
     check(

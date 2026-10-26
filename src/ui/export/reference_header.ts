@@ -1,5 +1,5 @@
 /**
- * The LaTeX header that makes table and equation references follow native counters.
+ * The LaTeX header that makes table, equation, and list references follow counters.
  *
  * The document's own frontmatter supplies the visible table word and literal
  * prefix. The portable reference macros ask LaTeX for the final number, so a
@@ -20,13 +20,25 @@ export function referenceHeader(markdown: string): string {
   const references = referenceIndex(markdown);
   const hasTable = references.some((entry) => entry.kind === 'table');
   const hasEquation = references.some((entry) => entry.kind === 'equation');
-  if (!hasTable && !hasEquation) {
+  const hasList = references.some((entry) => entry.kind === 'list');
+  if (!hasTable && !hasEquation && !hasList) {
     return '';
   }
   const vocabulary = referenceVocabularyFromTree(parseMarkdown(markdown));
   const lines = ['% Yi target references; generated from the document vocabulary.'];
   if (hasEquation) {
     lines.push('\\providecommand{\\equationname}{Equation}');
+  }
+  if (hasList) {
+    lines.push(
+      '\\makeatletter',
+      '\\@ifundefined{c@yilist}{\\newcounter{yilist}}{}',
+      '\\makeatother',
+      '\\providecommand{\\yiListNumber}{\\arabic{yilist}}',
+      '\\renewcommand{\\theyilist}{\\yiListNumber}',
+      '\\providecommand{\\yiListName}{List}',
+      '\\providecommand{\\yiListCounterSetup}{}'
+    );
   }
   lines.push('\\AtBeginDocument{%');
   if (hasTable) {
@@ -47,6 +59,16 @@ export function referenceHeader(markdown: string): string {
       );
     }
   }
+  if (hasList) {
+    const style = vocabulary.list;
+    lines.push('  \\yiListCounterSetup');
+    lines.push(`  \\renewcommand{\\yiListName}{${latexText(style.label)}}%`);
+    if (style.prefix !== '') {
+      lines.push(
+        `  \\renewcommand{\\theyilist}{\\mbox{${latexText(style.prefix)}}\\yiListNumber}%`
+      );
+    }
+  }
   lines.push('}');
   if (hasTable) {
     lines.push(
@@ -59,6 +81,13 @@ export function referenceHeader(markdown: string): string {
     lines.push(
       '\\providecommand{\\yiEquationRef}[1]{%',
       '  \\hyperref[#1]{\\equationname~\\eqref{#1}}%',
+      '}'
+    );
+  }
+  if (hasList) {
+    lines.push(
+      '\\providecommand{\\yiListRef}[1]{%',
+      '  \\hyperref[#1]{\\yiListName~\\ref*{#1}}%',
       '}'
     );
   }
