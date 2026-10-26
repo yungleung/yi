@@ -278,9 +278,10 @@
     const pageDocument = new DOMParser().parseFromString(page, 'text/html');
     const equationTarget = pageDocument.querySelector('[id="eq:system"]');
     const equationTable = equationTarget?.querySelector('table');
+    const equationBody = equationTable?.querySelector('tbody');
     const equationRows = equationTarget?.querySelectorAll('table > tbody > tr') ?? [];
     const equationCells = equationRows[0]?.children ?? [];
-    const borderless = [equationTable, ...equationCells].every(
+    const borderless = [equationTable, equationBody, ...equationCells].every(
       (element) => element?.getAttribute('style')?.includes('border: none') ?? false
     );
     const equationLayout = [

@@ -304,6 +304,7 @@
       const chapter = new DOMParser().parseFromString(text, 'text/html');
       const target = chapter.querySelector('[id="eq:system"]');
       const table = target?.querySelector('table');
+      const body = table?.querySelector('tbody');
       const rows = target?.querySelectorAll('table > tbody > tr') ?? [];
       const cells = rows[0]?.children ?? [];
       return {
@@ -313,7 +314,7 @@
         cells: cells.length,
         equation: cells[0]?.querySelector('math, .math') !== null,
         number: cells[1]?.textContent?.trim() ?? null,
-        borderless: [table, ...cells].every(
+        borderless: [table, body, ...cells].every(
           (element) => element?.getAttribute('style')?.includes('border: none') ?? false
         )
       };

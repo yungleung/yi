@@ -370,7 +370,7 @@ For every writer:
 - automatic references become ordinary links or native LaTeX references.
 - each labeled non-LaTeX equation is laid out in one row with two cells:
   formula first, visible number second.
-- the HTML/EPUB layout table and both cells have no visible border.
+- the HTML/EPUB layout table, body, and both cells have no visible border.
 
 ### HTML and KaTeX
 
@@ -381,7 +381,8 @@ body. A labeled equation becomes:
 <div id="eq:energy" class="equation-target equation-layout">
   <table class="equation-layout" role="presentation"
          style="width: 100%; border: none; border-collapse: collapse;">
-    <tr>
+    <tbody style="border: none;">
+      <tr>
       <td class="equation-math-cell"
           style="width: 90%; border: none; vertical-align: middle;">
 
@@ -396,7 +397,8 @@ $$
 \(1\)
 
       </td>
-    </tr>
+      </tr>
+    </tbody>
   </table>
 </div>
 ```
@@ -404,7 +406,7 @@ $$
 Pandoc parses the Markdown math inside the raw HTML table. The target remains
 the outer `Div`; the equation and number are adjacent cells in one row, and
 KaTeX renders no native tag. Inline styles keep the layout borderless even when
-a template styles ordinary tables.
+Pandoc's own stylesheet or a template styles ordinary tables.
 
 ### EPUB
 

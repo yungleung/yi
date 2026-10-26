@@ -367,7 +367,7 @@ const render = async (text, answers = {}) => {
     'See [Equation (1)](#eq:system).\n\n' +
       '<div id="eq:system" class="equation-target equation-layout wide" data-owner="demo">\n' +
       '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">\n' +
-      '<tbody>\n' +
+      '<tbody style="border: none;">\n' +
       '<tr>\n' +
       '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">\n\n' +
       '$$\n' +

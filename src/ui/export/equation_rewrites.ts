@@ -106,7 +106,7 @@ function equationMarkdown(
       equation,
       [
         '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">',
-        '<tbody>',
+        '<tbody style="border: none;">',
         '<tr>',
         '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">',
         '',
