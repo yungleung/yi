@@ -368,38 +368,52 @@ For every writer:
 - inner environments are never separately numbered;
 - formula source remains unchanged in the note;
 - automatic references become ordinary links or native LaTeX references.
+- each labeled non-LaTeX equation is laid out in one row with two cells:
+  formula first, visible number second.
 
 ### HTML and KaTeX
 
 HTML uses `html-math-method: katex`. It therefore receives an unnumbered lowered
 body. A labeled equation becomes:
 
-```markdown
-::: {#eq:energy .equation-target}
+```html
+<div id="eq:energy" class="equation-target equation-layout">
+  <table class="equation-layout" role="presentation">
+    <tr>
+      <td class="equation-math-cell">
+
 $$
-\begin{equation*}
 E = mc^2
-\end{equation*}
 $$
+
+      </td>
+      <td class="equation-number-cell">
 
 \(1\)
-:::
+
+      </td>
+    </tr>
+  </table>
+</div>
 ```
 
-Pandoc converts the ID to an HTML target and KaTeX renders no native tag.
+Pandoc parses the Markdown math inside the raw HTML table. The target remains
+the outer `Div`; the equation and number are adjacent cells in one row, and
+KaTeX renders no native tag.
 
 ### EPUB
 
 The current EPUB writer uses MathML and emits no native environment number. Yi
 still receives the lowered unnumbered body, so a package that switches its math
 method to KaTeX or MathJax behaves identically. A labeled equation gets the same
-ID-bearing wrapper and visible number `(1)`.
+ID-bearing one-row, two-cell layout: formula first, number `(1)` second.
 
 ### DOCX and ODT
 
 The math body is lowered before Pandoc converts it to OMML or a StarMath formula
 object. A labeled block is wrapped in an ID-bearing `Div`, which becomes a Word
-bookmark or ODT named section, followed by the visible number `(1)`.
+bookmark or ODT named section. Inside it is a native one-row grid table: the
+formula is in the first cell and the visible number `(1)` is in the second.
 
 ### LaTeX and PDF
 

@@ -227,14 +227,15 @@ target is the bundle folder `note/`);
 the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
 names), a captioned table's bookmark/number/link relationship, the hint that says so, and Escape
-writing nothing at all, plus a labeled equation's bookmark, visible number, and formula; `export-refused` —
+writing nothing at all, plus a labeled equation's bookmark and one-row two-cell formula/number
+table; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
 `export-odt` — the second kind: the menu's odt item opens its card and the target's extension is that
 kind's own, the configuration file it names is that kind's own, and what comes out is a valid ODF
 (`mimetype` first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which
 is a row, an asset and a menu item — plus a table's named section, visible number, and link;
-the same probe also holds a labeled equation's named section and number;
+the same probe also holds a labeled equation's named section and one-row formula/number table;
 `export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
 target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture
 named `a b#c%.png` is referred to as `{a b\#c\%.png}`, whose un-escaped path is the file the app
@@ -278,14 +279,16 @@ nothing;
 bundle folder whose `note.html` is read back; a web picture stays the URL the note wrote instead of
 becoming an app temporary; the heading is shifted the way the file says, the math is marked for
 KaTeX (a CDN script and stylesheet), and the citations become a headed `References` list; a
-captioned table keeps its ID, numbered caption, class, and automatic link;
+captioned table keeps its ID, numbered caption, class, and automatic link; a labeled equation is
+one layout-table row with formula and number in adjacent cells;
 `export-html-local-assets` — the bundle's contents: the note's local picture is copied to
 `note.assets/`, a web picture stays its URL, and Yuki's `template/` tree travels beside the page;
 `export-epub` — the fifth, and the one whose output is a *container*: the probe reads the book the way
 a reader's software does and inflates entries by name, so the stored `mimetype`, the note's own
 frontmatter as `<dc:title>`/`<dc:creator>`/`<dc:language>`, the web picture carried in `EPUB/media/`,
 the navigation and the chapter's `References` list are all values it asserts — as are a captioned
-table's anchor, visible number, automatic link, and preserved `.margin` class;
+table's anchor, visible number, automatic link, and preserved `.margin` class, and a labeled
+equation's adjacent formula/number cells;
 `export-font-hint` — the card's font hint: a note written in characters this export cannot draw is said
 so in the app's own words, with the characters it is written in and the settings file beside it. This
 build ships a face per script, so Chinese, Korean and Greek are quiet and stay quiet; what is left is a

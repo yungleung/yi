@@ -332,6 +332,25 @@
         links: internalLinks
       }
     );
+    const equationTables = [...documentXml.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)]
+      .map((match) => match[0])
+      .filter((table) => table.includes('m:oMathPara') && table.includes('(1)'));
+    const equationLayout = equationTables.map((table) => {
+      const cells = [...table.matchAll(/<w:tc[ >][\s\S]*?<\/w:tc>/g)].map(
+        (match) => match[0]
+      );
+      return [
+        (table.match(/<w:tr[ >]/g) ?? []).length,
+        cells.length,
+        cells[0]?.includes('m:oMathPara') ?? false,
+        cells[1]?.includes('(1)') ?? false
+      ];
+    });
+    check(
+      'the equation bookmark uses a one-row two-cell table',
+      JSON.stringify(equationLayout) === JSON.stringify([[1, 2, true, true]]),
+      { actual: equationLayout, expected: [[1, 2, true, true]] }
+    );
     const hint = document.querySelector('[data-hint] [data-hint-text]');
     check(
       'and the reader is told, quietly, what was written',

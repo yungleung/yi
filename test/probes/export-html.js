@@ -275,6 +275,26 @@
         equationContext: page.match(/.{0,120}Equation.{0,120}/)?.[0] ?? null
       }
     );
+    const pageDocument = new DOMParser().parseFromString(page, 'text/html');
+    const equationTarget = pageDocument.querySelector('[id="eq:system"]');
+    const equationRows = equationTarget?.querySelectorAll('table > tbody > tr') ?? [];
+    const equationCells = equationRows[0]?.children ?? [];
+    const equationLayout = [
+      equationTarget?.querySelectorAll('table').length ?? 0,
+      equationRows.length,
+      equationCells.length,
+      equationCells[0]?.textContent?.trim() ?? null,
+      equationCells[1]?.textContent?.trim() ?? null
+    ];
+    check(
+      'the equation and its number share one row of two table cells',
+      JSON.stringify(equationLayout) ===
+        JSON.stringify([1, 1, 2, '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}', '(1)']),
+      {
+        actual: equationLayout,
+        expected: [1, 1, 2, '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}', '(1)']
+      }
+    );
     check(
       'an unlabeled equation environment is also unnumbered',
       page.includes('begin{gather*}') && !page.includes('\\begin{gather}'),

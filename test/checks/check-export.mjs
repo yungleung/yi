@@ -362,19 +362,50 @@ const render = async (text, answers = {}) => {
     '$$]{#eq:system .wide owner=demo}\n';
   const { rendered } = await render(equation, { kind: 'html' });
   check(
-    'HTML lowers a labeled environment to one target and one visible equation number',
+    'HTML lowers a labeled environment to a target layout table',
     rendered,
     'See [Equation (1)](#eq:system).\n\n' +
-      '::: {#eq:system .equation-target .wide owner="demo"}\n' +
+      '<div id="eq:system" class="equation-target equation-layout wide" data-owner="demo">\n' +
+      '<table class="equation-layout" role="presentation" style="width: 100%; border: none;">\n' +
+      '<tbody>\n' +
+      '<tr>\n' +
+      '<td class="equation-math-cell" style="width: 90%; vertical-align: middle;">\n\n' +
       '$$\n' +
       '\\begin{aligned}\n' +
       'x&=1\\\\\n' +
       'y&=2\n' +
       '\\end{aligned}\n' +
       '$$\n\n' +
-      '\\(1\\)\n' +
-      ':::\n'
+      '</td>\n' +
+      '<td class="equation-number-cell" style="width: 10%; text-align: right; vertical-align: middle;">\n\n' +
+      '\\(1\\)\n\n' +
+      '</td>\n' +
+      '</tr>\n' +
+      '</tbody>\n' +
+      '</table>\n' +
+      '</div>\n'
   );
+
+  for (const kind of ['docx', 'odt']) {
+    const { rendered } = await render(equation, { kind });
+    const rows = rendered.split('\n').filter((line) => line.startsWith('| '));
+    check(
+      `${kind} uses a native one-row two-cell equation table`,
+      [
+        rendered.startsWith(
+          'See [Equation (1)](#eq:system).\n\n' +
+            '::: {#eq:system .equation-target .wide owner="demo"}\n'
+        ),
+        rows.length,
+        (rows[0]?.match(/\|/g) ?? []).length,
+        rows[0]?.includes(
+          '$$\\begin{aligned} x&=1\\\\ y&=2 \\end{aligned}$$'
+        ) ?? false,
+        rows[0]?.includes('\\(1\\)') ?? false
+      ],
+      [true, 1, 3, true, true]
+    );
+  }
 }
 
 {

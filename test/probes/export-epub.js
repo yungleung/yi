@@ -300,6 +300,36 @@
         native: chapter.includes('eqn-num')
       }))
     );
+    const equationLayouts = texts.map((text) => {
+      const chapter = new DOMParser().parseFromString(text, 'text/html');
+      const target = chapter.querySelector('[id="eq:system"]');
+      const rows = target?.querySelectorAll('table > tbody > tr') ?? [];
+      const cells = rows[0]?.children ?? [];
+      return {
+        target: target !== null,
+        tables: target?.querySelectorAll('table').length ?? 0,
+        rows: rows.length,
+        cells: cells.length,
+        equation: cells[0]?.querySelector('math, .math') !== null,
+        number: cells[1]?.textContent?.trim() ?? null
+      };
+    });
+    const expectedEquationLayout = [
+      {
+        target: true,
+        tables: 1,
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '(1)'
+      }
+    ];
+    const equationLayout = equationLayouts.filter((layout) => layout.target);
+    check(
+      'a labeled equation uses one table row with formula and number cells',
+      JSON.stringify(equationLayout) === JSON.stringify(expectedEquationLayout),
+      { actual: equationLayout, expected: expectedEquationLayout }
+    );
     }
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(

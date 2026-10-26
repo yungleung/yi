@@ -636,7 +636,7 @@ no native automatic tag can depend on virtualization. `create_block.ts` and
 `nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
 `document/reference_index.ts` indexes only labeled blocks.
 `ui/export/equation_rewrites.ts` gives HTML/EPUB/DOCX/ODT a single target and
-number, `equation_html.ts` writes processed-Markdown MathML, and LaTeX/PDF get one
+number in a one-row two-cell table, `equation_html.ts` writes processed-Markdown MathML, and LaTeX/PDF get one
 outer `equation` with `\yiEquationRef`. The default fixture contains every
 matrix row with and without an ID;
 `equation-matrix-default-document.js`, `equation-rendering.js`,

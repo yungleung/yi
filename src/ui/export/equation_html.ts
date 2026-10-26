@@ -20,7 +20,24 @@ export function equationHtml(
   math: string,
   numberText: string
 ): string {
-  const classes = ['equation-target', ...equation.classes];
+  const rendered = katex.renderToString(math, {
+    displayMode: true,
+    throwOnError: false,
+    output: 'mathml'
+  });
+  return equationHtmlContainer(equation, [
+    `  ${rendered}`,
+    `  <span class="equation-number">${escapeHtml(numberText)}</span>`
+  ]);
+}
+
+/** One target Div around content that may itself contain Markdown parsed by Pandoc. */
+export function equationHtmlContainer(
+  equation: EquationBlockSource,
+  content: readonly string[],
+  extraClasses: readonly string[] = []
+): string {
+  const classes = ['equation-target', ...extraClasses, ...equation.classes];
   const attributes = [
     ...(equation.id === null ? [] : [`id="${escapeHtml(equation.id)}"`]),
     `class="${escapeHtml(classes.join(' '))}"`,
@@ -28,15 +45,5 @@ export function equationHtml(
       ([key, value]) => `data-${htmlAttributeName(key)}="${escapeHtml(value)}"`
     )
   ];
-  const rendered = katex.renderToString(math, {
-    displayMode: true,
-    throwOnError: false,
-    output: 'mathml'
-  });
-  return [
-    `<div ${attributes.join(' ')}>`,
-    `  ${rendered}`,
-    `  <span class="equation-number">${escapeHtml(numberText)}</span>`,
-    '</div>'
-  ].join('\n');
+  return [`<div ${attributes.join(' ')}>`, ...content, '</div>'].join('\n');
 }

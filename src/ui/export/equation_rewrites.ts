@@ -22,7 +22,7 @@ import {
   readEquationBlock,
   unnumberedEquationBody
 } from '../markdown/syntax/equation_blocks';
-import { equationHtml } from './equation_html';
+import { equationHtml, equationHtmlContainer } from './equation_html';
 
 /** One source range and its replacement. */
 export interface EquationRewrite {
@@ -72,7 +72,7 @@ export function equationRewrites(
       text:
         kind === 'markdown'
           ? equationHtml(equation, math, numberText)
-          : equationMarkdown(equation, math, numberText)
+          : equationMarkdown(equation, math, numberText, kind)
     });
   }
 
@@ -98,8 +98,34 @@ export function equationRewrites(
 function equationMarkdown(
   equation: ReturnType<typeof readEquationBlock> & object,
   math: string,
-  numberText: string
+  numberText: string,
+  kind: string
 ): string {
+  if (kind === 'html' || kind === 'epub') {
+    return equationHtmlContainer(
+      equation,
+      [
+        '<table class="equation-layout" role="presentation" style="width: 100%; border: none;">',
+        '<tbody>',
+        '<tr>',
+        '<td class="equation-math-cell" style="width: 90%; vertical-align: middle;">',
+        '',
+        mathMarkdown(math),
+        '',
+        '</td>',
+        '<td class="equation-number-cell" style="width: 10%; text-align: right; vertical-align: middle;">',
+        '',
+        equationNumberMarkdown(numberText),
+        '',
+        '</td>',
+        '</tr>',
+        '</tbody>',
+        '</table>'
+      ],
+      ['equation-layout']
+    );
+  }
+
   const tokens = [
     ...(equation.id === null ? [] : [`#${equation.id}`]),
     '.equation-target',
@@ -110,11 +136,65 @@ function equationMarkdown(
   ];
   return [
     `::: {${tokens.join(' ')}}`,
-    mathMarkdown(math),
-    '',
-    numberText.replace(/[()]/g, '\\$&'),
+    equationGridTable(math, numberText),
     ':::'
   ].join('\n');
+}
+
+/** A native one-row table for writers that do not preserve layout HTML. */
+function equationGridTable(math: string, numberText: string): string {
+  const formula = math.trim() === '' ? '' : `$$${singleLineMath(math)}$$`;
+  const number = equationNumberMarkdown(numberText);
+  const formulaWidth = Math.max(48, formula.length + 2);
+  const numberWidth = Math.max(10, Math.ceil(formulaWidth * 0.18), number.length + 2);
+  const border = `+${'-'.repeat(formulaWidth + 2)}+${'-'.repeat(numberWidth + 2)}+`;
+  return [
+    border,
+    `| ${padCell(formula, formulaWidth)} | ${padCell(number, numberWidth)} |`,
+    border
+  ].join('\n');
+}
+
+/** One display formula on one line, retaining TeX comment semantics. */
+function singleLineMath(math: string): string {
+  const lines = math.split(/\r?\n/);
+  let result = '';
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const comment = texCommentAt(line);
+    result += comment < 0 ? line : line.slice(0, comment);
+    if (comment < 0 && index < lines.length - 1) {
+      result += ' ';
+    }
+  }
+  return result;
+}
+
+/** The start of an unescaped TeX comment, or -1. */
+function texCommentAt(line: string): number {
+  for (let index = 0; index < line.length; index += 1) {
+    if (line[index] !== '%') {
+      continue;
+    }
+    let escapes = 0;
+    for (let before = index - 1; before >= 0 && line[before] === '\\'; before -= 1) {
+      escapes += 1;
+    }
+    if (escapes % 2 === 0) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/** One literal number inside a Markdown table cell. */
+function equationNumberMarkdown(numberText: string): string {
+  return numberText.replace(/\\/g, '\\\\').replace(/[()|]/g, '\\$&');
+}
+
+/** Pad one grid-table cell to its fixed display width. */
+function padCell(value: string, width: number): string {
+  return value + ' '.repeat(Math.max(0, width - value.length));
 }
 
 /** One display formula as Markdown. */

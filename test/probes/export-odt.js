@@ -234,6 +234,39 @@
         link: content.includes('xlink:href="#eq:system"')
       }
     );
+    const sectionName = 'text:section text:name="eq:system"';
+    const sectionAt = content.indexOf(sectionName);
+    const sectionStart = content.lastIndexOf('<text:section', sectionAt);
+    const sectionEnd = content.indexOf('</text:section>', sectionAt);
+    const equationSection =
+      sectionAt < 0 || sectionEnd < 0
+        ? ''
+        : content.slice(sectionStart, sectionEnd + '</text:section>'.length);
+    const equationTables = [
+      ...equationSection.matchAll(/<table:table[\s\S]*?<\/table:table>/g)
+    ].map((match) => match[0]);
+    const equationLayoutDetails = equationTables.map((table) => {
+      const cells = [
+        ...table.matchAll(/<table:table-cell[\s\S]*?<\/table:table-cell>/g)
+      ].map((match) => match[0]);
+      return {
+        layout: [
+          (table.match(/<table:table-row/g) ?? []).length,
+          cells.length,
+          cells[0]?.includes('<draw:object') ?? false,
+          cells[1]?.includes('(1)') ?? false
+        ]
+      };
+    });
+    const equationLayout = equationLayoutDetails.map((entry) => entry.layout);
+    check(
+      'the equation section uses a one-row two-cell table',
+      JSON.stringify(equationLayout) === JSON.stringify([[1, 2, true, true]]),
+      {
+        actual: equationLayout,
+        expected: [[1, 2, true, true]]
+      }
+    );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);
     check(
       'and the reader is told which file it wrote',
