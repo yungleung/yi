@@ -142,6 +142,7 @@
   "export.noTarget": "請輸入要寫入的檔案路徑。",
   "export.cancel": "取消",
   "export.run": "匯出",
+  "export.inProgress": "正在匯出…",
   "export.done": "已匯出至 {file}",
   "export.pictureNotFetched": "無法取得 {url} 的圖片，文件中只留下了它的名字。",
   "export.references": "參考文獻",

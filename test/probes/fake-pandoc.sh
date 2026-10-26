@@ -46,6 +46,14 @@ done
 [ -n "$note" ] && cp "$note" "$log/input.md" 2>/dev/null
 
 case "$(basename "$output")" in
+  slow-refuse*)
+    sleep 0.7
+    echo "the fake pandoc refuses to write $output" >&2
+    exit 1
+    ;;
+  slow*)
+    sleep 0.7
+    ;;
   refuse*)
     echo "the fake pandoc refuses to write $output" >&2
     exit 1

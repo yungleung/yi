@@ -142,6 +142,7 @@
   "export.noTarget": "Gib den Pfad an, in den die Datei geschrieben werden soll.",
   "export.cancel": "Abbrechen",
   "export.run": "Exportieren",
+  "export.inProgress": "Wird exportiert…",
   "export.done": "Nach {file} exportiert",
   "export.pictureNotFetched": "Das Bild unter {url} konnte nicht geladen werden; das Dokument nennt es stattdessen.",
   "export.references": "Literaturverzeichnis",

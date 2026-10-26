@@ -142,6 +142,7 @@
   "export.noTarget": "書き出すファイルのパスを入力してください。",
   "export.cancel": "キャンセル",
   "export.run": "エクスポート",
+  "export.inProgress": "エクスポート中…",
   "export.done": "{file} に書き出しました",
   "export.pictureNotFetched": "{url} の画像を取得できなかったため、文書にはその名前だけが残りました。",
   "export.references": "参考文献",

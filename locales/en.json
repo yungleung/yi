@@ -142,6 +142,7 @@
   "export.noTarget": "Type the path the file should be written to.",
   "export.cancel": "Cancel",
   "export.run": "Export",
+  "export.inProgress": "Exporting…",
   "export.done": "Exported to {file}",
   "export.pictureNotFetched": "The picture at {url} could not be fetched, so the document names it instead.",
   "export.references": "References",

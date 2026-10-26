@@ -30,6 +30,7 @@ import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
 import { registerVersionCommand } from './ui/versioning/save_version';
 import { registerExportCommand } from './ui/export/export_flow';
+import { ExportProgressStatus } from './ui/export/export_progress';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/tutorial_flow';
 import { registerDocumentationCommand } from './ui/documentation/documentation_flow';
 import { VersionStatus } from './ui/versioning/version_status';
@@ -82,6 +83,7 @@ function createAppShell(): MarkdownEditor {
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
   const versionStatus = new VersionStatus(() => editor.focusText());
+  const exportProgress = new ExportProgressStatus();
 
   titleBar.mount(root);
   sidebar.mount(contentShell.element);
@@ -109,7 +111,9 @@ function createAppShell(): MarkdownEditor {
   statusBar.addComponent(layoutToolbar, 'right');
   statusBar.addComponent(stackStatus, 'right');
   statusBar.addComponent(savedStatus, 'right');
-  // The versions of the note on screen: the left group is the status bar's own, and it was empty.
+  // What is running belongs at the status bar's left, before the document's own facts.
+  statusBar.addComponent(exportProgress, 'left');
+  // And the versions of the note on screen follow it.
   statusBar.addComponent(versionStatus, 'left');
 
   // The session holds the documents; the editor panel is the view it drives.
@@ -125,7 +129,7 @@ function createAppShell(): MarkdownEditor {
   registerVersionCommand();
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is
   // the text on screen rather than the session's debounced copy of it.
-  registerExportCommand({ text: () => editor.getContent() });
+  registerExportCommand({ text: () => editor.getContent(), progress: exportProgress });
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).
