@@ -249,28 +249,39 @@
       const cells = [
         ...table.matchAll(/<table:table-cell[\s\S]*?<\/table:table-cell>/g)
       ].map((match) => match[0]);
+      const styleName =
+        /<table:table[^>]*table:style-name="([^"]+)"/.exec(table)?.[1] ?? '';
+      const styleAt = content.indexOf(
+        `style:name="${styleName}" style:family="table"`
+      );
+      const styleEnd = content.indexOf('</style:style>', styleAt);
+      const tableStyle =
+        styleAt < 0 || styleEnd < 0
+          ? ''
+          : content.slice(content.lastIndexOf('<style:style', styleAt), styleEnd);
       return {
         layout: [
           (table.match(/<table:table-row/g) ?? []).length,
           cells.length,
           cells[0]?.includes('<draw:object') ?? false,
-          cells[1]?.includes('(1)') ?? false
+          cells[1]?.includes('(1)') ?? false,
+          tableStyle.includes('style:rel-width="100%"')
         ]
       };
     });
     const equationLayout = equationLayoutDetails.map((entry) => entry.layout);
     check(
-      'labeled and unlabeled equations use the same one-row two-cell table',
+      'labeled and unlabeled equations use the same full-width one-row two-cell table',
       JSON.stringify(equationLayout) ===
         JSON.stringify([
-          [1, 2, true, true],
-          [1, 2, true, false]
+          [1, 2, true, true, true],
+          [1, 2, true, false, true]
         ]),
       {
         actual: equationLayout,
         expected: [
-          [1, 2, true, true],
-          [1, 2, true, false]
+          [1, 2, true, true, true],
+          [1, 2, true, false, true]
         ]
       }
     );

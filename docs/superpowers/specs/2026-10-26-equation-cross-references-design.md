@@ -374,6 +374,8 @@ For every writer:
   unlabeled equation leaves that cell empty, preserving the shared geometry.
 - the second cell has a `4em` minimum width in HTML/EPUB and the equivalent
   fixed minimum column width in DOCX/ODT. Its contents are left-aligned.
+- the DOCX/ODT table spans the page's content width rather than shrinking
+  around short formulas.
 - the HTML/EPUB layout table, body, and both cells have no visible border.
 
 ### HTML and KaTeX
@@ -430,7 +432,9 @@ is also wrapped in an ID-bearing `Div`, which becomes a Word bookmark or ODT
 named section. Its formula is in the first cell and the visible number `(1)` is
 in the second. An unlabeled equation uses the same grid table with an empty
 second cell. The grid column reserves the same minimum width and leaves the
-number left-aligned.
+number left-aligned. The grid is wide enough for Pandoc's relative column
+widths to total one, which makes the writer emit a full page-content-width
+table in both Word and ODT.
 
 ### LaTeX and PDF
 

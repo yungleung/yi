@@ -227,7 +227,7 @@ target is the bundle folder `note/`);
 the settings button opening that file in the defaults editor, the real pandoc writing a Word file where
 the reader asked with the note's picture inside it (`word/media/`, read out of the zip's own entry
 names), a captioned table's bookmark/number/link relationship, the hint that says so, and Escape
-writing nothing at all, plus labeled and unlabeled equations sharing one-row two-cell
+writing nothing at all, plus labeled and unlabeled equations sharing full-width one-row two-cell
 formula/reserved-cell tables; `export-refused` —
 the two ways an export stops: a machine with no pandoc saying so with the button refused, and a
 pandoc whose own sentence reaches the reader as a message while nothing of the note is left behind;
@@ -235,7 +235,7 @@ pandoc whose own sentence reaches the reader as a message while nothing of the n
 kind's own, the configuration file it names is that kind's own, and what comes out is a valid ODF
 (`mimetype` first and stored, the note's picture in `Pictures/`) — the machinery a kind costs, which
 is a row, an asset and a menu item — plus a table's named section, visible number, and link;
-the same probe also holds a labeled equation's named section and the shared formula/reserved-cell
+the same probe also holds a labeled equation's named section and the shared full-width formula/reserved-cell
 table for labeled and unlabeled equations;
 `export-latex` — the third, and the one where the *file the document refers to* is the test: the card's
 target is a `.tex`, the document is whole (`\documentclass`, `\begin{document}`), and a picture

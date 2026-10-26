@@ -345,25 +345,30 @@
       const cells = [...table.matchAll(/<w:tc[ >][\s\S]*?<\/w:tc>/g)].map(
         (match) => match[0]
       );
+      const widthTag = /<w:tblW[^>]*>/.exec(table)?.[0] ?? '';
       return [
         (table.match(/<w:tr[ >]/g) ?? []).length,
         cells.length,
         cells[0]?.includes('m:oMathPara') ?? false,
-        cells[1]?.includes('(1)') ?? false
+        cells[1]?.includes('(1)') ?? false,
+        {
+          type: /w:type="([^"]+)"/.exec(widthTag)?.[1] ?? null,
+          width: /w:w="([^"]+)"/.exec(widthTag)?.[1] ?? null
+        }
       ];
     });
     check(
-      'labeled and unlabeled equations use the same one-row two-cell table',
+      'labeled and unlabeled equations use the same full-width one-row two-cell table',
       JSON.stringify(equationLayout) ===
         JSON.stringify([
-          [1, 2, true, true],
-          [1, 2, true, false]
+          [1, 2, true, true, { type: 'pct', width: '5000' }],
+          [1, 2, true, false, { type: 'pct', width: '5000' }]
         ]),
       {
         actual: equationLayout,
         expected: [
-          [1, 2, true, true],
-          [1, 2, true, false]
+          [1, 2, true, true, { type: 'pct', width: '5000' }],
+          [1, 2, true, false, { type: 'pct', width: '5000' }]
         ]
       }
     );

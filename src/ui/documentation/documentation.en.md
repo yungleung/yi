@@ -373,7 +373,7 @@ Native equation-environment numbering is suppressed in the editor and every expo
   KaTeX or MathJax. Labeled and unlabeled equations reserve the same left-aligned second cell.
 - Word and ODT receive the same native one-row, two-cell table for every display equation. A
   labeled equation places its number in the second cell; an unlabeled equation reserves it empty.
-  Neither has row numbers of its own.
+  The table spans the page's content width, and neither equation has row numbers of its own.
 - LaTeX and PDF receive exactly one generated outer `equation`; multi-row user environments are
   lowered to `aligned`, `gathered`, or `alignedat` inside it.
 - Processed Markdown gives every display equation the same two-cell layout around

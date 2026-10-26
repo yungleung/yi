@@ -506,9 +506,10 @@ const render = async (text, answers = {}) => {
     [
       rendered.startsWith('::: {.equation-layout}\n'),
       rendered.includes('| $$E=mc^2$$'),
-      (rendered.match(/\|/g) ?? []).length === 3
+      (rendered.match(/\|/g) ?? []).length === 3,
+      rendered.includes(': {width=100%}')
     ],
-    [true, true, true]
+    [true, true, true, true]
   );
 }
 

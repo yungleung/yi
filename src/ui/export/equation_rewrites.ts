@@ -150,13 +150,17 @@ function equationMarkdown(
 function equationGridTable(math: string, numberText: string): string {
   const formula = math.trim() === '' ? '' : `$$${singleLineMath(math)}$$`;
   const number = equationNumberMarkdown(numberText);
-  const formulaWidth = Math.max(48, formula.length + 2);
+  // Pandoc derives DOCX/ODT table width from the grid's column proportions. A grid spanning its
+  // default 78-column text measure makes those proportions sum to one, so the writer emits a table
+  // at the full page-content width instead of shrinking it to the formula's visible text.
+  const formulaWidth = Math.max(78, formula.length + 2);
   const numberWidth = Math.max(10, Math.ceil(formulaWidth * 0.18), number.length + 2);
   const border = `+${'-'.repeat(formulaWidth + 2)}+${'-'.repeat(numberWidth + 2)}+`;
   return [
     border,
     `| ${padCell(formula, formulaWidth)} | ${padCell(number, numberWidth)} |`,
-    border
+    border,
+    ': {width=100%}'
   ].join('\n');
 }
 
