@@ -377,7 +377,7 @@ const render = async (text, answers = {}) => {
       '\\end{aligned}\n' +
       '$$\n\n' +
       '</td>\n' +
-      '<td class="equation-number-cell" style="width: 10%; border: none; text-align: right; vertical-align: middle;">\n\n' +
+      '<td class="equation-number-cell" style="width: 10%; min-width: 4em; border: none; text-align: left; vertical-align: middle;">\n\n' +
       '\\(1\\)\n\n' +
       '</td>\n' +
       '</tr>\n' +
@@ -394,7 +394,7 @@ const render = async (text, answers = {}) => {
       [
         rendered.startsWith(
           'See [Equation (1)](#eq:system).\n\n' +
-            '::: {#eq:system .equation-target .wide owner="demo"}\n'
+            '::: {#eq:system .equation-target .equation-layout .wide owner="demo"}\n'
         ),
         rows.length,
         (rows[0]?.match(/\|/g) ?? []).length,
@@ -448,12 +448,40 @@ const render = async (text, answers = {}) => {
   check(
     'an unlabeled environment is handed on with its native numbering suppressed',
     rendered,
-    '$$\n' +
+    '<div class="equation-layout">\n' +
+      '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">\n' +
+      '<tbody style="border: none;">\n' +
+      '<tr>\n' +
+      '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">\n\n' +
+      '$$\n' +
       '\\begin{align*}\n' +
       'x&=1\\\\\n' +
       'y&=2\n' +
       '\\end{align*}\n' +
-      '$$\n'
+      '$$\n\n' +
+      '</td>\n' +
+      '<td class="equation-number-cell" style="width: 10%; min-width: 4em; border: none; text-align: left; vertical-align: middle;">\n\n' +
+      '\n\n' +
+      '</td>\n' +
+      '</tr>\n' +
+      '</tbody>\n' +
+      '</table>\n' +
+      '</div>\n'
+  );
+}
+
+{
+  const plain = '$$\nE=mc^2\n$$\n';
+  const { rendered } = await render(plain, { kind: 'html' });
+  check(
+    'plain display math also receives the shared reserved-cell layout',
+    [
+      rendered.startsWith('<div class="equation-layout">\n'),
+      rendered.includes('<td class="equation-math-cell"'),
+      rendered.includes('E=mc^2'),
+      rendered.includes('min-width: 4em; border: none; text-align: left;')
+    ],
+    [true, true, true, true]
   );
 }
 
@@ -474,9 +502,13 @@ const render = async (text, answers = {}) => {
   const wrapped = '[$$\nE=mc^2\n$$]{}\n';
   const { rendered } = await render(wrapped, { kind: 'docx' });
   check(
-    'an empty attribute wrapper is removed when there is no target',
-    rendered,
-    '$$\nE=mc^2\n$$\n'
+    'an empty attribute wrapper keeps the shared layout without a target',
+    [
+      rendered.startsWith('::: {.equation-layout}\n'),
+      rendered.includes('| $$E=mc^2$$'),
+      (rendered.match(/\|/g) ?? []).length === 3
+    ],
+    [true, true, true]
   );
 }
 
@@ -489,12 +521,14 @@ const render = async (text, answers = {}) => {
     'processed Markdown emits an equation target containing MathML',
     [
       rendered.includes('See [Equation (1)](#eq:plain).'),
-      rendered.includes('<div id="eq:plain" class="equation-target">'),
+      rendered.includes('<div id="eq:plain" class="equation-target equation-layout">'),
+      rendered.includes('<table class="equation-layout" role="presentation"'),
+      rendered.includes('min-width: 4em; border: none; text-align: left;'),
       rendered.includes('<math xmlns="http://www.w3.org/1998/Math/MathML"'),
       rendered.includes('annotation encoding="application/x-tex">E=mc^2</annotation>'),
       rendered.includes('<span class="equation-number">(1)</span>')
     ],
-    [true, true, true, true, true]
+    [true, true, true, true, true, true, true]
   );
 }
 

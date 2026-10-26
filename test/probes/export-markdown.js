@@ -96,6 +96,12 @@
     'y&=2',
     '\\end{align}',
     '$$]{#eq:system .wide}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -241,13 +247,52 @@
         emptyTarget: plain.includes('<table id="">')
       }
     );
+    const equationDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const equationLayouts = [...equationDocument.querySelectorAll('table.equation-layout')].map(
+      (table) => {
+        const cells = table.querySelectorAll('tbody > tr > td');
+        const numberStyle = cells[1]?.getAttribute('style') ?? '';
+        return {
+          target: table.closest('.equation-target')?.id ?? null,
+          cells: cells.length,
+          number: cells[1]?.textContent?.trim() ?? null,
+          minWidth: numberStyle.includes('min-width: 4em'),
+          leftAligned: numberStyle.includes('text-align: left')
+        };
+      }
+    );
+    const expectedEquationLayouts = [
+      {
+        target: 'eq:plain',
+        cells: 2,
+        number: '(1)',
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: 'eq:system',
+        cells: 2,
+        number: '(2)',
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        cells: 2,
+        number: '',
+        minWidth: true,
+        leftAligned: true
+      }
+    ];
     check(
-      'and labeled equations become MathML with one target and one number each',
+      'and all display equations become MathML in the shared reserved-cell layout',
       plain.includes(
         'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
       ) &&
-        plain.includes('<div id="eq:plain" class="equation-target">') &&
-        plain.includes('<div id="eq:system" class="equation-target wide">') &&
+        plain.includes('<div id="eq:plain" class="equation-target equation-layout">') &&
+        plain.includes(
+          '<div id="eq:system" class="equation-target equation-layout wide">'
+        ) &&
         plain.includes('<span class="equation-number">(1)</span>') &&
         plain.includes('<span class="equation-number">(2)</span>') &&
         plain.includes('annotation encoding="application/x-tex">\\begin{aligned}'),
@@ -259,8 +304,14 @@
         links: plain.includes(
           'See [Equation (1)](#eq:plain) and [Equation (2)](#eq:system)'
         ),
-        plain: plain.includes('<div id="eq:plain" class="equation-target">'),
-        align: plain.includes('<div id="eq:system" class="equation-target wide">'),
+        layouts:
+          JSON.stringify(equationLayouts) === JSON.stringify(expectedEquationLayouts),
+        plain: plain.includes(
+          '<div id="eq:plain" class="equation-target equation-layout">'
+        ),
+        align: plain.includes(
+          '<div id="eq:system" class="equation-target equation-layout wide">'
+        ),
         numbers:
           plain.includes('<span class="equation-number">(1)</span>') &&
           plain.includes('<span class="equation-number">(2)</span>'),

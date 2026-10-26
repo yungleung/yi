@@ -101,6 +101,12 @@
     'y&=2',
     '\\end{align}',
     '$$]{#eq:system}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -300,41 +306,54 @@
         native: chapter.includes('eqn-num')
       }))
     );
-    const equationLayouts = texts.map((text) => {
+    const equationLayouts = texts.flatMap((text) => {
       const chapter = new DOMParser().parseFromString(text, 'text/html');
-      const target = chapter.querySelector('[id="eq:system"]');
-      const table = target?.querySelector('table');
-      const body = table?.querySelector('tbody');
-      const rows = target?.querySelectorAll('table > tbody > tr') ?? [];
-      const cells = rows[0]?.children ?? [];
-      return {
-        target: target !== null,
-        tables: target?.querySelectorAll('table').length ?? 0,
-        rows: rows.length,
-        cells: cells.length,
-        equation: cells[0]?.querySelector('math, .math') !== null,
-        number: cells[1]?.textContent?.trim() ?? null,
-        borderless: [table, body, ...cells].every(
-          (element) => element?.getAttribute('style')?.includes('border: none') ?? false
-        )
-      };
+      return [...chapter.querySelectorAll('table.equation-layout')].map((table) => {
+        const body = table.querySelector('tbody');
+        const rows = table.querySelectorAll('tbody > tr');
+        const cells = rows[0]?.children ?? [];
+        const numberStyle = cells[1]?.getAttribute('style') ?? '';
+        return {
+          target: table.closest('.equation-target')?.id ?? null,
+          rows: rows.length,
+          cells: cells.length,
+          equation: cells[0]?.querySelector('math, .math') !== null,
+          number: cells[1]?.textContent?.trim() ?? null,
+          borderless: [table, body, ...cells].every(
+            (element) =>
+              element?.getAttribute('style')?.includes('border: none') ?? false
+          ),
+          minWidth: numberStyle.includes('min-width: 4em'),
+          leftAligned: numberStyle.includes('text-align: left')
+        };
+      });
     });
     const expectedEquationLayout = [
       {
-        target: true,
-        tables: 1,
+        target: 'eq:system',
         rows: 1,
         cells: 2,
         equation: true,
         number: '(1)',
-        borderless: true
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
       }
     ];
-    const equationLayout = equationLayouts.filter((layout) => layout.target);
     check(
-      'a labeled equation uses one borderless table row with formula and number cells',
-      JSON.stringify(equationLayout) === JSON.stringify(expectedEquationLayout),
-      { actual: equationLayout, expected: expectedEquationLayout }
+      'labeled and unlabeled equations share one borderless reserved-cell layout',
+      JSON.stringify(equationLayouts) === JSON.stringify(expectedEquationLayout),
+      { actual: equationLayouts, expected: expectedEquationLayout }
     );
     }
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

@@ -1,13 +1,15 @@
 /**
  * Lowers display equations for every export kind.
  *
- * Ordinary KaTeX environments are made unnumbered. A labeled wrapper becomes
- * one target with one Yi number; LaTeX/PDF keeps native equation lowering for
- * the following task, while the other writers receive Markdown or MathML.
+ * Ordinary KaTeX environments are made unnumbered. Every non-LaTeX display
+ * equation receives one layout with a reserved number cell; a labeled wrapper
+ * becomes one target with one Yi number, while LaTeX/PDF keeps native equation
+ * lowering.
  *
  * May import: the equation grammar, block splitter, reference index, and
- * equation HTML renderer. Upholds: one labeled block is at most one
- * target and native row numbering never survives a writer.
+ * equation HTML renderer. Upholds: one labeled block is at most one target,
+ * every non-LaTeX display equation shares one layout, and native row numbering
+ * never survives a writer.
  */
 
 import {
@@ -20,9 +22,14 @@ import {
   latexEquationBody,
   readDisplayMath,
   readEquationBlock,
+  type EquationBlockSource,
   unnumberedEquationBody
 } from '../markdown/syntax/equation_blocks';
-import { equationHtml, equationHtmlContainer } from './equation_html';
+import {
+  equationHtml,
+  equationHtmlContainer,
+  equationLayoutHtml
+} from './equation_html';
 
 /** One source range and its replacement. */
 export interface EquationRewrite {
@@ -48,24 +55,23 @@ export function equationRewrites(
     const entry = references.find(
       (candidate) => candidate.kind === 'equation' && candidate.from === block.charStart
     );
-    if (entry === undefined) {
-      rewrites.push({
-        start: block.charStart,
-        end: block.charEnd,
-        text: mathMarkdown(unnumberedEquationBody(equation.body))
-      });
-      continue;
-    }
     if (kind === 'latex' || kind === 'pdf') {
       rewrites.push({
         start: block.charStart,
         end: block.charEnd,
-        text: mathMarkdown(latexEquationBody(equation.body, entry.id ?? ''))
+        text: mathMarkdown(
+          entry === undefined
+            ? unnumberedEquationBody(equation.body)
+            : latexEquationBody(equation.body, entry.id ?? '')
+        )
       });
       continue;
     }
-    const numberText = equationBlockNumber(entry) ?? '';
-    const math = innerEquationBody(equation.body);
+    const numberText = entry === undefined ? '' : equationBlockNumber(entry) ?? '';
+    const math =
+      entry === undefined
+        ? unnumberedEquationBody(equation.body)
+        : innerEquationBody(equation.body);
     rewrites.push({
       start: block.charStart,
       end: block.charEnd,
@@ -82,21 +88,32 @@ export function equationRewrites(
       continue;
     }
     const lowered = unnumberedEquationBody(math.body);
-    if (lowered === math.math) {
+    if (kind === 'latex' || kind === 'pdf') {
+      if (lowered === math.math) {
+        continue;
+      }
+      rewrites.push({
+        start: block.charStart + math.mathFrom,
+        end: block.charStart + math.mathTo,
+        text: lowered
+      });
       continue;
     }
     rewrites.push({
-      start: block.charStart + math.mathFrom,
-      end: block.charStart + math.mathTo,
-      text: lowered
+      start: block.charStart,
+      end: block.charEnd,
+      text:
+        kind === 'markdown'
+          ? equationHtml(null, lowered, '')
+          : equationMarkdown(null, lowered, '', kind)
     });
   }
   return rewrites;
 }
 
-/** A labeled equation as a Pandoc target Div and one visible number. */
+/** One non-LaTeX display equation with an empty or numbered second cell. */
 function equationMarkdown(
-  equation: ReturnType<typeof readEquationBlock> & object,
+  equation: EquationBlockSource | null,
   math: string,
   numberText: string,
   kind: string
@@ -105,32 +122,20 @@ function equationMarkdown(
     return equationHtmlContainer(
       equation,
       [
-        '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">',
-        '<tbody style="border: none;">',
-        '<tr>',
-        '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">',
-        '',
-        mathMarkdown(math),
-        '',
-        '</td>',
-        '<td class="equation-number-cell" style="width: 10%; border: none; text-align: right; vertical-align: middle;">',
-        '',
-        equationNumberMarkdown(numberText),
-        '',
-        '</td>',
-        '</tr>',
-        '</tbody>',
-        '</table>'
+        equationLayoutHtml(
+          mathMarkdown(math),
+          equationNumberMarkdown(numberText)
+        )
       ],
       ['equation-layout']
     );
   }
 
   const tokens = [
-    ...(equation.id === null ? [] : [`#${equation.id}`]),
-    '.equation-target',
-    ...equation.classes.map((name) => `.${name}`),
-    ...Object.entries(equation.attributes).map(
+    ...(equation?.id == null ? [] : [`#${equation.id}`, '.equation-target']),
+    '.equation-layout',
+    ...(equation?.classes ?? []).map((name) => `.${name}`),
+    ...Object.entries(equation?.attributes ?? {}).map(
       ([key, value]) => `${key}="${attributeValue(value)}"`
     )
   ];

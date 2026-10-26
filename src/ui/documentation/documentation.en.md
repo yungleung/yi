@@ -365,17 +365,19 @@ attribute without an ID simply leaves it untargetable.
 
 Native equation-environment numbering is suppressed in the editor and every export:
 
-- HTML receives an unnumbered KaTeX body and one visible Yi number in a borderless one-row,
-  two-cell layout: the formula is first and the number is second. Its table, body, and cells carry
-  no visible border.
-- EPUB receives the same one-row, two-cell target, even if its template later selects KaTeX or
-  MathJax. Its layout table, body, and cells have no visible border.
-- Word and ODT receive a native one-row, two-cell table inside the ID-bearing target. The formula
-  is first, the number is second, and neither has row numbers of its own.
+- HTML receives every display equation as a borderless one-row, two-cell layout: the formula is
+  first and the number is second. A labeled equation fills the second cell; an unlabeled equation
+  leaves it empty. That cell has a minimum width and is left-aligned. Its table, body, and cells
+  carry no visible border.
+- EPUB receives the same layout for every display equation, even if its template later selects
+  KaTeX or MathJax. Labeled and unlabeled equations reserve the same left-aligned second cell.
+- Word and ODT receive the same native one-row, two-cell table for every display equation. A
+  labeled equation places its number in the second cell; an unlabeled equation reserves it empty.
+  Neither has row numbers of its own.
 - LaTeX and PDF receive exactly one generated outer `equation`; multi-row user environments are
   lowered to `aligned`, `gathered`, or `alignedat` inside it.
-- Processed Markdown emits an ID-bearing HTML block containing KaTeX-generated MathML and one
-  visible number.
+- Processed Markdown gives every display equation the same two-cell layout around
+  KaTeX-generated MathML. Only a labeled equation puts a number in the second cell.
 
 The visible equation number always has the form `(N)` or `(prefix-N)`. The configured equation
 label appears only in automatic-reference text.

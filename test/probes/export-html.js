@@ -277,42 +277,55 @@
     );
     const pageDocument = new DOMParser().parseFromString(page, 'text/html');
     const equationTarget = pageDocument.querySelector('[id="eq:system"]');
-    const equationTable = equationTarget?.querySelector('table');
-    const equationBody = equationTable?.querySelector('tbody');
-    const equationRows = equationTarget?.querySelectorAll('table > tbody > tr') ?? [];
-    const equationCells = equationRows[0]?.children ?? [];
-    const borderless = [equationTable, equationBody, ...equationCells].every(
-      (element) => element?.getAttribute('style')?.includes('border: none') ?? false
-    );
     const equationLayout = [
-      equationTarget?.querySelectorAll('table').length ?? 0,
-      equationRows.length,
-      equationCells.length,
-      equationCells[0]?.textContent?.trim() ?? null,
-      equationCells[1]?.textContent?.trim() ?? null,
-      borderless
+      ...pageDocument.querySelectorAll('table.equation-layout')
+    ].map((table) => {
+      const body = table.querySelector('tbody');
+      const rows = table.querySelectorAll('tbody > tr');
+      const cells = rows[0]?.children ?? [];
+      const numberStyle = cells[1]?.getAttribute('style') ?? '';
+      return {
+        target: table.closest('.equation-target')?.id ?? null,
+        rows: rows.length,
+        cells: cells.length,
+        equation: cells[0]?.querySelector('math, .math') !== null,
+        number: cells[1]?.textContent?.trim() ?? null,
+        borderless: [table, body, ...cells].every(
+          (element) =>
+            element?.getAttribute('style')?.includes('border: none') ?? false
+        ),
+        minWidth: numberStyle.includes('min-width: 4em'),
+        leftAligned: numberStyle.includes('text-align: left')
+      };
+    });
+    const expectedEquationLayout = [
+      {
+        target: 'eq:system',
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '(1)',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      },
+      {
+        target: null,
+        rows: 1,
+        cells: 2,
+        equation: true,
+        number: '',
+        borderless: true,
+        minWidth: true,
+        leftAligned: true
+      }
     ];
     check(
-      'the equation and its number share one borderless row of two table cells',
-      JSON.stringify(equationLayout) ===
-        JSON.stringify([
-          1,
-          1,
-          2,
-          '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}',
-          '(1)',
-          true
-        ]),
+      'labeled and unlabeled equations share one borderless row with a left-aligned reserved cell',
+      JSON.stringify(equationLayout) === JSON.stringify(expectedEquationLayout),
       {
         actual: equationLayout,
-        expected: [
-          1,
-          1,
-          2,
-          '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}',
-          '(1)',
-          true
-        ]
+        expected: expectedEquationLayout
       }
     );
     check(

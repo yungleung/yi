@@ -635,9 +635,11 @@ attributes are unfinished. Plain or environment math is lowered before KaTeX so
 no native automatic tag can depend on virtualization. `create_block.ts` and
 `nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
 `document/reference_index.ts` indexes only labeled blocks.
-`ui/export/equation_rewrites.ts` gives HTML/EPUB/DOCX/ODT a single target and
-number in a one-row two-cell table, `equation_html.ts` writes processed-Markdown MathML, and LaTeX/PDF get one
-outer `equation` with `\yiEquationRef`. The default fixture contains every
+`ui/export/equation_rewrites.ts` gives every HTML/EPUB/DOCX/ODT display equation
+one row with the formula first and a minimum-width, left-aligned second cell;
+only a label fills that cell. `equation_html.ts` gives processed-Markdown MathML
+the same layout, and LaTeX/PDF get one outer `equation` with `\yiEquationRef`.
+The default fixture contains every
 matrix row with and without an ID;
 `equation-matrix-default-document.js`, `equation-rendering.js`,
 `equation-source-editing.js`, `equation-crossrefs.js`, and

@@ -103,6 +103,12 @@
     'y&=2',
     '\\end{align}',
     '$$]{#eq:system}',
+    '',
+    '$$',
+    '\\begin{gather}',
+    'u=v',
+    '\\end{gather}',
+    '$$',
     ''
   ].join('\n');
 
@@ -334,7 +340,7 @@
     );
     const equationTables = [...documentXml.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)]
       .map((match) => match[0])
-      .filter((table) => table.includes('m:oMathPara') && table.includes('(1)'));
+      .filter((table) => table.includes('m:oMathPara'));
     const equationLayout = equationTables.map((table) => {
       const cells = [...table.matchAll(/<w:tc[ >][\s\S]*?<\/w:tc>/g)].map(
         (match) => match[0]
@@ -347,9 +353,19 @@
       ];
     });
     check(
-      'the equation bookmark uses a one-row two-cell table',
-      JSON.stringify(equationLayout) === JSON.stringify([[1, 2, true, true]]),
-      { actual: equationLayout, expected: [[1, 2, true, true]] }
+      'labeled and unlabeled equations use the same one-row two-cell table',
+      JSON.stringify(equationLayout) ===
+        JSON.stringify([
+          [1, 2, true, true],
+          [1, 2, true, false]
+        ]),
+      {
+        actual: equationLayout,
+        expected: [
+          [1, 2, true, true],
+          [1, 2, true, false]
+        ]
+      }
     );
     const hint = document.querySelector('[data-hint] [data-hint-text]');
     check(
