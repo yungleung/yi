@@ -193,13 +193,16 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
       end: { offset: attachment.caption.captionTo }
     };
     table.source = markdown.slice(start, attachment.caption.captionTo);
-    table.tableCaption = captionNode(
-      attachment.caption,
-      attachment.separatorFrom !== null,
-      attachment.tableFrom,
-      attachment.separatorFrom,
-      labels
-    );
+    table.tableCaption = {
+      type: 'tableCaption',
+      ...attachedCaptionFields(
+        attachment.caption,
+        attachment.separatorFrom !== null,
+        attachment.separatorFrom,
+        labels
+      ),
+      tableFrom: attachment.tableFrom
+    };
     let next = index + 1;
     while (next < children.length) {
       const position = (children[next] as { position?: NodePosition }).position;
@@ -212,32 +215,6 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
       }
       children.splice(next, 1);
     }
-  }
-
-  function captionNode(
-    data: CaptionLineData,
-    separated: boolean,
-    tableFrom: number,
-    separatorFrom: number | null,
-    definitions: ReadonlySet<string>
-  ): TableCaptionNode {
-    const caption = captionChildren(data, definitions);
-    return {
-      type: 'tableCaption',
-      id: data.id,
-      classes: data.classes,
-      attributes: data.attributes,
-      children: caption,
-      source: data.source,
-      captionData: data,
-      tableFrom,
-      separatorFrom,
-      separated,
-      position: {
-        start: { offset: data.captionFrom },
-        end: { offset: data.captionTo }
-      }
-    };
   }
 }
 
@@ -269,19 +246,13 @@ function restoreListCaptions(tree: Root, markdown: string): void {
     list.source = markdown.slice(start, attachment.caption.captionTo);
     list.listCaption = {
       type: 'listCaption',
-      id: attachment.caption.id,
-      classes: attachment.caption.classes,
-      attributes: attachment.caption.attributes,
-      children: captionChildren(attachment.caption, definitions),
-      source: attachment.caption.source,
-      captionData: attachment.caption,
-      listFrom: start,
-      separatorFrom: attachment.separatorFrom,
-      separated: attachment.separatorFrom !== null,
-      position: {
-        start: { offset: attachment.caption.captionFrom },
-        end: { offset: attachment.caption.captionTo }
-      }
+      ...attachedCaptionFields(
+        attachment.caption,
+        attachment.separatorFrom !== null,
+        attachment.separatorFrom,
+        definitions
+      ),
+      listFrom: start
     };
     let next = index + 1;
     while (next < children.length) {
@@ -296,6 +267,42 @@ function restoreListCaptions(tree: Root, markdown: string): void {
       children.splice(next, 1);
     }
   }
+}
+
+/** The parser data shared by a table or list caption, after its inline Markdown is parsed. */
+function attachedCaptionFields(
+  data: CaptionLineData,
+  separated: boolean,
+  separatorFrom: number | null,
+  definitions: ReadonlySet<string>
+): {
+  id: string | null;
+  classes: string[];
+  attributes: Record<string, string>;
+  children: RootContent[];
+  source: string;
+  captionData: CaptionLineData;
+  separatorFrom: number | null;
+  separated: boolean;
+  position: {
+    start: { offset: number };
+    end: { offset: number };
+  };
+} {
+  return {
+    id: data.id,
+    classes: data.classes,
+    attributes: data.attributes,
+    children: captionChildren(data, definitions),
+    source: data.source,
+    captionData: data,
+    separatorFrom,
+    separated,
+    position: {
+      start: { offset: data.captionFrom },
+      end: { offset: data.captionTo }
+    }
+  };
 }
 
 /** Parse a caption's inline Markdown and move its offsets into the block source. */

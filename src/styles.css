@@ -450,8 +450,7 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
-.markdown-table-caption-source,
-.markdown-list-caption-source,
+.markdown-caption-source,
 .markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
@@ -481,8 +480,7 @@ body {
 .markdown-wikilink-source,
 .markdown-auto-reference-source,
 .markdown-figure-source,
-.markdown-table-caption-source,
-.markdown-list-caption-source,
+.markdown-caption-source,
 .markdown-equation-source,
 .markdown-math-source,
 .markdown-break-source,
@@ -527,53 +525,42 @@ body {
   white-space: nowrap;
 }
 
-/* A table caption follows its table like the source it is written as. The optional
-   separator keeps an editable line of its own, and the caption can reveal that complete
-   `: …` line while the table itself remains editable cell by cell. */
+/* A caption follows its owner like the source it is written as. The optional separator
+   keeps an editable line of its own, and either caption can reveal that complete `: …`
+   line across the row while its table or list remains editable. */
 .markdown-table-block {
   display: block;
 }
 
-.markdown-table-caption {
+.markdown-caption {
+  display: block;
+  width: 100%;
   margin-top: 0.25rem;
-  text-align: center;
   font-size: 0.875em;
 }
 
-.markdown-table-caption-source {
+.markdown-table-block > .markdown-caption {
+  text-align: center;
+}
+
+.markdown-caption-source {
   display: block;
   margin-top: 0.25rem;
   white-space: pre-wrap;
 }
 
-.markdown-table-number {
+.markdown-caption-number {
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* A caption follows its list as the source says. The blank separator has no
-   element; the caption itself reveals the complete `: …` line while editing. */
+/* The list and table share the caption row; only its text alignment differs. */
 .markdown-list-block {
   display: block;
 }
 
-.markdown-list-caption {
-  width: fit-content;
-  max-width: 100%;
-  margin-top: 0.25rem;
+.markdown-list-block > .markdown-caption {
   text-align: left;
-  font-size: 0.875em;
-}
-
-.markdown-list-caption-source {
-  display: block;
-  margin-top: 0.25rem;
-  white-space: pre-wrap;
-}
-
-.markdown-list-number {
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /* The placeholder's box needs a line of its own, and this generated mark is what gives it one.

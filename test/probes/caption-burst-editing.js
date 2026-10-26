@@ -1,8 +1,7 @@
 /**
  * A caption keeps a fast burst typed into its attribute source.
  *
- * @covers src/ui/markdown/nodes/list_caption.ts,
- *   src/ui/markdown/nodes/table_caption.ts,
+ * @covers src/ui/markdown/nodes/caption.ts,
  *   src/ui/markdown/editing/composition_input.ts,
  *   src/ui/markdown/markdown_editor.ts
  */
@@ -28,7 +27,7 @@
   };
 
   await t.load('- First\n- Second\n: {#list:named}\n');
-  const label = t.prose().querySelector('.markdown-list-number');
+  const label = t.prose().querySelector('.markdown-caption-number');
   if (label) {
     await t.click(label, 0.5);
     await t.sleep(250);
@@ -51,7 +50,7 @@
   );
 
   await t.load('| A |\n| --- |\n| 1 |\n: {#tbl:named}\n');
-  const tableLabel = t.prose().querySelector('.markdown-table-number');
+  const tableLabel = t.prose().querySelector('.markdown-caption-number');
   if (tableLabel) {
     await t.click(tableLabel, 0.5);
     await t.sleep(250);

@@ -2,7 +2,7 @@
  * The default fixture demonstrates list numbering, targets, and both link forms.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/editing/references.ts, src/ui/markdown/nodes/list_caption.ts
+ *   src/ui/markdown/editing/references.ts, src/ui/markdown/nodes/caption.ts
  * @fixture test/fixtures/workspace/default-document.md
  */
 (async () => {
@@ -34,7 +34,7 @@
   heading?.scrollIntoView({ block: 'start' });
   await t.sleep(400);
 
-  const captions = [...t.prose().querySelectorAll('.markdown-list-caption')].map(
+  const captions = [...t.prose().querySelectorAll('.markdown-list-block .markdown-caption')].map(
     (caption) => caption.textContent?.replace(/\s+/g, ' ').trim() ?? ''
   );
   check(

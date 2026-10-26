@@ -1,7 +1,7 @@
 /**
  * List captions render below their list and edit as their own source line.
  *
- * @covers src/ui/markdown/nodes/list_caption.ts,
+ * @covers src/ui/markdown/nodes/caption.ts,
  *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/list_captions.ts
  */
 (async () => {
@@ -24,7 +24,7 @@
       `${source}\n`
   );
   const block = t.blocks().find((element) => element.textContent.includes('Steps'));
-  const caption = block?.querySelector('.markdown-list-caption');
+  const caption = block?.querySelector('.markdown-caption');
   const separatedMargin = caption == null ? null : getComputedStyle(caption).marginTop;
   check(
     'the list and caption are one block',
@@ -34,7 +34,7 @@
   check('the block carries the target ID', block?.id ?? null, 'list:steps');
   check(
     'the caption carries its generated label',
-    caption?.querySelector('.markdown-list-number')?.textContent ?? null,
+    caption?.querySelector('.markdown-caption-number')?.textContent ?? null,
     'List 1.'
   );
   check('the caption carries its text', caption?.textContent?.trim() ?? null, 'List 1. Steps');
@@ -65,7 +65,7 @@
     captionPoint === null
       ? null
       : document.elementFromPoint(captionPoint.x, captionPoint.y)?.closest(
-          '.markdown-list-caption'
+          '.markdown-caption'
         );
   check('the caption’s center is a clickable part of the caption', captionHit === caption, true);
 
@@ -75,14 +75,14 @@
   }
   check(
     'clicking the caption reveals its complete source',
-    t.prose().querySelector('.markdown-list-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     source
   );
   t.key('!');
   await t.sleep(250);
   check(
     'typing edits the caption line, not the first item',
-    t.prose().querySelector('.markdown-list-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     ': Steps! {#list:steps .wide owner=demo}'
   );
   t.key('Backspace');
@@ -95,23 +95,55 @@
   }
   check(
     'leaving the caption restores its rendering',
-    t.prose().querySelector('.markdown-list-caption')?.textContent?.trim() ?? null,
+    t.prose().querySelector('.markdown-caption')?.textContent?.trim() ?? null,
     'List 1. Steps'
   );
-  const renderedCaption = t.prose().querySelector('.markdown-list-caption');
-  const renderedLabel = renderedCaption?.querySelector('.markdown-list-number');
+  const renderedBlock = t.blocks().find((element) => element.textContent.includes('Steps'));
+  const renderedCaption = t.prose().querySelector('.markdown-caption');
+  const linePoint =
+    renderedBlock === undefined || renderedCaption == null
+      ? null
+      : {
+          x: renderedBlock.getBoundingClientRect().right - 4,
+          y:
+            renderedCaption.getBoundingClientRect().top +
+            renderedCaption.getBoundingClientRect().height * 0.5
+        };
+  const lineTarget =
+    linePoint === null ? null : document.elementFromPoint(linePoint.x, linePoint.y);
+  if (lineTarget !== null && linePoint !== null) {
+    const at = {
+      bubbles: true,
+      cancelable: true,
+      clientX: linePoint.x,
+      clientY: linePoint.y
+    };
+    lineTarget.dispatchEvent(new PointerEvent('pointerdown', at));
+    lineTarget.dispatchEvent(new PointerEvent('pointerup', at));
+    lineTarget.dispatchEvent(new MouseEvent('click', at));
+    await t.sleep(250);
+  }
+  check(
+    'clicking the empty part of the caption line reveals its source',
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
+    source
+  );
+  await t.click(t.prose().querySelector('h1'), 0.5);
+  await t.sleep(250);
+  const relaidCaption = t.prose().querySelector('.markdown-caption');
+  const renderedLabel = relaidCaption?.querySelector('.markdown-caption-number');
   if (renderedLabel) {
     await t.click(renderedLabel, 0.5);
     await t.sleep(250);
   }
   check(
     'clicking the generated label reveals the caption source',
-    t.prose().querySelector('.markdown-list-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     source
   );
 
   await t.load('- First\n- Second\n: Direct {#list:direct}\n');
-  const direct = t.prose().querySelector('.markdown-list-caption');
+  const direct = t.prose().querySelector('.markdown-caption');
   check('a direct caption renders', direct?.textContent?.trim() ?? null, 'List 1. Direct');
   check(
     'the separator changes nothing about the caption spacing',
@@ -124,12 +156,12 @@
   }
   check(
     'a direct caption is editable as a line',
-    t.prose().querySelector('.markdown-list-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     ': Direct {#list:direct}'
   );
 
   await t.load('- First\n\n: Separated\n');
-  const separated = t.prose().querySelector('.markdown-list-caption');
+  const separated = t.prose().querySelector('.markdown-caption');
   if (separated) {
     await t.click(separated.querySelector('[data-text-from]') ?? separated, 0.99);
   }
@@ -145,7 +177,7 @@
   );
 
   await t.load('- First\n: Joined\n');
-  const joined = t.prose().querySelector('.markdown-list-caption');
+  const joined = t.prose().querySelector('.markdown-caption');
   if (joined) {
     await t.click(joined.querySelector('[data-text-from]') ?? joined, 0.99);
   }

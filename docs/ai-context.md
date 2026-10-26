@@ -617,8 +617,9 @@ source mapper is bounded by the pipe rows, so a caret after the table never reso
 cell. `syntax/table_captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
 block, and preserves the exact table/caption source on the table node. `create_block.ts` groups the
 three lines but renders no node for the optional separator, so a direct and separated caption have
-the same appearance; `nodes/table_caption.ts` numbers the caption and reveals the complete line for
-editing. At the caption source's start, `Enter` adds the separator and `Backspace` removes it.
+the same appearance. The shared `nodes/caption.ts` numbers table and list captions and reveals the
+complete line from any point on its row. At the caption source's start, `Enter` adds the separator
+and `Backspace` removes it.
 `document/reference_index.ts` counts every captioned table but targets only one with an ID. The
 non-LaTeX lowering lives in `ui/export/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
 `\yiTableRef`, written by `ui/export/reference_header.ts` and the run-local Rust header file.
@@ -650,9 +651,9 @@ matrix row with and without an ID;
 `syntax/list_captions.ts` attaches it only at the list's base indentation and
 masks the line for remark without changing offsets. This keeps a colon after a
 paragraph as definition-list syntax and leaves `:::` free for callouts.
-`nodes/list_caption.ts` reveals the caption as its own source while list items
-remain editable. HTML/EPUB/DOCX/ODT all receive one target wrapper and numbered
-caption; processed Markdown renders equivalent list HTML. LaTeX/PDF use the
+The same shared `nodes/caption.ts` reveals the caption as its own source while
+list items remain editable. HTML/EPUB/DOCX/ODT all receive one target wrapper
+and numbered caption; processed Markdown renders equivalent list HTML. LaTeX/PDF use the
 namespaced `yilist` object counter and native labels/references, with
 `\yiListCounterSetup` letting a template choose the reset level and
 `\yiListNumber` its base format. The default fixture and the caption, crossref,
@@ -903,10 +904,11 @@ a synthetic click cannot warm an input context, so a probe drives the seam with 
 composition events rather than pretending to type.
 
 The hand-back deliberately blurs the seam for one turn so the input method gets a
-fresh context. A key can arrive inside that turn, when the browser sends it to the
-body rather than the field; the editor's window key path keeps routing it to the
-same text commands, so a quick burst after an arrow key or a caption click loses no
-character (`test/probes/caption-burst-editing.js`).
+fresh context. App activation can likewise leave the keyboard on the page while the
+editor still owns a live caret. The editor catches a page-targeted key whenever that
+caret exists, so neither a quick burst nor the first key after activating the app is
+lost (`test/probes/typed-text-focus-burst.js`); a click outside removes the caret,
+so losing focus there still writes nothing.
 
 A key the input method routes is the method's, whether a composition is behind it or not: a
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes

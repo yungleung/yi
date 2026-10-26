@@ -48,7 +48,7 @@
   );
   check(
     'a caption-only list still advances the list sequence',
-    t.prose().querySelector('#list\\:empty .markdown-list-number')?.textContent ?? null,
+    t.prose().querySelector('#list\\:empty .markdown-caption-number')?.textContent ?? null,
     'Procedure 2-2.'
   );
 

@@ -2,7 +2,7 @@
  * Automatic table references use the shared index and land in the first header cell.
  *
  * @covers src/ui/markdown/document/reference_index.ts,
- *   src/ui/markdown/editing/references.ts, src/ui/markdown/nodes/table_caption.ts
+ *   src/ui/markdown/editing/references.ts, src/ui/markdown/nodes/caption.ts
  */
 (async () => {
   const t = window.__t;

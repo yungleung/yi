@@ -1,7 +1,7 @@
 /**
  * Table captions render below their table and edit as their own source line.
  *
- * @covers src/ui/markdown/nodes/table_caption.ts,
+ * @covers src/ui/markdown/nodes/caption.ts,
  *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/table_captions.ts
  */
 (async () => {
@@ -25,11 +25,11 @@
       `${source}\n`
   );
   const block = t.blocks().find((element) => element.textContent.includes('Results'));
-  const caption = block?.querySelector('.markdown-table-caption');
+  const caption = block?.querySelector('.markdown-caption');
   const separatedMargin = caption === null ? null : getComputedStyle(caption).marginTop;
   check('the table and caption are one block', block?.classList.contains('markdown-table-block') ?? false, true);
   check('the block carries the target ID', block?.id ?? null, 'tbl:results');
-  check('the caption carries its generated label', caption?.querySelector('.markdown-table-number')?.textContent ?? null, 'Table 1.');
+  check('the caption carries its generated label', caption?.querySelector('.markdown-caption-number')?.textContent ?? null, 'Table 1.');
   check('the caption carries its text', caption?.textContent?.trim() ?? null, 'Table 1. Results');
   check(
     'the source separator is not rendered as an element',
@@ -37,6 +37,32 @@
     [null, 'TABLE']
   );
   check('unrelated classes are not applied to the editor DOM', block?.classList.contains('margin') ?? true, false);
+  const linePoint =
+    block === undefined || caption == null
+      ? null
+      : {
+          x: block.getBoundingClientRect().right - 4,
+          y: caption.getBoundingClientRect().top + caption.getBoundingClientRect().height * 0.5
+        };
+  const lineTarget =
+    linePoint === null ? null : document.elementFromPoint(linePoint.x, linePoint.y);
+  if (lineTarget !== null && linePoint !== null) {
+    const at = {
+      bubbles: true,
+      cancelable: true,
+      clientX: linePoint.x,
+      clientY: linePoint.y
+    };
+    lineTarget.dispatchEvent(new PointerEvent('pointerdown', at));
+    lineTarget.dispatchEvent(new PointerEvent('pointerup', at));
+    lineTarget.dispatchEvent(new MouseEvent('click', at));
+    await t.sleep(250);
+  }
+  check(
+    'clicking the empty part of the caption line reveals its source',
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
+    source
+  );
 
   if (caption) {
     await t.click(caption, 0.5);
@@ -44,14 +70,14 @@
   }
   check(
     'clicking the caption reveals its complete source',
-    t.prose().querySelector('.markdown-table-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     source
   );
   t.key('!');
   await t.sleep(250);
   check(
     'typing edits the caption line, not a table cell',
-    t.prose().querySelector('.markdown-table-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     `${source}!`
   );
   t.key('Backspace');
@@ -61,23 +87,23 @@
   await t.sleep(250);
   check(
     'leaving the caption restores its rendering',
-    t.prose().querySelector('.markdown-table-caption')?.textContent?.trim() ?? null,
+    t.prose().querySelector('.markdown-caption')?.textContent?.trim() ?? null,
     'Table 1. Results'
   );
-  const renderedCaption = t.prose().querySelector('.markdown-table-caption');
-  const renderedLabel = renderedCaption?.querySelector('.markdown-table-number');
+  const renderedCaption = t.prose().querySelector('.markdown-caption');
+  const renderedLabel = renderedCaption?.querySelector('.markdown-caption-number');
   if (renderedLabel) {
     await t.click(renderedLabel, 0.5);
     await t.sleep(250);
   }
   check(
     'clicking the generated label reveals the caption source',
-    t.prose().querySelector('.markdown-table-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     source
   );
 
   await t.load('| A |\n| --- |\n| 1 |\n: Direct {#tbl:direct}\n');
-  const direct = t.prose().querySelector('.markdown-table-caption');
+  const direct = t.prose().querySelector('.markdown-caption');
   check('a direct caption renders', direct?.textContent?.trim() ?? null, 'Table 1. Direct');
   check(
     'the separator changes nothing about the caption’s rendered spacing',
@@ -90,12 +116,12 @@
   }
   check(
     'a direct caption is editable as a line',
-    t.prose().querySelector('.markdown-table-caption-source')?.textContent ?? null,
+    t.prose().querySelector('.markdown-caption-source')?.textContent ?? null,
     ': Direct {#tbl:direct}'
   );
 
   await t.load('| A |\n| --- |\n| 1 |\n\n: Separated\n');
-  await t.click(t.prose().querySelector('.markdown-table-caption'), 0.5);
+  await t.click(t.prose().querySelector('.markdown-caption'), 0.5);
   for (const _character of ': Separated') {
     t.key('ArrowLeft');
   }
@@ -108,7 +134,7 @@
   );
 
   await t.load('| A |\n| --- |\n| 1 |\n: Joined\n');
-  await t.click(t.prose().querySelector('.markdown-table-caption'), 0.5);
+  await t.click(t.prose().querySelector('.markdown-caption'), 0.5);
   for (const _character of ': Joined') {
     t.key('ArrowLeft');
   }
