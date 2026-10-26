@@ -366,10 +366,10 @@ const render = async (text, answers = {}) => {
     rendered,
     'See [Equation (1)](#eq:system).\n\n' +
       '<div id="eq:system" class="equation-target equation-layout wide" data-owner="demo">\n' +
-      '<table class="equation-layout" role="presentation" style="width: 100%; border: none;">\n' +
+      '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">\n' +
       '<tbody>\n' +
       '<tr>\n' +
-      '<td class="equation-math-cell" style="width: 90%; vertical-align: middle;">\n\n' +
+      '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">\n\n' +
       '$$\n' +
       '\\begin{aligned}\n' +
       'x&=1\\\\\n' +
@@ -377,7 +377,7 @@ const render = async (text, answers = {}) => {
       '\\end{aligned}\n' +
       '$$\n\n' +
       '</td>\n' +
-      '<td class="equation-number-cell" style="width: 10%; text-align: right; vertical-align: middle;">\n\n' +
+      '<td class="equation-number-cell" style="width: 10%; border: none; text-align: right; vertical-align: middle;">\n\n' +
       '\\(1\\)\n\n' +
       '</td>\n' +
       '</tr>\n' +

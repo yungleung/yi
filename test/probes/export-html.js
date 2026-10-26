@@ -277,22 +277,41 @@
     );
     const pageDocument = new DOMParser().parseFromString(page, 'text/html');
     const equationTarget = pageDocument.querySelector('[id="eq:system"]');
+    const equationTable = equationTarget?.querySelector('table');
     const equationRows = equationTarget?.querySelectorAll('table > tbody > tr') ?? [];
     const equationCells = equationRows[0]?.children ?? [];
+    const borderless = [equationTable, ...equationCells].every(
+      (element) => element?.getAttribute('style')?.includes('border: none') ?? false
+    );
     const equationLayout = [
       equationTarget?.querySelectorAll('table').length ?? 0,
       equationRows.length,
       equationCells.length,
       equationCells[0]?.textContent?.trim() ?? null,
-      equationCells[1]?.textContent?.trim() ?? null
+      equationCells[1]?.textContent?.trim() ?? null,
+      borderless
     ];
     check(
-      'the equation and its number share one row of two table cells',
+      'the equation and its number share one borderless row of two table cells',
       JSON.stringify(equationLayout) ===
-        JSON.stringify([1, 1, 2, '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}', '(1)']),
+        JSON.stringify([
+          1,
+          1,
+          2,
+          '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}',
+          '(1)',
+          true
+        ]),
       {
         actual: equationLayout,
-        expected: [1, 1, 2, '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}', '(1)']
+        expected: [
+          1,
+          1,
+          2,
+          '\\begin{aligned}\nx&=1\\\\\ny&=2\n\\end{aligned}',
+          '(1)',
+          true
+        ]
       }
     );
     check(

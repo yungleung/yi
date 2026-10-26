@@ -303,6 +303,7 @@
     const equationLayouts = texts.map((text) => {
       const chapter = new DOMParser().parseFromString(text, 'text/html');
       const target = chapter.querySelector('[id="eq:system"]');
+      const table = target?.querySelector('table');
       const rows = target?.querySelectorAll('table > tbody > tr') ?? [];
       const cells = rows[0]?.children ?? [];
       return {
@@ -311,7 +312,10 @@
         rows: rows.length,
         cells: cells.length,
         equation: cells[0]?.querySelector('math, .math') !== null,
-        number: cells[1]?.textContent?.trim() ?? null
+        number: cells[1]?.textContent?.trim() ?? null,
+        borderless: [table, ...cells].every(
+          (element) => element?.getAttribute('style')?.includes('border: none') ?? false
+        )
       };
     });
     const expectedEquationLayout = [
@@ -321,12 +325,13 @@
         rows: 1,
         cells: 2,
         equation: true,
-        number: '(1)'
+        number: '(1)',
+        borderless: true
       }
     ];
     const equationLayout = equationLayouts.filter((layout) => layout.target);
     check(
-      'a labeled equation uses one table row with formula and number cells',
+      'a labeled equation uses one borderless table row with formula and number cells',
       JSON.stringify(equationLayout) === JSON.stringify(expectedEquationLayout),
       { actual: equationLayout, expected: expectedEquationLayout }
     );

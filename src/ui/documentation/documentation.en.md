@@ -365,10 +365,10 @@ attribute without an ID simply leaves it untargetable.
 
 Native equation-environment numbering is suppressed in the editor and every export:
 
-- HTML receives an unnumbered KaTeX body and one visible Yi number in a one-row, two-cell layout
-  table: the formula is first and the number is second.
+- HTML receives an unnumbered KaTeX body and one visible Yi number in a borderless one-row,
+  two-cell layout table: the formula is first and the number is second.
 - EPUB receives the same one-row, two-cell target, even if its template later selects KaTeX or
-  MathJax.
+  MathJax. Its layout table has no visible border.
 - Word and ODT receive a native one-row, two-cell table inside the ID-bearing target. The formula
   is first, the number is second, and neither has row numbers of its own.
 - LaTeX and PDF receive exactly one generated outer `equation`; multi-row user environments are

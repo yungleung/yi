@@ -105,15 +105,15 @@ function equationMarkdown(
     return equationHtmlContainer(
       equation,
       [
-        '<table class="equation-layout" role="presentation" style="width: 100%; border: none;">',
+        '<table class="equation-layout" role="presentation" style="width: 100%; border: none; border-collapse: collapse;">',
         '<tbody>',
         '<tr>',
-        '<td class="equation-math-cell" style="width: 90%; vertical-align: middle;">',
+        '<td class="equation-math-cell" style="width: 90%; border: none; vertical-align: middle;">',
         '',
         mathMarkdown(math),
         '',
         '</td>',
-        '<td class="equation-number-cell" style="width: 10%; text-align: right; vertical-align: middle;">',
+        '<td class="equation-number-cell" style="width: 10%; border: none; text-align: right; vertical-align: middle;">',
         '',
         equationNumberMarkdown(numberText),
         '',
