@@ -93,4 +93,3 @@ function visibleCaption(label: string, children: readonly RootContent[]): string
   const text = inlineHtml(children as InlineNode[]);
   return text === '' ? `${escapeHtml(label)}.` : `${escapeHtml(label)}. ${text}`;
 }
-
