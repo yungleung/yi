@@ -2,9 +2,11 @@
 reference-labels:
   table: Data table
   equation: Formula
+  list: Procedure
 reference-number-prefixes:
   table: "2-"
   equation: "2-"
+  list: "3-"
 ---
 
 # GitHub-flavored markdown demo
@@ -70,6 +72,33 @@ Attributes and margin placement remain source for Pandoc and template packages:
 | alpha | one |
 
 : Results {#tbl:results .margin data-owner=demo}
+
+## List cross-references
+
+A caption-only bullet list is numbered but has no target:
+
+- First check
+- Second check
+
+: Preliminary checks
+
+An ID-only ordered list keeps its item start and has a target:
+
+3. Build the note
+4. Test the export
+
+: {#list:ordered}
+
+A captioned task list may contain nested items and export attributes:
+
+- [x] Draft the note
+- [ ] Review the result
+  - Inspect citations
+  - Check every export
+
+: Release steps {#list:steps .wide data-owner=demo}
+
+See [#list:steps] or [the release steps](#list:steps).
 
 ## Math expressions
 

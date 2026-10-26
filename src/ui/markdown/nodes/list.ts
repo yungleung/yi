@@ -15,6 +15,9 @@ import { TASK_SOURCE_FROM, TEXT_FROM, setOffset } from './../offset_tags';
 export class List extends EditableNodeComponent {
   constructor(node: AstList) {
     super('list', node, document.createElement(node.ordered ? 'ol' : 'ul'), 'min-w-0');
+    if (node.ordered && node.start != null && node.start !== 1) {
+      this.element.setAttribute('start', String(node.start));
+    }
     appendChildren(this.element, node.children);
   }
 }

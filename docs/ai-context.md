@@ -645,6 +645,19 @@ matrix row with and without an ID;
 `equation-source-editing.js`, `equation-crossrefs.js`, and
 `export-pdf-equation-template.js` hold the feature.
 
+**A captioned list is a normal list followed by one shared colon caption line.**
+`syntax/caption_lines.ts` owns the grammar for both tables and lists;
+`syntax/list_captions.ts` attaches it only at the list's base indentation and
+masks the line for remark without changing offsets. This keeps a colon after a
+paragraph as definition-list syntax and leaves `:::` free for callouts.
+`nodes/list_caption.ts` reveals the caption as its own source while list items
+remain editable. HTML/EPUB/DOCX/ODT all receive one target wrapper and numbered
+caption; processed Markdown renders equivalent list HTML. LaTeX/PDF use the
+namespaced `yilist` object counter and native labels/references, with
+`\yiListCounterSetup` letting a template choose the reset level and
+`\yiListNumber` its base format. The default fixture and the caption, crossref,
+and export probes hold the feature.
+
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
 reader scrolls back, and a caret whose block was dropped is placed again once it is there — but
