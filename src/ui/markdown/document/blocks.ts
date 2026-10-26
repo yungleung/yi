@@ -40,6 +40,7 @@ import {
 import { withVisibleTrailingSpaces } from '../syntax/trailing_spaces';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 import { isTableCaptionLine } from '../syntax/table_captions';
+import { listCaptionLine } from '../syntax/list_captions';
 import { readTableSource } from '../syntax/table_source';
 import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
 import { BlockIndex, type BlockEntry } from './block_index';
@@ -637,6 +638,34 @@ function* blocksFrom(
       }
       if (listMerged) {
         j = mergedEnd;
+      }
+    }
+
+    // A list caption may follow after one blank line. Keep it in the list's
+    // block; two or more blank lines end the association and leave the colon
+    // line to ordinary Markdown parsing.
+    if (list && j < lines.length && lines[j].text.trim() === '') {
+      let captionLine = j;
+      while (captionLine < lines.length && lines[captionLine].text.trim() === '') {
+        captionLine += 1;
+      }
+      const indent = ' '.repeat(list.indent);
+      const candidate = lines[captionLine];
+      const caption =
+        candidate !== undefined &&
+        candidate.text.startsWith(indent) &&
+        listCaptionLine(candidate.text.slice(indent.length), 0) !== null;
+      if (caption && captionLine === j + 1) {
+        lineEnd = candidate.number;
+        charEnd = candidate.end;
+        i = captionLine + 1;
+        yield makeBlock('paragraph', text, lineStart, lineEnd, charStart, charEnd);
+        continue;
+      }
+      if (caption) {
+        i = j;
+        yield makeBlock('paragraph', text, lineStart, lineEnd, charStart, charEnd);
+        continue;
       }
     }
 

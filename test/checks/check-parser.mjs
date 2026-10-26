@@ -28,7 +28,10 @@ const load = async (input, name) => {
   return await import(file);
 };
 
-const { parseMarkdown } = await load('src/ui/markdown/syntax/parser.ts', 'parser');
+const { parseMarkdown, serializeMarkdown } = await load(
+  'src/ui/markdown/syntax/parser.ts',
+  'parser'
+);
 const { nodeShape } = await load('src/ui/markdown/syntax/node_shape.ts', 'node_shape');
 
 const failures = [];
@@ -146,6 +149,49 @@ check(
 );
 const toml = '+++\ntitle = "X"\n+++\n\nBody\n';
 check('a +++ block is not frontmatter', nodesOfType(parseMarkdown(toml), 'yaml').length, 0);
+
+const directList = parseMarkdown('- one\n- two\n: **Steps** {#list:steps}\n');
+check('a direct list caption stays in one list node', directList.children.map((node) => node.type), [
+  'list'
+]);
+check('the list keeps the caption ID', directList.children[0]?.listCaption?.id, 'list:steps');
+check(
+  'the list caption keeps inline Markdown',
+  directList.children[0]?.listCaption?.children?.[0]?.children?.[0]?.value,
+  'Steps'
+);
+check(
+  'the direct list caption serializes exactly',
+  serializeMarkdown(directList),
+  '- one\n- two\n: **Steps** {#list:steps}\n'
+);
+
+const separatedList = parseMarkdown('- one\n- two\n\n: Steps {#list:steps}\n');
+check(
+  'one blank line still attaches a list caption',
+  separatedList.children.map((node) => node.type),
+  ['list']
+);
+check('the separated list keeps its target', separatedList.children[0]?.listCaption?.id, 'list:steps');
+check(
+  'the separated list caption serializes exactly',
+  serializeMarkdown(separatedList),
+  '- one\n- two\n\n: Steps {#list:steps}\n'
+);
+
+const distantList = parseMarkdown('- one\n- two\n\n\n: Ordinary paragraph\n');
+check(
+  'two blank lines do not attach a list caption',
+  distantList.children[0]?.listCaption ?? null,
+  null
+);
+
+const definition = parseMarkdown('Term\n\n: Definition\n');
+check(
+  'a colon after a paragraph remains a definition list',
+  definition.children.map((node) => node.type),
+  ['descriptionlist']
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

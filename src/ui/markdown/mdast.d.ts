@@ -13,6 +13,7 @@ import type { AutoReferenceNode } from './plugins/remark-auto-references';
 import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { FigureNode } from './syntax/figures';
 import type { TableCaptionNode } from './syntax/table_captions';
+import type { ListCaptionNode } from './syntax/list_captions';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 
@@ -37,6 +38,13 @@ declare module 'mdast' {
     source?: string;
     /** The caption attached to this table. */
     tableCaption?: TableCaptionNode;
+  }
+
+  interface List {
+    /** The exact source of a parsed list, when it belongs to a caption pair. */
+    source?: string;
+    /** The caption attached to this list. */
+    listCaption?: ListCaptionNode;
   }
 
   interface PhrasingContentMap {

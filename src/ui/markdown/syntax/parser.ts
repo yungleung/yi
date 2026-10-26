@@ -27,9 +27,14 @@ import { restoreSpacedDestinations } from './spaced_destinations';
 import { restoreFigures } from './figures';
 import {
   tableCaptionAfterTable,
-  type TableCaptionData,
   type TableCaptionNode
 } from './table_captions';
+import type { CaptionLineData } from './caption_lines';
+import {
+  listCaptionAfterList,
+  listCaptionsForParsers,
+  type ListCaptionNode
+} from './list_captions';
 import { readTableSource } from './table_source';
 import { frontmatterForParsers } from './markers';
 import { equationsForParsers } from './equation_blocks';
@@ -83,6 +88,11 @@ const stringifyProcessor = unified()
       tableCaption(node: any): string {
         return `${String(node.source ?? '')}\n`;
       },
+      list(node: any, _parent: any, state: any, info: any): string {
+        return typeof node.source === 'string'
+          ? `${node.source}\n`
+          : state.containerFlow(node, info);
+      },
       heading(node: any, _parent: any, state: any, info: any): string {
         const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
         const content = state.containerPhrasing(node, info);
@@ -112,14 +122,16 @@ const stringifyProcessor = unified()
 
 export function parseMarkdown(markdown: string): Root {
   const prepared = equationsForParsers(frontmatterForParsers(markdown));
-  const tree = parseProcessor.parse(prepared) as Root;
-  const root = parseProcessor.runSync(tree, prepared) as Root;
+  const parserText = listCaptionsForParsers(prepared);
+  const tree = parseProcessor.parse(parserText) as Root;
+  const root = parseProcessor.runSync(tree, parserText) as Root;
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);
   restoreSpacedDestinations(root, markdown);
   restoreFigures(root, markdown);
   restoreTableCaptions(root, markdown);
+  restoreListCaptions(root, markdown);
   return root;
 }
 
@@ -203,31 +215,13 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
   }
 
   function captionNode(
-    data: TableCaptionData,
+    data: CaptionLineData,
     separated: boolean,
     tableFrom: number,
     separatorFrom: number | null,
     definitions: ReadonlySet<string>
   ): TableCaptionNode {
-    const withContext = withFootnoteDefinitions(data.caption, definitions);
-    const parsed = fragmentProcessor.runSync(
-      fragmentProcessor.parse(withContext),
-      withContext
-    ) as Root;
-    const caption = parsed.children
-      .filter((child) => isOwnNode(child, data.caption.length))
-      .flatMap((child) =>
-        child.type === 'paragraph' ? (child.children ?? []) : [child]
-      ) as RootContent[];
-    for (const child of caption) {
-      walk(child, (node) => {
-        const position = (node as { position?: NodePosition }).position;
-        if (position) {
-          position.start.offset += data.textFrom;
-          position.end.offset += data.textFrom;
-        }
-      });
-    }
+    const caption = captionChildren(data, definitions);
     return {
       type: 'tableCaption',
       id: data.id,
@@ -245,6 +239,102 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
       }
     };
   }
+}
+
+/** Attaches a following colon caption to each top-level Markdown list. */
+function restoreListCaptions(tree: Root, markdown: string): void {
+  const definitions = footnoteLabels(markdown);
+  const children = tree.children;
+  for (let index = 0; index < children.length; index += 1) {
+    const list = children[index] as (typeof children)[number] & {
+      source?: string;
+      listCaption?: ListCaptionNode;
+    };
+    if (list.type !== 'list') {
+      continue;
+    }
+    const start = list.position?.start.offset;
+    const end = list.position?.end.offset;
+    if (start === undefined || end === undefined) {
+      continue;
+    }
+    const attachment = listCaptionAfterList(markdown, start, end);
+    if (attachment === null) {
+      continue;
+    }
+    list.position = {
+      start: pointAt(markdown, start),
+      end: pointAt(markdown, attachment.caption.captionTo)
+    };
+    list.source = markdown.slice(start, attachment.caption.captionTo);
+    list.listCaption = {
+      type: 'listCaption',
+      id: attachment.caption.id,
+      classes: attachment.caption.classes,
+      attributes: attachment.caption.attributes,
+      children: captionChildren(attachment.caption, definitions),
+      source: attachment.caption.source,
+      captionData: attachment.caption,
+      listFrom: start,
+      separatorFrom: attachment.separatorFrom,
+      separated: attachment.separatorFrom !== null,
+      position: {
+        start: { offset: attachment.caption.captionFrom },
+        end: { offset: attachment.caption.captionTo }
+      }
+    };
+    let next = index + 1;
+    while (next < children.length) {
+      const position = (children[next] as { position?: NodePosition }).position;
+      if (
+        position === undefined ||
+        position.start.offset < attachment.caption.captionFrom ||
+        position.end.offset > attachment.caption.captionTo
+      ) {
+        break;
+      }
+      children.splice(next, 1);
+    }
+  }
+}
+
+/** Parse a caption's inline Markdown and move its offsets into the block source. */
+function captionChildren(
+  data: CaptionLineData,
+  definitions: ReadonlySet<string>
+): RootContent[] {
+  const withContext = withFootnoteDefinitions(data.caption, definitions);
+  const parsed = fragmentProcessor.runSync(
+    fragmentProcessor.parse(withContext),
+    withContext
+  ) as Root;
+  const caption = parsed.children
+    .filter((child) => isOwnNode(child, data.caption.length))
+    .flatMap((child) =>
+      child.type === 'paragraph' ? (child.children ?? []) : [child]
+    ) as RootContent[];
+  for (const child of caption) {
+    walk(child, (node) => {
+      const position = (node as { position?: NodePosition }).position;
+      if (position) {
+        position.start.offset += data.textFrom;
+        position.end.offset += data.textFrom;
+      }
+    });
+  }
+  return caption;
+}
+
+/** One source point, including the line and column mdast positions require. */
+function pointAt(markdown: string, offset: number): {
+  line: number;
+  column: number;
+  offset: number;
+} {
+  const before = markdown.slice(0, offset);
+  const line = 1 + (before.match(/\n/g)?.length ?? 0);
+  const lastBreak = markdown.lastIndexOf('\n', Math.max(0, offset - 1));
+  return { line, column: offset - lastBreak, offset };
 }
 
 /**

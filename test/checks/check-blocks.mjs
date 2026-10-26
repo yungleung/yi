@@ -84,6 +84,21 @@ const cases = [
     'two blank lines leave a caption as ordinary following source',
     '| A |\n| --- |\n| 1 |\n\n\n: Caption\n',
     'paragraph@1 blank@5 paragraph@6'
+  ],
+  [
+    'a direct list caption stays in the list block',
+    '- one\n- two\n: Steps {#list:steps}\n',
+    'paragraph@1'
+  ],
+  [
+    'one blank line keeps a list caption in the list block',
+    '- one\n- two\n\n: Steps {#list:steps}\n',
+    'paragraph@1'
+  ],
+  [
+    'two blank lines leave a list caption as ordinary following source',
+    '- one\n- two\n\n\n: Steps {#list:steps}\n',
+    'paragraph@1 blank@4 paragraph@5'
   ]
 ];
 
