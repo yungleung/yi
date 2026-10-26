@@ -31,6 +31,12 @@ export class Equation extends EditableNodeComponent {
     );
     this.bodyEnd = entryOffset(source);
     this.element.innerHTML = renderKatexHtml(math, true);
+    const navigation = document.createElement('span');
+    navigation.className = 'markdown-equation-navigation';
+    navigation.setAttribute('aria-hidden', 'true');
+    setOffset(navigation, TEXT_FROM, this.bodyEnd);
+    navigation.appendChild(document.createTextNode(''));
+    this.element.appendChild(navigation);
   }
 
   override placeCaretAt(): void {

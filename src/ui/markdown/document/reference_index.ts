@@ -222,6 +222,14 @@ export function referenceLabel(
   );
 }
 
+/** The number shown beside an equation block, without its reference word. */
+export function equationBlockNumber(entry: ReferenceEntry): string | null {
+  if (entry.kind !== 'equation' || entry.number === null) {
+    return null;
+  }
+  return `(${entry.numberPrefix}${entry.number})`;
+}
+
 /** The plain text Pandoc's identifier rule reads from a heading's inline children. */
 function plainHeadingText(heading: Heading): string {
   return heading.children.map((child) => plainText(child)).join('').trim();

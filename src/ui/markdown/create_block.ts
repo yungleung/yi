@@ -71,7 +71,7 @@ class BlockView implements BlockComponent {
     );
   }
 
-  /** A labeled equation: KaTeX, one Yi label, or the complete wrapper as source. */
+  /** A labeled equation: KaTeX, one Yi number, or the complete wrapper as source. */
   private renderEquation(node: BlockNode): HTMLElement {
     const source = readEquationBlockSource(node.text);
     const element = this.container(node);
@@ -89,12 +89,12 @@ class BlockView implements BlockComponent {
     element.appendChild(
       new Equation(node, source, innerEquationBody(source.body)).element
     );
-    const label = renderContext().equationLabelAt(node.charStart + source.from);
-    if (label !== null) {
+    const numberText = renderContext().equationNumberAt(node.charStart + source.from);
+    if (numberText !== null) {
       const number = document.createElement('span');
       number.className = 'markdown-equation-number';
       number.setAttribute('data-chrome', 'true');
-      number.textContent = label;
+      number.textContent = numberText;
       element.appendChild(number);
     }
     return element;

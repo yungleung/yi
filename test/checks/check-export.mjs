@@ -372,7 +372,7 @@ const render = async (text, answers = {}) => {
       'y&=2\n' +
       '\\end{aligned}\n' +
       '$$\n\n' +
-      'Equation (1)\n' +
+      '\\(1\\)\n' +
       ':::\n'
   );
 }
@@ -461,7 +461,7 @@ const render = async (text, answers = {}) => {
       rendered.includes('<div id="eq:plain" class="equation-target">'),
       rendered.includes('<math xmlns="http://www.w3.org/1998/Math/MathML"'),
       rendered.includes('annotation encoding="application/x-tex">E=mc^2</annotation>'),
-      rendered.includes('<span class="equation-number">Equation (1)</span>')
+      rendered.includes('<span class="equation-number">(1)</span>')
     ],
     [true, true, true, true, true]
   );

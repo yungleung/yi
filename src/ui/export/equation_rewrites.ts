@@ -10,7 +10,10 @@
  * target and native row numbering never survives a writer.
  */
 
-import { referenceLabel, type ReferenceEntry } from '../markdown/document/reference_index';
+import {
+  equationBlockNumber,
+  type ReferenceEntry
+} from '../markdown/document/reference_index';
 import { splitBlocks } from '../markdown/document/blocks';
 import {
   innerEquationBody,
@@ -61,15 +64,15 @@ export function equationRewrites(
       });
       continue;
     }
-    const label = referenceLabel(entry);
+    const numberText = equationBlockNumber(entry) ?? '';
     const math = innerEquationBody(equation.body);
     rewrites.push({
       start: block.charStart,
       end: block.charEnd,
       text:
         kind === 'markdown'
-          ? equationHtml(equation, math, label)
-          : equationMarkdown(equation, math, label)
+          ? equationHtml(equation, math, numberText)
+          : equationMarkdown(equation, math, numberText)
     });
   }
 
@@ -95,7 +98,7 @@ export function equationRewrites(
 function equationMarkdown(
   equation: ReturnType<typeof readEquationBlock> & object,
   math: string,
-  label: string
+  numberText: string
 ): string {
   const tokens = [
     ...(equation.id === null ? [] : [`#${equation.id}`]),
@@ -109,7 +112,7 @@ function equationMarkdown(
     `::: {${tokens.join(' ')}}`,
     mathMarkdown(math),
     '',
-    label,
+    numberText.replace(/[()]/g, '\\$&'),
     ':::'
   ].join('\n');
 }

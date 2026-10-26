@@ -349,8 +349,8 @@ reference-number-prefixes:
   equation: "2-"
 ```
 
-With those values, the first equation displays `Formula (2-1)`. A missing or blank value falls back
-to `Equation` and an empty prefix.
+With those values, the reference displays `Formula (2-1)`, while the numbered formula itself shows
+only `(2-1)`. A missing or blank value falls back to `Equation` and an empty prefix.
 
 Clicking the rendered equation reveals the complete `[$$…$$]{…}` source. ⌘-click or Ctrl-click an
 automatic or manual reference to reveal the equation and place the caret at the start of its formula
@@ -373,6 +373,9 @@ Native equation-environment numbering is suppressed in the editor and every expo
   lowered to `aligned`, `gathered`, or `alignedat` inside it.
 - Processed Markdown emits an ID-bearing HTML block containing KaTeX-generated MathML and one
   visible number.
+
+The visible equation number always has the form `(N)` or `(prefix-N)`. The configured equation
+label appears only in automatic-reference text.
 
 An automatic LaTeX/PDF equation reference becomes `\yiEquationRef{id}` and reads the document's
 final `\theequation`. A template can therefore redefine the equation counter without conflicting

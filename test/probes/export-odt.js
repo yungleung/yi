@@ -225,10 +225,12 @@
       'a labeled equation keeps a named section and one visible number',
       content.includes('text:section text:name="eq:system"') &&
         content.includes('Equation (1)') &&
+        content.includes('>(1)</text:p>') &&
         content.includes('xlink:href="#eq:system"'),
       {
         section: content.includes('text:section text:name="eq:system"'),
-        label: content.includes('Equation (1)'),
+        reference: content.includes('Equation (1)'),
+        number: content.includes('>(1)</text:p>'),
         link: content.includes('xlink:href="#eq:system"')
       }
     );

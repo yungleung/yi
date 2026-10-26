@@ -288,11 +288,15 @@
         (chapter) =>
           chapter.includes('id="eq:system"') &&
           chapter.includes('Equation (1)') &&
+          chapter.replace('<a href="#eq:system">Equation (1)</a>', '').includes('(1)') &&
           !chapter.includes('eqn-num')
       ),
       texts.map((chapter) => ({
         target: chapter.includes('id="eq:system"'),
-        label: chapter.includes('Equation (1)'),
+        reference: chapter.includes('Equation (1)'),
+        number: chapter
+          .replace('<a href="#eq:system">Equation (1)</a>', '')
+          .includes('(1)'),
         native: chapter.includes('eqn-num')
       }))
     );

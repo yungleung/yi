@@ -248,8 +248,8 @@
       ) &&
         plain.includes('<div id="eq:plain" class="equation-target">') &&
         plain.includes('<div id="eq:system" class="equation-target wide">') &&
-        plain.includes('<span class="equation-number">Equation (1)</span>') &&
-        plain.includes('<span class="equation-number">Equation (2)</span>') &&
+        plain.includes('<span class="equation-number">(1)</span>') &&
+        plain.includes('<span class="equation-number">(2)</span>') &&
         plain.includes('annotation encoding="application/x-tex">\\begin{aligned}'),
       {
         references: plain
@@ -261,8 +261,9 @@
         ),
         plain: plain.includes('<div id="eq:plain" class="equation-target">'),
         align: plain.includes('<div id="eq:system" class="equation-target wide">'),
-        labels:
-          plain.includes('Equation (1)') && plain.includes('Equation (2)'),
+        numbers:
+          plain.includes('<span class="equation-number">(1)</span>') &&
+          plain.includes('<span class="equation-number">(2)</span>'),
         annotation: plain.includes(
           'annotation encoding="application/x-tex">\\begin{aligned}'
         )

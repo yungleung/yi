@@ -255,15 +255,21 @@
         target: page.includes('id="tbl:only"')
       }
     );
+    const equationWithoutReference = page.replace(
+      /<a[^>]*href="#eq:system"[^>]*>[\s\S]*?<\/a>/g,
+      ''
+    );
     check(
       'a labeled equation keeps its target, one visible number, and unnumbered rows',
-      page.includes('id="eq:system"') &&
+      equationWithoutReference.includes('(1)') &&
+        page.includes('id="eq:system"') &&
         page.includes('Equation (1)') &&
         page.includes('begin{aligned}') &&
         !page.includes('\\begin{align}'),
       {
         target: page.includes('id="eq:system"'),
-        label: page.includes('Equation (1)'),
+        reference: page.includes('Equation (1)'),
+        number: equationWithoutReference.includes('(1)'),
         aligned: page.includes('begin{aligned}'),
         numberedAlign: page.includes('\\begin{align}'),
         equationContext: page.match(/.{0,120}Equation.{0,120}/)?.[0] ?? null

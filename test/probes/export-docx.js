@@ -316,13 +316,18 @@
         anchors: internalLinks
       }
     );
+    const equationText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(
+      (match) => match[1]
+    );
     check(
       'a labeled equation keeps one bookmark, visible number, and aligned formula',
-      documentXml.includes('Equation (1)') &&
+      equationText.includes('(1)') &&
+        documentXml.includes('Equation (1)') &&
         documentXml.includes('m:oMathPara') &&
         internalLinks.some((link) => link.text === 'Equation (1)'),
       {
-        label: documentXml.includes('Equation (1)'),
+        reference: internalLinks.some((link) => link.text === 'Equation (1)'),
+        number: equationText.includes('(1)'),
         math: documentXml.includes('m:oMathPara'),
         links: internalLinks
       }

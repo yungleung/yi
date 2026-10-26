@@ -15,7 +15,11 @@ import type { EquationBlockSource } from '../markdown/syntax/equation_blocks';
 import { escapeHtml, htmlAttributeName } from './html';
 
 /** One labeled equation as an HTML block. */
-export function equationHtml(equation: EquationBlockSource, math: string, label: string): string {
+export function equationHtml(
+  equation: EquationBlockSource,
+  math: string,
+  numberText: string
+): string {
   const classes = ['equation-target', ...equation.classes];
   const attributes = [
     ...(equation.id === null ? [] : [`id="${escapeHtml(equation.id)}"`]),
@@ -32,7 +36,7 @@ export function equationHtml(equation: EquationBlockSource, math: string, label:
   return [
     `<div ${attributes.join(' ')}>`,
     `  ${rendered}`,
-    `  <span class="equation-number">${escapeHtml(label)}</span>`,
+    `  <span class="equation-number">${escapeHtml(numberText)}</span>`,
     '</div>'
   ].join('\n');
 }

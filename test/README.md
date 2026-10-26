@@ -79,7 +79,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and fifty-two probes (`probe:all` runs 223 and skips 29, each skip for the reason its
+two hundred and fifty-three probes (`probe:all` runs 224 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -118,7 +118,8 @@ suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;
 `equation-crossrefs` — configured labels, automatic/manual links, and navigation to the formula
 body; `equation-matrix-default-document` — all 13 environment/plain rows with and without IDs,
 including numbering and native-tag suppression; `equation-source-editing` — unlabeled rendering,
-exact source-line clicks, and unfinished attributes), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
+exact source-line clicks, and unfinished attributes; `equation-empty-navigation` — Left from the
+following line enters an empty equation's source), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document

@@ -633,10 +633,10 @@ the `[$$` autocomplete skeleton, and the environment matrix. An ID is optional
 for display; the structural reader keeps a block visible while its final
 attributes are unfinished. Plain or environment math is lowered before KaTeX so
 no native automatic tag can depend on virtualization. `create_block.ts` and
-`nodes/equation.ts` render one Yi label or the exact, clickable wrapper source;
+`nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
 `document/reference_index.ts` indexes only labeled blocks.
 `ui/export/equation_rewrites.ts` gives HTML/EPUB/DOCX/ODT a single target and
-label, `equation_html.ts` writes processed-Markdown MathML, and LaTeX/PDF get one
+number, `equation_html.ts` writes processed-Markdown MathML, and LaTeX/PDF get one
 outer `equation` with `\yiEquationRef`. The default fixture contains every
 matrix row with and without an ID;
 `equation-matrix-default-document.js`, `equation-rendering.js`,

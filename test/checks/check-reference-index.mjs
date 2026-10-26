@@ -20,7 +20,12 @@ const load = async (input, name) => {
 };
 
 const { parseMarkdown } = await load('src/ui/markdown/syntax/parser.ts', 'parser');
-const { firstReference, referenceIndex, referenceLabel } = await load(
+const {
+  equationBlockNumber,
+  firstReference,
+  referenceIndex,
+  referenceLabel
+} = await load(
   'src/ui/markdown/document/reference_index.ts',
   'reference_index'
 );
@@ -146,6 +151,11 @@ check(
   'an equation uses the configured label and prefix',
   referenceLabel(equationEntries[0]),
   'Formula (2-1)'
+);
+check(
+  'a visible equation number omits the reference label',
+  equationBlockNumber(equationEntries[0]),
+  '(2-1)'
 );
 check('an equation target starts at its formula body', equationEntries[0]?.caretAt, 95);
 

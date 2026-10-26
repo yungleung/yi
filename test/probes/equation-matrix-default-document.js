@@ -59,9 +59,9 @@
   const reference = t.prose().querySelector('[data-auto-reference="eq:plain"]');
   check('the automatic reference uses the configured equation label', reference?.textContent ?? null, 'Formula (2-1)');
   check(
-    'the visible labeled equation uses the same text',
+    'the visible labeled equation uses only its number',
     t.prose().querySelector('[id="eq:plain"] .markdown-equation-number')?.textContent ?? null,
-    'Formula (2-1)'
+    '(2-1)'
   );
   check(
     'KaTeX row-number tags do not appear in mounted equations',

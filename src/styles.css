@@ -169,6 +169,10 @@
   margin: 0;
 }
 
+.markdown-equation-navigation {
+  display: inline;
+}
+
 .markdown-equation-number {
   position: absolute;
   right: 0;

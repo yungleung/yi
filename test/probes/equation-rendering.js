@@ -25,12 +25,12 @@
   check('plain equation block renders', plain !== null, true);
   check('align equation block renders', align !== null, true);
   check(
-    'each block carries one Yi label',
+    'each block carries one Yi number without its reference word',
     [
       plain?.querySelector('.markdown-equation-number')?.textContent ?? null,
       align?.querySelector('.markdown-equation-number')?.textContent ?? null
     ],
-    ['Equation (1)', 'Equation (2)']
+    ['(1)', '(2)']
   );
   check(
     'KaTeX environment numbering is absent',

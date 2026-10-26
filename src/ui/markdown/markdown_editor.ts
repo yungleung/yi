@@ -72,7 +72,11 @@ import { commandForKey } from './commands/keymap';
 import { MENU_COMMANDS } from './commands/menu';
 import { runCommand, setEditingAllowed, type CommandId } from './commands/registry';
 import { MarkdownEditorState } from './document/state';
-import { firstReference, referenceLabel } from './document/reference_index';
+import {
+  equationBlockNumber,
+  firstReference,
+  referenceLabel
+} from './document/reference_index';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
 
@@ -186,11 +190,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         );
         return target?.number == null ? null : referenceLabel(target);
       },
-      equationLabelAt: (from) => {
+      equationNumberAt: (from) => {
         const target = this.state.referenceEntries().find(
           (entry) => entry.kind === 'equation' && entry.from === from
         );
-        return target?.number == null ? null : referenceLabel(target);
+        return target === undefined ? null : equationBlockNumber(target);
       }
     });
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
