@@ -159,6 +159,44 @@ check(
 );
 check('an equation target starts at its formula body', equationEntries[0]?.caretAt, 95);
 
+const listDocument =
+  '---\n' +
+  'reference-labels:\n' +
+  '  list: Procedure\n' +
+  'reference-number-prefixes:\n' +
+  '  list: "3-"\n' +
+  '---\n\n' +
+  '- First item\n- Second item\n: Steps\n\n' +
+  '3. Third item\n4. Fourth item\n: {#list:target}\n';
+const listEntries = referenceIndex(listDocument).filter((entry) => entry.kind === 'list');
+check(
+  'every captioned list is numbered in document order',
+  listEntries.map((entry) => [entry.id, entry.number, entry.title]),
+  [
+    [null, 1, 'Steps'],
+    ['list:target', 2, '']
+  ]
+);
+check(
+  'a list uses its configured label and prefix',
+  referenceLabel(listEntries[1]),
+  'Procedure 3-2'
+);
+check(
+  'a list target starts at its first item content',
+  [listEntries[0]?.caretAt, listEntries[0]?.caretAt == null
+    ? null
+    : listDocument.slice(listEntries[0].caretAt, listEntries[0].caretAt + 10)],
+  [listDocument.indexOf('First item'), 'First item']
+);
+check(
+  'an ID-only list keeps a non-default ordered start',
+  [listEntries[1]?.caretAt, listEntries[1]?.caretAt == null
+    ? null
+    : listDocument.slice(listEntries[1].caretAt, listEntries[1].caretAt + 10)],
+  [listDocument.indexOf('Third item'), 'Third item']
+);
+
 const equationBeforeFigure = referenceIndex(
   '[$$\nx=1\n$$]{#eq:before}\n\n' +
     '![After](after.png){#fig:after}\n'

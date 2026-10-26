@@ -92,8 +92,12 @@ export function listCaptionLine(line: string, from: number): ListCaptionData | n
  * Mask direct list-caption lines for remark while preserving every offset.
  *
  * remark-deflist otherwise reads a directly adjacent `: Caption` as a
- * description-list paragraph lazily continued inside the final list item. The
- * original document supplies the caption through {@link listCaptionAfterList}.
+ * description-list paragraph lazily continued inside the final list item, and a
+ * blank caption line would let the following list merge with the one above it,
+ * and an HTML-looking line is a lazy list continuation without a blank. An ATX
+ * heading interrupts both while keeping the caption line's exact width.
+ * The original document supplies the caption through
+ * {@link listCaptionAfterList}.
  */
 export function listCaptionsForParsers(markdown: string): string {
   const lines = sourceLines(markdown);
@@ -161,7 +165,7 @@ export function listCaptionsForParsers(markdown: string): string {
         current.text.startsWith(indent) &&
         listCaptionLine(current.text.slice(indent.length), 0) !== null
       ) {
-        const from = current.start + indent.length;
+        const from = current.start;
         masks.push({ from, to: current.end });
         break;
       }
@@ -175,7 +179,11 @@ export function listCaptionsForParsers(markdown: string): string {
   const parts: string[] = [];
   let copied = 0;
   for (const { from, to } of masks) {
-    parts.push(markdown.slice(copied, from), ' '.repeat(to - from));
+    const marker = '#';
+    parts.push(
+      markdown.slice(copied, from),
+      marker + ' '.repeat(Math.max(0, to - from - marker.length))
+    );
     copied = to;
   }
   parts.push(markdown.slice(copied));
