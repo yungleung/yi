@@ -10,27 +10,12 @@
  * non-final attributes remain caption text and create no target.
  */
 
-import {
-  attributeBlockAtEnd,
-  trimSpacesBack,
-  type PandocAttributeBlock
-} from './pandoc_attributes';
 import type { RootContent } from 'mdast';
 import { readTableSource } from './table_source';
+import { captionLine, type CaptionLineData } from './caption_lines';
 
 /** One caption line, with every range in its block's coordinates. */
-export interface TableCaptionData {
-  id: string | null;
-  classes: string[];
-  attributes: Record<string, string>;
-  caption: string;
-  source: string;
-  attribute: PandocAttributeBlock | null;
-  captionFrom: number;
-  captionTo: number;
-  textFrom: number;
-  textTo: number;
-}
+export interface TableCaptionData extends CaptionLineData {}
 
 /** One caption and the table source it follows. */
 export interface TableCaptionAttachment {
@@ -111,38 +96,7 @@ export function tableCaptionAfterTable(
  * text or a non-empty ID; whitespace alone remains ordinary source.
  */
 export function tableCaptionLine(line: string, from: number): TableCaptionData | null {
-  const opening = /^:(\s+)/.exec(line);
-  if (opening === null) {
-    return null;
-  }
-  const contentFrom = opening[0].length;
-  const relative = attributeBlockAtEnd(line, line.length, true);
-  const attribute =
-    relative === null
-      ? null
-      : {
-          ...relative,
-          from: from + relative.from,
-          to: from + relative.to,
-          separatorFrom: from + relative.separatorFrom
-        };
-  const textEnd = trimSpacesBack(line, relative?.separatorFrom ?? line.length);
-  const caption = line.slice(contentFrom, textEnd);
-  if (caption === '' && attribute?.id == null) {
-    return null;
-  }
-  return {
-    id: attribute?.id ?? null,
-    classes: attribute?.classes ?? [],
-    attributes: attribute?.attributes ?? {},
-    caption,
-    source: line,
-    attribute,
-    captionFrom: from,
-    captionTo: from + line.length,
-    textFrom: from + contentFrom,
-    textTo: from + textEnd
-  };
+  return captionLine(line, from);
 }
 
 /** Whether a line carries the table-caption marker. */
