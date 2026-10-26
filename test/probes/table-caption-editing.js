@@ -64,6 +64,17 @@
     t.prose().querySelector('.markdown-table-caption')?.textContent?.trim() ?? null,
     'Table 1. Results'
   );
+  const renderedCaption = t.prose().querySelector('.markdown-table-caption');
+  const renderedLabel = renderedCaption?.querySelector('.markdown-table-number');
+  if (renderedLabel) {
+    await t.click(renderedLabel, 0.5);
+    await t.sleep(250);
+  }
+  check(
+    'clicking the generated label reveals the caption source',
+    t.prose().querySelector('.markdown-table-caption-source')?.textContent ?? null,
+    source
+  );
 
   await t.load('| A |\n| --- |\n| 1 |\n: Direct {#tbl:direct}\n');
   const direct = t.prose().querySelector('.markdown-table-caption');

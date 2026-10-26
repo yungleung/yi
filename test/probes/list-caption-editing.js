@@ -98,6 +98,17 @@
     t.prose().querySelector('.markdown-list-caption')?.textContent?.trim() ?? null,
     'List 1. Steps'
   );
+  const renderedCaption = t.prose().querySelector('.markdown-list-caption');
+  const renderedLabel = renderedCaption?.querySelector('.markdown-list-number');
+  if (renderedLabel) {
+    await t.click(renderedLabel, 0.5);
+    await t.sleep(250);
+  }
+  check(
+    'clicking the generated label reveals the caption source',
+    t.prose().querySelector('.markdown-list-caption-source')?.textContent ?? null,
+    source
+  );
 
   await t.load('- First\n- Second\n: Direct {#list:direct}\n');
   const direct = t.prose().querySelector('.markdown-list-caption');

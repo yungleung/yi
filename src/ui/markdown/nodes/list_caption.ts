@@ -50,6 +50,10 @@ export class ListCaption extends RevealableNodeComponent {
   protected sourceContentRange(source: string): { start: number; end: number } {
     return wholeSource(source);
   }
+
+  protected override entryOffset(): number {
+    return (this.node as ListCaptionNode).position.end.offset;
+  }
 }
 
 /** The source view is the complete caption line. */
