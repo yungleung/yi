@@ -33,6 +33,85 @@ Yi 以 Markdown 原文為準，同時顯示呈現結果。游標進入連結、�
 Markdown。常用快捷鍵為 ⌘S / Ctrl+S 儲存、⌘N / Ctrl+N 新增、⌘F / Ctrl+F 尋找、
 ⇧⌘F / Ctrl+Shift+F 取代，以及 F1 文件。
 
+### 清單
+
+完整的項目符號清單、有序清單或任務清單後方緊接一行題註時，會成為帶編號的清單物件：
+
+```markdown
+1. 準備樣本
+2. 執行量測
+
+: 步驟 {#list:steps .wide data-owner=demo}
+```
+
+以冒號開頭的題註行可以直接接在清單後，也可以隔一行空白。它使用與表格題註相同的語法。只有題註
+而沒有 ID 的清單會消耗編號，但不能作為參照目標：
+
+```markdown
+: 初步檢查
+```
+
+只有 ID 的清單有參照目標和可見編號，但沒有題註正文：
+
+```markdown
+: {#list:steps}
+```
+
+沒有題註行的普通清單既沒有清單物件編號，也沒有參照目標。物件編號與有序清單內部的 `1.`、`2.`
+項目編號互相獨立。
+
+`[#list:steps]` 會建立自動參照；普通連結則保留作者撰寫的文字：
+
+```markdown
+參閱 [#list:steps]。
+參閱[量測步驟](#list:steps)。
+```
+
+自動參照的預設文字是 `List 1`，不隨本文件的語言改變。可以在前置資料中設定清單類型詞與字面編號
+前綴：
+
+```yaml
+reference-labels:
+  list: 流程
+reference-number-prefixes:
+  list: "3-"
+```
+
+參照與可見題註會使用 `流程 3-1`。
+
+HTML、EPUB、Word 和 ODT 會取得相同的清單目標、題註位置、類型詞、前綴與編號行為。不同 writer
+產生的底層容器不同，但可見行為與結構一致。清單標記、任務核取方塊與巢狀清單維持不變。預處理
+Markdown 使用與 HTML 相同的結構。
+
+按住 ⌘ 或 Ctrl 點擊參照會顯示清單，並把游標放到第一個可編輯項目。點擊呈現後的題註會顯示完整
+來源 `: 題註 {…}`，可在此編輯正文、ID、類別與屬性。
+
+清單來源不需要 `:::` 區塊。冒號題註不會佔用圍欄 div，因此 callout 可以繼續使用該語法。清單項目
+內部縮排的冒號仍屬於該項目內容；普通段落後的冒號則保留 Pandoc 定義清單的意義。
+
+#### LaTeX 與 PDF 中的清單編號
+
+LaTeX 沒有針對整個清單物件的原生計數器：`enumi`、`enumii` 等只計算項目，而且作用範圍限於一個
+`enumerate` 環境。因此 Yi 為清單物件使用專用計數器 `yilist`，但標籤與參照仍使用 LaTeX 原生的
+`\label`、`\ref` 和 `hyperref` 機制。
+
+預設使用整份文件中的單一序列。LaTeX/PDF 範本可以透過 `\yiListCounterSetup` 設定重設層級與編號
+格式。依章編號的範例：
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+Yi 會在 `\begin{document}` 時呼叫這個 hook，接著套用筆記設定的類型詞與字面前綴。`\yiListNumber`
+只控制基礎編號，不會移除前綴。如果清單編號必須與範本的表格計數器完全一致，必須把兩個計數器放在
+同一位置並設定相同的重設層級；Yi 無法自動推斷任意文件類別的表格計數器規則。
+
 ## 匯出筆記
 
 | 類型 | 輸出 |

@@ -42,6 +42,94 @@ O Yi mantém Markdown como fonte da verdade enquanto exibe o resultado. Ao entra
 bloco cercado, seu Markdown aparece para edição. Atalhos: ⌘S / Ctrl+S salvar, ⌘N / Ctrl+N nova,
 ⌘F / Ctrl+F buscar, ⇧⌘F / Ctrl+Shift+F substituir e F1 documentação.
 
+### Listas
+
+Uma lista completa com marcadores, ordenada ou de tarefas torna-se um objeto de lista numerado
+quando é seguida por uma linha de legenda:
+
+```markdown
+1. Preparar a amostra
+2. Executar a medição
+
+: Etapas {#list:steps .wide data-owner=demo}
+```
+
+A linha iniciada por dois-pontos pode vir logo após a lista ou depois de exatamente uma linha em
+branco. Ela usa a mesma gramática de legenda de uma tabela. Uma lista apenas com legenda recebe
+número, mas sem ID não pode ser destino de referência:
+
+```markdown
+: Verificações preliminares
+```
+
+Uma lista apenas com ID possui destino e número visível, mas nenhum texto de legenda:
+
+```markdown
+: {#list:steps}
+```
+
+Uma lista comum sem linha de legenda não recebe número de objeto nem destino. O número do objeto é
+independente dos marcadores `1.`, `2.` dentro de uma lista ordenada.
+
+`[#list:steps]` cria uma referência automática; um link comum mantém o texto escrito pelo autor:
+
+```markdown
+Consulte [#list:steps].
+Consulte [as etapas de medição](#list:steps).
+```
+
+O texto automático padrão é `List 1`, independentemente do idioma deste guia. A palavra e o prefixo
+numérico literal são configurados no frontmatter:
+
+```yaml
+reference-labels:
+  list: Procedimento
+reference-number-prefixes:
+  list: "3-"
+```
+
+A referência e a legenda visível passam a usar `Procedimento 3-1`.
+
+HTML, EPUB, Word e ODT recebem a mesma estrutura de destino, posição da legenda, palavra, prefixo e
+numeração. Cada writer produz um contêiner nativo diferente, mas o comportamento visível é comum.
+Marcadores, caixas de tarefas e listas aninhadas não mudam. Markdown pré-processado usa a mesma
+estrutura do HTML.
+
+⌘-clique ou Ctrl-clique em uma referência revela a lista e coloca o cursor no primeiro item
+editável. Um clique na legenda renderizada mostra sua origem completa `: Legenda {…}`, onde texto,
+ID, classes e atributos podem ser editados.
+
+Listas não exigem um bloco `:::` no texto de origem. A legenda com dois-pontos deixa os blocos
+fenced div disponíveis para callouts. Dois-pontos indentados dentro de um item continuam sendo
+conteúdo desse item; depois de um parágrafo comum, o Pandoc mantém seu significado de lista de
+definições.
+
+#### Numeração de listas em LaTeX e PDF
+
+O LaTeX não tem um contador nativo para um objeto de lista completo: `enumi`, `enumii` e contadores
+semelhantes numeram itens e valem apenas dentro de um ambiente `enumerate`. Por isso o Yi dá ao
+objeto de lista o contador próprio `yilist`, enquanto `\label`, `\ref` e `hyperref` continuam sendo
+os mecanismos nativos de referência do LaTeX.
+
+O padrão é uma sequência global por documento. Um modelo LaTeX/PDF pode configurar o nível de
+reinício e o formato por `\yiListCounterSetup`. Para numeração por capítulo:
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+O Yi chama o hook em `\begin{document}` e depois aplica a palavra e o prefixo literal da nota.
+`\yiListNumber` controla o número subjacente sem remover o prefixo. Se a numeração precisar
+corresponder exatamente ao contador de tabelas de um modelo, os dois contadores devem ser
+configurados no mesmo local e com o mesmo nível de reinício; o Yi não consegue inferir
+automaticamente as regras de uma classe arbitrária.
+
 ## Exportar uma nota
 
 | Tipo | Saída |

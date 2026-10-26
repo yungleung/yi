@@ -43,6 +43,85 @@ Yi 以 Markdown 原文为准，同时显示渲染结果。光标进入链接、�
 Markdown。常用快捷键：⌘S / Ctrl+S 保存，⌘N / Ctrl+N 新建，⌘F / Ctrl+F 查找，
 ⇧⌘F / Ctrl+Shift+F 替换，F1 打开文档。
 
+### 列表
+
+完整的项目符号列表、有序列表或任务列表后紧跟一行题注时，会成为带编号的列表对象：
+
+```markdown
+1. 准备样本
+2. 执行测量
+
+: 步骤 {#list:steps .wide data-owner=demo}
+```
+
+以冒号开头的题注行可以直接跟在列表后，也可以隔一行空行。它使用与表格题注相同的语法。只有题注
+而没有 ID 的列表会消耗编号，但不能作为引用目标：
+
+```markdown
+: 初步检查
+```
+
+只有 ID 的列表有引用目标和可见编号，但没有题注正文：
+
+```markdown
+: {#list:steps}
+```
+
+没有题注行的普通列表既不会有列表对象编号，也不会有引用目标。列表对象编号与有序列表内部的
+`1.`、`2.` 项目编号相互独立。
+
+`[#list:steps]` 会生成自动引用；普通链接保留作者写入的文本：
+
+```markdown
+参见 [#list:steps]。
+参见[测量步骤](#list:steps)。
+```
+
+自动引用的默认文本是 `List 1`，不随本文档语言变化。可以在前置元数据中设置列表类型词和字面编号
+前缀：
+
+```yaml
+reference-labels:
+  list: 流程
+reference-number-prefixes:
+  list: "3-"
+```
+
+引用和可见题注会使用 `流程 3-1`。
+
+HTML、EPUB、Word 和 ODT 获得相同的列表目标、题注位置、类型词、前缀和编号行为。不同 writer
+生成的底层容器不同，但可见行为和结构一致。列表标记、任务复选框和嵌套列表保持不变。预处理
+Markdown 使用与 HTML 相同的结构。
+
+按住 ⌘ 或 Ctrl 点击引用会显示列表，并把光标放到第一个可编辑项目中。点击渲染后的题注会显示完整
+来源 `: 题注 {…}`，可在此编辑正文、ID、类名和属性。
+
+列表来源不需要 `:::` 块。冒号题注不会占用围栏 div，因此 callout 可以继续使用该语法。列表项目
+内部缩进的冒号仍属于该项目内容；普通段落后的冒号继续保留 Pandoc 定义列表的含义。
+
+#### LaTeX 与 PDF 中的列表编号
+
+LaTeX 没有针对整个列表对象的原生计数器：`enumi`、`enumii` 等只计算项目，并且作用范围限于一个
+`enumerate` 环境。因此 Yi 为列表对象使用专用计数器 `yilist`，但标签和引用仍使用 LaTeX 原生的
+`\label`、`\ref` 和 `hyperref` 机制。
+
+默认使用整个文档中的单一序列。LaTeX/PDF 模板可以通过 `\yiListCounterSetup` 设置重置层级和编号
+格式。按章编号的示例：
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+Yi 在 `\begin{document}` 时调用这个 hook，随后应用笔记配置的类型词和字面前缀。`\yiListNumber`
+只控制基础编号，不会移除前缀。如果列表编号必须与模板的表格计数器完全一致，需要把两个计数器放在
+同一位置并设置为相同的重置层级；Yi 无法自动推断任意文档类的表格计数器规则。
+
 ## 导出笔记
 
 | 类型 | 输出 |
