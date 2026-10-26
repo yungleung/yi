@@ -818,6 +818,25 @@ const render = async (text, answers = {}) => {
 }
 
 {
+  const rich =
+    '- [x] Done\n' +
+    '- [ ] Todo\n' +
+    '  - Nested item\n\n' +
+    ': Tasks {#list:tasks}\n';
+  const { rendered } = await render(rich, { kind: 'markdown' });
+  check(
+    'processed Markdown keeps task boxes and nested lists in a captioned list',
+    [
+      rendered.includes('<li class="task-list-item"><input type="checkbox" disabled checked> Done</li>'),
+      rendered.includes('<li class="task-list-item"><input type="checkbox" disabled> Todo'),
+      rendered.includes('  <ul>'),
+      rendered.includes('<span class="list-label">List 1.</span> Tasks')
+    ],
+    [true, true, true, true]
+  );
+}
+
+{
   const list = '- First item\n- Second item\n\n: Steps {#list:steps .wide owner=demo}\n';
   for (const kind of ['latex', 'pdf']) {
     const { rendered } = await render(list, { kind });

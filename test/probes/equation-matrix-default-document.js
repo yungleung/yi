@@ -8,6 +8,13 @@
  */
 (async () => {
   const t = window.__t;
+  const read = await window.__TAURI_INTERNALS__.invoke('plugin:fs|read_text_file', {
+    path: `${window.__probePaths.checkout}test/fixtures/workspace/default-document.md`
+  });
+  const note = new TextDecoder().decode(
+    read instanceof ArrayBuffer ? read : Uint8Array.from(read)
+  );
+  await t.load(note);
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -51,16 +58,38 @@
     [13, 13]
   );
 
-  const heading = [...t.prose().querySelectorAll('h2')].find(
-    (candidate) => candidate.textContent === 'Equation cross-references'
-  );
-  heading?.scrollIntoView({ block: 'start' });
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const heading = [...t.prose().querySelectorAll('h2')].find(
+      (candidate) => candidate.textContent === 'Equation cross-references'
+    );
+    if (heading) {
+      heading.scrollIntoView({ block: 'start' });
+      break;
+    }
+    const scroller = t.scroller();
+    if (scroller) {
+      scroller.scrollTop += 320;
+    }
+    await t.sleep(100);
+  }
   await t.sleep(400);
-  const reference = t.prose().querySelector('[data-auto-reference="eq:plain"]');
+  let reference = null;
+  let numbered = null;
+  for (let attempt = 0; attempt < 8 && (reference === null || numbered === null); attempt += 1) {
+    reference = t.prose().querySelector('[data-auto-reference="eq:plain"]');
+    numbered = t.prose().querySelector('[id="eq:plain"] .markdown-equation-number');
+    if (reference === null || numbered === null) {
+      const scroller = t.scroller();
+      if (scroller) {
+        scroller.scrollTop += 240;
+      }
+      await t.sleep(200);
+    }
+  }
   check('the automatic reference uses the configured equation label', reference?.textContent ?? null, 'Formula (2-1)');
   check(
     'the visible labeled equation uses only its number',
-    t.prose().querySelector('[id="eq:plain"] .markdown-equation-number')?.textContent ?? null,
+    numbered?.textContent ?? null,
     '(2-1)'
   );
   check(
