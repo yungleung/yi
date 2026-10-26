@@ -261,10 +261,30 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.find = new FindController(this.context, this.findBar);
     this.element.appendChild(this.findBar.element);
 
-    this.contentView.addEventListener('keydown', (event) => {
+    const handleKey = (event: KeyboardEvent): void => {
       this.placeCaretForTheTextPath();
       handleEditorKey(event, this.keyHost);
-    });
+    };
+    this.contentView.addEventListener('keydown', handleKey);
+    // Regaining IME context needs one unfocused turn. A key can arrive before that
+    // turn ends, when the browser sends it to the body instead of the field; it is
+    // still the reader's keystroke and belongs to the same text path.
+    window.addEventListener(
+      'keydown',
+      (event) => {
+        const active = document.activeElement;
+        const focusIsPage =
+          active === null || active === document.body || active === document.documentElement;
+        if (
+          this.composition.keyboardRegaining() &&
+          focusIsPage &&
+          !(event.target instanceof Node && this.contentView.contains(event.target))
+        ) {
+          handleKey(event);
+        }
+      },
+      true
+    );
     // The routed clicks, in the order they have to run: a checkbox and a footnote
     // marker are handled before a node can place a caret where the click landed, a
     // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening

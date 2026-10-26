@@ -218,7 +218,9 @@ height remembered against it.
    (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
    syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
    a span at the caret, marked `data-composing` so the offsets step over it, because none of those
-   characters is in the document yet.
+   characters is in the document yet. Restoring the field's input context deliberately
+   blurs it for one turn; a key that arrives before the deferred refocus is still
+   handled by the same key path, rather than being delivered to the body and lost.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).

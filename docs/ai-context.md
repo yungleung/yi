@@ -902,6 +902,12 @@ command that focuses the page and a command that selects it are then asking for 
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
 composition events rather than pretending to type.
 
+The hand-back deliberately blurs the seam for one turn so the input method gets a
+fresh context. A key can arrive inside that turn, when the browser sends it to the
+body rather than the field; the editor's window key path keeps routing it to the
+same text commands, so a quick burst after an arrow key or a caption click loses no
+character (`test/probes/caption-burst-editing.js`).
+
 A key the input method routes is the method's, whether a composition is behind it or not: a
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes
 that character — typing it as well writes it twice (measured with Caps Lock on, where the method
