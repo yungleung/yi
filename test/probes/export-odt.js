@@ -87,6 +87,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -192,6 +199,7 @@
       { pictures: latin.includes('Pictures/') }
     );
     const content = bytes === null ? '' : (await t.zipEntry(bytes, 'content.xml')) ?? '';
+    const contentText = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     check(
       'a figure keeps its target and numbered caption in the ODT section',
       content.includes('text:section text:name="fig:demo"') &&
@@ -225,6 +233,17 @@
         captionOnly: content.includes('Table 2. Numbered without an ID'),
         idOnly: content.includes('Table 3.'),
         section: content.includes('text:section text:name="tbl:only"')
+      }
+    );
+    check(
+      'a captioned list keeps its named section, visible caption, and automatic link',
+      content.includes('text:section text:name="list:steps"') &&
+        /List 1\. Steps/.test(contentText) &&
+        content.includes('xlink:href="#list:steps"'),
+      {
+        section: content.includes('text:section text:name="list:steps"'),
+        caption: /List 1\. Steps/.test(contentText),
+        link: content.includes('xlink:href="#list:steps"')
       }
     );
     check(

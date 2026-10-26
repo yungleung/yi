@@ -84,6 +84,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:plain] and [#eq:system].',
     '',
     '[$$',
@@ -245,6 +252,21 @@
         idOnly: plain.includes('<caption>Table 3.</caption>'),
         target: plain.includes('<table id="tbl:only">'),
         emptyTarget: plain.includes('<table id="">')
+      }
+    );
+    const listDocument = new DOMParser().parseFromString(plain, 'text/html');
+    const listTarget = listDocument.querySelector('#list\\:steps');
+    check(
+      'and a captioned list becomes targeted HTML with its numbered caption',
+      plain.includes('See [List 1](#list:steps)') &&
+        listTarget?.tagName === 'DIV' &&
+        listTarget.querySelectorAll('ul > li').length === 2 &&
+        listTarget.querySelector('.list-caption')?.textContent?.trim() === 'List 1. Steps',
+      {
+        link: plain.includes('See [List 1](#list:steps)'),
+        tag: listTarget?.tagName ?? null,
+        items: listTarget?.querySelectorAll('ul > li').length ?? 0,
+        caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null
       }
     );
     const equationDocument = new DOMParser().parseFromString(plain, 'text/html');

@@ -95,6 +95,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -282,6 +289,10 @@
       internalLinks.find((link) => link.text === text)?.anchor ?? null;
     const tableOneAnchor = anchorFor('Table 1');
     const tableThreeAnchor = anchorFor('Table 3');
+    const listAnchor = anchorFor('List 1');
+    const wordText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
+      .map((match) => match[1])
+      .join('');
     check(
       'and a figure keeps a bookmark, numbered caption, and automatic link',
       documentXml.includes('<w:bookmarkStart') &&
@@ -320,6 +331,21 @@
           tableThreeAnchor !== null && documentXml.includes(`w:name="${tableThreeAnchor}"`),
         captionOnlyLink: internalLinks.some((link) => link.text === 'Table 2'),
         anchors: internalLinks
+      }
+    );
+    check(
+      'a captioned list keeps a bookmark, visible caption, and automatic link',
+      wordText.includes('List 1.') &&
+        wordText.includes('Steps') &&
+        listAnchor !== null &&
+        documentXml.includes(`w:name="${listAnchor}"`),
+      {
+        caption: wordText.includes('List 1.') && wordText.includes('Steps'),
+        text: wordText,
+        link: listAnchor !== null,
+        bookmark:
+          listAnchor !== null && documentXml.includes(`w:name="${listAnchor}"`),
+        anchor: listAnchor
       }
     );
     const equationText = [...documentXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(

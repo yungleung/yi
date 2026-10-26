@@ -93,6 +93,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -223,6 +230,30 @@
       for (const page of pages) {
         texts.push((await t.zipEntry(bytes, page)) ?? '');
       }
+      const listLayouts = texts.flatMap((text) => {
+        const chapter = new DOMParser().parseFromString(text, 'text/html');
+        const target = chapter.querySelector('#list\\:steps');
+        return target === null
+          ? []
+          : [
+              {
+                tag: target.tagName,
+                items: target.querySelectorAll('ul > li').length,
+                caption:
+                  target.querySelector('.list-caption')?.textContent?.trim() ?? null
+              }
+            ];
+      });
+      check(
+        'a captioned list keeps its target, items, and visible caption',
+        JSON.stringify(listLayouts) ===
+          JSON.stringify([{ tag: 'DIV', items: 2, caption: 'List 1. Steps' }]) &&
+          texts.some((text) => /href="[^"]*#list:steps"/.test(text)),
+        {
+          actual: listLayouts,
+          linked: texts.some((text) => /href="[^"]*#list:steps"/.test(text))
+        }
+      );
       const chapter = texts.join('\n');
       check(
         'the picture the app fetched from the web is carried in the book, not linked',

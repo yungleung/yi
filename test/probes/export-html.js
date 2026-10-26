@@ -81,6 +81,13 @@
     '| target |',
     ': {#tbl:only}',
     '',
+    'See [#list:steps] for the procedure.',
+    '',
+    '- First step',
+    '- Second step',
+    '',
+    ': Steps {#list:steps .wide owner=demo}',
+    '',
     'See [#eq:system] for the equations.',
     '',
     '[$$',
@@ -276,6 +283,20 @@
       }
     );
     const pageDocument = new DOMParser().parseFromString(page, 'text/html');
+    const listTarget = pageDocument.querySelector('#list\\:steps');
+    check(
+      'a captioned list keeps one target, its items, and a visible caption',
+      listTarget?.tagName === 'DIV' &&
+        listTarget.querySelectorAll('ul > li').length === 2 &&
+        listTarget.querySelector('.list-caption')?.textContent?.trim() === 'List 1. Steps' &&
+        page.includes('href="#list:steps"'),
+      {
+        tag: listTarget?.tagName ?? null,
+        items: listTarget?.querySelectorAll('ul > li').length ?? 0,
+        caption: listTarget?.querySelector('.list-caption')?.textContent?.trim() ?? null,
+        link: page.includes('href="#list:steps"')
+      }
+    );
     const equationTarget = pageDocument.querySelector('[id="eq:system"]');
     const equationLayout = [
       ...pageDocument.querySelectorAll('table.equation-layout')

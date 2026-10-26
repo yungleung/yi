@@ -46,6 +46,7 @@ import type { FigureNode } from '../markdown/syntax/figures';
 import { escapeHtml, htmlAttributeName } from './html';
 import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
+import { listRewrites } from './list_rewrites';
 import {
   firstReference,
   referenceIndex,
@@ -138,6 +139,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...(await imageRewrites(tree, answers, fetched, figures, tables)),
     ...equationRewrites(text, references, answers.kind),
+    ...listRewrites(tree, references, answers.kind),
     ...tableRewrites(tree, references, answers.kind),
     ...(cited ?? []).map((span) => ({
       start: span.start,

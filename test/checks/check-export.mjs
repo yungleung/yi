@@ -772,6 +772,51 @@ const render = async (text, answers = {}) => {
   );
 }
 
+{
+  const list =
+    '- First item\n- Second item\n\n' +
+    ': Steps {#list:steps .wide owner=demo}\n';
+  const expected =
+    ':::: {#list:steps .list-target .wide owner="demo"}\n' +
+    '- First item\n- Second item\n\n' +
+    '::: {.list-caption}\n' +
+    '**List 1.** Steps\n' +
+    ':::\n' +
+    '::::\n';
+  for (const kind of ['html', 'epub', 'docx', 'odt']) {
+    const { rendered } = await render(list, { kind });
+    check(`${kind} gives a captioned list the shared target wrapper`, rendered, expected);
+  }
+
+  const { rendered: processed } = await render(list, { kind: 'markdown' });
+  check(
+    'processed Markdown renders the list and caption as targeted HTML',
+    processed,
+    '<div id="list:steps" class="list-target wide" data-owner="demo">\n' +
+      '  <ul>\n' +
+      '    <li>First item</li>\n' +
+      '    <li>Second item</li>\n' +
+      '  </ul>\n' +
+      '  <div class="list-caption"><span class="list-label">List 1.</span> Steps</div>\n' +
+      '</div>\n'
+  );
+}
+
+{
+  const captionOnly = '- Only item\n: Checks\n';
+  const { rendered } = await render(captionOnly, { kind: 'html' });
+  check(
+    'a caption-only list is numbered without a target ID',
+    rendered,
+    ':::: {.list-target}\n' +
+      '- Only item\n\n' +
+      '::: {.list-caption}\n' +
+      '**List 1.** Checks\n' +
+      ':::\n' +
+      '::::\n'
+  );
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
