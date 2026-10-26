@@ -146,8 +146,11 @@ list into a numbered object.
 
 Pandoc's non-LaTeX writers do not add numbers to captioned figures or tables.
 Yi therefore displays the shared computed number in its editor and in exported
-HTML, EPUB, DOCX, and ODT captions. LaTeX/PDF uses its native float counters, and
-the numbering policy must keep those counters aligned with the shared index.
+HTML, EPUB, DOCX, and ODT captions. LaTeX/PDF uses native float counters where
+the object has one. Lists use a Yi-owned object counter through LaTeX's native
+reference mechanisms because no native counter covers a whole list. The
+numbering policy must keep every writer's sequence aligned with the shared
+index.
 
 Numbers are document-global in the first release:
 
@@ -164,8 +167,9 @@ not.
 
 The first release uses one document-global sequence per kind.
 `reference-labels` and `reference-number-prefixes` in frontmatter may replace
-the default English kind word and add literal prefix text. Chapter-relative
-numbering and dynamic paper/book numbering remain later features.
+the default English kind word and add literal prefix text. Yi does not infer a
+chapter-relative prefix from heading structure. A LaTeX/PDF template may instead
+configure its object counter's reset level and format.
 
 Headings do not gain synthetic section numbers in this release. An automatic
 reference to a heading displays the heading's title, matching its existing link
@@ -268,6 +272,11 @@ automatic references:
   must match the shared index.
 
 Each element specification owns the placement and styling of that label.
+
+For captioned lists, HTML, EPUB, DOCX, and ODT use one identical normalized
+wrapper/caption representation. The writer maps that wrapper to an HTML
+container, Word bookmark, or ODT named section, but label, prefix, sequence,
+caption placement, and target semantics do not vary by kind.
 
 Processed Markdown uses presentation-oriented fallbacks where an element
 specification needs one for common Markdown readers. Pandoc-backed exports keep

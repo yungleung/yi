@@ -389,6 +389,90 @@ with Yi's visible numbering.
 Explicit author `\tag{…}` is not Yi numbering. It remains author-controlled math content and is not
 part of automatic equation-reference resolution.
 
+### Lists
+
+A completed bullet, ordered, or task list becomes a numbered list object when it is followed by a
+caption line:
+
+```markdown
+1. Prepare the sample
+2. Run the measurement
+
+: Steps {#list:steps .wide data-owner=demo}
+```
+
+The colon line may follow directly after the list or after one blank line. It uses the same caption
+grammar as a table. A caption-only list is numbered but cannot be referenced:
+
+```markdown
+: Preliminary checks
+```
+
+An ID-only list has a target and a visible number but no caption text:
+
+```markdown
+: {#list:steps}
+```
+
+An ordinary list without a caption line has no list-object number and no target. The list-object
+number is separate from the `1.`, `2.` item markers inside an ordered list.
+
+Use `[#list:steps]` for an automatic reference or an ordinary link with your own text:
+
+```markdown
+See [#list:steps].
+See [the measurement steps](#list:steps).
+```
+
+The default automatic text is `List 1`. Configure its word and literal number prefix in frontmatter:
+
+```yaml
+reference-labels:
+  list: Procedure
+reference-number-prefixes:
+  list: "3-"
+```
+
+The reference and visible caption then use `Procedure 3-1`.
+
+HTML, EPUB, Word, and ODT receive the same list target, caption placement, label, prefix, and
+numbering. Their writers produce different native containers, but the visible list-reference
+behavior is shared. Item markers, task checkboxes, and nested lists remain unchanged. Processed
+Markdown uses the same structure as HTML.
+
+Command-click or Ctrl-click a reference to reveal the list and place the caret at its first
+editable item. Clicking the rendered caption reveals the complete `: Caption {…}` source, where the
+caption, ID, classes, and attributes can be edited.
+
+Lists do not require a source `:::` block. The colon caption leaves fenced divs available for
+callouts. An indented colon inside a list item remains ordinary item content, and a colon after a
+non-list paragraph keeps Pandoc's definition-list meaning.
+
+#### List numbering in LaTeX and PDF
+
+LaTeX has no native counter for a whole list object: `enumi`, `enumii`, and similar counters number
+items and are scoped to an `enumerate` environment. Yi therefore gives the list object a namespaced
+`yilist` counter, while labels and references still use LaTeX's native `\label`, `\ref`, and
+`hyperref` mechanisms.
+
+The default is one document-global list sequence. A LaTeX/PDF template can configure the counter's
+reset level and number format through `\yiListCounterSetup`. For chapter-based list numbering:
+
+```tex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+Yi calls the hook at `\begin{document}`, then applies the note's configured label and literal prefix.
+`\yiListNumber` controls the underlying number without removing that prefix. Templates that need
+list numbering to match their table counter must configure both counters with the same reset level;
+Yi cannot infer a class's table reset rules automatically.
+
 ## Export a note
 
 **File → Export** offers these kinds:

@@ -364,6 +364,8 @@ For every writer:
 - a captioned list is one numbered object;
 - one Yi-owned list number is shared by the list caption and its automatic
   references;
+- HTML, EPUB, DOCX, and ODT share one non-LaTeX representation: one target
+  wrapper, one list, and one generated caption in source order;
 - item markers and item numbers are unchanged;
 - automatic references become ordinary links or native LaTeX references;
 - source caption attributes survive in a target wrapper or caption structure;
@@ -379,10 +381,10 @@ List N. Caption
 or `List N.` when the caption text is empty. Configured labels and prefixes
 replace `List` and `N` respectively.
 
-### HTML and EPUB
+### HTML, EPUB, DOCX, and ODT
 
-The non-LaTeX rewrite wraps the exact list and its generated caption in a
-target `Div`:
+All four non-LaTeX writers receive the same rewritten structure around the exact
+list and its generated caption:
 
 ```markdown
 ::: {#list:steps .list-target .wide data-owner=demo}
@@ -405,25 +407,11 @@ Rules:
 - ordinary lists remain unchanged.
 
 Pandoc therefore produces one stable target around the list and the visible
-generated caption in HTML and EPUB.
-
-### DOCX and ODT
-
-Pandoc has no native list-caption object. The same ID-bearing wrapper is used so
-its `Div` becomes a Word bookmark or ODT named section:
-
-```markdown
-::: {#list:steps .list-target .wide data-owner=demo}
-1. First step
-2. Second step
-
-**List 2.** Steps
-:::
-```
-
-The caption is a normal visible paragraph after the list. A caption-only list
-is numbered without a wrapper ID. Classes and key/value attributes remain on
-the wrapper for reference-document styles and user filters.
+generated caption in every non-LaTeX writer. Pandoc emits an HTML `Div`, a Word
+bookmark, or an ODT named section from the same wrapper. The caption is a normal
+visible paragraph after the list in all four outputs. A caption-only list is
+numbered without a wrapper ID. Classes and key/value attributes remain on the
+wrapper for stylesheets, reference-document styles, and user filters.
 
 ### LaTeX and PDF
 
@@ -440,8 +428,10 @@ The generated header defines:
 \makeatletter
 \@ifundefined{c@yilist}{\newcounter{yilist}}{}
 \makeatother
-\providecommand{\theyilist}{\arabic{yilist}}
+\providecommand{\yiListNumber}{\arabic{yilist}}
+\renewcommand{\theyilist}{\yiListNumber}
 \providecommand{\yiListName}{List}
+\providecommand{\yiListCounterSetup}{}
 \providecommand{\yiListRef}[1]{%
   \hyperref[#1]{\yiListName~\ref*{#1}}%
 }
@@ -452,13 +442,42 @@ The header applies the note's configured label and literal prefix inside
 
 ```latex
 \AtBeginDocument{%
+  \yiListCounterSetup
   \renewcommand{\yiListName}{Steps}%
-  \renewcommand{\theyilist}{\mbox{2-}\arabic{yilist}}%
+  \renewcommand{\theyilist}{\mbox{2-}\yiListNumber}%
 }
 ```
 
 The prefix is escaped as literal text. If the prefix is empty,
-`\theyilist` keeps LaTeX's default `\arabic{yilist}`.
+`\theyilist` keeps `\yiListNumber`.
+
+#### Template counter setup
+
+The counter has a Yi-owned name because LaTeX has no native counter for a whole
+list object, but all of its reference behavior uses native LaTeX mechanisms:
+`\refstepcounter`, `\label`, `\ref`, and `hyperref`. It never changes `enumi`,
+`enumii`, `table`, or another package-owned counter.
+
+The generated header calls `\yiListCounterSetup` once at
+`\begin{document}`, before it applies the note's configured label and literal
+prefix. A template can provide the hook and choose the reset level and number
+format. For chapter-based list numbering:
+
+```latex
+\makeatletter
+\providecommand{\yiListCounterSetup}{}
+\renewcommand{\yiListCounterSetup}{%
+  \@addtoreset{yilist}{chapter}%
+  \renewcommand{\yiListNumber}{\thechapter.\arabic{yilist}}%
+}
+\makeatother
+```
+
+The default is one document-global sequence. A template may instead mirror its
+own table counter's reset level and formatting by configuring both counters in
+the same place. Yi cannot infer an arbitrary class's table reset or number
+format, so table-identical behavior is a template contract rather than an
+automatic consequence.
 
 For a captioned list, the lowered LaTeX source:
 
@@ -521,12 +540,12 @@ Re-importing this file treats it as raw HTML, not as a Yi captioned list.
 
 The matrix assumes an empty prefix and default label.
 
-| Source | HTML/EPUB | DOCX/ODT | Processed Markdown | LaTeX/PDF |
-| --- | --- | --- | --- | --- |
-| No caption | Ordinary list | Ordinary list | Ordinary list | Ordinary list |
-| Caption only | Numbered list with visible caption | Numbered list with visible caption | HTML list with visible caption | Visible numbered caption, no `\label` |
-| ID only | Wrapped target and visible `List N.` | Bookmark/section and visible `List N.` | HTML target and visible label | Numbered caption and label |
-| ID and caption | Wrapped target with numbered caption | Bookmark/section with numbered caption | HTML target with numbered caption | Numbered caption and label |
+| Source | HTML/EPUB/DOCX/ODT | Processed Markdown | LaTeX/PDF |
+| --- | --- | --- | --- |
+| No caption | Ordinary list | Ordinary list | Ordinary list |
+| Caption only | Numbered list with visible caption | HTML list with visible caption | Visible numbered caption, no `\label` |
+| ID only | Wrapped target and visible `List N.` | HTML target and visible label | Numbered caption and label |
+| ID and caption | Wrapped target with numbered caption | HTML target with numbered caption | Numbered caption and label |
 
 Configured labels and prefixes replace every visible `List N` spelling.
 
@@ -589,6 +608,7 @@ Tauri probes will cover:
 
 Export probes will cover:
 
+- one normalized HTML/EPUB/DOCX/ODT caption, sequence, and attribute contract;
 - HTML/EPUB list targets and visible numbered captions;
 - DOCX bookmarks and visible captions;
 - ODT named sections and visible captions;
@@ -612,7 +632,8 @@ The English Documentation will explain:
 - where command-click lands;
 - how each export kind displays the list;
 - that callouts use fenced Divs while list captions do not;
-- template `\theyilist` behavior in LaTeX/PDF.
+- template `\theyilist` behavior in LaTeX/PDF;
+- `\yiListCounterSetup` for chapter-based numbering.
 
 `test/fixtures/workspace/default-document.md` will include:
 
