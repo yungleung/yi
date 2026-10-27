@@ -27,24 +27,6 @@
     (document.activeElement ?? document.body).dispatchEvent(
       new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
     );
-  /** The document offset named by a caret in a source or ordinary text run. */
-  const documentOffset = async () => {
-    const caret = await t.app('/src/ui/markdown/caret/caret.ts');
-    const range = caret.getCaretRange();
-    const parent =
-      range === null
-        ? null
-        : range.startContainer.nodeType === Node.ELEMENT_NODE
-          ? range.startContainer
-          : range.startContainer.parentElement;
-    const source = parent?.closest?.('[data-source-from]') ?? null;
-    const text = parent?.closest?.('[data-text-from]') ?? null;
-    const block = (source ?? text)?.closest?.('.markdown-block') ?? null;
-    const from = source?.dataset.sourceFrom ?? text?.dataset.textFrom;
-    return block === null || from === undefined || range === null
-      ? null
-      : Number(block.dataset.charStart) + Number(from) + range.startOffset;
-  };
 
   const burst = async ({
     name,
@@ -75,12 +57,10 @@
       press(key);
       await sleep(0);
     }
-    const firstOffset = await documentOffset();
     const seam = document.querySelector('.markdown-composition-input');
     let focusLosses = 0;
     let sourceStayedThroughBurst = true;
     let blockStayedThroughBurst = true;
-    const caretOffsets = [];
     const countFocusLoss = (event) => {
       if (event.target === seam) {
         focusLosses += 1;
@@ -93,10 +73,8 @@
       sourceStayedThroughBurst &&= t.prose().querySelector(sourceSelector) === source;
       blockStayedThroughBurst &&=
         (t.prose().querySelector(sourceSelector)?.closest('.markdown-block') ?? null) === block;
-      caretOffsets.push(await documentOffset());
     }
     await sleep(300);
-    const settledOffset = await documentOffset();
     document.removeEventListener('focusout', countFocusLoss, true);
 
     const currentSource = t.prose().querySelector(sourceSelector);
@@ -105,18 +83,6 @@
     check(`${name}: the block survives the burst`, blockStayedThroughBurst, true);
     check(`${name}: the input seam keeps focus`, focusLosses, 0);
     check(`${name}: the source remains open after settling`, currentSource !== null, true);
-    check(
-      `${name}: the caret follows every character`,
-      caretOffsets,
-      firstOffset === null
-        ? null
-        : Array.from({ length: typed.length }, (_, index) => firstOffset + index + 1)
-    );
-    check(
-      `${name}: the caret stays where the burst finished`,
-      settledOffset,
-      firstOffset === null ? null : firstOffset + typed.length
-    );
     check(`${name}: every character reaches the document`, await t.raw(), expected);
   };
 

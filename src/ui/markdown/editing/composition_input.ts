@@ -21,9 +21,7 @@
  *
  * May import: the caret (`caret/caret.ts`, `caret/geometry.ts`) and that view. Upholds:
  * the document text is the only source of truth — nothing is written while a word is
- * being composed, and what commits is the system's own text, once. While a structural
- * edit or source reveal replaces the line's input context, printable keys WebKit reports
- * as 229 are held for a short idle window and replayed once through the ordinary typing path.
+ * being composed, and what commits is the system's own text, once.
  */
 
 import { getCaretRange, onCaretRangeChanged } from '../caret/caret';
@@ -41,17 +39,6 @@ export interface CompositionInput {
    * composition already over and nothing on it to say so (see `markdown_editor.ts`).
    */
   markedText(): boolean;
-  /**
-   * Opens the short window in which the editor has replaced or rebuilt the focused
-   * line and WebKit may report printable keys as `keyCode` 229 before the input context
-   * is ready. The window closes itself, whether or not a queued key arrives.
-   */
-  beginReconciliation(): void;
-  /**
-   * Queues a printable 229 key while {@link beginReconciliation} is open.
-   * Returns false outside that window, where 229 belongs to the input method.
-   */
-  queueCharacter(character: string): boolean;
   /**
    * Keeps the seam focused after ordinary typing without deliberately resetting its input
    * context. A source block used to be rebuilt for every character and then blur/refocus the
@@ -81,12 +68,6 @@ const CONTROLS = 'input, textarea, select, [contenteditable=""], [contenteditabl
 const MOMENT_MS = 50;
 
 /**
- * How long the input context may keep reporting printable keys as 229 after a
- * structural rebuild. It starts again whenever another such key arrives.
- */
-const RECONCILIATION_MS = 250;
-
-/**
  * Puts the seam in `host` (the scroller) and reports what committed.
  *
  * The element is parked off to the side until there is a caret to sit on, and follows
@@ -98,8 +79,7 @@ const RECONCILIATION_MS = 250;
 export function installCompositionInput(
   host: HTMLElement,
   onCommit: (text: string) => void,
-  onLayoutChanged: (block: HTMLElement) => void,
-  onRecoveredText: (text: string) => void
+  onLayoutChanged: (block: HTMLElement) => void
 ): CompositionInput {
   const element = document.createElement('textarea');
   element.className = 'markdown-composition-input';
@@ -121,14 +101,6 @@ export function installCompositionInput(
   clip.appendChild(element);
 
   let composing = false;
-  /** Whether the editor is replacing the focused line and its input context. */
-  let reconciling = false;
-  /** Printable 229 keys typed while that replacement is in progress. */
-  let queued = '';
-  /** The frame that puts the keyboard back after the new line exists. */
-  let recoveryFrame: number | null = null;
-  /** The idle window after the last printable 229 key. */
-  let recoveryTimer: number | null = null;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
   // The composing text is written into the line at the caret, and the block it lands in has
@@ -204,8 +176,6 @@ export function installCompositionInput(
 
   element.addEventListener('compositionstart', () => {
     composing = true;
-    // A real composition owns the keys from here.
-    queued = '';
     drawMarked();
   });
   element.addEventListener('compositionupdate', () => {
@@ -213,7 +183,6 @@ export function installCompositionInput(
   });
   element.addEventListener('compositionend', () => {
     composing = false;
-    queued = '';
     committedAt = performance.now();
     commit();
   });
@@ -227,9 +196,6 @@ export function installCompositionInput(
   // - the marked text of a composition whose input method sends no composition events.
   //   Those arrive with `insertCompositionText`, which is exactly how they are told apart.
   element.addEventListener('input', (event) => {
-    // The system has taken the key into this field; it is not one of the printable
-    // 229 keys waiting to be replayed as ordinary document typing.
-    queued = '';
     if (composing || event.inputType === 'insertCompositionText') {
       drawMarked();
       return;
@@ -247,80 +213,6 @@ export function installCompositionInput(
   const showingSelection = (): boolean => {
     const selection = window.getSelection();
     return selection !== null && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
-  };
-
-  /** Puts the keyboard back once the new line exists, without closing the queue window. */
-  const recoverKeyboard = (): void => {
-    if (!reconciling || recoveryFrame !== null) {
-      return;
-    }
-    recoveryFrame = requestAnimationFrame(() => {
-      recoveryFrame = null;
-      if (!reconciling) {
-        return;
-      }
-      const active = document.activeElement;
-      const keyboardIsOurs =
-        active === null ||
-        active === document.body ||
-        (active instanceof Node &&
-          host.contains(active) &&
-          !(active instanceof Element && active.matches(CONTROLS)));
-      if (active !== element && keyboardIsOurs && !showingSelection()) {
-        element.focus({ preventScroll: true });
-      }
-    });
-  };
-
-  /**
-   * Closes the short window after typing settles and writes the queued run once
-   * through the ordinary typing path. WebKit can stay in its 229 state across
-   * several animation frames, so this is an idle timer rather than one frame.
-   */
-  const closeReconciliation = (): void => {
-    recoveryTimer = null;
-    if (!reconciling) {
-      return;
-    }
-    const active = document.activeElement;
-    const keyboardIsOurs =
-      active === null ||
-      active === document.body ||
-      (active instanceof Node &&
-        host.contains(active) &&
-        !(active instanceof Element && active.matches(CONTROLS)));
-    if (active !== element && keyboardIsOurs && !showingSelection()) {
-      element.focus({ preventScroll: true });
-    }
-    reconciling = false;
-    const text = queued;
-    queued = '';
-    if (text !== '') {
-      onRecoveredText(text);
-    }
-  };
-
-  /** Extends the input-context window while printable 229 keys keep arriving. */
-  const holdReconciliation = (): void => {
-    if (recoveryTimer !== null) {
-      clearTimeout(recoveryTimer);
-    }
-    recoveryTimer = window.setTimeout(closeReconciliation, RECONCILIATION_MS);
-  };
-
-  const beginReconciliation = (): void => {
-    reconciling = true;
-    holdReconciliation();
-    recoverKeyboard();
-  };
-
-  const queueCharacter = (character: string): boolean => {
-    if (!reconciling) {
-      return false;
-    }
-    queued += character;
-    holdReconciliation();
-    return true;
   };
 
   /**
@@ -352,14 +244,13 @@ export function installCompositionInput(
       return;
     }
     element.blur();
-    recoverKeyboard();
+    requestAnimationFrame(() => element.focus({ preventScroll: true }));
   };
 
   /** Keeps ordinary character typing in the seam without the deliberate focus reset. */
   const keepKeyboard = (): void => {
     const active = document.activeElement;
     if (active === element) {
-      recoverKeyboard();
       return;
     }
     if (active instanceof Element && active.matches(CONTROLS)) {
@@ -368,7 +259,7 @@ export function installCompositionInput(
     if (showingSelection()) {
       return;
     }
-    recoverKeyboard();
+    requestAnimationFrame(() => element.focus({ preventScroll: true }));
   };
 
   // A pointer that is down means the reader is working with the page itself — dragging
@@ -410,8 +301,6 @@ export function installCompositionInput(
   return {
     element,
     markedText,
-    beginReconciliation,
-    queueCharacter,
     keepKeyboard,
     regainKeyboard
   };

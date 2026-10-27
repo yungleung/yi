@@ -47,27 +47,13 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
   // A character the input method is handling is not the editor's. The keys *during* a
   // composition say so with `isComposing`; a key the method routes does so with
   // `keyCode` 229 — the key that picks a candidate, and (with Caps Lock on, so the method
-  // composes nothing) every letter it passes straight through. While the editor is
-  // rebuilding the line, WebKit also reports ordinary printable keys as 229 until the
-  // new input context is ready. The seam queues those for a short idle window, then
-  // writes them through the typing path. Outside that window 229 stays the method's,
-  // and typing it here as well would write the author's character twice. A 229 key
-  // that is *not* a character — `Enter`, an arrow, `Backspace`, `Tab` — is always the
-  // editor's (see
+  // composes nothing) every letter it passes straight through. Typing those writes the
+  // author's character twice: the method leaves the same letter in the seam, and the seam
+  // commits it. A 229 key that is *not* a character — `Enter` while a method is merely
+  // active, an arrow, `Backspace`, `Tab` — is still the editor's, which is why the guard
+  // is about the character and not about 229 alone (see
   // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
-  if (event.isComposing) {
-    return;
-  }
-  if (event.keyCode === 229 && event.key.length === 1) {
-    // A key that follows a composition belongs to the method even when the
-    // composition event itself is already over: this is the space that chooses
-    // a candidate and arrives once more as a 229.
-    if (host.composition.markedText()) {
-      return;
-    }
-    if (host.composition.queueCharacter(event.key)) {
-      event.preventDefault();
-    }
+  if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
     return;
   }
   // A Backspace that edits the word being composed is the input method's: while the word is

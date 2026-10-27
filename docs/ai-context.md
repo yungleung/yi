@@ -953,17 +953,6 @@ that character — typing it as well writes it twice (measured with Caps Lock on
 composes nothing and passes every letter through; `test/probes/input-method-passthrough.js`). A 229
 key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's.
 
-There is one exception, and it is narrowly scoped to the rebuild itself. A structural edit and a
-revealable source opening or closing replace the focused line; for a short window afterward WebKit
-can report ordinary printable keys as 229 without starting a composition or emitting an `input`
-event. `composition_input.ts` opens that reconciliation explicitly, queues those characters,
-extends the window while they keep arriving, and replays the run once through `insertText` after
-the caret and input context are restored. Outside that window, 229 remains the input method's; so
-does the candidate-picking key in the `MOMENT_MS` after a composition ends, even if a rebuild is
-open then. The queue exists only during reconciliation and is not a persistent typing buffer.
-`reconciliation-typing.js` holds both sides: a rebuilt line keeps its keys, and a 229 key outside
-the window stays untouched.
-
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.
 

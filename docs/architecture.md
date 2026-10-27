@@ -224,15 +224,6 @@ height remembered against it.
    the seam focused and does not reset that context. Activating the app can also leave focus
    on the page. A page-targeted key is still handled by the same path while the editor owns a
    live caret; without a caret it writes nothing.
-
-   A structural rebuild and entering or leaving a revealable source open a short input
-   reconciliation. WebKit may report printable keys as `keyCode` 229 across several frames in
-   that window even with no composition behind them; the seam queues those characters, extends
-   the window while they arrive, and replays the run once through the typing path after the
-   rebuilt caret and input context exist. Outside the window a 229 character remains the input
-   method's; so does one during the short moment after a composition has just committed, even
-   if a rebuild is open then. This is a transient queue for one rebuild, not a second document
-   buffer.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).
