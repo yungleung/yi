@@ -347,15 +347,15 @@ export function applyEdit(
   const rule = isPlainEdit(beforeText, from, to, replacement, literal);
   const root = proseRoot(context);
   const candidate = root ? plainRun(context.state, root, from, to) : null;
-  // A source view and ordinary keyboard typing on one exact text node both write the
-  // document's own characters directly. Prose may temporarily show a marker literally;
-  // the deferred shape check below renders it once the typing burst settles.
+  // A source view, ordinary keyboard typing and an input-method commit on one exact
+  // text node all write the document's own characters directly. Prose may temporarily
+  // show a marker literally; the deferred shape check renders it once input settles.
   const direct =
     candidate !== null &&
     (candidate.source
       ? isInPlaceTextEdit(beforeText, from, to, replacement)
       : rule ||
-        (kind === 'typing' &&
+        ((kind === 'typing' || kind === 'commit') &&
           replacement !== '' &&
           isInPlaceTextEdit(beforeText, from, to, replacement)));
   const run = direct ? candidate : null;

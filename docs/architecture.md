@@ -219,11 +219,11 @@ height remembered against it.
    (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
    syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
    a span at the caret, marked `data-composing` so the offsets step over it, because none of those
-   characters is in the document yet. A committed word and a structural edit deliberately
-   blur the field for one turn to restore its input context; ordinary character typing keeps
-   the seam focused and does not reset that context. Activating the app can also leave focus
-   on the page. A page-targeted key is still handled by the same path while the editor owns a
-   live caret; without a caret it writes nothing.
+   characters is in the document yet. A committed word and ordinary typing write in place when
+   the edit maps into one exact text node; both keep the seam focused during the burst. A
+   structural edit deliberately blurs the field for one turn to restore its input context.
+   Activating the app can also leave focus on the page. A page-targeted key is still handled by
+   the same path while the editor owns a live caret; without a caret it writes nothing.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).
@@ -244,14 +244,14 @@ region or over a selection, a step over the `]` the app itself wrote, and a pair
 by Backspace).
 
 Most typing never gets that far. A keyboard insertion followed by a non-newline
-character is written into the rendered text run as it is typed; nothing is rendered
-during the burst. `editing/typed_text.ts` first proves that the edit maps into one
-tagged text node that spells the document's own characters, one for one. Prose and
-source views therefore use the same rule: `Start _word_` appears literally character
-by character, with its case and caret intact, and becomes emphasis only after the
-deferred parse check. Edits that cannot map exactly — selections across nodes,
-newlines, non-keyboard commands — take the ordinary path above, which is always
-correct.
+character, and an input method's committed word, is written into the rendered text run
+as it arrives; nothing is rendered during the burst. `editing/typed_text.ts` first
+proves that the edit maps into one tagged text node that spells the document's own
+characters, one for one. Prose and source views therefore use the same rule:
+`Start _word_` appears literally character by character, with its case and caret
+intact, and becomes emphasis only after the deferred parse check. Edits that cannot
+map exactly — selections across nodes, newlines, non-keyboard commands — take the
+ordinary path above, which is always correct.
 
 `syntax/plain_edit.ts` remains the smaller, parse-aware classification of edits whose
 shape is already known not to change. It accepts letters, digits, single spaces and

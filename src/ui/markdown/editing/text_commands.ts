@@ -118,7 +118,14 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
     applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
     return true;
   }
-  applyEdit(context, offsets.from, offsets.to, text, undefined, brackets ? 'typing' : 'other');
+  applyEdit(
+    context,
+    offsets.from,
+    offsets.to,
+    text,
+    undefined,
+    brackets ? 'typing' : 'commit'
+  );
   return true;
 }
 

@@ -135,8 +135,9 @@ export function documentOffsetAt(
         // same raw offset (where its content would start), so typing stays on
         // that line instead of spilling into the next one.
         const placeholder =
-          textSpan.classList.contains('markdown-list-placeholder') ||
-          textSpan.classList.contains('markdown-empty-line-placeholder');
+          textSpan.textContent.length === 0 &&
+          (textSpan.classList.contains('markdown-list-placeholder') ||
+            textSpan.classList.contains('markdown-empty-line-placeholder'));
         // The tag names where the span's *text* starts, which need not be the
         // caret's own parent: a source shown highlighted is many nodes, and
         // every one of them counts from the span's beginning.

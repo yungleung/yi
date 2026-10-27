@@ -127,6 +127,8 @@ check('a CJK full stop closes the step',
   coalesceRun(closed(letter(0, '你好。', 0)), letter(3, '好', 3), 'typing'), null);
 check('a paste is a step of its own',
   coalesceRun(letter(0, 'a', 0), { from: 1, to: 1, removed: '', inserted: 'word' }, 'typing'), null);
+check('a committed input-method word is a step of its own',
+  coalesceRun(letter(0, 'a', 0), { from: 1, to: 1, removed: '', inserted: 'word' }, 'commit'), null);
 check('a run stops at the cap',
   coalesceRun(letter(0, 'x'.repeat(24), 0), letter(24, 'x', 24), 'typing'), null);
 const erased = { from: 1, to: 2, removed: 'b', inserted: '', before: mark(2), after: mark(1) };

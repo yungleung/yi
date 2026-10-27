@@ -46,13 +46,12 @@ export interface CompositionInput {
    */
   keepKeyboard(): void;
   /**
-   * Hands the field the keyboard again after a committed word, a structural edit or a click
-   * that placed the caret. Those need a fresh input context: the next word would otherwise
-   * never compose, and after a click the *first letter* is delivered as a Latin keystroke
-   * instead (measured: `nihao` came out `ni` and 好 — see `markdown_editor.ts`). Ordinary
-   * character typing uses `keepKeyboard` instead, because blurring the seam for every
-   * character loses input in a fast burst. A selection the edit left showing is kept: a
-   * focus change would drop it.
+   * Hands the field the keyboard again after a structural edit or a click that placed the
+   * caret. Those need a fresh input context: the next word would otherwise never compose, and
+   * after a click the *first letter* is delivered as a Latin keystroke instead (measured:
+   * `nihao` came out `ni` and 好 — see `markdown_editor.ts`). Ordinary character typing and
+   * an in-place committed word use `keepKeyboard` instead, because blurring the seam during a
+   * burst loses input. A selection the edit left showing is kept: a focus change would drop it.
    */
   regainKeyboard(): void;
 }
@@ -218,12 +217,12 @@ export function installCompositionInput(
   /**
    * Puts the keyboard back where the caret is — a turn later, never in the same one.
    *
-   * A committed word, a structural edit or a caret moved by a click, undo or arrow needs it:
-   * each costs the field its input context, and without a fresh one the first letter of the
-   * next word arrived as a Latin keystroke instead of opening a composition (`nihao` came out
-   * `ni` and 好). A click also leaves the keyboard on the page because the browser focuses the
-   * focusable prose root on mousedown, and the hand-over above stands back for that gesture.
-   * Ordinary typed characters do not take this path; see `keepKeyboard`.
+   * A structural edit or a caret moved by a click, undo or arrow needs it: each costs the field
+   * its input context, and without a fresh one the first letter of the next word arrived as a
+   * Latin keystroke instead of opening a composition (`nihao` came out `ni` and 好). A click
+   * also leaves the keyboard on the page because the browser focuses the focusable prose root
+   * on mousedown, and the hand-over above stands back for that gesture. Ordinary typed
+   * characters and an in-place committed word do not take this path; see `keepKeyboard`.
    *
    * A control of the app's keeps its own keyboard, and a selection the reader is showing is kept
    * — a focus change would drop it. A field that has just lost the keyboard does not compose

@@ -63,8 +63,14 @@ export function invert(edit: DocumentEdit): DocumentEdit {
   return inverted;
 }
 
-/** What a keystroke was: a run of one kind becomes one undo step. */
-export type EditKind = 'typing' | 'deleting' | 'other';
+/**
+ * What an edit was: consecutive keystrokes of one kind can become one undo step.
+ *
+ * A `commit` is the system handing over a complete word from an input method,
+ * dictation or the emoji panel. It is one history step of its own, like `other`, but
+ * unlike other commands it is ordinary text input and must keep the keyboard seam.
+ */
+export type EditKind = 'typing' | 'deleting' | 'commit' | 'other';
 
 /** How many characters one run may hold, so a script without spaces still breaks. */
 export const STEP_LIMIT = 24;
@@ -90,7 +96,7 @@ export function coalesceRun(
   kind: EditKind,
   limit: number = STEP_LIMIT
 ): DocumentEdit | null {
-  if (kind === 'other') {
+  if (kind === 'other' || kind === 'commit') {
     return null;
   }
   if (kind === 'typing') {

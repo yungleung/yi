@@ -225,10 +225,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // hears about one: the event carries nothing, since the text is the state's.
       onChanged: (kind) => {
         void eventManager.emit(EDITOR_EDITED);
-        // A committed word and a structural edit need a fresh input context. Ordinary typed
-        // characters do not: resetting the seam for every character blurred source-mode typing
-        // and raced the rebuilt caret, losing keys in a fast burst.
-        if (kind === 'typing') {
+        // Ordinary typed characters and an exact committed word stay in the same input context.
+        // A structural edit does not: resetting the seam around it restores the next text
+        // context after the block it rebuilt has changed.
+        if (kind === 'typing' || kind === 'commit') {
           this.composition.keepKeyboard();
         } else {
           this.composition.regainKeyboard();

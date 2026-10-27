@@ -926,12 +926,12 @@ the line, and it is taken out — the text node joined again — before the word
 edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
 marked and for the moment after one is let go, because the key that emptied the word arrives with
 the composition already over (`composition_input.ts: markedText`;
-`test/probes/input-method-backspace.js`). A committed word and a structural edit hand the keyboard
-back to the seam, as do a click and an *undo* — the last is a change that never goes through
-`applyEdit` and so has its hand-back named where it happens (`markdown_editor.ts: applyHistory`).
-Ordinary character typing instead keeps the focused seam in place; blurring and refocusing it for
-each character lost input in a fast burst (`source-burst-editing.js`). Three facts follow from the
-seam: a *document* selection is one inside
+`test/probes/input-method-backspace.js`). A structural edit hands the keyboard back to the seam,
+as do a click and an *undo* — the last is a change that never goes through `applyEdit` and so has
+its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Ordinary character
+typing and an in-place committed word keep the focused seam; blurring and refocusing during a
+burst lost input (`source-burst-editing.js`, `empty-task-composition-burst.js`). Three facts follow
+from the seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and
@@ -939,7 +939,7 @@ a synthetic click cannot warm an input context, so a probe drives the seam with 
 composition events rather than pretending to type.
 
 The hand-back deliberately blurs the seam for one turn so the input method gets a
-fresh context after a committed word or structural edit. Ordinary typing does not take
+fresh context after a structural edit. Ordinary typing and an in-place committed word do not take
 that path, because the focus round trip is slower than a burst and loses keys. App
 activation can likewise leave the keyboard on the page while the editor still owns a
 live caret. The editor catches a page-targeted key whenever that caret exists, so neither

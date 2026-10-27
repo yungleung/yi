@@ -113,20 +113,17 @@
   );
   check('and the editor did not swallow it', imeKey.defaultPrevented, false);
 
-  // Committing costs the field its input context — the next word would never compose — so the
-  // seam takes the keyboard back once the turn is over, which a focus event says it did.
-  let focusedAgain = false;
-  area.addEventListener('focus', () => {
-    focusedAgain = true;
+  // An exact commit is written in place, so it does not cost the field its input context. A
+  // focus change here would drop fast typing that follows the composed word.
+  let focusLosses = 0;
+  area.addEventListener('focusout', () => {
+    focusLosses += 1;
   });
   area.value = '字';
   area.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
   area.dispatchEvent(new CompositionEvent('compositionend', { data: '字', bubbles: true }));
   await t.sleep(250);
-  for (let attempt = 0; attempt < 20 && !focusedAgain; attempt += 1) {
-    await t.sleep(50);
-  }
-  check('the field takes the keyboard back after a commit', focusedAgain, true);
+  check('the field keeps the keyboard through a commit', focusLosses, 0);
   check('and the seam has the keyboard', document.activeElement === area, true);
 
   // A pointer that is down is the reader's: dragging over text selects it, and taking the
