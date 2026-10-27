@@ -12,7 +12,7 @@
 
 import { tagRawRange } from './editable_node';
 import type { AstInlineCode } from '../ast';
-import { preserveSpaces } from './text';
+import { preserveSpaces } from '../text_spacing';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 import { TEXT_FROM, setOffset } from './../offset_tags';
 

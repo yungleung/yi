@@ -166,7 +166,7 @@ export function isPlainEdit(
     return false;
   }
   // The spaces of the line the edit is in are the line's own business: a run of two does
-  // not render as the characters say (`nodes/text.ts: preserveSpaces` turns the second
+  // not render as the characters say (`text_spacing.ts: preserveSpaces` turns the second
   // into a no-break space), and the two at the end of a line are a hard break — a
   // construct a character typed *between* them would quietly delete. The line is the
   // scope, because the run an edit straddles is not the run a character of it sits in

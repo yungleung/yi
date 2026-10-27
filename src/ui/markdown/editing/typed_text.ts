@@ -12,7 +12,8 @@
  *
  * It refuses whenever the mapping is not exact, and it decides that *before* the
  * edit is applied: both ends of the edit must land in one text node, and the text
- * run that node belongs to must spell the document's own characters, one for one.
+ * run that node belongs to must be the document's own characters under the canonical
+ * space rendering (`text_spacing.ts`), one source character for one displayed one.
  * An ordinary run is its `[data-text-from]` span with one child. A source view is
  * any `[data-source-from]` element, or a `.markdown-source-text` box, and may be
  * split across many highlighted nodes; it is accepted when its whole text is exact,
@@ -25,9 +26,10 @@
  * it gained (see `writeRun`).
  *
  * May import: the offset mapping (`caret/dom_position.ts`), the edit arithmetic
- * (`syntax/edit_range.ts`) and the state. Upholds: what is rendered is a function
- * of the document — this only ever writes characters the document already holds,
- * and every offset it moves is moved to where the text went.
+ * (`syntax/edit_range.ts`), the one rendered-space mapping (`text_spacing.ts`) and
+ * the state. Upholds: what is rendered is a function of the document — this only
+ * ever writes characters the document already holds, and every offset it moves is
+ * moved to where the text went.
  */
 
 import { domPositionAtOffset } from '../caret/dom_position';
@@ -35,11 +37,14 @@ import { sourceTextOffset } from '../caret/offsets';
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
 import { sourceTextAt } from '../source_text';
+import { preserveSpaces } from '../text_spacing';
 import { FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
 
 /** The rendered text a plain edit can be written into, and where in it. */
 export interface TypedRun {
   node: Text;
+  /** The document's raw text for the whole tagged run. */
+  text: string;
   /** Offset in `node.data` where the replaced range starts. */
   start: number;
   /** Where it ends. */
@@ -83,8 +88,8 @@ export function plainRun(
   if (!span || (source === null && span.childNodes.length !== 1)) {
     return null;
   }
-  // The span spells out the document's own characters, from the offset it was
-  // tagged with: that equality is what makes the write exact, and it is what
+  // The span is the document's text under its canonical space rendering, from the
+  // offset it was tagged with: that equality is what makes the write exact, and it is what
   // refuses a link's title, a citation's formatted reference, KaTeX, an entity and
   // an escaped character — none of which is the text the author typed.
   const text = state.getText();
@@ -92,7 +97,8 @@ export function plainRun(
   const tag = Number.isFinite(sourceFrom) ? sourceFrom : offsetOf(span, TEXT_FROM);
   const rawStart = block.charStart + tag;
   const raw = text.slice(rawStart, rawStart + span.textContent.length);
-  if (!Number.isFinite(rawStart) || span.textContent !== raw) {
+  const rendered = source === null ? preserveSpaces(raw) : raw;
+  if (!Number.isFinite(rawStart) || span.textContent !== rendered) {
     return null;
   }
   // Highlighting makes one source box many text nodes. Its text still spells the block's
@@ -105,6 +111,7 @@ export function plainRun(
   }
   return {
     node,
+    text: raw,
     start: start.offset,
     end: end.offset,
     from: tag + startWithin,
@@ -122,10 +129,13 @@ export function plainRun(
  * at all: the edit is inside its text. Where an offset ends up is
  * `syntax/edit_range.ts: shiftOffset`, the rule the caret and the table commands
  * already share, and a tag strictly inside the replaced range cannot happen — the
- * range lives inside one text node.
+ * range lives inside one text node. Ordinary prose is written through
+ * `text_spacing.ts` so a newly trailing or repeated space is visible immediately.
  */
 export function writeRun(run: TypedRun, inserted: string): void {
-  run.node.data = `${run.node.data.slice(0, run.start)}${inserted}${run.node.data.slice(run.end)}`;
+  const local = `${run.node.data.slice(0, run.start)}${inserted}${run.node.data.slice(run.end)}`;
+  const raw = `${run.text.slice(0, run.start)}${inserted}${run.text.slice(run.end)}`;
+  run.node.data = run.source ? local : preserveSpaces(raw);
   const blockElement = run.node.parentElement?.closest<HTMLElement>('.markdown-block') ?? null;
   if (!blockElement) {
     return;

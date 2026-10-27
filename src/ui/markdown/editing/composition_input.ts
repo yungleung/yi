@@ -102,6 +102,12 @@ export function installCompositionInput(
   let composing = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
+  /**
+   * Whether a printable keydown arrived after the last commit. The duplicate space a
+   * method sends when choosing a candidate has no such key of its own; the next space
+   * the author types does.
+   */
+  let keyAfterCommit = false;
   // The composing text is written into the line at the caret, and the block it lands in has
   // to be measured again — a longer word can wrap the line (see `composition_view.ts`).
   const view = createCompositionView(onLayoutChanged);
@@ -175,6 +181,7 @@ export function installCompositionInput(
 
   element.addEventListener('compositionstart', () => {
     composing = true;
+    keyAfterCommit = false;
     drawMarked();
   });
   element.addEventListener('compositionupdate', () => {
@@ -183,6 +190,7 @@ export function installCompositionInput(
   element.addEventListener('compositionend', () => {
     composing = false;
     committedAt = performance.now();
+    keyAfterCommit = false;
     commit();
   });
   // Dictation, the emoji panel and a system autocorrection arrive as an `input` with no
@@ -201,7 +209,11 @@ export function installCompositionInput(
     }
     // The space that chose the candidate, delivered once more as ordinary text: it is the
     // method's key, and typing it would leave a space after every Chinese word.
-    if (element.value === ' ' && performance.now() - committedAt < MOMENT_MS) {
+    if (
+      element.value === ' ' &&
+      performance.now() - committedAt < MOMENT_MS &&
+      !keyAfterCommit
+    ) {
       element.value = '';
       return;
     }
@@ -266,6 +278,15 @@ export function installCompositionInput(
   // gesture is what cancels it. The hand-over waits for the gesture to be over, or for
   // the click that places a caret (`editing/context.ts: placeCaret` → `focusText`).
   let pointerDown = false;
+  host.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key.length === 1 && performance.now() - committedAt < MOMENT_MS) {
+        keyAfterCommit = true;
+      }
+    },
+    true
+  );
   host.addEventListener('pointerdown', () => {
     pointerDown = true;
   }, true);

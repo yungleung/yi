@@ -951,7 +951,16 @@ A key the input method routes is the method's, whether a composition is behind i
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes
 that character — typing it as well writes it twice (measured with Caps Lock on, where the method
 composes nothing and passes every letter through; `test/probes/input-method-passthrough.js`). A 229
-key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's.
+key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's. A letter
+with Caps Lock in its modifier state is the method's too, even when the browser does not mark that
+keydown as 229: its `key` carries the lock's case while the seam carries the text the method
+actually supplies. A printable keydown after a commit also proves that the next space is the
+author's rather than the duplicate space that chose the prior candidate.
+
+The prose fast path writes into the rendered text, so it uses `text_spacing.ts` for both its
+equality proof and its output. A run of spaces, or one at a text node's end, is a no-break space on
+screen while the document keeps ordinary spaces; the source and rendered length stay equal
+(`space-typing-visibility.js`).
 
 `docs/architecture.md` is the same map with the data flow and a "where does this
 change go?" table.

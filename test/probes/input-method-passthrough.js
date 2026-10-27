@@ -9,9 +9,12 @@
  *
  * The narrowing this guard used to have is the other half: a `keyCode` 229 key that is
  * *not* a character — `Enter`, pressed while a method is merely active — is still the
- * editor's, and must still start a line.
+ * editor's, and must still start a line. Caps Lock can also arrive on an ordinary keydown
+ * whose `key` has the lock's case while the seam has the method's lower-case character;
+ * that key belongs to the method, while a modified command shortcut still belongs to us.
  *
- * @covers src/ui/markdown/markdown_editor.ts: handleKeydown, src/ui/markdown/editing/composition_input.ts
+ * @covers src/ui/markdown/markdown_editor.ts: handleKeydown,
+ *   src/ui/markdown/editing/keys.ts, src/ui/markdown/editing/composition_input.ts
  */
 (async () => {
   const t = window.__t;
@@ -32,6 +35,15 @@
     seam().value = text;
     seam().dispatchEvent(new InputEvent('input', { data: text, inputType: 'insertText', bubbles: true }));
   };
+  /** A normal Caps Lock keydown whose character the method supplies lower-case in the seam. */
+  const capsLockRouted = (key, keyCode) => {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'keyCode', { value: keyCode });
+    Object.defineProperty(event, 'getModifierState', {
+      value: (modifier) => modifier === 'CapsLock'
+    });
+    t.scroller().dispatchEvent(event);
+  };
 
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
@@ -48,6 +60,37 @@
   inSeam('b');
   await t.sleep(250);
   check('the letter the method routed is written once', await t.raw(), 'hello' + 'b\n');
+
+  // Caps Lock changes the `key` of an otherwise ordinary keydown, while the input method's
+  // committed text is still lower-case. The editor must let that one reach the seam too.
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  capsLockRouted('B', 66);
+  inSeam('b');
+  await t.sleep(250);
+  check('a Caps Lock key keeps the method’s own case', await t.raw(), 'hello' + 'b\n');
+
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  capsLockRouted('A', 65);
+  inSeam('A');
+  await t.sleep(250);
+  check('and ordinary Caps Lock text stays upper-case', await t.raw(), 'hello' + 'A\n');
+
+  const selectAll = new KeyboardEvent('keydown', {
+    key: 'a',
+    metaKey: true,
+    bubbles: true,
+    cancelable: true
+  });
+  Object.defineProperty(selectAll, 'keyCode', { value: 65 });
+  Object.defineProperty(selectAll, 'getModifierState', {
+    value: (modifier) => modifier === 'CapsLock'
+  });
+  t.scroller().dispatchEvent(selectAll);
+  check('Caps Lock does not take a command shortcut from the editor', selectAll.defaultPrevented, true);
 
   // The other half of the narrowing: a 229 key that is not a character is the editor's.
   await t.load('hello\n');

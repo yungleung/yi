@@ -11,6 +11,7 @@
 import { EditableNodeComponent } from './editable_node';
 import type { AstText } from '../ast';
 import { TEXT_FROM, setOffset } from '../offset_tags';
+import { preserveSpaces } from '../text_spacing';
 
 export class TextNode extends EditableNodeComponent {
   constructor(node: AstText) {
@@ -28,9 +29,4 @@ export class TextNode extends EditableNodeComponent {
       setOffset(this.element, TEXT_FROM, start);
     }
   }
-}
-
-/** Keeps consecutive source spaces visible without changing their length. */
-export function preserveSpaces(value: string): string {
-  return value.replace(/ {2,}/g, (run) => ` ${'\u00a0'.repeat(run.length - 1)}`);
 }

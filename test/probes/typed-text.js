@@ -90,7 +90,8 @@
    * to the blank line that ends it — the same characters, in the same order, with
    * nothing of the block left out and nothing added.
    */
-  const showsDocument = (measurement) => measurement.expected.startsWith(`${measurement.text}\n`);
+  const showsDocument = (measurement) =>
+    measurement.expected.startsWith(`${measurement.text.replace(/\u00a0/g, ' ')}\n`);
 
   /**
    * Types `keys` at a caret `place` puts in the rendering of `text`, and reports

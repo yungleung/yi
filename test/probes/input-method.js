@@ -126,6 +126,27 @@
   check('the field keeps the keyboard through a commit', focusLosses, 0);
   check('and the seam has the keyboard', document.activeElement === area, true);
 
+  // The next space is the author's. Its 229 keydown separates it from the space that chose
+  // the preceding candidate, so it must reach the document even inside the short hand-off.
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  area.value = '字';
+  area.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+  area.dispatchEvent(new CompositionEvent('compositionend', { data: '字', bubbles: true }));
+  const nextSpace = new KeyboardEvent('keydown', {
+    key: ' ',
+    bubbles: true,
+    cancelable: true
+  });
+  Object.defineProperty(nextSpace, 'keyCode', { value: 229 });
+  t.scroller().dispatchEvent(nextSpace);
+  area.value = ' ';
+  area.dispatchEvent(new InputEvent('input', { data: ' ', inputType: 'insertText', bubbles: true }));
+  t.key('x');
+  await t.sleep(250);
+  check('the next space after a commit separates the next word', await t.raw(), 'hello字 x\n');
+
   // A pointer that is down is the reader's: dragging over text selects it, and taking the
   // keyboard out from under the drag is what cancels the selection. When the gesture is
   // over, the editor takes the keyboard back as it always did.

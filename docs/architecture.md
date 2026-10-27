@@ -50,6 +50,7 @@ taking — is `docs/structure.md`.
 | Line spans, touched lines, item subtrees | `syntax/lines.ts` |
 | Empty-paragraph lines | `syntax/blank_lines.ts` |
 | Trailing-space rewriting | `syntax/trailing_spaces.ts` |
+| Spaces prose draws literally | `text_spacing.ts` owns the one-length mapping from a source space to the no-break space HTML needs in a run or at a text node's end |
 | The `data-*` names that carry document offsets | `offset_tags.ts` |
 | Table source, captions, table/list/code edits, `TextEdit` | `syntax/table_source.ts` bounds the pipe rows and maps a caret only inside them; `syntax/table_captions.ts` parses the optional following `: …` line and its Pandoc attributes; `syntax/table_edits.ts`, `syntax/list_edits.ts`, `syntax/code_edits.ts` and `syntax/edit_range.ts` own the edits |
 | A fenced block's body, and where a write inside one lands | `syntax/fence_edits.ts` |
@@ -216,7 +217,9 @@ height remembered against it.
    an invisible textarea (`editing/composition_input.ts`), so a key can also arrive as a
    composition: what an input method, dictation or the emoji panel commits is inserted through
    the same text path as typing, as one edit of its own
-   (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
+   (`text_commands.ts: insertCommitted`). A 229 key and an unmodified letter carrying Caps Lock
+   belong to that method; a modified command chord does not. What a method has *marked* —
+   the pinyin, the kana, the
    syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
    a span at the caret, marked `data-composing` so the offsets step over it, because none of those
    characters is in the document yet. A committed word and ordinary typing write in place when
@@ -246,8 +249,9 @@ by Backspace).
 Most typing never gets that far. A keyboard insertion followed by a non-newline
 character, and an input method's committed word, is written into the rendered text run
 as it arrives; nothing is rendered during the burst. `editing/typed_text.ts` first
-proves that the edit maps into one tagged text node that spells the document's own
-characters, one for one. Prose and source views therefore use the same rule:
+proves that the edit maps into one tagged text node whose canonical space rendering
+spells the document's own characters, one for one. Prose and source views therefore
+use the same rule:
 `Start _word_` appears literally character by character, with its case and caret
 intact, and becomes emphasis only after the deferred parse check. Edits that cannot
 map exactly — selections across nodes, newlines, non-keyboard commands — take the

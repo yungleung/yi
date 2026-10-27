@@ -23,7 +23,7 @@
 
 import type { FormattingEdit, FormattingStyle } from './format';
 import type { MarkdownEditorState } from './document/state';
-import { preserveSpaces } from './nodes/text';
+import { preserveSpaces } from './text_spacing';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf, setOffset } from './offset_tags';
 
 const FORMAT_TAGS: Record<FormattingStyle, string> = {
