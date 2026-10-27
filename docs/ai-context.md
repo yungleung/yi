@@ -678,7 +678,9 @@ identified Divs or processed-HTML figures, and leaves LaTeX/PDF with native list
 generated label/counter header. `listing-rendering.js`, `listing-crossrefs.js`, and their
 default-document probes hold the editor behavior. `listing-source-horizontal-caret.js` holds the
 source box's own horizontal scroll: typing or deleting near the end of a long opening fence
-rebuilds the highlighted `pre`, so the restored caret must scroll that box back to the caret.
+can rebuild the highlighted `pre` when the edit changes its shape, so the restored caret must
+scroll that box back to the caret. Ordinary characters in highlighted source use the plain
+write path and keep the existing `pre`.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
@@ -914,10 +916,12 @@ the line, and it is taken out — the text node joined again — before the word
 edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
 marked and for the moment after one is let go, because the key that emptied the word arrives with
 the composition already over (`composition_input.ts: markedText`;
-`test/probes/input-method-backspace.js`). And the keyboard comes back to the seam after every change that
-moves the caret — an edit, a click, and an *undo*, which is a change that never goes through `applyEdit`
-and so had its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Three facts
-follow from the seam: a *document* selection is one inside
+`test/probes/input-method-backspace.js`). A committed word and a structural edit hand the keyboard
+back to the seam, as do a click and an *undo* — the last is a change that never goes through
+`applyEdit` and so has its hand-back named where it happens (`markdown_editor.ts: applyHistory`).
+Ordinary character typing instead keeps the focused seam in place; blurring and refocusing it for
+each character lost input in a fast burst (`source-burst-editing.js`). Three facts follow from the
+seam: a *document* selection is one inside
 the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and
@@ -925,11 +929,13 @@ a synthetic click cannot warm an input context, so a probe drives the seam with 
 composition events rather than pretending to type.
 
 The hand-back deliberately blurs the seam for one turn so the input method gets a
-fresh context. App activation can likewise leave the keyboard on the page while the
-editor still owns a live caret. The editor catches a page-targeted key whenever that
-caret exists, so neither a quick burst nor the first key after activating the app is
-lost (`test/probes/typed-text-focus-burst.js`); a click outside removes the caret,
-so losing focus there still writes nothing.
+fresh context after a committed word or structural edit. Ordinary typing does not take
+that path, because the focus round trip is slower than a burst and loses keys. App
+activation can likewise leave the keyboard on the page while the editor still owns a
+live caret. The editor catches a page-targeted key whenever that caret exists, so neither
+a quick burst nor the first key after activating the app is lost
+(`test/probes/typed-text-focus-burst.js`); a click outside removes the caret, so losing
+focus there still writes nothing.
 
 A key the input method routes is the method's, whether a composition is behind it or not: a
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes

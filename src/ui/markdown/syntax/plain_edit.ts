@@ -133,7 +133,13 @@ function runAfter(text: string, at: number): string {
  * Whether the edit `before[from, to) → inserted` can change how its text parses.
  * `before` is the text the edit was applied to.
  */
-export function isPlainEdit(before: string, from: number, to: number, inserted: string): boolean {
+export function isPlainEdit(
+  before: string,
+  from: number,
+  to: number,
+  inserted: string,
+  literal: boolean = false
+): boolean {
   if (!isPlainText(inserted) || !isPlainText(before.slice(from, to))) {
     return false;
   }
@@ -169,22 +175,26 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   if (/ {2}/.test(line) || trailingSpaces(line) !== trailingSpaces(lineAt(before, from))) {
     return false;
   }
-  // The characters beside the edit. An asterisk next to the caret is an emphasis
-  // waiting for a character, and what closes it can be an entirely plain one; the
-  // characters on the far side of a deletion are the ones a marker would meet.
-  if (!isPlainText(before.slice(Math.max(0, from - 1), from))) {
-    return false;
-  }
-  if (!isPlainText(before.slice(to, to + 1))) {
-    return false;
-  }
   // Line edges. A character typed at the start of a line can open a list, a
   // heading, a fence or a quote, and one typed at the end of a line can be what
   // the line the next one reads as a setext underline follows.
   const lineStart = before.lastIndexOf('\n', Math.max(0, from - 1)) + 1;
   const newline = before.indexOf('\n', to);
   const lineEnd = newline === -1 ? before.length : newline;
-  if (from === lineStart || to === lineEnd) {
+  // The characters beside the edit. An asterisk next to the caret is an emphasis
+  // waiting for a character, and what closes it can be an entirely plain one; the
+  // characters on the far side of a deletion are the ones a marker would meet. Inside a
+  // literal block, a line edge is a newline rather than a markdown neighbour.
+  if (
+    !(literal && from === lineStart) &&
+    !isPlainText(before.slice(Math.max(0, from - 1), from))
+  ) {
+    return false;
+  }
+  if (!(literal && to === lineEnd) && !isPlainText(before.slice(to, to + 1))) {
+    return false;
+  }
+  if (!literal && (from === lineStart || to === lineEnd)) {
     return false;
   }
   // A block marker is a few characters at a line's beginning, and a typed character can
@@ -192,7 +202,7 @@ export function isPlainEdit(before: string, from: number, to: number, inserted: 
   // letter. So while everything before the caret is marker material the edit waits for
   // a marker that is already there and whose space has gone by (`1. x`, `# x`, `> x`).
   const prefix = before.slice(lineStart, from);
-  if (MARKER_MATERIAL.test(prefix) && !MARKER_PREFIX.test(prefix)) {
+  if (!literal && MARKER_MATERIAL.test(prefix) && !MARKER_PREFIX.test(prefix)) {
     return false;
   }
   // A setext underline is made by the line below, so the line below is the rule's

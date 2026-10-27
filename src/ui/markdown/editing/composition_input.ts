@@ -40,12 +40,19 @@ export interface CompositionInput {
    */
   markedText(): boolean;
   /**
-   * Hands the field the keyboard again — after an edit, and after a click that placed the
-   * caret. Both cost the field its input context: the next word would never compose, and
-   * after a click the *first letter* of it is delivered as a Latin keystroke instead
-   * (measured: `nihao` came out `ni` and 好 — see `markdown_editor.ts`). So the seam takes
-   * it back once the turn is over. A selection the edit left showing is kept: a focus
-   * change would drop it.
+   * Keeps the seam focused after ordinary typing without deliberately resetting its input
+   * context. A source block used to be rebuilt for every character and then blur/refocus the
+   * seam, which lost fast keyboard input.
+   */
+  keepKeyboard(): void;
+  /**
+   * Hands the field the keyboard again after a committed word, a structural edit or a click
+   * that placed the caret. Those need a fresh input context: the next word would otherwise
+   * never compose, and after a click the *first letter* is delivered as a Latin keystroke
+   * instead (measured: `nihao` came out `ni` and 好 — see `markdown_editor.ts`). Ordinary
+   * character typing uses `keepKeyboard` instead, because blurring the seam for every
+   * character loses input in a fast burst. A selection the edit left showing is kept: a
+   * focus change would drop it.
    */
   regainKeyboard(): void;
 }
@@ -211,12 +218,12 @@ export function installCompositionInput(
   /**
    * Puts the keyboard back where the caret is — a turn later, never in the same one.
    *
-   * Anything that moves the caret needs it: an edit costs the field its input context, a click
-   * leaves the keyboard on the page (the browser focuses the focusable prose root on mousedown,
-   * and the hand-over above stands back for the reader's gesture), and an undo and an arrow key
-   * each leave it where it was without the input method knowing. Every one of them was measured
-   * the same way: the first letter of the next word arrived as a Latin keystroke, typed by the
-   * editor, instead of opening a composition (`nihao` came out `ni` and 好).
+   * A committed word, a structural edit or a caret moved by a click, undo or arrow needs it:
+   * each costs the field its input context, and without a fresh one the first letter of the
+   * next word arrived as a Latin keystroke instead of opening a composition (`nihao` came out
+   * `ni` and 好). A click also leaves the keyboard on the page because the browser focuses the
+   * focusable prose root on mousedown, and the hand-over above stands back for that gesture.
+   * Ordinary typed characters do not take this path; see `keepKeyboard`.
    *
    * A control of the app's keeps its own keyboard, and a selection the reader is showing is kept
    * — a focus change would drop it. A field that has just lost the keyboard does not compose
@@ -237,6 +244,21 @@ export function installCompositionInput(
       return;
     }
     element.blur();
+    requestAnimationFrame(() => element.focus({ preventScroll: true }));
+  };
+
+  /** Keeps ordinary character typing in the seam without the deliberate focus reset. */
+  const keepKeyboard = (): void => {
+    const active = document.activeElement;
+    if (active === element) {
+      return;
+    }
+    if (active instanceof Element && active.matches(CONTROLS)) {
+      return;
+    }
+    if (showingSelection()) {
+      return;
+    }
     requestAnimationFrame(() => element.focus({ preventScroll: true }));
   };
 
@@ -279,6 +301,7 @@ export function installCompositionInput(
   return {
     element,
     markedText,
+    keepKeyboard,
     regainKeyboard
   };
 }

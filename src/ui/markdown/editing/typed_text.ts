@@ -9,11 +9,14 @@
  * fixture note's last block costs ~26 ms, writing into one of its text nodes ~0).
  *
  * It refuses whenever the mapping is not exact, and it decides that *before* the
- * edit is applied: both ends of the edit must land in one text node, that node must
- * be the only child of its `[data-text-from]` span, and the span's text must be the
- * document's own characters, one for one. Escapes, entities, hidden markers and
- * every widget that draws a *rendering* of its source fail that test, and the
- * caller renders the edit the ordinary way, which is always correct.
+ * edit is applied: both ends of the edit must land in one text node, and the text
+ * run that node belongs to must spell the document's own characters, one for one.
+ * An ordinary run is its `[data-text-from]` span with one child. Highlighted source
+ * is a `.markdown-source-text` box split across many nodes; that box is accepted
+ * when its whole text is exact, and the caret's node is edited without replacing the
+ * box. Escapes, entities, hidden markers and every widget that draws a *rendering*
+ * of its source fail that test, and the caller renders the edit the ordinary way,
+ * which is always correct.
  *
  * Writing is also what moves the offsets the block's elements carry: they name
  * positions in the block's own text, so the ones after the edit move with the text
@@ -26,6 +29,7 @@
  */
 
 import { domPositionAtOffset } from '../caret/dom_position';
+import { sourceTextOffset } from '../caret/offsets';
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
 import { FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
@@ -68,8 +72,11 @@ export function plainRun(
     return null;
   }
   const node = start.node as Text;
-  const span = node.parentElement?.closest<HTMLElement>(`[data-${TEXT_FROM}]`) ?? null;
-  if (!span || span.childNodes.length !== 1) {
+  const source = node.parentElement?.closest<HTMLElement>(
+    `.markdown-source-text[data-${TEXT_FROM}]`
+  ) ?? null;
+  const span = source ?? node.parentElement?.closest<HTMLElement>(`[data-${TEXT_FROM}]`) ?? null;
+  if (!span || (source === null && span.childNodes.length !== 1)) {
     return null;
   }
   // The span spells out the document's own characters, from the offset it was
@@ -83,12 +90,20 @@ export function plainRun(
   if (!Number.isFinite(rawStart) || span.textContent !== raw) {
     return null;
   }
+  // Highlighting makes one source box many text nodes. Its text still spells the block's
+  // source exactly, so the write can stay in the node the caret is in and leave the source
+  // box mounted. This is the same proof as the single-node path, made over the whole box.
+  const startWithin = source === null ? start.offset : sourceTextOffset(source, node, start.offset);
+  const endWithin = source === null ? end.offset : sourceTextOffset(source, node, end.offset);
+  if (startWithin === null || endWithin === null) {
+    return null;
+  }
   return {
     node,
     start: start.offset,
     end: end.offset,
-    from: tag + start.offset,
-    to: tag + end.offset
+    from: tag + startWithin,
+    to: tag + endWithin
   };
 }
 

@@ -55,7 +55,7 @@ export interface EditorContext {
    * the stack — can follow it. It carries nothing: the text is the state's, and a listener
    * that wants it reads it then.
    */
-  readonly onChanged?: () => void;
+  readonly onChanged?: (kind: EditKind) => void;
   /**
    * Puts the keyboard where the text is.
    *
@@ -321,7 +321,12 @@ export function applyEdit(
   // is what keeps the page's layout (and the 26 ms it costs to invalidate) out of a
   // typed character's way. Everything the rule or the mapping is unsure about falls
   // through to the ordinary path below, which is always correct.
-  const rule = isPlainEdit(context.state.getText(), from, to, replacement);
+  const editBlock = context.state.getBlockAtOffset(from);
+  const literal =
+    editBlock?.kind === 'fencedCode' ||
+    editBlock?.kind === 'displayMath' ||
+    editBlock?.kind === 'equation';
+  const rule = isPlainEdit(context.state.getText(), from, to, replacement, literal);
   const root = rule ? proseRoot(context) : null;
   const run = root ? plainRun(context.state, root, from, to) : null;
   // The shape is captured before the edit is applied: afterwards the parse it
@@ -337,6 +342,11 @@ export function applyEdit(
   const target = context.state.replaceRange(from, to, replacement, { before, caret, kind });
   if (run) {
     writeRun(run, replacement);
+    // The shown range names document offsets, so it has to move before the block is measured:
+    // measuring records the DOM's current rendering identity, and a shrinking edit whose old
+    // end still lies past the new block end would record the rendered shape while the source
+    // view is still mounted.
+    moveShownSource({ from, to, replacement });
     const block = context.state.getBlockAtOffset(from + replacement.length);
     if (block) {
       context.renderer.measureEditedBlock(block.lineStart);
@@ -348,10 +358,9 @@ export function applyEdit(
     // in `test/checks/check-plain-edit.mjs`). The range the edit did move is moved
     // with it, and the decision stays held while the caret is placed: placing it
     // notifies the caret observer (`markdown_editor.ts: followCaret`), which asks.
-    moveShownSource({ from, to, replacement });
     withHeldShownSource(() => restoreCaret(context, target));
     keepScroll(context, anchor);
-    context.onChanged?.();
+    context.onChanged?.(kind);
     return;
   }
   // The source the caret lands in is the source that is shown (see
@@ -363,7 +372,7 @@ export function applyEdit(
   context.renderer.renderChanged();
   restoreCaret(context, target);
   keepScroll(context, anchor);
-  context.onChanged?.();
+  context.onChanged?.(kind);
 }
 
 /**

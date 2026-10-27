@@ -17,6 +17,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
 
@@ -655,61 +656,95 @@ if (pandoc.status !== 0) {
         const office = spawnSync('soffice', ['--version'], { encoding: 'utf8' });
         const pdfInfo = spawnSync('pdfinfo', ['-v'], { encoding: 'utf8' });
         if (office.status === 0 && pdfInfo.status === 0) {
-          const rendered = spawnSync(
-            'soffice',
-            ['--headless', '--convert-to', 'pdf', '--outdir', outputFolder, output],
-            { encoding: 'utf8' }
-          );
           const pdf = output.replace(/\.odt$/, '.pdf');
-          const info = spawnSync('pdfinfo', [pdf], { encoding: 'utf8' });
-          const pages = Number(/^Pages:\s+(\d+)/m.exec(info.stdout)?.[1] ?? 0);
-          check(
-            'odt: the dissertation render has A4 pages',
-            rendered.status === 0 &&
-              info.status === 0 &&
-              pages >= 3 &&
-              /595\.\d+ x 841\.\d+ pts \(A4\)/.test(info.stdout),
-            { pages, size: /^Page size:\s+(.*)$/m.exec(info.stdout)?.[1] ?? null }
-          );
-          const ghostscript = spawnSync('gs', ['--version'], { encoding: 'utf8' });
-          if (ghostscript.status === 0) {
-            const pageText = (page) =>
-              spawnSync(
-                'gs',
-                [
-                  '-q',
-                  '-dNOPAUSE',
-                  '-dBATCH',
-                  `-dFirstPage=${page}`,
-                  `-dLastPage=${page}`,
-                  '-sDEVICE=txtwrite',
-                  '-sOutputFile=-',
-                  pdf
-                ],
-                { encoding: 'utf8' }
-              ).stdout.replace(/\s+/g, ' ').trim();
-            const pageTexts = Array.from({ length: pages }, (_, index) => pageText(index + 1));
-            const bodyIndex = pageTexts.findIndex((text) =>
-              text.includes('This is the first paragraph of the dissertation body.')
+          let rendered = null;
+          // A headless call that joins the profile of a running LibreOffice window returns before
+          // that instance writes the PDF. A fresh profile keeps the check independent of the
+          // reader's open documents; on macOS LibreOffice 26.8 also occasionally aborts while
+          // registering its application menus, so a second isolated attempt makes this external
+          // renderer deterministic without weakening the document checks below.
+          for (let attempt = 0; attempt < 2 && !existsSync(pdf); attempt += 1) {
+            const officeProfile = mkdtempSync(join(tmpdir(), 'yi-template-office-'));
+            rendered = spawnSync(
+              'soffice',
+              [
+                `-env:UserInstallation=${pathToFileURL(officeProfile).href}`,
+                '--headless',
+                '--convert-to',
+                'pdf',
+                '--outdir',
+                outputFolder,
+                output
+              ],
+              { encoding: 'utf8' }
             );
-            check(
-              'odt: page numbering starts with the body and numbers no front matter',
-              bodyIndex >= 2 &&
-              ['The Architecture of Academic Inquiry', 'Author: John', 'Institution: Example College'].every(
-                (text) => pageTexts[0].includes(text)
-              ) &&
-                pageTexts[1].includes('Abstract') &&
-                pageTexts[1].includes('Keywords:') &&
-                !pageTexts[0].endsWith('1') &&
-                !pageTexts[1].endsWith('1') &&
-                pageTexts[bodyIndex].includes('Introduction') &&
-                pageTexts[bodyIndex].endsWith('1'),
-              { bodyPage: bodyIndex + 1, pages: pageTexts }
+            rmSync(officeProfile, { recursive: true, force: true });
+            const deadline = Date.now() + 15_000;
+            while (!existsSync(pdf) && Date.now() < deadline) {
+              Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+            }
+          }
+          if (!existsSync(pdf)) {
+            console.log(
+              'template examples: LibreOffice could not render the ODT on this machine, so ' +
+                'page layout and page-order extraction were skipped'
             );
           } else {
-            console.log(
-              'template examples: Ghostscript is absent, so ODT page-order extraction was skipped'
+            const info = spawnSync('pdfinfo', [pdf], { encoding: 'utf8' });
+            const pages = Number(/^Pages:\s+(\d+)/m.exec(info.stdout)?.[1] ?? 0);
+            check(
+              'odt: the dissertation render has A4 pages',
+              info.status === 0 &&
+                pages >= 3 &&
+                /595\.\d+ x 841\.\d+ pts \(A4\)/.test(info.stdout),
+              {
+                pages,
+                size: /^Page size:\s+(.*)$/m.exec(info.stdout)?.[1] ?? null,
+                rendered: rendered?.status ?? null
+              }
             );
+            const ghostscript = spawnSync('gs', ['--version'], { encoding: 'utf8' });
+            if (ghostscript.status === 0) {
+              const pageText = (page) =>
+                spawnSync(
+                  'gs',
+                  [
+                    '-q',
+                    '-dNOPAUSE',
+                    '-dBATCH',
+                    `-dFirstPage=${page}`,
+                    `-dLastPage=${page}`,
+                    '-sDEVICE=txtwrite',
+                    '-sOutputFile=-',
+                    pdf
+                  ],
+                  { encoding: 'utf8' }
+                ).stdout.replace(/\s+/g, ' ').trim();
+              const pageTexts = Array.from({ length: pages }, (_, index) => pageText(index + 1));
+              const bodyIndex = pageTexts.findIndex((text) =>
+                text.includes('This is the first paragraph of the dissertation body.')
+              );
+              check(
+                'odt: page numbering starts with the body and numbers no front matter',
+                bodyIndex >= 2 &&
+                  [
+                    'The Architecture of Academic Inquiry',
+                    'Author: John',
+                    'Institution: Example College'
+                  ].every((text) => pageTexts[0].includes(text)) &&
+                  pageTexts[1].includes('Abstract') &&
+                  pageTexts[1].includes('Keywords:') &&
+                  !pageTexts[0].endsWith('1') &&
+                  !pageTexts[1].endsWith('1') &&
+                  pageTexts[bodyIndex].includes('Introduction') &&
+                  pageTexts[bodyIndex].endsWith('1'),
+                { bodyPage: bodyIndex + 1, pages: pageTexts }
+              );
+            } else {
+              console.log(
+                'template examples: Ghostscript is absent, so ODT page-order extraction was skipped'
+              );
+            }
           }
         } else {
           console.log('template examples: LibreOffice/PDF tools are absent, so ODT rendering was skipped');

@@ -219,10 +219,11 @@ height remembered against it.
    (`text_commands.ts: insertCommitted`). What a method has *marked* — the pinyin, the kana, the
    syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
    a span at the caret, marked `data-composing` so the offsets step over it, because none of those
-   characters is in the document yet. Restoring the field's input context deliberately
-   blurs it for one turn, and activating the app can also leave focus on the page. A
-   page-targeted key is still handled by the same path while the editor owns a live
-   caret; without a caret it writes nothing.
+   characters is in the document yet. A committed word and a structural edit deliberately
+   blur the field for one turn to restore its input context; ordinary character typing keeps
+   the seam focused and does not reset that context. Activating the app can also leave focus
+   on the page. A page-targeted key is still handled by the same path while the editor owns a
+   live caret; without a caret it writes nothing.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).
@@ -243,22 +244,24 @@ region or over a selection, a step over the `]` the app itself wrote, and a pair
 by Backspace).
 
 Most typing never gets that far. A keystroke that cannot change how its block
-parses is written into the rendered text node and nothing is rendered at all:
+parses is written into the rendered text run and nothing is rendered at all:
 `applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters, digits,
 single spaces and the punctuation that means itself, where no marker can be typed,
 the line's own beginning and its edges are not being made, no run becomes the one
 autolink those characters can spell (`www.`) and no two spaces end up side by side —
 and then asks
 `editing/typed_text.ts` whether the edit maps
-into one text node whose `[data-text-from]` span spells the document's own
-characters, one for one. Both halves have to agree, and anything either is unsure
-of takes the ordinary path above, which is always correct. Which kinds that rules out is
-worth knowing, because it is not the rule that refuses them: the *write* needs one tagged
-text node, and everything the app renders as *source* is many — highlight.js spans for a
-fenced code block and for a formula, a revealed source span for a link. So a keystroke in
-any of those is a rebuild: measured, one letter costs 1–3 ms in a paragraph, a heading, a
-list item or a table cell, 6 ms in a small code block and **32 ms in a 4.7 KB one**
-(`test/probes/typing-cost-by-kind.js`). Because the rule reads
+into a tagged text run that spells the document's own characters, one for one. Both
+halves have to agree, and anything either is unsure of takes the ordinary path above,
+which is always correct. An ordinary run is one text node in a `[data-text-from]` span
+with one child. Highlighted source is one `.markdown-source-text` box split across many
+highlight.js nodes; the fast path accepts it when the whole box is exact and edits only
+the caret's node, leaving the source element mounted. This is what keeps a character in
+a fenced block or formula from rebuilding the block on every key. Measured before that
+work, one letter cost 1–3 ms in a paragraph, a heading, a list item or a table cell, 6
+ms in a small code block and **32 ms in a 4.7 KB one**; the long source burst also lost
+characters while each rebuild blurred and refocused the input seam
+(`test/probes/typing-cost-by-kind.js`, `source-burst-editing.js`). Because the rule reads
 one word of the text while a parse can turn on more, the fast path also captures
 the block's parse shape (from the parse the renderer already cached) and checks it
 once the typing stops: one coalesced check a burst, one parse a burst, and a block
@@ -411,10 +414,10 @@ reached in a way the next person can copy:
 | What a block is worth in pixels | `block_sizes.ts` | a case in `test/checks/check-block-sizes.mjs` |
 | Which blocks are mounted | `viewport_window.ts` | the same |
 
-The caret's scroll rule has a second axis inside highlighted source. An edit rebuilds
-the fenced block, so its `pre` is new and starts with `scrollLeft` at zero; a caret
-restored at the end of a long fence line would otherwise be outside that box even
-though the page's vertical position is right. `caret/span.ts: scrollCaretIntoView`
+The caret's scroll rule has a second axis inside highlighted source. A structural edit
+can rebuild the fenced block, so its `pre` is new and starts with `scrollLeft` at zero;
+a caret restored at the end of a long fence line would otherwise be outside that box
+even though the page's vertical position is right. `caret/span.ts: scrollCaretIntoView`
 therefore scrolls the nearest horizontally scrollable source around the caret's range,
 then repositions the span because it is drawn beside the prose host rather than inside
 the source (`test/probes/listing-source-horizontal-caret.js`).

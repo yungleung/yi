@@ -223,11 +223,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       focusText: () => this.focusText(),
       // Every edit funnels through `applyEdit`, and this is how the session behind the editor
       // hears about one: the event carries nothing, since the text is the state's.
-      onChanged: () => {
+      onChanged: (kind) => {
         void eventManager.emit(EDITOR_EDITED);
-        // An edit costs the seam its input context — a word committed, an Enter, a keystroke —
-        // so the keyboard goes back to it once the turn is over (`composition_input.ts`).
-        this.composition.regainKeyboard();
+        // A committed word and a structural edit need a fresh input context. Ordinary typed
+        // characters do not: resetting the seam for every character blurred source-mode typing
+        // and raced the rebuilt caret, losing keys in a fast burst.
+        if (kind === 'typing') {
+          this.composition.keepKeyboard();
+        } else {
+          this.composition.regainKeyboard();
+        }
       }
     };
     // Revealable nodes ask the editor where the caret is in the raw document;

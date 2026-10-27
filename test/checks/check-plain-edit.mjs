@@ -153,6 +153,10 @@ check('typing beside a marker is not plain', isPlainEdit('*a*quick fox', 3, 3, '
 check('deleting a marker is not plain', isPlainEdit('*a* quick fox', 1, 2, ''), false);
 check('typing at a line start is not plain', isPlainEdit('a\nquick fox', 2, 2, 'x'), false);
 check('typing at a line end is not plain', isPlainEdit('a\nquick fox', 1, 1, 'x'), false);
+check('typing at the start of literal source is plain',
+  isPlainEdit('```js\nlet x = 1\n```', 6, 6, 'x', true), true);
+check('typing at the end of a literal source line is plain',
+  isPlainEdit('```js\nlet x = 1\n```', 15, 15, 'x', true), true);
 check('typing above a setext underline is not plain', isPlainEdit('title\n---\n', 3, 3, 'x'), false);
 check('typing above a setext equals line is not plain', isPlainEdit('title\n===\n', 3, 3, 'x'), false);
 check('an edit spanning a line edge is not plain', isPlainEdit('a\nquick fox', 1, 3, 'x'), false);

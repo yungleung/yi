@@ -24,11 +24,23 @@
   await t.load('Alpha\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(250);
+  const seam = document.querySelector('.markdown-composition-input');
+  let focusLosses = 0;
+  document.addEventListener(
+    'focusout',
+    (event) => {
+      if (event.target === seam) {
+        focusLosses += 1;
+      }
+    },
+    true
+  );
   for (const character of 'quick') {
     press(character);
   }
   await t.sleep(250);
   check('a burst in a paragraph keeps every character', await t.raw(), 'Alphaquick\n');
+  check('and it never resets the input seam', focusLosses, 0);
 
   await t.load('Alpha\n\nBeta\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
