@@ -48,7 +48,7 @@ import {
 import { editorSelection, isDocumentRange, proseRoot, rangeOffsets } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
-import { insertCommitted } from './editing/text_commands';
+import { insertCommitted, insertText } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
 import { fenceLanguageEdit } from './syntax/fence_edits';
@@ -221,6 +221,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       renderer: this.renderer,
       contentView: this.contentView,
       focusText: () => this.focusText(),
+      beginReconciliation: () => this.composition.beginReconciliation(),
       // Every edit funnels through `applyEdit`, and this is how the session behind the editor
       // hears about one: the event carries nothing, since the text is the state's.
       onChanged: (kind) => {
@@ -365,7 +366,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       },
       // The word being composed is written into the line, so the block it lands in can grow
       // under it: measured again, or the spacers below would be short by the line it gained.
-      (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
+      (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart)),
+      // Printable keys reported during a rebuild are replayed through the same text
+      // path as typing, so syntax rules and history see one ordinary edit.
+      (text) => {
+        if (this.readOnly) {
+          return;
+        }
+        this.placeCaretForTheTextPath();
+        insertText(this.context, text);
+      }
     );
     // A fenced code block's label asks for a language (`nodes/fence_label.ts`); the card that
     // answers is the app's own chrome, and the edit it makes is the pure rule's

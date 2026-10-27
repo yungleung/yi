@@ -65,6 +65,8 @@ export interface EditorContext {
    * selection the command has just made (`clipboard.ts: selectAll`).
    */
   readonly focusText: () => void;
+  /** Marks the transient input-context replacement after a structural edit. */
+  readonly beginReconciliation: () => void;
 }
 
 /**
@@ -139,6 +141,10 @@ export function showSourceAt(context: EditorContext, offset: number | null): voi
   if (!setShownRange(range)) {
     return;
   }
+  // Entering or leaving a source rebuilds the block around it. Keep printable
+  // keys that WebKit reports as 229 during that input-context handoff, then
+  // replay them at the caret the new source has just placed.
+  context.beginReconciliation();
   // The blocks that change shape are rebuilt, and a caret's DOM range is not
   // dropped by that: the browser relocates it to the element that replaced its
   // text, where it looks connected while sitting somewhere the author never
@@ -392,6 +398,7 @@ export function applyEdit(
   // built in the shape the caret is about to need — and it is decided from the
   // document, so an edit inside a link or a formula keeps that source open
   // without an editing range to shift.
+  context.beginReconciliation();
   showSourceAt(context, target);
   context.renderer.renderChanged();
   restoreCaret(context, target);
