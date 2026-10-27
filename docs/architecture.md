@@ -243,24 +243,21 @@ bracket writes where the author is (`syntax/brackets.ts` — a pair in prose, no
 region or over a selection, a step over the `]` the app itself wrote, and a pair taken away whole
 by Backspace).
 
-Most typing never gets that far. A keystroke that cannot change how its block
-parses is written into the rendered text run and nothing is rendered at all:
-`applyEdit` asks `syntax/plain_edit.ts` first — the rule accepts letters, digits,
-single spaces and the punctuation that means itself, where no marker can be typed,
-the line's own beginning and its edges are not being made, no run becomes the one
-autolink those characters can spell (`www.`) and no two spaces end up side by side —
-and then asks
-`editing/typed_text.ts` whether the edit maps
-into a tagged text run that spells the document's own characters, one for one. Both
-halves have to agree, and anything either is unsure of takes the ordinary path above,
-which is always correct. An ordinary run is one text node in a `[data-text-from]` span
-with one child. A source view is any `[data-source-from]` element — a link, caption,
-reference, formula, formatting run and the rest — or a `.markdown-source-text` fenced
-block. It may be split across many highlighted nodes; the fast path accepts it when the
-whole box is exact and edits only the caret's node, leaving the source element mounted.
-Because that box already shows the characters being typed, Markdown markers are literal
-there: `{`, `=`, `_`, a backtick or a bracket is written directly instead of rebuilding
-the block. This is what keeps any editable source from rebuilding on every key.
+Most typing never gets that far. A keyboard insertion followed by a non-newline
+character is written into the rendered text run as it is typed; nothing is rendered
+during the burst. `editing/typed_text.ts` first proves that the edit maps into one
+tagged text node that spells the document's own characters, one for one. Prose and
+source views therefore use the same rule: `Start _word_` appears literally character
+by character, with its case and caret intact, and becomes emphasis only after the
+deferred parse check. Edits that cannot map exactly — selections across nodes,
+newlines, non-keyboard commands — take the ordinary path above, which is always
+correct.
+
+`syntax/plain_edit.ts` remains the smaller, parse-aware classification of edits whose
+shape is already known not to change. It accepts letters, digits, single spaces and
+punctuation that means itself where no marker, line edge, autolink or hard break can
+be made. That classification is still tested over the seeded corpus, and source views
+still accept every non-newline character literally because their whole box is exact.
 
 Measured before that work, one letter cost 1–3 ms in a paragraph, a heading, a list
 item or a table cell, 6 ms in a small code block and **32 ms in a 4.7 KB one**; the
@@ -270,15 +267,14 @@ input seam (`test/probes/typing-cost-by-kind.js`, `source-burst-editing.js`).
 captions, math, formatting, citations, images, footnotes, heading attributes and
 fenced attributes.
 
-For rendered prose, because the rule reads one word of the text while a parse can turn
-on more, the fast path also captures the block's parse shape (from the parse the
-renderer already cached) and checks it once the typing stops: one coalesced check a
+For rendered prose, the in-place write captures the block's parse shape (from the parse
+the renderer already cached) and checks it once the typing stops: one coalesced check a
 burst, one parse a burst, and a block whose parse no longer has that shape is rendered
-again (`editing/context.ts: scheduleVerify`). That same deferred reconciliation also
-refreshes blocks whose parse depends on another block — a footnote marker whose
-definition was renamed, for example — once per burst rather than once per key. A source
-view remains mounted while its caret is inside it; leaving it performs the full shape
-change.
+again (`editing/context.ts: scheduleVerify`). Characters and caret movement are
+immediate; only that optional render waits. The same deferred reconciliation refreshes
+blocks whose parse depends on another block — a footnote marker whose definition was
+renamed, for example — once per burst rather than once per key. A source view remains
+mounted while its caret is inside it; leaving it performs the full shape change.
 
 The write parses nothing either. Which source the caret is in is decided from the
 document, but an accepted edit cannot move the caret out of the node it is in —

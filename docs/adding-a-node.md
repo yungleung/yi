@@ -145,16 +145,20 @@ the raw document — the shape `test/probes/revealable-flows.js` uses:
 ## 6. Say whether a letter could open or close it
 
 Nothing in the renderer has to know about your construct: the fast path that writes
-a keystroke into the text node instead of rendering the block is decided by
-characters and tags, not by node types. If your node reveals itself through
+a keystroke into the text node instead of rendering the block is decided by tags and
+exact text mapping, not by node types. If your node reveals itself through
 `sourceViewFor`, it receives `data-source-from` and joins the literal source path:
-any non-newline character is written into that exact text while the source is shown,
-regardless of whether it is a Markdown marker. If it renders as ordinary text,
-`syntax/plain_edit.ts` accepts a letter, a
-digit, a space or a piece of punctuation that means itself, in a place where no
-marker, line beginning, line edge, autolink or setext underline could change what the
-line means, and `editing/typed_text.ts` then refuses any edit that does not map into
-one span whose text is the document's own characters.
+any non-newline character is written into that exact text while the source is shown.
+Ordinary prose keyboard insertions use the same in-place path when
+`editing/typed_text.ts` proves the edit lands inside one exact text node. Markdown
+markers may be visible literally until the deferred shape check runs.
+
+`syntax/plain_edit.ts` is the narrower classification of edits already known not to
+change the parse. It accepts a letter, a digit, a space or punctuation that means
+itself where no marker, line beginning, line edge, autolink or setext underline could
+change what the line means. A direct prose write outside that set still appears
+immediately, then captures its old shape and lets
+`editing/context.ts: scheduleVerify` render once after the burst if the parse moved.
 
 What the rule *assumes* is that every construct needs a character it does not accept:
 a marker (`*`, `` ` ``, `[`, `|`, `$`, `@`, `/`, …), a line's own beginning (`1. `, `#`,
@@ -173,11 +177,10 @@ it, and that has one home and two proofs:
 - `test/probes/typed-text.js`: a case that types where the construct is, and says
   which path took the keystroke.
 
-The deferred check behind the fast path (`editing/context.ts: scheduleVerify`) is a
-safety net rather than a licence: it renders a block again when the parse it now has
-is not the shape it was built from, which heals a stale rendering a moment later —
-but only when the shape moved, and a construct that changes a rendering without
-adding or removing nodes is not covered by it.
+The deferred check behind the fast path (`editing/context.ts: scheduleVerify`) is what
+renders marker syntax after the burst: it renders a block again when the parse it now
+has is not the shape it was built from. A construct that changes rendering without
+adding or removing nodes still needs a distinct node shape for this check to see it.
 
 ## 7. Run everything
 

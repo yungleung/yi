@@ -1,22 +1,18 @@
 /**
  * Typing into a paragraph: what does not render, and the seams where it does.
  *
- * A letter typed inside a word cannot change how its block parses, so the
- * keystroke is written into the text node the caret is in and nothing is rendered:
- * the block's element and that text node both survive, the characters reach the
- * document, and what is on screen is what the document says. The space between two
- * words, a comma and a full stop are the same path (see `syntax/plain_edit.ts`); a
- * character that could change how the text parses — an asterisk, or the full stop that
- * would finish a `1.` list — still goes through the ordinary path and rebuilds the
- * block, which is what keeps this an optimisation rather than a second renderer.
+ * A printable keystroke that maps exactly into the text node under the caret is
+ * written there immediately, even when a marker could later change the parse. The
+ * block and text node survive the burst; `syntax/plain_edit.ts` identifies the
+ * smaller set already known not to change the parse, and other writes are checked
+ * once after typing settles.
  *
  * The rest of the probe is the seams on either side of that rule:
  *
  * - a selection spanning two text nodes is no write into one node, and an edit at
  *   a line edge can change what the line is, so both go the ordinary way;
- * - a caret inside a link's shown source goes the ordinary way too — the source
- *   view is tagged with the offset the block's source starts at, not with
- *   `data-text-from`, so `editing/typed_text.ts` refuses to write into it;
+ * - a caret inside a link's shown source is written in place through the same exact
+ *   text mapping;
  * - typing that makes the block taller re-measures it, so the heights the spacers
  *   are built from still add up to the page;
  * - and the deferred check behind all of it: a burst of typing captures the
@@ -217,10 +213,12 @@
   check('a run of letters keeps the block', out.plainLetterRun.blockSurvived);
   check('a run of letters reaches the document', showsDocument(out.plainLetterRun));
 
-  // The refusals: characters that could change how the text parses.
-  out.structuralAsterisk = await typeAt(paragraph, inWord('plain', 2), ['*']);
-  check('an asterisk rebuilds the block', !out.structuralAsterisk.blockSurvived);
-  check('an asterisk reaches the document', showsDocument(out.structuralAsterisk));
+  // A marker that could change the parse is still written in place during the
+  // burst; only the deferred shape check may replace the block afterwards.
+  out.markerAsterisk = await typeAt(paragraph, inWord('plain', 2), ['*']);
+  check('an asterisk keeps the block while it is typed', out.markerAsterisk.blockSurvived);
+  check('an asterisk keeps the text node', out.markerAsterisk.textNodeSurvived);
+  check('an asterisk reaches the document', showsDocument(out.markerAsterisk));
 
   out.plainSpace = await typeAt(paragraph, inWord('plain', 2), [' ']);
   check('a space keeps the block', out.plainSpace.blockSurvived);

@@ -30,7 +30,7 @@ import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
 import { markerShape } from '../syntax/footnotes';
-import { isPlainEdit, isSourceTextEdit } from '../syntax/plain_edit';
+import { isInPlaceTextEdit, isPlainEdit } from '../syntax/plain_edit';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
@@ -347,12 +347,18 @@ export function applyEdit(
   const rule = isPlainEdit(beforeText, from, to, replacement, literal);
   const root = proseRoot(context);
   const candidate = root ? plainRun(context.state, root, from, to) : null;
-  // A source view already shows the exact characters being edited, so its Markdown
-  // markers are literal there. Rendered prose still uses the parse-aware rule.
-  const run =
-    candidate && (candidate.source ? isSourceTextEdit(beforeText, from, to, replacement) : rule)
-      ? candidate
-      : null;
+  // A source view and ordinary keyboard typing on one exact text node both write the
+  // document's own characters directly. Prose may temporarily show a marker literally;
+  // the deferred shape check below renders it once the typing burst settles.
+  const direct =
+    candidate !== null &&
+    (candidate.source
+      ? isInPlaceTextEdit(beforeText, from, to, replacement)
+      : rule ||
+        (kind === 'typing' &&
+          replacement !== '' &&
+          isInPlaceTextEdit(beforeText, from, to, replacement)));
+  const run = direct ? candidate : null;
   // The shape is captured before the edit is applied: afterwards the parse it
   // names is the one the edit replaced, and this block is being written into
   // without being built again (see `scheduleVerify`).

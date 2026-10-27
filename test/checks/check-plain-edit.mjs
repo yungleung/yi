@@ -27,7 +27,7 @@ const load = async (input, name) => {
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
   return await import(file);
 };
-const { isPlainEdit, isSourceTextEdit } = await load(
+const { isInPlaceTextEdit, isPlainEdit } = await load(
   'src/ui/markdown/syntax/plain_edit.ts',
   'plain_edit'
 );
@@ -160,12 +160,12 @@ check('typing at the start of literal source is plain',
   isPlainEdit('```js\nlet x = 1\n```', 6, 6, 'x', true), true);
 check('typing at the end of a literal source line is plain',
   isPlainEdit('```js\nlet x = 1\n```', 15, 15, 'x', true), true);
-check('source views accept Markdown markers literally',
-  isSourceTextEdit('{#id}', 4, 4, ' .wide'), true);
-check('source views reject an inserted line ending',
-  isSourceTextEdit('{#id}', 4, 4, '\n'), false);
-check('source views reject deleting a line ending',
-  isSourceTextEdit('a\nb', 1, 2, ''), false);
+check('exact in-place surfaces accept Markdown markers literally',
+  isInPlaceTextEdit('{#id}', 4, 4, ' .wide'), true);
+check('exact in-place surfaces reject an inserted line ending',
+  isInPlaceTextEdit('{#id}', 4, 4, '\n'), false);
+check('exact in-place surfaces reject deleting a line ending',
+  isInPlaceTextEdit('a\nb', 1, 2, ''), false);
 check('typing above a setext underline is not plain', isPlainEdit('title\n---\n', 3, 3, 'x'), false);
 check('typing above a setext equals line is not plain', isPlainEdit('title\n===\n', 3, 3, 'x'), false);
 check('an edit spanning a line edge is not plain', isPlainEdit('a\nquick fox', 1, 3, 'x'), false);

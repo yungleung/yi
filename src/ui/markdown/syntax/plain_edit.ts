@@ -1,14 +1,14 @@
 /**
  * Whether an edit can only change characters, never how the text parses.
  *
-* The editor's fast path turns a keystroke into a write to one rendered text node
- * and no rendering at all, and this is the rule it trusts. Markdown is
- * context-sensitive: `x` typed between two asterisks is an emphasis, a character at the
- * start of a line can make it a list item or a heading, `.` after the `1` of `1 x` makes
- * it a list, and a character typed on the line above a `---` line makes that line a
- * setext underline. What the rule admits is a letter, a digit, a space and the
- * punctuation that means itself, in a place where none of those can happen; everything
- * else falls back to the ordinary re-render, which is always correct.
+ * The editor writes a printable keystroke into one exact text node before deciding
+ * whether the parse moved. This rule identifies the subset whose parse is already known
+ * not to move. Markdown is context-sensitive: `x` typed between two asterisks is an
+ * emphasis, a character at the start of a line can make it a list item or a heading, `.`
+ * after the `1` of `1 x` makes it a list, and a character typed on the line above a
+ * `---` line makes that line a setext underline. What the rule admits is a letter, a
+ * digit, a space and punctuation that means itself, in a place where none of those can
+ * happen; everything else is checked once after the typing burst.
 *
 * What it may not do is call an edit plain when the parse would change, and
 * `test/checks/check-plain-edit.mjs` is the property that keeps it honest: over a
@@ -214,14 +214,14 @@ export function isPlainEdit(
 }
 
 /**
- * Whether an edit can be written into an already-visible source view.
+ * Whether an edit can be written directly into an exact text surface.
  *
- * That view contains the document's own characters, so Markdown markers are ordinary
+ * Such a surface contains the document's own characters, so Markdown markers are ordinary
  * characters to edit there even though the same markers need a render in prose. A line
  * ending still belongs to the line rules: adding or removing one can split the block or
  * turn a delimiter into content, and is reconciled through the ordinary path.
  */
-export function isSourceTextEdit(
+export function isInPlaceTextEdit(
   before: string,
   from: number,
   to: number,

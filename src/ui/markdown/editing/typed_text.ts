@@ -1,12 +1,14 @@
 /**
  * Writes a typed edit into the text node the caret is in, instead of rendering.
  *
- * A keystroke that cannot change how its block parses does not need a rendering at
- * all: the characters it inserted are the characters the document now holds, and
- * the text node that held the old ones holds the new ones. Writing them is what
- * keeps the block's element — and therefore the layout of everything below it —
- * exactly where it was (see `test/probes/block-rebuild-cost.js`: rebuilding the
- * fixture note's last block costs ~26 ms, writing into one of its text nodes ~0).
+ * A keystroke that maps exactly into rendered text does not need a rendering while it
+ * is typed: the characters it inserted are the characters the document now holds, and
+ * the text node that held the old ones holds the new ones. Writing them is what keeps
+ * the block's element — and therefore the layout of everything below it — exactly
+ * where it was (see `test/probes/block-rebuild-cost.js`: rebuilding the fixture note's
+ * last block costs ~26 ms, writing into one of its text nodes ~0). A character that
+ * may change the parse is checked once after the typing burst (`context.ts:
+ * scheduleVerify`); the write itself never waits.
  *
  * It refuses whenever the mapping is not exact, and it decides that *before* the
  * edit is applied: both ends of the edit must land in one text node, and the text
