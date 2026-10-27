@@ -265,7 +265,9 @@ long source burst also lost characters while each rebuild blurred and refocused 
 input seam (`test/probes/typing-cost-by-kind.js`, `source-burst-editing.js`).
 `editable-source-burst.js` holds the same behavior across links, automatic references,
 captions, math, formatting, citations, images, footnotes, heading attributes and
-fenced attributes.
+fenced attributes. `default-list-inplace-typing.js` holds the same immediate,
+mounted write in the default fixture's task, unordered, ordered, nested and
+captioned lists.
 
 For rendered prose, the in-place write captures the block's parse shape (from the parse
 the renderer already cached) and checks it once the typing stops: one coalesced check a
