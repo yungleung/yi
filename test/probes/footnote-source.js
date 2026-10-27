@@ -58,9 +58,9 @@
     after
   );
   check(
-    'and the marker is the label it now has',
-    marker()?.dataset.footnoteRef === '2',
-    marker()?.dataset.footnoteRef ?? null
+    'and the source shows the label it now has',
+    source()?.textContent === '[^2]',
+    source()?.textContent ?? null
   );
   check(
     'and the note it names is still the note it names',
@@ -72,8 +72,14 @@
   await t.sleep(300);
   check(
     'and a caret that leaves it renders it again',
-    source() === null && marker()?.textContent === '[2]',
-    { source: source()?.textContent ?? null, marker: marker()?.textContent ?? null }
+    source() === null &&
+      marker()?.textContent === '[2]' &&
+      marker()?.dataset.footnoteRef === '2',
+    {
+      source: source()?.textContent ?? null,
+      marker: marker()?.textContent ?? null,
+      markerRef: marker()?.dataset.footnoteRef ?? null
+    }
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

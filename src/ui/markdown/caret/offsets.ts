@@ -28,6 +28,7 @@ import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { markerShape } from '../syntax/footnotes';
 import { readTableSource } from '../syntax/table_source';
+import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { getCaretRange } from './caret';
 import { LINE_START, TABLE_ROW_START, TEXT_FROM, offsetOf } from './../offset_tags';
 
@@ -39,26 +40,6 @@ export interface CaretLocation {
   /** Character offset relative to the block's start. */
   blockOffset: number;
 }
-
-export const SOURCE_SELECTOR = [
-  '.markdown-link-source',
-  '.markdown-image-source',
-  '.markdown-citation-source',
-  '.markdown-wikilink-source',
-  '.markdown-math-source',
-  '.markdown-break-source',
-  '.markdown-thematic-break-source',
-  '.markdown-footnote-source',
-  '.markdown-auto-reference-source',
-  '.markdown-figure-source',
-  '.markdown-caption-source',
-  '.markdown-equation-source',
-  '.markdown-strong-source',
-  '.markdown-emphasis-source',
-  '.markdown-delete-source',
-  '.markdown-inline-code-source',
-  '.markdown-heading-attributes-source'
-].join(', ');
 
 /** The caret's location in the document, or null when it cannot be mapped. */
 export function caretLocation(state: MarkdownEditorState): CaretLocation | null {
@@ -91,7 +72,7 @@ export function documentOffsetAt(
     containerNode.nodeType === Node.TEXT_NODE
       ? containerNode.parentElement
       : (containerNode as Element)
-  )?.closest<HTMLElement>(SOURCE_SELECTOR);
+  )?.closest<HTMLElement>(SOURCE_TEXT_SELECTOR);
   if (sourceSpan) {
     const from = Number(sourceSpan.dataset.sourceFrom ?? NaN);
     const blockElement = sourceSpan.closest('.markdown-block') as HTMLElement | null;

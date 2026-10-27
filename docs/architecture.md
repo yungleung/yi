@@ -254,19 +254,31 @@ and then asks
 into a tagged text run that spells the document's own characters, one for one. Both
 halves have to agree, and anything either is unsure of takes the ordinary path above,
 which is always correct. An ordinary run is one text node in a `[data-text-from]` span
-with one child. Highlighted source is one `.markdown-source-text` box split across many
-highlight.js nodes; the fast path accepts it when the whole box is exact and edits only
-the caret's node, leaving the source element mounted. This is what keeps a character in
-a fenced block or formula from rebuilding the block on every key. Measured before that
-work, one letter cost 1–3 ms in a paragraph, a heading, a list item or a table cell, 6
-ms in a small code block and **32 ms in a 4.7 KB one**; the long source burst also lost
-characters while each rebuild blurred and refocused the input seam
-(`test/probes/typing-cost-by-kind.js`, `source-burst-editing.js`). Because the rule reads
-one word of the text while a parse can turn on more, the fast path also captures
-the block's parse shape (from the parse the renderer already cached) and checks it
-once the typing stops: one coalesced check a burst, one parse a burst, and a block
-whose parse no longer has that shape is rendered again
-(`editing/context.ts: scheduleVerify`).
+with one child. A source view is any `[data-source-from]` element — a link, caption,
+reference, formula, formatting run and the rest — or a `.markdown-source-text` fenced
+block. It may be split across many highlighted nodes; the fast path accepts it when the
+whole box is exact and edits only the caret's node, leaving the source element mounted.
+Because that box already shows the characters being typed, Markdown markers are literal
+there: `{`, `=`, `_`, a backtick or a bracket is written directly instead of rebuilding
+the block. This is what keeps any editable source from rebuilding on every key.
+
+Measured before that work, one letter cost 1–3 ms in a paragraph, a heading, a list
+item or a table cell, 6 ms in a small code block and **32 ms in a 4.7 KB one**; the
+long source burst also lost characters while each rebuild blurred and refocused the
+input seam (`test/probes/typing-cost-by-kind.js`, `source-burst-editing.js`).
+`editable-source-burst.js` holds the same behavior across links, automatic references,
+captions, math, formatting, citations, images, footnotes, heading attributes and
+fenced attributes.
+
+For rendered prose, because the rule reads one word of the text while a parse can turn
+on more, the fast path also captures the block's parse shape (from the parse the
+renderer already cached) and checks it once the typing stops: one coalesced check a
+burst, one parse a burst, and a block whose parse no longer has that shape is rendered
+again (`editing/context.ts: scheduleVerify`). That same deferred reconciliation also
+refreshes blocks whose parse depends on another block — a footnote marker whose
+definition was renamed, for example — once per burst rather than once per key. A source
+view remains mounted while its caret is inside it; leaving it performs the full shape
+change.
 
 The write parses nothing either. Which source the caret is in is decided from the
 document, but an accepted edit cannot move the caret out of the node it is in —

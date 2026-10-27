@@ -35,6 +35,7 @@ import { caretInTableCell, tableDeleteIsNoop } from './table';
 import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
 import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
 import { insertFenceOpen } from './fence_open';
+import { rangeInSourceText } from '../source_text';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -66,6 +67,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
     return false;
   }
   const block = context.state.getBlockAtOffset(offsets.from);
+  const sourceText = rangeInSourceText(range);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
   }
@@ -90,7 +92,8 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
   let pair: BracketEdit | null = null;
   if (brackets && offsets.from === offsets.to) {
-    const literal = block?.kind === 'fencedCode' || block?.kind === 'displayMath';
+    const literal =
+      sourceText || block?.kind === 'fencedCode' || block?.kind === 'displayMath';
     const source = context.state.getText();
     if (skipClosingFor(source, offsets.from, text, literal)) {
       // The author typed the bracket they can see: they move past it rather than writing another.
@@ -104,6 +107,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   // plus the pair is a fence's ` ``` ` — so the rule sees what would be written, not the key alone.
   if (
     block !== null &&
+    !sourceText &&
     !isRawRendered(block.kind) &&
     offsets.from === offsets.to &&
     insertFenceOpen(context, offsets.from, pair ? pair.insert : text)

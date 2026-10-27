@@ -27,7 +27,10 @@ const load = async (input, name) => {
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
   return await import(file);
 };
-const { isPlainEdit } = await load('src/ui/markdown/syntax/plain_edit.ts', 'plain_edit');
+const { isPlainEdit, isSourceTextEdit } = await load(
+  'src/ui/markdown/syntax/plain_edit.ts',
+  'plain_edit'
+);
 const { nodeShape } = await load('src/ui/markdown/syntax/node_shape.ts', 'node_shape');
 // The parse reaches `decode-named-character-reference`, whose bundled build makes an
 // element at import time; `check-history.mjs` installs the same stub before it
@@ -157,6 +160,12 @@ check('typing at the start of literal source is plain',
   isPlainEdit('```js\nlet x = 1\n```', 6, 6, 'x', true), true);
 check('typing at the end of a literal source line is plain',
   isPlainEdit('```js\nlet x = 1\n```', 15, 15, 'x', true), true);
+check('source views accept Markdown markers literally',
+  isSourceTextEdit('{#id}', 4, 4, ' .wide'), true);
+check('source views reject an inserted line ending',
+  isSourceTextEdit('{#id}', 4, 4, '\n'), false);
+check('source views reject deleting a line ending',
+  isSourceTextEdit('a\nb', 1, 2, ''), false);
 check('typing above a setext underline is not plain', isPlainEdit('title\n---\n', 3, 3, 'x'), false);
 check('typing above a setext equals line is not plain', isPlainEdit('title\n===\n', 3, 3, 'x'), false);
 check('an edit spanning a line edge is not plain', isPlainEdit('a\nquick fox', 1, 3, 'x'), false);

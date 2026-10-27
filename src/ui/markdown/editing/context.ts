@@ -30,7 +30,7 @@ import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
 import { markerShape } from '../syntax/footnotes';
-import { isPlainEdit } from '../syntax/plain_edit';
+import { isPlainEdit, isSourceTextEdit } from '../syntax/plain_edit';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
@@ -79,6 +79,8 @@ const VERIFY_DELAY_MS = 200;
 interface PendingVerify {
   /** The parse shape the block's element was built from (see `scheduleVerify`). */
   readonly shape: string;
+  /** Whether this edit can change how blocks outside the edited one render. */
+  readonly syncDependents: boolean;
   /** The timer that will do the check, replaced by every keystroke of the burst. */
   timer: ReturnType<typeof setTimeout>;
 }
@@ -253,7 +255,11 @@ function sourceRangeIn(
  * with a shape it never had, which costs one render and cannot produce a wrong
  * page: the check only ever decides whether to render again from the document.
  */
-function scheduleVerify(context: EditorContext, block: MarkdownBlock): void {
+function scheduleVerify(
+  context: EditorContext,
+  block: MarkdownBlock,
+  syncDependents: boolean
+): void {
   const lineStart = block.lineStart;
   const pending = pendingFor(context);
   const waiting = pending.get(lineStart);
@@ -262,10 +268,21 @@ function scheduleVerify(context: EditorContext, block: MarkdownBlock): void {
     clearTimeout(waiting.timer);
   }
   const timer = setTimeout(() => {
+    const current = pending.get(lineStart);
     pending.delete(lineStart);
-    verifyBlock(context, lineStart, shape);
+    if (current?.syncDependents === true) {
+      // A definition's label can change how another block parses even though that
+      // block's own text did not move (a footnote marker becomes plain text when its
+      // definition disappears). Reconcile every block that shares this document once
+      // the burst ends. The edited source block still matches the key recorded by
+      // `measureEditedBlock`, so it remains mounted; its own parse waits until the
+      // caret leaves.
+      context.renderer.renderChanged();
+    } else {
+      verifyBlock(context, lineStart, shape);
+    }
   }, VERIFY_DELAY_MS);
-  pending.set(lineStart, { shape, timer });
+  pending.set(lineStart, { shape, syncDependents, timer });
 }
 
 /** The checks pending for this editor, creating the map on first use. */
@@ -326,15 +343,22 @@ export function applyEdit(
     editBlock?.kind === 'fencedCode' ||
     editBlock?.kind === 'displayMath' ||
     editBlock?.kind === 'equation';
-  const rule = isPlainEdit(context.state.getText(), from, to, replacement, literal);
-  const root = rule ? proseRoot(context) : null;
-  const run = root ? plainRun(context.state, root, from, to) : null;
+  const beforeText = context.state.getText();
+  const rule = isPlainEdit(beforeText, from, to, replacement, literal);
+  const root = proseRoot(context);
+  const candidate = root ? plainRun(context.state, root, from, to) : null;
+  // A source view already shows the exact characters being edited, so its Markdown
+  // markers are literal there. Rendered prose still uses the parse-aware rule.
+  const run =
+    candidate && (candidate.source ? isSourceTextEdit(beforeText, from, to, replacement) : rule)
+      ? candidate
+      : null;
   // The shape is captured before the edit is applied: afterwards the parse it
   // names is the one the edit replaced, and this block is being written into
   // without being built again (see `scheduleVerify`).
   const written = run ? context.state.getBlockAtOffset(from) : null;
   if (written) {
-    scheduleVerify(context, written);
+    scheduleVerify(context, written, run?.source === true);
   }
   // The caret is resolved against the *edited* text (`state.ts: EditCaret`): asking a
   // rule like `Enter`'s what it names before the edit names the block the key was

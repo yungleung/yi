@@ -212,3 +212,20 @@ export function isPlainEdit(
   const nextLine = before.slice(nextStart, nextEnd === -1 ? before.length : nextEnd);
   return !/^ {0,3}(=+|-+)\s*$/.test(nextLine);
 }
+
+/**
+ * Whether an edit can be written into an already-visible source view.
+ *
+ * That view contains the document's own characters, so Markdown markers are ordinary
+ * characters to edit there even though the same markers need a render in prose. A line
+ * ending still belongs to the line rules: adding or removing one can split the block or
+ * turn a delimiter into content, and is reconciled through the ordinary path.
+ */
+export function isSourceTextEdit(
+  before: string,
+  from: number,
+  to: number,
+  inserted: string
+): boolean {
+  return !/[\r\n]/.test(inserted) && !/[\r\n]/.test(before.slice(from, to));
+}

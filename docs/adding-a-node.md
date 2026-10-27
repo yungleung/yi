@@ -146,7 +146,11 @@ the raw document — the shape `test/probes/revealable-flows.js` uses:
 
 Nothing in the renderer has to know about your construct: the fast path that writes
 a keystroke into the text node instead of rendering the block is decided by
-characters and tags, not by node types. `syntax/plain_edit.ts` accepts a letter, a
+characters and tags, not by node types. If your node reveals itself through
+`sourceViewFor`, it receives `data-source-from` and joins the literal source path:
+any non-newline character is written into that exact text while the source is shown,
+regardless of whether it is a Markdown marker. If it renders as ordinary text,
+`syntax/plain_edit.ts` accepts a letter, a
 digit, a space or a piece of punctuation that means itself, in a place where no
 marker, line beginning, line edge, autolink or setext underline could change what the
 line means, and `editing/typed_text.ts` then refuses any edit that does not map into

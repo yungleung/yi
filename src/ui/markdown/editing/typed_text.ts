@@ -11,12 +11,12 @@
  * It refuses whenever the mapping is not exact, and it decides that *before* the
  * edit is applied: both ends of the edit must land in one text node, and the text
  * run that node belongs to must spell the document's own characters, one for one.
- * An ordinary run is its `[data-text-from]` span with one child. Highlighted source
- * is a `.markdown-source-text` box split across many nodes; that box is accepted
- * when its whole text is exact, and the caret's node is edited without replacing the
- * box. Escapes, entities, hidden markers and every widget that draws a *rendering*
- * of its source fail that test, and the caller renders the edit the ordinary way,
- * which is always correct.
+ * An ordinary run is its `[data-text-from]` span with one child. A source view is
+ * any `[data-source-from]` element, or a `.markdown-source-text` box, and may be
+ * split across many highlighted nodes; it is accepted when its whole text is exact,
+ * and the caret's node is edited without replacing the box. Escapes, entities,
+ * hidden markers and every widget that draws a *rendering* of its source fail that
+ * test, and the caller renders the edit the ordinary way, which is always correct.
  *
  * Writing is also what moves the offsets the block's elements carry: they name
  * positions in the block's own text, so the ones after the edit move with the text
@@ -32,6 +32,7 @@ import { domPositionAtOffset } from '../caret/dom_position';
 import { sourceTextOffset } from '../caret/offsets';
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
+import { sourceTextAt } from '../source_text';
 import { FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
 
 /** The rendered text a plain edit can be written into, and where in it. */
@@ -44,6 +45,8 @@ export interface TypedRun {
   /** The same range as block-relative raw offsets, which is what the tags name. */
   from: number;
   to: number;
+  /** Whether this is an exact source view, where every printable character is literal. */
+  source: boolean;
 }
 
 /** The attributes whose value is a raw offset within the block. */
@@ -72,10 +75,9 @@ export function plainRun(
     return null;
   }
   const node = start.node as Text;
-  const source = node.parentElement?.closest<HTMLElement>(
-    `.markdown-source-text[data-${TEXT_FROM}]`
-  ) ?? null;
-  const span = source ?? node.parentElement?.closest<HTMLElement>(`[data-${TEXT_FROM}]`) ?? null;
+  const source = sourceTextAt(node);
+  const span =
+    source ?? node.parentElement?.closest<HTMLElement>(`[data-${TEXT_FROM}]`) ?? null;
   if (!span || (source === null && span.childNodes.length !== 1)) {
     return null;
   }
@@ -84,7 +86,8 @@ export function plainRun(
   // refuses a link's title, a citation's formatted reference, KaTeX, an entity and
   // an escaped character — none of which is the text the author typed.
   const text = state.getText();
-  const tag = offsetOf(span, TEXT_FROM);
+  const sourceFrom = offsetOf(span, SOURCE_FROM);
+  const tag = Number.isFinite(sourceFrom) ? sourceFrom : offsetOf(span, TEXT_FROM);
   const rawStart = block.charStart + tag;
   const raw = text.slice(rawStart, rawStart + span.textContent.length);
   if (!Number.isFinite(rawStart) || span.textContent !== raw) {
@@ -93,8 +96,8 @@ export function plainRun(
   // Highlighting makes one source box many text nodes. Its text still spells the block's
   // source exactly, so the write can stay in the node the caret is in and leave the source
   // box mounted. This is the same proof as the single-node path, made over the whole box.
-  const startWithin = source === null ? start.offset : sourceTextOffset(source, node, start.offset);
-  const endWithin = source === null ? end.offset : sourceTextOffset(source, node, end.offset);
+  const startWithin = sourceTextOffset(span, node, start.offset);
+  const endWithin = sourceTextOffset(span, node, end.offset);
   if (startWithin === null || endWithin === null) {
     return null;
   }
@@ -103,7 +106,8 @@ export function plainRun(
     start: start.offset,
     end: end.offset,
     from: tag + startWithin,
-    to: tag + endWithin
+    to: tag + endWithin,
+    source: source !== null
   };
 }
 

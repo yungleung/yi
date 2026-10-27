@@ -288,11 +288,9 @@
   check('an edit that joins two lines rebuilds the block', !out.lineJoin.blockSurvived);
   check('an edit that joins two lines takes the newline with it', showsDocument(out.lineJoin));
 
-  // A caret inside a link's shown source: the text on screen is the block's own
-  // source, tagged where that source starts rather than as the document's text at
-  // the caret, so the write falls back to the ordinary path — and the source is
-  // shown again, from the document, with the caret where the first keystroke left
-  // it.
+  // A caret inside a link's shown source: the source tag names the block-relative
+  // start of the text on screen, so the same local write applies to the node under
+  // the caret and the source view stays mounted.
   out.shownSource = await typeAt(
     linked,
     async (text) => {
@@ -318,7 +316,8 @@
     },
     ['x', 'y']
   );
-  check('typing in a shown source goes the ordinary path', !out.shownSource.blockSurvived);
+  check('typing in a shown source keeps the block', out.shownSource.blockSurvived);
+  check('typing in a shown source keeps its text node', out.shownSource.textNodeSurvived);
   check('typing in a shown source lands where the caret is', showsDocument(out.shownSource));
   check(
     'typing in a shown source shows the source it now has',

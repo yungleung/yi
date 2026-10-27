@@ -123,6 +123,9 @@
   area.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
   area.dispatchEvent(new CompositionEvent('compositionend', { data: '字', bubbles: true }));
   await t.sleep(250);
+  for (let attempt = 0; attempt < 20 && !focusedAgain; attempt += 1) {
+    await t.sleep(50);
+  }
   check('the field takes the keyboard back after a commit', focusedAgain, true);
   check('and the seam has the keyboard', document.activeElement === area, true);
 

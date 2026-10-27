@@ -682,6 +682,16 @@ can rebuild the highlighted `pre` when the edit changes its shape, so the restor
 scroll that box back to the caret. Ordinary characters in highlighted source use the plain
 write path and keep the existing `pre`.
 
+Every revealed node uses that same literal surface. `data-source-from` marks links,
+citations, wikilinks, images, formulas, formatting, captions, automatic references and
+heading attributes; a fenced block's complete text is `.markdown-source-text` with
+`data-text-from`. While one is open, any non-newline character is written locally,
+including Markdown markers. The parse and rendered view wait until the caret leaves.
+`source_text.ts` owns the shape, and `editable-source-burst.js` holds every
+node family to it. The existing deferred parse check also reconciles dependent blocks
+once per burst, so renaming a footnote definition updates markers in other blocks
+without rebuilding the source under the caret for every character.
+
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the
 reader scrolls back, and a caret whose block was dropped is placed again once it is there — but

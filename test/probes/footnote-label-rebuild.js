@@ -5,10 +5,10 @@
  * deferred check parses once the burst stops (`editing/context.ts:
  * scheduleVerify`), so a keystroke in a label ends by rebuilding the very block the
  * caret is in. Two shapes of that: the label still names a definition and the
- * caret has to stay at the end of the characters it was typing, and the label
- * stops being one — `[^1]:` with its `1` deleted is a paragraph, not a definition —
- * where the caret has to stay where the author was rather than fall to the block's
- * start, and no marker may be left behind in the text that named it.
+ * caret has to stay at the end of the characters it was typing. If the label stops
+ * being a footnote, it stays editable as its source until the caret leaves; no marker
+ * may be left behind in the text that named it, and the next character can complete
+ * the label again.
  *
  * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/document/state.ts,
  *   src/ui/markdown/caret/dom_position.ts
@@ -68,20 +68,23 @@
     await t.raw()
   );
 
-  // 2. The label stops being one: the line is rebuilt as a paragraph.
+  // 2. The label stops being one: its source remains editable where the author is.
   await t.load(doc);
   await click(label());
   t.key('Backspace');
   await t.sleep(600);
   check(
-    'deleting the label`s last character rebuilds the line as the text it is',
-    t.blocks()[1]?.textContent === '[^]: first note',
+    'deleting the label`s last character leaves its source editable',
+    t.blocks()[1]?.textContent === '[^]first note',
     t.blocks().map((block) => block.textContent)
   );
   const afterDelete = caret();
   check(
-    'and the caret stays where the author was, not at the block`s start',
-    afterDelete !== null && afterDelete.text === '[^]: first note' && afterDelete.offset === 2,
+    'and the caret stays at the end of that source',
+    afterDelete !== null &&
+      afterDelete.cls?.includes('markdown-footnote-source') &&
+      afterDelete.text === '[^]' &&
+      afterDelete.offset === 2,
     afterDelete
   );
   check(

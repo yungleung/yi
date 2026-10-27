@@ -11,7 +11,8 @@
  */
 
 import type { RootContent } from 'mdast';
-import { drawnMarkerLength, nodeRawRange, renderedLength, SOURCE_SELECTOR } from './offsets';
+import { drawnMarkerLength, nodeRawRange, renderedLength } from './offsets';
+import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { afterNewline } from './dom';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
@@ -57,7 +58,7 @@ export function domPositionAtOffset(
   // text. Mapping through the rendered node instead would approximate the
   // position (a formula renders as KaTeX, not as its source) and the caret
   // would drift away from where the edit left it.
-  for (const source of blockElement.querySelectorAll<HTMLElement>(SOURCE_SELECTOR)) {
+  for (const source of blockElement.querySelectorAll<HTMLElement>(SOURCE_TEXT_SELECTOR)) {
     const from = block.charStart + offsetOf(source, SOURCE_FROM);
     if (!Number.isFinite(from)) {
       continue;

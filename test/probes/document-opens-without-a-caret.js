@@ -58,6 +58,26 @@
     range === null
       ? null
       : `${(range.startContainer.textContent ?? '').slice(0, 20)}@${range.startOffset}`;
+  /** The document offset a caret names in a revealed source or an ordinary text run. */
+  const documentOffset = (range) => {
+    if (range === null) {
+      return null;
+    }
+    const parent = (
+      range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer
+        : range.startContainer.parentElement
+    );
+    const source = parent?.closest('[data-source-from]');
+    const text = parent?.closest('[data-text-from]');
+    const element = source ?? text;
+    const from = source?.dataset.sourceFrom ?? text?.dataset.textFrom;
+    const block = element?.closest('.markdown-block');
+    if (!element || !block || from === undefined) {
+      return null;
+    }
+    return Number(block.dataset.charStart) + Number(from) + range.startOffset;
+  };
 
   /**
    * Opens a document through the session, answering the question it may ask first — the document on
@@ -111,6 +131,7 @@
     await t.sleep(400);
     const typed = await t.raw();
     const beforeLeaving = whereIs(caret.getCaretRange());
+    const beforeLeavingOffset = documentOffset(caret.getCaretRange());
     check('a letter typed with no caret writes at the text’s start', typed.startsWith('X'), typed.slice(0, 30));
 
     // 3. The other half: a caret the session *does* remember is placed again, where it was. Leaving
@@ -123,10 +144,20 @@
       .documents.find((document) => document.path === notePath)?.view;
     await openNote(notePath);
     const restored = caret.getCaretRange();
+    const restoredOffset = documentOffset(restored);
     check(
       'a caret the session remembers is placed again, where it was',
-      whereIs(restored) === beforeLeaving && restored !== null,
-      { remembered: heldView?.caret ?? null, left: beforeLeaving, cameBack: whereIs(restored) }
+      restored !== null &&
+        beforeLeavingOffset !== null &&
+        restoredOffset === beforeLeavingOffset &&
+        restoredOffset === heldView?.caret,
+      {
+        remembered: heldView?.caret ?? null,
+        left: beforeLeaving,
+        leftOffset: beforeLeavingOffset,
+        cameBack: whereIs(restored),
+        cameBackOffset: restoredOffset
+      }
     );
   } finally {
     try {
