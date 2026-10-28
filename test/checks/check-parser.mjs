@@ -244,6 +244,45 @@ const nestedCallout = parseMarkdown('> > [!TIP]\n> > Nested\n');
 check('the outer container remains a blockquote', nestedCallout.children[0].type, 'blockquote');
 check('the inner container becomes a callout', nestedCallout.children[0].children[0].type, 'callout');
 
+const calloutListSource =
+  '> [!NOTE]\n' +
+  '> - First\n' +
+  '> - Second\n' +
+  '> : Steps {#list:steps}\n';
+const calloutList = parseMarkdown(calloutListSource).children[0].children[0];
+check('a captioned list stays a list inside a callout', calloutList.type, 'list');
+check('the callout list keeps its caption', calloutList.listCaption?.id, 'list:steps');
+check(
+  'the callout list caption keeps one list node',
+  parseMarkdown(calloutListSource).children[0].children.map((node) => node.type),
+  ['list']
+);
+check(
+  'a callout list serializes exactly',
+  serializeMarkdown(parseMarkdown(calloutListSource)),
+  calloutListSource
+);
+
+const calloutTableSource =
+  '> [!NOTE]\n' +
+  '> | A |\n' +
+  '> | --- |\n' +
+  '> | 1 |\n' +
+  '> : Results {#tbl:results}\n';
+const calloutTable = parseMarkdown(calloutTableSource).children[0].children[0];
+check('a captioned table stays a table inside a callout', calloutTable.type, 'table');
+check('the callout table keeps its caption', calloutTable.tableCaption?.id, 'tbl:results');
+check(
+  'the callout table caption keeps one table node',
+  parseMarkdown(calloutTableSource).children[0].children.map((node) => node.type),
+  ['table']
+);
+check(
+  'a callout table serializes exactly',
+  serializeMarkdown(parseMarkdown(calloutTableSource)),
+  calloutTableSource
+);
+
 const unknownCallout = parseMarkdown('> [!UNKNOWN]\n> ordinary quote\n');
 check('an unknown marker remains a blockquote', unknownCallout.children[0].type, 'blockquote');
 

@@ -40,7 +40,7 @@ import { readTableSource } from './table_source';
 import { restoreListings } from './listings';
 import { frontmatterForParsers } from './markers';
 import { equationsForParsers } from './equation_blocks';
-import { calloutsForParsers } from './callouts';
+import { calloutsForParsers, type CalloutSource } from './callouts';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkAutoReferences } from '../plugins/remark-auto-references';
@@ -155,6 +155,94 @@ export function parseMarkdown(markdown: string): Root {
   return root;
 }
 
+interface CaptionView {
+  text: string;
+  toView(offset: number): number;
+  toOriginal(offset: number): number;
+}
+
+/**
+ * A callout body with its outer quote carriers removed but every source
+ * boundary retained. Caption readers understand the body's Markdown, while
+ * their answers still map back to the document's original positions.
+ */
+function captionView(
+  markdown: string,
+  callout: CalloutSource | null
+): CaptionView {
+  if (callout === null) {
+    return {
+      text: markdown,
+      toView: (offset) => offset,
+      toOriginal: (offset) => offset
+    };
+  }
+
+  const originalToView = new Array<number>(markdown.length + 1);
+  const viewToOriginal: number[] = [0];
+  const lines: Array<{ start: number; end: number; text: string }> = [];
+  let start = 0;
+  for (;;) {
+    const newline = markdown.indexOf('\n', start);
+    const end = newline < 0 ? markdown.length : newline;
+    lines.push({ start, end, text: markdown.slice(start, end) });
+    if (newline < 0) {
+      break;
+    }
+    start = newline + 1;
+  }
+
+  const hidden = new Set<number>();
+  for (const line of lines) {
+    if (line.start < callout.from || line.start >= callout.to) {
+      continue;
+    }
+    const prefix = /^ {0,3}(?:> ?)+/.exec(line.text)?.[0].length ?? 0;
+    for (let offset = line.start; offset < line.start + prefix; offset += 1) {
+      hidden.add(offset);
+    }
+  }
+
+  let text = '';
+  for (let offset = 0; offset < markdown.length; offset += 1) {
+    originalToView[offset] = text.length;
+    if (hidden.has(offset)) {
+      continue;
+    }
+    viewToOriginal[text.length] = offset;
+    text += markdown[offset];
+  }
+  originalToView[markdown.length] = text.length;
+  viewToOriginal[text.length] = markdown.length;
+
+  return {
+    text,
+    toView: (offset) => originalToView[Math.max(0, Math.min(offset, markdown.length))],
+    toOriginal: (offset) => viewToOriginal[Math.max(0, Math.min(offset, text.length))]
+  };
+}
+
+/** One caption's source ranges moved from a callout body view to the document. */
+function mapCaptionData(data: CaptionLineData, view: CaptionView): CaptionLineData {
+  return {
+    ...data,
+    source: view.text.slice(data.captionFrom, data.captionTo),
+    captionFrom: view.toOriginal(data.captionFrom),
+    captionTo: view.toOriginal(data.captionTo),
+    textFrom: view.toOriginal(data.textFrom),
+    textTo: view.toOriginal(data.textTo),
+    attribute:
+      data.attribute === null
+        ? null
+        : {
+            ...data.attribute,
+            from: view.toOriginal(data.attribute.from),
+            to: view.toOriginal(data.attribute.to),
+            separatorFrom: view.toOriginal(data.attribute.separatorFrom)
+          }
+  };
+}
+
 /**
  * Attaches a following caption line to a parsed GFM table.
  *
@@ -164,19 +252,25 @@ export function parseMarkdown(markdown: string): Root {
  */
 function restoreTableCaptions(tree: Root, markdown: string): void {
   const definitions = footnoteLabels(markdown);
-  visit(tree.children);
+  visit(tree.children, null);
 
-  function visit(children: RootContent[]): void {
+  function visit(children: RootContent[], callout: CalloutSource | null): void {
     for (let index = 0; index < children.length; index += 1) {
       const child = children[index] as RootContent & {
+        type: string;
+        callout?: CalloutSource;
         children?: RootContent[];
         position?: NodePosition;
       };
+      const context =
+        child.type === 'callout' && child.callout !== undefined
+          ? child.callout
+          : callout;
       if (child.type === 'table') {
-        attachCaption(children, index, child, definitions);
+        attachCaption(children, index, child, definitions, context);
       }
       if (Array.isArray(child.children)) {
-        visit(child.children);
+        visit(child.children, context);
       }
     }
   }
@@ -190,46 +284,53 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
       source?: string;
       tableCaption?: TableCaptionNode;
     },
-    labels: ReadonlySet<string>
+    labels: ReadonlySet<string>,
+    callout: CalloutSource | null
   ): void {
     const start = table.position?.start.offset;
     const end = table.position?.end.offset;
     if (start === undefined || end === undefined) {
       return;
     }
-    const attachment = tableCaptionAfterTable(markdown, start);
+    const view = captionView(markdown, callout);
+    const viewStart = view.toView(start);
+    const attachment = tableCaptionAfterTable(view.text, viewStart);
     if (attachment === null) {
-      table.source = markdown.slice(start, end);
+      table.source = view.text.slice(viewStart, view.toView(end));
       return;
     }
-    const source = readTableSource(markdown.slice(start));
+    const source = readTableSource(view.text.slice(viewStart));
     if (source === null || !Array.isArray(table.children)) {
-      table.source = markdown.slice(start, end);
+      table.source = view.text.slice(viewStart, view.toView(end));
       return;
     }
+    const tableEnd = view.toOriginal(attachment.caption.captionTo);
+    const captionData = mapCaptionData(attachment.caption, view);
     table.children.splice(source.rows.length);
     table.position = {
       start: { offset: start },
-      end: { offset: attachment.caption.captionTo }
+      end: { offset: tableEnd }
     };
-    table.source = markdown.slice(start, attachment.caption.captionTo);
+    table.source = view.text.slice(viewStart, attachment.caption.captionTo);
     table.tableCaption = {
       type: 'tableCaption',
       ...attachedCaptionFields(
-        attachment.caption,
+        captionData,
         attachment.separatorFrom !== null,
-        attachment.separatorFrom,
+        attachment.separatorFrom === null
+          ? null
+          : view.toOriginal(attachment.separatorFrom),
         labels
       ),
-      tableFrom: attachment.tableFrom
+      tableFrom: view.toOriginal(attachment.tableFrom)
     };
     let next = index + 1;
     while (next < children.length) {
       const position = (children[next] as { position?: NodePosition }).position;
       if (
         position === undefined ||
-        position.start.offset < attachment.caption.captionFrom ||
-        position.end.offset > attachment.caption.captionTo
+        position.start.offset < captionData.captionFrom ||
+        position.end.offset > captionData.captionTo
       ) {
         break;
       }
@@ -241,35 +342,70 @@ function restoreTableCaptions(tree: Root, markdown: string): void {
 /** Attaches a following colon caption to each top-level Markdown list. */
 function restoreListCaptions(tree: Root, markdown: string): void {
   const definitions = footnoteLabels(markdown);
-  const children = tree.children;
-  for (let index = 0; index < children.length; index += 1) {
-    const list = children[index] as (typeof children)[number] & {
+  visit(tree.children, null);
+
+  function visit(children: RootContent[], callout: CalloutSource | null): void {
+    for (let index = 0; index < children.length; index += 1) {
+      const child = children[index] as RootContent & {
+        type: string;
+        callout?: CalloutSource;
+        source?: string;
+        listCaption?: ListCaptionNode;
+        children?: RootContent[];
+        position?: NodePosition;
+      };
+      const context =
+        child.type === 'callout' && child.callout !== undefined
+          ? child.callout
+          : callout;
+      if (child.type === 'list') {
+        attachCaption(children, index, child, context);
+      }
+      if (Array.isArray(child.children)) {
+        visit(child.children, context);
+      }
+    }
+  }
+
+  function attachCaption(
+    children: RootContent[],
+    index: number,
+    list: RootContent & {
       source?: string;
       listCaption?: ListCaptionNode;
-    };
-    if (list.type !== 'list') {
-      continue;
-    }
+      position?: NodePosition;
+    },
+    callout: CalloutSource | null
+  ): void {
     const start = list.position?.start.offset;
     const end = list.position?.end.offset;
     if (start === undefined || end === undefined) {
-      continue;
+      return;
     }
-    const attachment = listCaptionAfterList(markdown, start, end);
+    const view = captionView(markdown, callout);
+    const viewStart = view.toView(start);
+    const attachment = listCaptionAfterList(
+      view.text,
+      viewStart,
+      view.toView(end)
+    );
     if (attachment === null) {
-      continue;
+      return;
     }
+    const captionData = mapCaptionData(attachment.caption, view);
     list.position = {
       start: pointAt(markdown, start),
-      end: pointAt(markdown, attachment.caption.captionTo)
+      end: pointAt(markdown, captionData.captionTo)
     };
-    list.source = markdown.slice(start, attachment.caption.captionTo);
+    list.source = view.text.slice(viewStart, attachment.caption.captionTo);
     list.listCaption = {
       type: 'listCaption',
       ...attachedCaptionFields(
-        attachment.caption,
+        captionData,
         attachment.separatorFrom !== null,
-        attachment.separatorFrom,
+        attachment.separatorFrom === null
+          ? null
+          : view.toOriginal(attachment.separatorFrom),
         definitions
       ),
       listFrom: start
@@ -279,8 +415,8 @@ function restoreListCaptions(tree: Root, markdown: string): void {
       const position = (children[next] as { position?: NodePosition }).position;
       if (
         position === undefined ||
-        position.start.offset < attachment.caption.captionFrom ||
-        position.end.offset > attachment.caption.captionTo
+        position.start.offset < captionData.captionFrom ||
+        position.end.offset > captionData.captionTo
       ) {
         break;
       }
