@@ -966,10 +966,14 @@ method uses Caps Lock as its English-mode switch. When an editor-handled key suc
 that native burst, the seam resets its native input context immediately; a frame-delayed reset
 still loses the next ultra-fast Caps Lock key.
 
-The system's keyboard-source notification is the other context boundary. `input_source.rs`
-observes AppKit's `NSTextInputContextKeyboardSelectionDidChangeNotification` and sends
-`input_source_changed`; while the seam is focused it clears native text and reacquires focus, so a
-switch from English to Chinese starts pinyin in the next key (`input-source-switch.js`).
+The system's keyboard-source notification is the other context boundary. `input_source.rs` sends
+one `input_source_changed` event through the native observer for each desktop: AppKit's
+`NSTextInputContextKeyboardSelectionDidChangeNotification` on macOS, `WM_INPUTLANGCHANGE` on the
+main window on Windows, and the IBus/Fcitx source-change signals on the session bus on Linux.
+While the seam is focused it clears native text and reacquires focus, so a switch from English to
+Chinese starts pinyin in the next key. The shared page path is held by
+`input-source-switch.js`; the Windows and Linux native deliveries await platform integration
+tests.
 
 The prose fast path writes into the rendered text, so it uses `text_spacing.ts` for both its
 equality proof and its output. A run of spaces, or one at a text node's end, is a no-break space on
