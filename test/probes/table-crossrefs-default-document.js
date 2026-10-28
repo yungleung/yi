@@ -34,15 +34,13 @@
     );
   };
 
-  let heading = null;
-  for (let fraction = 0.1; heading === null && fraction <= 1; fraction += 0.1) {
+  let target = null;
+  for (let fraction = 0.1; target === null && fraction <= 1; fraction += 0.1) {
     t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
     await t.sleep(100);
-    heading = [...t.prose().querySelectorAll('h2')].find(
-      (candidate) => candidate.textContent === 'Tables'
-    );
+    target = t.prose().querySelector('[id="tbl:results"]');
   }
-  heading?.scrollIntoView({ block: 'start' });
+  target?.scrollIntoView({ block: 'center' });
   await t.sleep(400);
 
   const captions = [...t.prose().querySelectorAll('.markdown-table-block .markdown-caption')].map(
@@ -68,7 +66,6 @@
     ['Data table 2-3', 'the results table']
   );
 
-  const target = t.prose().querySelector('[id="tbl:results"]');
   const idOnly = t.prose().querySelector('[id="tbl:target"]');
   check(
     'explicit table IDs reach the editor DOM',

@@ -161,16 +161,30 @@ A forma curta `.callout-note` também funciona. Um tipo personalizado sem `title
 nome da classe sem depender do idioma da interface. ID, classes e outros atributos são preservados
 para exportação; um ID de Div é metadado do Pandoc e não um destino de referência do Yi.
 
+Digitar `:::` sozinho numa linha cria um Div Note fechado e abre seis opções: Note, Tip, Important,
+Warning, Caution e Definition. A escolha altera apenas a classe `.callout-<tipo>`; o corpo, o ID,
+as outras classes e os atributos permanecem intactos.
+
 Callouts podem ser aninhados em citações ou em outros callouts. O corpo aceita parágrafos, listas,
 tabelas, blocos de código, equações, legendas, citações e citações Markdown comuns. O Yi mostra o
 painel quando o cursor está fora; clicar no título ou no corpo revela a origem completa, e sair do
 bloco restaura a renderização.
+Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
+prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
 
 Em um parágrafo de citação comum, Enter cria duas linhas vazias com o prefixo `>` completo. O texto
 seguinte forma outro parágrafo. Um segundo Enter no parágrafo vazio remove apenas um nível de
 citação; em citações aninhadas, repita uma vez por nível. Listas, tabelas, blocos de código e
 equações mantêm o comportamento normal, e cada nova linha recebe o prefixo completo. Depois que um
 bloco filho termina, apenas uma linha vazia com prefixo é necessária.
+
+Digitar numa linha `>` vazia produz exatamente `>B`, sem acrescentar um espaço invisível. Se a origem
+já tiver o espaço visível `> `, ele é preservado. Backspace ou Delete numa linha de citação vazia
+remove toda a linha física, não apenas o `>`.
+
+Dentro de um callout com Div cercado, Enter insere exatamente uma quebra de linha. Cada Enter
+adicional cria outra linha vazia, e o cursor permanece na linha mais recente. Um Div dentro de uma
+citação conserva o prefixo visível em cada linha inserida.
 
 Um callout vazio mantém uma âncora invisível para o cursor do corpo. Left a partir do bloco seguinte
 e Right a partir do anterior entram nela; a navegação sozinha não altera a origem. O primeiro

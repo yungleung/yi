@@ -163,16 +163,30 @@ También vale la forma corta `.callout-note`. Para un tipo personalizado sin `ti
 deriva del nombre de clase sin depender del idioma de la interfaz. Los ID, clases y demás atributos
 se conservan para la exportación; un ID de Div es metadatos de Pandoc y no una referencia de Yi.
 
+Escribir `:::` en una línea propia crea un Div Note cerrado y abre seis opciones: Note, Tip,
+Important, Warning, Caution y Definition. La elección cambia solo la clase `.callout-<tipo>`; el
+cuerpo, el ID, las demás clases y los atributos permanecen intactos.
+
 Los callouts pueden anidarse dentro de citas u otros callouts. Su cuerpo admite párrafos, listas,
 tablas, bloques de código, ecuaciones, leyendas, citas y citas Markdown normales. Yi muestra el panel
 cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la fuente completa y al
 salir del bloque vuelve la vista renderizada.
+Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
+los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
 
 En un párrafo de cita normal, Enter crea dos líneas vacías con el prefijo `>` completo. El texto
 siguiente forma otro párrafo. Un segundo Enter en el párrafo vacío quita solo un nivel de cita; en
 citas anidadas se repite una vez por nivel. Las listas, tablas, bloques de código y ecuaciones
 mantienen su comportamiento normal, y cada línea nueva recibe el prefijo completo. Cuando termina un
 bloque hijo, solo hace falta una línea vacía con prefijo.
+
+Escribir en una línea `>` vacía produce exactamente `>B`, sin añadir un espacio invisible. Si la
+fuente ya contiene el espacio visible `> `, se conserva. Backspace o Delete en una línea de cita
+vacía elimina la línea física completa, no solo el carácter `>`.
+
+Dentro de un callout con Div cercado, Enter inserta exactamente un salto de línea. Cada Enter
+adicional crea otra línea vacía y el cursor se queda en la más reciente. Un Div dentro de una cita
+conserva su prefijo visible en cada línea insertada.
 
 Un callout vacío conserva un ancla invisible para el cursor del cuerpo. Left desde el bloque
 posterior y Right desde el anterior entran en ella; navegar no modifica la fuente. El primer

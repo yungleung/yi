@@ -41,7 +41,8 @@
     const drawn = drawnLabel();
     const shape = { drawn: drawn?.textContent ?? null };
     await click(drawn);
-    const source = shownLabel();
+    const source =
+      shownLabel() ?? t.prose().querySelector('.markdown-quote-source');
     shape.tag = source?.tagName ?? null;
     shape.text = source?.textContent ?? null;
     // Block-relative, like every source view: the definition's own offset inside
@@ -57,19 +58,25 @@
     {
       name: 'a description detail',
       doc: 'a term\n\n: a detail with a note[^1] in it\n\n  [^1]: the note in the detail\n',
+      sourceTag: 'SPAN',
+      sourceText: '[^1]',
       from: '2',
       typed: 'a term\n\n: a detail with a note[^1] in it\n\n  [^19]: the note in the detail\n'
     },
     {
       name: 'a list item',
       doc: '- item text[^1] here\n\n  [^1]: the note in the item\n',
+      sourceTag: 'SPAN',
+      sourceText: '[^1]',
       from: '24',
       typed: '- item text[^1] here\n\n  [^19]: the note in the item\n'
     },
     {
       name: 'a blockquote',
       doc: '> quote text[^1] here\n>\n> [^1]: the note in the quote\n',
-      from: '26',
+      sourceTag: 'PRE',
+      sourceText: '> quote text[^1] here\n>\n> [^1]: the note in the quote',
+      from: null,
       typed: '> quote text[^1] here\n>\n> [^19]: the note in the quote\n'
     }
   ];
@@ -78,8 +85,10 @@
     const seen = await editLabel(shape.doc, '9');
     check(`${shape.name}: the definition draws its label as the marker it is`, seen.drawn === '[1]', seen.drawn);
     check(
-      `${shape.name}: a click opens it as its own source, at the definition's own offset`,
-      seen.tag === 'SPAN' && seen.text === '[^1]' && seen.from === shape.from,
+      `${shape.name}: a click opens the definition's exact editable source`,
+      seen.tag === shape.sourceTag &&
+        seen.text === shape.sourceText &&
+        seen.from === shape.from,
       seen
     );
     check(

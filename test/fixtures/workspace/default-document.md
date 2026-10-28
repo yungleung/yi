@@ -100,12 +100,23 @@ A callout body can contain ordinary Markdown blocks:
 
 Pandoc fenced-Div callouts support built-in and custom kinds:
 
+Type `:::` on an empty line in Yi to create this form and choose its kind.
+
 ::: {.callout .callout-note}
 A fenced-Div note.
 :::
 
 ::: {.callout .callout-definition title="Definition"}
 A **defined** term.
+:::
+
+A fenced-Div body accepts consecutive blank lines:
+
+::: {.callout .callout-note}
+The first paragraph.
+
+
+The second paragraph after an additional blank line.
 :::
 
 Escaped and unknown GitHub markers remain ordinary quotes:

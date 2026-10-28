@@ -51,6 +51,19 @@
     t.prose().querySelector('[data-callout-kind="definition"]') !== null,
     true
   );
+  let spacedParagraphs = null;
+  for (let fraction = 0.25; spacedParagraphs === null && fraction <= 0.45; fraction += 0.05) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(150);
+    spacedParagraphs = [...t.prose().querySelectorAll('.markdown-callout')].find(
+      (callout) => callout.textContent?.includes('The first paragraph.')
+    ) ?? null;
+  }
+  check(
+    'a fenced-Div keeps both paragraphs around consecutive blank lines',
+    spacedParagraphs?.querySelectorAll('.markdown-callout-body > p').length ?? null,
+    2
+  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

@@ -164,10 +164,16 @@ titre vient du nom de classe sans passer par la langue de l’interface. Les ID,
 attributs sont conservés pour l’export. Un ID de Div reste une métadonnée Pandoc et ne devient pas une
 cible de référence Yi.
 
+Taper `:::` seul sur une ligne crée un Div Note fermé et ouvre six choix : Note, Tip, Important,
+Warning, Caution et Definition. Le choix ne change que la classe `.callout-<type>` ; le corps, l’ID,
+les autres classes et les attributs restent intacts.
+
 Les callouts peuvent être imbriqués dans des citations ou d’autres callouts. Leur corps accepte les
 paragraphes, listes, tableaux, blocs de code, équations, légendes, citations et citations Markdown
 ordinaires. Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.
+Une citation ordinaire révèle sa source complète selon la même règle : les marqueurs échappés, les
+préfixes `>` et les délimiteurs internes sont exactement les caractères modifiés.
 
 Dans un paragraphe de citation ordinaire, Entrée crée deux lignes vides portant le préfixe `>`
 complet. Le texte suivant forme un nouveau paragraphe. Une seconde pression sur Entrée dans le
@@ -175,6 +181,14 @@ paragraphe vide retire une seule profondeur de citation ; dans une citation imbr
 fois par niveau. Les listes, tableaux, blocs de code et équations gardent leur comportement habituel,
 et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, une
 seule ligne vide préfixée suffit.
+
+La saisie sur une ligne `>` vide produit exactement `>B`, sans espace invisible ajouté. Si la source
+contient déjà l’espace visible `> `, il est conservé. Backspace ou Delete sur une ligne de citation
+vide retire toute la ligne physique, pas seulement le `>`.
+
+Dans un callout délimité par un Div, Entrée insère exactement un saut de ligne. Chaque Entrée
+supplémentaire ajoute une autre ligne vide et le curseur reste sur la plus récente. Un Div dans une
+citation conserve son préfixe visible sur chaque ligne insérée.
 
 Un callout vide garde une ancre de curseur invisible dans son corps. Left depuis le bloc suivant et
 Right depuis le bloc précédent y entrent ; la navigation seule ne modifie pas la source. Le premier

@@ -21,7 +21,10 @@ async function bundle(name, input) {
 }
 
 const {
+  deleteBlankQuoteLine,
+  emptyQuoteTyping,
   enterInQuote,
+  fencedDivNewline,
   prefixInsertedLines,
   projectQuoteSource,
   quoteNeedsSourceAt
@@ -97,9 +100,9 @@ check(
 
 const proseWithQuotedBlank = '> Intro[^1]\n>\n> [^1]: note\n';
 check(
-  'ordinary prose in a broken quote stays rendered',
+  'ordinary prose in a quote shows the complete source',
   quoteNeedsSourceAt(proseWithQuotedBlank, proseWithQuotedBlank.indexOf('Intro')),
-  false
+  true
 );
 check(
   'a quoted blank line needs block source',
@@ -113,6 +116,63 @@ check(
   'quote projection preserves child-list indentation',
   projectQuoteSource('> - Parent\n>   - Child\n').text,
   '- Parent\n  - Child\n'
+);
+
+const markerOnlyQuote = '>';
+check(
+  'typing on a blank quote line does not invent a delimiter space',
+  emptyQuoteTyping(markerOnlyQuote, markerOnlyQuote.length, 'A'),
+  {
+    edit: { from: 1, to: 1, replacement: 'A' },
+    caret: 2
+  }
+);
+const spacedEmptyQuote = '> ';
+check(
+  'typing after a visible quote delimiter space keeps exactly that one space',
+  emptyQuoteTyping(spacedEmptyQuote, spacedEmptyQuote.length, 'A'),
+  {
+    edit: { from: 2, to: 2, replacement: 'A' },
+    caret: 3
+  }
+);
+
+const quotedBlank = '> First\n>\n> Last\n';
+check(
+  'deleting a blank quoted line removes the physical line',
+  deleteBlankQuoteLine(quotedBlank, quotedBlank.indexOf('\n>') + 2),
+  {
+    edit: { from: 8, to: 10, replacement: '' },
+    caret: 8
+  }
+);
+check(
+  'a quoted line holding text is not a blank-line deletion',
+  deleteBlankQuoteLine('> First\n', 4),
+  null
+);
+
+const divBody = '::: {.callout-note}\nA\n:::\n';
+check(
+  'Enter in a fenced-Div body adds exactly one newline',
+  fencedDivNewline(divBody, divBody.indexOf('A') + 1),
+  {
+    edit: { from: divBody.indexOf('A') + 1, to: divBody.indexOf('A') + 1, replacement: '\n' },
+    caret: divBody.indexOf('A') + 2
+  }
+);
+const quotedDivBody = '> ::: {.callout-note}\n> A\n> :::\n';
+check(
+  'Enter in a quoted fenced-Div keeps its visible quote prefix',
+  fencedDivNewline(quotedDivBody, quotedDivBody.indexOf('A') + 1),
+  {
+    edit: {
+      from: quotedDivBody.indexOf('A') + 1,
+      to: quotedDivBody.indexOf('A') + 1,
+      replacement: '\n> '
+    },
+    caret: quotedDivBody.indexOf('A') + 4
+  }
 );
 
 for (const context of ['list', 'table', 'code', 'equation']) {

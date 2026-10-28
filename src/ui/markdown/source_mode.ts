@@ -37,7 +37,6 @@
 import type { AstNode } from './ast';
 import { type MarkdownBlock } from './document/blocks';
 import { hasSourceMode } from './document/block_kinds';;
-import { calloutAtOffset } from './syntax/callouts';
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
 import { quoteNeedsSourceAt } from './syntax/quote_edits';
@@ -131,11 +130,11 @@ export function blockSourceAt(block: MarkdownBlock, offset: number): boolean {
   if (block.kind !== 'quote' && block.kind !== 'fencedDiv') {
     return false;
   }
+  if (block.kind === 'fencedDiv') {
+    return true;
+  }
   const relative = Math.min(Math.max(0, offset - block.charStart), block.text.length);
-  return (
-    calloutAtOffset(block.text, relative) !== null ||
-    (block.kind === 'quote' && quoteNeedsSourceAt(block.text, relative))
-  );
+  return quoteNeedsSourceAt(block.text, relative);
 }
 
 /**

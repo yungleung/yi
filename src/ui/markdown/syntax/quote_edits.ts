@@ -1,18 +1,20 @@
 /**
- * Pure Enter edits inside blockquotes and GitHub-style callouts.
+ * Pure line edits inside blockquotes, GitHub-style callouts and callout Divs.
  *
  * The active quote depth is supplied by the editor. Paragraph breaks use the
  * full prefix chain, a second Enter removes exactly one level, and completed
- * child blocks need one prefixed separator. List, table, code and equation
- * contexts are declined so their own editing rules stay authoritative.
+ * child blocks need one prefixed separator. Blank carriers are deleted as
+ * physical lines, and typing preserves exactly the delimiter space in source.
+ * List, table, code and equation contexts are declined so their own editing
+ * rules stay authoritative.
  *
- * May import: the text-edit shape only. Upholds: every result is one raw-text
- * replacement, and quote prefixes are derived from depth rather than folded
- * into child-command logic.
+ * May import: text-edit shapes and the callout source model. Upholds: every
+ * result is one raw-text replacement, and prefixes are read from source rather
+ * than invented by the UI.
  */
 
 import type { TextEdit } from './edit_range';
-import { openingFence } from './markers';
+import { readCallout } from './callouts';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -92,6 +94,80 @@ export function enterInQuote(
   };
 }
 
+/**
+ * Typing the first text on an empty quoted line.
+ *
+ * The delimiter space is source, not UI chrome. A line written as `>` gains
+ * exactly the typed character; a line written as `> ` keeps its visible space.
+ */
+export function emptyQuoteTyping(
+  text: string,
+  offset: number,
+  typed: string
+): QuoteEdit | null {
+  const current = quoteLineAt(text, offset);
+  if (
+    current === null ||
+    current.content !== '' ||
+    offset !== current.end ||
+    typed === ''
+  ) {
+    return null;
+  }
+  const prefix = text.slice(current.start, current.prefixEnd);
+  const replacement = typed.replace(/\n/g, `\n${prefix}`);
+  return {
+    edit: { from: offset, to: offset, replacement },
+    caret: offset + replacement.length
+  };
+}
+
+/**
+ * Removing a blank quote line as one physical line.
+ *
+ * A blank carrier such as `>` is the line, not a character the reader should
+ * have to erase one key at a time. Its newline goes with it; when it is the
+ * final line, the preceding newline goes instead.
+ */
+export function deleteBlankQuoteLine(text: string, offset: number): QuoteEdit | null {
+  const line = quoteLineAt(text, offset);
+  if (line === null || line.content.trim() !== '') {
+    return null;
+  }
+  const followsLine = line.end < text.length;
+  const from = followsLine ? line.start : Math.max(0, line.start - 1);
+  const to = followsLine ? line.end + 1 : line.end;
+  return {
+    edit: { from, to, replacement: '' },
+    caret: from
+  };
+}
+
+/**
+ * Enter in a fenced-Div callout body: one newline, wherever the caret is.
+ *
+ * Unlike a paragraph split, a Div accepts any number of consecutive blank
+ * lines. A quoted Div also keeps the exact quote carrier visible on its line.
+ */
+export function fencedDivNewline(text: string, offset: number): QuoteEdit | null {
+  const callout = readCallout(text);
+  if (
+    callout?.form !== 'div' ||
+    offset < callout.bodyFrom ||
+    offset > callout.bodyTo
+  ) {
+    return null;
+  }
+  const current = quoteLineAt(text, offset);
+  const prefix =
+    current === null ? '' : text.slice(current.start, current.prefixEnd);
+  const replacement = `\n${prefix}`;
+  return {
+    edit: { from: offset, to: offset, replacement },
+    caret: offset + replacement.length
+  };
+}
+
 /** Add a full quote prefix to every physical line produced by a child edit. */
 export function prefixInsertedLines(prefix: string, inserted: string): string {
   if (inserted === '') {
@@ -121,56 +197,12 @@ export function quotePrefixAt(
 /**
  * Whether the quote position at `offset` needs its exact block source.
  *
- * A rendered quote has no caret target for a quoted empty line, and code/math
- * children hide the delimiter lines an Enter at their boundary must target.
- * Ordinary prose positions remain rendered.
+ * An ordinary quote is an editable container, just like a callout. Its
+ * complete source is the shape that exposes every carrier, escape marker,
+ * empty line and child delimiter to the same one-to-one caret mapping.
  */
 export function quoteNeedsSourceAt(text: string, offset: number): boolean {
-  const current = quoteLineAt(text, offset);
-  if (current === null) {
-    return false;
-  }
-  if (current.content.trim() === '') {
-    return true;
-  }
-
-  let fence: string | null = null;
-  let displayMath = false;
-  let at = 0;
-  for (const sourceLine of text.split('\n')) {
-    const quoted = quoteLineAt(text, at);
-    const content = quoted?.content ?? sourceLine;
-    if (at === current.start) {
-      return (
-        fence !== null ||
-        displayMath ||
-        openingFence(content) !== null ||
-        content.trimStart().startsWith('$$')
-      );
-    }
-    if (fence !== null) {
-      if (content.trimStart().startsWith(fence[0])) {
-        fence = null;
-      }
-    } else {
-      const opened = openingFence(content);
-      if (opened !== null) {
-        fence = opened;
-      } else if (displayMath) {
-        if (content.trimEnd().endsWith('$$')) {
-          displayMath = false;
-        }
-      } else if (content.trimStart().startsWith('$$')) {
-        const open = content.indexOf('$$');
-        displayMath = !(
-          content.indexOf('$$', open + 2) >= 0 &&
-          content.trimEnd().endsWith('$$')
-        );
-      }
-    }
-    at += sourceLine.length + 1;
-  }
-  return false;
+  return quoteLineAt(text, offset) !== null;
 }
 
 /** A quote document with its carrier prefixes removed, plus offset maps both ways. */

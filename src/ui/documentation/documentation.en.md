@@ -626,12 +626,18 @@ The lone shorthand `.callout-note` is also accepted. A custom kind without `titl
 locale-independent class name, with dashes shown as spaces. IDs, classes, and other attributes are
 kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
 
+Typing `:::` on a line of its own creates a closed Note Div and opens a six-choice picker beside it:
+Note, Tip, Important, Warning, Caution, or Definition. The choice changes only the
+`.callout-<kind>` class; the body, ID, other classes, and attributes stay intact.
+
 Callouts may be nested inside quotes and inside other callouts. Their bodies accept ordinary
 Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
 and nested quotes.
 
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
+An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape
+markers, carrier prefixes, and child delimiters are exactly the characters being edited.
 
 Inside an ordinary quoted paragraph, Enter creates the quoted equivalent of a blank line:
 
@@ -641,13 +647,22 @@ Inside an ordinary quoted paragraph, Enter creates the quoted equivalent of a bl
 >
 ```
 
-The next text becomes `> Second paragraph.`. A second consecutive Enter on the empty paragraph
-removes one quote level. In nested quotes, repeat the action once per level; it never removes every
-`>` at once.
+Because the generated line is a bare `>`, the next text becomes `>Second paragraph.`; type a space
+yourself if you want the visible `> ` form. A second consecutive Enter on the empty paragraph removes
+one quote level. In nested quotes, repeat the action once per level; it never removes every `>` at
+once.
+
+Typing on a blank `>` line produces exactly `>B`, not an invented `> B`. If the source already has
+the visible `> ` delimiter space, Yi keeps it. Backspace or Delete on a blank quoted line removes
+that complete physical line rather than removing only the `>` character.
 
 Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
 line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
 one quoted empty line, because the child block already supplies the paragraph boundary.
+
+Inside a fenced-Div callout, Enter inserts exactly one newline at the caret. Every additional Enter
+adds another blank line, and the caret stays on the newest line. A quoted Div keeps its visible
+quote prefix on each inserted line.
 
 Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
 ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the

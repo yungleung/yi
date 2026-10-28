@@ -152,19 +152,18 @@
   await t.load('> | A | B |\n> | --- | --- |\n> | 1 | 2 |\n');
   const headerCell = t.prose().querySelector('[data-table-cell="0:1"]');
   await t.click(headerCell);
+  const tableSource = t.prose().querySelector('.markdown-quote-source')?.textContent ?? null;
+  const beforeCaret = t.caretRect();
   t.key('Enter');
   await t.sleep(80);
-  const bodyCell = t.prose().querySelector('[data-table-cell="1:1"]');
-  const caret = t.caretRect();
-  const bodyBox = bodyCell?.getBoundingClientRect();
+  const afterCaret = t.caretRect();
+  const afterSource = t.prose().querySelector('.markdown-quote-source')?.textContent ?? null;
   check(
-    'Enter moves down a quoted table by column',
-    caret !== null &&
-      bodyBox !== undefined &&
-      caret.x >= bodyBox.left &&
-      caret.x <= bodyBox.right &&
-      caret.y >= bodyBox.top &&
-      caret.y <= bodyBox.bottom,
+    'Enter moves down a source-visible quoted table without editing it',
+    afterSource === tableSource &&
+      beforeCaret !== null &&
+      afterCaret !== null &&
+      afterCaret.y > beforeCaret.y,
     true
   );
   t.key('Enter');

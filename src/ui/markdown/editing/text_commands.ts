@@ -44,7 +44,10 @@ import {
 } from '../syntax/callouts';
 import { materializeCalloutBody } from '../syntax/callout_body';
 import {
+  deleteBlankQuoteLine,
+  emptyQuoteTyping,
   enterInQuote,
+  fencedDivNewline,
   projectQuoteSource,
   quoteLineAt
 } from '../syntax/quote_edits';
@@ -104,23 +107,19 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
         return true;
       }
     }
-    const quote = isQuoteLike(block.kind) ? quoteLineAt(block.text, relative) : null;
-    if (
-      quote !== null &&
-      quote.content === '' &&
-      relative === quote.end
-    ) {
-      const prefix = block.text.slice(quote.start, quote.prefixEnd);
-      const inserted = text.replace(/\n/g, `\n${prefix}`);
-      applyEdit(
-        context,
-        offsets.from,
-        offsets.to,
-        ` ${inserted}`,
-        undefined,
-        brackets ? 'typing' : 'commit'
-      );
-      return true;
+    if (isQuoteLike(block.kind)) {
+      const write = emptyQuoteTyping(block.text, relative, text);
+      if (write !== null) {
+        applyEdit(
+          context,
+          block.charStart + write.edit.from,
+          block.charStart + write.edit.to,
+          write.edit.replacement,
+          block.charStart + write.caret,
+          brackets ? 'typing' : 'commit'
+        );
+        return true;
+      }
     }
   }
   // A character typed at the end of a fenced block's body belongs *in* the body: written where the
@@ -193,6 +192,24 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   }
   let { from, to } = offsets;
   if (from === to) {
+    const block = context.state.getBlockAtOffset(from);
+    if (block !== null && isQuoteLike(block.kind)) {
+      const deletion = deleteBlankQuoteLine(
+        block.text,
+        Math.min(from - block.charStart, block.text.length)
+      );
+      if (deletion !== null) {
+        applyEdit(
+          context,
+          block.charStart + deletion.edit.from,
+          block.charStart + deletion.edit.to,
+          '',
+          block.charStart + deletion.caret,
+          'deleting'
+        );
+        return true;
+      }
+    }
     // A pair the app wrote goes whole: a mistyped `[` should not leave its `]` behind.
     const pair = forward ? null : pairAround(context.state.getText(), from);
     if (pair) {
@@ -265,8 +282,9 @@ export function insertNewline(context: EditorContext): boolean {
         const projectedFrom = afterSubtree
           ? itemSubtreeEnd(projected.text, projectedLine)
           : projectedOffset;
-        const from =
-          projected.sourceOffsets[projectedFrom] ?? offsets.from;
+        const relativeFrom =
+          projected.sourceOffsets[projectedFrom] ?? relative;
+        const from = block.charStart + relativeFrom;
         const replacement = `\n${rawPrefix}${continuation.slice(1)}`;
         applyEdit(
           context,
@@ -309,6 +327,22 @@ export function insertNewline(context: EditorContext): boolean {
           return true;
         }
       }
+    }
+  }
+  if (block.kind === 'fencedDiv' && offsets.from === offsets.to) {
+    const write = fencedDivNewline(
+      block.text,
+      Math.min(offsets.from - block.charStart, block.text.length)
+    );
+    if (write !== null) {
+      applyEdit(
+        context,
+        block.charStart + write.edit.from,
+        block.charStart + write.edit.to,
+        write.edit.replacement,
+        block.charStart + write.caret
+      );
+      return true;
     }
   }
   // Code, math, frontmatter and the other raw-rendered blocks keep their own line structure.

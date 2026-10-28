@@ -675,12 +675,17 @@ fixed English built-in titles, custom Div titles and offset-preserving parser
 normalisation. `plugins/remark-callouts.ts` converts both forms to one
 positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
 draws the rendered panel, and `nodes/quote_source.ts` exposes exact block
-source while editing, including raw code and math lines that a rendered quote
-cannot give a caret. `syntax/quote_edits.ts` and `syntax/callout_body.ts`
+source while editing for both ordinary quotes and callouts, including escaped
+markers, physical blank lines and raw child delimiters that a rendering cannot
+give an exact caret. `syntax/quote_edits.ts` and `syntax/callout_body.ts`
 implement the shared quote rule: Enter adds two fully prefixed lines, a second
-Enter exits exactly one level, child blocks keep their own Enter semantics with
-every inserted line prefixed, and an empty callout's invisible body anchor is
-reachable by Left or Right and materialised only on typing.
+Enter exits exactly one level, blank quote lines delete as physical lines,
+typing never invents a delimiter space, child blocks keep their own Enter
+semantics with every inserted line prefixed, and an empty callout's invisible
+body anchor is reachable by Left or Right and materialised only on typing.
+A typed `:::` creates a closed Note Div and opens
+`editing/callout_kind_picker.ts`; a Div body inserts one newline per Enter and
+accepts repeated blank lines with the caret left on the newest.
 `ui/export/callout_rewrites.ts` lowers both authoring forms to one semantic
 `.callout` / `.callout-<kind>` / `.callout-title` Div before all overlapping
 source rewrites, so template Lua filters receive one stable AST shape.

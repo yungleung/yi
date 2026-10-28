@@ -21,6 +21,7 @@ import {
   frontmatterDelimiter,
   openingFence
 } from './markers';
+import type { TextEdit } from './edit_range';
 
 export type BuiltinCalloutKind =
   | 'note'
@@ -124,6 +125,74 @@ export function calloutBodyInsertion(callout: CalloutSource | null): number {
     return 0;
   }
   return callout.bodyFrom;
+}
+
+/**
+ * The edit that changes a closed fenced-Div callout's kind class.
+ *
+ * Only the existing `.callout-<kind>` token moves. IDs, other classes,
+ * attributes, the body and both fences stay byte-for-byte as the author wrote
+ * them.
+ */
+export function calloutKindEdit(text: string, kind: string): TextEdit | null {
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(kind)) {
+    return null;
+  }
+  const lineEnd = text.indexOf('\n');
+  const end = lineEnd < 0 ? text.length : lineEnd;
+  const line = text.slice(0, end);
+  const attribute = attributeBlockAtEnd(line, line.length, false);
+  if (attribute === null) {
+    return null;
+  }
+  const token = calloutClassToken(attribute.source);
+  if (token === null) {
+    return null;
+  }
+  return {
+    from: attribute.from + token.from,
+    to: attribute.from + token.to,
+    replacement: `callout-${kind}`
+  };
+}
+
+/** The class token after the dot, outside quoted attribute values. */
+function calloutClassToken(source: string): { from: number; to: number } | null {
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  for (let index = 1; index < source.length - 1; index += 1) {
+    const character = source[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (quote !== null) {
+      if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character !== '.' || (index > 1 && !/\s/.test(source[index - 1]))) {
+      continue;
+    }
+    let end = index + 1;
+    while (end < source.length - 1 && !/\s/.test(source[end])) {
+      end += 1;
+    }
+    const name = source.slice(index + 1, end);
+    if (name.startsWith('callout-') && name !== 'callout-title' && name !== 'callout-body') {
+      return { from: index + 1, to: end };
+    }
+  }
+  return null;
 }
 
 /** The parser spelling of callout fenced Divs, with every source offset kept. */

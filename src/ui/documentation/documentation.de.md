@@ -169,16 +169,30 @@ unabhängig von der Oberflächensprache aus dem Klassennamen gebildet. IDs, Klas
 Attribute bleiben für den Export erhalten; eine Div-ID ist Pandoc-Metadatum und kein
 Querverweisziel von Yi.
 
+Wer `:::` allein in eine Zeile schreibt, erhält ein geschlossenes Note-Div und eine Auswahl mit
+Note, Tip, Important, Warning, Caution und Definition. Die Auswahl ändert nur die Klasse
+`.callout-<Art>`; Inhalt, ID, weitere Klassen und Attribute bleiben unverändert.
+
 Callouts können in Zitaten oder anderen Callouts verschachtelt werden. Ihr Inhalt kann Absätze,
 Listen, Tabellen, Codeblöcke, Formeln, Beschriftungen, Zitate und normale Markdown-Zitate enthalten.
 Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
+Ein gewöhnliches Zitat zeigt unter derselben Cursor-Regel seinen vollständigen Quelltext, sodass
+Escape-Marker, `>`-Präfixe und Trennzeichen der Kindblöcke exakt bearbeitet werden.
 
 In einem normalen Zitatabsatz erzeugt Enter zwei leere Zeilen mit dem vollständigen `>`-Präfix. Der
 nächste Text beginnt einen neuen Absatz. Ein zweites Enter auf dem leeren Zitatabsatz entfernt genau
 eine Zitatebene; bei verschachtelten Zitaten wiederholt man dies pro Ebene. Listen, Tabellen,
 Codeblöcke und Formeln behalten ihr normales Enter-Verhalten, und jede eingefügte Quellzeile erhält
 das vollständige Präfix. Nach einem abgeschlossenen Kindblock genügt eine leere Zeile mit Präfix.
+
+Die Eingabe auf einer leeren `>`-Zeile erzeugt genau `>B` und fügt keinen unsichtbaren Abstand ein.
+Ein bereits sichtbares `> ` bleibt erhalten. Backspace oder Delete auf einer leeren Zitatzeile
+entfernt die ganze physische Zeile statt nur des `>`.
+
+Innerhalb eines Callouts in einem eingezäunten Div fügt Enter genau einen Zeilenumbruch ein. Jedes
+weitere Enter erzeugt eine weitere Leerzeile, und der Cursor bleibt auf der neuesten Zeile. Ein
+eingezäuntes Div in einem Zitat behält auf jeder neuen Zeile sein sichtbares Präfix.
 
 Ein leerer Callout behält einen unsichtbaren Cursoranker im Inhalt. Left vom folgenden Block und
 Right vom vorherigen Block führen hinein; reine Navigation verändert den Quelltext nicht. Das erste

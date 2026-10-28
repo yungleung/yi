@@ -23,6 +23,7 @@ writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   calloutAtOffset,
   calloutBodyInsertion,
+  calloutKindEdit,
   calloutsForParsers,
   readCallout
 } = await import(file);
@@ -133,6 +134,38 @@ check(
     return callout?.source.slice(callout.bodyFrom, callout.bodyTo).trimEnd();
   })(),
   '> Inner'
+);
+
+const warningDiv = '::: {.callout .callout-note #notice}\nBody\n:::\n';
+check(
+  'choosing a kind rewrites only the callout-kind class',
+  calloutKindEdit(warningDiv, 'warning'),
+  {
+    from: '::: {.callout .'.length,
+    to: '::: {.callout .callout-note'.length,
+    replacement: 'callout-warning'
+  }
+);
+const definitionDiv = '::: {.callout .callout-note}\nBody\n:::\n';
+check(
+  'choosing Definition creates the custom definition kind',
+  calloutKindEdit(definitionDiv, 'definition'),
+  {
+    from: '::: {.callout .'.length,
+    to: '::: {.callout .callout-note'.length,
+    replacement: 'callout-definition'
+  }
+);
+const quotedClassAttribute =
+  '::: {.callout .callout-tip title=".callout-note"}\nBody\n:::\n';
+check(
+  'a class-looking quoted value is not mistaken for the callout kind',
+  calloutKindEdit(quotedClassAttribute, 'warning'),
+  {
+    from: '::: {.callout .'.length,
+    to: '::: {.callout .callout-tip'.length,
+    replacement: 'callout-warning'
+  }
 );
 
 check('unknown marker is not a callout', readCallout('> [!CUSTOM]\n> text'), null);

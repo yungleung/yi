@@ -298,6 +298,11 @@ fenced blocks.
 Leaving the block restores the rendered callout. Re-entering it restores the
 same source and document offset.
 
+Ordinary blockquotes use this same source-visible rule. For both containers the
+complete block source is the editable surface, including outer `>` carriers,
+escaped markers, empty quoted lines and child delimiters. This is what keeps a
+click and Enter aligned with the characters the reader can see.
+
 Clicking the rendered panel enters source mode:
 
 - a click on the title enters the marker line;
@@ -409,16 +414,25 @@ the first Enter writes two quoted empty lines:
 The caret is after the final `>`. The string is inserted as one edit and is
 one undo step. The first empty line is the paragraph separator; the second is
 the editable paragraph. When the next printable character is typed, Yi writes
-the delimiter space and the character:
+only that character because the visible source has no delimiter space:
 
 ```markdown
 > A line
 >
-> B line
+>B line
 ```
 
 The intermediate source has no trailing spaces that another Markdown tool
 could mistake for a hard break.
+
+The intermediate `>` lines do not acquire a delimiter space by themselves.
+Typing on a blank `>` line produces `>B`, while a source line that already
+contains the visible `> ` keeps that space when the reader types after it. This
+rule applies equally to quotes and callouts.
+
+Backspace or Delete on a blank quoted line removes that whole physical line,
+including its adjacent newline. Removing the final line removes the preceding
+newline instead. The action never stops at deleting only the marker.
 
 When Enter is used in the middle of a line, the text after the caret moves to
 the new quoted paragraph:
@@ -428,6 +442,14 @@ the new quoted paragraph:
 >
 > second half
 ```
+
+### Enter inside a fenced-Div callout
+
+A fenced-Div body does not use paragraph splitting. Enter inserts exactly one
+newline at the caret, so one press creates one new line and successive presses
+can create any number of blank lines. The caret remains on the newest line. A
+Div nested inside a quote writes the exact visible quote prefix for that new
+line so it remains inside the same container.
 
 ### Double Enter exits one level
 
@@ -626,6 +648,10 @@ semantic callout even when it does not render native GitHub alerts.
 - Changing the innermost callout class from `.callout-note` to
   `.callout-tip` re-renders the fenced-Div callout with the new title and
   colour.
+- Typing `:::` on a line of its own creates
+  `::: {.callout .callout-note}` with a closed `:::` fence and opens a picker
+  for Note, Tip, Important, Warning, Caution and Definition. A choice rewrites
+  only `.callout-<kind>`; other source bytes do not move.
 - Deleting or malforming a GitHub marker makes that innermost quote level an
   ordinary blockquote after the edit settles; outer quote levels remain.
 - Malforming or removing a fenced-Div callout class makes the source an
