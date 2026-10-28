@@ -36,11 +36,11 @@
     seam().dispatchEvent(new InputEvent('input', { data: text, inputType: 'insertText', bubbles: true }));
   };
   /** A normal Caps Lock keydown whose character the method supplies lower-case in the seam. */
-  const capsLockRouted = (key, keyCode) => {
+  const capsLockRouted = (key, keyCode, capsState = true) => {
     const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
     Object.defineProperty(event, 'keyCode', { value: keyCode });
     Object.defineProperty(event, 'getModifierState', {
-      value: (modifier) => modifier === 'CapsLock'
+      value: (modifier) => modifier === 'CapsLock' && capsState
     });
     t.scroller().dispatchEvent(event);
   };
@@ -78,6 +78,28 @@
   inSeam('A');
   await t.sleep(250);
   check('and ordinary Caps Lock text stays upper-case', await t.raw(), 'hello' + 'A\n');
+
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  capsLockRouted('D', 68, false);
+  inSeam('d');
+  await t.sleep(250);
+  check('an upper-case key with a missing Caps Lock state still uses the seam', await t.raw(), 'hellod\n');
+
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  const shifted = new KeyboardEvent('keydown', {
+    key: 'D',
+    shiftKey: true,
+    bubbles: true,
+    cancelable: true
+  });
+  Object.defineProperty(shifted, 'keyCode', { value: 68 });
+  t.scroller().dispatchEvent(shifted);
+  await t.sleep(250);
+  check('a Shift-typed capital remains the editor’s key', shifted.defaultPrevented, true);
 
   // Clearing the native field inside one input event makes WebKit refuse the next
   // insertion at the same caret. Three native insertions must therefore all reach the
