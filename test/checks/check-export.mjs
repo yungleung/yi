@@ -1040,6 +1040,86 @@ const render = async (text, answers = {}) => {
   );
 }
 
+{
+  const nestedCallout =
+    '> [!NOTE]\n' +
+    '> Intro\n' +
+    '>\n' +
+    '> > [!TIP]\n' +
+    '> > Inner\n';
+  const { rendered } = await render(nestedCallout, { kind: 'html' });
+  check(
+    'a callout inside a callout lowers recursively',
+    rendered,
+    '::::: {.callout .callout-note}\n' +
+      '::: {.callout-title}\n' +
+      'Note\n' +
+      ':::\n\n' +
+      'Intro\n\n' +
+      '> :::: {.callout .callout-tip}\n' +
+      '> ::: {.callout-title}\n' +
+      '> Tip\n' +
+      '> :::\n' +
+      '>\n' +
+      '> Inner\n' +
+      '> ::::\n' +
+      ':::::\n'
+  );
+}
+
+{
+  const trailingEmpty = '> [!NOTE]\n> First\n>\n>';
+  const { rendered } = await render(trailingEmpty, { kind: 'html' });
+  check(
+    'a callout keeps intentional trailing quoted empty lines',
+    rendered,
+    ':::: {.callout .callout-note}\n' +
+      '::: {.callout-title}\n' +
+      'Note\n' +
+      ':::\n\n' +
+      'First\n\n\n' +
+      '::::'
+  );
+}
+
+{
+  const nestedSeparator = '> > [!TIP]\n> >\n> > Body\n';
+  const { rendered } = await render(nestedSeparator, { kind: 'html' });
+  check(
+    'a nested alert separator is recognised at its own quote depth',
+    rendered,
+    '> :::: {.callout .callout-tip}\n' +
+      '> ::: {.callout-title}\n' +
+      '> Tip\n' +
+      '> :::\n' +
+      '>\n' +
+      '> Body\n' +
+      '> ::::\n'
+  );
+}
+
+{
+  const quotedProse =
+    '> Intro\n' +
+    '>\n' +
+    '> > [!TIP]\n' +
+    '> > Body\n';
+  const { rendered } = await render(quotedProse, { kind: 'html' });
+  check(
+    'a callout after quoted prose is lowered without losing the quote',
+    rendered,
+    '> Intro\n' +
+      '>\n' +
+      '> :::: {.callout .callout-tip}\n' +
+      '> ::: {.callout-title}\n' +
+      '> Tip\n' +
+      '> :::\n' +
+      '>\n' +
+      '> Body\n' +
+      '> ::::\n'
+  );
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
