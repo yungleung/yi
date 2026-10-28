@@ -74,6 +74,14 @@
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(200);
+  routed('B', 229);
+  inSeam('B');
+  await t.sleep(250);
+  check('a 229-routed Caps Lock letter is normalized by the method path', await t.raw(), 'hellob\n');
+
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
   capsLockRouted('A', 65);
   inSeam('A');
   await t.sleep(250);

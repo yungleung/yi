@@ -961,7 +961,9 @@ is the author's rather than the duplicate space that chose the prior candidate.
 Caps Lock pass-through can deliver several native insertions without a composition. The seam
 tracks the prefix already committed and defers clearing its textarea until the current input event
 is over; clearing it synchronously makes WebKit reject every insertion after the first at that
-caret (`input-method-passthrough.js` holds three consecutive characters).
+caret (`input-method-passthrough.js` holds three consecutive characters). A 229-routed Latin
+letter is also normalized to lower-case when Caps Lock supplied an upper-case form, because the
+method uses Caps Lock as its English-mode switch.
 
 The prose fast path writes into the rendered text, so it uses `text_spacing.ts` for both its
 equality proof and its output. A run of spaces, or one at a text node's end, is a no-break space on

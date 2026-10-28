@@ -106,6 +106,8 @@ export function installCompositionInput(
   let committedValue = '';
   /** A deferred clear, so WebKit finishes the input event that produced the text. */
   let clearTimer: ReturnType<typeof setTimeout> | null = null;
+  /** A 229-routed Latin letter whose Caps Lock form should follow the method's case. */
+  let methodLetterLowercase = false;
   /**
    * Whether a printable keydown arrived after the last commit. The duplicate space a
    * method sends when choosing a candidate has no such key of its own; the next space
@@ -137,13 +139,18 @@ export function installCompositionInput(
       }
       element.value = '';
       committedValue = '';
+      methodLetterLowercase = false;
     }, 0);
   };
 
   /** Takes the new value the system left and hands it over; no new text commits nothing. */
   const commit = () => {
-    const text = pendingText();
+    const pending = pendingText();
+    const text = methodLetterLowercase
+      ? pending.replace(/\p{Lu}/gu, (letter) => letter.toLocaleLowerCase())
+      : pending;
     committedValue = element.value;
+    methodLetterLowercase = false;
     // Marked text stops being marked here, whether it committed a word or was cancelled.
     view.hide();
     if (text === '') {
@@ -212,6 +219,7 @@ export function installCompositionInput(
   element.addEventListener('compositionstart', () => {
     composing = true;
     keyAfterCommit = false;
+    methodLetterLowercase = false;
     drawMarked();
   });
   element.addEventListener('compositionupdate', () => {
@@ -314,6 +322,14 @@ export function installCompositionInput(
   host.addEventListener(
     'keydown',
     (event) => {
+      if (
+        event.keyCode === 229 &&
+        !event.shiftKey &&
+        event.key.length === 1 &&
+        /\p{L}/u.test(event.key)
+      ) {
+        methodLetterLowercase = true;
+      }
       if (event.key.length === 1 && performance.now() - committedAt < MOMENT_MS) {
         keyAfterCommit = true;
       }
