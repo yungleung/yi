@@ -139,6 +139,37 @@
   margin: 0;
 }
 
+/* A quote is a broad inset with one oversized opening mark. The typography
+   plugin's side rule and paired paragraph quotes are removed, leaving the
+   opening mark as the only chrome and preserving the full text column. */
+.prose-tight blockquote {
+  position: relative;
+  border-inline-start-width: 0;
+  margin-inline: calc(0.75rem * var(--md-page-scale));
+  padding-inline: calc(2rem * var(--md-page-scale)) calc(1rem * var(--md-page-scale));
+}
+
+.prose-tight blockquote::before {
+  content: "“";
+  position: absolute;
+  top: calc(-0.35rem * var(--md-page-scale));
+  left: calc(-0.15rem * var(--md-page-scale));
+  color: var(--color-primary);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(3.75rem * var(--md-page-scale));
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.42;
+  pointer-events: none;
+  user-select: none;
+}
+
+.prose-tight blockquote p:first-of-type::before,
+.prose-tight blockquote p:last-of-type::after {
+  content: none;
+}
+
 /* The spacing the nodes carry themselves, in the page's own scale — a description list, the
    blank line around a display formula or a revealed source, a footnote's line under the text
    it belongs to, a task item's checkbox beside its words. */

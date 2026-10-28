@@ -171,6 +171,8 @@ painel quando o cursor está fora; clicar no título ou no corpo revela a origem
 bloco restaura a renderização.
 Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
 prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
+Fora do modo de origem, uma citação comum tem margem dos dois lados e uma grande aspa inicial. Ela
+não mostra a linha lateral grossa nem a aspa final.
 
 Em um parágrafo de citação comum, Enter cria duas linhas vazias com o prefixo `>` completo. O texto
 seguinte forma outro parágrafo. Um segundo Enter no parágrafo vazio remove apenas um nível de
@@ -181,6 +183,8 @@ bloco filho termina, apenas uma linha vazia com prefixo é necessária.
 Digitar numa linha `>` vazia produz exatamente `>B`, sem acrescentar um espaço invisível. Se a origem
 já tiver o espaço visível `> `, ele é preservado. Backspace ou Delete numa linha de citação vazia
 remove toda a linha física, não apenas o `>`.
+Enter num item de lista vazio remove o marcador e deixa uma linha normal do corpo da citação ou do
+callout.
 
 Dentro de um callout com Div cercado, Enter insere exatamente uma quebra de linha. Cada Enter
 adicional cria outra linha vazia, e o cursor permanece na linha mais recente. Um Div dentro de uma

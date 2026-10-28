@@ -298,10 +298,10 @@ export function insertNewline(context: EditorContext): boolean {
       if (blankItemLineAt(projected.text, projectedOffset) !== null) {
         applyEdit(
           context,
-          line.prefixEnd,
-          line.end,
+          block.charStart + line.prefixEnd,
+          block.charStart + line.end,
           '',
-          line.prefixEnd
+          block.charStart + line.prefixEnd
         );
         return true;
       } else if (quote.child === 'code' || quote.child === 'equation') {

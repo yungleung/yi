@@ -174,6 +174,8 @@ ordinaires. Yi affiche le panneau quand le curseur est à l’extérieur ; cliqu
 corps révèle la source complète, et quitter le bloc restaure le rendu.
 Une citation ordinaire révèle sa source complète selon la même règle : les marqueurs échappés, les
 préfixes `>` et les délimiteurs internes sont exactement les caractères modifiés.
+Hors du mode source, une citation ordinaire est décalée des deux côtés et porte un grand guillemet
+ouvrant. Elle n’a ni trait latéral épais ni guillemet fermant.
 
 Dans un paragraphe de citation ordinaire, Entrée crée deux lignes vides portant le préfixe `>`
 complet. Le texte suivant forme un nouveau paragraphe. Une seconde pression sur Entrée dans le
@@ -185,6 +187,8 @@ seule ligne vide préfixée suffit.
 La saisie sur une ligne `>` vide produit exactement `>B`, sans espace invisible ajouté. Si la source
 contient déjà l’espace visible `> `, il est conservé. Backspace ou Delete sur une ligne de citation
 vide retire toute la ligne physique, pas seulement le `>`.
+Entrée sur un élément de liste vide retire son marqueur et laisse une ligne normale du corps de la
+citation ou du callout.
 
 Dans un callout délimité par un Div, Entrée insère exactement un saut de ligne. Chaque Entrée
 supplémentaire ajoute une autre ligne vide et le curseur reste sur la plus récente. Un Div dans une

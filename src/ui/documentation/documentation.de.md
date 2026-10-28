@@ -179,6 +179,8 @@ Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder 
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
 Ein gewöhnliches Zitat zeigt unter derselben Cursor-Regel seinen vollständigen Quelltext, sodass
 Escape-Marker, `>`-Präfixe und Trennzeichen der Kindblöcke exakt bearbeitet werden.
+Außerhalb des Quellmodus hat ein gewöhnliches Zitat beidseitigen Abstand und ein großes öffnendes
+Anführungszeichen. Die dicke Seitenlinie und das schließende Anführungszeichen entfallen.
 
 In einem normalen Zitatabsatz erzeugt Enter zwei leere Zeilen mit dem vollständigen `>`-Präfix. Der
 nächste Text beginnt einen neuen Absatz. Ein zweites Enter auf dem leeren Zitatabsatz entfernt genau
@@ -189,6 +191,8 @@ das vollständige Präfix. Nach einem abgeschlossenen Kindblock genügt eine lee
 Die Eingabe auf einer leeren `>`-Zeile erzeugt genau `>B` und fügt keinen unsichtbaren Abstand ein.
 Ein bereits sichtbares `> ` bleibt erhalten. Backspace oder Delete auf einer leeren Zitatzeile
 entfernt die ganze physische Zeile statt nur des `>`.
+Enter auf einem leeren Listeneintrag entfernt dessen Listenzeichen und hinterlässt eine normale
+Zitat- oder Callout-Zeile.
 
 Innerhalb eines Callouts in einem eingezäunten Div fügt Enter genau einen Zeilenumbruch ein. Jedes
 weitere Enter erzeugt eine weitere Leerzeile, und der Cursor bleibt auf der neuesten Zeile. Ein

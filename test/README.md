@@ -123,6 +123,8 @@ sibling after nested children and an empty quoted item leaves the list without l
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
 `callout-div-open` — `:::` creates a closed Note Div and its six-kind picker;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
+`quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
+opening mark;
 `callout-default-document` — the fixture's five built-in kinds, custom Div, nested callout and
 block-rich bodies);
 tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that

@@ -173,6 +173,8 @@ cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la
 salir del bloque vuelve la vista renderizada.
 Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
 los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
+Fuera del modo fuente, una cita normal tiene margen a ambos lados y una gran comilla inicial. No
+muestra la línea lateral gruesa ni la comilla final.
 
 En un párrafo de cita normal, Enter crea dos líneas vacías con el prefijo `>` completo. El texto
 siguiente forma otro párrafo. Un segundo Enter en el párrafo vacío quita solo un nivel de cita; en
@@ -183,6 +185,8 @@ bloque hijo, solo hace falta una línea vacía con prefijo.
 Escribir en una línea `>` vacía produce exactamente `>B`, sin añadir un espacio invisible. Si la
 fuente ya contiene el espacio visible `> `, se conserva. Backspace o Delete en una línea de cita
 vacía elimina la línea física completa, no solo el carácter `>`.
+Enter sobre un elemento de lista vacío elimina su marcador y deja una línea normal del cuerpo de la
+cita o del callout.
 
 Dentro de un callout con Div cercado, Enter inserta exactamente un salto de línea. Cada Enter
 adicional crea otra línea vacía y el cursor se queda en la más reciente. Un Div dentro de una cita

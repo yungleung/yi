@@ -638,6 +638,8 @@ Yi shows a rendered callout while the caret is outside it. Clicking its title or
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
 An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape
 markers, carrier prefixes, and child delimiters are exactly the characters being edited.
+Outside source mode, an ordinary quote is inset from both sides and has one large opening quotation
+mark. It has no thick side rule and no closing quotation mark.
 
 Inside an ordinary quoted paragraph, Enter creates the quoted equivalent of a blank line:
 
@@ -659,6 +661,7 @@ that complete physical line rather than removing only the `>` character.
 Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
 line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
 one quoted empty line, because the child block already supplies the paragraph boundary.
+Enter on an empty list item removes its list marker and leaves a normal quote or callout body line.
 
 Inside a fenced-Div callout, Enter inserts exactly one newline at the caret. Every additional Enter
 adds another blank line, and the caret stays on the newest line. A quoted Div keeps its visible

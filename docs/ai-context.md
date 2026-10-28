@@ -682,7 +682,10 @@ implement the shared quote rule: Enter adds two fully prefixed lines, a second
 Enter exits exactly one level, blank quote lines delete as physical lines,
 typing never invents a delimiter space, child blocks keep their own Enter
 semantics with every inserted line prefixed, and an empty callout's invisible
-body anchor is reachable by Left or Right and materialised only on typing.
+body anchor is reachable by Left or Right and materialised only on typing. An
+empty list item exits to the quote/callout body as one block-relative edit, and
+ordinary quotes render with a two-sided inset and one oversized opening mark
+instead of the typography plugin's side rule and paired quote glyphs.
 A typed `:::` creates a closed Note Div and opens
 `editing/callout_kind_picker.ts`; a Div body inserts one newline per Enter and
 accepts repeated blank lines with the caret left on the newest.

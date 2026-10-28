@@ -58,5 +58,49 @@
     '> \n'
   );
 
+  await t.load('> - Parent\n');
+  await clickTextEnd('Parent');
+  t.key('Enter');
+  await t.sleep(120);
+  t.key('Enter');
+  await t.sleep(120);
+  check(
+    'a second Enter on the new blank item leaves a plain quoted line',
+    await t.raw(),
+    '> - Parent\n> \n'
+  );
+
+  await t.load('> [!NOTE]\n> - Parent\n');
+  await clickTextEnd('Parent');
+  t.key('Enter');
+  await t.sleep(120);
+  t.key('Enter');
+  await t.sleep(120);
+  check(
+    'the same empty-item exit leaves a plain callout body line',
+    await t.raw(),
+    '> [!NOTE]\n> - Parent\n> \n'
+  );
+
+  await t.load('Before\n\n> - \n');
+  await clickTextEnd('-');
+  t.key('Enter');
+  await t.sleep(120);
+  check(
+    'a quote after earlier text exits its blank item without touching the prefix',
+    await t.raw(),
+    'Before\n\n> \n'
+  );
+
+  await t.load('Before\n\n> [!NOTE]\n> - \n');
+  await clickTextEnd('-');
+  t.key('Enter');
+  await t.sleep(120);
+  check(
+    'a callout after earlier text exits its blank item without touching the prefix',
+    await t.raw(),
+    'Before\n\n> [!NOTE]\n> \n'
+  );
+
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

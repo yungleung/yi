@@ -303,6 +303,10 @@ complete block source is the editable surface, including outer `>` carriers,
 escaped markers, empty quoted lines and child delimiters. This is what keeps a
 click and Enter aligned with the characters the reader can see.
 
+Outside source mode, an ordinary quote uses a two-sided inset and one oversized
+opening quotation mark. The typography plugin's thick inline-start rule and its
+paired opening/closing glyphs are removed; there is no closing decoration.
+
 Clicking the rendered panel enters source mode:
 
 - a click on the title enters the marker line;
@@ -433,6 +437,11 @@ rule applies equally to quotes and callouts.
 Backspace or Delete on a blank quoted line removes that whole physical line,
 including its adjacent newline. Removing the final line removes the preceding
 newline instead. The action never stops at deleting only the marker.
+
+Enter on an empty list item removes that item's marker and returns the line to
+the quote or callout body. The edit replaces only the block-relative line span,
+using document offsets, so quotes and callouts after earlier text keep their
+prefixes and neighboring content intact.
 
 When Enter is used in the middle of a line, the text after the caret moves to
 the new quoted paragraph:
