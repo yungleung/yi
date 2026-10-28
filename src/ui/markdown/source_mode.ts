@@ -37,6 +37,7 @@
 import type { AstNode } from './ast';
 import { type MarkdownBlock } from './document/blocks';
 import { hasSourceMode } from './document/block_kinds';;
+import { readCallout } from './syntax/callouts';
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
 
@@ -100,7 +101,18 @@ export function setShownRange(range: { from: number; to: number } | null): boole
 
 /** Whether this block is one that shows its own text. */
 export function isSourceBlock(block: MarkdownBlock): boolean {
-  return hasSourceMode(block.kind) && shownSourceWithinBlock(block) !== null;
+  return blockShowsSource(block) && shownSourceWithinBlock(block) !== null;
+}
+
+/** Whether this block is built as its own source while the caret is inside it. */
+export function blockShowsSource(block: MarkdownBlock): boolean {
+  if (hasSourceMode(block.kind)) {
+    return true;
+  }
+  return (
+    (block.kind === 'quote' || block.kind === 'fencedDiv') &&
+    readCallout(block.text) !== null
+  );
 }
 
 /**

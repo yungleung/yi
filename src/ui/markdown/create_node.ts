@@ -18,6 +18,7 @@ import type {
   AstBlockquote,
   AstAutoReference,
   AstBreak,
+  AstCallout,
   AstCitation,
   AstCode,
   AstDelete,
@@ -48,6 +49,7 @@ import { RootNode } from './nodes/root';
 import { Paragraph } from './nodes/paragraph';
 import { Heading } from './nodes/heading';
 import { Blockquote } from './nodes/blockquote';
+import { Callout } from './nodes/callout';
 import { List, ListItem } from './nodes/list';
 import { DescriptionDetails, DescriptionList, DescriptionTerm } from './nodes/description';
 import { FootnoteDefinition, FootnoteReference } from './nodes/footnote';
@@ -73,6 +75,7 @@ registerComponent('root', (node) => new RootNode(node as AstRoot));
 registerComponent('paragraph', (node) => new Paragraph(node as AstParagraph));
 registerComponent('heading', (node) => new Heading(node as AstHeading));
 registerComponent('blockquote', (node) => new Blockquote(node as AstBlockquote));
+registerComponent('callout', (node) => new Callout(node as AstCallout));
 registerComponent('list', (node) => new List(node as AstList));
 registerComponent('listItem', (node) => new ListItem(node as AstListItem));
 registerComponent('descriptionlist', (node) => new DescriptionList(node as AstDescriptionList));

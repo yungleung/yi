@@ -25,7 +25,13 @@ import {
   scheduleNativeSelection,
   setSelectionRange
 } from '../caret/caret';
-import { moveShownSource, setShownRange, shownSourceHeld, withHeldShownSource } from '../source_mode';
+import {
+  blockShowsSource,
+  moveShownSource,
+  setShownRange,
+  shownSourceHeld,
+  withHeldShownSource
+} from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
@@ -37,7 +43,6 @@ import { editorSelection, proseRoot, rangeOffsets } from './selection';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
 import type { AstHeading } from '../ast';
-import { hasSourceMode } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import { editsId } from './id_lock';
@@ -168,7 +173,7 @@ function sourceRangeAt(
   // A fenced block is the source the caret is in: its rendering is the body with the delimiters
   // hidden (`nodes/fence_text.ts`), so the text that stands in for that rendering is the block's
   // own — delimiters and all — and every offset in the block maps through it.
-  if (!selecting && hasSourceMode(block.kind)) {
+  if (!selecting && blockShowsSource(block)) {
     return { from: block.charStart, to: block.charEnd };
   }
   const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);
