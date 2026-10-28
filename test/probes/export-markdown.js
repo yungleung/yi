@@ -115,6 +115,15 @@
     'u=v',
     '\\end{gather}',
     '$$',
+    '',
+    '> [!NOTE]',
+    '> A callout with [[other|an alias]].',
+    '>',
+    '> A second callout paragraph.',
+    '',
+    '::: {.callout .callout-definition title="Defined Term"}',
+    'A term in a Div callout.',
+    ':::',
     ''
   ].join('\n');
 
@@ -360,6 +369,27 @@
         annotation: plain.includes(
           'annotation encoding="application/x-tex">\\begin{aligned}'
         )
+      }
+    );
+    check(
+      'and both callout forms become semantic Divs with their title and body',
+      plain.includes(':::: {.callout .callout-note}') &&
+        plain.includes('::: {.callout-title}\nNote\n:::') &&
+        plain.includes('A callout with an alias.') &&
+        plain.includes('A second callout paragraph.') &&
+        plain.includes(':::: {.callout .callout-definition title="Defined Term"}') &&
+        plain.includes('A term in a Div callout.') &&
+        !plain.includes('[!NOTE]'),
+      {
+        note: plain.includes(':::: {.callout .callout-note}'),
+        title: plain.includes('::: {.callout-title}\nNote\n:::'),
+        link: plain.includes('A callout with an alias.'),
+        second: plain.includes('A second callout paragraph.'),
+        custom: plain.includes(
+          ':::: {.callout .callout-definition title="Defined Term"}'
+        ),
+        body: plain.includes('A term in a Div callout.'),
+        nativeAlert: plain.includes('[!NOTE]')
       }
     );
 

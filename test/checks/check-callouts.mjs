@@ -125,6 +125,11 @@ check('suffix text is not a callout', readCallout('> [!NOTE] suffix\n> text'), n
 check('escaped marker is not a callout', readCallout('> \\[!NOTE]\n> text'), null);
 check('ordinary quote is not a callout', readCallout('> ordinary quote'), null);
 check(
+  'the generated title wrapper is not a callout kind',
+  readCallout('::: {.callout-title}\nTitle\n:::'),
+  null
+);
+check(
   'a lazy continuation prevents alert recognition',
   readCallout('> [!NOTE]\n> body\noutside\n'),
   null

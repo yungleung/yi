@@ -89,6 +89,7 @@ const BUILTIN_TITLES: Record<BuiltinCalloutKind, string> = {
 
 const ALERT_MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*$/i;
 const CALLOUT_CLASS = /^callout-([a-z0-9][a-z0-9_-]*)$/;
+const RESERVED_CALLOUT_CLASSES = new Set(['title', 'body']);
 
 /** Read one complete callout from the start of `source`. */
 export function readCallout(source: string, from = 0): CalloutSource | null {
@@ -373,7 +374,8 @@ function readDivOpening(line: SourceLine): DivOpening | null {
   const kinds = attribute.classes
     .map((name) => CALLOUT_CLASS.exec(name))
     .filter((match): match is RegExpExecArray => match !== null)
-    .map((match) => match[1]);
+    .map((match) => match[1])
+    .filter((kind) => !RESERVED_CALLOUT_CLASSES.has(kind));
   if (kinds.length !== 1) {
     return null;
   }

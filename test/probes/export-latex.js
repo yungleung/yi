@@ -121,6 +121,9 @@
     'y&=2',
     '\\end{align}',
     '$$]{#eq:system}',
+    '',
+    '> [!NOTE]',
+    '> A callout body preserved in LaTeX.',
     ''
   ].join('\n');
 
@@ -398,6 +401,14 @@
       {
         macro: tex.includes('\\providecommand{\\yiEquationRef}[1]'),
         label: tex.includes('\\renewcommand{\\equationname}{Equation}')
+      }
+    );
+    check(
+      'a callout keeps its visible title and body without requiring a package filter',
+      tex.includes('Note') && tex.includes('A callout body preserved in LaTeX.'),
+      {
+        title: tex.includes('Note'),
+        body: tex.includes('A callout body preserved in LaTeX.')
       }
     );
     const hint = [...document.querySelectorAll('[data-hint] [data-hint-text]')].at(-1);

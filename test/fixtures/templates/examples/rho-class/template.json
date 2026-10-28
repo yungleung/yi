@@ -17,6 +17,7 @@
     "ATTRIBUTION.txt",
     "CSL-NOTICE.txt",
     "README.md",
+    "callout.lua",
     "defaults.yaml",
     "example.md",
     "figures/sensor-residuals.pdf",
