@@ -79,6 +79,26 @@
   await t.sleep(250);
   check('and ordinary Caps Lock text stays upper-case', await t.raw(), 'hello' + 'A\n');
 
+  // Clearing the native field inside one input event makes WebKit refuse the next
+  // insertion at the same caret. Three native insertions must therefore all reach the
+  // document without another click.
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  const inserted = [];
+  for (const [key, code, lower] of [
+    ['A', 65, 'a'],
+    ['B', 66, 'b'],
+    ['C', 67, 'c']
+  ]) {
+    capsLockRouted(key, code);
+    inserted.push(document.execCommand('insertText', false, lower));
+    await t.sleep(80);
+  }
+  await t.sleep(250);
+  check('every consecutive Caps Lock character reaches the seam', inserted, [true, true, true]);
+  check('continuous typing stays at the same caret', await t.raw(), 'helloabc\n');
+
   const selectAll = new KeyboardEvent('keydown', {
     key: 'a',
     metaKey: true,

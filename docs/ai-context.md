@@ -957,6 +957,11 @@ keydown as 229: its `key` carries the lock's case while the seam carries the tex
 actually supplies. A printable keydown after a commit also proves that the next space is the
 author's rather than the duplicate space that chose the prior candidate.
 
+Caps Lock pass-through can deliver several native insertions without a composition. The seam
+tracks the prefix already committed and defers clearing its textarea until the current input event
+is over; clearing it synchronously makes WebKit reject every insertion after the first at that
+caret (`input-method-passthrough.js` holds three consecutive characters).
+
 The prose fast path writes into the rendered text, so it uses `text_spacing.ts` for both its
 equality proof and its output. A run of spaces, or one at a text node's end, is a no-break space on
 screen while the document keeps ordinary spaces; the source and rendered length stay equal

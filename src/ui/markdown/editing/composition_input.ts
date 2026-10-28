@@ -102,6 +102,10 @@ export function installCompositionInput(
   let composing = false;
   /** When the last composition committed, so the space that chose it is told from an ordinary one. */
   let committedAt = 0;
+  /** The part of the field already handed to the document during the current native burst. */
+  let committedValue = '';
+  /** A deferred clear, so WebKit finishes the input event that produced the text. */
+  let clearTimer: ReturnType<typeof setTimeout> | null = null;
   /**
    * Whether a printable keydown arrived after the last commit. The duplicate space a
    * method sends when choosing a candidate has no such key of its own; the next space
@@ -112,16 +116,42 @@ export function installCompositionInput(
   // to be measured again — a longer word can wrap the line (see `composition_view.ts`).
   const view = createCompositionView(onLayoutChanged);
 
-  /** Takes the value the system left and hands it over; an empty one commits nothing. */
+  /** The native text not yet handed to the document. */
+  const pendingText = (): string =>
+    element.value.startsWith(committedValue)
+      ? element.value.slice(committedValue.length)
+      : element.value;
+
+  /**
+   * Clears the field after the current input event. Clearing it synchronously makes
+   * WebKit refuse the next native insertion at the same caret.
+   */
+  const clearLater = (): void => {
+    if (clearTimer !== null) {
+      clearTimeout(clearTimer);
+    }
+    clearTimer = setTimeout(() => {
+      clearTimer = null;
+      if (composing) {
+        return;
+      }
+      element.value = '';
+      committedValue = '';
+    }, 0);
+  };
+
+  /** Takes the new value the system left and hands it over; no new text commits nothing. */
   const commit = () => {
-    const text = element.value;
-    element.value = '';
+    const text = pendingText();
+    committedValue = element.value;
     // Marked text stops being marked here, whether it committed a word or was cancelled.
     view.hide();
     if (text === '') {
+      clearLater();
       return;
     }
     onCommit(text);
+    clearLater();
   };
 
   /** Where the caret is, which is where the seam sits and the candidate window opens. */
@@ -210,11 +240,14 @@ export function installCompositionInput(
     // The space that chose the candidate, delivered once more as ordinary text: it is the
     // method's key, and typing it would leave a space after every Chinese word.
     if (
-      element.value === ' ' &&
+      pendingText() === ' ' &&
       performance.now() - committedAt < MOMENT_MS &&
       !keyAfterCommit
     ) {
-      element.value = '';
+      // Keep the field editable until the current event is over, but remove this
+      // method-owned suffix from what the next event will see.
+      element.value = committedValue;
+      clearLater();
       return;
     }
     commit();
