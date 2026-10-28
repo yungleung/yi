@@ -119,29 +119,97 @@ export function quotePrefixAt(
 }
 
 /**
- * Whether a quote needs its exact source surface while edited.
+ * Whether the quote position at `offset` needs its exact block source.
  *
- * Prism queries cannot paint a quoted empty line, and code/math children hide
- * the fence lines an Enter at their boundary must target. Ordinary prose
- * quotes remain rendered.
+ * A rendered quote has no caret target for a quoted empty line, and code/math
+ * children hide the delimiter lines an Enter at their boundary must target.
+ * Ordinary prose positions remain rendered.
  */
-export function quoteNeedsSource(text: string): boolean {
-  let offset = 0;
-  for (const line of text.split('\n')) {
-    const quoted = quoteLineAt(text, offset);
-    if (quoted !== null) {
-      const content = quoted.content.trimEnd();
-      if (
-        content.trim() === '' ||
-        content.trimStart().startsWith('$$') ||
-        openingFence(content)
-      ) {
-        return true;
+export function quoteNeedsSourceAt(text: string, offset: number): boolean {
+  const current = quoteLineAt(text, offset);
+  if (current === null) {
+    return false;
+  }
+  if (current.content.trim() === '') {
+    return true;
+  }
+
+  let fence: string | null = null;
+  let displayMath = false;
+  let at = 0;
+  for (const sourceLine of text.split('\n')) {
+    const quoted = quoteLineAt(text, at);
+    const content = quoted?.content ?? sourceLine;
+    if (at === current.start) {
+      return (
+        fence !== null ||
+        displayMath ||
+        openingFence(content) !== null ||
+        content.trimStart().startsWith('$$')
+      );
+    }
+    if (fence !== null) {
+      if (content.trimStart().startsWith(fence[0])) {
+        fence = null;
+      }
+    } else {
+      const opened = openingFence(content);
+      if (opened !== null) {
+        fence = opened;
+      } else if (displayMath) {
+        if (content.trimEnd().endsWith('$$')) {
+          displayMath = false;
+        }
+      } else if (content.trimStart().startsWith('$$')) {
+        const open = content.indexOf('$$');
+        displayMath = !(
+          content.indexOf('$$', open + 2) >= 0 &&
+          content.trimEnd().endsWith('$$')
+        );
       }
     }
-    offset += line.length + 1;
+    at += sourceLine.length + 1;
   }
   return false;
+}
+
+/** A quote document with its carrier prefixes removed, plus offset maps both ways. */
+export interface QuoteProjection {
+  text: string;
+  /** Source offset for every projected offset, including the end. */
+  sourceOffsets: number[];
+  /** Projected offset for every source offset, including the end. */
+  projectedOffsets: number[];
+}
+
+/** Remove every blockquote carrier while preserving a two-way offset map. */
+export function projectQuoteSource(source: string): QuoteProjection {
+  const sourceOffsets = new Array<number>(source.length + 1);
+  const projectedOffsets = new Array<number>(source.length + 1);
+  let projected = '';
+  let at = 0;
+  for (const sourceLine of source.split('\n')) {
+    const quoted = quoteLineAt(source, at);
+    const contentStart = quoted?.prefixEnd ?? at;
+    for (let index = at; index < contentStart; index += 1) {
+      projectedOffsets[index] = projected.length;
+    }
+    const content = source.slice(contentStart, at + sourceLine.length);
+    for (let index = 0; index < content.length; index += 1) {
+      sourceOffsets[projected.length] = contentStart + index;
+      projectedOffsets[contentStart + index] = projected.length;
+      projected += content[index];
+    }
+    sourceOffsets[projected.length] = at + sourceLine.length;
+    projectedOffsets[at + sourceLine.length] = projected.length;
+    if (at + sourceLine.length < source.length) {
+      projected += '\n';
+    }
+    at += sourceLine.length + 1;
+  }
+  sourceOffsets[projected.length] = source.length;
+  projectedOffsets[source.length] = projected.length;
+  return { text: projected, sourceOffsets, projectedOffsets };
 }
 
 /**

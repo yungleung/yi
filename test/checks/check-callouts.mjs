@@ -21,6 +21,7 @@ await bundle.close();
 const file = join(directory, 'callouts.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
+  calloutAtOffset,
   calloutBodyInsertion,
   calloutsForParsers,
   readCallout
@@ -60,6 +61,20 @@ check(
     .slice(nestedCallout.bodyFrom, nestedCallout.bodyTo)
     .split('\n')[0],
   '> First'
+);
+
+const nestedBeforeOuter = '> > [!TIP]\n> > Inner\n>\n> Outer after\n';
+check(
+  'a nested callout ends at a shallower outer quote line',
+  readCallout(nestedBeforeOuter)?.to,
+  nestedBeforeOuter.indexOf('\n>\n> Outer after')
+);
+
+const nestedAfterProse = '> Intro\n> > [!TIP]\n> > Inner\n';
+check(
+  'a nested callout is found after ordinary quoted prose',
+  calloutAtOffset(nestedAfterProse, nestedAfterProse.indexOf('[!TIP]'))?.kind,
+  'tip'
 );
 
 const separated = '> [!WARNING]\n>\n> First\n>\n> Second\n';

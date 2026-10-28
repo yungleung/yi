@@ -244,6 +244,15 @@ const nestedCallout = parseMarkdown('> > [!TIP]\n> > Nested\n');
 check('the outer container remains a blockquote', nestedCallout.children[0].type, 'blockquote');
 check('the inner container becomes a callout', nestedCallout.children[0].children[0].type, 'callout');
 
+const nestedBeforeOuter = parseMarkdown(
+  '> > [!TIP]\n> > Nested\n>\n> Outer after\n'
+);
+check(
+  'a nested callout ends before later outer quote prose',
+  nestedBeforeOuter.children[0].children.map((node) => node.type),
+  ['callout', 'paragraph']
+);
+
 const calloutListSource =
   '> [!NOTE]\n' +
   '> - First\n' +

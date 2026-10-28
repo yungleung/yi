@@ -117,8 +117,10 @@ ID-only, ordered-start, task and nested list cases, manual and automatic links, 
 callouts (`callout-rendering` — both source forms render one panel and reveal exact source;
 `callout-empty-navigation` — empty, nested, quoted-Div and adjacent callouts are reachable in one
 arrow from either side without source edits; `quote-enter` — paragraph, nested-level, list, table,
-code, equation and empty-body Enter rules; `callout-default-document` — the fixture's five built-in
-kinds, custom Div, nested callout and block-rich bodies);
+code, equation and empty-body Enter rules; `quote-list-enter` — a quoted parent inserts its next
+sibling after nested children and an empty quoted item leaves the list without leaving the quote;
+`callout-default-document` — the fixture's five built-in kinds, custom Div, nested callout and
+block-rich bodies);
 tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that
 can be added or removed from the caption source boundary, source reveal, label, target ID, and
 direct/one-blank forms; `table-caption-crossrefs` — configured labels and

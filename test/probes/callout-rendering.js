@@ -57,6 +57,31 @@
     true
   );
 
+  const nestedAfterProse = '> Intro\n> > [!TIP]\n> > Nested\n';
+  await t.load(nestedAfterProse);
+  const nestedPanel = t.prose().querySelector('.markdown-callout');
+  if (nestedPanel) {
+    await t.click(nestedPanel, 0.5);
+    await t.sleep(250);
+  }
+  check(
+    'a nested callout after quoted prose reveals its exact block source',
+    t.prose().querySelector('.markdown-quote-source')?.textContent ?? null,
+    nestedAfterProse.trimEnd()
+  );
+
+  await t.load('> > [!TIP]\n> > Inner\n>\n> Outer after\n');
+  check(
+    'a nested callout ends before outer quote content',
+    t.prose().querySelector('.markdown-callout')?.dataset.calloutKind ?? null,
+    'tip'
+  );
+  check(
+    'outer quote content remains after that callout',
+    [...t.prose().querySelectorAll('p')].some((node) => node.textContent === 'Outer after'),
+    true
+  );
+
   await t.load('> Ordinary quote\n');
   check(
     'an ordinary quote does not become a callout',

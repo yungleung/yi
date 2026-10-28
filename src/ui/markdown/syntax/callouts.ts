@@ -100,6 +100,24 @@ export function readCallout(source: string, from = 0): CalloutSource | null {
   return readAlertCallout(source, lines, from) ?? readDivCallout(source, lines, from);
 }
 
+/** The callout whose source range contains the block-relative offset. */
+export function calloutAtOffset(source: string, offset: number): CalloutSource | null {
+  const lines = sourceLines(source);
+  for (const line of lines) {
+    if (line.start > offset) {
+      break;
+    }
+    if (!line.text.includes('[!') && !line.text.includes(':::')) {
+      continue;
+    }
+    const callout = readCallout(source.slice(line.start));
+    if (callout !== null && offset <= line.start + callout.to) {
+      return callout;
+    }
+  }
+  return null;
+}
+
 /** Where the first body character goes, or the block end for an empty body. */
 export function calloutBodyInsertion(callout: CalloutSource | null): number {
   if (callout === null) {
@@ -264,7 +282,7 @@ function readAlertCallout(
       break;
     }
     if (line.depth < first.depth) {
-      return null;
+      break;
     }
     last = index;
   }

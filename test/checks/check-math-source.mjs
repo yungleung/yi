@@ -84,6 +84,16 @@ moveShownSource({ from: formula.charEnd, to: formula.charEnd, replacement: 'zz' 
 check('an edit after the shown range leaves it where it is', shownSourceWithinBlock(formula), 0);
 setShownRange(null);
 
+// A quote or fenced Div can show a source nested inside it, such as a
+// footnote label. That partial range keeps the container rendered; only the
+// complete block range replaces it with source mode.
+const quote = block('> quote[^1]\n> [^1]: note', 0, 'quote');
+setShownRange({ from: 8, to: 12 });
+check('a source nested in a quote leaves the container rendered', isSourceBlock(quote), false);
+setShownRange({ from: quote.charStart, to: quote.charEnd });
+check('a complete quote range shows the container source', isSourceBlock(quote), true);
+setShownRange(null);
+
 // Where a click on the rendering enters the text: the end of the body's last
 // line that has content. The delimiters are not drawn, so the caret has to land
 // inside the body, and blank lines at its end are not content.

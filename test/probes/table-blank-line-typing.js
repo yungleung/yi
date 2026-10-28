@@ -20,17 +20,19 @@
   t.key('Enter');
   await t.sleep(250);
   const afterEnter = await t.raw();
-  t.key(':');
-  await t.sleep(250);
-  t.key(' ');
-  await t.sleep(250);
+  const blank = t.prose()
+    .querySelector('.markdown-empty-line-placeholder')
+    ?.closest('.markdown-block');
+  if (blank) {
+    await t.click(blank, 0.5);
+  }
   t.key('x');
   await t.sleep(250);
 
   check(
     'typing on the blank line stays after the table',
     await t.raw(),
-    '| A | B |\n| --- | --- |\n| 1 | 2 |\n\n: x\n\nAfter\n'
+    '| A | B |\n| --- | --- |\n| 1 | 2 |\n\nx\n\nAfter\n'
   );
   check(
     'leaving the table makes a blank line first',

@@ -32,7 +32,7 @@ import {
 } from './context';
 import { editorSelection, rangeOffsets } from './selection';
 import { isFenced, isQuoteLike, isRawRendered } from '../document/block_kinds';
-import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
+import { blankItemLineAt, hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
 import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
@@ -45,7 +45,7 @@ import {
 import { materializeCalloutBody } from '../syntax/callout_body';
 import {
   enterInQuote,
-  prefixInsertedLines,
+  projectQuoteSource,
   quoteLineAt
 } from '../syntax/quote_edits';
 
@@ -251,23 +251,41 @@ export function insertNewline(context: EditorContext): boolean {
     const line = quoteLineAt(block.text, relative);
     if (quote !== null && line !== null) {
       const rawPrefix = block.text.slice(line.start, line.prefixEnd);
-      if (quote.child === 'list') {
-        const continuation = itemContinuation(line.content);
-        if (continuation !== null) {
-          const tail = block.text.slice(relative, line.end);
-          const replacement = `\n${prefixInsertedLines(
-            rawPrefix,
-            `${continuation.slice(1)}${tail}`
-          )}`;
-          applyEdit(
-            context,
-            offsets.from,
-            offsets.to,
-            replacement,
-            offsets.from + replacement.length - tail.length
-          );
-          return true;
-        }
+      const projected = projectQuoteSource(block.text);
+      const projectedOffset =
+        projected.projectedOffsets[relative] ?? projected.text.length;
+      const projectedLine = lineSpanAt(projected.text, projectedOffset);
+      const continuation = itemContinuation(
+        projected.text.slice(projectedLine.start, projectedLine.end)
+      );
+      if (continuation !== null) {
+        const afterSubtree =
+          projectedOffset === projectedLine.end &&
+          hasChildBlock(projected.text, projectedLine);
+        const projectedFrom = afterSubtree
+          ? itemSubtreeEnd(projected.text, projectedLine)
+          : projectedOffset;
+        const from =
+          projected.sourceOffsets[projectedFrom] ?? offsets.from;
+        const replacement = `\n${rawPrefix}${continuation.slice(1)}`;
+        applyEdit(
+          context,
+          from,
+          offsets.to,
+          replacement,
+          from + replacement.length
+        );
+        return true;
+      }
+      if (blankItemLineAt(projected.text, projectedOffset) !== null) {
+        applyEdit(
+          context,
+          line.prefixEnd,
+          line.end,
+          '',
+          line.prefixEnd
+        );
+        return true;
       } else if (quote.child === 'code' || quote.child === 'equation') {
         const tail = block.text.slice(relative, line.end);
         const replacement = `\n${rawPrefix}${tail}`;

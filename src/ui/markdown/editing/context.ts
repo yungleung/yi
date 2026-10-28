@@ -26,7 +26,7 @@ import {
   setSelectionRange
 } from '../caret/caret';
 import {
-  blockShowsSource,
+  blockSourceAt,
   moveShownSource,
   setShownRange,
   shownSourceHeld,
@@ -228,7 +228,7 @@ function sourceRangeAt(
   // A fenced block is the source the caret is in: its rendering is the body with the delimiters
   // hidden (`nodes/fence_text.ts`), so the text that stands in for that rendering is the block's
   // own — delimiters and all — and every offset in the block maps through it.
-  if (!selecting && blockShowsSource(block)) {
+  if (!selecting && blockSourceAt(block, offset)) {
     return { from: block.charStart, to: block.charEnd };
   }
   const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);

@@ -109,7 +109,22 @@ function restoreNode(
     return null;
   }
 
-  const callout = readCallout(markdown.slice(start));
+  const rawCallout = readCallout(markdown.slice(start));
+  const nodeLength = (node.position?.end.offset ?? -1) - start;
+  // A nested blockquote starts after its parent's `>` carrier, but later lines
+  // in the raw slice still carry that outer level. The parser node's end is the
+  // authoritative boundary; clamp the source reader to it.
+  const callout =
+    rawCallout === null
+      ? null
+      : rawCallout.to > nodeLength && nodeLength > 0
+        ? {
+            ...rawCallout,
+            to: nodeLength,
+            bodyTo: Math.min(rawCallout.bodyTo, nodeLength),
+            source: rawCallout.source.slice(0, nodeLength)
+          }
+        : rawCallout;
   if (
     callout === null ||
     callout.to !== (node.position?.end.offset ?? -1) - start ||

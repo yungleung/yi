@@ -9,10 +9,10 @@
  * the deferred check's — one capture when the burst starts, one comparison when it
  * ends, and that comparison is the burst's single parse.
  *
- * A structural keystroke — an asterisk, which can open an emphasis, or a `.` where a
- * list's marker is waiting for it — is the contrast: it renders, so it asks the lookup,
- * parses the block it landed in, and builds it again. A space and a comma are not:
- * they are prose, and they are written like a letter (see `syntax/plain_edit.ts`).
+ * A structural keystroke — an asterisk — is written immediately too, then checked
+ * once at the end of the burst. If the parse shape moved, that check rebuilds the
+ * block; a star inside an ordinary word changes no shape. A space and a comma are
+ * prose and take the same in-place path.
  *
  * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/source_mode.ts
  */
@@ -91,9 +91,17 @@
   );
 
   const structural = await count('fairly', ['*']);
-  check('a structural keystroke asks the caret lookup', structural.lookups >= 1, structural.calls);
-  check('a structural keystroke rebuilds the block', structural.builds >= 1, structural.calls);
-  check('a structural keystroke replaces the block', !structural.sameBlock, structural.sameBlock);
+  check(
+    'a structural keystroke never asks the caret lookup',
+    structural.lookups === 0,
+    structural.calls
+  );
+  check('a structural keystroke is checked once', structural.checks === 1, structural.calls);
+  check(
+    'a shape-preserving structural keystroke keeps the block',
+    structural.sameBlock,
+    structural.sameBlock
+  );
   check(
     'a structural keystroke reaches the document',
     structural.document === 'A paragraph with f*airly plain words in it.\n\nsecond\n',

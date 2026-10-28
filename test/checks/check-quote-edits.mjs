@@ -22,7 +22,9 @@ async function bundle(name, input) {
 
 const {
   enterInQuote,
-  prefixInsertedLines
+  prefixInsertedLines,
+  projectQuoteSource,
+  quoteNeedsSourceAt
 } = await import(await bundle('quote_edits', 'src/ui/markdown/syntax/quote_edits.ts'));
 const { materializeCalloutBody } = await import(
   await bundle('callout_body', 'src/ui/markdown/syntax/callout_body.ts')
@@ -91,6 +93,26 @@ check(
   'child insertion prefixes every physical line',
   prefixInsertedLines('> > ', 'one\ntwo'),
   '> > one\n> > two'
+);
+
+const proseWithQuotedBlank = '> Intro[^1]\n>\n> [^1]: note\n';
+check(
+  'ordinary prose in a broken quote stays rendered',
+  quoteNeedsSourceAt(proseWithQuotedBlank, proseWithQuotedBlank.indexOf('Intro')),
+  false
+);
+check(
+  'a quoted blank line needs block source',
+  quoteNeedsSourceAt(
+    proseWithQuotedBlank,
+    proseWithQuotedBlank.indexOf('\n>\n') + 2
+  ),
+  true
+);
+check(
+  'quote projection preserves child-list indentation',
+  projectQuoteSource('> - Parent\n>   - Child\n').text,
+  '- Parent\n  - Child\n'
 );
 
 for (const context of ['list', 'table', 'code', 'equation']) {

@@ -684,7 +684,7 @@ reachable by Left or Right and materialised only on typing.
 `ui/export/callout_rewrites.ts` lowers both authoring forms to one semantic
 `.callout` / `.callout-<kind>` / `.callout-title` Div before all overlapping
 source rewrites, so template Lua filters receive one stable AST shape.
-`callout-rendering.js`, `callout-empty-navigation.js`, `quote-enter.js`, the
+`callout-rendering.js`, `callout-empty-navigation.js`, `quote-enter.js`, `quote-list-enter.js`, the
 default-fixture probe, and the export/filter probes hold the feature.
 
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
