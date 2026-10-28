@@ -231,7 +231,9 @@ height remembered against it.
    Caps Lock pass-through may deliver a run of native insertions through the seam. The field
    tracks the prefix already committed and clears after the current input event, because clearing
    synchronously makes WebKit reject the next insertion at the same caret. A 229-routed letter's
-   Caps Lock form is normalized to the method's lower-case English character.
+   Caps Lock form is normalized to the method's lower-case English character. An editor-handled
+   key after that native burst resets the seam context immediately, before an ultra-fast next
+   native character arrives.
 2. The command works out a document offset from the caret (`editing/context.ts:
    caretOffset`) and computes a raw-text edit — the rules are pure
    (`code_edits.ts`, `list_edits.ts`, `table_edits.ts`, `blank_lines.ts`).

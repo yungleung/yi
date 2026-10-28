@@ -46,6 +46,11 @@ export interface CompositionInput {
    */
   keepKeyboard(): void;
   /**
+   * Ends a native-input burst before an editor-handled key extends the document.
+   * The reset is immediate because the next key can arrive before the next frame.
+   */
+  settleNativeInput(): void;
+  /**
    * Hands the field the keyboard again after a structural edit or a click that placed the
    * caret. Those need a fresh input context: the next word would otherwise never compose, and
    * after a click the *first letter* is delivered as a Latin keystroke instead (measured:
@@ -108,6 +113,8 @@ export function installCompositionInput(
   let clearTimer: ReturnType<typeof setTimeout> | null = null;
   /** A 229-routed Latin letter whose Caps Lock form should follow the method's case. */
   let methodLetterLowercase = false;
+  /** Whether native text entered the field since the last editor-handled key. */
+  let nativeBurstActive = false;
   /**
    * Whether a printable keydown arrived after the last commit. The duplicate space a
    * method sends when choosing a candidate has no such key of its own; the next space
@@ -144,12 +151,13 @@ export function installCompositionInput(
   };
 
   /** Takes the new value the system left and hands it over; no new text commits nothing. */
-  const commit = () => {
+  const commit = (fromInput = false) => {
     const pending = pendingText();
     const text = methodLetterLowercase
       ? pending.replace(/\p{Lu}/gu, (letter) => letter.toLocaleLowerCase())
       : pending;
     committedValue = element.value;
+    nativeBurstActive ||= fromInput;
     methodLetterLowercase = false;
     // Marked text stops being marked here, whether it committed a word or was cancelled.
     view.hide();
@@ -220,6 +228,7 @@ export function installCompositionInput(
     composing = true;
     keyAfterCommit = false;
     methodLetterLowercase = false;
+    nativeBurstActive = false;
     drawMarked();
   });
   element.addEventListener('compositionupdate', () => {
@@ -258,7 +267,7 @@ export function installCompositionInput(
       clearLater();
       return;
     }
-    commit();
+    commit(true);
   });
 
   /** Whether the reader is showing a selection — which a focus change would drop. */
@@ -312,6 +321,23 @@ export function installCompositionInput(
       return;
     }
     requestAnimationFrame(() => element.focus({ preventScroll: true }));
+  };
+
+  /** Releases a native burst so its textarea context cannot outlive an editor-handled key. */
+  const settleNativeInput = (): void => {
+    if (!nativeBurstActive) {
+      return;
+    }
+    if (clearTimer !== null) {
+      clearTimeout(clearTimer);
+      clearTimer = null;
+    }
+    element.value = '';
+    committedValue = '';
+    methodLetterLowercase = false;
+    nativeBurstActive = false;
+    element.blur();
+    element.focus({ preventScroll: true });
   };
 
   // A pointer that is down means the reader is working with the page itself — dragging
@@ -371,6 +397,7 @@ export function installCompositionInput(
     element,
     markedText,
     keepKeyboard,
-    regainKeyboard
+    regainKeyboard,
+    settleNativeInput
   };
 }

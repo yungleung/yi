@@ -963,7 +963,9 @@ tracks the prefix already committed and defers clearing its textarea until the c
 is over; clearing it synchronously makes WebKit reject every insertion after the first at that
 caret (`input-method-passthrough.js` holds three consecutive characters). A 229-routed Latin
 letter is also normalized to lower-case when Caps Lock supplied an upper-case form, because the
-method uses Caps Lock as its English-mode switch.
+method uses Caps Lock as its English-mode switch. When an editor-handled key such as a space ends
+that native burst, the seam resets its native input context immediately; a frame-delayed reset
+still loses the next ultra-fast Caps Lock key.
 
 The prose fast path writes into the rendered text, so it uses `text_spacing.ts` for both its
 equality proof and its output. A run of spaces, or one at a text node's end, is a no-break space on

@@ -228,7 +228,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         // Ordinary typed characters and an exact committed word stay in the same input context.
         // A structural edit does not: resetting the seam around it restores the next text
         // context after the block it rebuilt has changed.
-        if (kind === 'typing' || kind === 'commit') {
+        if (kind === 'typing') {
+          // A native Caps Lock burst can leave committed text in the seam's textarea.
+          // An editor-handled key after it — a space above all — must end that native
+          // context before the next key reaches the field, or WebKit rejects it.
+          this.composition.settleNativeInput();
+          this.composition.keepKeyboard();
+        } else if (kind === 'commit') {
           this.composition.keepKeyboard();
         } else {
           this.composition.regainKeyboard();

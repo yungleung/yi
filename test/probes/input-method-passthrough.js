@@ -126,8 +126,15 @@
     await t.sleep(80);
   }
   await t.sleep(250);
-  check('every consecutive Caps Lock character reaches the seam', inserted, [true, true, true]);
+  check('every consecutive Caps Lock character reaches the seam', [...inserted], [true, true, true]);
   check('continuous typing stays at the same caret', await t.raw(), 'helloabc\n');
+
+  t.key(' ');
+  capsLockRouted('D', 68, false);
+  inserted.push(document.execCommand('insertText', false, 'd'));
+  await t.sleep(250);
+  check('a space does not end the native Caps Lock burst', inserted, [true, true, true, true]);
+  check('typing resumes after the space', await t.raw(), 'helloabc d\n');
 
   const selectAll = new KeyboardEvent('keydown', {
     key: 'a',
