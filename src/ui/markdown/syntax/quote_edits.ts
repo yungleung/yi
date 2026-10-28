@@ -12,6 +12,7 @@
  */
 
 import type { TextEdit } from './edit_range';
+import { openingFence } from './markers';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -28,7 +29,8 @@ export type QuoteChildContext =
   | 'code'
   | 'equation';
 
-interface QuoteLine {
+/** One source line and the quote carrier before its content. */
+export interface QuoteLine {
   start: number;
   end: number;
   depth: number;
@@ -107,11 +109,46 @@ export function quoteCarrier(depth: number): string {
   return '> '.repeat(Math.max(0, Math.floor(depth))).trimEnd();
 }
 
+/** The quote depth and canonical prefix on the line at `offset`, or null outside a quote. */
+export function quotePrefixAt(
+  text: string,
+  offset: number
+): { depth: number; prefix: string } | null {
+  const line = quoteLineAt(text, offset);
+  return line === null ? null : { depth: line.depth, prefix: quoteCarrier(line.depth) };
+}
+
+/**
+ * Whether a quote needs its exact source surface while edited.
+ *
+ * Prism queries cannot paint a quoted empty line, and code/math children hide
+ * the fence lines an Enter at their boundary must target. Ordinary prose
+ * quotes remain rendered.
+ */
+export function quoteNeedsSource(text: string): boolean {
+  let offset = 0;
+  for (const line of text.split('\n')) {
+    const quoted = quoteLineAt(text, offset);
+    if (quoted !== null) {
+      const content = quoted.content.trimEnd();
+      if (
+        content.trim() === '' ||
+        content.trimStart().startsWith('$$') ||
+        openingFence(content)
+      ) {
+        return true;
+      }
+    }
+    offset += line.length + 1;
+  }
+  return false;
+}
+
 /**
  * The line before the caret, its depth, and content after the quote carriers.
  * Offsets at a newline belong to the line they end.
  */
-function quoteLineAt(text: string, offset: number): QuoteLine | null {
+export function quoteLineAt(text: string, offset: number): QuoteLine | null {
   const at = Math.min(Math.max(0, offset), text.length);
   const start = text.lastIndexOf('\n', Math.max(0, at - 1)) + 1;
   const newline = text.indexOf('\n', at);

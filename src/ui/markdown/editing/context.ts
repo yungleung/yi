@@ -37,6 +37,10 @@ import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
 import { markerShape } from '../syntax/footnotes';
 import { isInPlaceTextEdit, isPlainEdit } from '../syntax/plain_edit';
+import {
+  quotePrefixAt,
+  type QuoteChildContext
+} from '../syntax/quote_edits';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
@@ -105,6 +109,57 @@ export function caretOffset(context: EditorContext): number | null {
   }
   const start = documentOffsetAt(context.state, range.startContainer, range.startOffset);
   return start ? start.offset : null;
+}
+
+/** The active quote depth and child construct at a document offset. */
+export function quoteContextAt(
+  state: MarkdownEditorState,
+  block: MarkdownBlock,
+  offset: number
+): { depth: number; child: QuoteChildContext; prefix: string } | null {
+  const relative = Math.min(Math.max(0, offset - block.charStart), block.text.length);
+  const line = quotePrefixAt(block.text, relative);
+  if (line === null) {
+    return null;
+  }
+
+  let child: QuoteChildContext = 'paragraph';
+  let ownerEnd: number | null = null;
+  const visit = (nodes: readonly RootContent[]): void => {
+    for (const node of nodes) {
+      const position = (node as {
+        position?: { start?: { offset?: number }; end?: { offset?: number } };
+      }).position;
+      const start = position?.start?.offset;
+      const end = position?.end?.offset;
+      if (start === undefined || end === undefined || relative < start || relative > end) {
+        continue;
+      }
+      if (node.type === 'code') {
+        child = 'code';
+        ownerEnd = end;
+      } else if (node.type === 'math') {
+        child = 'equation';
+        ownerEnd = end;
+      } else if (node.type === 'table') {
+        child = 'table';
+        ownerEnd = end;
+      } else if (node.type === 'listItem') {
+        child = 'list';
+        ownerEnd = null;
+      }
+      const children = (node as { children?: RootContent[] }).children;
+      if (Array.isArray(children)) {
+        visit(children);
+      }
+    }
+  };
+  visit(state.getBlockContent(block));
+
+  if (ownerEnd !== null && relative === ownerEnd) {
+    child = 'completed-child';
+  }
+  return { ...line, child };
 }
 
 /**

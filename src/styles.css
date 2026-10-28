@@ -157,6 +157,7 @@
 
 .markdown-display-math,
 .markdown-equation-source,
+.markdown-quote-source,
 .markdown-source-text {
   margin-block: calc(1rem * var(--md-page-scale));
 }

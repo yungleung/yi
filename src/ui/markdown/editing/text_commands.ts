@@ -16,6 +16,7 @@ import {
   continueListItem,
   deleteEmptyParagraph,
   exitBlankItem,
+  itemContinuation,
   materializeInsertion,
   splitParagraph,
   startEmptyParagraphAbove,
@@ -25,17 +26,28 @@ import {
   applyEdit,
   caretOffset,
   placeCaret,
+  quoteContextAt,
   restoreCaret,
   type EditorContext
 } from './context';
 import { editorSelection, rangeOffsets } from './selection';
-import { isFenced, isRawRendered } from '../document/block_kinds';
+import { isFenced, isQuoteLike, isRawRendered } from '../document/block_kinds';
 import { blankItemLineAt, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
 import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
 import { insertFenceOpen } from './fence_open';
 import { rangeInSourceText } from '../source_text';
+import {
+  calloutBodyInsertion,
+  readCallout
+} from '../syntax/callouts';
+import { materializeCalloutBody } from '../syntax/callout_body';
+import {
+  enterInQuote,
+  prefixInsertedLines,
+  quoteLineAt
+} from '../syntax/quote_edits';
 
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
@@ -70,6 +82,46 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   const sourceText = rangeInSourceText(range);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
+  }
+  if (block && offsets.from === offsets.to) {
+    const callout = readCallout(block.text);
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    if (
+      callout !== null &&
+      callout.bodyFrom === callout.bodyTo &&
+      relative === calloutBodyInsertion(callout)
+    ) {
+      const body = materializeCalloutBody(block.text, relative, callout, text);
+      if (body !== null) {
+        applyEdit(
+          context,
+          block.charStart + body.edit.from,
+          block.charStart + body.edit.to,
+          body.edit.replacement,
+          block.charStart + body.caret,
+          brackets ? 'typing' : 'commit'
+        );
+        return true;
+      }
+    }
+    const quote = isQuoteLike(block.kind) ? quoteLineAt(block.text, relative) : null;
+    if (
+      quote !== null &&
+      quote.content === '' &&
+      relative === quote.end
+    ) {
+      const prefix = block.text.slice(quote.start, quote.prefixEnd);
+      const inserted = text.replace(/\n/g, `\n${prefix}`);
+      applyEdit(
+        context,
+        offsets.from,
+        offsets.to,
+        ` ${inserted}`,
+        undefined,
+        brackets ? 'typing' : 'commit'
+      );
+      return true;
+    }
   }
   // A character typed at the end of a fenced block's body belongs *in* the body: written where the
   // caret is, it would land on the closing delimiter's own line, which the parser reads as part of
@@ -192,6 +244,54 @@ export function insertNewline(context: EditorContext): boolean {
   const block = context.state.getBlockAtOffset(offsets.from);
   if (!block) {
     return false;
+  }
+  if (isQuoteLike(block.kind) && offsets.from === offsets.to) {
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const quote = quoteContextAt(context.state, block, offsets.from);
+    const line = quoteLineAt(block.text, relative);
+    if (quote !== null && line !== null) {
+      const rawPrefix = block.text.slice(line.start, line.prefixEnd);
+      if (quote.child === 'list') {
+        const continuation = itemContinuation(line.content);
+        if (continuation !== null) {
+          const tail = block.text.slice(relative, line.end);
+          const replacement = `\n${prefixInsertedLines(
+            rawPrefix,
+            `${continuation.slice(1)}${tail}`
+          )}`;
+          applyEdit(
+            context,
+            offsets.from,
+            offsets.to,
+            replacement,
+            offsets.from + replacement.length - tail.length
+          );
+          return true;
+        }
+      } else if (quote.child === 'code' || quote.child === 'equation') {
+        const tail = block.text.slice(relative, line.end);
+        const replacement = `\n${rawPrefix}${tail}`;
+        applyEdit(context, offsets.from, offsets.to, replacement);
+        return true;
+      } else {
+        const edit = enterInQuote(
+          block.text,
+          relative,
+          quote.depth,
+          quote.child
+        );
+        if (edit !== null) {
+          applyEdit(
+            context,
+            block.charStart + edit.edit.from,
+            block.charStart + edit.edit.to,
+            edit.edit.replacement,
+            block.charStart + edit.caret
+          );
+          return true;
+        }
+      }
+    }
   }
   // Code, math, frontmatter and the other raw-rendered blocks keep their own line structure.
   if (isRawRendered(block.kind)) {

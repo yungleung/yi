@@ -16,6 +16,7 @@ import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
 import { Equation, EquationSource } from './nodes/equation';
+import { QuoteSourceView } from './nodes/quote_source';
 import { CalloutSourceView } from './nodes/callout_source';
 import { Caption } from './nodes/caption';
 import { fenceLabel } from './nodes/fence_label';
@@ -115,6 +116,10 @@ class BlockView implements BlockComponent {
     if (callout !== null) {
       element.classList.add('markdown-callout-block');
       element.appendChild(new CalloutSourceView(node).element);
+      return element;
+    }
+    if (node.kind === 'quote') {
+      element.appendChild(new QuoteSourceView(node).element);
       return element;
     }
     this.markListing(element, node);

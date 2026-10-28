@@ -40,6 +40,7 @@ import { hasSourceMode } from './document/block_kinds';;
 import { readCallout } from './syntax/callouts';
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
+import { quoteNeedsSource } from './syntax/quote_edits';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;
@@ -107,6 +108,9 @@ export function isSourceBlock(block: MarkdownBlock): boolean {
 /** Whether this block is built as its own source while the caret is inside it. */
 export function blockShowsSource(block: MarkdownBlock): boolean {
   if (hasSourceMode(block.kind)) {
+    return true;
+  }
+  if (block.kind === 'quote' && quoteNeedsSource(block.text)) {
     return true;
   }
   return (
