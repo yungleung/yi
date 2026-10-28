@@ -217,9 +217,9 @@ height remembered against it.
    an invisible textarea (`editing/composition_input.ts`), so a key can also arrive as a
    composition: what an input method, dictation or the emoji panel commits is inserted through
    the same text path as typing, as one edit of its own
-   (`text_commands.ts: insertCommitted`). A 229 key, a letter carrying Caps Lock, and an
-   unshifted upper-case letter whose modifier state omitted Caps Lock belong to that method; a
-   modified command chord does not. What a method has *marked* —
+   (`text_commands.ts: insertCommitted`). An explicit 229 key belongs to that method; Caps Lock
+   alone does not, because in the English source it is ordinary editor input. What a method has
+   *marked* —
    the pinyin, the kana, the
    syllable — is written into the line where the reader is typing it (`editing/composition_view.ts`):
    a span at the caret, marked `data-composing` so the offsets step over it, because none of those

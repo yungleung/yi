@@ -951,12 +951,11 @@ A key the input method routes is the method's, whether a composition is behind i
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes
 that character — typing it as well writes it twice (measured with Caps Lock on, where the method
 composes nothing and passes every letter through; `test/probes/input-method-passthrough.js`). A 229
-key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's. A letter
-with Caps Lock in its modifier state is the method's too, even when the browser does not mark that
-keydown as 229: its `key` carries the lock's case while the seam carries the text the method
-actually supplies. An unshifted upper-case letter is treated the same way when the browser omits
-the Caps Lock modifier state. A printable keydown after a commit also proves that the next space
-is the author's rather than the duplicate space that chose the prior candidate.
+key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's. Caps Lock
+alone is not a delegation signal: in the English source its key is ordinary editor input, and
+sending it to the seam leaves stale native context when the reader then switches to Chinese. A
+printable keydown after a commit also proves that the next space is the author's rather than the
+duplicate space that chose the prior candidate.
 
 Caps Lock pass-through can deliver several native insertions without a composition. The seam
 tracks the prefix already committed and defers clearing its textarea until the current input event

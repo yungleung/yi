@@ -46,26 +46,14 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
   }
   // A character the input method is handling is not the editor's. The keys *during* a
   // composition say so with `isComposing`; a key the method routes does so with
-  // `keyCode` 229. Caps Lock letters are also the method's even when the browser does not
-  // mark that keydown as 229: an unshifted upper-case `key`, or a letter whose modifier
-  // state says Caps Lock, is routed by the method while its seam carries the character it
-  // actually intends. Typing those writes both otherwise.
+  // `keyCode` 229. Caps Lock alone is not that signal: in the English source it is
+  // ordinary editor input, and delegating it to the seam leaves stale native context
+  // across a source switch. Typing a 229 character both places writes it twice.
   // A 229 key that is *not* a character — `Enter` while a method is merely active, an
   // arrow, `Backspace`, `Tab` — is still the editor's, which is why the guard is about
   // the character and not about 229 alone (see
   // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
-  const capsLockLetter =
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.altKey &&
-    event.key.length === 1 &&
-    /\p{L}/u.test(event.key) &&
-    (event.getModifierState('CapsLock') ||
-      (!event.shiftKey && /\p{Lu}/u.test(event.key)));
-  if (
-    event.isComposing ||
-    (event.key.length === 1 && (event.keyCode === 229 || capsLockLetter))
-  ) {
+  if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
     return;
   }
   // A Backspace that edits the word being composed is the input method's: while the word is

@@ -7,11 +7,11 @@
  * the seam. The editor must not write it from both. Measured with the real method:
  * three letters typed left four characters in the document.
  *
- * The narrowing this guard used to have is the other half: a `keyCode` 229 key that is
- * *not* a character — `Enter`, pressed while a method is merely active — is still the
- * editor's, and must still start a line. Caps Lock can also arrive on an ordinary keydown
- * whose `key` has the lock's case while the seam has the method's lower-case character;
- * that key belongs to the method, while a modified command shortcut still belongs to us.
+ * The narrowing this guard has is the other half: only `keyCode` 229 delegates a
+ * character to the seam. Caps Lock on its own is ordinary editor input, even when the
+ * English source supplies an upper-case `key`; routing it to the native textarea leaves
+ * stale context across a later source switch. A 229 key that carries no character is
+ * still the editor's.
  *
  * @covers src/ui/markdown/markdown_editor.ts: handleKeydown,
  *   src/ui/markdown/editing/keys.ts, src/ui/markdown/editing/composition_input.ts
@@ -35,14 +35,15 @@
     seam().value = text;
     seam().dispatchEvent(new InputEvent('input', { data: text, inputType: 'insertText', bubbles: true }));
   };
-  /** A normal Caps Lock keydown whose character the method supplies lower-case in the seam. */
-  const capsLockRouted = (key, keyCode, capsState = true) => {
+  /** An ordinary Caps Lock keydown, not delegated by an input method. */
+  const capsKey = (key, keyCode) => {
     const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
     Object.defineProperty(event, 'keyCode', { value: keyCode });
     Object.defineProperty(event, 'getModifierState', {
-      value: (modifier) => modifier === 'CapsLock' && capsState
+      value: (modifier) => modifier === 'CapsLock'
     });
     t.scroller().dispatchEvent(event);
+    return event;
   };
 
   await t.load('hello\n');
@@ -61,16 +62,6 @@
   await t.sleep(250);
   check('the letter the method routed is written once', await t.raw(), 'hello' + 'b\n');
 
-  // Caps Lock changes the `key` of an otherwise ordinary keydown, while the input method's
-  // committed text is still lower-case. The editor must let that one reach the seam too.
-  await t.load('hello\n');
-  await t.click(t.blocks()[0], 0.99, 0.5);
-  await t.sleep(200);
-  capsLockRouted('B', 66);
-  inSeam('b');
-  await t.sleep(250);
-  check('a Caps Lock key keeps the method’s own case', await t.raw(), 'hello' + 'b\n');
-
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(200);
@@ -82,18 +73,26 @@
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(200);
-  capsLockRouted('A', 65);
-  inSeam('A');
+  const capA = capsKey('A', 65);
   await t.sleep(250);
-  check('and ordinary Caps Lock text stays upper-case', await t.raw(), 'hello' + 'A\n');
+  check('ordinary Caps Lock text is editor input', capA.defaultPrevented, true);
+  check('and stays upper-case', await t.raw(), 'hello' + 'A\n');
 
+  // A space and a source switch after editor-handled Caps Lock text must not leave a
+  // native textarea context behind. The Chinese composition then starts normally.
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(200);
-  capsLockRouted('D', 68, false);
-  inSeam('d');
+  capsKey('A', 65);
+  t.key(' ');
+  capsKey('B', 66);
+  seam().dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+  seam().value = 'ni';
+  seam().dispatchEvent(new CompositionEvent('compositionupdate', { data: 'ni', bubbles: true }));
+  seam().value = '你';
+  seam().dispatchEvent(new CompositionEvent('compositionend', { data: '你', bubbles: true }));
   await t.sleep(250);
-  check('an upper-case key with a missing Caps Lock state still uses the seam', await t.raw(), 'hellod\n');
+  check('a source switch after Caps Lock starts a composition', await t.raw(), 'helloA B你\n');
 
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
@@ -109,19 +108,19 @@
   await t.sleep(250);
   check('a Shift-typed capital remains the editor’s key', shifted.defaultPrevented, true);
 
-  // Clearing the native field inside one input event makes WebKit refuse the next
-  // insertion at the same caret. Three native insertions must therefore all reach the
-  // document without another click.
+  // Clearing the explicitly routed native field inside one input event makes WebKit
+  // refuse the next insertion at the same caret. Three native insertions must all reach
+  // the document without another click.
   await t.load('hello\n');
   await t.click(t.blocks()[0], 0.99, 0.5);
   await t.sleep(200);
   const inserted = [];
-  for (const [key, code, lower] of [
-    ['A', 65, 'a'],
-    ['B', 66, 'b'],
-    ['C', 67, 'c']
+  for (const [key, lower] of [
+    ['A', 'a'],
+    ['B', 'b'],
+    ['C', 'c']
   ]) {
-    capsLockRouted(key, code);
+    routed(key, 229);
     inserted.push(document.execCommand('insertText', false, lower));
     await t.sleep(80);
   }
@@ -130,7 +129,7 @@
   check('continuous typing stays at the same caret', await t.raw(), 'helloabc\n');
 
   t.key(' ');
-  capsLockRouted('D', 68, false);
+  routed('D', 229);
   inserted.push(document.execCommand('insertText', false, 'd'));
   await t.sleep(250);
   check('a space does not end the native Caps Lock burst', inserted, [true, true, true, true]);
