@@ -618,6 +618,11 @@ body {
   margin-bottom: 0;
 }
 
+.markdown-callout-empty {
+  min-height: 1lh;
+  margin: 0;
+}
+
 .markdown-listing-label,
 .markdown-caption-number {
   font-weight: 600;

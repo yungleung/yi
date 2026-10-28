@@ -13,6 +13,8 @@
 import type { AstCallout } from '../ast';
 import { appendChildren } from '../registry';
 import { enterSourceOf } from '../source_mode';
+import { calloutBodyInsertion } from '../syntax/callouts';
+import { CALLOUT_BODY_ANCHOR, TEXT_FROM, setOffset } from '../offset_tags';
 import { EditableNodeComponent } from './editable_node';
 
 /** The concrete editor class for each built-in kind; custom kinds use the base panel. */
@@ -52,6 +54,23 @@ export class Callout extends EditableNodeComponent {
     const body = document.createElement('div');
     body.className = 'markdown-callout-body';
     appendChildren(body, node.children);
+    if (node.children.length === 0) {
+      const insertion = calloutBodyInsertion(node.callout);
+      const anchor = document.createElement('p');
+      anchor.className = 'markdown-callout-empty';
+      setOffset(anchor, CALLOUT_BODY_ANCHOR, insertion);
+      setOffset(anchor, TEXT_FROM, insertion);
+      anchor.appendChild(document.createTextNode(''));
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        enterSourceOf(this.element, insertion);
+        (this.element.closest('.prose') as HTMLElement | null)?.focus({
+          preventScroll: true
+        });
+      });
+      body.appendChild(anchor);
+    }
     element.appendChild(body);
   }
 }
