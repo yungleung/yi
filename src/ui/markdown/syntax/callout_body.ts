@@ -45,17 +45,18 @@ export function materializeCalloutBody(
   const lineEnd = lineEndAt < 0 ? text.length : lineEndAt;
   const line = text.slice(at, lineEnd);
   if (line.trim() === '' && lineEndAt >= 0) {
-    const replacement = typed.replace(/\n/g, '\n');
+    const replacement = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
     return {
       edit: { from: at, to: at, replacement },
       caret: at + replacement.length
     };
   }
 
-  const replacement = `${typed}\n`;
+  const body = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
+  const replacement = `${body}\n`;
   return {
     edit: { from: at, to: at, replacement },
-    caret: at + typed.length
+    caret: at + body.length
   };
 }
 

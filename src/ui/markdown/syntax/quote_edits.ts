@@ -159,8 +159,8 @@ function emptyQuoteRunBeforeCursor(
   let first = current;
   let count = 1;
   let previousEnd = first.start;
-  let contentEnd = current.start - 1;
-  while (previousEnd > 0) {
+  let contentEnd = Math.max(0, current.start - 1);
+  while (previousEnd > 0 && count < 2) {
     const previousBreak = text.lastIndexOf('\n', previousEnd - 2);
     const previousStart = previousBreak + 1;
     const previousStop = previousEnd - 1;

@@ -27,7 +27,7 @@ const {
 const { materializeCalloutBody } = await import(
   await bundle('callout_body', 'src/ui/markdown/syntax/callout_body.ts')
 );
-const { readCallout } = await import(
+const { calloutBodyInsertion, readCallout } = await import(
   await bundle('callouts', 'src/ui/markdown/syntax/callouts.ts')
 );
 
@@ -55,6 +55,25 @@ check(
   {
     edit: { from: 10, to: nestedBreak.length, replacement: '\n>\n>' },
     caret: 14
+  }
+);
+
+check(
+  'an empty quote at the start of a file never names a negative offset',
+  enterInQuote('>', 1, 1, 'paragraph'),
+  {
+    edit: { from: 0, to: 1, replacement: '\n' },
+    caret: 1
+  }
+);
+
+const threeEmptyLines = '> A\n>\n>\n>';
+check(
+  'double Enter only unwraps the two lines made by one paragraph break',
+  enterInQuote(threeEmptyLines, threeEmptyLines.length, 1, 'paragraph'),
+  {
+    edit: { from: 5, to: threeEmptyLines.length, replacement: '\n\n' },
+    caret: 7
   }
 );
 
@@ -127,6 +146,26 @@ check(
       replacement: 'Body\n'
     },
     caret: emptyDiv.lastIndexOf(':::') + 4
+  }
+);
+
+const quotedDiv = '> ::: {.callout-note}\n> :::\n';
+const quotedOuter = readCallout(quotedDiv);
+check(
+  'multiline text in an empty quoted Div prefixes every physical line',
+  materializeCalloutBody(
+    quotedDiv,
+    calloutBodyInsertion(quotedOuter),
+    quotedOuter,
+    'one\ntwo'
+  ),
+  {
+    edit: {
+      from: 24,
+      to: 24,
+      replacement: 'one\n> two\n'
+    },
+    caret: 33
   }
 );
 
