@@ -794,10 +794,11 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       manifest.assets.every((asset) => existsSync(join(rhoClass, asset)))
   );
   check(
-    'rho-class: pdfLaTeX and its table filter leave citations to Yi settings',
+    'rho-class: pdfLaTeX and its table/callout filters leave citations to Yi settings',
     defaults['pdf-engine'] === 'pdflatex' &&
-      defaults.filters.length === 1 &&
+      defaults.filters.length === 2 &&
       defaults.filters[0] === 'table.lua' &&
+      defaults.filters[1] === 'callout.lua' &&
       defaults.bibliography === undefined &&
       defaults.csl === undefined &&
       defaults['shift-heading-level-by'] === 0

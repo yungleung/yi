@@ -51,7 +51,13 @@ import { copySelection, pasteText } from './editing/clipboard';
 import { insertCommitted } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
+import {
+  installCalloutKindPicker,
+  setCalloutKindChangeHandler,
+  setCalloutKindPicker
+} from './editing/callout_kind_picker';
 import { fenceLanguageEdit } from './syntax/fence_edits';
+import { calloutKindEdit } from './syntax/callouts';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';
@@ -382,6 +388,10 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // (`syntax/fence_edits.ts: fenceLanguageEdit`).
     setLanguagePicker(installLanguagePicker());
     setLanguageChangeHandler((lineStart, language) => this.changeFenceLanguage(lineStart, language));
+    setCalloutKindPicker(installCalloutKindPicker());
+    setCalloutKindChangeHandler((lineStart, kind) =>
+      this.changeCalloutKind(lineStart, kind)
+    );
 
     // Keep the editor's selection state in sync with the native DOM selection
     // (the rendered text is selectable by dragging).
@@ -785,6 +795,29 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     }
     const block = this.state.getBlockAtLine(lineStart);
     const edit = block ? fenceLanguageEdit(block.text, language) : null;
+    if (block === null || edit === null) {
+      return;
+    }
+    const from = block.charStart + edit.from;
+    const to = block.charStart + edit.to;
+    const caret = caretOffset(this.context);
+    const delta = edit.replacement.length - (edit.to - edit.from);
+    const target =
+      caret === null || (caret >= from && caret < to)
+        ? undefined
+        : caret > to
+          ? caret + delta
+          : caret;
+    applyEdit(this.context, from, to, edit.replacement, target);
+  }
+
+  /** The fenced-Div kind the reader chose, with the body and caret left in place. */
+  private changeCalloutKind(lineStart: number, kind: string): void {
+    if (this.readOnly) {
+      return;
+    }
+    const block = this.state.getBlockAtLine(lineStart);
+    const edit = block ? calloutKindEdit(block.text, kind) : null;
     if (block === null || edit === null) {
       return;
     }

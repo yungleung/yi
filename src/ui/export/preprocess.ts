@@ -48,6 +48,7 @@ import { escapeHtml, htmlAttributeName } from './html';
 import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
 import { listRewrites } from './list_rewrites';
+import { calloutRewrites } from './callout_rewrites';
 import {
   firstReference,
   referenceIndex,
@@ -127,21 +128,24 @@ interface Rewrite {
  * exactly as it was written, character for character.
  */
 export async function exportSource(text: string, answers: ExportAnswers): Promise<string> {
-  const tree = parseMarkdown(text) as unknown as Walkable;
-  const references = referenceIndex(text);
+  // Callouts become ordinary semantic Divs before the shared parse, so every
+  // rewrite below sees the body at its final nesting level.
+  const withCallouts = applyRewrites(text, calloutRewrites(text));
+  const tree = parseMarkdown(withCallouts) as unknown as Walkable;
+  const references = referenceIndex(withCallouts);
   const figures = spansOfType(tree, 'figure');
   const tables = spansOfType(tree, 'table');
   const listings = spansOfType(tree, 'listing');
   const cited = answers.citations === null ? null : spansOfType(tree, 'citation');
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
-  const rewritten = applyRewrites(text, [
+  const rewritten = applyRewrites(withCallouts, [
     ...autoReferenceRewrites(tree, references, answers.kind),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...listingRewrites(listings, references, answers),
     ...(await imageRewrites(tree, answers, fetched, figures, tables)),
-    ...equationRewrites(text, references, answers.kind),
+    ...equationRewrites(withCallouts, references, answers.kind),
     ...listRewrites(tree, references, answers.kind),
     ...tableRewrites(tree, references, answers.kind),
     ...(cited ?? []).map((span) => ({

@@ -82,7 +82,7 @@
   check(
     'and the note is the one it names, rendered and without a label',
     shown !== null &&
-      shown.textContent.includes('A note with a link.') &&
+      shown.textContent.replace(/\u00a0/g, ' ').includes('A note with a link.') &&
       !shown.textContent.includes('[') &&
       shown.querySelector('[data-footnote-def]') === null &&
       shown.querySelector('em, i') !== null &&

@@ -132,6 +132,89 @@ exactamente con el contador de tablas de una plantilla, ambos contadores deben c
 mismo lugar y con el mismo nivel de reinicio; Yi no puede inferir automáticamente las reglas de una
 clase arbitraria.
 
+## Callouts
+
+Una alerta de estilo GitHub crea un callout:
+
+```markdown
+> [!NOTE]
+> Algo que conviene advertir.
+```
+
+Los cinco tipos integrados son `NOTE`, `TIP`, `IMPORTANT`, `WARNING` y `CAUTION`. Sus títulos
+visibles siempre son `Note`, `Tip`, `Important`, `Warning` y `Caution`, independientemente del idioma
+de la interfaz. Las etiquetas no distinguen mayúsculas de minúsculas. La línea de cita vacía después
+del marcador es opcional. Una etiqueta desconocida, una etiqueta seguida de texto o un marcador
+escapado como `> \[!NOTE]` siguen siendo una cita normal.
+
+También se acepta la sintaxis de Div cercado de Pandoc:
+
+```markdown
+::: {.callout .callout-note}
+Un callout integrado.
+:::
+
+::: {.callout .callout-definition title="Definición"}
+Un tipo personalizado.
+:::
+```
+
+También vale la forma corta `.callout-note`. Para un tipo personalizado sin `title=`, el título se
+deriva del nombre de clase sin depender del idioma de la interfaz. Los ID, clases y demás atributos
+se conservan para la exportación; un ID de Div es metadatos de Pandoc y no una referencia de Yi.
+
+Escribir `:::` en una línea propia crea un Div Note cerrado y abre seis opciones: Note, Tip,
+Important, Warning, Caution y Definition. La elección cambia solo la clase `.callout-<tipo>`; el
+cuerpo, el ID, las demás clases y los atributos permanecen intactos.
+
+Los callouts pueden anidarse dentro de citas u otros callouts. Su cuerpo admite párrafos, listas,
+tablas, bloques de código, ecuaciones, leyendas, citas y citas Markdown normales. Yi muestra el panel
+cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la fuente completa y al
+salir del bloque vuelve la vista renderizada.
+Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
+los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
+Fuera del modo fuente, una cita normal tiene margen a ambos lados y una gran comilla inicial. No
+muestra la línea lateral gruesa ni la comilla final.
+
+En un párrafo de cita normal, Enter crea dos líneas vacías con el prefijo `>` completo. El texto
+siguiente forma otro párrafo. Un segundo Enter en el párrafo vacío quita solo un nivel de cita; en
+citas anidadas se repite una vez por nivel. Las listas, tablas, bloques de código y ecuaciones
+mantienen su comportamiento normal, y cada línea nueva recibe el prefijo completo. Cuando termina un
+bloque hijo, solo hace falta una línea vacía con prefijo.
+
+Escribir en una línea `>` vacía produce exactamente `>B`, sin añadir un espacio invisible. Si la
+fuente ya contiene el espacio visible `> `, se conserva. Backspace o Delete en una línea de cita
+vacía elimina la línea física completa, no solo el carácter `>`.
+Enter sobre un elemento de lista vacío elimina su marcador y deja una línea normal del cuerpo de la
+cita o del callout.
+Al insertar una tabla dentro de una cita o callout de GitHub, cada fila y separador recibe la misma
+cadena de `>`, por lo que la tabla permanece dentro del contenedor.
+
+Dentro de un callout con Div cercado, Enter inserta exactamente un salto de línea. Cada Enter
+adicional crea otra línea vacía y el cursor se queda en la más reciente. Un Div dentro de una cita
+conserva su prefijo visible en cada línea insertada.
+
+Un callout vacío conserva un ancla invisible para el cursor del cuerpo. Left desde el bloque
+posterior y Right desde el anterior entran en ella; navegar no modifica la fuente. El primer
+carácter escrito crea la línea de cuerpo que falta.
+
+Todas las exportaciones con Pandoc convierten ambas formas en el mismo Div semántico:
+
+```markdown
+:::: {.callout .callout-note}
+::: {.callout-title}
+Note
+:::
+
+Algo que conviene advertir.
+::::
+```
+
+Las plantillas HTML, EPUB, DOCX, ODT y LaTeX/PDF pueden aplicar estilos mediante CSS, documentos de
+referencia o un filtro Lua. El filtro recibe `.callout`, `.callout-<tipo>`, `.callout-title` y el
+cuerpo en orden. La conversión ocurre antes de los filtros de plantilla, que así trabajan con esta
+estructura estable y no con el código GitHub o el Div original.
+
 ## Exportar una nota
 
 | Tipo | Salida |

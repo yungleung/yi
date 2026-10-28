@@ -34,15 +34,105 @@ This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~
 1. Ordered list item
 2. Another ordered item
 
-## Blockquotes and code
+## Blockquotes
 
 > A blockquote with a [link](https://example.com)
+
+## Code
 
 ```ts
 function greet(name: string) {
   console.log(`Hello, ${name}`);
 }
 ```
+
+## Callouts
+
+The five GitHub-style kinds:
+
+> [!NOTE]
+> Something worth noticing.
+
+> [!TIP]
+>
+> A helpful suggestion.
+
+> [!IMPORTANT]
+> Information needed to complete the task.
+
+> [!WARNING]
+> A possible problem.
+
+> [!CAUTION]
+> A consequence to avoid.
+
+Callouts may contain multiple paragraphs:
+
+> [!NOTE]
+> First paragraph.
+>
+> Second paragraph.
+
+Nested quotes and callouts retain their depth:
+
+> An outer quote.
+>
+> > [!TIP]
+> > A callout nested inside the quote.
+
+A callout body can contain ordinary Markdown blocks:
+
+> [!WARNING]
+> - First check
+> - Second check
+>
+> | A | B |
+> | --- | --- |
+> | one | two |
+>
+> ```ts
+> const answer = 42;
+> ```
+>
+> $$
+> E = mc^2
+> $$
+
+Pandoc fenced-Div callouts support built-in and custom kinds:
+
+Type `:::` on an empty line in Yi to create this form and choose its kind.
+
+::: {.callout .callout-note}
+A fenced-Div note.
+:::
+
+::: {.callout .callout-definition title="Definition"}
+A **defined** term.
+:::
+
+A fenced-Div body accepts consecutive blank lines:
+
+::: {.callout .callout-note}
+The first paragraph.
+
+
+The second paragraph after an additional blank line.
+:::
+
+Escaped and unknown GitHub markers remain ordinary quotes:
+
+> \[!NOTE]
+> This is literal quoted text.
+
+> [!CUSTOM]
+> This is also an ordinary quote.
+
+Empty callouts remain reachable:
+
+> [!NOTE]
+
+::: {.callout .callout-tip}
+:::
 
 ## Code listings
 

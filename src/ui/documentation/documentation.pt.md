@@ -130,6 +130,89 @@ corresponder exatamente ao contador de tabelas de um modelo, os dois contadores 
 configurados no mesmo local e com o mesmo nível de reinício; o Yi não consegue inferir
 automaticamente as regras de uma classe arbitrária.
 
+## Callouts
+
+Um alerta no estilo GitHub cria um callout:
+
+```markdown
+> [!NOTE]
+> Algo que merece atenção.
+```
+
+Os cinco tipos internos são `NOTE`, `TIP`, `IMPORTANT`, `WARNING` e `CAUTION`. Os títulos visíveis
+são sempre `Note`, `Tip`, `Important`, `Warning` e `Caution`, independentemente do idioma da
+interface. Os rótulos não diferenciam maiúsculas de minúsculas. A linha de citação vazia após o
+marcador é opcional. Um rótulo desconhecido, texto depois do rótulo ou um marcador escapado como
+`> \[!NOTE]` continuam sendo uma citação comum.
+
+A sintaxe de Div cercado do Pandoc também é aceita:
+
+```markdown
+::: {.callout .callout-note}
+Um callout interno.
+:::
+
+::: {.callout .callout-definition title="Definição"}
+Um tipo personalizado.
+:::
+```
+
+A forma curta `.callout-note` também funciona. Um tipo personalizado sem `title=` deriva o título do
+nome da classe sem depender do idioma da interface. ID, classes e outros atributos são preservados
+para exportação; um ID de Div é metadado do Pandoc e não um destino de referência do Yi.
+
+Digitar `:::` sozinho numa linha cria um Div Note fechado e abre seis opções: Note, Tip, Important,
+Warning, Caution e Definition. A escolha altera apenas a classe `.callout-<tipo>`; o corpo, o ID,
+as outras classes e os atributos permanecem intactos.
+
+Callouts podem ser aninhados em citações ou em outros callouts. O corpo aceita parágrafos, listas,
+tabelas, blocos de código, equações, legendas, citações e citações Markdown comuns. O Yi mostra o
+painel quando o cursor está fora; clicar no título ou no corpo revela a origem completa, e sair do
+bloco restaura a renderização.
+Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
+prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
+Fora do modo de origem, uma citação comum tem margem dos dois lados e uma grande aspa inicial. Ela
+não mostra a linha lateral grossa nem a aspa final.
+
+Em um parágrafo de citação comum, Enter cria duas linhas vazias com o prefixo `>` completo. O texto
+seguinte forma outro parágrafo. Um segundo Enter no parágrafo vazio remove apenas um nível de
+citação; em citações aninhadas, repita uma vez por nível. Listas, tabelas, blocos de código e
+equações mantêm o comportamento normal, e cada nova linha recebe o prefixo completo. Depois que um
+bloco filho termina, apenas uma linha vazia com prefixo é necessária.
+
+Digitar numa linha `>` vazia produz exatamente `>B`, sem acrescentar um espaço invisível. Se a origem
+já tiver o espaço visível `> `, ele é preservado. Backspace ou Delete numa linha de citação vazia
+remove toda a linha física, não apenas o `>`.
+Enter num item de lista vazio remove o marcador e deixa uma linha normal do corpo da citação ou do
+callout.
+Ao inserir uma tabela numa citação ou callout do GitHub, cada linha e separador recebe a mesma
+cadeia de `>`, mantendo a tabela dentro do contêiner.
+
+Dentro de um callout com Div cercado, Enter insere exatamente uma quebra de linha. Cada Enter
+adicional cria outra linha vazia, e o cursor permanece na linha mais recente. Um Div dentro de uma
+citação conserva o prefixo visível em cada linha inserida.
+
+Um callout vazio mantém uma âncora invisível para o cursor do corpo. Left a partir do bloco seguinte
+e Right a partir do anterior entram nela; a navegação sozinha não altera a origem. O primeiro
+caractere digitado cria a linha de corpo ausente.
+
+Toda exportação com Pandoc transforma as duas formas no mesmo Div semântico:
+
+```markdown
+:::: {.callout .callout-note}
+::: {.callout-title}
+Note
+:::
+
+Algo que merece atenção.
+::::
+```
+
+Modelos HTML, EPUB, DOCX, ODT e LaTeX/PDF podem estilizar por CSS, documentos de referência ou filtro
+Lua. O filtro recebe `.callout`, `.callout-<tipo>`, `.callout-title` e o corpo na ordem do documento.
+A conversão acontece antes dos filtros do modelo, que trabalham com essa estrutura estável em vez da
+sintaxe GitHub ou do Div original.
+
 ## Exportar uma nota
 
 | Tipo | Saída |

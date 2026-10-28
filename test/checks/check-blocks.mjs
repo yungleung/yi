@@ -187,6 +187,33 @@ reSplit('editing the frontmatter', '---\ntitle: x\n---\n\nbody\n', [[13, 13, '!'
 reSplit('editing frontmatter closed by ...', '---\ntitle: x\n...\n\nbody\n', [[13, 13, '!']]);
 reSplit('editing the last line of a document with no line ending', 'a\n\nb', [[4, 4, 'c'], [5, 5, '\n']]);
 
+const nestedCallout = splitBlocks(
+  '> > [!NOTE]\n> > first\n> >\n> > second\n\nAfter\n'
+);
+const nestedShape = nestedCallout
+  .slice(0, 2)
+  .map((block) => [block.kind, block.lineStart, block.lineEnd]);
+if (JSON.stringify(nestedShape) === JSON.stringify([
+  ['quote', 1, 4],
+  ['paragraph', 6, 6]
+])) {
+  console.log('ok   a nested callout is one quote block');
+} else {
+  failures += 1;
+  console.log(`FAIL a nested callout is one quote block\n     ${JSON.stringify(nestedShape)}`);
+}
+
+const div = splitBlocks(
+  '::: {.callout .callout-note}\nFirst\n\nSecond\n:::\n'
+);
+const divShape = div.map((block) => [block.kind, block.lineStart, block.lineEnd]);
+if (JSON.stringify(divShape) === JSON.stringify([['fencedDiv', 1, 5]])) {
+  console.log('ok   a fenced-Div callout keeps its blank body lines');
+} else {
+  failures += 1;
+  console.log(`FAIL a fenced-Div callout keeps its blank body lines\n     ${JSON.stringify(divShape)}`);
+}
+
 // A deterministic walk through a document with the constructs that span lines,
 // so the boundaries move in combinations a hand-written list would miss.
 let seed = 20260922;

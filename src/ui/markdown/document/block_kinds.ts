@@ -14,6 +14,8 @@
  */
 
 export type BlockKind =
+  | 'quote'
+  | 'fencedDiv'
   | 'frontmatter'
   | 'fencedCode'
   | 'indentedCode'
@@ -69,6 +71,11 @@ export function isFenced(kind: BlockKind): boolean {
     kind === 'displayMath' ||
     kind === 'equation'
   );
+}
+
+/** Whether this block is a quote container that the Enter rules may edit. */
+export function isQuoteLike(kind: BlockKind): boolean {
+  return kind === 'quote';
 }
 
 /**

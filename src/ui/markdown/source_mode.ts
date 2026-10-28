@@ -39,6 +39,7 @@ import { type MarkdownBlock } from './document/blocks';
 import { hasSourceMode } from './document/block_kinds';;
 import { shiftOffset, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
+import { quoteNeedsSourceAt } from './syntax/quote_edits';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;
@@ -100,7 +101,40 @@ export function setShownRange(range: { from: number; to: number } | null): boole
 
 /** Whether this block is one that shows its own text. */
 export function isSourceBlock(block: MarkdownBlock): boolean {
-  return hasSourceMode(block.kind) && shownSourceWithinBlock(block) !== null;
+  if (!blockCanShowSource(block) || shownSourceWithinBlock(block) === null) {
+    return false;
+  }
+  if (hasSourceMode(block.kind)) {
+    return true;
+  }
+  // A quote or fenced Div also holds inline sources such as a footnote label.
+  // Revealing one of those must leave the container rendered; only the
+  // container's complete source range replaces it.
+  return shownRange?.from === block.charStart && shownRange.to === block.charEnd;
+}
+
+/** Whether this block kind can be built as its own complete source. */
+function blockCanShowSource(block: MarkdownBlock): boolean {
+  return (
+    hasSourceMode(block.kind) ||
+    block.kind === 'quote' ||
+    block.kind === 'fencedDiv'
+  );
+}
+
+/** Whether the position inside this block needs the complete block source. */
+export function blockSourceAt(block: MarkdownBlock, offset: number): boolean {
+  if (hasSourceMode(block.kind)) {
+    return true;
+  }
+  if (block.kind !== 'quote' && block.kind !== 'fencedDiv') {
+    return false;
+  }
+  if (block.kind === 'fencedDiv') {
+    return true;
+  }
+  const relative = Math.min(Math.max(0, offset - block.charStart), block.text.length);
+  return quoteNeedsSourceAt(block.text, relative);
 }
 
 /**

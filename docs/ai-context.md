@@ -669,6 +669,32 @@ namespaced `yilist` object counter and native labels/references, with
 `\yiListNumber` its base format. The default fixture and the caption, crossref,
 and export probes hold the feature.
 
+**A callout is either a GitHub alert blockquote or an attributed Pandoc fenced
+Div.** `syntax/callouts.ts` owns both grammars, exact source ranges, five
+fixed English built-in titles, custom Div titles and offset-preserving parser
+normalisation. `plugins/remark-callouts.ts` converts both forms to one
+positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
+draws the rendered panel, and `nodes/quote_source.ts` exposes exact block
+source while editing for both ordinary quotes and callouts, including escaped
+markers, physical blank lines and raw child delimiters that a rendering cannot
+give an exact caret. `syntax/quote_edits.ts` and `syntax/callout_body.ts`
+implement the shared quote rule: Enter adds two fully prefixed lines, a second
+Enter exits exactly one level, blank quote lines delete as physical lines,
+typing never invents a delimiter space, child blocks keep their own Enter
+semantics with every inserted line prefixed, and an empty callout's invisible
+body anchor is reachable by Left or Right and materialised only on typing. An
+empty list item exits to the quote/callout body as one block-relative edit, and
+ordinary quotes render with a two-sided inset and one oversized opening mark
+instead of the typography plugin's side rule and paired quote glyphs.
+A typed `:::` creates a closed Note Div and opens
+`editing/callout_kind_picker.ts`; a Div body inserts one newline per Enter and
+accepts repeated blank lines with the caret left on the newest.
+`ui/export/callout_rewrites.ts` lowers both authoring forms to one semantic
+`.callout` / `.callout-<kind>` / `.callout-title` Div before all overlapping
+source rewrites, so template Lua filters receive one stable AST shape.
+`callout-rendering.js`, `callout-empty-navigation.js`, `quote-enter.js`, `quote-list-enter.js`, the
+default-fixture probe, and the export/filter probes hold the feature.
+
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
 `syntax/code_fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/listings.ts`
 creates an ID/caption listing block, while `create_block.ts` keeps the code body editable and

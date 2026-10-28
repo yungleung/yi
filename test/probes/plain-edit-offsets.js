@@ -49,7 +49,7 @@
       )
       .map((element) => {
         const tag = Number(element.dataset.textFrom ?? element.dataset.sourceFrom);
-        const holds = element.textContent;
+        const holds = element.textContent.replace(/\u00a0/g, ' ');
         return {
           tag,
           holds,

@@ -42,11 +42,13 @@ must have pdfLaTeX and the standard TeX packages loaded by `rho.cls`, including
 outside Yi with `rho.bib` and `ieee.csl` named explicitly when reproducing the
 article.
 
-Markdown blockquotes become the class's green **Note** callout. Fenced code,
-figures, tables, footnotes, mathematics and citations use Pandoc's ordinary
-Markdown output rather than template-specific syntax. `table.lua` turns the
-ordinary Markdown table into a full-width `table*` because `longtable` cannot
-run in this two-column class.
+Markdown blockquotes become the class's green **Note** callout. Yi callouts
+arrive as semantic `.callout` Divs; `callout.lua` demonstrates how a package
+can rewrite their title and body while leaving ordinary Pandoc output alone.
+Fenced code, figures, tables, footnotes, mathematics and citations use
+Pandoc's ordinary Markdown output rather than template-specific syntax.
+`table.lua` turns the ordinary Markdown table into a full-width `table*`
+because `longtable` cannot run in this two-column class.
 
 Use **Test PDF** in the package editor for the short Pandoc-to-pdfLaTeX path,
 or export `example.md` as PDF to inspect the complete research article.

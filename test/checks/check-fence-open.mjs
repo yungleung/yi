@@ -132,6 +132,16 @@ check(
   '[$$\n\n$$]{}\n\n'
 );
 
+// A fenced-Div callout opens paired, on its Note kind, which the editor may then change.
+const calloutDiv = typed('text\n\n::', 9, ':');
+check(
+  'typing `:::` opens a paired fenced-Div callout',
+  calloutDiv.text,
+  'text\n\n::: {.callout .callout-note}\n\n:::\n\n'
+);
+check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n::: {.callout .callout-note}\n'.length);
+check('with the fenced-Div kind', calloutDiv.kind, 'fencedDiv');
+
 // What is not a delimiter line of its own stays ordinary typing.
 check('a delimiter made in front of text is not one', typed('x``', 1, '`').kind, null);
 check('a delimiter typed over a selection is not one', typed('``', 0, '`').kind, null);

@@ -7,7 +7,8 @@
  * and `table_edits.ts`; this module is the only part that touches the editor.
  *
  * May import: the table's raw source and pure edits (`syntax/table_source.ts`,
- * `syntax/table_edits.ts`), the caret's location (`caret/offsets.ts`) and the
+ * `syntax/table_edits.ts`), quote projection and line-prefix rules
+ * (`syntax/quote_edits.ts`), the caret's location (`caret/offsets.ts`) and the
  * editing context. Upholds: the document text is the only source of truth — a
  * cell is addressed by its name in the table's own text, never by the caret's
  * position in the rendered DOM.
@@ -16,7 +17,13 @@
 import type { MarkdownBlock } from '../document/blocks';
 import { lineSpanAt } from '../syntax/lines';
 import { caretLocation } from '../caret/offsets';
-import { cellBelow, readTableSource, rowAt, type TableSource } from '../syntax/table_source';
+import {
+  cellBelow,
+  readTableSource,
+  readTableSourceInQuote,
+  rowAt,
+  type TableSource
+} from '../syntax/table_source';
 import {
   alignColumn,
   clearCell,
@@ -35,6 +42,11 @@ import {
 } from '../syntax/table_edits';
 import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
+import {
+  prefixInsertedBreaks,
+  projectQuoteSource,
+  quoteLineAt
+} from '../syntax/quote_edits';
 
 export interface TableTarget {
   /** The 1-based first line of the table's block. */
@@ -118,6 +130,31 @@ export function insertTable(
   const firstCell = readTableSource(table)?.rows[0].cells[0].contentStart ?? 0;
   const text = context.state.getText();
   const block = context.state.getBlockAtOffset(caret);
+  if (block !== null) {
+    const blockOffset = caret - block.charStart;
+    const quote = quoteLineAt(block.text, blockOffset);
+    if (quote !== null) {
+      const projected = projectQuoteSource(block.text);
+      const sourceFrom =
+        quote.content.trim() === '' ? quote.end : blockOffset;
+      const projectedFrom =
+        projected.projectedOffsets[sourceFrom] ?? projected.text.length;
+      const { leading, trailing } = blockPadding(projected.text, projectedFrom);
+      const insertion = prefixInsertedBreaks(
+        block.text.slice(quote.start, quote.prefixEnd),
+        `${leading}${table}${trailing}`,
+        leading.length + firstCell
+      );
+      applyEdit(
+        context,
+        block.charStart + sourceFrom,
+        block.charStart + sourceFrom,
+        insertion.replacement,
+        block.charStart + sourceFrom + insertion.caret
+      );
+      return true;
+    }
+  }
 
   if (block?.kind === 'blank') {
     const line = lineSpanAt(text, caret);
@@ -233,12 +270,27 @@ export function runTableCommand(
 /** The table, block and cell the caret sits in, or null. */
 function caretTable(
   context: EditorContext
-): { source: TableSource; block: MarkdownBlock; row: number; column: number } | null {
+): {
+  source: TableSource;
+  block: MarkdownBlock;
+  row: number;
+  column: number;
+  quotePrefix: string | null;
+} | null {
   const location = caretLocation(context.state);
   if (!location) {
     return null;
   }
-  const source = readTableSource(location.block.text, location.blockOffset);
+  const quote = quoteLineAt(location.block.text, location.blockOffset);
+  const quotePrefix =
+    quote === null
+      ? null
+      : location.block.text.slice(quote.start, quote.prefixEnd).trimEnd();
+  const source =
+    readTableSource(location.block.text, location.blockOffset) ??
+    (quotePrefix === null
+      ? null
+      : readTableSourceInQuote(location.block.text, location.blockOffset));
   if (!source) {
     return null;
   }
@@ -248,7 +300,15 @@ function caretTable(
       (candidate) =>
         location.blockOffset >= candidate.innerStart && location.blockOffset <= candidate.innerEnd
     );
-  return cell ? { source, block: location.block, row: cell.row, column: cell.column } : null;
+  return cell
+    ? {
+        source,
+        block: location.block,
+        row: cell.row,
+        column: cell.column,
+        quotePrefix
+      }
+    : null;
 }
 
 /** Whether the caret sits inside a table cell. */
@@ -274,7 +334,7 @@ export function continueTableDown(context: EditorContext): boolean {
   if (below) {
     return restoreCaret(context, found.block.charStart + below.contentStart);
   }
-  return leaveTableBelow(context, found.block);
+  return leaveTableBelow(context, found.block, found.source, found.quotePrefix);
 }
 
 /**
@@ -290,14 +350,30 @@ export function continueTableDown(context: EditorContext): boolean {
  * paragraph after the table is, rather than by counting characters: the line
  * the author sees is the one the caret has to land on.
  */
-function leaveTableBelow(context: EditorContext, block: MarkdownBlock): boolean {
-  const rows = readTableSource(block.text)?.rows;
+function leaveTableBelow(
+  context: EditorContext,
+  block: MarkdownBlock,
+  source: TableSource,
+  quotePrefix: string | null
+): boolean {
+  const rows = source.rows;
   const lastRow = rows?.[rows.length - 1];
   if (!lastRow) {
     return false;
   }
   const after = block.charStart + lastRow.end;
   const text = context.state.getText();
+  if (quotePrefix !== null) {
+    const nextLineStart = after + 1;
+    const nextLineEnd = text.indexOf('\n', nextLineStart);
+    const nextLine = text.slice(nextLineStart, nextLineEnd < 0 ? text.length : nextLineEnd);
+    if (text[after] === '\n' && nextLine.trimEnd() === quotePrefix) {
+      return restoreCaret(context, nextLineStart + quotePrefix.length);
+    }
+    const insertion = `\n${quotePrefix}`;
+    applyEdit(context, after, after, insertion, after + insertion.length);
+    return true;
+  }
   const run = /^\n+/.exec(text.slice(after))?.[0].length ?? 0;
   const endsTheDocument = text.slice(after + run) === '';
   const neededRun = endsTheDocument ? 2 : 3;

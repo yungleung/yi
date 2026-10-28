@@ -11,6 +11,8 @@
  * Block rules:
  * - `frontmatter`: a `---` fence at the very start of the document, through its
  *   closing `---` or `...`;
+ * - `quote`: one contiguous stack of lines carrying blockquote markers;
+ * - `fencedDiv`: a callout-bearing Pandoc fenced Div, through its closing fence;
  * - `fencedCode`: an opening fence through the closing fence (blank lines
  *   are allowed inside);
  * - `displayMath`: `$$` … `$$` (blank lines are allowed inside);
@@ -43,6 +45,7 @@ import { isTableCaptionLine } from '../syntax/table_captions';
 import { listCaptionLine } from '../syntax/list_captions';
 import { readTableSource } from '../syntax/table_source';
 import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
+import { readCallout } from '../syntax/callouts';
 import { BlockIndex, type BlockEntry } from './block_index';
 import { isRawRendered, type BlockKind } from './block_kinds';
 import type { DocumentEdit } from './history';
@@ -546,6 +549,40 @@ function* blocksFrom(
       continue;
     }
 
+    // Blockquotes carry Markdown container prefixes that cannot be split into
+    // ordinary paragraphs: quoted blank lines (`>`) belong to the same quote,
+    // and an ordinary blank line without the carrier ends it.
+    if (isQuoteCarrier(first.text)) {
+      kind = 'quote';
+      while (j < lines.length && isQuoteCarrier(lines[j].text)) {
+        lineEnd = lines[j].number;
+        charEnd = lines[j].end;
+        j += 1;
+      }
+      yield makeBlock(kind, text, lineStart, lineEnd, charStart, charEnd);
+      i = j;
+      continue;
+    }
+
+    // A callout-bearing fenced Div must be one block even when its body has
+    // ordinary blank lines. `readCallout` has already proved that every nested
+    // fence closes for the source after this line.
+    if (first.text.includes(':::')) {
+      const callout = readCallout(text.slice(charStart));
+      if (callout?.form === 'div' && callout.to > 0) {
+        const end = charStart + callout.to;
+        let close = i;
+        while (close < lines.length && lines[close].end <= end) {
+          lineEnd = lines[close].number;
+          charEnd = lines[close].end;
+          close += 1;
+        }
+        yield makeBlock('fencedDiv', text, lineStart, lineEnd, charStart, charEnd);
+        i = close;
+        continue;
+      }
+    }
+
     // A run of consecutive non-blank lines — which stops before a fence or a display formula.
     //
     // Both may interrupt a paragraph, and markdown reads them as blocks when they do (`text\n```\n`
@@ -737,6 +774,11 @@ function makeBlock(
   charEnd: number
 ): MarkdownBlock {
   return { kind, lineStart, lineEnd, charStart, charEnd, text: text.slice(charStart, charEnd) };
+}
+
+/** Whether a line carries one blockquote level. */
+function isQuoteCarrier(line: string): boolean {
+  return /^ {0,3}>/.test(line);
 }
 
 /**

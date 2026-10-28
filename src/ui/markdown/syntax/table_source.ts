@@ -10,15 +10,18 @@
  * what remark-gfm parsed: a cell boundary is any unescaped `|` (including one
  * inside inline code), and rows are not padded to the header's column count.
  *
- * A table inside a blockquote or a list item is not modelled: those lines carry
- * a marker (`> `, `- `) that would have to be stripped from every line first.
- * `readTableSource` returns null for them, so table edits simply do not apply
- * where the model cannot be trusted.
+ * A table inside a list item is not modelled: its lines carry a marker that
+ * would have to be stripped first. `readTableSource` also refuses quote-carried
+ * lines; `readTableSourceInQuote` is the explicit projection for a table whose
+ * only carrier is one or more `>` levels. Other callers do not silently treat a
+ * marked line as a table.
  *
- * May import: nothing — the table's slice of raw text is passed in. Upholds: one
- * fact about markdown syntax has one home, and this is the home of the table's
- * source model: cell spans, alignment, and which cell holds a given offset.
+ * May import: the quote-carrier grammar. Upholds: one fact about markdown
+ * syntax has one home, and this is the home of the table's source model: cell
+ * spans, alignment, and which cell holds a given offset.
  */
+
+import { quoteLineAt } from './quote_edits';
 
 export type ColumnAlign = 'left' | 'center' | 'right' | null;
 
@@ -245,6 +248,92 @@ export function readTableSource(text: string, at?: number): TableSource | null {
     delimiter: { start: spans[header + 1].start, end: spans[header + 1].end },
     columns: delimiterRanges.length,
     align
+  };
+}
+
+/**
+ * A table inside a quote, with every returned offset still naming the original
+ * quote-prefixed block. The table grammar reads a carrier-stripped projection;
+ * only the quote carrier is removed.
+ */
+export function readTableSourceInQuote(text: string, at?: number): TableSource | null {
+  const projected = projectQuoteCarriers(text);
+  if (projected === null) {
+    return null;
+  }
+  const source = readTableSource(
+    projected.text,
+    at === undefined ? undefined : projected.toProjected(at)
+  );
+  if (source === null) {
+    return null;
+  }
+  return {
+    ...source,
+    from: projected.toOriginal(source.from),
+    to: projected.toOriginal(source.to),
+    delimiter: {
+      start: projected.toOriginal(source.delimiter.start),
+      end: projected.toOriginal(source.delimiter.end)
+    },
+    rows: source.rows.map((row) => ({
+      ...row,
+      start: projected.toOriginal(row.start),
+      end: projected.toOriginal(row.end),
+      cells: row.cells.map((cell) => ({
+        ...cell,
+        contentStart: projected.toOriginal(cell.contentStart),
+        innerStart: projected.toOriginal(cell.innerStart),
+        innerEnd: projected.toOriginal(cell.innerEnd)
+      }))
+    }))
+  };
+}
+
+/** A quote-carrier-free copy of text, with offset maps in both directions. */
+function projectQuoteCarriers(text: string): {
+  text: string;
+  toProjected(offset: number): number;
+  toOriginal(offset: number): number;
+} | null {
+  const spans = lineSpans(text);
+  const originalToProjected = new Array<number>(text.length + 1).fill(0);
+  const projectedToOriginal: number[] = [];
+  let projected = '';
+  let sawQuote = false;
+
+  for (const span of spans) {
+    const quote = quoteLineAt(text, span.start);
+    if (quote === null) {
+      return null;
+    }
+    sawQuote = true;
+    for (let at = span.start; at <= quote.prefixEnd; at += 1) {
+      originalToProjected[at] = projected.length;
+    }
+    for (let at = quote.prefixEnd; at < span.end; at += 1) {
+      originalToProjected[at] = projected.length;
+      projectedToOriginal[projected.length] = at;
+      projected += text[at];
+    }
+    originalToProjected[span.end] = projected.length;
+    projectedToOriginal[projected.length] = span.end;
+    if (span.end < text.length) {
+      projectedToOriginal[projected.length] = span.end;
+      projected += '\n';
+      originalToProjected[span.end + 1] = projected.length;
+    }
+  }
+
+  if (!sawQuote) {
+    return null;
+  }
+  return {
+    text: projected,
+    toProjected: (offset) =>
+      originalToProjected[Math.max(0, Math.min(offset, text.length))] ?? projected.length,
+    toOriginal: (offset) =>
+      projectedToOriginal[Math.max(0, Math.min(offset, projected.length))] ?? text.length
   };
 }
 

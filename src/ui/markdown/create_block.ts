@@ -16,6 +16,8 @@ import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
 import { FenceText, type FenceTextStyle } from './nodes/fence_text';
 import { Equation, EquationSource } from './nodes/equation';
+import { QuoteSourceView } from './nodes/quote_source';
+import { CalloutSourceView } from './nodes/callout_source';
 import { Caption } from './nodes/caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
@@ -27,6 +29,7 @@ import {
   readEquationBlockSource
 } from './syntax/equation_blocks';
 import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code_fences';
+import { readCallout } from './syntax/callouts';
 import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.
@@ -55,6 +58,7 @@ class BlockView implements BlockComponent {
 
   constructor(node: BlockNode, children: RootContent[]) {
     this.node = node;
+    const callout = readCallout(node.text);
     // The block is built with itself named as the one being built, so a node
     // inside it can tell whether its own source is the one being shown (see
     // `source_mode.ts`).
@@ -64,10 +68,10 @@ class BlockView implements BlockComponent {
         : node.kind === 'equation'
           ? this.renderEquation(node)
         : isSourceBlock(node)
-          ? this.renderSource(node)
+          ? this.renderSource(node, callout)
           : hasBodyView(node.kind)
             ? this.renderFenceBody(node)
-            : this.renderParsed(node, children)
+            : this.renderParsed(node, children, callout)
     );
   }
 
@@ -76,7 +80,7 @@ class BlockView implements BlockComponent {
     const source = readEquationBlockSource(node.text);
     const element = this.container(node);
     if (source === null) {
-      return this.renderParsed(node, []);
+      return this.renderParsed(node, [], null);
     }
     element.classList.add('markdown-equation-block');
     if (source.id !== null) {
@@ -106,9 +110,18 @@ class BlockView implements BlockComponent {
    * a formula's KaTeX has no characters to aim at, and the other two hide the lines a character
    * typed at the body's edge would land on (see `nodes/fence_text.ts`).
    */
-  private renderSource(node: BlockNode): HTMLElement {
+  private renderSource(node: BlockNode, callout: ReturnType<typeof readCallout>): HTMLElement {
     const kind = fenceKind(node);
     const element = this.container(node);
+    if (callout !== null) {
+      element.classList.add('markdown-callout-block');
+      element.appendChild(new CalloutSourceView(node).element);
+      return element;
+    }
+    if (node.kind === 'quote') {
+      element.appendChild(new QuoteSourceView(node).element);
+      return element;
+    }
     this.markListing(element, node);
     element.appendChild(
       new FenceText(
@@ -156,8 +169,15 @@ class BlockView implements BlockComponent {
     return element;
   }
 
-  private renderParsed(node: BlockNode, children: RootContent[]): HTMLElement {
+  private renderParsed(
+    node: BlockNode,
+    children: RootContent[],
+    callout: ReturnType<typeof readCallout>
+  ): HTMLElement {
     const element = this.container(node);
+    if (callout !== null) {
+      element.classList.add('markdown-callout-block');
+    }
     // The heading's level marker sits outside its own content box. The block owns that gutter so
     // content-visibility does not clip the marker or its hover target (`styles.css`).
     if (children.some((child) => child.type === 'heading')) {

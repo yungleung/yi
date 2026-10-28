@@ -59,7 +59,8 @@
     {
       name: 'a blockquote',
       doc: '> quote text[^1] here\n>\n> [^1]: the note in the quote\n',
-      words: 'the note in the quote'
+      words: 'the note in the quote',
+      wholeQuote: true
     }
   ];
 
@@ -71,7 +72,10 @@
     const block = note?.parentElement?.closest('.markdown-block') ?? null;
     check(
       `${shape.name}: a cmd-click lands the caret at the start of the note's own text`,
-      landed !== null && note !== null && landed.node === note && landed.offset === 0,
+      landed !== null &&
+        note !== null &&
+        landed.node === note &&
+        landed.offset === (shape.wholeQuote ? shape.doc.indexOf(shape.words) : 0),
       landed ? { text: landed.text?.slice(0, 24), offset: landed.offset } : null
     );
     check(
@@ -79,24 +83,34 @@
       block !== null && inView(block),
       block ? { inView: inView(block) } : null
     );
-    check(
-      `${shape.name}: and it left the label drawn, not shown as a source`,
-      label()?.textContent === '[1]' && !label().classList.contains('markdown-footnote-source'),
-      label() ? `${label().tagName} ${label().textContent}` : null
-    );
+    if (shape.wholeQuote) {
+      check(
+        `${shape.name}: the complete quote source is the editing surface`,
+        t.prose().querySelector('.markdown-quote-source')?.textContent === shape.doc.trimEnd() &&
+          label() === null,
+        t.prose().querySelector('.markdown-quote-source')?.textContent ?? null
+      );
+    } else {
+      check(
+        `${shape.name}: and it left the label drawn, not shown as a source`,
+        label()?.textContent === '[1]' &&
+          !label()?.classList.contains('markdown-footnote-source'),
+        label() ? `${label().tagName} ${label().textContent}` : null
+      );
 
-    await click(label(), { metaKey: true });
-    const back = caret();
-    const markerBox = marker()?.getBoundingClientRect() ?? null;
-    const caretBox = t.caretRect();
-    check(
-      `${shape.name}: and a cmd-click on the label goes back to the marker`,
-      caretBox !== null &&
-        markerBox !== null &&
-        caretBox.y >= markerBox.top - 6 &&
-        caretBox.y <= markerBox.bottom + 6,
-      { caret: caretBox, marker: markerBox ? t.rectOf(marker()) : null, back: back?.text?.slice(0, 12) }
-    );
+      await click(label(), { metaKey: true });
+      const back = caret();
+      const markerBox = marker()?.getBoundingClientRect() ?? null;
+      const caretBox = t.caretRect();
+      check(
+        `${shape.name}: and a cmd-click on the label goes back to the marker`,
+        caretBox !== null &&
+          markerBox !== null &&
+          caretBox.y >= markerBox.top - 6 &&
+          caretBox.y <= markerBox.bottom + 6,
+        { caret: caretBox, marker: markerBox ? t.rectOf(marker()) : null, back: back?.text?.slice(0, 12) }
+      );
+    }
     check(
       `${shape.name}: leaving the document untouched`,
       (await t.raw()) === shape.doc,

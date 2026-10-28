@@ -27,12 +27,14 @@ import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 import { proseRoot } from './selection';
 import { chooseLanguage } from './language_picker';
+import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
+import { readCallout } from '../syntax/callouts';
 
 /** The blocks a typed delimiter opens. */
 export type FenceOpenKind = Extract<
   BlockKind,
-  'frontmatter' | 'fencedCode' | 'displayMath' | 'equation'
+  'frontmatter' | 'fencedCode' | 'displayMath' | 'equation' | 'fencedDiv'
 >;
 
 /** What typing the last character of a delimiter line writes, in the document's own offsets. */
@@ -82,6 +84,18 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
   if (caret !== line.end) {
     return null;
   }
+  if (/^ {0,3}:{3}$/.test(completed)) {
+    const { leading } = blockPadding(text, line.start);
+    const { trailing } = blockPadding(text, caret);
+    const opening = '::: {.callout .callout-note}';
+    return {
+      kind: 'fencedDiv',
+      from: line.start,
+      to: line.end,
+      replacement: `${leading}${opening}\n\n:::${trailing}`,
+      caret: line.start + leading.length + opening.length + 1
+    };
+  }
   const delimiter = soleDelimiter(`${text.slice(line.start, line.end)}${typed}`);
   if (delimiter === null || delimiter[0] !== typed[0]) {
     return null;
@@ -110,6 +124,8 @@ export function insertFenceOpen(context: EditorContext, at: number, typed: strin
   applyEdit(context, write.from, write.to, write.replacement, write.caret, 'typing');
   if (write.kind === 'fencedCode') {
     askForLanguage(context);
+  } else if (write.kind === 'fencedDiv') {
+    askForCalloutKind(context);
   }
   return true;
 }
@@ -130,5 +146,20 @@ function askForLanguage(context: EditorContext): void {
   );
   if (label) {
     chooseLanguage(label, '', block.lineStart);
+  }
+}
+
+/** Opens the callout-kind list beside the source of the Div just created. */
+function askForCalloutKind(context: EditorContext): void {
+  const caret = caretOffset(context);
+  const block = caret === null ? null : context.state.getBlockAtOffset(caret);
+  if (block === null) {
+    return;
+  }
+  const source = proseRoot(context)?.querySelector<HTMLElement>(
+    `.markdown-block[data-line-start="${block.lineStart}"] .markdown-callout-source`
+  );
+  if (source) {
+    chooseCalloutKind(source, readCallout(block.text)?.kind ?? 'note', block.lineStart);
   }
 }

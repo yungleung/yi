@@ -193,6 +193,122 @@ check(
   ['descriptionlist']
 );
 
+const directCalloutSource = '> [!NOTE]\n> First\n>\n> Second\n';
+const directCallout = parseMarkdown(directCalloutSource).children[0];
+check('a direct GitHub alert becomes a callout node', directCallout.type, 'callout');
+check(
+  'the direct callout keeps two body paragraphs',
+  directCallout.children.map((node) => node.type),
+  ['paragraph', 'paragraph']
+);
+check(
+  'the marker is not direct callout body text',
+  directCallout.children[0].children[0].value,
+  'First'
+);
+check(
+  'the direct callout serializes exactly',
+  serializeMarkdown(parseMarkdown(directCalloutSource)),
+  directCalloutSource
+);
+
+const joinedCalloutSource = '> [!TIP]\n> Joined body\n';
+const joinedCallout = parseMarkdown(joinedCalloutSource).children[0];
+check('a marker and body may share one parsed paragraph', joinedCallout.type, 'callout');
+check(
+  'the joined body loses only the marker and soft break',
+  joinedCallout.children[0].children[0].value,
+  'Joined body'
+);
+check(
+  'the joined body keeps its source offset',
+  joinedCallout.children[0].position.start.offset,
+  joinedCallout.callout.bodyFrom
+);
+
+const customDivSource =
+  '::: {.callout .callout-definition title="Defined"}\n' +
+  'First\n\n' +
+  'Second\n' +
+  ':::\n';
+const customDiv = parseMarkdown(customDivSource).children[0];
+check('a fenced-Div callout becomes a callout node', customDiv.type, 'callout');
+check('the custom title is parsed', customDiv.callout?.title, 'Defined');
+check(
+  'the custom callout serializes exactly',
+  serializeMarkdown(parseMarkdown(customDivSource)),
+  customDivSource
+);
+
+const nestedCallout = parseMarkdown('> > [!TIP]\n> > Nested\n');
+check('the outer container remains a blockquote', nestedCallout.children[0].type, 'blockquote');
+check('the inner container becomes a callout', nestedCallout.children[0].children[0].type, 'callout');
+
+const nestedBeforeOuter = parseMarkdown(
+  '> > [!TIP]\n> > Nested\n>\n> Outer after\n'
+);
+check(
+  'a nested callout ends before later outer quote prose',
+  nestedBeforeOuter.children[0].children.map((node) => node.type),
+  ['callout', 'paragraph']
+);
+
+const calloutListSource =
+  '> [!NOTE]\n' +
+  '> - First\n' +
+  '> - Second\n' +
+  '> : Steps {#list:steps}\n';
+const calloutList = parseMarkdown(calloutListSource).children[0].children[0];
+check('a captioned list stays a list inside a callout', calloutList.type, 'list');
+check('the callout list keeps its caption', calloutList.listCaption?.id, 'list:steps');
+check(
+  'the callout list caption keeps one list node',
+  parseMarkdown(calloutListSource).children[0].children.map((node) => node.type),
+  ['list']
+);
+check(
+  'a callout list serializes exactly',
+  serializeMarkdown(parseMarkdown(calloutListSource)),
+  calloutListSource
+);
+
+const calloutTableSource =
+  '> [!NOTE]\n' +
+  '> | A |\n' +
+  '> | --- |\n' +
+  '> | 1 |\n' +
+  '> : Results {#tbl:results}\n';
+const calloutTable = parseMarkdown(calloutTableSource).children[0].children[0];
+check('a captioned table stays a table inside a callout', calloutTable.type, 'table');
+check('the callout table keeps its caption', calloutTable.tableCaption?.id, 'tbl:results');
+check(
+  'the callout table caption keeps one table node',
+  parseMarkdown(calloutTableSource).children[0].children.map((node) => node.type),
+  ['table']
+);
+check(
+  'a callout table serializes exactly',
+  serializeMarkdown(parseMarkdown(calloutTableSource)),
+  calloutTableSource
+);
+
+const unknownCallout = parseMarkdown('> [!UNKNOWN]\n> ordinary quote\n');
+check('an unknown marker remains a blockquote', unknownCallout.children[0].type, 'blockquote');
+
+const literalDirective = ':plain ordinary text\n';
+check(
+  'directive-looking prose remains ordinary text',
+  serializeMarkdown(parseMarkdown(literalDirective)),
+  literalDirective
+);
+
+const genericDiv = '::: generic\nordinary body\n:::\n';
+check(
+  'a non-callout fenced Div remains literal source',
+  serializeMarkdown(parseMarkdown(genericDiv)),
+  genericDiv
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

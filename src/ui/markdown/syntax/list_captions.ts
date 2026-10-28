@@ -139,7 +139,8 @@ export function listCaptionsForParsers(markdown: string): string {
       index += 1;
       continue;
     }
-    const marker = listMarker(line.text);
+    const listed = listedLine(line.text);
+    const marker = listMarker(listed.content);
     if (marker === null) {
       index += 1;
       continue;
@@ -148,13 +149,19 @@ export function listCaptionsForParsers(markdown: string): string {
     let scan = index + 1;
     while (scan < lines.length) {
       const current = lines[scan];
-      if (current.text.trim() === '') {
+      const currentLine = listedLine(current.text);
+      if (currentLine.prefix !== listed.prefix) {
+        break;
+      }
+      if (currentLine.content.trim() === '') {
         const next = lines[scan + 1];
+        const nextLine = next === undefined ? null : listedLine(next.text);
         if (
           next === undefined ||
-          !next.text.startsWith(indent) ||
-          (listMarker(next.text) === null && !/^\s{2,}/.test(next.text)) &&
-            listCaptionLine(next.text.slice(indent.length), 0) === null
+          nextLine?.prefix !== listed.prefix ||
+          !nextLine.content.startsWith(indent) ||
+          (listMarker(nextLine.content) === null && !/^\s{2,}/.test(nextLine.content)) &&
+            listCaptionLine(nextLine.content.slice(indent.length), 0) === null
         ) {
           break;
         }
@@ -162,10 +169,10 @@ export function listCaptionsForParsers(markdown: string): string {
         continue;
       }
       if (
-        current.text.startsWith(indent) &&
-        listCaptionLine(current.text.slice(indent.length), 0) !== null
+        currentLine.content.startsWith(indent) &&
+        listCaptionLine(currentLine.content.slice(indent.length), 0) !== null
       ) {
-        const from = current.start;
+        const from = current.start + currentLine.prefix.length;
         masks.push({ from, to: current.end });
         break;
       }
@@ -188,6 +195,12 @@ export function listCaptionsForParsers(markdown: string): string {
   }
   parts.push(markdown.slice(copied));
   return parts.join('');
+}
+
+/** A line's blockquote carrier and the Markdown content inside it. */
+function listedLine(line: string): { prefix: string; content: string } {
+  const prefix = /^ {0,3}(?:> ?)+/.exec(line)?.[0] ?? '';
+  return { prefix, content: line.slice(prefix.length) };
 }
 
 /** One caption line at the list's exact base indentation. */

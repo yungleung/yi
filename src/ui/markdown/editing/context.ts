@@ -25,19 +25,28 @@ import {
   scheduleNativeSelection,
   setSelectionRange
 } from '../caret/caret';
-import { moveShownSource, setShownRange, shownSourceHeld, withHeldShownSource } from '../source_mode';
+import {
+  blockSourceAt,
+  moveShownSource,
+  setShownRange,
+  shownSourceHeld,
+  withHeldShownSource
+} from '../source_mode';
 import { documentOffsetAt } from '../caret/offsets';
 import { domPositionAtOffset } from '../caret/dom_position';
 import { showsSource } from '../registry';
 import { markerShape } from '../syntax/footnotes';
 import { isInPlaceTextEdit, isPlainEdit } from '../syntax/plain_edit';
+import {
+  quotePrefixAt,
+  type QuoteChildContext
+} from '../syntax/quote_edits';
 import { nodeShape } from '../syntax/node_shape';
 import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
 import type { EditKind, EditMark } from '../document/history';
 import type { RootContent } from 'mdast';
 import type { AstHeading } from '../ast';
-import { hasSourceMode } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import { editsId } from './id_lock';
@@ -100,6 +109,57 @@ export function caretOffset(context: EditorContext): number | null {
   }
   const start = documentOffsetAt(context.state, range.startContainer, range.startOffset);
   return start ? start.offset : null;
+}
+
+/** The active quote depth and child construct at a document offset. */
+export function quoteContextAt(
+  state: MarkdownEditorState,
+  block: MarkdownBlock,
+  offset: number
+): { depth: number; child: QuoteChildContext; prefix: string } | null {
+  const relative = Math.min(Math.max(0, offset - block.charStart), block.text.length);
+  const line = quotePrefixAt(block.text, relative);
+  if (line === null) {
+    return null;
+  }
+
+  let child: QuoteChildContext = 'paragraph';
+  let ownerEnd: number | null = null;
+  const visit = (nodes: readonly RootContent[]): void => {
+    for (const node of nodes) {
+      const position = (node as {
+        position?: { start?: { offset?: number }; end?: { offset?: number } };
+      }).position;
+      const start = position?.start?.offset;
+      const end = position?.end?.offset;
+      if (start === undefined || end === undefined || relative < start || relative > end) {
+        continue;
+      }
+      if (node.type === 'code') {
+        child = 'code';
+        ownerEnd = end;
+      } else if (node.type === 'math') {
+        child = 'equation';
+        ownerEnd = end;
+      } else if (node.type === 'table') {
+        child = 'table';
+        ownerEnd = end;
+      } else if (node.type === 'listItem') {
+        child = 'list';
+        ownerEnd = null;
+      }
+      const children = (node as { children?: RootContent[] }).children;
+      if (Array.isArray(children)) {
+        visit(children);
+      }
+    }
+  };
+  visit(state.getBlockContent(block));
+
+  if (ownerEnd !== null && relative === ownerEnd) {
+    child = 'completed-child';
+  }
+  return { ...line, child };
 }
 
 /**
@@ -168,7 +228,7 @@ function sourceRangeAt(
   // A fenced block is the source the caret is in: its rendering is the body with the delimiters
   // hidden (`nodes/fence_text.ts`), so the text that stands in for that rendering is the block's
   // own — delimiters and all — and every offset in the block maps through it.
-  if (!selecting && hasSourceMode(block.kind)) {
+  if (!selecting && blockSourceAt(block, offset)) {
     return { from: block.charStart, to: block.charEnd };
   }
   const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);

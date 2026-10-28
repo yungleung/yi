@@ -20,7 +20,7 @@ import {
 } from './caret';
 import { caretRect } from './geometry';
 import { collectLineFragments, pickVerticalPoint, refineColumn, samplePoints } from './line_hits';
-import { CONTENT_START } from '../offset_tags';
+import { CALLOUT_BODY_ANCHOR, CONTENT_START } from '../offset_tags';
 import {
   afterNewline,
   collapsed,
@@ -267,6 +267,10 @@ function endOfPreviousText(
   offset: number,
   blocks: readonly HTMLElement[]
 ): Range | null {
+  const callout = adjacentCalloutRange(node, blocks, -1);
+  if (callout) {
+    return callout;
+  }
   // Beside a void element, the previous position is its other side.
   if (node.nodeType === Node.ELEMENT_NODE && isVoidElement(node)) {
     return rangeBefore(node as Element);
@@ -305,6 +309,10 @@ function startOfNextText(
   offset: number,
   blocks: readonly HTMLElement[]
 ): Range | null {
+  const callout = adjacentCalloutRange(node, blocks, 1);
+  if (callout) {
+    return callout;
+  }
   if (node.nodeType === Node.ELEMENT_NODE && isVoidElement(node)) {
     return rangeAfter(node as Element);
   }
@@ -326,6 +334,86 @@ function startOfNextText(
   const rect = (next as Element).getBoundingClientRect();
   const sameLine = sameLineTop(currentTop, rect.height > 0 ? rect.top : null);
   return sameLine ? rangeAfter(next as Element) : rangeBefore(next as Element);
+}
+
+/**
+ * The body position of an adjacent rendered callout.
+ *
+ * A callout title is chrome, not editable text. Moving into a callout from
+ * either side therefore targets its body: the empty-body anchor when there is
+ * no content, otherwise the nearest body text/leaf.
+ */
+function adjacentCalloutRange(
+  node: Node,
+  blocks: readonly HTMLElement[],
+  direction: -1 | 1
+): Range | null {
+  const element =
+    node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  const block = element?.closest<HTMLElement>('.markdown-block') ?? null;
+  const current = block === null ? -1 : blocks.indexOf(block);
+  if (current < 0) {
+    return null;
+  }
+  const neighbor = blocks[current + direction];
+  if (!neighbor) {
+    return null;
+  }
+
+  // The shortcut exists only when the callout body itself is the edge of the
+  // neighboring block. A block may begin with ordinary quoted prose and end
+  // with a nested callout; searching the whole block would jump over that prose.
+  const edge =
+    direction < 0
+      ? lastNavigableNodeIn(neighbor)
+      : firstNavigableNodeIn(neighbor);
+  const body = edge?.parentElement?.closest<HTMLElement>('.markdown-callout-body') ?? null;
+  if (!body) {
+    return null;
+  }
+
+  const anchor = body.querySelector<HTMLElement>(`[data-${CALLOUT_BODY_ANCHOR}]`);
+  const text = anchor
+    ? firstTextNodeIn(anchor)
+    : direction < 0
+      ? lastTextNodeIn(body)
+      : firstTextNodeIn(body);
+  if (!text) {
+    return null;
+  }
+  return collapsed(text, direction < 0 ? text.data.length : 0);
+}
+
+/** First caret-bearing content: text or a void leaf, never generated chrome. */
+function firstNavigableNodeIn(element: Element): Node | null {
+  return navigableNodeIn(element, false);
+}
+
+/** Last caret-bearing content: text or a void leaf, never generated chrome. */
+function lastNavigableNodeIn(element: Element): Node | null {
+  return navigableNodeIn(element, true);
+}
+
+/** The first or last content node below `node`, skipping generated chrome. */
+function navigableNodeIn(node: Node, reverse: boolean): Node | null {
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  if (element?.closest('[data-chrome]') ?? null) {
+    return null;
+  }
+  if (node.nodeType === Node.TEXT_NODE || (node.nodeType === Node.ELEMENT_NODE && isVoidElement(node))) {
+    return node;
+  }
+  const children = [...node.childNodes];
+  if (reverse) {
+    children.reverse();
+  }
+  for (const child of children) {
+    const found = navigableNodeIn(child, reverse);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
 }
 
 function moveVertically(

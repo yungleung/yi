@@ -34,16 +34,15 @@
     );
   };
 
-  let heading = null;
-  for (let fraction = 0.1; heading === null && fraction <= 1; fraction += 0.1) {
+  let mounted = false;
+  for (let fraction = 0.1; !mounted && fraction <= 1; fraction += 0.1) {
     t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
-    await t.sleep(100);
-    heading = [...t.prose().querySelectorAll('h2')].find(
-      (candidate) => candidate.textContent === 'List cross-references'
-    );
+    await t.sleep(150);
+    mounted =
+      t.prose().querySelector('[id="list:steps"]') !== null &&
+      t.prose().querySelector('[id="list:ordered"]') !== null;
   }
-  heading?.scrollIntoView({ block: 'start' });
-  await t.sleep(400);
+  await t.sleep(250);
 
   const captions = [...t.prose().querySelectorAll('.markdown-list-block .markdown-caption')].map(
     (caption) => caption.textContent?.replace(/\s+/g, ' ').trim() ?? ''

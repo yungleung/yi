@@ -38,7 +38,7 @@ import { shiftOffset, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
 import { sourceTextAt } from '../source_text';
 import { preserveSpaces } from '../text_spacing';
-import { FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
+import { CALLOUT_BODY_ANCHOR, FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
 
 /** The rendered text a plain edit can be written into, and where in it. */
 export interface TypedRun {
@@ -57,7 +57,15 @@ export interface TypedRun {
 }
 
 /** The attributes whose value is a raw offset within the block. */
-const MOVED_TAGS = [TEXT_FROM, SOURCE_FROM, FORMAT_FROM, FORMAT_TO, TABLE_ROW_START, TASK_SOURCE_FROM] as const;
+const MOVED_TAGS = [
+  TEXT_FROM,
+  SOURCE_FROM,
+  FORMAT_FROM,
+  FORMAT_TO,
+  TABLE_ROW_START,
+  TASK_SOURCE_FROM,
+  CALLOUT_BODY_ANCHOR
+] as const;
 
 /** The elements that carry one of them. */
 const TAGGED = tagSelector(...MOVED_TAGS);
