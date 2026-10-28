@@ -62,12 +62,12 @@
   }
   check(
     'the light table border is slightly darker than its page',
-    brightness(seen.winter.border) < brightness(seen.winter.page),
+    luminance(seen.winter.border) < luminance(seen.winter.page),
     true
   );
   check(
     'the dark table border is inverted and is lighter than its page',
-    brightness(seen.dim.border) > brightness(seen.dim.page),
+    luminance(seen.dim.border) > luminance(seen.dim.page),
     true
   );
   check(
