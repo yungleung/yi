@@ -70,6 +70,15 @@ interface DivOpening {
   title: string;
 }
 
+interface DivFrame {
+  line: number;
+  quoteDepth: number;
+  fenceLength: number;
+  opening: DivOpening | null;
+  parent: DivFrame | null;
+  closed: boolean;
+}
+
 const BUILTIN_TITLES: Record<BuiltinCalloutKind, string> = {
   note: 'Note',
   tip: 'Tip',
@@ -108,6 +117,8 @@ export function calloutsForParsers(markdown: string): string {
   let frontmatter = frontmatterDelimiter(lines[0].text) !== null;
   let codeFence: string | null = null;
   let displayMath = false;
+  const frames: DivFrame[] = [];
+  const stack: DivFrame[] = [];
   const replacements: Array<{ start: number; end: number; text: string }> = [];
 
   for (const [index, line] of lines.entries()) {
@@ -148,14 +159,47 @@ export function calloutsForParsers(markdown: string): string {
       continue;
     }
 
-    const opening = readDivOpening(line);
-    if (opening === null) {
-      continue;
-    }
     const quoteDepth = quote?.depth ?? 0;
-    if (!hasDivClosing(lines, index + 1, opening.fenceLength, quoteDepth)) {
+    while (stack.length > 0 && quoteDepth < stack[stack.length - 1].quoteDepth) {
+      stack.pop();
+    }
+
+    const div = divFence(content);
+    if (div === null) {
       continue;
     }
+    const current = stack[stack.length - 1];
+    if (div.closing) {
+      if (
+        current !== undefined &&
+        quoteDepth === current.quoteDepth &&
+        div.length >= current.fenceLength
+      ) {
+        current.closed = true;
+        stack.pop();
+      }
+      continue;
+    }
+
+    const frame: DivFrame = {
+      line: index,
+      quoteDepth,
+      fenceLength: div.length,
+      opening: readDivOpening(line),
+      parent: current ?? null,
+      closed: false
+    };
+    frames.push(frame);
+    stack.push(frame);
+  }
+
+  for (const frame of frames) {
+    if (!frameIsClosed(frame) || frame.opening === null) {
+      continue;
+    }
+    const line = lines[frame.line];
+    const quote = quoteLine(line);
+    const opening = frame.opening;
     const lineOffset = quote?.prefixEnd ?? 0;
     const prefix = line.text.slice(0, lineOffset + opening.fenceStart + opening.fenceLength);
     const directive = `callout-${opening.kind}`;
@@ -176,37 +220,23 @@ export function calloutsForParsers(markdown: string): string {
   return transformed;
 }
 
-/**
- * Whether the fenced Div opened at `start - 1` has a matching close at the
- * same quote depth. Parser preparation must not turn an incomplete Div into a
- * directive that can consume the rest of the document.
- */
-function hasDivClosing(
-  lines: SourceLine[],
-  start: number,
-  fenceLength: number,
-  quoteDepth: number
-): boolean {
-  for (let index = start; index < lines.length; index += 1) {
-    const quote = quoteLine(lines[index]);
-    if (quoteDepth === 0) {
-      if (quote !== null) {
-        continue;
-      }
-    } else if (quote === null) {
+/** A fenced Div is valid only when it and every enclosing fence closed. */
+function frameIsClosed(frame: DivFrame): boolean {
+  for (let current: DivFrame | null = frame; current !== null; current = current.parent) {
+    if (!current.closed) {
       return false;
-    } else if (quote.depth < quoteDepth) {
-      return false;
-    } else if (quote.depth !== quoteDepth) {
-      continue;
-    }
-    const content = quote?.content ?? lines[index].text;
-    const close = /^\s*(:{3,})\s*$/.exec(content);
-    if (close !== null && close[1].length >= fenceLength) {
-      return true;
     }
   }
-  return false;
+  return true;
+}
+
+/** A Div opening/closing fence in line content, after any quote carrier. */
+function divFence(content: string): { length: number; closing: boolean } | null {
+  const match = /^ {0,3}(:{3,})(.*)$/.exec(content.trimEnd());
+  if (match === null) {
+    return null;
+  }
+  return { length: match[1].length, closing: match[2].trim() === '' };
 }
 
 function readAlertCallout(

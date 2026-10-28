@@ -170,6 +170,39 @@ check(
   calloutsForParsers(unclosedQuotedDiv),
   unclosedQuotedDiv
 );
+const unclosedOuterDiv =
+  '::: {.callout .callout-note}\n' +
+  ':::: {.callout .callout-tip}\n' +
+  'Inner\n' +
+  '::::\n';
+check(
+  'a nested close does not validate an unclosed outer callout',
+  calloutsForParsers(unclosedOuterDiv),
+  unclosedOuterDiv
+);
+const nestedGenericDiv =
+  '::: {.callout .callout-note}\n' +
+  ':::: {.warning}\n' +
+  'Inner\n' +
+  '::::\n' +
+  ':::\n';
+const nestedGenericParserInput = calloutsForParsers(nestedGenericDiv);
+check(
+  'a generic inner Div still contributes fence depth',
+  nestedGenericParserInput.split('\n')[0].trimEnd(),
+  ':::callout-note'
+);
+check(
+  'the generic inner opening stays literal',
+  nestedGenericParserInput.split('\n')[1],
+  ':::: {.warning}'
+);
+const quotedClosingText = '::: {.callout-note}\n> :::\nBody\n';
+check(
+  'a quoted closer does not close a top-level Div',
+  calloutsForParsers(quotedClosingText),
+  quotedClosingText
+);
 
 const quotedDiv = '> :::: {.callout .callout-tip title="Tip"}\n> Body\n> ::::\n';
 const quotedParserInput = calloutsForParsers(quotedDiv);
