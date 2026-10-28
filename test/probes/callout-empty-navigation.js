@@ -6,6 +6,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caret = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -14,16 +15,30 @@
       expected,
       pass: JSON.stringify(actual) === JSON.stringify(expected)
     });
-  const until = async (matches, key) => {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      if (matches()) {
-        return true;
-      }
-      t.key(key);
-      await t.sleep(150);
+  const clickBoundary = async (element, side) => {
+    const text = t.textNodesIn(element).find((node) => node.data.length > 0);
+    if (!text) {
+      return false;
     }
-    return matches();
+    const range = document.createRange();
+    const at = side === 'end' ? text.data.length - 1 : 0;
+    range.setStart(text, at);
+    range.setEnd(text, at + 1);
+    const box = range.getBoundingClientRect();
+    const event = {
+      bubbles: true,
+      cancelable: true,
+      clientX: side === 'end' ? box.right - 0.5 : box.left + 0.5,
+      clientY: box.top + box.height / 2
+    };
+    const target = text.parentElement;
+    target.dispatchEvent(new PointerEvent('pointerdown', event));
+    target.dispatchEvent(new PointerEvent('pointerup', event));
+    target.dispatchEvent(new MouseEvent('click', event));
+    await t.sleep(60);
+    return true;
   };
+  const source = () => t.prose().querySelector('.markdown-callout-source');
 
   const cases = [
     ['GitHub', 'Before\n\n> [!NOTE]\n\nAfter\n'],
@@ -40,11 +55,12 @@
     const before = [...t.prose().querySelectorAll('p')].find(
       (node) => node.textContent === 'Before'
     );
-    await t.click(before, 0.99);
-    await until(() => t.prose().querySelector('.markdown-callout-source') !== null, 'ArrowRight');
+    await clickBoundary(before, 'end');
+    t.key('ArrowRight');
+    await t.sleep(120);
     check(
-      `${name}: right arrow enters the empty callout`,
-      t.prose().querySelector('.markdown-callout-source') !== null,
+      `${name}: one right arrow enters the empty callout`,
+      source() !== null,
       true
     );
 
@@ -52,22 +68,53 @@
       (node) => node.textContent === 'After'
     );
     if (after) {
-      await t.click(after, 0.01);
-      await until(() => t.prose().querySelector('.markdown-callout-source') !== null, 'ArrowLeft');
+      await clickBoundary(after, 'start');
+      t.key('ArrowLeft');
+      await t.sleep(120);
     }
     check(
-      `${name}: left arrow returns to the empty callout`,
-      t.prose().querySelector('.markdown-callout-source') !== null,
+      `${name}: one left arrow returns to the empty callout`,
+      source() !== null,
       true
     );
     check(`${name}: navigation changes no source`, await t.raw(), markdown);
   }
+
+  await t.load('Before\n\n> Intro\n>\n> > [!TIP]\n\nAfter\n');
+  const beforeNested = [...t.prose().querySelectorAll('p')].find(
+    (node) => node.textContent === 'Before'
+  );
+  await clickBoundary(beforeNested, 'end');
+  t.key('ArrowRight');
+  await t.sleep(120);
+  check(
+    'navigation reaches quoted text before a nested empty callout',
+    [
+      source() === null,
+      caret.getCaretRange()?.startContainer.textContent?.includes('Intro') ?? false
+    ],
+    [true, true]
+  );
 
   await t.load('Before\n\n> [!NOTE]\n\n> [!TIP]\n\nAfter\n');
   check(
     'adjacent empty callouts keep two distinct anchors',
     t.prose().querySelectorAll('[data-callout-body-anchor]').length,
     2
+  );
+  const beforeAdjacent = [...t.prose().querySelectorAll('p')].find(
+    (node) => node.textContent === 'Before'
+  );
+  await clickBoundary(beforeAdjacent, 'end');
+  t.key('ArrowRight');
+  await t.sleep(120);
+  const firstSource = source()?.textContent ?? null;
+  t.key('ArrowRight');
+  await t.sleep(120);
+  check(
+    'adjacent empty callouts are separate navigation stops',
+    [firstSource, source()?.textContent ?? null],
+    ['> [!NOTE]', '> [!TIP]']
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

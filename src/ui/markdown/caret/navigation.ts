@@ -356,7 +356,18 @@ function adjacentCalloutRange(
     return null;
   }
   const neighbor = blocks[current + direction];
-  const body = neighbor?.querySelector<HTMLElement>('.markdown-callout-body');
+  if (!neighbor) {
+    return null;
+  }
+
+  // The shortcut exists only when the callout body itself is the edge of the
+  // neighboring block. A block may begin with ordinary quoted prose and end
+  // with a nested callout; searching the whole block would jump over that prose.
+  const edge =
+    direction < 0
+      ? lastNavigableNodeIn(neighbor)
+      : firstNavigableNodeIn(neighbor);
+  const body = edge?.parentElement?.closest<HTMLElement>('.markdown-callout-body') ?? null;
   if (!body) {
     return null;
   }
@@ -371,6 +382,38 @@ function adjacentCalloutRange(
     return null;
   }
   return collapsed(text, direction < 0 ? text.data.length : 0);
+}
+
+/** First caret-bearing content: text or a void leaf, never generated chrome. */
+function firstNavigableNodeIn(element: Element): Node | null {
+  return navigableNodeIn(element, false);
+}
+
+/** Last caret-bearing content: text or a void leaf, never generated chrome. */
+function lastNavigableNodeIn(element: Element): Node | null {
+  return navigableNodeIn(element, true);
+}
+
+/** The first or last content node below `node`, skipping generated chrome. */
+function navigableNodeIn(node: Node, reverse: boolean): Node | null {
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  if (element?.closest('[data-chrome]') ?? null) {
+    return null;
+  }
+  if (node.nodeType === Node.TEXT_NODE || (node.nodeType === Node.ELEMENT_NODE && isVoidElement(node))) {
+    return node;
+  }
+  const children = [...node.childNodes];
+  if (reverse) {
+    children.reverse();
+  }
+  for (const child of children) {
+    const found = navigableNodeIn(child, reverse);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
 }
 
 function moveVertically(
