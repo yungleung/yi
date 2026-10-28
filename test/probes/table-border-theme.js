@@ -22,9 +22,17 @@
     context.fillRect(0, 0, 1, 1);
     return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
   };
-  const brightness = (colour) => {
-    const [r, g, b] = rgb(colour);
+  const luminance = (colour) => {
+    const channel = (value) => {
+      const c = value / 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const [r, g, b] = rgb(colour).map(channel);
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (one, two) => {
+    const [high, low] = [luminance(one), luminance(two)].sort((a, b) => b - a);
+    return (high + 0.05) / (low + 0.05);
   };
   await t.load('| A | B |\n| --- | --- |\n| 1 | 2 |\n');
   const root = document.documentElement;
@@ -64,7 +72,7 @@
   );
   check(
     'the inverted dark border remains visible',
-    Math.abs(brightness(seen.dim.border) - brightness(seen.dim.page)) >= 30,
+    contrast(seen.dim.border, seen.dim.page) >= 3,
     true
   );
   return {

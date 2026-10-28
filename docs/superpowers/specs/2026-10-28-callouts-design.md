@@ -443,6 +443,10 @@ the quote or callout body. The edit replaces only the block-relative line span,
 using document offsets, so quotes and callouts after earlier text keep their
 prefixes and neighboring content intact.
 
+Inserting a table while the caret is inside a quote or GitHub-style callout
+applies the active source prefix to every table row and separator. The table
+therefore remains one child block of the container instead of terminating it.
+
 When Enter is used in the middle of a line, the text after the caret moves to
 the new quoted paragraph:
 

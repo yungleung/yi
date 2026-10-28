@@ -741,8 +741,8 @@ body {
 [data-theme="dim"] .prose table.markdown-table td {
   border-color: color-mix(
     in oklab,
-    var(--color-base-300) 55%,
-    var(--color-base-content)
+    var(--color-base-content) 70%,
+    var(--color-base-100)
   );
 }
 

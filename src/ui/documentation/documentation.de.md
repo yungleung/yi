@@ -193,6 +193,8 @@ Ein bereits sichtbares `> ` bleibt erhalten. Backspace oder Delete auf einer lee
 entfernt die ganze physische Zeile statt nur des `>`.
 Enter auf einem leeren Listeneintrag entfernt dessen Listenzeichen und hinterlässt eine normale
 Zitat- oder Callout-Zeile.
+Beim Einfügen einer Tabelle in einem Zitat oder GitHub-Callout erhalten jede Tabellenzeile und jeder
+Trenner dieselbe `>`-Kette; die Tabelle bleibt dadurch im Container.
 
 Innerhalb eines Callouts in einem eingezäunten Div fügt Enter genau einen Zeilenumbruch ein. Jedes
 weitere Enter erzeugt eine weitere Leerzeile, und der Cursor bleibt auf der neuesten Zeile. Ein

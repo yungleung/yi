@@ -187,6 +187,8 @@ fuente ya contiene el espacio visible `> `, se conserva. Backspace o Delete en u
 vacía elimina la línea física completa, no solo el carácter `>`.
 Enter sobre un elemento de lista vacío elimina su marcador y deja una línea normal del cuerpo de la
 cita o del callout.
+Al insertar una tabla dentro de una cita o callout de GitHub, cada fila y separador recibe la misma
+cadena de `>`, por lo que la tabla permanece dentro del contenedor.
 
 Dentro de un callout con Div cercado, Enter inserta exactamente un salto de línea. Cada Enter
 adicional crea otra línea vacía y el cursor se queda en la más reciente. Un Div dentro de una cita

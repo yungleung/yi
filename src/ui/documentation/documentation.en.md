@@ -662,6 +662,8 @@ Lists, tables, code fences, and equations keep their normal Enter behaviour. Eve
 line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
 one quoted empty line, because the child block already supplies the paragraph boundary.
 Enter on an empty list item removes its list marker and leaves a normal quote or callout body line.
+Inserting a table while editing a quote or GitHub-style callout prefixes every table row and separator
+with that container’s `>` chain, so the table stays inside the container.
 
 Inside a fenced-Div callout, Enter inserts exactly one newline at the caret. Every additional Enter
 adds another blank line, and the caret stays on the newest line. A quoted Div keeps its visible

@@ -7,7 +7,8 @@
  * and `table_edits.ts`; this module is the only part that touches the editor.
  *
  * May import: the table's raw source and pure edits (`syntax/table_source.ts`,
- * `syntax/table_edits.ts`), the caret's location (`caret/offsets.ts`) and the
+ * `syntax/table_edits.ts`), quote projection and line-prefix rules
+ * (`syntax/quote_edits.ts`), the caret's location (`caret/offsets.ts`) and the
  * editing context. Upholds: the document text is the only source of truth — a
  * cell is addressed by its name in the table's own text, never by the caret's
  * position in the rendered DOM.
@@ -41,7 +42,11 @@ import {
 } from '../syntax/table_edits';
 import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
-import { quoteLineAt } from '../syntax/quote_edits';
+import {
+  prefixInsertedBreaks,
+  projectQuoteSource,
+  quoteLineAt
+} from '../syntax/quote_edits';
 
 export interface TableTarget {
   /** The 1-based first line of the table's block. */
@@ -125,6 +130,31 @@ export function insertTable(
   const firstCell = readTableSource(table)?.rows[0].cells[0].contentStart ?? 0;
   const text = context.state.getText();
   const block = context.state.getBlockAtOffset(caret);
+  if (block !== null) {
+    const blockOffset = caret - block.charStart;
+    const quote = quoteLineAt(block.text, blockOffset);
+    if (quote !== null) {
+      const projected = projectQuoteSource(block.text);
+      const sourceFrom =
+        quote.content.trim() === '' ? quote.end : blockOffset;
+      const projectedFrom =
+        projected.projectedOffsets[sourceFrom] ?? projected.text.length;
+      const { leading, trailing } = blockPadding(projected.text, projectedFrom);
+      const insertion = prefixInsertedBreaks(
+        block.text.slice(quote.start, quote.prefixEnd),
+        `${leading}${table}${trailing}`,
+        leading.length + firstCell
+      );
+      applyEdit(
+        context,
+        block.charStart + sourceFrom,
+        block.charStart + sourceFrom,
+        insertion.replacement,
+        block.charStart + sourceFrom + insertion.caret
+      );
+      return true;
+    }
+  }
 
   if (block?.kind === 'blank') {
     const line = lineSpanAt(text, caret);

@@ -180,6 +180,28 @@ export function prefixInsertedLines(prefix: string, inserted: string): string {
     .join('\n');
 }
 
+/**
+ * Prefix every new physical line after a line break in an insertion.
+ *
+ * Unlike {@link prefixInsertedLines}, this leaves the text before the first
+ * newline alone: it is being inserted at the caret on the current line.
+ */
+export function prefixInsertedBreaks(
+  prefix: string,
+  inserted: string,
+  caret: number
+): { replacement: string; caret: number } {
+  const linePrefix = prefix.endsWith(' ') ? prefix : `${prefix} `;
+  const replacement = inserted.replace(/\n/g, `\n${linePrefix}`);
+  const breaksBeforeCaret = inserted
+    .slice(0, Math.max(0, Math.min(caret, inserted.length)))
+    .split('\n').length - 1;
+  return {
+    replacement,
+    caret: caret + breaksBeforeCaret * linePrefix.length
+  };
+}
+
 /** The canonical source prefix for a quote depth, without a trailing space. */
 export function quoteCarrier(depth: number): string {
   return '> '.repeat(Math.max(0, Math.floor(depth))).trimEnd();

@@ -185,6 +185,8 @@ já tiver o espaço visível `> `, ele é preservado. Backspace ou Delete numa l
 remove toda a linha física, não apenas o `>`.
 Enter num item de lista vazio remove o marcador e deixa uma linha normal do corpo da citação ou do
 callout.
+Ao inserir uma tabela numa citação ou callout do GitHub, cada linha e separador recebe a mesma
+cadeia de `>`, mantendo a tabela dentro do contêiner.
 
 Dentro de um callout com Div cercado, Enter insere exatamente uma quebra de linha. Cada Enter
 adicional cria outra linha vazia, e o cursor permanece na linha mais recente. Um Div dentro de uma

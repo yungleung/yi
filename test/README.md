@@ -137,7 +137,9 @@ line after the table keeps its own caret instead of resolving to the last cell;
 `table-border-theme` — the border is a quiet darker edge in the light theme and an inverted lighter
 edge with visible separation in the dark theme;
 `table-cell-typing` and `table-enter-exit-caret` — existing cell editing and exit behavior stay
-unchanged), equations (`equation-rendering` — plain and labeled formulas, one Yi number,
+unchanged; `table-insert` also holds table creation inside quotes and callouts, and
+`table-picker-container` exercises the same path through the visible picker), equations
+(`equation-rendering` — plain and labeled formulas, one Yi number,
 suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;
 `equation-crossrefs` — configured labels, automatic/manual links, and navigation to the formula
 body; `equation-matrix-default-document` — all 13 environment/plain rows with and without IDs,

@@ -25,6 +25,7 @@ const {
   emptyQuoteTyping,
   enterInQuote,
   fencedDivNewline,
+  prefixInsertedBreaks,
   prefixInsertedLines,
   projectQuoteSource,
   quoteNeedsSourceAt
@@ -96,6 +97,14 @@ check(
   'child insertion prefixes every physical line',
   prefixInsertedLines('> > ', 'one\ntwo'),
   '> > one\n> > two'
+);
+check(
+  'a block insertion prefixes only the lines after its first newline',
+  prefixInsertedBreaks('>', '\n\nA\n\n', 2),
+  {
+    replacement: '\n> \n> A\n> \n> ',
+    caret: 6
+  }
 );
 
 const proseWithQuotedBlank = '> Intro[^1]\n>\n> [^1]: note\n';

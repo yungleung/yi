@@ -189,6 +189,8 @@ contient déjà l’espace visible `> `, il est conservé. Backspace ou Delete s
 vide retire toute la ligne physique, pas seulement le `>`.
 Entrée sur un élément de liste vide retire son marqueur et laisse une ligne normale du corps de la
 citation ou du callout.
+Lors de l’insertion d’un tableau dans une citation ou un callout GitHub, chaque ligne et séparateur
+reçoit la même chaîne de `>` ; le tableau reste donc dans le conteneur.
 
 Dans un callout délimité par un Div, Entrée insère exactement un saut de ligne. Chaque Entrée
 supplémentaire ajoute une autre ligne vide et le curseur reste sur la plus récente. Un Div dans une

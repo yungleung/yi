@@ -33,6 +33,31 @@
     checks.push({ name, actual, expected });
   };
   const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+  const clickTextEnd = async (needle) => {
+    const node = [...t.textNodesIn(t.prose())]
+      .find((candidate) => candidate.data.includes(needle));
+    const at = node?.data.lastIndexOf(needle);
+    if (!node || at < 0) {
+      return false;
+    }
+    const range = document.createRange();
+    const end = at + needle.length;
+    range.setStart(node, end - 1);
+    range.setEnd(node, end);
+    const box = range.getBoundingClientRect();
+    const event = {
+      bubbles: true,
+      cancelable: true,
+      clientX: box.right - 0.5,
+      clientY: box.top + box.height / 2
+    };
+    const target = node.parentElement;
+    target.dispatchEvent(new PointerEvent('pointerdown', event));
+    target.dispatchEvent(new PointerEvent('pointerup', event));
+    target.dispatchEvent(new MouseEvent('click', event));
+    await t.sleep(120);
+    return true;
+  };
 
   // An empty paragraph becomes the table: it is the line, not a break around it.
   await t.load(doc);
@@ -83,6 +108,40 @@
     'at the top of the document the table needs nothing above it',
     await t.raw(),
     `${table(2, 3)}\n\nFirst paragraph.\n`
+  );
+
+  await t.load('Before\n\n> A quoted paragraph.\n');
+  await clickTextEnd('A quoted paragraph.');
+  check('the table command runs inside a quote', insert(3, 2), true);
+  await t.sleep(300);
+  const quoted = await t.raw();
+  const quotedRows = quoted.split('\n').filter((line) => line.includes('|'));
+  check(
+    'every row of a table inserted in a quote carries the quote prefix',
+    quotedRows.length === 4 && quotedRows.every((line) => /^> \|/.test(line)),
+    true
+  );
+  check(
+    'the quote and its preceding text stay intact',
+    quoted.startsWith('Before\n\n> A quoted paragraph.\n> \n> |  |'),
+    true
+  );
+
+  await t.load('Before\n\n> [!NOTE]\n> A callout body.\n');
+  await clickTextEnd('A callout body.');
+  check('the table command runs inside a callout', insert(3, 2), true);
+  await t.sleep(300);
+  const calledOut = await t.raw();
+  const calloutRows = calledOut.split('\n').filter((line) => line.includes('|'));
+  check(
+    'every row of a table inserted in a callout carries the callout prefix',
+    calloutRows.length === 4 && calloutRows.every((line) => /^> \|/.test(line)),
+    true
+  );
+  check(
+    'the callout marker and body stay intact',
+    calledOut.startsWith('Before\n\n> [!NOTE]\n> A callout body.\n> \n> |  |'),
+    true
   );
 
   return { checks, failed: checks.filter((entry) => !same(entry.actual, entry.expected)).map((entry) => entry.name) };
