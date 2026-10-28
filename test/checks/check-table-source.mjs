@@ -13,8 +13,16 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-table-'));
 const file = join(directory, 'table_source.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { readTableSource, rowAt, locateCell, cellBelow, cellValue, canonicalLine, alignmentMarker } =
-  await import(file);
+const {
+  readTableSource,
+  readTableSourceInQuote,
+  rowAt,
+  locateCell,
+  cellBelow,
+  cellValue,
+  canonicalLine,
+  alignmentMarker
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -52,6 +60,25 @@ check('one line is not a table', readTableSource('just text | more'), null);
 check('not a table', readTableSource('plain text'), null);
 check('ragged row keeps its own cells', readTableSource('| a | b |\n| --- | --- |\n| 1 |').rows[1].values, ['1']);
 check('a quoted table is not modelled', readTableSource('> | a |\n> | --- |\n> | 1 |'), null);
+const quoted = '> | a | b |\n> | --- | --- |\n> | 1 | 2 |';
+const quotedSource = readTableSourceInQuote(quoted);
+check('a quoted table reads through its carrier', quotedSource.rows[0].values, ['a', 'b']);
+check(
+  'quoted cells still name original offsets',
+  quotedSource.rows[1].cells.map((cell) => [
+    cell.contentStart,
+    quoted.slice(cell.innerStart, cell.innerEnd).trim()
+  ]),
+  [
+    [quoted.indexOf('1'), '1'],
+    [quoted.indexOf('2'), '2']
+  ]
+);
+check(
+  'a quoted delimiter still names its original range',
+  quoted.slice(quotedSource.delimiter.start, quotedSource.delimiter.end),
+  '| --- | --- |'
+);
 check(
   'locateCell finds the cell an offset sits in',
   locateCell(readTableSource('| a | b |\n| --- | --- |\n| 1 | 2 |'), 30)?.column,

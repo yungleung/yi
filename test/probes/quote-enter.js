@@ -149,6 +149,32 @@
     'Before\n\n> [!NOTE]\n> N\n\nAfter\n'
   );
 
+  await t.load('> | A | B |\n> | --- | --- |\n> | 1 | 2 |\n');
+  const headerCell = t.prose().querySelector('[data-table-cell="0:1"]');
+  await t.click(headerCell);
+  t.key('Enter');
+  await t.sleep(80);
+  const bodyCell = t.prose().querySelector('[data-table-cell="1:1"]');
+  const caret = t.caretRect();
+  const bodyBox = bodyCell?.getBoundingClientRect();
+  check(
+    'Enter moves down a quoted table by column',
+    caret !== null &&
+      bodyBox !== undefined &&
+      caret.x >= bodyBox.left &&
+      caret.x <= bodyBox.right &&
+      caret.y >= bodyBox.top &&
+      caret.y <= bodyBox.bottom,
+    true
+  );
+  t.key('Enter');
+  await t.sleep(80);
+  check(
+    'Enter at a quoted table end adds one quoted separator',
+    await t.raw(),
+    '> | A | B |\n> | --- | --- |\n> | 1 | 2 |\n>\n'
+  );
+
   return {
     checks,
     failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)
