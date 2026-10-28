@@ -16,6 +16,7 @@ It adds:
 - a rendered callout that can contain ordinary Markdown blocks;
 - whole-block source editing while the caret is inside the callout;
 - context-aware Enter editing for ordinary quotes and callouts;
+- navigable caret anchors for empty callout and fenced-Div bodies;
 - escaping and rejection rules that leave ordinary blockquotes unchanged;
 - a semantic Pandoc `Div` lowering for every Pandoc-backed export;
 - a stable class contract for template-package Lua filters;
@@ -301,12 +302,78 @@ Clicking the rendered panel enters source mode:
 
 - a click on the title enters the marker line;
 - a click in the body enters the nearest exact body source position;
-- when the body is empty, the caret enters the empty body line after the
-  marker.
+- when the body is empty, the caret enters the invisible body anchor described
+  below.
 
 The rendered block and the source block are two shapes of one block, not two
 document blocks. Switching shapes preserves scroll position and the logical
 caret.
+
+### Empty callout navigation
+
+An empty callout or fenced-Div callout still needs a caret destination. The
+rendered panel therefore carries one invisible body anchor with a real
+document offset and a visible line box, even when the body has no characters.
+
+The anchor has these properties:
+
+- it belongs to the callout body, not to the title or an adjacent block;
+- it has a non-zero line height but no selectable text;
+- it maps to the point where the first body character would be written;
+- its offset includes the complete outer quote prefix for a GitHub-style
+  callout;
+- it remains inside the callout when the caret leaves and the rendered panel
+  returns.
+
+Arrow navigation treats the anchor as the callout's sole body position:
+
+- ArrowRight from the block before an empty callout enters the anchor;
+- ArrowLeft from the block after an empty callout enters the same anchor;
+- entering the anchor switches the callout to source mode and places the
+  logical caret there;
+- ArrowLeft or ArrowRight may then leave source mode again;
+- moving back toward the callout from either adjacent block returns to the
+  anchor rather than skipping the empty container.
+
+For a marker-only GitHub callout:
+
+```markdown
+> [!NOTE]
+```
+
+the body insertion point is after the marker line. Typing there materialises
+the required quoted body line:
+
+```markdown
+> [!NOTE]
+> New body
+```
+
+For an empty fenced-Div callout:
+
+```markdown
+::: {.callout-note}
+:::
+```
+
+the insertion point is before the closing fence. Typing there materialises one
+body line:
+
+```markdown
+::: {.callout-note}
+New body
+:::
+```
+
+The navigation does not insert a newline merely because the caret passed over
+an empty callout. Source changes happen only when the author starts typing or
+performs an edit. Multiple adjacent empty callouts keep distinct anchors and
+are traversed in document order.
+
+A nested empty callout uses the same rule at its innermost body position.
+Typing materialises a body line with the complete outer quote prefix, so an
+empty callout inside another callout cannot accidentally become top-level
+text.
 
 ## Enter inside quote containers
 
@@ -584,10 +651,12 @@ The implementation should keep these responsibilities separate:
 | --- | --- |
 | `syntax/callouts.ts` | GitHub marker grammar, fenced-Div recognition, kind/title mapping, quote-layer stripping and source ranges |
 | `syntax/quote_edits.ts` | Pure context-aware Enter, double-Enter and prefixed child-edit rules for every quote depth |
+| `syntax/callout_body.ts` | Pure empty-body insertion points and the first-typing materialisation rules for both source forms |
 | `document/blocks.ts` | Recognize and bound `quote` and callout-bearing `fencedDiv` blocks |
 | `document/block_kinds.ts` | Distinguish quote containers, source-mode callouts and ordinary fenced Divs |
 | `plugins/remark-callouts.ts` | Normalize both source forms into one callout model and preserve nested quote levels |
 | `nodes/callout.ts` | Render the panel, title and parsed body |
+| `caret/navigation.ts` | Treat an empty callout body anchor as a real caret destination from either side |
 | `create_block.ts` | Choose the rendered callout or the complete source view |
 | `editing/keys.ts` and the quote edit command | Route Enter and child-block edits through the active quote context |
 | `ui/export/callout_rewrites.ts` | Lower source blocks to the semantic fenced `Div` |
@@ -621,6 +690,11 @@ callout.
   grammar remains in charge after the callout's own quote layer is removed.
 - Empty and marker-only GitHub callouts remain editable.
 - A fenced-Div callout with no body remains editable.
+- ArrowLeft and ArrowRight re-enter an empty callout from either adjacent
+  block instead of skipping it.
+- An empty callout never borrows the caret anchor of its title, a neighboring
+  block or the paragraph after it.
+- Passing over an empty callout with an arrow key does not edit the document.
 - Callouts have no generated IDs. An author-supplied Div ID is preserved for
   Pandoc and filters but does not participate in Yi cross-reference numbering.
 
@@ -671,6 +745,14 @@ Tauri probes will cover:
 - equivalent editing through GitHub and fenced-Div callout source;
 - caret line stability across a callout rebuild;
 - empty callout editing;
+- empty marker-only and fenced-Div callouts entered from both the preceding
+  and following block with ArrowLeft/ArrowRight;
+- leaving an empty callout and returning to its body anchor without a source
+  edit;
+- first typing in an empty callout materialising the correct quote or Div body
+  line;
+- multiple adjacent empty callouts remaining distinct navigation stops;
+- a nested empty callout preserving every outer quote prefix;
 - a long callout in a virtualised document;
 - examples in the default fixture.
 
@@ -704,6 +786,8 @@ The Documentation in every shipped language will explain:
 - that callout titles are fixed English Markdown vocabulary rather than UI
   translations;
 - the rendered editor appearance and source editing;
+- how an empty callout remains reachable with Left and Right arrows from
+  either side;
 - the exported `.callout`, `.callout-<kind>` and `.callout-title` classes;
 - how template-package Lua filters can style or replace callouts for
   LaTeX/PDF;
@@ -715,6 +799,7 @@ The default Markdown fixture will include:
 - built-in and custom fenced-Div callouts;
 - the no-separator and quoted-separator forms;
 - multi-paragraph and nested callouts;
+- marker-only and empty fenced-Div callout navigation cases;
 - a list, a table and a code fence inside callouts;
 - an escaped marker;
 - ordinary blockquotes next to callouts.
