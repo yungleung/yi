@@ -162,6 +162,14 @@ check(
   divParserInput.slice(divInput.indexOf('\n')),
   divInput.slice(divInput.indexOf('\n'))
 );
+const unclosedDiv = '::: {.callout .callout-note}\nBody\n';
+check('unclosed callout-like Div stays literal', calloutsForParsers(unclosedDiv), unclosedDiv);
+const unclosedQuotedDiv = '> ::: {.callout .callout-note}\n> Body\n';
+check(
+  'unclosed quoted callout-like Div stays literal',
+  calloutsForParsers(unclosedQuotedDiv),
+  unclosedQuotedDiv
+);
 
 const quotedDiv = '> :::: {.callout .callout-tip title="Tip"}\n> Body\n> ::::\n';
 const quotedParserInput = calloutsForParsers(quotedDiv);

@@ -110,7 +110,7 @@ export function calloutsForParsers(markdown: string): string {
   let displayMath = false;
   const replacements: Array<{ start: number; end: number; text: string }> = [];
 
-  for (const line of lines) {
+  for (const [index, line] of lines.entries()) {
     const quote = quoteLine(line);
     const content = quote?.content ?? line.text;
 
@@ -152,6 +152,10 @@ export function calloutsForParsers(markdown: string): string {
     if (opening === null) {
       continue;
     }
+    const quoteDepth = quote?.depth ?? 0;
+    if (!hasDivClosing(lines, index + 1, opening.fenceLength, quoteDepth)) {
+      continue;
+    }
     const lineOffset = quote?.prefixEnd ?? 0;
     const prefix = line.text.slice(0, lineOffset + opening.fenceStart + opening.fenceLength);
     const directive = `callout-${opening.kind}`;
@@ -170,6 +174,39 @@ export function calloutsForParsers(markdown: string): string {
       transformed.slice(replacement.end);
   }
   return transformed;
+}
+
+/**
+ * Whether the fenced Div opened at `start - 1` has a matching close at the
+ * same quote depth. Parser preparation must not turn an incomplete Div into a
+ * directive that can consume the rest of the document.
+ */
+function hasDivClosing(
+  lines: SourceLine[],
+  start: number,
+  fenceLength: number,
+  quoteDepth: number
+): boolean {
+  for (let index = start; index < lines.length; index += 1) {
+    const quote = quoteLine(lines[index]);
+    if (quoteDepth === 0) {
+      if (quote !== null) {
+        continue;
+      }
+    } else if (quote === null) {
+      return false;
+    } else if (quote.depth < quoteDepth) {
+      return false;
+    } else if (quote.depth !== quoteDepth) {
+      continue;
+    }
+    const content = quote?.content ?? lines[index].text;
+    const close = /^\s*(:{3,})\s*$/.exec(content);
+    if (close !== null && close[1].length >= fenceLength) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function readAlertCallout(
