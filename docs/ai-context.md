@@ -794,8 +794,11 @@ An ordinary link takes the same gesture for the *same reason* when its destinati
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
 node itself and stops there, so a listener that waits for it to bubble never sees it. And the card
 is placed from the caret's *range*, never from the span that draws the caret: `scheduleCaret` draws
-that span a frame later, so the redraw a keystroke triggers would measure where the caret has just
-left, and the popover would open one character off and slide across on the first ArrowDown. A row
+that span after the pending layout settles, so the redraw a keystroke triggers would otherwise
+measure where the caret has just left, and the popover would open one character off and slide
+across on the first ArrowDown. `span.ts: scheduleRender` also leaves the old caret in place for the
+first frame of a rebuild: measuring a table there catches its provisional height and paints the
+caption's caret above its line for one frame (`caret-rebuild-line.js`). A row
 of the card is also the card's own width — daisyUI's `menu` sizes an item to what it holds, so a
 long title has to be clamped (`min-w-0` and a truncating title) or the row is wider than the card
 it is drawn in.

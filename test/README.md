@@ -161,7 +161,9 @@ and the page staying where the reader put it while the window turns over
 reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is what a saved setting
 or the bibliography arriving asks for, leaves the caret in the note it was in: the reader's caret
 is a live DOM range, the browser relocates it rather than dropping it when the element it sits in
-is removed, and a letter typed at a caret that names no offset replaces the whole document),
+is removed, and a letter typed at a caret that names no offset replaces the whole document;
+`caret-rebuild-line` — undoing a table-caption edit never paints the caret at the table's
+provisional height before the rebuilt caption has settled),
 what a keystroke costs (`edit-cost` — the keystrokes at the end of the
 document as it loaded, and `edit-cost-notes` — the same in a text with a thousand footnote
 definitions pasted on: each round is bounded by the clock, because what a keystroke there costs is

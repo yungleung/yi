@@ -79,13 +79,12 @@ export function scheduleRender(scroll: boolean): void {
     }
     // This frame's measurement can be stale — an edit can insert a block that
     // layout has not placed yet, a `content-visibility: auto` block can still
-    // be skipped — so the caret is neither trusted nor scrolled from it. One
-    // more frame re-anchors it, and scrolls, against the settled layout;
-    // scrolling from the stale measurement moved the page when the caret had
-    // not moved at all.
-    renderNow(false);
+    // be skipped — so do not paint from it at all. Painting here moved a
+    // rebuilt table caption's caret to the table's provisional top for one
+    // frame. Keep the previous caret in place until the next frame, when the
+    // rebuilt block has settled, then anchor and scroll from that layout.
     requestAnimationFrame(() => {
-      reposition();
+      renderNow(false);
       // `scroll` is the difference between a caret that *moved* and one that was put back
       // where it already was: a move brings the caret into view, a window change must not
       // move the page (measured: scrolling up from the end of the demo document, the view
