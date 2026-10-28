@@ -15,6 +15,7 @@
 
 import { unified } from 'unified';
 import remarkDeflist from 'remark-deflist';
+import remarkDirective from 'remark-directive';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -39,14 +40,20 @@ import { readTableSource } from './table_source';
 import { restoreListings } from './listings';
 import { frontmatterForParsers } from './markers';
 import { equationsForParsers } from './equation_blocks';
+import { calloutsForParsers } from './callouts';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkAutoReferences } from '../plugins/remark-auto-references';
 import { remarkHeadingAttributes } from '../plugins/remark-heading-attributes';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
+import {
+  remarkCallouts
+} from '../plugins/remark-callouts';
 
 const parseProcessor = unified()
   .use(remarkParse)
+  .use(remarkDirective)
+  .use(remarkCallouts)
   .use(remarkDeflistCompat)
   .use(remarkDeflist)
   .use(remarkGfm)
@@ -112,6 +119,9 @@ const stringifyProcessor = unified()
       descriptiondetails(node: any, _parent: any, state: any, info: any): string {
         return `: ${state.containerPhrasing(node, info)}`;
       },
+      callout(node: any): string {
+        return `${String(node.callout?.source ?? '').trimEnd()}\n`;
+      },
       delete(node: any, _parent: any, state: any, info: any): string {
         return `~~${state.containerPhrasing(node, info)}~~`;
       }
@@ -125,10 +135,15 @@ const stringifyProcessor = unified()
   .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
-  const prepared = equationsForParsers(frontmatterForParsers(markdown));
+  const prepared = equationsForParsers(
+    calloutsForParsers(frontmatterForParsers(markdown))
+  );
   const parserText = listCaptionsForParsers(prepared);
   const tree = parseProcessor.parse(parserText) as Root;
-  const root = parseProcessor.runSync(tree, parserText) as Root;
+  const root = parseProcessor.runSync(tree, {
+    value: parserText,
+    data: { calloutSource: markdown }
+  }) as Root;
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);
   restoreEmptyItems(root, markdown);

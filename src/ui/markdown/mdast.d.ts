@@ -17,6 +17,7 @@ import type { ListCaptionNode } from './syntax/list_captions';
 import type { ListingNode } from './syntax/listings';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
+import type { CalloutNode } from './plugins/remark-callouts';
 
 declare module 'mdast' {
   interface Heading {
@@ -33,6 +34,7 @@ declare module 'mdast' {
     descriptionterm: DescriptionTerm;
     descriptiondetails: DescriptionDetails;
     wikilink: WikilinkNode;
+    callout: CalloutNode;
   }
 
   interface Table {

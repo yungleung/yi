@@ -193,6 +193,74 @@ check(
   ['descriptionlist']
 );
 
+const directCalloutSource = '> [!NOTE]\n> First\n>\n> Second\n';
+const directCallout = parseMarkdown(directCalloutSource).children[0];
+check('a direct GitHub alert becomes a callout node', directCallout.type, 'callout');
+check(
+  'the direct callout keeps two body paragraphs',
+  directCallout.children.map((node) => node.type),
+  ['paragraph', 'paragraph']
+);
+check(
+  'the marker is not direct callout body text',
+  directCallout.children[0].children[0].value,
+  'First'
+);
+check(
+  'the direct callout serializes exactly',
+  serializeMarkdown(parseMarkdown(directCalloutSource)),
+  directCalloutSource
+);
+
+const joinedCalloutSource = '> [!TIP]\n> Joined body\n';
+const joinedCallout = parseMarkdown(joinedCalloutSource).children[0];
+check('a marker and body may share one parsed paragraph', joinedCallout.type, 'callout');
+check(
+  'the joined body loses only the marker and soft break',
+  joinedCallout.children[0].children[0].value,
+  'Joined body'
+);
+check(
+  'the joined body keeps its source offset',
+  joinedCallout.children[0].position.start.offset,
+  joinedCallout.callout.bodyFrom
+);
+
+const customDivSource =
+  '::: {.callout .callout-definition title="Defined"}\n' +
+  'First\n\n' +
+  'Second\n' +
+  ':::\n';
+const customDiv = parseMarkdown(customDivSource).children[0];
+check('a fenced-Div callout becomes a callout node', customDiv.type, 'callout');
+check('the custom title is parsed', customDiv.callout?.title, 'Defined');
+check(
+  'the custom callout serializes exactly',
+  serializeMarkdown(parseMarkdown(customDivSource)),
+  customDivSource
+);
+
+const nestedCallout = parseMarkdown('> > [!TIP]\n> > Nested\n');
+check('the outer container remains a blockquote', nestedCallout.children[0].type, 'blockquote');
+check('the inner container becomes a callout', nestedCallout.children[0].children[0].type, 'callout');
+
+const unknownCallout = parseMarkdown('> [!UNKNOWN]\n> ordinary quote\n');
+check('an unknown marker remains a blockquote', unknownCallout.children[0].type, 'blockquote');
+
+const literalDirective = ':plain ordinary text\n';
+check(
+  'directive-looking prose remains ordinary text',
+  serializeMarkdown(parseMarkdown(literalDirective)),
+  literalDirective
+);
+
+const genericDiv = '::: generic\nordinary body\n:::\n';
+check(
+  'a non-callout fenced Div remains literal source',
+  serializeMarkdown(parseMarkdown(genericDiv)),
+  genericDiv
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
