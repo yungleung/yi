@@ -132,6 +132,71 @@ correspondre exactement au compteur de tableaux d’un modèle, les deux compteu
 configurés au même endroit avec le même niveau de remise à zéro ; Yi ne peut pas déduire
 automatiquement les règles d’une classe arbitraire.
 
+## Callouts
+
+Une alerte de style GitHub crée un callout :
+
+```markdown
+> [!NOTE]
+> Un point à remarquer.
+```
+
+Les cinq types intégrés sont `NOTE`, `TIP`, `IMPORTANT`, `WARNING` et `CAUTION`. Leurs titres restent
+`Note`, `Tip`, `Important`, `Warning` et `Caution`, indépendamment de la langue de l’interface. Les
+libellés ne distinguent pas majuscules et minuscules. La ligne de citation vide après le marqueur est
+facultative. Un libellé inconnu, un libellé suivi de texte ou un marqueur échappé comme
+`> \[!NOTE]` reste une citation ordinaire.
+
+Yi accepte aussi la syntaxe Pandoc des Div clôturés :
+
+```markdown
+::: {.callout .callout-note}
+Un callout intégré.
+:::
+
+::: {.callout .callout-definition title="Définition"}
+Un type personnalisé.
+:::
+```
+
+La forme courte `.callout-note` est également reconnue. Pour un type personnalisé sans `title=`, le
+titre vient du nom de classe sans passer par la langue de l’interface. Les ID, classes et autres
+attributs sont conservés pour l’export. Un ID de Div reste une métadonnée Pandoc et ne devient pas une
+cible de référence Yi.
+
+Les callouts peuvent être imbriqués dans des citations ou d’autres callouts. Leur corps accepte les
+paragraphes, listes, tableaux, blocs de code, équations, légendes, citations et citations Markdown
+ordinaires. Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
+corps révèle la source complète, et quitter le bloc restaure le rendu.
+
+Dans un paragraphe de citation ordinaire, Entrée crée deux lignes vides portant le préfixe `>`
+complet. Le texte suivant forme un nouveau paragraphe. Une seconde pression sur Entrée dans le
+paragraphe vide retire une seule profondeur de citation ; dans une citation imbriquée, répétez une
+fois par niveau. Les listes, tableaux, blocs de code et équations gardent leur comportement habituel,
+et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, une
+seule ligne vide préfixée suffit.
+
+Un callout vide garde une ancre de curseur invisible dans son corps. Left depuis le bloc suivant et
+Right depuis le bloc précédent y entrent ; la navigation seule ne modifie pas la source. Le premier
+caractère saisi matérialise la ligne de corps manquante.
+
+Tous les exports Pandoc transforment les deux écritures en un même Div sémantique :
+
+```markdown
+:::: {.callout .callout-note}
+::: {.callout-title}
+Note
+:::
+
+Un point à remarquer.
+::::
+```
+
+Les modèles HTML, EPUB, DOCX, ODT et LaTeX/PDF peuvent régler l’apparence par CSS, styles de
+référence ou filtre Lua. Le filtre reçoit `.callout`, `.callout-<type>`, `.callout-title` et le corps
+dans l’ordre du document. La conversion précède les filtres du modèle : ceux-ci voient donc cette
+structure stable plutôt que la syntaxe GitHub ou le Div source.
+
 ## Exporter une note
 
 | Type | Sortie |

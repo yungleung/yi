@@ -137,6 +137,71 @@ Listennummerierung genau dem Tabellenzähler der Vorlage folgen, müssen beide Z
 Stelle und mit derselben Rücksetzebene eingerichtet werden; Yi kann die Regeln einer beliebigen
 Klasse nicht automatisch ableiten.
 
+## Callouts
+
+Ein GitHub-Alert erzeugt einen Callout:
+
+```markdown
+> [!NOTE]
+> Etwas, das Beachtung verdient.
+```
+
+Die fünf eingebauten Arten sind `NOTE`, `TIP`, `IMPORTANT`, `WARNING` und `CAUTION`. Ihre sichtbaren
+Titel heißen immer `Note`, `Tip`, `Important`, `Warning` und `Caution`, unabhängig von der
+Oberflächensprache. Die Kennungen unterscheiden nicht zwischen Groß- und Kleinschreibung. Die
+Zitatleerzeile nach der Kennung ist optional. Unbekannte Kennungen, zusätzlicher Text nach der
+Kennung und maskierte Marker wie `> \[!NOTE]` bleiben gewöhnliche Zitate.
+
+Auch Pandocs eingezäunte Div-Syntax wird akzeptiert:
+
+```markdown
+::: {.callout .callout-note}
+Ein eingebauter Callout.
+:::
+
+::: {.callout .callout-definition title="Definition"}
+Eine eigene Callout-Art.
+:::
+```
+
+Die Kurzform `.callout-note` funktioniert ebenfalls. Ohne `title=` wird der Titel einer eigenen Art
+unabhängig von der Oberflächensprache aus dem Klassennamen gebildet. IDs, Klassen und andere
+Attribute bleiben für den Export erhalten; eine Div-ID ist Pandoc-Metadatum und kein
+Querverweisziel von Yi.
+
+Callouts können in Zitaten oder anderen Callouts verschachtelt werden. Ihr Inhalt kann Absätze,
+Listen, Tabellen, Codeblöcke, Formeln, Beschriftungen, Zitate und normale Markdown-Zitate enthalten.
+Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
+vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
+
+In einem normalen Zitatabsatz erzeugt Enter zwei leere Zeilen mit dem vollständigen `>`-Präfix. Der
+nächste Text beginnt einen neuen Absatz. Ein zweites Enter auf dem leeren Zitatabsatz entfernt genau
+eine Zitatebene; bei verschachtelten Zitaten wiederholt man dies pro Ebene. Listen, Tabellen,
+Codeblöcke und Formeln behalten ihr normales Enter-Verhalten, und jede eingefügte Quellzeile erhält
+das vollständige Präfix. Nach einem abgeschlossenen Kindblock genügt eine leere Zeile mit Präfix.
+
+Ein leerer Callout behält einen unsichtbaren Cursoranker im Inhalt. Left vom folgenden Block und
+Right vom vorherigen Block führen hinein; reine Navigation verändert den Quelltext nicht. Das erste
+eingegebene Zeichen erzeugt die fehlende Inhaltszeile.
+
+Jeder Pandoc-Export wandelt beide Schreibweisen in dasselbe semantische Div um:
+
+```markdown
+:::: {.callout .callout-note}
+::: {.callout-title}
+Note
+:::
+
+Etwas, das Beachtung verdient.
+::::
+```
+
+HTML-, EPUB-, DOCX-, ODT- und LaTeX/PDF-Vorlagen können das Aussehen per CSS,
+Referenzdokument-Stilen oder Lua-Filter festlegen. Der Filter erhält `.callout`,
+`.callout-<Art>`, `.callout-title` und die Inhaltsblöcke in Dokumentreihenfolge. Die Umwandlung
+erfolgt vor den Vorlagenfiltern; diese arbeiten daher mit dieser stabilen Struktur statt mit der
+GitHub- oder Div-Quelle.
+
 ## Eine Notiz exportieren
 
 | Art | Ausgabe |

@@ -20,6 +20,7 @@ methodology; this file is the index and the conventions.
 | --- | --- |
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
+| `check-callouts.mjs` | GitHub-alert and Pandoc fenced-Div callout grammar: nested quote depth, all five built-in labels, custom kinds/titles, exact IDs/classes/attributes, malformed and escaped markers, offset-preserving parser input, and unclosed or nested Div fences left literal |
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/book_body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
 | `check-documentation.mjs` | The bundled Documentation guide and its native F1 menu entry: stable identity, read-only source, install instructions for Pandoc, TeX Live, MacTeX and MiKTeX, package-authoring chapters, security limits, fixture-package pointer and no unfinished placeholders |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
@@ -57,6 +58,7 @@ methodology; this file is the index and the conventions.
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
+| `check-quote-edits.mjs` | The pure quote/callout Enter rules: two prefixed lines for a paragraph, one-level double-Enter exit, one separator after a closed child, per-line prefixing, child-context delegation, and empty GitHub/Div body materialisation including multiline text |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
 | `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
@@ -81,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and fifty-three probes (`probe:all` runs 224 and skips 29, each skip for the reason its
+two hundred and seventy-nine probes (`probe:all` runs 250 and skips 29, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -112,6 +114,11 @@ label, target ID, attributes, direct/one-blank forms, and unchanged item editing
 `list-crossrefs` — configured list labels and prefixes, automatic-reference text, first-item
 navigation, and an empty-item placeholder; `list-default-document` — the fixture's caption-only,
 ID-only, ordered-start, task and nested list cases, manual and automatic links, and navigation;
+callouts (`callout-rendering` — both source forms render one panel and reveal exact source;
+`callout-empty-navigation` — empty, nested, quoted-Div and adjacent callouts are reachable in one
+arrow from either side without source edits; `quote-enter` — paragraph, nested-level, list, table,
+code, equation and empty-body Enter rules; `callout-default-document` — the fixture's five built-in
+kinds, custom Div, nested callout and block-rich bodies);
 tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that
 can be added or removed from the caption source boundary, source reveal, label, target ID, and
 direct/one-blank forms; `table-caption-crossrefs` — configured labels and

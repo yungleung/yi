@@ -583,6 +583,94 @@ Yi calls the hook at `\begin{document}`, then applies the note's configured labe
 list numbering to match their table counter must configure both counters with the same reset level;
 Yi cannot infer a class's table reset rules automatically.
 
+## Callouts
+
+GitHub-style alerts create callouts:
+
+```markdown
+> [!NOTE]
+> Something worth noticing.
+```
+
+The five built-in kinds are `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`. Their visible
+titles are always `Note`, `Tip`, `Important`, `Warning`, and `Caution`; they do not change with Yi's
+interface language. Labels are case-insensitive.
+
+A quoted blank line after the marker is optional. Both forms are equivalent:
+
+```markdown
+> [!NOTE]
+>
+> A body with a quoted separator.
+
+> [!NOTE]
+> A body without one.
+```
+
+Unknown labels, labels followed by other text, and escaped markers such as `> \[!NOTE]` remain
+ordinary blockquotes. This lets a quote show the marker literally without becoming a callout.
+
+Yi also accepts Pandoc fenced-Div syntax:
+
+```markdown
+::: {.callout .callout-note}
+A built-in callout.
+:::
+
+::: {.callout .callout-definition title="Definition"}
+A custom callout kind.
+:::
+```
+
+The lone shorthand `.callout-note` is also accepted. A custom kind without `title=` uses its
+locale-independent class name, with dashes shown as spaces. IDs, classes, and other attributes are
+kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
+
+Callouts may be nested inside quotes and inside other callouts. Their bodies accept ordinary
+Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
+and nested quotes.
+
+Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
+complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
+
+Inside an ordinary quoted paragraph, Enter creates the quoted equivalent of a blank line:
+
+```markdown
+> First paragraph.
+>
+>
+```
+
+The next text becomes `> Second paragraph.`. A second consecutive Enter on the empty paragraph
+removes one quote level. In nested quotes, repeat the action once per level; it never removes every
+`>` at once.
+
+Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
+line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
+one quoted empty line, because the child block already supplies the paragraph boundary.
+
+Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
+ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the
+source; the first typed character creates the missing body line.
+
+Every Pandoc-backed export lowers both source forms to the same semantic Div:
+
+```markdown
+:::: {.callout .callout-note}
+::: {.callout-title}
+Note
+:::
+
+Something worth noticing.
+::::
+```
+
+HTML and EPUB templates can style `.callout`, `.callout-note`, and `.callout-title`. DOCX and ODT
+reference documents can provide matching styles. LaTeX/PDF templates can style the Div or rewrite it
+with a Lua filter. A filter receives the outer callout Div, its kind class, the visible title child,
+and the body blocks in document order. The conversion happens before template filters, so filters
+work with this stable structure rather than Yi's GitHub or fenced-Div source.
+
 ## Export a note
 
 **File → Export** offers these kinds:

@@ -5,7 +5,7 @@
  * external images. It is also the place a reader learns how to build a package, which means the
  * installation, package-YAML and per-kind sections have to be present rather than implied.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const file = 'src/ui/documentation/documentation.en.md';
 const failures = [];
@@ -165,6 +165,21 @@ if (existsSync(file)) {
   check(
     'it contains no unfinished placeholders',
     !/\b(?:TODO|TBD|FIXME)\b/.test(text)
+  );
+}
+
+const localeDocuments = readdirSync('src/ui/documentation')
+  .filter((name) => /^documentation\..+\.md$/.test(name))
+  .sort();
+check('all shipped Documentation languages exist', localeDocuments.length === 8);
+for (const name of localeDocuments) {
+  const text = readFileSync(`src/ui/documentation/${name}`, 'utf8');
+  check(`${name} explains callouts`, /^## Callout/m.test(text));
+  check(
+    `${name} keeps the stable callout syntax and export contract`,
+    text.includes('[!NOTE]') &&
+      text.includes('.callout-note') &&
+      text.includes('.callout-title')
   );
 }
 
