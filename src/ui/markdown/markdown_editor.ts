@@ -88,6 +88,7 @@ export const EDITOR_LAYOUT_CHANGED = 'editor_layout_changed';
 
 /** The event that says the document's text changed, for whatever keeps a copy of it. */
 export const EDITOR_EDITED = 'editor_edited';
+export const INPUT_SOURCE_CHANGED = 'input_source_changed';
 
 /** A page of A4, or the column at the width of the pane. */
 export type EditorLayout = 'page' | 'auto';
@@ -373,6 +374,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // under it: measured again, or the spacers below would be short by the line it gained.
       (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
     );
+    void eventManager.on(INPUT_SOURCE_CHANGED, () => {
+      this.composition.resetInputContext();
+    });
     // A fenced code block's label asks for a language (`nodes/fence_label.ts`); the card that
     // answers is the app's own chrome, and the edit it makes is the pure rule's
     // (`syntax/fence_edits.ts: fenceLanguageEdit`).

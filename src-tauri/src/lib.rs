@@ -1,6 +1,7 @@
 mod i18n;
 mod menu;
 mod files;
+mod input_source;
 mod access;
 mod export;
 mod fonts;
@@ -27,6 +28,7 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            input_source::install(app.handle());
             // Set the main menu for the application
             menu::set_as_main_menu(app)
         })

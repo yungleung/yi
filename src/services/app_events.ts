@@ -46,6 +46,8 @@ export interface AppEvents {
   editor_layout_changed: 'page' | 'auto';
   /** The editor's document was edited (a keystroke, a command, an undo). */
   editor_edited: null;
+  /** macOS selected a different keyboard input source. */
+  input_source_changed: null;
   /** The bibliography was reloaded, so anything showing a citation must render again. */
   citation_updated: null;
 

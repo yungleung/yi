@@ -34,3 +34,9 @@ anyhow = "1.0.104"
 reqwest = "0.13"
 tokio = { version = "1", features = ["time"] }
 zip = { version = "2.4.2", default-features = false, features = ["deflate"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", features = ["NSTextInputContext"] }
+objc2-foundation = { version = "0.3.2", features = ["NSNotification", "NSOperation", "NSString", "block2"] }

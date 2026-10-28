@@ -51,6 +51,11 @@ export interface CompositionInput {
    */
   settleNativeInput(): void;
   /**
+   * Recreates the native editing context after the system changes input source.
+   * The document caret is kept; only the textarea's native state is reset.
+   */
+  resetInputContext(): void;
+  /**
    * Hands the field the keyboard again after a structural edit or a click that placed the
    * caret. Those need a fresh input context: the next word would otherwise never compose, and
    * after a click the *first letter* is delivered as a Latin keystroke instead (measured:
@@ -340,6 +345,27 @@ export function installCompositionInput(
     element.focus({ preventScroll: true });
   };
 
+  /** Rebinds the focused seam to the input source the system has just selected. */
+  const resetInputContext = (): void => {
+    if (document.activeElement !== element) {
+      return;
+    }
+    if (clearTimer !== null) {
+      clearTimeout(clearTimer);
+      clearTimer = null;
+    }
+    composing = false;
+    committedAt = 0;
+    keyAfterCommit = false;
+    methodLetterLowercase = false;
+    nativeBurstActive = false;
+    committedValue = '';
+    element.value = '';
+    view.hide();
+    element.blur();
+    element.focus({ preventScroll: true });
+  };
+
   // A pointer that is down means the reader is working with the page itself — dragging
   // over text to select it, most of all — and taking the keyboard out from under that
   // gesture is what cancels it. The hand-over waits for the gesture to be over, or for
@@ -398,6 +424,7 @@ export function installCompositionInput(
     markedText,
     keepKeyboard,
     regainKeyboard,
-    settleNativeInput
+    settleNativeInput,
+    resetInputContext
   };
 }
