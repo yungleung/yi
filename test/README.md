@@ -134,6 +134,8 @@ prefixes, automatic-reference text, and command-click into the first header cell
 `table-crossrefs-default-document` — the fixture's caption-only, ID-only, and labeled tables,
 manual and automatic links, unapplied `.margin`, and navigation; `table-blank-line-typing` — a
 line after the table keeps its own caret instead of resolving to the last cell;
+`table-border-theme` — the border is a quiet darker edge in the light theme and an inverted lighter
+edge with visible separation in the dark theme;
 `table-cell-typing` and `table-enter-exit-caret` — existing cell editing and exit behavior stay
 unchanged), equations (`equation-rendering` — plain and labeled formulas, one Yi number,
 suppressed KaTeX environment tags, full source reveal, and `[$$` autocomplete;

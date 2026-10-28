@@ -734,6 +734,18 @@ body {
   vertical-align: top;
 }
 
+/* `base-300` is darker than the paper in a dark theme, which makes the grid
+   fade into it. Invert that relationship by drawing the dark border from the
+   theme's text side while keeping the light theme's quiet edge unchanged. */
+[data-theme="dim"] .prose table.markdown-table th,
+[data-theme="dim"] .prose table.markdown-table td {
+  border-color: color-mix(
+    in oklab,
+    var(--color-base-300) 55%,
+    var(--color-base-content)
+  );
+}
+
 /* The default minimum width of a cell: enough to hold a caret and a few
    characters, while the column still grows with whatever the author writes. */
 .prose table.markdown-table .markdown-table-cell {
