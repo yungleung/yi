@@ -189,6 +189,11 @@ Die Vervollständigung von Zitaten nach `@`, Wikilinks nach `[[` und automatisch
 Ziel-ID; das umgebende Zitatpräfix und die Klammern bleiben unverändert. Die Liste öffnet sich,
 sobald die Markierung eingegeben oder von einer Eingabemethode übergeben wird; Tab ist nicht nötig.
 
+Die öffnenden Zeichen `[`, `(` und `{` werden in normalem Text, Zitaten, GitHub-Callouts und
+Callouts in eingezäunten Divs automatisch gepaart, auch wenn das Zeichen von einer Eingabemethode
+kommt. Im Ziel eines normalen Links auf dasselbe Dokument listet `#` nach `](` außerdem die
+Referenzziele des Dokuments auf; die Auswahl schreibt nur die Fragment-ID.
+
 Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
 Ein gewöhnliches Zitat zeigt unter derselben Cursor-Regel seinen vollständigen Quelltext, sodass

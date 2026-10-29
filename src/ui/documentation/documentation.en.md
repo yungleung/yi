@@ -646,6 +646,11 @@ after `[#` remain available in both source forms. Choosing a row writes only the
 the surrounding quote prefix and brackets stay intact. The list opens as soon as the marker is
 typed or committed by an input method; Tab is not needed to reveal it.
 
+Opening `[`, `(`, and `{` pair automatically in ordinary text, blockquotes, GitHub callouts, and
+fenced-Div callouts, including when the character arrives through an input method. In an ordinary
+same-document link destination, typing `#` after `](` also lists the document's reference targets;
+accepting a row writes only the fragment ID.
+
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
 An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape

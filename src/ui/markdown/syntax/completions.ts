@@ -1,11 +1,11 @@
 /**
  * What the caret is inside when a list should open, and which entries belong in it.
  *
- * Three things are offered: a citation while an `@` is being typed, a document target after `[#`,
- * and a wikilink between `[[` and `]]`. All are asked as *queries* — the offset the query starts at,
- * and the characters typed so far — so the popup only ever opens where the syntax says the
- * construct can exist, and closing the popup, filtering it and accepting from it are all decided
- * from the same text the editor holds.
+ * Four things are offered: a citation while an `@` is being typed, an automatic-reference target
+ * after `[#`, a same-document link target after `](#`, and a wikilink between `[[` and `]]`. All
+ * are asked as *queries* — the offset the query starts at, and the characters typed so far — so
+ * the popup only ever opens where the syntax says the construct can exist, and closing the popup,
+ * filtering it and accepting from it are all decided from the same text the editor holds.
  *
  * A citation's query is bounded by the citation plugin's own characters (a key starts with a letter,
  * digit or `_` and continues with those plus pandoc's punctuation) and by its own rule for what may
@@ -81,6 +81,30 @@ export function autoReferenceQuery(text: string, caret: number): CompletionQuery
     return null;
   }
   return { from: start, query: text.slice(start, caret) };
+}
+
+/**
+ * A same-document fragment in an ordinary link destination, or null.
+ *
+ * The query starts after the `#` in `](#` and continues until the closing
+ * parenthesis or whitespace. A destination that names a path before its `#`
+ * belongs to a cross-document link and is not offered here.
+ */
+export function linkReferenceQuery(text: string, caret: number): CompletionQuery | null {
+  if (caret <= 0) {
+    return null;
+  }
+  const hash = text.lastIndexOf('#', caret - 1);
+  if (
+    hash < 2 ||
+    text[hash - 1] !== '(' ||
+    text[hash - 2] !== ']' ||
+    escapedAt(text, hash - 1)
+  ) {
+    return null;
+  }
+  const query = text.slice(hash + 1, caret);
+  return /[\s)]/.test(query) ? null : { from: hash + 1, query };
 }
 
 /** Whether the character at `at` follows an odd run of backslashes. */

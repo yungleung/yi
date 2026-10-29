@@ -97,6 +97,29 @@
     true
   );
 
+  const pickerBody = Array.from({ length: 12 }, (_, index) => `> Line ${index}`).join('\n');
+  await t.load(`Before\n\n> [!NOTE]\n${pickerBody}\n> \n\nAfter\n`);
+  const pickerSource = await openCalloutSource();
+  await clickEnd(pickerSource, '> ');
+  await type([':', ':', ':']);
+  const pickerCard = document
+    .querySelector('[data-callout-kind-choice]')
+    ?.parentElement?.parentElement ?? null;
+  const caretBox = (await t.app('/src/ui/markdown/caret/caret.ts'))
+    .getCaretRange()
+    ?.getBoundingClientRect() ?? null;
+  const cardBox = pickerCard?.getBoundingClientRect() ?? null;
+  check(
+    'the callout picker opens beside the caret inside a callout',
+    caretBox !== null &&
+      cardBox !== null &&
+      Math.abs(cardBox.left - caretBox.left) < 320 &&
+      Math.abs(cardBox.top - caretBox.top) < 120,
+    true
+  );
+  t.key('Escape');
+  await t.sleep(100);
+
   await t.load(
     'Before\n\n> [!NOTE]\n> - First\n> - Second\n>\n> $$\n> x = 1\n> $$\n\nAfter\n'
   );
@@ -153,7 +176,11 @@
       );
     }
     const raw = await t.raw();
-    check(`${name} opens on an ordinary blank line`, raw.startsWith(expected), true);
+    check(
+      `${name} opens on an ordinary blank line`,
+      raw.startsWith(expected) ? true : raw,
+      true
+    );
   }
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

@@ -22,7 +22,13 @@ async function bundleModule(input, name) {
   return import(file);
 }
 
-const { autoReferenceQuery, citationQuery, matchingChoices, wikilinkQuery } = await bundleModule(
+const {
+  autoReferenceQuery,
+  citationQuery,
+  linkReferenceQuery,
+  matchingChoices,
+  wikilinkQuery
+} = await bundleModule(
   'src/ui/markdown/syntax/completions.ts',
   'completions'
 );
@@ -81,6 +87,30 @@ check('an escaped reference opening asks for nothing', autoReferenceQuery('\\[#f
 check(
   'whitespace ends an automatic-reference query',
   autoReferenceQuery('[#fig sample', 11),
+  null
+);
+check('a link fragment asks for a document target', linkReferenceQuery('[text](#', 8), {
+  from: 8,
+  query: ''
+});
+check('and typing narrows it', linkReferenceQuery('[text](#fig:sample', 18), {
+  from: 8,
+  query: 'fig:sample'
+});
+check(
+  'a caret before the destination close still asks',
+  linkReferenceQuery('[text](#fig:sample)', 18),
+  { from: 8, query: 'fig:sample' }
+);
+check(
+  'a path fragment is not a same-document link target',
+  linkReferenceQuery('[text](note.md#section', 21),
+  null
+);
+check('an automatic reference is not a link destination', linkReferenceQuery('[#fig]', 5), null);
+check(
+  'an escaped fragment is not a link target',
+  linkReferenceQuery('[text](\\#fig', 13),
   null
 );
 

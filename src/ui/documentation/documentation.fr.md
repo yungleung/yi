@@ -185,6 +185,11 @@ La complétion des citations après `@`, des wikilinks après `[[` et des réfé
 destination ; le préfixe de citation et les crochets autour restent intacts. La liste s’ouvre dès
 que le marqueur est saisi ou validé par une méthode de saisie ; Tab n’est pas nécessaire.
 
+Les ouvrants `[`, `(` et `{` sont appariés automatiquement dans le texte ordinaire, les citations,
+les callouts GitHub et les callouts Div, y compris lorsqu’un caractère arrive par une méthode de
+saisie. Dans la destination d’un lien vers le même document, saisir `#` après `](` propose aussi les
+cibles de référence du document ; accepter une ligne n’écrit que l’ID du fragment.
+
 Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.
 Une citation ordinaire révèle sa source complète selon la même règle : les marqueurs échappés, les

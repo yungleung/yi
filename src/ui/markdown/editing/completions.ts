@@ -1,6 +1,7 @@
 /**
- * The lists the editor opens as the author types: a citation's keys after an `@`, a document
- * target after `[#`, and the workspace's documents between `[[` and `]]`.
+ * The lists the editor opens as the author types: a citation's keys after an `@`, the document's
+ * targets after `[#` or a same-document `](#`, and the workspace's documents between `[[` and
+ * `]]`.
  *
  * This is the living half of the feature: `syntax/completions.ts` says what the caret is inside
  * and which entries match, the card draws them, and what is left here is when a list is open, what
@@ -22,6 +23,7 @@ import type { Box } from '../../floating/placement';
 import {
   autoReferenceQuery,
   citationQuery,
+  linkReferenceQuery,
   matchingChoices,
   wikilinkQuery,
   type CompletionChoice
@@ -91,17 +93,12 @@ export class Completions {
       );
       return;
     }
-    const reference = autoReferenceQuery(text, caret);
+    const reference = linkReferenceQuery(text, caret) ?? autoReferenceQuery(text, caret);
     if (reference) {
-      const seen = new Set<string>();
-      const choices = this.context.state.referenceEntries().flatMap((entry) => {
-        if (entry.id === null || seen.has(entry.id)) {
-          return [];
-        }
-        seen.add(entry.id);
-        return [{ value: entry.id, title: referenceLabel(entry) }];
-      });
-      this.offer(reference.from, matchingChoices(choices, reference.query));
+      this.offer(
+        reference.from,
+        matchingChoices(this.referenceChoices(), reference.query)
+      );
       return;
     }
     const wikilink = wikilinkQuery(text, caret);
@@ -141,6 +138,18 @@ export class Completions {
 
   private documents(): { target: string; title: string }[] {
     return this.documentsFound;
+  }
+
+  /** Every uniquely identified target in this document, in document order. */
+  private referenceChoices(): CompletionChoice[] {
+    const seen = new Set<string>();
+    return this.context.state.referenceEntries().flatMap((entry) => {
+      if (entry.id === null || seen.has(entry.id)) {
+        return [];
+      }
+      seen.add(entry.id);
+      return [{ value: entry.id, title: referenceLabel(entry) }];
+    });
   }
 
   close(): void {

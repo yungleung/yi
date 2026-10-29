@@ -14,6 +14,7 @@
  * here is a pure function of the text and an offset, applied as one replacement.
  */
 
+import type { EditKind } from '../document/history';
 import type { MarkdownBlock } from '../document/blocks';
 import { isEmptyParagraphLine } from '../syntax/blank_lines';
 import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
@@ -292,10 +293,21 @@ function contentFollowsTheLine(text: string, offset: number): boolean {
 export function materializeInsertion(
   context: EditorContext,
   offsets: { from: number; to: number },
-  inserted: string
+  inserted: string,
+  caretWithin = inserted.length,
+  kind: EditKind = 'other'
 ): boolean {
-  const { replacement, caret } = emptyLineInsertion(context.state.getText(), offsets.from, inserted);
-  applyEdit(context, offsets.from, offsets.to, replacement, caret);
+  const insertion = emptyLineInsertion(context.state.getText(), offsets.from, inserted);
+  applyEdit(
+    context,
+    offsets.from,
+    offsets.to,
+    insertion.replacement,
+    insertion.caret - inserted.length + Math.min(caretWithin, inserted.length),
+    kind,
+    // A blank-line placeholder cannot hold the materialised paragraph's caret.
+    false
+  );
   return true;
 }
 

@@ -538,9 +538,17 @@ changes how inserted source is written, not what Enter means for the child:
 Opening-marker completion is part of the same context rule. A quoted display
 formula, labeled equation, code fence and fenced-Div callout creates all of its
 delimiter lines with the active quote prefix. The callout-kind chooser remains
-available for `:::`. A backtick on an empty quoted line starts literally so the
-three-character fence can complete; an auto-paired `]` after `[$$` is part of
-the equation opener rather than a reason to leave it literal.
+available for `:::` and opens beside the caret whose third colon completed the
+opener, including when the callout is scrolled well below its title. A backtick
+on an empty quoted line starts literally so the three-character fence can
+complete; an auto-paired `]` after `[$$` is part of the equation opener rather
+than a reason to leave it literal.
+
+Opening `[`, `(`, and `{` pair in ordinary text, ordinary quotes, GitHub callout
+bodies and fenced-Div callout bodies. A one-character input-method commit uses
+the same rule as a key press. Pairing happens before an empty container body is
+materialized, so the caret remains inside the pair rather than after a
+generated newline or closing delimiter.
 
 Citation completion after `@`, wikilink completion after `[[`, and automatic
 reference completion after `[#` use the document text, so they remain available
@@ -799,7 +807,9 @@ Tauri probes will cover:
 - double Enter exiting one nested quote level at a time;
 - Enter inside quoted list, table, code and equation contexts;
 - completion of display math, labeled equations, code fences, callout Divs and
-  their chooser surfaces while quoted or called out;
+  their caret-placed chooser surfaces while quoted or called out;
+- opening-bracket pairing through keys and one-character input-method commits
+  in ordinary text, quotes, GitHub callouts and fenced-Div callouts;
 - citation, wikilink and automatic-reference completion inside both container
   source forms;
 - a two-line paragraph break after a completed child block;

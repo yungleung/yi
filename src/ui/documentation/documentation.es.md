@@ -185,6 +185,11 @@ después de `[#` sigue disponible en ambas formas de origen. Al elegir una fila 
 clave o el ID de destino; el prefijo de cita y los corchetes que lo rodean quedan intactos. La lista
 aparece en cuanto se escribe el marcador o lo confirma un método de entrada; no hace falta pulsar Tab.
 
+Los signos de apertura `[`, `(` y `{` se emparejan automáticamente en texto normal, citas, callouts
+de GitHub y callouts Div, también cuando el carácter llega desde un método de entrada. En el destino
+de un enlace normal al mismo documento, escribir `#` después de `](` también muestra los destinos de
+referencia; al aceptar una fila solo se escribe el ID del fragmento.
+
 Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
 los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
 Fuera del modo fuente, una cita normal tiene margen a ambos lados y una gran comilla inicial. No

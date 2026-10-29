@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
-| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink and automatic-reference queries, the places an `@` or `[#` is not one, entries matching on either field, and the cap |
+| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink, automatic-reference and same-document link-fragment queries, the places an `@`, `[#` or `](#` is not one, path fragments and escapes, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and ninety-three probes (`probe:all` runs 262 and skips 31, each skip for the reason its
+two hundred and ninety-four probes (`probe:all` runs 263 and skips 31, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -131,9 +131,11 @@ while an empty Div opening creates one editable body line before its closing fen
 `container-completions` — citation, wikilink and automatic-reference completion remain available in
 quote and callout source, and accepting a row preserves the container;
 `callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
-and container-aware opening markers/pickers on ordinary blank lines;
-`completion-immediate` — all three completion kinds open from key input and from native input-method
-commits without requiring Tab;
+container-aware opening markers/pickers on ordinary blank lines, and a `:::` picker that stays
+beside a caret deep in the callout;
+`completion-immediate` — all three marker-triggered completion kinds open from key input and from
+native input-method commits without requiring Tab, and `#` in an ordinary same-document link
+destination offers and accepts a fragment target;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
 `quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
 opening mark;
@@ -159,6 +161,8 @@ including numbering and native-tag suppression; `equation-source-editing` — un
 exact source-line clicks, and unfinished attributes; `equation-empty-navigation` — Left from the
 following line enters an empty equation's source), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
+`bracket-contexts` — `[`, `(`, `{` pair through keys and input-method commits in ordinary text,
+blank lines, quotes and both callout source forms;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
 with no id is written by, which its title beside it must not be mistaken for; `wikilink-cmd-click` —

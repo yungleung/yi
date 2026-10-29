@@ -43,11 +43,17 @@ export function materializeCalloutBody(
   text: string,
   offset: number,
   callout: CalloutSource | null,
-  typed: string
+  typed: string,
+  caretWithin = typed.length
 ): QuoteEdit | null {
   if (callout === null || typed === '') {
     return null;
   }
+  const caretInBody = prefixedOffset(
+    typed,
+    Math.min(caretWithin, typed.length),
+    callout.quotePrefix
+  );
 
   if (callout.form === 'alert') {
     const prefix = callout.quotePrefix;
@@ -55,7 +61,7 @@ export function materializeCalloutBody(
     const replacement = `\n${prefix}${body}`;
     return {
       edit: { from: offset, to: offset, replacement },
-      caret: offset + replacement.length
+      caret: offset + `\n${prefix}`.length + caretInBody
     };
   }
 
@@ -73,7 +79,7 @@ export function materializeCalloutBody(
     const replacement = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
     return {
       edit: { from: at, to: at, replacement },
-      caret: at + replacement.length
+      caret: at + caretInBody
     };
   }
 
@@ -81,7 +87,14 @@ export function materializeCalloutBody(
   const replacement = `${body}\n`;
   return {
     edit: { from: at, to: at, replacement },
-    caret: at + body.length
+    caret: at + caretInBody
   };
+}
+
+/** A caret in `typed`, after every quote prefix the rewrite adds before it. */
+function prefixedOffset(typed: string, caret: number, prefix: string): number {
+  const beforeCaret = typed.slice(0, caret);
+  const insertedPrefixes = beforeCaret.match(/\n/g)?.length ?? 0;
+  return caret + insertedPrefixes * prefix.length;
 }
 

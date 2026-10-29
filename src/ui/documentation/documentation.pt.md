@@ -183,6 +183,11 @@ depois de `[#` continua disponível nas duas formas de origem. Escolher uma linh
 ou o ID de destino; o prefixo de citação e os parênteses retos em volta permanecem intactos. A lista
 abre assim que o marcador é digitado ou confirmado por um método de entrada; Tab não é necessário.
 
+Os sinais de abertura `[`, `(` e `{` são emparelhados automaticamente em texto comum, citações,
+callouts do GitHub e callouts Div, inclusive quando o caractere chega por um método de entrada. No
+destino de um link comum para o mesmo documento, digitar `#` depois de `](` também lista os destinos
+de referência; aceitar uma linha grava apenas o ID do fragmento.
+
 Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
 prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
 Fora do modo de origem, uma citação comum tem margem dos dois lados e uma grande aspa inicial. Ela

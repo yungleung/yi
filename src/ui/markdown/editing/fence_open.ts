@@ -23,6 +23,9 @@
 
 import { soleDelimiter } from '../syntax/markers';
 import { lineSpanAt } from '../syntax/lines';
+import { getCaretRange } from '../caret/caret';
+import { caretRect } from '../caret/geometry';
+import { boxOf } from '../../floating/beside';
 import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 import { proseRoot } from './selection';
@@ -210,7 +213,7 @@ function askForLanguage(context: EditorContext): void {
   }
 }
 
-/** Opens the callout-kind list beside the source of the Div just created. */
+/** Opens the callout-kind list beside the caret that completed the Div. */
 function askForCalloutKind(context: EditorContext): void {
   const caret = caretOffset(context);
   const block = caret === null ? null : context.state.getBlockAtOffset(caret);
@@ -225,8 +228,18 @@ function askForCalloutKind(context: EditorContext): void {
   if (source) {
     const at = caret ?? block.charStart;
     const relative = Math.min(Math.max(0, at - block.charStart), block.text.length);
+    const range = getCaretRange();
+    const measured = range === null ? null : caretRect(range);
+    const anchor = measured
+      ? {
+          left: measured.left,
+          top: measured.top,
+          width: 0,
+          height: measured.height
+        }
+      : boxOf(source);
     chooseCalloutKind(
-      source,
+      anchor,
       calloutAtOffset(block.text, relative)?.kind ?? 'note',
       block.lineStart
     );

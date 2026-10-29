@@ -7,8 +7,13 @@
 (async () => {
   const t = window.__t;
   const checks = [];
-  const check = (name, actual) =>
-    checks.push({ name, actual, expected: true, pass: actual === true });
+  const check = (name, actual, expected = true) =>
+    checks.push({
+      name,
+      actual,
+      expected,
+      pass: JSON.stringify(actual) === JSON.stringify(expected)
+    });
   const cardOpen = () =>
     document.querySelector('[data-completion]')?.classList.contains('hidden') === false;
   const placeAtEnd = async (needle) => {
@@ -76,6 +81,47 @@
   await placeAtEnd('See\u00a0');
   await commit('@');
   check('citations open when their marker is committed', cardOpen());
+  t.key('Escape');
+
+  await t.load('# Target\n\nSee [the target]()\n');
+  const link = t.prose().querySelector('.markdown-link');
+  if (link) {
+    await t.click(link);
+    await t.sleep(120);
+  }
+  const linkSource = t.prose().querySelector('.markdown-link-source');
+  const linkText = linkSource
+    ? t.textNodesIn(linkSource).find((node) => node.data.includes(')'))
+    : null;
+  if (linkText) {
+    const close = linkText.data.indexOf(')');
+    const range = document.createRange();
+    range.setStart(linkText, close);
+    range.collapse(true);
+    const box = range.getBoundingClientRect();
+    linkText.parentElement.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        clientX: box.left + 1,
+        clientY: box.top + box.height / 2
+      })
+    );
+    await t.sleep(140);
+    await type(['#']);
+  }
+  const linkOpen = cardOpen();
+  const linkRows = [...document.querySelectorAll('[data-completion-row]')].map((row) =>
+    row.getAttribute('data-completion-row')
+  );
+  check('ordinary link fragment completion opens on #', linkOpen);
+  check('and offers the document target', linkRows.includes('target'), true);
+  t.key('Enter');
+  await t.sleep(160);
+  check(
+    'accepting it writes only the fragment ID',
+    await t.raw(),
+    '# Target\n\nSee [the target](#target)\n'
+  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()
