@@ -27,6 +27,7 @@ import {
 } from '../caret/caret';
 import {
   blockSourceAt,
+  editStaysInsideShownSource,
   moveShownSource,
   setShownRange,
   shownSourceHeld,
@@ -413,9 +414,20 @@ export function applyEdit(
   // A source view, ordinary keyboard typing and an input-method commit on one exact
   // text node all write the document's own characters directly. Prose may temporarily
   // show a marker literally; the deferred shape check renders it once input settles.
+  const sourceEditStays =
+    candidate === null ||
+    !candidate.source ||
+    editStaysInsideShownSource(
+      { from, to, replacement },
+      {
+        start: candidate.sourceGrowsAtStart,
+        end: candidate.sourceGrowsAtEnd
+      }
+    );
   const direct =
     allowFastPath &&
     candidate !== null &&
+    sourceEditStays &&
     (candidate.source
       ? isInPlaceTextEdit(beforeText, from, to, replacement)
       : rule ||

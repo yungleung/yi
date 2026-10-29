@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and ninety-six probes (`probe:all` runs 263 and skips 33, each skip for the reason its
+two hundred and ninety-eight probes (`probe:all` runs 264 and skips 34, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -137,8 +137,8 @@ beside a caret deep in the callout;
 native input-method commits without requiring Tab, and `#` in an ordinary same-document link
 destination offers and accepts a fragment target;
 `completion-filtered-accept` — every completion kind accepts a filtered row after the deferred
-block rebuild, renders immediately with the caret outside its closing delimiter, and works at
-the end of a line in ordinary text; it also keeps `[test](` in link source mode with the caret
+block rebuild, stays in source with the caret at its closing edge, and renders on the next
+character or at the end of a line; it also keeps `[test](` in link source mode with the caret
 inside the paired destination;
 `completion-container-filtered-accept` — the same filtered acceptance and closing-delimiter caret
 inside quotes, GitHub callouts and fenced-Div callouts;
@@ -220,6 +220,8 @@ shows nothing while the write is a letter or a digit, and `code-local-write-stal
 where the rest of the line keeps its old colours — `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
 localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is, and the next author-typed space is not mistaken for the candidate key; `input-source-switch` — one source-change event rebinds the focused seam so Chinese pinyin starts after English, delivered by AppKit on macOS, `WM_INPUTLANGCHANGE` on Windows, and IBus/Fcitx D-Bus signals on Linux (the Windows and Linux delivery paths await platform checks); `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-passthrough` — explicit 229 letters keep the method's own case and survive an editor-handled space, while English Caps Lock stays on the editor path across a source switch; `empty-task-composition-burst` — a committed word followed immediately by a fast burst keeps the empty task row, its placeholder and the input focus; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), `space-typing-visibility` — spaces at the end of a leaf and in a run stay visible while the source keeps ordinary spaces, paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
+`revealable-edge-exit` and `revealable-edge-exit-format` — every inline revealable family keeps
+its source at the closing edge and renders when the caret moves beyond it;
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
 page where it was; `reveal-keeps-its-height` — and the block it opens never spends a frame at
 the `contain-intrinsic-size` fallback, which is what a reader sees as the paragraph blinking and

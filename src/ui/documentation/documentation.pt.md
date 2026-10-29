@@ -187,8 +187,10 @@ Os sinais de abertura `[`, `(` e `{` são emparelhados automaticamente em texto 
 callouts do GitHub e callouts Div, inclusive quando o caractere chega por um método de entrada. No
 destino de um link comum para o mesmo documento, digitar `#` depois de `](` também lista os destinos
 de referência; aceitar uma linha grava apenas o ID do fragmento.
-Ao aceitar qualquer uma dessas sugestões, o link, a referência, a citação ou o wikilink é
-renderizado imediatamente e o cursor fica logo após o delimitador de fechamento.
+Ao aceitar qualquer uma dessas sugestões, o cursor fica na borda de fechamento do nó e o
+Markdown continua visível para edição. O próximo caractere é escrito depois do nó e renderiza o
+link, a referência, a citação ou o wikilink concluídos. Se o caractere ainda fizer parte da mesma
+construção, como outra tecla de uma citação narrativa, a fonte continua visível.
 
 Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
 prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.

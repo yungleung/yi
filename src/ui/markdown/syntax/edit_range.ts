@@ -23,3 +23,16 @@ export function shiftOffset(offset: number, edit: TextEdit): number {
   if (offset >= edit.to) return offset + (edit.replacement.length - (edit.to - edit.from));
   return edit.from;
 }
+
+/**
+ * Where a range's right endpoint ends after `edit`.
+ *
+ * Unlike a caret at the same boundary, an exclusive range end includes text
+ * inserted at that boundary. This is what lets a source view's content and the
+ * complete source range both grow as the author types at their visible end.
+ */
+export function shiftRangeEnd(offset: number, edit: TextEdit): number {
+  if (offset < edit.from) return offset;
+  if (offset > edit.to) return offset + (edit.replacement.length - (edit.to - edit.from));
+  return edit.from + edit.replacement.length;
+}

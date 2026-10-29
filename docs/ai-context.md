@@ -820,11 +820,17 @@ live DOM caret on the block wrapper. Accepting from the recorded document range 
 Enter write the filtered row after that rebuild. Non-owned text keys are re-anchored to the same
 endpoint first, and Escape or a query with no matches restores it before closing, so the next
 Backspace still edits the query. A query records how many delimiter characters follow it, so
-acceptance can put the caret after `]`, `)`, or `]]` and render the completed node immediately
-rather than leave its source open. A delimiter pair now rebuilds through the ordinary path:
-typing `(` after `[title]` must open `()` around the caret and rebuild the block as a link source.
+acceptance can put the caret after `]`, `)`, or `]]` while keeping the completed node's source
+open at that edge. A boundary character is then decided again from the rebuilt paragraph: it
+leaves source mode when it is surrounding prose, so the completed node renders, while a character
+that continues the same construct keeps its source open (a narrative citation accepting another
+key character is the exception). A growable source such as a caption keeps its content end moving
+with the local write, so a burst at that end does not rebuild each character. A delimiter pair
+rebuilds through the ordinary path: typing `(` after `[title]` must open `()` around the caret and
+rebuild the block as a link source.
 `completion-filtered-accept.js` holds every kind in ordinary prose, quotes, GitHub callouts and
-fenced-Div callouts, including completed nodes at the end of a line.
+fenced-Div callouts, including completed nodes at the end of a line; `revealable-edge-exit.js` and
+`revealable-edge-exit-format.js` hold the boundary decision.
 A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) asks for the document
 its target names and it opens through the session, exactly as a click on a row of the tree opens
 one — a plain click still opens the link's own source, and a target no document answers to is said

@@ -189,8 +189,10 @@ Los signos de apertura `[`, `(` y `{` se emparejan automáticamente en texto nor
 de GitHub y callouts Div, también cuando el carácter llega desde un método de entrada. En el destino
 de un enlace normal al mismo documento, escribir `#` después de `](` también muestra los destinos de
 referencia; al aceptar una fila solo se escribe el ID del fragmento.
-Al aceptar cualquiera de estas sugerencias, el enlace, la referencia, la cita o el wikilink se
-renderizan de inmediato y el cursor queda justo después de su delimitador de cierre.
+Al aceptar cualquiera de estas sugerencias, el cursor queda en el borde de cierre del nodo y su
+código Markdown permanece visible para editarlo. El siguiente carácter se escribe después del
+nodo y renderiza el enlace, la referencia, la cita o el wikilink terminados. Si el carácter sigue
+formando parte del mismo elemento, como otra tecla de una cita narrativa, el código sigue visible.
 
 Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
 los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.

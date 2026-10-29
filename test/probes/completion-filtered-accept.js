@@ -1,5 +1,7 @@
 /**
- * Every completion kind accepts its filtered row after typing settles.
+ * Every completion kind accepts its filtered row after typing settles. Acceptance leaves the
+ * caret at the new node's closing edge; the following character decides from the rebuilt
+ * paragraph whether the node ends there and renders or continues its editable source.
  *
  * @covers src/ui/markdown/editing/completions.ts,
  *   src/ui/markdown/syntax/completions.ts
@@ -125,7 +127,10 @@
       },
       expected: (body, chosen) => `${body}@${chosen}`,
       rendered: '.markdown-citation',
-      source: '.markdown-citation-source'
+      source: '.markdown-citation-source',
+      // A narrative citation has no closing bracket: a space, not a key
+      // character, is what ends it before the surrounding prose.
+      beyond: ' '
     },
     {
       name: 'wikilink',
@@ -158,23 +163,38 @@
         cardOpen() && rows().includes(chosen)
       );
       await type(['Enter'], 0);
-      check(
-        `${context.name}: ${kind.name} accepts the filtered row`,
-        await t.raw(),
-        context.source(kind.expected(kind.body, chosen))
-      );
+      const accepted = context.source(kind.expected(kind.body, chosen));
       const range = caretModule.getCaretRange();
+      const edgeSource =
+        range === null ? null : t.prose().querySelector(kind.source);
       check(
-        `${context.name}: ${kind.name} leaves the caret outside the closing marker`,
+        `${context.name}: ${kind.name} leaves the caret at the closing edge`,
         range !== null &&
-          (range.startContainer.textContent ?? '').slice(range.startOffset).startsWith(' tail')
+          edgeSource !== null &&
+          edgeSource.contains(range.startContainer) &&
+          range.startOffset === (range.startContainer.textContent ?? '').length
       );
       if (context.expectsRendered) {
         check(
-          `${context.name}: ${kind.name} renders immediately`,
+          `${context.name}: ${kind.name} stays in source at its closing edge`,
+          t.prose().querySelector(kind.source) !== null,
+          true
+        );
+        const beyond = kind.beyond ?? 'X';
+        t.key(beyond);
+        await t.sleep(260);
+        check(
+          `${context.name}: ${kind.name} starts the surrounding text beyond the node`,
+          await t.raw(),
+          accepted.replace(' tail\n', `${beyond} tail\n`)
+        );
+        check(
+          `${context.name}: ${kind.name} renders once the caret is beyond its edge`,
           t.prose().querySelector(kind.rendered) !== null &&
             t.prose().querySelector(kind.source) === null
         );
+      } else {
+        check(`${context.name}: ${kind.name} accepts the filtered row`, await t.raw(), accepted);
       }
       check(`${context.name}: ${kind.name} closes after accepting`, cardOpen(), false);
     }
@@ -187,12 +207,20 @@
     const chosen = await kind.query();
     await type(['Enter'], 0);
     check(
-      `end of line: ${kind.name} accepts`,
+      `end of line: ${kind.name} stays in source at its closing edge`,
+      t.prose().querySelector(kind.source) !== null,
+      true
+    );
+    const beyond = kind.beyond ?? 'X';
+    t.key(beyond);
+    await t.sleep(260);
+    check(
+      `end of line: ${kind.name} starts the surrounding text beyond the node`,
       await t.raw(),
-      `${target}${kind.expected(kind.body, chosen)}\n`
+      `${target}${kind.expected(kind.body, chosen)}${beyond}\n`
     );
     check(
-      `end of line: ${kind.name} renders immediately`,
+      `end of line: ${kind.name} renders once the caret is beyond its edge`,
       t.prose().querySelector(kind.rendered) !== null &&
         t.prose().querySelector(kind.source) === null
     );
@@ -203,21 +231,21 @@
   await type(['s', 'm']);
   await type(['Enter'], 0);
   check(
-    'a parenthetical citation accepts beyond its closing bracket',
+    'a parenthetical citation stays in source at its closing bracket',
+    t.prose().querySelector('.markdown-citation-source') !== null,
+    true
+  );
+  t.key('X');
+  await t.sleep(260);
+  check(
+    'typing beyond a parenthetical citation starts the surrounding text',
     await t.raw(),
-    `${target}See [@smith2020] tail\n`
+    `${target}See [@smith2020]X tail\n`
   );
   check(
-    'and renders with the caret outside that bracket',
+    'and the citation renders once the caret is beyond that bracket',
     t.prose().querySelector('.markdown-citation') !== null &&
-      t.prose().querySelector('.markdown-citation-source') === null &&
-      (() => {
-        const range = caretModule.getCaretRange();
-        return (
-          range !== null &&
-          (range.startContainer.textContent ?? '').slice(range.startOffset).startsWith(' tail')
-        );
-      })()
+      t.prose().querySelector('.markdown-citation-source') === null
   );
 
   await t.load('Before [test] tail\n');

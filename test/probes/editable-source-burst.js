@@ -124,6 +124,15 @@
   });
 
   await burst({
+    name: 'table caption end',
+    documentText: '| A |\n| --- |\n| 1 |\n\n: Result\n',
+    clickSelector: '.markdown-caption',
+    sourceSelector: '.markdown-caption-source',
+    typed: ' details',
+    expected: '| A |\n| --- |\n| 1 |\n\n: Result details\n'
+  });
+
+  await burst({
     name: 'fenced-code attributes',
     documentText: '```js {#sample}\nconst value = 1;\n```\n',
     clickSelector: '.markdown-fenced-code',

@@ -37,7 +37,7 @@
 import type { AstNode } from './ast';
 import { type MarkdownBlock } from './document/blocks';
 import { hasSourceMode } from './document/block_kinds';;
-import { shiftOffset, type TextEdit } from './syntax/edit_range';
+import { shiftOffset, shiftRangeEnd, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
 import { quoteNeedsSourceAt } from './syntax/quote_edits';
 
@@ -64,7 +64,37 @@ export function moveShownSource(edit: TextEdit): void {
     return;
   }
   const from = shiftOffset(shownRange.from, edit);
-  shownRange = { from, to: Math.max(from, shiftOffset(shownRange.to, edit)) };
+  shownRange = { from, to: Math.max(from, shiftRangeEnd(shownRange.to, edit)) };
+}
+
+/**
+ * Whether an edit belongs strictly inside the source that is being shown.
+ *
+ * The caret at either edge still belongs to the revealable node, so its source stays open
+ * while the reader is at a marker. Inserting text at that edge is different: the new
+ * character may belong to the surrounding prose. The ordinary edit path rebuilds from the
+ * document, which decides whether the node ended at that edge or grew to include the new
+ * character: a completed link, formula, image, or formatting run renders; a narrative
+ * citation that accepts the typed key character remains in its source.
+ */
+export function editStaysInsideShownSource(
+  edit: TextEdit,
+  growth: { start: boolean; end: boolean } = { start: false, end: false }
+): boolean {
+  if (!shownRange || edit.from < shownRange.from || edit.to > shownRange.to) {
+    return false;
+  }
+  if (edit.from > shownRange.from && edit.to < shownRange.to) {
+    return true;
+  }
+  const insertion = edit.from === edit.to && edit.replacement.length > 0;
+  if (!insertion) {
+    return false;
+  }
+  return (
+    (edit.from === shownRange.from && growth.start) ||
+    (edit.from === shownRange.to && growth.end)
+  );
 }
 
 /**

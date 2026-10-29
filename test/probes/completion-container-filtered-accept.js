@@ -1,5 +1,5 @@
 /**
- * Filtered completions accept beyond their closing delimiters inside containers.
+ * Filtered completions leave the caret at their closing edge inside containers.
  *
  * @covers src/ui/markdown/editing/completions.ts,
  *   src/ui/markdown/syntax/completions.ts
@@ -166,7 +166,7 @@
       );
       const range = caretModule.getCaretRange();
       check(
-        `${context.name}: ${kind.name} leaves the caret outside`,
+        `${context.name}: ${kind.name} leaves the caret at the closing edge`,
         range !== null &&
           (range.startContainer.textContent ?? '').slice(range.startOffset).startsWith(' tail')
       );

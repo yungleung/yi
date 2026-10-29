@@ -29,11 +29,9 @@ import {
   type CompletionChoice
 } from '../syntax/completions';
 import { referenceLabel } from '../document/reference_index';
-import { setShownRange, withHeldShownSource } from '../source_mode';
 import {
   applyEdit,
   caretOffset,
-  placeCaret,
   restoreCaret,
   type EditorContext
 } from './context';
@@ -241,16 +239,6 @@ export class Completions {
     const caret = from + choice.value.length + closing;
     this.close();
     applyEdit(this.context, from, to, choice.value, caret, 'other', false);
-    const block = this.context.state.getBlockAtOffset(caret);
-    if (block && block.kind !== 'quote' && block.kind !== 'fencedDiv') {
-      // A completed inline target renders as soon as its closing delimiter is
-      // behind the caret. The ordinary edit path deliberately keeps a node in
-      // source mode at its edge so it remains editable; completion has reached
-      // the outside edge, where the rendered form is the truthful view.
-      setShownRange(null);
-      this.context.renderer.renderChanged();
-      withHeldShownSource(() => placeCaret(this.context, caret, false));
-    }
   }
 
   /**

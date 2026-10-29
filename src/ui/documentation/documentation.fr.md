@@ -189,8 +189,10 @@ Les ouvrants `[`, `(` et `{` sont appariés automatiquement dans le texte ordina
 les callouts GitHub et les callouts Div, y compris lorsqu’un caractère arrive par une méthode de
 saisie. Dans la destination d’un lien vers le même document, saisir `#` après `](` propose aussi les
 cibles de référence du document ; accepter une ligne n’écrit que l’ID du fragment.
-Après avoir accepté l’une de ces suggestions, le lien, la référence, la citation ou le wikilien
-est rendu immédiatement et le curseur se place juste après son délimiteur de fermeture.
+Après avoir accepté l’une de ces suggestions, le curseur reste au bord fermant du nœud et son
+Markdown demeure visible pour la modification. Le caractère suivant est écrit après le nœud et
+rend le lien, la référence, la citation ou le wikilien terminé. Si le caractère prolonge encore
+la même construction, par exemple une clé de citation narrative, sa source reste visible.
 
 Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.

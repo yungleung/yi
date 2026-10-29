@@ -95,6 +95,12 @@ check('shiftOffset before the edit', edits.shiftOffset(3, { from: 10, to: 12, re
 check('shiftOffset after the edit', edits.shiftOffset(20, { from: 10, to: 12, replacement: 'xxx' }), 21);
 check('shiftOffset inside the edit clamps to its start',
   edits.shiftOffset(11, { from: 10, to: 12, replacement: 'xxx' }), 10);
+check('shiftRangeEnd includes text inserted at the range end',
+  edits.shiftRangeEnd(12, { from: 12, to: 12, replacement: 'abc' }), 15);
+check('shiftRangeEnd moves with an edit beyond the range',
+  edits.shiftRangeEnd(8, { from: 12, to: 12, replacement: 'abc' }), 8);
+check('shiftRangeEnd ends at the replacement when the edit overlaps it',
+  edits.shiftRangeEnd(12, { from: 10, to: 12, replacement: 'x' }), 11);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
