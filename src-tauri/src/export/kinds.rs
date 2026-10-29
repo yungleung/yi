@@ -227,6 +227,23 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::Text,
     },
     ExportKind {
+        kind: "revealjs",
+        extension: "html",
+        name_suffix: "",
+        // The title, theme, transition and slide level are the note's own
+        // frontmatter metadata; the window never substitutes a title.
+        takes_a_title: false,
+        needs_a_language: false,
+        names_its_body: false,
+        carries_pictures: true,
+        takes_a_page_size: false,
+        needs_pandoc: true,
+        needs_a_font: false,
+        defaults: include_str!("../../assets/export/export.revealjs.yaml"),
+        ships_fonts: false,
+        template_mode: KindTemplate::None,
+    },
+    ExportKind {
         kind: "epub",
         extension: "epub",
         name_suffix: "",
@@ -265,6 +282,22 @@ pub const KINDS: &[ExportKind] = &[
         defaults: include_str!("../../assets/export/export.pdf.yaml"),
         ships_fonts: true,
         template_mode: KindTemplate::Text,
+    },
+    ExportKind {
+        kind: "beamer",
+        extension: "pdf",
+        name_suffix: "",
+        // Title, institute, theme, colors, fonts and ratio are note metadata.
+        takes_a_title: false,
+        needs_a_language: false,
+        names_its_body: false,
+        carries_pictures: false,
+        takes_a_page_size: false,
+        needs_pandoc: true,
+        needs_a_font: true,
+        defaults: include_str!("../../assets/export/export.beamer.yaml"),
+        ships_fonts: false,
+        template_mode: KindTemplate::None,
     },
     ExportKind {
         kind: "markdown",

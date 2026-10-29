@@ -1,0 +1,56 @@
+# REVEAL.JS DEFAULTS FILE
+# =======================
+# Markdown --> Reveal.js presentation.
+#
+# Presentation metadata belongs to the note's frontmatter: title, subtitle,
+# author, date, theme, transition, slide-level, incremental, and any other
+# variables Pandoc's Reveal.js template understands. This file supplies the
+# conversion contract and nothing that overrides those document choices.
+#
+# Reveal.js is never self-contained. Yi exports a folder with the page, its
+# pictures, and the Reveal.js distribution files under js/dist. The export
+# card decides independently whether Reveal.js files and remote pictures stay
+# remote; when they are local, Yi downloads them after Pandoc writes the page.
+reader: markdown
+writer: revealjs
+standalone: true
+embed-resources: false
+slide-level: 2
+incremental: false
+controls: true
+progress: true
+history: true
+variables: {}
+metadata-files: []
+include-before-body: []
+include-after-body: []
+include-in-header: []
+bibliography: []
+filters:
+- type: citeproc
+top-level-division: section
+wrap: none
+columns: 78
+dpi: 72
+toc: false
+toc-depth: 2
+number-sections: false
+number-offset:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+shift-heading-level-by: 0
+identifier-prefix: ''
+title-prefix: ''
+eol: lf
+strip-comments: false
+indented-code-classes: []
+ascii: false
+highlight-style: pygments
+tab-stop: 4
+preserve-tabs: false
+fail-if-warnings: false
+

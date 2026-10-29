@@ -1,0 +1,48 @@
+# BEAMER DEFAULTS FILE
+# ====================
+# Markdown --> Beamer PDF presentation.
+#
+# Talk metadata belongs to the note's frontmatter: title, subtitle, author,
+# date, institute, theme, colortheme, fonttheme, aspectratio, navigation,
+# section-titles, and any other variables Pandoc's Beamer template supports.
+# This file supplies the conversion contract and nothing that overrides those
+# document choices.
+reader: markdown
+writer: beamer
+standalone: true
+pdf-engine: xelatex
+slide-level: 2
+variables: {}
+metadata-files: []
+include-before-body: []
+include-after-body: []
+include-in-header: []
+bibliography: []
+filters:
+- type: citeproc
+top-level-division: section
+wrap: none
+columns: 78
+dpi: 72
+toc: false
+toc-depth: 2
+number-sections: false
+number-offset:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+shift-heading-level-by: 0
+identifier-prefix: ''
+title-prefix: ''
+eol: lf
+strip-comments: false
+indented-code-classes: []
+ascii: false
+highlight-style: pygments
+tab-stop: 4
+preserve-tabs: false
+fail-if-warnings: false
+

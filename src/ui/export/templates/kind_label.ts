@@ -17,10 +17,14 @@ export function kindLabel(kind: string): string {
       return t('export.kind.latex');
     case 'html':
       return t('export.kind.html');
+    case 'revealjs':
+      return t('export.kind.revealjs');
     case 'epub':
       return t('export.kind.epub');
     case 'pdf':
       return t('export.kind.pdf');
+    case 'beamer':
+      return t('export.kind.beamer');
     case 'markdown':
       return t('export.kind.markdown');
     default:

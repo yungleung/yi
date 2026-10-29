@@ -10,9 +10,20 @@
         // times: `odt`, `latex`, `html`, each one moved the example along).
         let refused = kind_of("rtf").expect_err("rtf is not a kind this build ships");
         assert!(refused.contains("rtf"), "{refused}");
-        for shipped in ["docx", "odt", "latex", "html", "epub"] {
+        for shipped in ["docx", "odt", "latex", "html", "epub", "revealjs", "beamer"] {
             assert!(kind_of(shipped).is_ok(), "{shipped} is not shipped");
         }
+    }
+
+    #[test]
+    fn presentation_kinds_use_pandoc_without_template_packages() {
+        for name in ["revealjs", "beamer"] {
+            let kind = kind_of(name).expect("presentation kind");
+            assert!(kind.needs_pandoc);
+            assert_eq!(kind.template_mode, KindTemplate::None);
+        }
+        assert_eq!(kind_of("revealjs").unwrap().extension, "html");
+        assert_eq!(kind_of("beamer").unwrap().extension, "pdf");
     }
 
     #[test]
@@ -29,8 +40,10 @@
             "odt" => "odt",
             "latex" => "tex",
             "html" => "html",
+            "revealjs" => "html",
             "epub" => "epub",
             "pdf" => "pdf",
+            "beamer" => "pdf",
             "markdown" => "md",
             _ => "",
         };
