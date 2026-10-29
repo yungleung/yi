@@ -71,6 +71,7 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
     event.preventDefault();
     return;
   }
+  host.completions.restoreQueryCaret();
   handleTextKey(event, host);
   host.completions.refresh();
 }

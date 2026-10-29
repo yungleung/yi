@@ -48,7 +48,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'fence_open.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { fenceOpenWrite } = await import(file);
+const { containerFenceOpenWrite, fenceOpenWrite } = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -105,6 +105,26 @@ check(
   '```\n\n```\n\nhello world\n'
 );
 check('and its caret is on the blank line too', typed('`\n\nhello world\n', 1, '``').caret, '```\n'.length);
+const quotedCode = '> Intro\n> ``\n';
+const quotedCodeOpen = containerFenceOpenWrite(quotedCode, 12, '`');
+check(
+  'a completed code fence keeps every generated line in its quote',
+  quotedCodeOpen === null
+    ? null
+    : {
+        kind: quotedCodeOpen.kind,
+        text:
+          quotedCode.slice(0, quotedCodeOpen.from) +
+          quotedCodeOpen.replacement +
+          quotedCode.slice(quotedCodeOpen.to),
+        caret: quotedCodeOpen.caret
+      },
+  {
+    kind: 'fencedCode',
+    text: '> Intro\n> \n> ```\n> \n> ```\n> \n',
+    caret: 19
+  }
+);
 
 // And so does a display formula.
 const formula = 'text\n\n$';
@@ -124,6 +144,11 @@ check('with the equation kind', labeled.kind, 'equation');
 check(
   'the three typed characters `[$$` open it too',
   typed('[$', 2, '$').text,
+  '[$$\n\n$$]{}\n\n'
+);
+check(
+  'the auto-paired closing bracket does not stop labeled math from opening',
+  typed('[$]\n\n', 2, '$').text,
   '[$$\n\n$$]{}\n\n'
 );
 check(

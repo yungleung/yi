@@ -63,7 +63,7 @@ taking — is `docs/structure.md`.
 | Table captions and export | the shared `nodes/caption.ts` renders, numbers, and reveals a table caption across its complete row; `create_block.ts` groups the table, source-only separator, and caption without rendering the blank separator; `ui/export/table_rewrites.ts` lowers non-LaTeX output through `table_html.ts`; `ui/export/reference_header.ts` defines the LaTeX/PDF counter macro |
 | Equations | `syntax/equation_blocks.ts` reads `[$$…$$]{…}` wrappers, classifies the one top-level environment, keeps the structural block alive while its attributes are unfinished, and lowers native numbering; `create_block.ts` and `nodes/equation.ts` render one KaTeX block with one Yi-owned number, or its exact clickable source; `ui/export/equation_rewrites.ts` and `equation_html.ts` own writer output, including the full-width formula/reserved-number table shared by every display equation in HTML, EPUB, DOCX and ODT |
 | List captions and export | `syntax/caption_lines.ts` owns the colon-line grammar shared with tables; `syntax/list_captions.ts` attaches a caption only to its list and masks it for remark; the shared `nodes/caption.ts` renders, numbers, and reveals it; `ui/export/list_rewrites.ts` gives HTML/EPUB/DOCX/ODT one shared wrapper and LaTeX/PDF a `yilist` counter with native references |
-| Callouts | `syntax/callouts.ts` owns GitHub-alert and Pandoc fenced-Div grammar, title/kind and source ranges; `syntax/quote_edits.ts` and `syntax/callout_body.ts` own quote-depth Enter and empty-body materialisation; `plugins/remark-callouts.ts` normalises both forms into an `AstCallout`; `nodes/callout.ts` renders the panel and empty anchor; `ui/export/callout_rewrites.ts` lowers both forms into the filter-visible semantic Div |
+| Callouts | `syntax/callouts.ts` owns GitHub-alert and Pandoc fenced-Div grammar, title/kind and source ranges; `syntax/quote_edits.ts` and `syntax/callout_body.ts` own quote-depth Enter, empty-opening Enter and first-body materialisation; `plugins/remark-callouts.ts` normalises both forms into an `AstCallout`; `nodes/callout.ts` renders the panel and empty anchor; `ui/export/callout_rewrites.ts` lowers both forms into the filter-visible semantic Div |
 | Code listings | `syntax/code_fences.ts` reads Pandoc attributes from a fenced opening line; `syntax/listings.ts` creates a block node for an ID or caption; `create_block.ts` renders the generated label/caption below the editable code body; `ui/export/preprocess.ts` rewrites automatic references and every writer's listing shape |
 
 `test/checks/syntax-home.mjs` fails if any of those facts is defined anywhere else.
@@ -248,15 +248,19 @@ height remembered against it.
 4. Rendering rebuilds only the blocks whose content key or shape key changed; the
    rest keep their DOM, which is what keeps typing cheap in a long document.
 
-Before step 1, the key is offered to the **completion list** — a citation's keys after an `@`,
-the workspace's documents between `[[` and `]]`. While one is open the arrows, Enter, Tab and
-Escape are the list's, and every other key is the text path's, which redraws the list afterwards
-(`markdown_editor.ts: handleKeydown`, `editing/completions.ts`); a click in the document closes
-it, because a click is not typing. Two pure rules decide everything the list shows: whether the
-caret is inside a query at all, and which entries match it (`syntax/completions.ts`), and what a
-bracket writes where the author is (`syntax/brackets.ts` — a pair in prose, nothing in a literal
-region or over a selection, a step over the `]` the app itself wrote, and a pair taken away whole
-by Backspace).
+Before step 1, the key is offered to the **completion list** — a citation's keys after an `@`, the
+document's targets after `[#` or a same-document `](#`, and the workspace's documents between `[[`
+and `]]`. While one is open the arrows, Enter, Tab and Escape are the list's, and every other key is
+the text path's, which redraws the list afterwards (`markdown_editor.ts: handleKeydown`,
+`editing/completions.ts`). A native input-method, dictation or emoji commit refreshes the same list
+after its one edit is written, so every way of entering a marker opens its choices at once. A click
+in the document closes it, because a click is not typing. Two pure rules decide everything the list
+shows: whether the caret is inside a query at all, and which entries match it
+(`syntax/completions.ts`), and what a bracket writes where the author is (`syntax/brackets.ts` — a
+pair in prose, quotation, GitHub callout or fenced-Div source, nothing in a literal region or over a
+selection, a step over the `]` the app itself wrote, and a pair taken away whole by Backspace). The
+bracket rule sees a one-character input-method commit exactly as it sees a key, before a blank line
+or container body is materialized, so the caret remains inside the pair in every supported context.
 
 Most typing never gets that far. A keyboard insertion followed by a non-newline
 character, and an input method's committed word, is written into the rendered text run
@@ -294,13 +298,17 @@ blocks whose parse depends on another block — a footnote marker whose definiti
 renamed, for example — once per burst rather than once per key. A source view remains
 mounted while its caret is inside it; leaving it performs the full shape change.
 
-The write parses nothing either. Which source the caret is in is decided from the
-document, but an accepted edit cannot move the caret out of the node it is in —
-`test/checks/check-plain-edit.mjs` checks that against the editor's own parse — so
-the fast path holds that decision while it places the caret and moves the shown
-range with the edit (`source_mode.ts: moveShownSource`) instead of re-deciding it.
-The ordinary path and the deferred check keep asking, and the parse they read is the
-one their rebuild renders from.
+The write parses nothing for an edit *strictly inside* the shown source, where
+`test/checks/check-plain-edit.mjs` checks against the editor's own parse that it cannot
+leave the node. The fast path holds that decision while it places the caret and moves
+the shown range with the edit (`source_mode.ts: moveShownSource`). An edit touching
+either source edge takes the ordinary path instead: a typed character there can end the
+node (a completed link, formula, image, or formatting run) or grow it (another key
+character in a narrative citation), and only the rebuilt paragraph can decide which.
+The source's content tags move with a local write as well, using a right-biased end for
+text inserted at that boundary; a growable caption can therefore accept a burst at its
+own end without rebuilding while a completed link still leaves source mode.
+The deferred check keeps that rule for a burst that changed the block's shape.
 
 Two writers put text into a mounted block without the renderer building it: the fast path
 above writes into the tagged text node, and a formatting command patches the block's own
@@ -392,7 +400,7 @@ still places one (`test/probes/select-across-blocks.js`).
 | A callout's source, editing, navigation, or export shape | `syntax/callouts.ts`, `syntax/quote_edits.ts`, `syntax/callout_body.ts`, `editing/callout_kind_picker.ts`, `plugins/remark-callouts.ts`, `nodes/callout.ts`, `nodes/quote_source.ts`, `caret/navigation.ts`, `ui/export/callout_rewrites.ts` | a GitHub alert is a blockquote subtype and a Pandoc callout is a fenced Div; both normalise to one positioned callout node. Ordinary quotes and callouts become exact block source while edited, so carriers and escape markers remain addressable. Enter uses the active quote depth, exits one level at a time, and prefixes every inserted child line; a Div inserts one newline per press and accepts repeated blank lines. A typed `:::` creates a closed Note Div and opens the six-kind picker. Empty callouts retain a body anchor reachable from either side. Export lowers both forms to `.callout`, `.callout-<kind>`, and `.callout-title` before other source rewrites, leaving a stable Lua-filter contract |
 | What a markdown construct means for editing (a pure rule) | the matching `*_edits.ts` |
 | A new keystroke or command | `docs/adding-a-command.md` — the id in `commands/registry.ts`, the work registered in `markdown_editor.ts` (`registerCommandEvents`), and the trigger |
-| What typing a bracket writes, and the list that opens as the author types `@` or `[[` | `syntax/brackets.ts` (the pair, the literal regions and the selection, stepping over, Backspace) and `syntax/completions.ts` (what the caret is inside, which entries match, what accepting writes) are the rules, each with its check in `test/checks/`; `editing/completions.ts` is the list in hand (the arrows, Enter, Escape, and the closing click), `completion_card.ts` draws it, and the two ends that reach them are the editor's key path (`markdown_editor.ts: handleKeydown`) and the text path's `insertText` (`editing/text_commands.ts`). The entries come from `bibliographyManager.entries()` and `documentManager.documents()` — the latter's `target` is what `documentManager.resolve` takes, a document's frontmatter `id` or its file name, never the title the row shows |
+| What typing a bracket writes, and the list that opens as the author types `@`, `[#`, `](#` or `[[` | `syntax/brackets.ts` (the pair, the literal regions and the selection, stepping over, Backspace) and `syntax/completions.ts` (what the caret is inside, which entries match, the closing-marker count, and what accepting writes) are the rules, each with its check in `test/checks/`; `editing/completions.ts` is the list in hand (the arrows, Enter, Escape, and the closing click), `completion_card.ts` draws it, and the two ends that reach them are the editor's key path (`markdown_editor.ts: handleKeydown`) and the text path's typing/committed-text path (`editing/text_commands.ts`). Each refresh records the query's document end alongside its start; accepting and every non-owned text key use that recorded range rather than re-reading a live DOM caret that a deferred block rebuild can leave on a wrapper node. Acceptance leaves the caret at the completed node's closing edge, where source mode correctly remains open for editing. An insertion at either edge of a shown source is surrounding text, not part of the node: the fast path declines it and rebuilds through the document, so links, references, citations, wikilinks, formulas, images, footnotes and inline formatting render on the first character beyond them. Escape and a no-match query restore the query caret before closing. A delimiter pair is committed through the normal rebuild path, because adding `()` after `[title]` changes plain text into a link source. The entries come from `bibliographyManager.entries()`, `document/state.ts: referenceEntries`, and `documentManager.documents()` — the latter's `target` is what `documentManager.resolve` takes, a document's frontmatter `id` or its file name, never the title the row shows. A same-document link query exists only for `](#`; a path fragment such as `note.md#section` is not offered |
 | What writing a delimiter line opens, and what a bare block marker is | `editing/fence_open.ts` is the rule — the delimiter becomes both of a fence's lines with the caret on the blank line between them, and a fresh code fence asks for its language (`editing/language_picker.ts`) — and `syntax/bare_markers.ts` is the repair that keeps a bare `-` from rendering as an item and bare `#` characters from rendering as an empty heading (`syntax/markers.ts` says what a marker and a delimiter are). The rules have their checks (`check-fence-open.mjs`, `check-bare-markers.mjs`) and their probes (`fence-open-typing.js`, `bare-marker-typing.js`, `blank-line-heading.js`) |
 | A surface that floats over the page — a card beside a point, a panel above or below its button, a question over the window | `src/ui/floating/` — one base and three kinds: `surface.ts` (`FloatingSurface`: hidden until opened, the card's chrome in `CHROME`, Escape, and the refusal to take the focus or the caret), `beside.ts` (`BesideCard`, `fixed` on the body and placed by `placement.ts`'s pure rule beside a box the caller measures — the caret's range, a marker, a row — or in the window's corner when it names nothing; the pointer policy is what it is built with), `panel.ts` (`AnchoredPanel`, `absolute` inside its `relative` host and hanging by its own `side` — `below` by default, `above` where the host sits against the bottom), and `question_card.ts` (`QuestionCard`: the veil, the centred card a subclass fills, one answer at a time, and Escape giving the cautious answer). The footnote preview, the completion list, the stack panel, the table picker, the prompt and the two cards are one of those kinds; a kind may add to Escape and never replace it, and the base grows no mode flag — a fact one kind has is a parameter it is built with, or a subclass of it. Whatever a probe finds inside a surface (`[data-prompt-yes]`, `[data-completion-row]`, `.markdown-footnote-preview`, …) stays where it is: the migration changed how a surface is built, never what it is called |
 | Something the app has to tell the reader, or wants them to notice | two surfaces, and the difference is whether the reader has to *act*: a **message** (`services/messages.ts`: `Message`, `MESSAGE_EVENT`, `notify`) is a failure and needs their attention, so `ui/messages.ts` (`installMessages()`) shows one `BesideCard` per message in the window's bottom-right corner — whatever it is about — stacked upward, with its ✕ at the card's right edge, closed by the ✕ or Escape and by nothing else; a **hint** (`services/hints.ts`: `Hint`, `HintPlace`, `HINT_EVENT`, `hintPlaceSelector`, `showHint`) is a confirmation the reader only has to notice, so `ui/hints.ts` (`installHints()`) shows one card beside the row it happened on, with no ✕, gone at the next press or Escape, replaced by the next hint. A hint's place travels as a *name* — a workspace path, which is the row its selector finds — never as an element, because the bus is Tauri's and its payload is JSON, and `hintPlaceSelector` escapes it |

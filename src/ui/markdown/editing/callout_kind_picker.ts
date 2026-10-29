@@ -1,19 +1,20 @@
 /**
  * Choosing the kind of a fenced-Div callout.
  *
- * Typing `:::` creates a closed, editable Div and opens this card beside its
- * source. The five GitHub kinds and the custom Definition kind are the six
+ * Typing `:::` creates a closed, editable Div and opens this card beside the
+ * caret. The five GitHub kinds and the custom Definition kind are the six
  * choices; choosing one is a single source edit owned by the editor.
  *
  * May import: the beside-card surface. Upholds: the picker holds no document
  * state and every choice is expressed by its stable callout kind name.
  */
 
-import { BesideCard, boxOf } from '../../floating/beside';
+import { BesideCard } from '../../floating/beside';
+import type { Box } from '../../floating/placement';
 
 /** What an installed editor does when a kind is chosen. */
 export type CalloutKindPicker = (
-  anchor: HTMLElement,
+  anchor: Box | null,
   current: string,
   choose: (kind: string) => void
 ) => void;
@@ -36,9 +37,9 @@ export function setCalloutKindChangeHandler(
   changed = handler;
 }
 
-/** Opens the kinds beside a callout's complete source. */
+/** Opens the kinds beside the picker's measured anchor. */
 export function chooseCalloutKind(
-  anchor: HTMLElement,
+  anchor: Box | null,
   current: string,
   lineStart: number
 ): void {
@@ -47,10 +48,10 @@ export function chooseCalloutKind(
 
 /** Creates the editor's one reusable callout-kind card. */
 export function installCalloutKindPicker(): CalloutKindPicker {
-  let anchor: HTMLElement | null = null;
+  let anchor: Box | null = null;
   let choose: ((kind: string) => void) | null = null;
   const card = new BesideCard({
-    anchor: () => (anchor === null ? null : boxOf(anchor)),
+    anchor: () => anchor,
     className: 'w-44 p-1'
   });
   const list = document.createElement('div');

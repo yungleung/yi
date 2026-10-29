@@ -27,6 +27,7 @@ import {
 } from '../caret/caret';
 import {
   blockSourceAt,
+  editStaysInsideShownSource,
   moveShownSource,
   setShownRange,
   shownSourceHeld,
@@ -371,7 +372,9 @@ function verifyBlock(context: EditorContext, lineStart: number, shape: string): 
 /**
  * Applies a raw-text edit, re-syncs the rendered window and moves the caret.
  * Every command funnels through here so the change/render/caret sequence is
- * identical everywhere.
+ * identical everywhere. `allowFastPath` is false for an edit such as turning a
+ * blank-line placeholder into a paragraph: that edit must rebuild its block,
+ * because the placeholder's text node cannot carry the new block's caret.
  */
 export function applyEdit(
   context: EditorContext,
@@ -379,7 +382,8 @@ export function applyEdit(
   to: number,
   replacement: string,
   caret: EditCaret = from + replacement.length,
-  kind: EditKind = 'other'
+  kind: EditKind = 'other',
+  allowFastPath = true
 ): void {
   if (editsId(context.state.getText(), from, to)) {
     // Refusing the write still consumes the keystroke: the editor's text is the truth, and a
@@ -410,8 +414,20 @@ export function applyEdit(
   // A source view, ordinary keyboard typing and an input-method commit on one exact
   // text node all write the document's own characters directly. Prose may temporarily
   // show a marker literally; the deferred shape check renders it once input settles.
+  const sourceEditStays =
+    candidate === null ||
+    !candidate.source ||
+    editStaysInsideShownSource(
+      { from, to, replacement },
+      {
+        start: candidate.sourceGrowsAtStart,
+        end: candidate.sourceGrowsAtEnd
+      }
+    );
   const direct =
+    allowFastPath &&
     candidate !== null &&
+    sourceEditStays &&
     (candidate.source
       ? isInPlaceTextEdit(beforeText, from, to, replacement)
       : rule ||

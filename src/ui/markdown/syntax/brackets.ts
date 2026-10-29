@@ -29,6 +29,12 @@ const PAIRS: Readonly<Record<string, string>> = {
   '`': '`'
 };
 
+/** Whether a key opens a pair with a different closing character. */
+export function isOpeningBracket(key: string): boolean {
+  const closing = PAIRS[key];
+  return closing !== undefined && closing !== key;
+}
+
 /** What a keystroke does to the text, as one edit. */
 export interface BracketEdit {
   /** How many characters the caret sits at the start of. */

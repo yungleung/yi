@@ -1,10 +1,11 @@
 /**
  * What the caret is inside when a list should open, and which entries belong in it.
  *
- * Two things are offered: a citation, while an `@` is being typed, and a wikilink between `[[` and
- * `]]`. Both are asked as *queries* — the offset the query starts at, and the characters typed so
- * far — so the popup only ever opens where the syntax says the construct can exist, and closing the
- * popup, filtering it and accepting from it are all decided from the same text the editor holds.
+ * Four things are offered: a citation while an `@` is being typed, an automatic-reference target
+ * after `[#`, a same-document link target after `](#`, and a wikilink between `[[` and `]]`. All
+ * are asked as *queries* — the offset the query starts at, and the characters typed so far — so
+ * the popup only ever opens where the syntax says the construct can exist, and closing the popup,
+ * filtering it and accepting from it are all decided from the same text the editor holds.
  *
  * A citation's query is bounded by the citation plugin's own characters (a key starts with a letter,
  * digit or `_` and continues with those plus pandoc's punctuation) and by its own rule for what may
@@ -24,6 +25,8 @@ export interface CompletionQuery {
   from: number;
   /** What has been typed since, and what the entries are filtered by. */
   query: string;
+  /** Closing delimiter characters immediately after the query, when the construct has one. */
+  closing: number;
 }
 
 /**
@@ -42,7 +45,11 @@ export function citationQuery(text: string, caret: number): CompletionQuery | nu
   if (text[start - 1] !== '@' || !citationPrecedesAt(text.charCodeAt(start - 2))) {
     return null;
   }
-  return { from: start, query: text.slice(start, caret) };
+  return {
+    from: start,
+    query: text.slice(start, caret),
+    closing: text[caret] === ']' ? 1 : 0
+  };
 }
 
 /**
@@ -58,7 +65,77 @@ export function wikilinkQuery(text: string, caret: number): CompletionQuery | nu
     return null;
   }
   const query = text.slice(start, caret);
-  return query.includes(']') ? null : { from: start, query };
+  return query.includes(']')
+    ? null
+    : {
+        from: start,
+        query,
+        closing: text.startsWith(']]', caret) ? 2 : 0
+      };
+}
+
+/**
+ * The automatic reference the caret is typing inside, or null.
+ *
+ * `[#` opens the query. An ID continues until whitespace, a newline or its closing bracket; the
+ * generated `]` may already stand after the caret, which is the normal shape while the author is
+ * completing it.
+ */
+export function autoReferenceQuery(text: string, caret: number): CompletionQuery | null {
+  let start = caret;
+  while (
+    start > 0 &&
+    !/[\s[\]#]/.test(text[start - 1])
+  ) {
+    start -= 1;
+  }
+  if (text[start - 1] !== '#' || text[start - 2] !== '[' || escapedAt(text, start - 2)) {
+    return null;
+  }
+  return {
+    from: start,
+    query: text.slice(start, caret),
+    closing: text[caret] === ']' ? 1 : 0
+  };
+}
+
+/**
+ * A same-document fragment in an ordinary link destination, or null.
+ *
+ * The query starts after the `#` in `](#` and continues until the closing
+ * parenthesis or whitespace. A destination that names a path before its `#`
+ * belongs to a cross-document link and is not offered here.
+ */
+export function linkReferenceQuery(text: string, caret: number): CompletionQuery | null {
+  if (caret <= 0) {
+    return null;
+  }
+  const hash = text.lastIndexOf('#', caret - 1);
+  if (
+    hash < 2 ||
+    text[hash - 1] !== '(' ||
+    text[hash - 2] !== ']' ||
+    escapedAt(text, hash - 1)
+  ) {
+    return null;
+  }
+  const query = text.slice(hash + 1, caret);
+  return /[\s)]/.test(query)
+    ? null
+    : {
+        from: hash + 1,
+        query,
+        closing: text[caret] === ')' ? 1 : 0
+      };
+}
+
+/** Whether the character at `at` follows an odd run of backslashes. */
+function escapedAt(text: string, at: number): boolean {
+  let slashes = 0;
+  for (let index = at - 1; index >= 0 && text[index] === '\\'; index -= 1) {
+    slashes += 1;
+  }
+  return slashes % 2 === 1;
 }
 
 /** One entry a list may offer: what it is called, and what accepting it writes. */

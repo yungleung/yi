@@ -170,7 +170,31 @@ les autres classes et les attributs restent intacts.
 
 Les callouts peuvent être imbriqués dans des citations ou d’autres callouts. Leur corps accepte les
 paragraphes, listes, tableaux, blocs de code, équations, légendes, citations et citations Markdown
-ordinaires. Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
+ordinaires.
+
+Les marqueurs d’ouverture restent conscients de leur conteneur pendant l’édition. Saisir `$$`,
+`[$$`, un bloc de code délimité par trois accents graves ou `:::` crée la construction appariée
+correspondante, préfixe chaque ligne source générée par la chaîne `>` active et conserve le sélecteur
+de type de callout pour `:::`. Dans un bloc de code ou une formule d’affichage placé dans une
+citation ou un callout, Entrée suit la règle du bloc enfant et peut créer autant de lignes vides
+consécutives que nécessaire. Un callout Div ajoute exactement un saut de ligne préfixé par Entrée,
+même lorsqu’il est imbriqué dans une autre citation ou un autre callout.
+
+La complétion des citations après `@`, des wikilinks après `[[` et des références automatiques après
+`[#` reste disponible dans les deux formes source. Choisir une ligne n’écrit que la clé ou l’ID de
+destination ; le préfixe de citation et les crochets autour restent intacts. La liste s’ouvre dès
+que le marqueur est saisi ou validé par une méthode de saisie ; Tab n’est pas nécessaire.
+
+Les ouvrants `[`, `(` et `{` sont appariés automatiquement dans le texte ordinaire, les citations,
+les callouts GitHub et les callouts Div, y compris lorsqu’un caractère arrive par une méthode de
+saisie. Dans la destination d’un lien vers le même document, saisir `#` après `](` propose aussi les
+cibles de référence du document ; accepter une ligne n’écrit que l’ID du fragment.
+Après avoir accepté l’une de ces suggestions, le curseur reste au bord fermant du nœud et son
+Markdown demeure visible pour la modification. Le caractère suivant est écrit après le nœud et
+rend le lien, la référence, la citation ou le wikilien terminé. Si le caractère prolonge encore
+la même construction, par exemple une clé de citation narrative, sa source reste visible.
+
+Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.
 Une citation ordinaire révèle sa source complète selon la même règle : les marqueurs échappés, les
 préfixes `>` et les délimiteurs internes sont exactement les caractères modifiés.
@@ -181,8 +205,8 @@ Dans un paragraphe de citation ordinaire, Entrée crée deux lignes vides portan
 complet. Le texte suivant forme un nouveau paragraphe. Une seconde pression sur Entrée dans le
 paragraphe vide retire une seule profondeur de citation ; dans une citation imbriquée, répétez une
 fois par niveau. Les listes, tableaux, blocs de code et équations gardent leur comportement habituel,
-et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, une
-seule ligne vide préfixée suffit.
+et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, Entrée
+ajoute le même paragraphe de deux lignes vides préfixées.
 
 La saisie sur une ligne `>` vide produit exactement `>B`, sans espace invisible ajouté. Si la source
 contient déjà l’espace visible `> `, il est conservé. Backspace ou Delete sur une ligne de citation
@@ -199,6 +223,10 @@ citation conserve son préfixe visible sur chaque ligne insérée.
 Un callout vide garde une ancre de curseur invisible dans son corps. Left depuis le bloc suivant et
 Right depuis le bloc précédent y entrent ; la navigation seule ne modifie pas la source. Le premier
 caractère saisi matérialise la ligne de corps manquante.
+Entrée sur le marqueur d’un callout GitHub vide crée les deux lignes vides préfixées d’un paragraphe
+de citation et place le curseur sur la seconde ; une nouvelle Entrée retire ces marqueurs et quitte
+le callout. Entrée sur l’ouverture vide d’un callout Div crée une ligne de corps modifiable avant sa
+fermeture.
 
 Tous les exports Pandoc transforment les deux écritures en un même Div sémantique :
 

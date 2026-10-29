@@ -36,7 +36,10 @@
   };
   const type = async (key) => {
     t.key(key);
-    await t.sleep(150);
+    // The editor's deferred parse check runs at 200 ms. Let the brace's block settle
+    // before the next key, so this probe measures bracket behavior rather than the
+    // ordering of two timers.
+    await t.sleep(240);
   };
 
   await t.load('abc\n');

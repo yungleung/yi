@@ -10,19 +10,50 @@
  * callout body in either authoring form.
  */
 
-import type { CalloutSource } from './callouts';
+import { calloutAtOffset, type CalloutSource } from './callouts';
 import type { QuoteEdit } from './quote_edits';
+
+/**
+ * Enter on an empty fenced-Div callout's opening line.
+ *
+ * The ordinary paragraph rule would leave the caret against the closing fence.
+ * GitHub alerts deliberately use that paragraph rule instead, so their first
+ * Enter is the same two-line break as every other quoted paragraph.
+ */
+export function emptyCalloutNewline(text: string, offset: number): QuoteEdit | null {
+  const callout = calloutAtOffset(text, offset);
+  if (
+    callout?.form !== 'div' ||
+    callout.bodyFrom !== callout.bodyTo
+  ) {
+    return null;
+  }
+  if (offset !== callout.markerTo && offset !== callout.bodyFrom) {
+    return null;
+  }
+  const replacement = `\n${callout.quotePrefix}`;
+  return {
+    edit: { from: callout.markerTo, to: callout.markerTo, replacement },
+    caret: callout.markerTo + replacement.length
+  };
+}
 
 /** The edit that materialises a callout body and writes the first text. */
 export function materializeCalloutBody(
   text: string,
   offset: number,
   callout: CalloutSource | null,
-  typed: string
+  typed: string,
+  caretWithin = typed.length
 ): QuoteEdit | null {
   if (callout === null || typed === '') {
     return null;
   }
+  const caretInBody = prefixedOffset(
+    typed,
+    Math.min(caretWithin, typed.length),
+    callout.quotePrefix
+  );
 
   if (callout.form === 'alert') {
     const prefix = callout.quotePrefix;
@@ -30,7 +61,7 @@ export function materializeCalloutBody(
     const replacement = `\n${prefix}${body}`;
     return {
       edit: { from: offset, to: offset, replacement },
-      caret: offset + replacement.length
+      caret: offset + `\n${prefix}`.length + caretInBody
     };
   }
 
@@ -48,7 +79,7 @@ export function materializeCalloutBody(
     const replacement = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
     return {
       edit: { from: at, to: at, replacement },
-      caret: at + replacement.length
+      caret: at + caretInBody
     };
   }
 
@@ -56,7 +87,14 @@ export function materializeCalloutBody(
   const replacement = `${body}\n`;
   return {
     edit: { from: at, to: at, replacement },
-    caret: at + body.length
+    caret: at + caretInBody
   };
+}
+
+/** A caret in `typed`, after every quote prefix the rewrite adds before it. */
+function prefixedOffset(typed: string, caret: number, prefix: string): number {
+  const beforeCaret = typed.slice(0, caret);
+  const insertedPrefixes = beforeCaret.match(/\n/g)?.length ?? 0;
+  return caret + insertedPrefixes * prefix.length;
 }
 

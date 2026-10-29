@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
-| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
+| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink, automatic-reference and same-document link-fragment queries, the places an `@`, `[#` or `](#` is not one, path fragments and escapes, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
@@ -58,7 +58,7 @@ methodology; this file is the index and the conventions.
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
-| `check-quote-edits.mjs` | The pure quote/callout line rules: paragraph splits, one-level exits, child-context delegation, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, and empty GitHub/Div body materialisation |
+| `check-quote-edits.mjs` | The pure quote/callout line rules: two-line paragraph breaks including after child blocks, one-level exits, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, and empty GitHub/Div bodies |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
 | `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and seventy-nine probes (`probe:all` runs 250 and skips 29, each skip for the reason its
+two hundred and ninety-eight probes (`probe:all` runs 264 and skips 34, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -122,6 +122,26 @@ sibling after nested children and an empty quoted item leaves the list without l
 `quote-source-editing` — complete quote source, physical blank-line deletion, exact `>` spacing and
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
 `callout-div-open` — `:::` creates a closed Note Div and its six-kind picker;
+`container-fence-open` — quoted and called-out display math, labeled math, code fences and Div
+callouts retain paired delimiters, prefixes, chooser surfaces and caret placement;
+`container-block-enter` — quoted code and display math accept repeated blank lines while a Div nested
+in another callout keeps one context-aware newline per Enter;
+`callout-empty-enter` — Enter on an empty alert creates the standard two-line quoted paragraph,
+while an empty Div opening creates one editable body line before its closing fence;
+`container-completions` — citation, wikilink and automatic-reference completion remain available in
+quote and callout source, and accepting a row preserves the container;
+`callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
+container-aware opening markers/pickers on ordinary blank lines, and a `:::` picker that stays
+beside a caret deep in the callout;
+`completion-immediate` — all three marker-triggered completion kinds open from key input and from
+native input-method commits without requiring Tab, and `#` in an ordinary same-document link
+destination offers and accepts a fragment target;
+`completion-filtered-accept` — every completion kind accepts a filtered row after the deferred
+block rebuild, stays in source with the caret at its closing edge, and renders on the next
+character or at the end of a line; it also keeps `[test](` in link source mode with the caret
+inside the paired destination;
+`completion-container-filtered-accept` — the same filtered acceptance and closing-delimiter caret
+inside quotes, GitHub callouts and fenced-Div callouts;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
 `quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
 opening mark;
@@ -147,6 +167,8 @@ including numbering and native-tag suppression; `equation-source-editing` — un
 exact source-line clicks, and unfinished attributes; `equation-empty-navigation` — Left from the
 following line enters an empty equation's source), what typing offers (`brackets` — the pair, the `[[` that comes out as two pairs, the
 pair Backspace takes away whole, the literal block and the selection it writes nothing around;
+`bracket-contexts` — `[`, `(`, `{` pair through keys and input-method commits in ordinary text,
+blank lines, quotes and both callout source forms;
 `completion` — the bibliography's keys, narrowed by key *or* title, the arrows and Enter;
 `completion-wikilink` — the workspace's documents, the id Enter writes and the file name a document
 with no id is written by, which its title beside it must not be mistaken for; `wikilink-cmd-click` —
@@ -198,6 +220,8 @@ shows nothing while the write is a letter or a digit, and `code-local-write-stal
 where the rest of the line keeps its old colours — `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
 localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is, and the next author-typed space is not mistaken for the candidate key; `input-source-switch` — one source-change event rebinds the focused seam so Chinese pinyin starts after English, delivered by AppKit on macOS, `WM_INPUTLANGCHANGE` on Windows, and IBus/Fcitx D-Bus signals on Linux (the Windows and Linux delivery paths await platform checks); `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-passthrough` — explicit 229 letters keep the method's own case and survive an editor-handled space, while English Caps Lock stays on the editor path across a source switch; `empty-task-composition-burst` — a committed word followed immediately by a fast burst keeps the empty task row, its placeholder and the input focus; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), `space-typing-visibility` — spaces at the end of a leaf and in a run stay visible while the source keeps ordinary spaces, paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
+`revealable-edge-exit` and `revealable-edge-exit-format` — every inline revealable family keeps
+its source at the closing edge and renders when the caret moves beyond it;
 `revealed-source-exit`, `reveal-click-scroll` — a click that opens a source keeps the
 page where it was; `reveal-keeps-its-height` — and the block it opens never spends a frame at
 the `contain-intrinsic-size` fallback, which is what a reader sees as the paragraph blinking and

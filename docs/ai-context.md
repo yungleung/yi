@@ -791,25 +791,46 @@ translate), the development seams' sentences (a probe's bad call, a fetch error 
 `catch` that replaces it with the app's own), and the versioning facts' `cloud_evidence`, which no window
 shows and one probe reads.
 
-Typing is not a command, so **what a bracket writes and the two lists that open as the author
-types** live in the editor's key path: `syntax/brackets.ts` says what a `[` (or `(`, `{`, a quote)
-writes — its pair with the caret inside, and only where prose is being written: nothing in a fenced
-code block, a display formula or an inline code span, nothing around a selection, and Backspace on
-an empty pair takes both characters back — while `syntax/completions.ts` says what the caret is
-*inside* (an `@` the citation plugin itself would make a citation of, or `[[`) and which entries
-match what has been typed. `editing/completions.ts` is the list in hand and `completion_card.ts`
-draws it beside the caret, clamped to the window the way the footnote preview is; the editor asks
-it *before* its own text path, so while a list is open the arrows, Enter, Tab and Escape are the
-list's, every other key types and redraws it, and a click in the document closes it — a click is
-not typing. Enter writes the citation's key, and a document's **id** — or its **file name** when it
-has none, *not* the title the row shows beside it — so what is written is what the resolver reads
-back (`documentManager.resolve` falls back by name first). The entries come from
-`bibliographyManager.entries()` and `documentManager.documents()` — a document's `target` is the
-id or the file name, which is exactly what `resolve` takes. Three things bite. The second `[` must
-write its own pair *in front of* the `]` the first one's pair left after the caret — that is what
-makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves the
-wikilink one bracket short, which is exactly what Enter then writes into (measured: `[[<id>]`,
-against `test/probes/brackets.js`).
+Typing is not a command, so **what a bracket writes and the lists that open as the author types**
+live in the editor's key path: `syntax/brackets.ts` says what a `[` (or `(`, `{`, a quote) writes
+— its pair with the caret inside, and only where prose is being written: nothing in a fenced code
+block, a display formula or an inline code span, nothing around a selection, and Backspace on an
+empty pair takes both characters back — while `syntax/completions.ts` says what the caret is
+*inside* (an `@` the citation plugin itself would make a citation of, `[#` or a same-document
+`](#`, or `[[`) and which entries match what has been typed. A one-character input-method commit
+takes the same bracket rule as a key, including in quote and callout source; the rule runs before
+an empty line or callout body is materialized so the caret stays between the pair.
+`editing/completions.ts` is the list in hand and `completion_card.ts` draws it beside the caret,
+clamped to the window the way the footnote preview is; the editor asks it *before* its own text
+path, so while a list is open the arrows, Enter, Tab and Escape are the list's, every other key
+types and redraws it, and a click in the document closes it — a click is not typing. Enter writes
+the citation's key, a reference or link-fragment target's ID, and a document's **id** — or its
+**file name** when it has none, *not* the title the row shows beside it — so what is written is
+what the resolver reads back (`documentManager.resolve` falls back by name first). Link-fragment
+completion is same-document only: it asks after `](#` and deliberately declines a path such as
+`note.md#section`. The entries come from `bibliographyManager.entries()`,
+`document/state.ts: referenceEntries`, and `documentManager.documents()` — a document's `target`
+is the id or the file name, which is exactly what `resolve` takes. Three things bite. The second
+`[` must write its own pair *in front of* the `]` the first one's pair left after the caret — that
+is what makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves
+the wikilink one bracket short, which is exactly what Enter then writes into (measured:
+`[[<id>]`, against `test/probes/brackets.js`). The list also has to remember the end of the query
+it is showing: the parse check after a structural character can rebuild the block and leave the
+live DOM caret on the block wrapper. Accepting from the recorded document range is what makes
+Enter write the filtered row after that rebuild. Non-owned text keys are re-anchored to the same
+endpoint first, and Escape or a query with no matches restores it before closing, so the next
+Backspace still edits the query. A query records how many delimiter characters follow it, so
+acceptance can put the caret after `]`, `)`, or `]]` while keeping the completed node's source
+open at that edge. A boundary character is then decided again from the rebuilt paragraph: it
+leaves source mode when it is surrounding prose, so the completed node renders, while a character
+that continues the same construct keeps its source open (a narrative citation accepting another
+key character is the exception). A growable source such as a caption keeps its content end moving
+with the local write, so a burst at that end does not rebuild each character. A delimiter pair
+rebuilds through the ordinary path: typing `(` after `[title]` must open `()` around the caret and
+rebuild the block as a link source.
+`completion-filtered-accept.js` holds every kind in ordinary prose, quotes, GitHub callouts and
+fenced-Div callouts, including completed nodes at the end of a line; `revealable-edge-exit.js` and
+`revealable-edge-exit-format.js` hold the boundary decision.
 A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) asks for the document
 its target names and it opens through the session, exactly as a click on a row of the tree opens
 one — a plain click still opens the link's own source, and a target no document answers to is said
@@ -966,6 +987,10 @@ report one of its own; where the keyboard goes is one hook (`EditorContext.focus
 command that focuses the page and a command that selects it are then asking for the same thing; and
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
 composition events rather than pretending to type.
+
+The same committed text also refreshes the completion list. A `[#`, `[[` or `@` arriving through
+the native seam therefore opens its choices immediately, exactly as a `keydown` path does; the next
+Tab is never the event that makes the card appear.
 
 The hand-back deliberately blurs the seam for one turn so the input method gets a
 fresh context after a structural edit. Ordinary typing and an in-place committed word do not take

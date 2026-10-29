@@ -14,7 +14,7 @@
  */
 
 import type { TextEdit } from './edit_range';
-import { readCallout } from './callouts';
+import { calloutAtOffset } from './callouts';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -59,14 +59,6 @@ export function enterInQuote(
   const activeDepth = Math.max(1, Math.floor(depth));
   const prefix = quoteCarrier(activeDepth);
   const current = quoteLineAt(text, offset);
-  if (context === 'completed-child') {
-    const tail = current === null ? '' : text.slice(offset, current.end);
-    const replacement = `\n${prefix}${tail === '' || /^\s/.test(tail) ? '' : ' '}`;
-    return {
-      edit: { from: offset, to: offset, replacement },
-      caret: offset + replacement.length
-    };
-  }
 
   const emptyRun = current === null ? null : emptyQuoteRunBeforeCursor(text, current, offset);
   if (emptyRun !== null) {
@@ -150,7 +142,7 @@ export function deleteBlankQuoteLine(text: string, offset: number): QuoteEdit | 
  * lines. A quoted Div also keeps the exact quote carrier visible on its line.
  */
 export function fencedDivNewline(text: string, offset: number): QuoteEdit | null {
-  const callout = readCallout(text);
+  const callout = calloutAtOffset(text, offset);
   if (
     callout?.form !== 'div' ||
     offset < callout.bodyFrom ||

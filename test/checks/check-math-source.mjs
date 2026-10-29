@@ -14,6 +14,7 @@ const directory = mkdtempSync(join(tmpdir(), 'yi-math-'));
 const file = join(directory, 'source_mode.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
+  editStaysInsideShownSource,
   isSourceBlock,
   moveShownSource,
   setShownRange,
@@ -82,6 +83,59 @@ check(
 setShownRange({ from: formula.charStart, to: formula.charStart + 4 });
 moveShownSource({ from: formula.charEnd, to: formula.charEnd, replacement: 'zz' });
 check('an edit after the shown range leaves it where it is', shownSourceWithinBlock(formula), 0);
+setShownRange(null);
+
+// A source is half-open for the text it contains, while the caret may still
+// rest at either edge. An insertion at an edge therefore belongs to the text
+// around the node and must take the ordinary rebuild path; an insertion inside
+// it remains a local source edit.
+setShownRange({ from: 10, to: 20 });
+check(
+  'an insertion inside the shown source stays local',
+  editStaysInsideShownSource({ from: 15, to: 15, replacement: 'x' }),
+  true
+);
+check(
+  'an insertion at the source start leaves it',
+  editStaysInsideShownSource({ from: 10, to: 10, replacement: 'x' }),
+  false
+);
+check(
+  'an insertion at the source end leaves it',
+  editStaysInsideShownSource({ from: 20, to: 20, replacement: 'x' }),
+  false
+);
+check(
+  'an edit beyond the source leaves it',
+  editStaysInsideShownSource({ from: 21, to: 21, replacement: 'x' }),
+  false
+);
+check(
+  'a deletion that touches the source end leaves it',
+  editStaysInsideShownSource({ from: 19, to: 20, replacement: '' }),
+  false
+);
+check(
+  'a replacement that reaches the source end leaves it',
+  editStaysInsideShownSource({ from: 15, to: 20, replacement: 'x' }),
+  false
+);
+check(
+  'an insertion at an end that can grow stays local',
+  editStaysInsideShownSource(
+    { from: 20, to: 20, replacement: 'x' },
+    { start: false, end: true }
+  ),
+  true
+);
+check(
+  'an insertion at a start that can grow stays local',
+  editStaysInsideShownSource(
+    { from: 10, to: 10, replacement: 'x' },
+    { start: true, end: false }
+  ),
+  true
+);
 setShownRange(null);
 
 // A quote or fenced Div can show a source nested inside it, such as a

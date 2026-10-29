@@ -23,12 +23,12 @@ import {
   type ColumnAlign,
   type TableSource
 } from './table_source';
-import { shiftOffset, type TextEdit } from './edit_range';
+import { shiftOffset, shiftRangeEnd, type TextEdit } from './edit_range';
 
 /** A table operation is a raw-text edit like any other. */
 export type TableEdit = TextEdit;
 
-export { shiftOffset };
+export { shiftOffset, shiftRangeEnd };
 
 /** One of the table's source lines: the delimiter line has no row index. */
 interface TableLine {

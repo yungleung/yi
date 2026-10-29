@@ -634,6 +634,27 @@ Callouts may be nested inside quotes and inside other callouts. Their bodies acc
 Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
 and nested quotes.
 
+Opening markers remain container-aware while editing. Typing `$$`, `[$$`, a triple-backtick code
+fence, or `:::` creates the matching paired construct, gives every generated physical line the
+current `>` prefix, and keeps the callout-kind chooser for `:::`. Inside quoted or called-out code
+and display math, Enter follows the child block's line rule and may create any number of consecutive
+blank lines. A fenced-Div callout creates one prefixed newline per Enter, including when it is nested
+in another quote or callout.
+
+Citation completion after `@`, wikilink completion after `[[`, and automatic-reference completion
+after `[#` remain available in both source forms. Choosing a row writes only the key or target ID;
+the surrounding quote prefix and brackets stay intact. The list opens as soon as the marker is
+typed or committed by an input method; Tab is not needed to reveal it.
+
+Opening `[`, `(`, and `{` pair automatically in ordinary text, blockquotes, GitHub callouts, and
+fenced-Div callouts, including when the character arrives through an input method. In an ordinary
+same-document link destination, typing `#` after `](` also lists the document's reference targets;
+accepting a row writes only the fragment ID. Accepting any of these completions keeps the caret
+at the completed node's closing edge and leaves its Markdown source open for editing. Typing the
+next character writes it after the node and renders the completed link, reference, citation, or
+wikilink. A character that continues the same construct, such as another key character in a
+narrative citation, keeps its source open.
+
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
 An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape
@@ -659,8 +680,8 @@ the visible `> ` delimiter space, Yi keeps it. Backspace or Delete on a blank qu
 that complete physical line rather than removing only the `>` character.
 
 Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
-line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
-one quoted empty line, because the child block already supplies the paragraph boundary.
+line carries the complete quote prefix. Enter after one of these child blocks has closed adds the
+same two quoted empty lines as any other paragraph break.
 Enter on an empty list item removes its list marker and leaves a normal quote or callout body line.
 Inserting a table while editing a quote or GitHub-style callout prefixes every table row and separator
 with that container’s `>` chain, so the table stays inside the container.
@@ -672,6 +693,10 @@ quote prefix on each inserted line.
 Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
 ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the
 source; the first typed character creates the missing body line.
+Enter on the opening marker of an empty GitHub callout creates the same two quoted empty lines as a
+quoted paragraph and places the caret on the second. A further Enter removes those quote markers and
+leaves the callout. Enter on an empty fenced-Div opening creates one editable body line before its
+closing fence.
 
 Every Pandoc-backed export lowers both source forms to the same semantic Div:
 

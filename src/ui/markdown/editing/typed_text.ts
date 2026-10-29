@@ -34,11 +34,24 @@
 
 import { domPositionAtOffset } from '../caret/dom_position';
 import { sourceTextOffset } from '../caret/offsets';
-import { shiftOffset, type TextEdit } from '../syntax/edit_range';
+import { shiftOffset, shiftRangeEnd, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
 import { sourceTextAt } from '../source_text';
 import { preserveSpaces } from '../text_spacing';
-import { CALLOUT_BODY_ANCHOR, FORMAT_FROM, FORMAT_TO, SOURCE_FROM, TABLE_ROW_START, TASK_SOURCE_FROM, TEXT_FROM, offsetOf, setOffset, tagSelector } from './../offset_tags';
+import {
+  CALLOUT_BODY_ANCHOR,
+  CONTENT_END,
+  CONTENT_START,
+  FORMAT_FROM,
+  FORMAT_TO,
+  SOURCE_FROM,
+  TABLE_ROW_START,
+  TASK_SOURCE_FROM,
+  TEXT_FROM,
+  offsetOf,
+  setOffset,
+  tagSelector
+} from './../offset_tags';
 
 /** The rendered text a plain edit can be written into, and where in it. */
 export interface TypedRun {
@@ -54,6 +67,13 @@ export interface TypedRun {
   to: number;
   /** Whether this is an exact source view, where every printable character is literal. */
   source: boolean;
+  /** The source element and its content bounds, when the view carries them. */
+  sourceElement: HTMLElement | null;
+  contentStart: number | null;
+  contentEnd: number | null;
+  /** Whether typing at a source edge can continue that same source. */
+  sourceGrowsAtStart: boolean;
+  sourceGrowsAtEnd: boolean;
 }
 
 /** The attributes whose value is a raw offset within the block. */
@@ -117,6 +137,14 @@ export function plainRun(
   if (startWithin === null || endWithin === null) {
     return null;
   }
+  const contentStart = offsetOf(span, CONTENT_START);
+  const contentEnd = offsetOf(span, CONTENT_END);
+  const boundedContent = Number.isFinite(contentStart) && Number.isFinite(contentEnd);
+  // A whole-source view (a caption) grows at its end; a view whose closing
+  // marker sits beyond its content (a link) does not. A hard break carries its
+  // ending newline, so appending after it belongs to the next line.
+  const sourceGrowsAtEnd =
+    !boundedContent || (contentEnd === raw.length && !raw.endsWith('\n'));
   return {
     node,
     text: raw,
@@ -124,7 +152,12 @@ export function plainRun(
     end: end.offset,
     from: tag + startWithin,
     to: tag + endWithin,
-    source: source !== null
+    source: source !== null,
+    sourceElement: boundedContent ? span : null,
+    contentStart: boundedContent ? contentStart : null,
+    contentEnd: boundedContent ? contentEnd : null,
+    sourceGrowsAtStart: !boundedContent || contentStart === 0,
+    sourceGrowsAtEnd
   };
 }
 
@@ -144,6 +177,22 @@ export function writeRun(run: TypedRun, inserted: string): void {
   const local = `${run.node.data.slice(0, run.start)}${inserted}${run.node.data.slice(run.end)}`;
   const raw = `${run.text.slice(0, run.start)}${inserted}${run.text.slice(run.end)}`;
   run.node.data = run.source ? local : preserveSpaces(raw);
+  if (
+    run.sourceElement !== null &&
+    run.contentStart !== null &&
+    run.contentEnd !== null
+  ) {
+    const sourceFrom = offsetOf(run.sourceElement, SOURCE_FROM);
+    if (Number.isFinite(sourceFrom)) {
+      const edit: TextEdit = {
+        from: run.from - sourceFrom,
+        to: run.to - sourceFrom,
+        replacement: inserted
+      };
+      setOffset(run.sourceElement, CONTENT_START, shiftOffset(run.contentStart, edit));
+      setOffset(run.sourceElement, CONTENT_END, shiftRangeEnd(run.contentEnd, edit));
+    }
+  }
   const blockElement = run.node.parentElement?.closest<HTMLElement>('.markdown-block') ?? null;
   if (!blockElement) {
     return;

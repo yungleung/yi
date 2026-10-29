@@ -34,15 +34,22 @@ import { editorSelection, rangeOffsets } from './selection';
 import { isFenced, isQuoteLike, isRawRendered } from '../document/block_kinds';
 import { blankItemLineAt, hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
-import { pairAround, pairingFor, skipClosingFor, type BracketEdit } from '../syntax/brackets';
+import {
+  isOpeningBracket,
+  pairAround,
+  pairingFor,
+  skipClosingFor,
+  type BracketEdit
+} from '../syntax/brackets';
 import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
 import { insertFenceOpen } from './fence_open';
 import { rangeInSourceText } from '../source_text';
 import {
+  calloutHasBody,
   calloutBodyInsertion,
   readCallout
 } from '../syntax/callouts';
-import { materializeCalloutBody } from '../syntax/callout_body';
+import { emptyCalloutNewline, materializeCalloutBody } from '../syntax/callout_body';
 import {
   deleteBlankQuoteLine,
   emptyQuoteTyping,
@@ -52,27 +59,55 @@ import {
   quoteLineAt
 } from '../syntax/quote_edits';
 
+/**
+ * The block holding the rendered caret.
+ *
+ * At a shared character boundary a blank block and the block before it can
+ * carry the same offset. The DOM names the line the caret is visibly on, so
+ * the text path uses that before falling back to an offset lookup.
+ */
+function blockAtCaret(
+  context: EditorContext,
+  range: Range,
+  offset: number
+) {
+  const start = range.startContainer;
+  const element =
+    start.nodeType === Node.ELEMENT_NODE
+      ? (start as Element)
+      : start.parentElement;
+  const blockElement = element?.closest<HTMLElement>('.markdown-block') ?? null;
+  const lineStart = Number(blockElement?.dataset.lineStart);
+  const block = Number.isFinite(lineStart)
+    ? context.state.getBlockAtLine(lineStart)
+    : null;
+  return block ?? context.state.getBlockAtOffset(offset);
+}
+
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
-  return insertAt(context, text, true);
+  return insertAt(context, text, 'typing');
 }
 
 /**
  * Inserts a word the system committed — an input method, dictation, the emoji panel.
  *
  * The block's own rules are the ones typing follows: an empty paragraph materializes
- * its line, a display formula's content gets a line of its own. What it does not do is
- * pair a bracket: the characters are the author's own text, and a `]` the app added
- * around them would be a second editor's opinion. And its edit is not `typing`, which
- * is what makes one undo take the whole word (`history.ts`: a multi-character
- * insertion is a step of its own).
+ * its line, a display formula's content gets a line of its own. A single committed
+ * bracket follows the same pairing rule as the key path; a committed word is still
+ * inserted literally. Its edit is not `typing`, which is what makes one undo take the
+ * whole word (`history.ts`: a multi-character insertion is a step of its own).
  */
 export function insertCommitted(context: EditorContext, text: string): boolean {
-  return insertAt(context, text, false);
+  return insertAt(context, text, 'commit');
 }
 
 /** The one text path: the block's rules first, then a bracket's pair or the text. */
-function insertAt(context: EditorContext, text: string, brackets: boolean): boolean {
+function insertAt(
+  context: EditorContext,
+  text: string,
+  kind: 'typing' | 'commit'
+): boolean {
   const range = editorSelection(context, true);
   if (!range) {
     return false;
@@ -81,20 +116,47 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   if (!offsets) {
     return false;
   }
-  const block = context.state.getBlockAtOffset(offsets.from);
+  const block = blockAtCaret(context, range, offsets.from);
   const sourceText = rangeInSourceText(range);
+  let pair: BracketEdit | null = null;
+  if (offsets.from === offsets.to) {
+    const containerSource = block?.kind === 'quote' || block?.kind === 'fencedDiv';
+    const literal =
+      (!containerSource && sourceText) ||
+      block?.kind === 'fencedCode' ||
+      block?.kind === 'displayMath' ||
+      block?.kind === 'equation';
+    const source = context.state.getText();
+    if (skipClosingFor(source, offsets.from, text, literal)) {
+      placeCaret(context, offsets.from + 1);
+      return true;
+    }
+    pair = pairingFor(source, offsets.from, text, literal);
+  }
+  const materializedPair = isOpeningBracket(text) ? pair : null;
+  const inserted = materializedPair?.insert ?? text;
+  const caretWithin = materializedPair
+    ? materializedPair.caret - offsets.from
+    : text.length;
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
-    return materializeInsertion(context, offsets, text);
+    return materializeInsertion(context, offsets, inserted, caretWithin, kind);
   }
   if (block && offsets.from === offsets.to) {
     const callout = readCallout(block.text);
     const relative = Math.min(offsets.from - block.charStart, block.text.length);
     if (
       callout !== null &&
+      !calloutHasBody(callout) &&
       callout.bodyFrom === callout.bodyTo &&
       relative === calloutBodyInsertion(callout)
     ) {
-      const body = materializeCalloutBody(block.text, relative, callout, text);
+      const body = materializeCalloutBody(
+        block.text,
+        relative,
+        callout,
+        inserted,
+        caretWithin
+      );
       if (body !== null) {
         applyEdit(
           context,
@@ -102,21 +164,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
           block.charStart + body.edit.to,
           body.edit.replacement,
           block.charStart + body.caret,
-          brackets ? 'typing' : 'commit'
-        );
-        return true;
-      }
-    }
-    if (isQuoteLike(block.kind)) {
-      const write = emptyQuoteTyping(block.text, relative, text);
-      if (write !== null) {
-        applyEdit(
-          context,
-          block.charStart + write.edit.from,
-          block.charStart + write.edit.to,
-          write.edit.replacement,
-          block.charStart + write.caret,
-          brackets ? 'typing' : 'commit'
+          kind
         );
         return true;
       }
@@ -134,40 +182,67 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
         block.charStart + write.to,
         write.replacement,
         block.charStart + write.caret,
-        brackets ? 'typing' : 'other'
+        kind
       );
       return true;
     }
   }
-  // A bracket writes its pair where prose is being written — not inside a code block or a
-  // formula, where the characters are the author's own source (`syntax/brackets.ts`).
-  let pair: BracketEdit | null = null;
-  if (brackets && offsets.from === offsets.to) {
-    const literal =
-      sourceText || block?.kind === 'fencedCode' || block?.kind === 'displayMath';
-    const source = context.state.getText();
-    if (skipClosingFor(source, offsets.from, text, literal)) {
-      // The author typed the bracket they can see: they move past it rather than writing another.
-      placeCaret(context, offsets.from + 1);
+  // A backtick on an empty quote line starts a possible fence. The first
+  // character must stay literal, as it does on an empty paragraph; pairing it
+  // immediately puts the caret inside the closer and prevents the next two
+  // backticks from completing the delimiter line.
+  if (
+    block &&
+    isQuoteLike(block.kind) &&
+    offsets.from === offsets.to &&
+    text === '`'
+  ) {
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const write = emptyQuoteTyping(block.text, relative, text);
+    if (write !== null) {
+      applyEdit(
+        context,
+        block.charStart + write.edit.from,
+        block.charStart + write.edit.to,
+        write.edit.replacement,
+        block.charStart + write.caret,
+        'typing'
+      );
       return true;
     }
-    pair = pairingFor(source, offsets.from, text, literal);
   }
   // What a delimiter line becomes when the write completes it: the fenced block it names, both
   // delimiter lines at once (`editing/fence_open.ts`). The pair a backtick writes counts — ` `` `
   // plus the pair is a fence's ` ``` ` — so the rule sees what would be written, not the key alone.
   if (
     block !== null &&
-    !sourceText &&
     !isRawRendered(block.kind) &&
     offsets.from === offsets.to &&
-    insertFenceOpen(context, offsets.from, pair ? pair.insert : text)
+    insertFenceOpen(context, offsets.from, inserted, block)
   ) {
     return true;
   }
   if (pair) {
-    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
+    // A closer can create a node the old text node cannot represent —
+    // `[title](` becomes a link source as soon as `()` is paired. Rebuild the
+    // block so source mode is decided from the inserted construct.
+    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, kind, false);
     return true;
+  }
+  if (block && isQuoteLike(block.kind) && offsets.from === offsets.to) {
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const write = emptyQuoteTyping(block.text, relative, text);
+    if (write !== null) {
+      applyEdit(
+        context,
+        block.charStart + write.edit.from,
+        block.charStart + write.edit.to,
+        write.edit.replacement,
+        block.charStart + write.caret,
+        kind
+      );
+      return true;
+    }
   }
   applyEdit(
     context,
@@ -175,7 +250,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
     offsets.to,
     text,
     undefined,
-    brackets ? 'typing' : 'commit'
+    kind
   );
   return true;
 }
@@ -192,7 +267,7 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   }
   let { from, to } = offsets;
   if (from === to) {
-    const block = context.state.getBlockAtOffset(from);
+    const block = blockAtCaret(context, range, from);
     if (block !== null && isQuoteLike(block.kind)) {
       const deletion = deleteBlankQuoteLine(
         block.text,
@@ -258,12 +333,37 @@ export function insertNewline(context: EditorContext): boolean {
   if (caretInTableCell(context)) {
     return true;
   }
-  const block = context.state.getBlockAtOffset(offsets.from);
+  const block = blockAtCaret(context, range, offsets.from);
   if (!block) {
     return false;
   }
+  const relativeNewline = Math.min(offsets.from - block.charStart, block.text.length);
+  if (offsets.from === offsets.to) {
+    const emptyCallout = emptyCalloutNewline(block.text, relativeNewline);
+    if (emptyCallout !== null) {
+      applyEdit(
+        context,
+        block.charStart + emptyCallout.edit.from,
+        block.charStart + emptyCallout.edit.to,
+        emptyCallout.edit.replacement,
+        block.charStart + emptyCallout.caret
+      );
+      return true;
+    }
+  }
   if (isQuoteLike(block.kind) && offsets.from === offsets.to) {
-    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const relative = relativeNewline;
+    const div = fencedDivNewline(block.text, relative);
+    if (div !== null) {
+      applyEdit(
+        context,
+        block.charStart + div.edit.from,
+        block.charStart + div.edit.to,
+        div.edit.replacement,
+        block.charStart + div.caret
+      );
+      return true;
+    }
     const quote = quoteContextAt(context.state, block, offsets.from);
     const line = quoteLineAt(block.text, relative);
     if (quote !== null && line !== null) {
@@ -332,7 +432,7 @@ export function insertNewline(context: EditorContext): boolean {
   if (block.kind === 'fencedDiv' && offsets.from === offsets.to) {
     const write = fencedDivNewline(
       block.text,
-      Math.min(offsets.from - block.charStart, block.text.length)
+      relativeNewline
     );
     if (write !== null) {
       applyEdit(

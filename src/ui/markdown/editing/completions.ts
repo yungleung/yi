@@ -1,6 +1,7 @@
 /**
- * The two lists the editor opens as the author types: a citation's keys after an `@`, and the
- * workspace's documents between `[[` and `]]`.
+ * The lists the editor opens as the author types: a citation's keys after an `@`, the document's
+ * targets after `[#` or a same-document `](#`, and the workspace's documents between `[[` and
+ * `]]`.
  *
  * This is the living half of the feature: `syntax/completions.ts` says what the caret is inside
  * and which entries match, the card draws them, and what is left here is when a list is open, what
@@ -20,18 +21,30 @@ import { caretRect } from '../caret/geometry';
 import { CompletionCard } from '../completion_card';
 import type { Box } from '../../floating/placement';
 import {
+  autoReferenceQuery,
   citationQuery,
+  linkReferenceQuery,
   matchingChoices,
   wikilinkQuery,
   type CompletionChoice
 } from '../syntax/completions';
-import { applyEdit, caretOffset, type EditorContext } from './context';
+import { referenceLabel } from '../document/reference_index';
+import {
+  applyEdit,
+  caretOffset,
+  restoreCaret,
+  type EditorContext
+} from './context';
 
 export class Completions {
   private readonly card = new CompletionCard();
   private choices: CompletionChoice[] = [];
   private selected = 0;
   private from: number | null = null;
+  /** The query end from the refresh that produced the visible list. */
+  private to: number | null = null;
+  /** Closing delimiters after the query; accepting places the caret beyond them. */
+  private closing = 0;
   /** Guards an answer that arrives after the author has typed on. */
   private generation = 0;
 
@@ -60,10 +73,28 @@ export class Completions {
       return true;
     }
     if (event.key === 'Escape') {
+      this.restoreQueryCaret(true);
       this.close();
       return true;
     }
     return false;
+  }
+
+  /**
+   * Gives a key that does not belong to the list the query's document caret.
+   *
+   * The deferred parse check after a structural query character can rebuild
+   * the block while the card stays open. The document range the list was built
+   * from is then the reliable caret; the browser-relocated wrapper position is
+   * not, and a text edit from it can replace the wrong range.
+   */
+  restoreQueryCaret(force = false): void {
+    if (this.to === null || (!force && !this.card.isOpen())) {
+      return;
+    }
+    if (force || caretOffset(this.context) !== this.to) {
+      restoreCaret(this.context, this.to, false);
+    }
   }
 
   /**
@@ -82,10 +113,22 @@ export class Completions {
     if (citation) {
       this.offer(
         citation.from,
+        caret,
+        citation.closing,
         matchingChoices(
           bibliographyManager.entries().map((entry) => ({ value: entry.key, title: entry.title })),
           citation.query
         )
+      );
+      return;
+    }
+    const reference = linkReferenceQuery(text, caret) ?? autoReferenceQuery(text, caret);
+    if (reference) {
+      this.offer(
+        reference.from,
+        caret,
+        reference.closing,
+        matchingChoices(this.referenceChoices(), reference.query)
       );
       return;
     }
@@ -100,6 +143,8 @@ export class Completions {
     const generation = ++this.generation;
     this.offer(
       wikilink.from,
+      caret,
+      wikilink.closing,
       matchingChoices(
         this.documents().map((document) => ({ value: document.target, title: document.title })),
         wikilink.query
@@ -113,6 +158,8 @@ export class Completions {
       this.selected = 0;
       this.offer(
         wikilink.from,
+        caret,
+        wikilink.closing,
         matchingChoices(
           documents.map((document) => ({ value: document.target, title: document.title })),
           wikilink.query
@@ -128,21 +175,45 @@ export class Completions {
     return this.documentsFound;
   }
 
+  /** Every uniquely identified target in this document, in document order. */
+  private referenceChoices(): CompletionChoice[] {
+    const seen = new Set<string>();
+    return this.context.state.referenceEntries().flatMap((entry) => {
+      if (entry.id === null || seen.has(entry.id)) {
+        return [];
+      }
+      seen.add(entry.id);
+      return [{ value: entry.id, title: referenceLabel(entry) }];
+    });
+  }
+
   close(): void {
     this.from = null;
+    this.to = null;
+    this.closing = 0;
     this.choices = [];
     this.card.close();
   }
 
   /** Puts `choices` in front of the author, with the first in hand. */
-  private offer(from: number, choices: CompletionChoice[]): void {
+  private offer(
+    from: number,
+    to: number,
+    closing: number,
+    choices: CompletionChoice[]
+  ): void {
     this.from = from;
+    this.to = to;
+    this.closing = closing;
     this.choices = choices;
     if (this.selected >= choices.length) {
       this.selected = 0;
     }
     if (choices.length === 0) {
-      this.card.close();
+      // A query with no matches closes the card, but the caret must stay on
+      // the query it just rejected: the next Backspace belongs to that text.
+      this.restoreQueryCaret(true);
+      this.close();
       return;
     }
     this.draw();
@@ -154,14 +225,20 @@ export class Completions {
 
   /** Writes the choice over the query: one edit, one undo step, the caret after it. */
   private accept(choice: CompletionChoice): void {
-    const caret = caretOffset(this.context);
-    if (this.from === null || caret === null) {
+    if (this.from === null || this.to === null) {
       this.close();
       return;
     }
     const from = this.from;
+    // The list outlives the deferred block rebuild that follows a structural
+    // query character. That rebuild can leave the live DOM range on the block
+    // wrapper even though the document query has not moved; the range captured
+    // by `offer` is the document truth the visible list was built from.
+    const to = this.to;
+    const closing = this.closing;
+    const caret = from + choice.value.length + closing;
     this.close();
-    applyEdit(this.context, from, caret, choice.value, from + choice.value.length);
+    applyEdit(this.context, from, to, choice.value, caret, 'other', false);
   }
 
   /**

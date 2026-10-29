@@ -61,6 +61,24 @@ the reference wording consistent across formats and avoids requiring a
 Automatic references are same-document references only. Cross-document targets,
 plural references, and reference ranges are out of scope.
 
+## Link-target completion
+
+When an ordinary same-document link destination is being edited, typing `#`
+immediately after `](` opens the same reference-target list used by `[#`:
+
+```markdown
+[the model figure](#│)
+```
+
+The list offers each uniquely identified target in document order. Its rows
+show the target's inferred label, and accepting a row replaces only the
+fragment query, producing `[the model figure](#fig:model)`.
+
+This completion is deliberately same-document only. A path fragment such as
+`[note](note.md#│)` is not a match, because its target has not been indexed.
+An escaped `\#` is ordinary destination text. The completion is editor-only:
+it does not change the Markdown or any export.
+
 ## Automatic-reference syntax
 
 `[#id]` is an inline Yi Markdown node.

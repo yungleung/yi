@@ -171,6 +171,29 @@ Los callouts pueden anidarse dentro de citas u otros callouts. Su cuerpo admite 
 tablas, bloques de código, ecuaciones, leyendas, citas y citas Markdown normales. Yi muestra el panel
 cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la fuente completa y al
 salir del bloque vuelve la vista renderizada.
+
+Los marcadores de apertura conservan el contexto del contenedor durante la edición. Escribir `$$`,
+`[$$`, un bloque de código delimitado por tres acentos graves o `:::` crea la construcción
+emparejada correspondiente, añade el prefijo `>` activo a cada línea fuente generada y conserva el
+selector de tipo de callout para `:::`. Dentro de código o fórmulas en bloque de una cita o callout,
+Enter sigue la regla del bloque hijo y puede crear cualquier número de líneas vacías consecutivas.
+Un callout Div crea exactamente una línea nueva con prefijo por cada Enter, también cuando está
+anidado en otra cita o callout.
+
+La finalización de citas después de `@`, de wikilinks después de `[[` y de referencias automáticas
+después de `[#` sigue disponible en ambas formas de origen. Al elegir una fila solo se escribe la
+clave o el ID de destino; el prefijo de cita y los corchetes que lo rodean quedan intactos. La lista
+aparece en cuanto se escribe el marcador o lo confirma un método de entrada; no hace falta pulsar Tab.
+
+Los signos de apertura `[`, `(` y `{` se emparejan automáticamente en texto normal, citas, callouts
+de GitHub y callouts Div, también cuando el carácter llega desde un método de entrada. En el destino
+de un enlace normal al mismo documento, escribir `#` después de `](` también muestra los destinos de
+referencia; al aceptar una fila solo se escribe el ID del fragmento.
+Al aceptar cualquiera de estas sugerencias, el cursor queda en el borde de cierre del nodo y su
+código Markdown permanece visible para editarlo. El siguiente carácter se escribe después del
+nodo y renderiza el enlace, la referencia, la cita o el wikilink terminados. Si el carácter sigue
+formando parte del mismo elemento, como otra tecla de una cita narrativa, el código sigue visible.
+
 Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
 los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
 Fuera del modo fuente, una cita normal tiene margen a ambos lados y una gran comilla inicial. No
@@ -180,7 +203,7 @@ En un párrafo de cita normal, Enter crea dos líneas vacías con el prefijo `>`
 siguiente forma otro párrafo. Un segundo Enter en el párrafo vacío quita solo un nivel de cita; en
 citas anidadas se repite una vez por nivel. Las listas, tablas, bloques de código y ecuaciones
 mantienen su comportamiento normal, y cada línea nueva recibe el prefijo completo. Cuando termina un
-bloque hijo, solo hace falta una línea vacía con prefijo.
+bloque hijo, Enter añade el mismo párrafo de dos líneas vacías con prefijo.
 
 Escribir en una línea `>` vacía produce exactamente `>B`, sin añadir un espacio invisible. Si la
 fuente ya contiene el espacio visible `> `, se conserva. Backspace o Delete en una línea de cita
@@ -197,6 +220,10 @@ conserva su prefijo visible en cada línea insertada.
 Un callout vacío conserva un ancla invisible para el cursor del cuerpo. Left desde el bloque
 posterior y Right desde el anterior entran en ella; navegar no modifica la fuente. El primer
 carácter escrito crea la línea de cuerpo que falta.
+Enter en la línea del marcador de un callout GitHub vacío crea las dos líneas vacías con prefijo de
+un párrafo de cita y coloca el cursor en la segunda; otro Enter elimina esas marcas y abandona el
+callout. Enter en la apertura vacía de un callout Div crea una línea de cuerpo editable antes de su
+cierre.
 
 Todas las exportaciones con Pandoc convierten ambas formas en el mismo Div semántico:
 

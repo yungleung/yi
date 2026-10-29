@@ -30,7 +30,7 @@ const {
   projectQuoteSource,
   quoteNeedsSourceAt
 } = await import(await bundle('quote_edits', 'src/ui/markdown/syntax/quote_edits.ts'));
-const { materializeCalloutBody } = await import(
+const { emptyCalloutNewline, materializeCalloutBody } = await import(
   await bundle('callout_body', 'src/ui/markdown/syntax/callout_body.ts')
 );
 const { calloutBodyInsertion, readCallout } = await import(
@@ -82,14 +82,27 @@ check(
     caret: 7
   }
 );
+const calloutBreak = '> [!NOTE]\n>\n>';
+check(
+  'a second Enter on the two callout lines removes their quote markers',
+  enterInQuote(calloutBreak, calloutBreak.length, 1, 'paragraph'),
+  {
+    edit: { from: 9, to: calloutBreak.length, replacement: '\n\n' },
+    caret: 11
+  }
+);
 
 const equationEnd = '> > $$\n> > x\n> > $$';
 check(
-  'completed child Enter adds one prefixed line',
+  'completed child Enter starts a full quoted paragraph break',
   enterInQuote(equationEnd, equationEnd.length, 2, 'completed-child'),
   {
-    edit: { from: equationEnd.length, to: equationEnd.length, replacement: '\n> >' },
-    caret: equationEnd.length + 4
+    edit: {
+      from: equationEnd.length,
+      to: equationEnd.length,
+      replacement: '\n> >\n> >'
+    },
+    caret: equationEnd.length + 8
   }
 );
 
@@ -183,6 +196,20 @@ check(
     caret: quotedDivBody.indexOf('A') + 4
   }
 );
+const divInsideCallout =
+  '> [!NOTE]\n> ::: {.callout .callout-tip}\n> A\n> :::\n';
+check(
+  'Enter finds a fenced-Div nested inside another callout',
+  fencedDivNewline(divInsideCallout, divInsideCallout.indexOf('A') + 1),
+  {
+    edit: {
+      from: divInsideCallout.indexOf('A') + 1,
+      to: divInsideCallout.indexOf('A') + 1,
+      replacement: '\n> '
+    },
+    caret: divInsideCallout.indexOf('A') + 4
+  }
+);
 
 for (const context of ['list', 'table', 'code', 'equation']) {
   check(
@@ -193,6 +220,11 @@ for (const context of ['list', 'table', 'code', 'equation']) {
 }
 
 const markerOnly = '> [!NOTE]';
+check(
+  'Enter on a marker-only alert leaves the quote paragraph rule in charge',
+  emptyCalloutNewline(markerOnly, markerOnly.length),
+  null
+);
 check(
   'marker-only callout materialises a quoted body',
   materializeCalloutBody(markerOnly, 9, readCallout(markerOnly), 'Body'),
@@ -222,6 +254,18 @@ check(
 );
 
 const emptyDiv = '::: {.callout-note}\n:::\n';
+check(
+  'Enter on an empty Div opening creates one body line before its close',
+  emptyCalloutNewline(emptyDiv, emptyDiv.indexOf('\n')),
+  {
+    edit: {
+      from: emptyDiv.indexOf('\n'),
+      to: emptyDiv.indexOf('\n'),
+      replacement: '\n'
+    },
+    caret: emptyDiv.indexOf('\n') + 1
+  }
+);
 check(
   'empty Div materialises a body line before its close',
   materializeCalloutBody(
@@ -258,6 +302,26 @@ check(
     },
     caret: 33
   }
+);
+
+const quotedEmptyDiv = '> ::: {.callout-note}\n> :::\n';
+check(
+  'Enter on a quoted empty Div keeps the visible quote prefix',
+  emptyCalloutNewline(quotedEmptyDiv, quotedEmptyDiv.indexOf('\n')),
+  {
+    edit: {
+      from: quotedEmptyDiv.indexOf('\n'),
+      to: quotedEmptyDiv.indexOf('\n'),
+      replacement: '\n> '
+    },
+    caret: quotedEmptyDiv.indexOf('\n') + 3
+  }
+);
+
+check(
+  'Enter elsewhere in a callout keeps the ordinary paragraph rule',
+  emptyCalloutNewline('> [!NOTE]\n> Body', '> [!NOTE]\n> Body'.length),
+  null
 );
 
 if (failures.length > 0) {
