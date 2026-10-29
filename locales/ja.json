@@ -217,6 +217,8 @@
   "newNote.folder": "フォルダ",
   "newNote.name": "ファイル名",
   "newNote.template": "テンプレートのメタデータ",
+  "newNote.template.revealjs": "Reveal.js プレゼンテーション",
+  "newNote.template.beamer": "Beamer プレゼンテーション",
   "newNote.withoutTemplate": "テンプレートなし",
   "newNote.templateTitle": "テンプレートから始めますか？",
   "newNote.metadataInvalid": "選択したテンプレートの metadata.yaml は有効な YAML ではありません: {reason}",

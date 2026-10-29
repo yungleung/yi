@@ -35,6 +35,13 @@ const {
   newDocumentText,
   titleRange
 } = await bundleModule('src/services/new_document.ts', 'new_document');
+const {
+  BUILT_IN_NOTE_METADATA,
+  BUILTIN_NOTE_TEMPLATES
+} = await bundleModule(
+  'src/services/new_document_builtins.ts',
+  'new_document_builtins'
+);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -190,6 +197,46 @@ try {
 check(
   'broken package metadata is refused instead of becoming a broken note',
   invalidMetadata?.includes('not valid YAML') ?? false,
+  true
+);
+
+// --- built-in presentation metadata ---
+
+check(
+  'the built-in choices are Reveal.js and Beamer',
+  BUILTIN_NOTE_TEMPLATES.map((template) => [template.id, template.kind]),
+  [
+    ['builtin:revealjs', 'revealjs'],
+    ['builtin:beamer', 'beamer']
+  ]
+);
+check(
+  'the Reveal.js starter carries presentation metadata',
+  [
+    'theme: black',
+    'transition: slide',
+    'slide-level: 2',
+    'incremental: false'
+  ].every((line) => BUILT_IN_NOTE_METADATA['builtin:revealjs'].split('\n').includes(line)),
+  true
+);
+check(
+  'the Beamer starter carries presentation metadata',
+  [
+    'theme: default',
+    'colortheme: default',
+    'fonttheme: default',
+    'aspectratio: 169',
+    'section-titles: true'
+  ].every((line) => BUILT_IN_NOTE_METADATA['builtin:beamer'].split('\n').includes(line)),
+  true
+);
+check(
+  'the built-in starters still obey the app date and id stamps',
+  newDocumentText({
+    ...STAMP,
+    metadata: BUILT_IN_NOTE_METADATA['builtin:beamer']
+  }).includes('date: 2026-09-29\nid: 20260929080503\n'),
   true
 );
 

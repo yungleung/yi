@@ -217,6 +217,8 @@
   "newNote.folder": "Ordner",
   "newNote.name": "Dateiname",
   "newNote.template": "Vorlagen-Metadaten",
+  "newNote.template.revealjs": "Reveal.js-Präsentation",
+  "newNote.template.beamer": "Beamer-Präsentation",
   "newNote.withoutTemplate": "Keine Vorlage",
   "newNote.templateTitle": "Mit einer Vorlage beginnen?",
   "newNote.metadataInvalid": "Die metadata.yaml der gewählten Vorlage ist kein gültiges YAML: {reason}",

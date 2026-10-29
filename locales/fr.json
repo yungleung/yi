@@ -217,6 +217,8 @@
   "newNote.folder": "Dossier",
   "newNote.name": "Nom du fichier",
   "newNote.template": "Métadonnées du modèle",
+  "newNote.template.revealjs": "Présentation Reveal.js",
+  "newNote.template.beamer": "Présentation Beamer",
   "newNote.withoutTemplate": "Sans modèle",
   "newNote.templateTitle": "Commencer avec un modèle ?",
   "newNote.metadataInvalid": "Le metadata.yaml du modèle choisi n’est pas un YAML valide : {reason}",

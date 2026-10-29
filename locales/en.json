@@ -217,6 +217,8 @@
   "newNote.folder": "Folder",
   "newNote.name": "File name",
   "newNote.template": "Template metadata",
+  "newNote.template.revealjs": "Reveal.js presentation",
+  "newNote.template.beamer": "Beamer presentation",
   "newNote.withoutTemplate": "No template",
   "newNote.templateTitle": "Start from a template?",
   "newNote.metadataInvalid": "The selected template’s metadata.yaml is not valid YAML: {reason}",

@@ -217,6 +217,8 @@
   "newNote.folder": "Pasta",
   "newNote.name": "Nome do arquivo",
   "newNote.template": "Metadados do modelo",
+  "newNote.template.revealjs": "Apresentação Reveal.js",
+  "newNote.template.beamer": "Apresentação Beamer",
   "newNote.withoutTemplate": "Sem modelo",
   "newNote.templateTitle": "Começar com um modelo?",
   "newNote.metadataInvalid": "O metadata.yaml do modelo escolhido não é YAML válido: {reason}",

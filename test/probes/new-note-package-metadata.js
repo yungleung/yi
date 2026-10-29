@@ -85,6 +85,15 @@
       [...choice.options].map((option) => option.textContent)
     );
     check(
+      'and the two built-in presentation starters come first',
+      choice.options[1]?.value === 'builtin:revealjs' &&
+        choice.options[2]?.value === 'builtin:beamer',
+      [...choice.options].slice(0, 4).map((option) => ({
+        value: option.value,
+        text: option.textContent
+      }))
+    );
+    check(
       'and its first answer is no template',
       choice.options[0]?.value === '',
       ''

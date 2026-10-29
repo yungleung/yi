@@ -41,7 +41,9 @@ export class NewDocumentTemplatePicker extends QuestionCard<string | null | unde
         select.append(
           this.option(
             template.id,
-            `${template.name} — ${kindLabel(template.kind)}`
+            template.source === 'built-in'
+              ? template.name
+              : `${template.name} — ${kindLabel(template.kind)}`
           )
         );
       }

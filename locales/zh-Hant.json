@@ -217,6 +217,8 @@
   "newNote.folder": "檔案夾",
   "newNote.name": "檔案名稱",
   "newNote.template": "範本中繼資料",
+  "newNote.template.revealjs": "Reveal.js 簡報",
+  "newNote.template.beamer": "Beamer 簡報",
   "newNote.withoutTemplate": "不使用範本",
   "newNote.templateTitle": "從範本開始？",
   "newNote.metadataInvalid": "所選範本的 metadata.yaml 不是有效的 YAML：{reason}",

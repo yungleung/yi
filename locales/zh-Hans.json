@@ -217,6 +217,8 @@
   "newNote.folder": "文件夹",
   "newNote.name": "文件名",
   "newNote.template": "模板元数据",
+  "newNote.template.revealjs": "Reveal.js 演示文稿",
+  "newNote.template.beamer": "Beamer 演示文稿",
   "newNote.withoutTemplate": "不使用模板",
   "newNote.templateTitle": "从模板开始？",
   "newNote.metadataInvalid": "所选模板的 metadata.yaml 不是有效的 YAML：{reason}",

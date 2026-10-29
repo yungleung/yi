@@ -195,7 +195,9 @@ export class NewDocumentDialog extends QuestionCard<NewDocumentPlacement | null>
       this.templateField.append(
         this.option(
           template.id,
-          `${template.name} — ${kindLabel(template.kind)}`
+          template.source === 'built-in'
+            ? template.name
+            : `${template.name} — ${kindLabel(template.kind)}`
         )
       );
     }

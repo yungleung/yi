@@ -10,28 +10,40 @@
  */
 
 import { exportTemplates, readTemplateFile } from '../api/templates';
+import { t } from './i18n';
+import { BUILT_IN_NOTE_METADATA, BUILTIN_NOTE_TEMPLATES } from './new_document_builtins';
 
 export interface NewNoteTemplate {
   id: string;
   name: string;
   kind: string;
+  source: 'built-in' | 'package';
 }
 
 export async function newNoteTemplates(): Promise<NewNoteTemplate[]> {
   const packages = await exportTemplates();
-  return packages
-    .filter(
-      (summary) =>
-        summary.manifest !== null &&
-        summary.files.some((file) => file.name === 'metadata.yaml')
-    )
-    .map((summary) => ({
-      id: summary.id,
-      name: summary.manifest?.name ?? summary.id,
-      kind: summary.manifest?.kind ?? ''
-    }));
+  return [
+    ...BUILTIN_NOTE_TEMPLATES.map((template) => ({
+      id: template.id,
+      name: t(template.nameKey),
+      kind: template.kind,
+      source: 'built-in' as const
+    })),
+    ...packages
+      .filter(
+        (summary) =>
+          summary.manifest !== null &&
+          summary.files.some((file) => file.name === 'metadata.yaml')
+      )
+      .map((summary) => ({
+        id: summary.id,
+        name: summary.manifest?.name ?? summary.id,
+        kind: summary.manifest?.kind ?? '',
+        source: 'package' as const
+      }))
+  ];
 }
 
 export async function newNoteMetadata(templateId: string): Promise<string> {
-  return await readTemplateFile(templateId, 'metadata.yaml');
+  return BUILT_IN_NOTE_METADATA[templateId] ?? await readTemplateFile(templateId, 'metadata.yaml');
 }

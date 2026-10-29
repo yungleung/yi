@@ -217,6 +217,8 @@
   "newNote.folder": "Carpeta",
   "newNote.name": "Nombre del archivo",
   "newNote.template": "Metadatos de la plantilla",
+  "newNote.template.revealjs": "Presentación Reveal.js",
+  "newNote.template.beamer": "Presentación Beamer",
   "newNote.withoutTemplate": "Sin plantilla",
   "newNote.templateTitle": "¿Empezar con una plantilla?",
   "newNote.metadataInvalid": "El metadata.yaml de la plantilla elegida no es YAML válido: {reason}",
