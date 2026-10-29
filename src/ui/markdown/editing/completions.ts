@@ -29,13 +29,15 @@ import {
   type CompletionChoice
 } from '../syntax/completions';
 import { referenceLabel } from '../document/reference_index';
-import { applyEdit, caretOffset, type EditorContext } from './context';
+import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 export class Completions {
   private readonly card = new CompletionCard();
   private choices: CompletionChoice[] = [];
   private selected = 0;
   private from: number | null = null;
+  /** The query end from the refresh that produced the visible list. */
+  private to: number | null = null;
   /** Guards an answer that arrives after the author has typed on. */
   private generation = 0;
 
@@ -64,10 +66,28 @@ export class Completions {
       return true;
     }
     if (event.key === 'Escape') {
+      this.restoreQueryCaret(true);
       this.close();
       return true;
     }
     return false;
+  }
+
+  /**
+   * Gives a key that does not belong to the list the query's document caret.
+   *
+   * The deferred parse check after a structural query character can rebuild
+   * the block while the card stays open. The document range the list was built
+   * from is then the reliable caret; the browser-relocated wrapper position is
+   * not, and a text edit from it can replace the wrong range.
+   */
+  restoreQueryCaret(force = false): void {
+    if (this.to === null || (!force && !this.card.isOpen())) {
+      return;
+    }
+    if (force || caretOffset(this.context) !== this.to) {
+      restoreCaret(this.context, this.to, false);
+    }
   }
 
   /**
@@ -86,6 +106,7 @@ export class Completions {
     if (citation) {
       this.offer(
         citation.from,
+        caret,
         matchingChoices(
           bibliographyManager.entries().map((entry) => ({ value: entry.key, title: entry.title })),
           citation.query
@@ -97,6 +118,7 @@ export class Completions {
     if (reference) {
       this.offer(
         reference.from,
+        caret,
         matchingChoices(this.referenceChoices(), reference.query)
       );
       return;
@@ -112,6 +134,7 @@ export class Completions {
     const generation = ++this.generation;
     this.offer(
       wikilink.from,
+      caret,
       matchingChoices(
         this.documents().map((document) => ({ value: document.target, title: document.title })),
         wikilink.query
@@ -125,6 +148,7 @@ export class Completions {
       this.selected = 0;
       this.offer(
         wikilink.from,
+        caret,
         matchingChoices(
           documents.map((document) => ({ value: document.target, title: document.title })),
           wikilink.query
@@ -154,19 +178,24 @@ export class Completions {
 
   close(): void {
     this.from = null;
+    this.to = null;
     this.choices = [];
     this.card.close();
   }
 
   /** Puts `choices` in front of the author, with the first in hand. */
-  private offer(from: number, choices: CompletionChoice[]): void {
+  private offer(from: number, to: number, choices: CompletionChoice[]): void {
     this.from = from;
+    this.to = to;
     this.choices = choices;
     if (this.selected >= choices.length) {
       this.selected = 0;
     }
     if (choices.length === 0) {
-      this.card.close();
+      // A query with no matches closes the card, but the caret must stay on
+      // the query it just rejected: the next Backspace belongs to that text.
+      this.restoreQueryCaret(true);
+      this.close();
       return;
     }
     this.draw();
@@ -178,14 +207,18 @@ export class Completions {
 
   /** Writes the choice over the query: one edit, one undo step, the caret after it. */
   private accept(choice: CompletionChoice): void {
-    const caret = caretOffset(this.context);
-    if (this.from === null || caret === null) {
+    if (this.from === null || this.to === null) {
       this.close();
       return;
     }
     const from = this.from;
+    // The list outlives the deferred block rebuild that follows a structural
+    // query character. That rebuild can leave the live DOM range on the block
+    // wrapper even though the document query has not moved; the range captured
+    // by `offer` is the document truth the visible list was built from.
+    const to = this.to;
     this.close();
-    applyEdit(this.context, from, caret, choice.value, from + choice.value.length);
+    applyEdit(this.context, from, to, choice.value, from + choice.value.length);
   }
 
   /**

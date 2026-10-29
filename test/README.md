@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and ninety-four probes (`probe:all` runs 263 and skips 31, each skip for the reason its
+two hundred and ninety-five probes (`probe:all` runs 263 and skips 32, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -136,6 +136,8 @@ beside a caret deep in the callout;
 `completion-immediate` — all three marker-triggered completion kinds open from key input and from
 native input-method commits without requiring Tab, and `#` in an ordinary same-document link
 destination offers and accepts a fragment target;
+`completion-filtered-accept` — every completion kind accepts a filtered row after the deferred
+block rebuild, in ordinary text, quotes, GitHub callouts and fenced-Div callouts;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
 `quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
 opening mark;

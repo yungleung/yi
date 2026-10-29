@@ -814,7 +814,13 @@ is the id or the file name, which is exactly what `resolve` takes. Three things 
 `[` must write its own pair *in front of* the `]` the first one's pair left after the caret — that
 is what makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves
 the wikilink one bracket short, which is exactly what Enter then writes into (measured:
-`[[<id>]`, against `test/probes/brackets.js`).
+`[[<id>]`, against `test/probes/brackets.js`). The list also has to remember the end of the query
+it is showing: the parse check after a structural character can rebuild the block and leave the
+live DOM caret on the block wrapper. Accepting from the recorded document range is what makes
+Enter write the filtered row after that rebuild. Non-owned text keys are re-anchored to the same
+endpoint first, and Escape or a query with no matches restores it before closing, so the next
+Backspace still edits the query. `completion-filtered-accept.js` holds every kind in ordinary
+prose, quotes, GitHub callouts and fenced-Div callouts.
 A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) asks for the document
 its target names and it opens through the session, exactly as a click on a row of the tree opens
 one — a plain click still opens the link's own source, and a target no document answers to is said

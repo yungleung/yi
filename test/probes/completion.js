@@ -156,7 +156,8 @@
     'See @\n',
     false
   ]);
-  await type('x');
+  t.key('x');
+  await t.sleep(260);
   same('while a letter after the @ reaches the text', await t.raw(), 'See @x\n');
   // A click is not typing: deleting the letter puts the `@` query back and the list with it, and
   // a click that moves the caret — into the words before the list — puts it away again.
