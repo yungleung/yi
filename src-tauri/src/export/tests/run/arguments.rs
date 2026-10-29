@@ -438,8 +438,8 @@ fn only_the_kind_whose_engine_draws_a_page_is_offered_a_size_for_it() {
     assert_eq!(sizing, vec!["pdf"]);
 }
 
-/// The kinds whose output can hold a picture as it is — an SVG or a webp — and nothing else: a page
-/// of HTML and a book can, and the app's own hand leaves the note's destinations as written.
+/// The kinds whose output can hold a picture as it is — an SVG or a webp — and nothing else:
+/// HTML, Reveal.js and a book can, and the app's own hand leaves the destinations as written.
 #[test]
 fn only_the_kinds_that_can_hold_a_picture_as_it_is_say_they_can() {
     let pictures: Vec<&str> = KINDS
@@ -447,7 +447,7 @@ fn only_the_kinds_that_can_hold_a_picture_as_it_is_say_they_can() {
         .filter(|kind| kind.carries_pictures)
         .map(|kind| kind.kind)
         .collect();
-    assert_eq!(pictures, vec!["html", "epub", "markdown"]);
+    assert_eq!(pictures, vec!["html", "revealjs", "epub", "markdown"]);
 }
 
 /// A page a reader asked for is `geometry` options, and nothing at all for *the file's own*: a

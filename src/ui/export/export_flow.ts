@@ -45,6 +45,7 @@ import { fileName, parentFolder } from '../../services/workspace_folders';
 import { imageBases } from '../image/image_urls';
 import { registerCommand } from '../markdown/commands/registry';
 import { bodyWithItsName } from './book_body';
+import { isLatexKind } from './kind_family';
 import { exportDialog } from './export_dialog';
 import type { ExportProgress } from './export_progress';
 import { uncoveredCharacters } from './font_hint';
@@ -288,7 +289,7 @@ export async function exportNote(
           : { path: nativeBibliography.path, text: nativeBibliography.text },
       note_assets: noteAssets,
       reference_header:
-        first.kind === 'latex' || first.kind === 'pdf' ? referenceHeader(text) : ''
+        isLatexKind(first.kind) ? referenceHeader(text) : ''
     });
     // The run is over before the success hint appears: the reader never sees "Exporting" beside
     // "Exported" while the temporary picture files are swept.

@@ -49,6 +49,7 @@ import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
 import { listRewrites } from './list_rewrites';
 import { calloutRewrites } from './callout_rewrites';
+import { isLatexKind } from './kind_family';
 import {
   firstReference,
   referenceIndex,
@@ -209,7 +210,7 @@ function autoReferenceRewrites(
     const target = firstReference(references, node.id);
     if (
       target?.kind === 'table' &&
-      (kind === 'latex' || kind === 'pdf')
+      isLatexKind(kind)
     ) {
       return {
         start: span.start,
@@ -219,7 +220,7 @@ function autoReferenceRewrites(
     }
     if (
       target?.kind === 'equation' &&
-      (kind === 'latex' || kind === 'pdf')
+      isLatexKind(kind)
     ) {
       return {
         start: span.start,
@@ -229,7 +230,7 @@ function autoReferenceRewrites(
     }
     if (
       target?.kind === 'list' &&
-      (kind === 'latex' || kind === 'pdf')
+      isLatexKind(kind)
     ) {
       return {
         start: span.start,
@@ -278,7 +279,7 @@ async function figureRewrites(
       });
       continue;
     }
-    const caption = label === null || answers.kind === 'latex' || answers.kind === 'pdf'
+    const caption = label === null || isLatexKind(answers.kind)
       ? image.alt ?? ''
       : `${label}. ${image.alt ?? ''}`;
     const imageText = destination === null
@@ -286,11 +287,11 @@ async function figureRewrites(
       : imageMarkdown({ ...image, alt: caption }, target);
     const markdown =
       imageText +
-      figureAttributes(figure, answers.kind === 'latex' || answers.kind === 'pdf');
+      figureAttributes(figure, isLatexKind(answers.kind));
     rewrites.push({
       start: span.start,
       end: span.end,
-      text: figure.id && answers.kind !== 'latex' && answers.kind !== 'pdf'
+      text: figure.id && !isLatexKind(answers.kind)
         ? `::: {#${figure.id}}\n${markdown}\n:::`
         : markdown
     });
@@ -316,7 +317,7 @@ function listingRewrites(
       text:
         answers.kind === 'markdown'
           ? listingHtml(listing, label)
-          : answers.kind === 'latex' || answers.kind === 'pdf'
+          : isLatexKind(answers.kind)
             ? latexListing(listing)
             : pandocListing(listing, label)
     };

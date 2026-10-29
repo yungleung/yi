@@ -15,6 +15,7 @@ import { referenceLabel, type ReferenceEntry } from '../markdown/document/refere
 import type { TableCaptionNode } from '../markdown/syntax/table_captions';
 import { spansOfType, type Walkable } from './node_spans';
 import { tableHtml } from './table_html';
+import { isLatexKind } from './kind_family';
 
 /** One source range and its replacement. */
 export interface TableRewrite {
@@ -33,7 +34,7 @@ export function tableRewrites(
   references: readonly ReferenceEntry[],
   kind: string
 ): TableRewrite[] {
-  if (kind === 'latex' || kind === 'pdf') {
+  if (isLatexKind(kind)) {
     return [];
   }
   const rewrites: TableRewrite[] = [];

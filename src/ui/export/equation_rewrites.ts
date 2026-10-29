@@ -30,6 +30,7 @@ import {
   equationHtmlContainer,
   equationLayoutHtml
 } from './equation_html';
+import { isHtmlLikeKind, isLatexKind } from './kind_family';
 
 /** One source range and its replacement. */
 export interface EquationRewrite {
@@ -55,7 +56,7 @@ export function equationRewrites(
     const entry = references.find(
       (candidate) => candidate.kind === 'equation' && candidate.from === block.charStart
     );
-    if (kind === 'latex' || kind === 'pdf') {
+    if (isLatexKind(kind)) {
       rewrites.push({
         start: block.charStart,
         end: block.charEnd,
@@ -88,7 +89,7 @@ export function equationRewrites(
       continue;
     }
     const lowered = unnumberedEquationBody(math.body);
-    if (kind === 'latex' || kind === 'pdf') {
+    if (isLatexKind(kind)) {
       if (lowered === math.math) {
         continue;
       }
@@ -118,7 +119,7 @@ function equationMarkdown(
   numberText: string,
   kind: string
 ): string {
-  if (kind === 'html' || kind === 'epub') {
+  if (isHtmlLikeKind(kind)) {
     return equationHtmlContainer(
       equation,
       [

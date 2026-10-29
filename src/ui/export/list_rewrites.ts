@@ -15,6 +15,7 @@ import { referenceLabel, type ReferenceEntry } from '../markdown/document/refere
 import type { ListCaptionNode } from '../markdown/syntax/list_captions';
 import { spansOfType, type Walkable } from './node_spans';
 import { listHtml } from './list_html';
+import { isLatexKind } from './kind_family';
 
 /** One source range and its replacement. */
 export interface ListRewrite {
@@ -51,7 +52,7 @@ export function listRewrites(
       rewrites.push({ start: span.start, end: span.end, text: listHtml(list, referenceLabel(entry)) });
       continue;
     }
-    if (kind === 'latex' || kind === 'pdf') {
+    if (isLatexKind(kind)) {
       rewrites.push({
         start: span.start,
         end: span.end,
