@@ -17,6 +17,7 @@ mod odt_toc;
 mod pandoc;
 mod pictures;
 mod reference_header;
+mod revealjs;
 mod run;
 mod search;
 pub mod templates;
@@ -28,6 +29,11 @@ pub use font_hints::NamedFonts;
 pub use info::{ExportKindInfo, ExportKinds};
 #[allow(unused_imports)]
 pub use kinds::{ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES};
+#[allow(unused_imports)]
+pub(super) use revealjs::{
+    download_revealjs_assets, package_revealjs_media, reveal_asset_path,
+    revealjs_asset_references, revealjs_output, use_revealjs_cdn,
+};
 #[allow(unused_imports)]
 pub use pandoc::find_pandoc;
 pub use run::{ExportOutcome, ExportRequest};
@@ -41,8 +47,11 @@ pub fn export_kinds(app: tauri::AppHandle) -> Result<ExportKinds, String> {
 }
 
 #[tauri::command]
-pub fn run_export(app: tauri::AppHandle, request: ExportRequest) -> Result<ExportOutcome, String> {
-    run::run_export(app, request)
+pub async fn run_export(
+    app: tauri::AppHandle,
+    request: ExportRequest,
+) -> Result<ExportOutcome, String> {
+    run::run_export(app, request).await
 }
 
 #[tauri::command]
@@ -87,6 +96,11 @@ pub async fn export_fetch_image(app: tauri::AppHandle, url: String) -> Result<St
 #[tauri::command]
 pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
     pandoc::export_use_pandoc(pandoc)
+}
+
+#[tauri::command]
+pub fn export_use_revealjs_cdn(base: Option<String>) -> Result<(), String> {
+    revealjs::use_revealjs_cdn(base)
 }
 
 #[cfg(test)]

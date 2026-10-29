@@ -116,6 +116,9 @@ pub struct ExportRequest {
     /// command-line value is explicit so an older defaults file cannot silently turn it back on.
     #[serde(default)]
     pub self_contained: bool,
+    /// Whether a Reveal.js deck should keep Pandoc's remote distribution URLs.
+    #[serde(default)]
+    pub revealjs_remote_js: bool,
     /// The cited part of the reader's selected library, for a LaTeX package that keeps native
     /// `\cite` and BibTeX instead of citeproc. The window computes this from the Markdown parse.
     #[serde(default)]
@@ -128,17 +131,21 @@ pub struct ExportRequest {
     pub reference_header: String,
 }
 /// Exports the note: the kind the reader chose, in pandoc's own hands.
-pub fn run_export(
+pub async fn run_export(
     app: tauri::AppHandle,
     mut request: ExportRequest,
 ) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
-    if kind.kind == "html" {
-        let (_, page) = super::html_media::html_output(&request.output_path)?;
+    if kind.kind == "html" || kind.kind == "revealjs" {
+        let (_, page) = if kind.kind == "html" {
+            super::html_media::html_output(&request.output_path)?
+        } else {
+            super::revealjs::revealjs_output(&request.output_path)?
+        };
         request.output_path = page.to_string_lossy().into_owned();
     }
     if kind.needs_pandoc {
-        export_with_pandoc(&app, kind, &request)
+        export_with_pandoc(&app, kind, &request).await
     } else {
         export_own_text(&request)
     }
@@ -169,7 +176,7 @@ fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
 
 /// The whole of an export: pandoc, the kind's own defaults file, and the note written out for it to
 /// read.
-fn export_with_pandoc(
+async fn export_with_pandoc(
     app: &tauri::AppHandle,
     kind: &ExportKind,
     request: &ExportRequest,
@@ -220,7 +227,8 @@ fn export_with_pandoc(
         super::reference_header::write_reference_header(&dir, &request.reference_header)?;
     let headers: Vec<_> = header.iter().chain(reference_header.iter()).cloned().collect();
     let note = write_note(&dir, &request.text)?;
-    let result = pandoc_arguments(
+    let result = async {
+        let arguments = pandoc_arguments(
         &dir,
         &defaults,
         &note,
@@ -232,8 +240,7 @@ fn export_with_pandoc(
             .as_ref()
             .map(|(path, manifest)| (path.as_path(), manifest)),
         alias.as_ref().map(|(root, _)| root.as_path()),
-    )
-    .and_then(|arguments| {
+        )?;
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
         // it is run in, so a package is that folder. The note, defaults and output are absolute,
         // which is what keeps that current directory from changing what the other paths mean.
@@ -252,10 +259,9 @@ fn export_with_pandoc(
                 Vec::new(),
             ),
         };
-        run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment)
-            .map(|warnings| ExportOutcome { warnings })
-    })
-    .and_then(|outcome| {
+        let outcome =
+            run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment)
+                .map(|warnings| ExportOutcome { warnings })?;
         if kind.kind == "odt" {
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());
             super::odt_toc::cache_contents(&output)?;
@@ -264,6 +270,13 @@ fn export_with_pandoc(
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());
             super::html_media::package_html_media(&output)?;
         }
+        if kind.kind == "revealjs" {
+            let output = absolute_output(&request.output_path, request.source_dir.as_deref());
+            super::revealjs::package_revealjs_media(&output)?;
+            if !request.revealjs_remote_js {
+                super::revealjs::download_revealjs_assets(&output).await?;
+            }
+        }
         if let Some((package, manifest)) = &template {
             deliver_package_assets(package, manifest, request, kind)?;
         }
@@ -271,7 +284,8 @@ fn export_with_pandoc(
             deliver_note_assets(request)?;
         }
         Ok(outcome)
-    });
+    }
+    .await;
     // The note's copy under the app's data folder is a thing of this call, whatever pandoc said —
     // and so are the pictures fetched for it. A picture is re-fetched rather than remembered: the
     // page it came from may have changed since the last export.

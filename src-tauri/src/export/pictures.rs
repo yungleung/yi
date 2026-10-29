@@ -160,6 +160,37 @@ async fn fetch_once(url: &str) -> Result<reqwest::Response, String> {
     Ok(response)
 }
 
+/// One non-image resource used by an export, bounded so a server cannot make
+/// the app hold or write an arbitrarily large response.
+pub(super) async fn fetch_resource(url: &str, limit: usize) -> Result<Vec<u8>, String> {
+    let mut response = fetch_once(url).await?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > limit as u64)
+    {
+        return Err(crate::i18n::now(
+            "export.fetchTooLarge",
+            &[("url", url), ("limit", &limit.to_string())],
+        ));
+    }
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|error| {
+        crate::i18n::now(
+            "export.pictureUnreadable",
+            &[("url", url), ("reason", &error.to_string())],
+        )
+    })? {
+        if bytes.len() + chunk.len() > limit {
+            return Err(crate::i18n::now(
+                "export.fetchTooLarge",
+                &[("url", url), ("limit", &limit.to_string())],
+            ));
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(bytes)
+}
+
 /// The one client every fetch shares: a client owns its connection pool, and a document with a
 /// dozen pictures should not pay for a dozen pools. Cloning it is cheap — the pool is behind an
 /// `Arc` — and the policy lives in one place.

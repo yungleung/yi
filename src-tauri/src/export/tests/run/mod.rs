@@ -2,7 +2,7 @@ use super::*;
 use std::path::Path;
 
 /// A request for the tests that read the arguments: every name it can carry, carried.
-fn request_in(dir: &Path) -> ExportRequest {
+pub(super) fn request_in(dir: &Path) -> ExportRequest {
     ExportRequest {
         kind: "docx".to_string(),
         text: "# a note\n".to_string(),
@@ -22,13 +22,14 @@ fn request_in(dir: &Path) -> ExportRequest {
         suppress_references: false,
         template_id: None,
         self_contained: false,
+        revealjs_remote_js: false,
         native_bibliography: None,
         note_assets: Vec::new(),
         reference_header: String::new(),
     }
 }
 
-fn named_arguments(dir: &Path, request: &ExportRequest) -> Vec<String> {
+pub(super) fn named_arguments(dir: &Path, request: &ExportRequest) -> Vec<String> {
     named_arguments_for(dir, request, kind_of(&request.kind).unwrap())
 }
 

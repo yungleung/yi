@@ -228,6 +228,11 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
 /// The temporary is a *sibling* on purpose: a rename across volumes copies rather than moves, which
 /// is the very half-written window this closes.
 pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
+    write_bytes_atomically(path, contents.as_bytes())
+}
+
+/// Writes bytes through the same sibling-temporary rename as [`write_atomically`].
+pub fn write_bytes_atomically(path: &Path, contents: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
 
     let mut temporary = path.as_os_str().to_os_string();
@@ -235,7 +240,7 @@ pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
     let temporary = PathBuf::from(temporary);
     {
         let mut file = fs::File::create(&temporary)?;
-        file.write_all(contents.as_bytes())?;
+        file.write_all(contents)?;
         file.sync_all()?;
     }
     fs::rename(&temporary, path)

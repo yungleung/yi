@@ -109,6 +109,8 @@ export interface ExportRequest {
   template_id: string | null;
   /** Whether an HTML page embeds its local files. The card's box is off by default. */
   self_contained: boolean;
+  /** Whether a Reveal.js deck keeps Pandoc's remote Reveal.js distribution URLs. */
+  revealjs_remote_js: boolean;
   /** The cited entries from the selected library, for a package that keeps native BibTeX. */
   native_bibliography: NativeBibliography | null;
   /** Local pictures referenced by a LaTeX source, copied into the output source tree. */

@@ -57,18 +57,21 @@ pub(super) fn html_output(requested: &str) -> Result<(PathBuf, PathBuf), String>
 }
 
 pub(super) fn package_html_media(output: &Path) -> Result<(), String> {
+    let stem = output
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| "page".to_string());
+    package_local_media(output, &format!("{stem}.assets"))
+}
+
+pub(super) fn package_local_media(output: &Path, asset_folder: &str) -> Result<(), String> {
     let Ok(html) = fs::read_to_string(output) else {
         return Ok(());
     };
     let Some(folder) = output.parent() else {
         return Ok(());
     };
-    let stem = output
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .filter(|stem| !stem.is_empty())
-        .unwrap_or_else(|| "page".to_string());
-    let asset_folder = format!("{stem}.assets");
     let mut copied: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
     let mut used: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut replacements: Vec<(String, String)> = Vec::new();
@@ -111,10 +114,17 @@ pub(super) fn package_html_media(output: &Path) -> Result<(), String> {
     })
 }
 
-/// Every `src` attribute value, ignoring `data-src` and similar names.
+/// Every image source attribute, including Reveal.js's lazy `data-src`.
 fn src_values(html: &str) -> Vec<String> {
+    let mut values = attribute_values(html, "data-src");
+    values.extend(attribute_values(html, "src"));
+    values
+}
+
+fn attribute_values(html: &str, attribute: &str) -> Vec<String> {
     let mut values = Vec::new();
-    for (at, _) in html.match_indices("src=") {
+    let needle = format!("{attribute}=");
+    for (at, _) in html.match_indices(&needle) {
         if at > 0
             && html[..at]
                 .chars()
@@ -123,7 +133,7 @@ fn src_values(html: &str) -> Vec<String> {
         {
             continue;
         }
-        let after = html[at + 4..].trim_start();
+        let after = html[at + needle.len()..].trim_start();
         let Some(first) = after.chars().next() else {
             continue;
         };

@@ -47,6 +47,12 @@ export async function startHttpFixture() {
       response.end(png);
       return;
     }
+    if (path.startsWith('/revealjs/js/dist/')) {
+      const type = path.endsWith('.css') ? 'text/css' : 'text/javascript';
+      response.writeHead(200, { 'content-type': type });
+      response.end(`/* local Reveal.js fixture: ${path} */\n`);
+      return;
+    }
     if (path === '/no-type') {
       response.writeHead(200);
       response.end(png);

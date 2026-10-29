@@ -16,11 +16,11 @@ writer: revealjs
 standalone: true
 embed-resources: false
 slide-level: 2
-incremental: false
-controls: true
-progress: true
-history: true
-variables: {}
+variables:
+  incremental: false
+  controls: true
+  progress: true
+  history: true
 metadata-files: []
 include-before-body: []
 include-after-body: []

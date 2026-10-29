@@ -29,4 +29,5 @@ mod kinds;
 mod odt_toc;
 mod pandoc;
 mod pictures;
+mod revealjs;
 mod run;

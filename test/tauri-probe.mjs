@@ -372,6 +372,11 @@ async function runProbe() {
        } catch (error) {
          // Nor a build without the export seam.
        }
+       try {
+         await window.__TAURI_INTERNALS__.invoke('export_use_revealjs_cdn', { base: null });
+       } catch (error) {
+         // Nor a build without the Reveal.js download seam.
+       }
        return null;
      })()`
   );

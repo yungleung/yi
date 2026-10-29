@@ -71,7 +71,7 @@
             heading: card().querySelector('p')?.textContent ?? null,
             target: card().querySelector('[data-export-target]')?.value ?? null,
             expected:
-              info.kind === 'html'
+              info.kind === 'html' || info.kind === 'revealjs'
                 ? `${folder}/note`
                 : `${folder}/note${info.name_suffix}.${info.extension}`
           };

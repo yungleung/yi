@@ -39,6 +39,17 @@ pub(crate) fn pandoc_arguments(
     if let Some(package_defaults) = package_defaults {
         crate::export::templates::append_defaults(&mut arguments, package_defaults);
     }
+    if kind.kind == "revealjs" {
+        arguments.push(OsString::from("--variable"));
+        arguments.push(OsString::from(if request.revealjs_remote_js {
+            format!(
+                "revealjs-url={}",
+                crate::export::revealjs::REVEALJS_CDN
+            )
+        } else {
+            "revealjs-url=js".to_string()
+        }));
+    }
     arguments.push(OsString::from("--output"));
     arguments.push(output.into_os_string());
     for header in headers {
