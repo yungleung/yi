@@ -22,7 +22,7 @@ async function bundleModule(input, name) {
   return import(file);
 }
 
-const { citationQuery, matchingChoices, wikilinkQuery } = await bundleModule(
+const { autoReferenceQuery, citationQuery, matchingChoices, wikilinkQuery } = await bundleModule(
   'src/ui/markdown/syntax/completions.ts',
   'completions'
 );
@@ -57,6 +57,32 @@ check('nor is a bracket with no pair', wikilinkQuery('plain [Note', 11), null);
 check('and the caret inside a wikilink that has a target asks for that target', wikilinkQuery('[[Note]]', 6), { from: 2, query: 'Note' });
 check('while a caret past its closing brackets asks for nothing', wikilinkQuery('[[Note]]', 8), null);
 check('and a newline stops the query', wikilinkQuery('[[a\nb', 5), null);
+
+// --- the automatic-reference query -------------------------------------------------------------
+
+check('`[#` asks for a document target', autoReferenceQuery('[#', 2), {
+  from: 2,
+  query: ''
+});
+check('and typing narrows it', autoReferenceQuery('See [#fig:sample', 16), {
+  from: 6,
+  query: 'fig:sample'
+});
+check('a caret before the closing bracket still asks', autoReferenceQuery('[#tbl:results]', 13), {
+  from: 2,
+  query: 'tbl:results'
+});
+check(
+  'a caret after the closing bracket asks for nothing',
+  autoReferenceQuery('[#tbl:results]', 14),
+  null
+);
+check('an escaped reference opening asks for nothing', autoReferenceQuery('\\[#fig', 6), null);
+check(
+  'whitespace ends an automatic-reference query',
+  autoReferenceQuery('[#fig sample', 11),
+  null
+);
 
 // --- the choices -------------------------------------------------------------------------------
 

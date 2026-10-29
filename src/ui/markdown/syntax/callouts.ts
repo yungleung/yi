@@ -104,6 +104,7 @@ export function readCallout(source: string, from = 0): CalloutSource | null {
 /** The callout whose source range contains the block-relative offset. */
 export function calloutAtOffset(source: string, offset: number): CalloutSource | null {
   const lines = sourceLines(source);
+  let innermost: CalloutSource | null = null;
   for (const line of lines) {
     if (line.start > offset) {
       break;
@@ -113,10 +114,19 @@ export function calloutAtOffset(source: string, offset: number): CalloutSource |
     }
     const callout = readCallout(source.slice(line.start));
     if (callout !== null && offset <= line.start + callout.to) {
-      return callout;
+      innermost = {
+        ...callout,
+        from: callout.from + line.start,
+        to: callout.to + line.start,
+        markerFrom: callout.markerFrom + line.start,
+        markerTo: callout.markerTo + line.start,
+        bodyFrom: callout.bodyFrom + line.start,
+        bodyTo: callout.bodyTo + line.start,
+        source
+      };
     }
   }
-  return null;
+  return innermost;
 }
 
 /** Where the first body character goes, or the block end for an empty body. */
@@ -128,19 +138,40 @@ export function calloutBodyInsertion(callout: CalloutSource | null): number {
 }
 
 /**
+ * Whether a callout already owns a physical body line.
+ *
+ * A GitHub alert may end with an empty quoted carrier whose body offsets
+ * collapse to its end. That line still exists, so typing on it must not
+ * materialise a second one.
+ */
+export function calloutHasBody(callout: CalloutSource): boolean {
+  if (callout.form === 'div') {
+    return callout.bodyFrom < callout.bodyTo;
+  }
+  const afterMarker = callout.source.slice(callout.markerTo, callout.to);
+  const firstBreak = afterMarker.indexOf('\n');
+  return firstBreak >= 0 && afterMarker.slice(firstBreak + 1).length > 0;
+}
+
+/**
  * The edit that changes a closed fenced-Div callout's kind class.
  *
  * Only the existing `.callout-<kind>` token moves. IDs, other classes,
  * attributes, the body and both fences stay byte-for-byte as the author wrote
  * them.
  */
-export function calloutKindEdit(text: string, kind: string): TextEdit | null {
+export function calloutKindEdit(text: string, kind: string, offset = 0): TextEdit | null {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(kind)) {
     return null;
   }
-  const lineEnd = text.indexOf('\n');
+  const callout = calloutAtOffset(text, offset);
+  const lineStart =
+    callout?.form === 'div'
+      ? text.lastIndexOf('\n', Math.max(0, callout.markerFrom - 1)) + 1
+      : 0;
+  const lineEnd = text.indexOf('\n', lineStart);
   const end = lineEnd < 0 ? text.length : lineEnd;
-  const line = text.slice(0, end);
+  const line = text.slice(lineStart, end);
   const attribute = attributeBlockAtEnd(line, line.length, false);
   if (attribute === null) {
     return null;
@@ -150,8 +181,8 @@ export function calloutKindEdit(text: string, kind: string): TextEdit | null {
     return null;
   }
   return {
-    from: attribute.from + token.from,
-    to: attribute.from + token.to,
+    from: lineStart + attribute.from + token.from,
+    to: lineStart + attribute.from + token.to,
     replacement: `callout-${kind}`
   };
 }

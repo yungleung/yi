@@ -29,7 +29,12 @@ import { proseRoot } from './selection';
 import { chooseLanguage } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
-import { readCallout } from '../syntax/callouts';
+import { calloutAtOffset } from '../syntax/callouts';
+import {
+  prefixInsertedBreaks,
+  projectQuoteSource,
+  quoteLineAt
+} from '../syntax/quote_edits';
 
 /** The blocks a typed delimiter opens. */
 export type FenceOpenKind = Extract<
@@ -50,6 +55,42 @@ export interface FenceOpen {
 }
 
 /**
+ * The same opening rule inside a quote-bearing block, expressed in the
+ * block-relative offsets the renderer and editor use here.
+ */
+export function containerFenceOpenWrite(
+  text: string,
+  at: number,
+  typed: string
+): FenceOpen | null {
+  const quote = quoteLineAt(text, at);
+  if (quote === null) {
+    return fenceOpenWrite(text, at, typed);
+  }
+  const projected = projectQuoteSource(text);
+  const projectedAt = projected.projectedOffsets[at] ?? projected.text.length;
+  const write = fenceOpenWrite(projected.text, projectedAt, typed);
+  if (write === null) {
+    return null;
+  }
+  const from = projected.sourceOffsets[write.from] ?? at;
+  const to = projected.sourceOffsets[write.to] ?? at;
+  const prefix = text.slice(quote.start, quote.prefixEnd);
+  const insertion = prefixInsertedBreaks(
+    prefix,
+    write.replacement,
+    write.caret - write.from
+  );
+  return {
+    kind: write.kind,
+    from,
+    to,
+    replacement: insertion.replacement,
+    caret: from + insertion.caret
+  };
+}
+
+/**
  * What writing `typed` at `at` makes when it completes a delimiter line of its own, or null when
  * the characters are ordinary ones. `typed` is what the keystroke writes — a bracket's pair is
  * often two characters, and two backticks are the pair that completes a fence.
@@ -62,11 +103,14 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
   const line = lineSpanAt(text, caret);
   const lineText = text.slice(line.start, line.end);
   const within = caret - line.start;
+  const beforeCaret = lineText.slice(0, within);
+  const afterCaret = lineText.slice(within);
   const completed =
-    lineText.slice(0, within) + typed + lineText.slice(within);
+    beforeCaret + typed + afterCaret;
   const labeledEquation =
     completed === '[$$' ||
     completed === '[$$]' ||
+    (beforeCaret + typed === '[$$' && afterCaret === ']') ||
     (lineText === '' && typed === '[$$');
   if (labeledEquation) {
     const { leading } = blockPadding(text, line.start);
@@ -117,11 +161,20 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
 
 /** Writes the block a typed delimiter opens, and asks for a code fence's language. */
 export function insertFenceOpen(context: EditorContext, at: number, typed: string): boolean {
-  const write = fenceOpenWrite(context.state.getText(), at, typed);
+  const block = context.state.getBlockAtOffset(at);
+  const relative =
+    block === null ? 0 : Math.min(Math.max(0, at - block.charStart), block.text.length);
+  const write =
+    block !== null && (block.kind === 'quote' || block.kind === 'fencedDiv')
+      ? containerFenceOpenWrite(block.text, relative, typed)
+      : fenceOpenWrite(context.state.getText(), at, typed);
   if (write === null) {
     return false;
   }
-  applyEdit(context, write.from, write.to, write.replacement, write.caret, 'typing');
+  const from = block === null ? write.from : block.charStart + write.from;
+  const to = block === null ? write.to : block.charStart + write.to;
+  const caret = block === null ? write.caret : block.charStart + write.caret;
+  applyEdit(context, from, to, write.replacement, caret, 'typing');
   if (write.kind === 'fencedCode') {
     askForLanguage(context);
   } else if (write.kind === 'fencedDiv') {
@@ -157,9 +210,17 @@ function askForCalloutKind(context: EditorContext): void {
     return;
   }
   const source = proseRoot(context)?.querySelector<HTMLElement>(
-    `.markdown-block[data-line-start="${block.lineStart}"] .markdown-callout-source`
+    `.markdown-block[data-line-start="${block.lineStart}"] ` +
+      '.markdown-callout-source, ' +
+      `.markdown-block[data-line-start="${block.lineStart}"] .markdown-quote-source`
   );
   if (source) {
-    chooseCalloutKind(source, readCallout(block.text)?.kind ?? 'note', block.lineStart);
+    const at = caret ?? block.charStart;
+    const relative = Math.min(Math.max(0, at - block.charStart), block.text.length);
+    chooseCalloutKind(
+      source,
+      calloutAtOffset(block.text, relative)?.kind ?? 'note',
+      block.lineStart
+    );
   }
 }

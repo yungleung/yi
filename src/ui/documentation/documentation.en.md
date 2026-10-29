@@ -634,6 +634,17 @@ Callouts may be nested inside quotes and inside other callouts. Their bodies acc
 Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
 and nested quotes.
 
+Opening markers remain container-aware while editing. Typing `$$`, `[$$`, a triple-backtick code
+fence, or `:::` creates the matching paired construct, gives every generated physical line the
+current `>` prefix, and keeps the callout-kind chooser for `:::`. Inside quoted or called-out code
+and display math, Enter follows the child block's line rule and may create any number of consecutive
+blank lines. A fenced-Div callout creates one prefixed newline per Enter, including when it is nested
+in another quote or callout.
+
+Citation completion after `@`, wikilink completion after `[[`, and automatic-reference completion
+after `[#` remain available in both source forms. Choosing a row writes only the key or target ID;
+the surrounding quote prefix and brackets stay intact.
+
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
 An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape
@@ -672,6 +683,9 @@ quote prefix on each inserted line.
 Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
 ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the
 source; the first typed character creates the missing body line.
+Enter on the opening marker of an empty GitHub callout or on an empty fenced-Div opening creates
+exactly one editable body line and places the caret there. It does not add a second separator; typing
+`>` on that line starts the intended nested quote.
 
 Every Pandoc-backed export lowers both source forms to the same semantic Div:
 

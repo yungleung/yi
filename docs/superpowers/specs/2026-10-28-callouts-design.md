@@ -379,6 +379,12 @@ an empty callout. Source changes happen only when the author starts typing or
 performs an edit. Multiple adjacent empty callouts keep distinct anchors and
 are traversed in document order.
 
+Enter on an empty callout's opening marker is its own source edit. A
+GitHub-alert marker creates exactly one quoted body line, with no additional
+quoted separator; a fenced-Div opening creates one body line before its closing
+fence. The caret lands at the end of that line. Typing `>` there therefore
+starts the requested nested quote rather than another callout-body wrapper.
+
 A nested empty callout uses the same rule at its innermost body position.
 Typing materialises a body line with the complete outer quote prefix, so an
 empty callout inside another callout cannot accidentally become top-level
@@ -528,6 +534,18 @@ changes how inserted source is written, not what Enter means for the child:
   source line receives the full quote prefix;
 - indentation and nested-list `>`/whitespace prefixes compose from outermost
   to innermost.
+
+Opening-marker completion is part of the same context rule. A quoted display
+formula, labeled equation, code fence and fenced-Div callout creates all of its
+delimiter lines with the active quote prefix. The callout-kind chooser remains
+available for `:::`. A backtick on an empty quoted line starts literally so the
+three-character fence can complete; an auto-paired `]` after `[$$` is part of
+the equation opener rather than a reason to leave it literal.
+
+Citation completion after `@`, wikilink completion after `[[`, and automatic
+reference completion after `[#` use the document text, so they remain available
+inside both source-visible forms. Accepting one writes only the key or target
+ID and leaves the surrounding container source intact.
 
 For example, a list item at depth two:
 
@@ -780,6 +798,10 @@ Tauri probes will cover:
 - Enter followed by typing, Backspace, undo and redo;
 - double Enter exiting one nested quote level at a time;
 - Enter inside quoted list, table, code and equation contexts;
+- completion of display math, labeled equations, code fences, callout Divs and
+  their chooser surfaces while quoted or called out;
+- citation, wikilink and automatic-reference completion inside both container
+  source forms;
 - one separator line after a completed child block;
 - equivalent editing through GitHub and fenced-Div callout source;
 - caret line stability across a callout rebuild;
@@ -790,6 +812,7 @@ Tauri probes will cover:
   edit;
 - first typing in an empty callout materialising the correct quote or Div body
   line;
+- Enter on an empty callout opening creating one body line with the caret in it;
 - multiple adjacent empty callouts remaining distinct navigation stops;
 - a nested empty callout preserving every outer quote prefix;
 - a long callout in a virtualised document;

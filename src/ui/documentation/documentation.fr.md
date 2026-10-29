@@ -170,7 +170,21 @@ les autres classes et les attributs restent intacts.
 
 Les callouts peuvent être imbriqués dans des citations ou d’autres callouts. Leur corps accepte les
 paragraphes, listes, tableaux, blocs de code, équations, légendes, citations et citations Markdown
-ordinaires. Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
+ordinaires.
+
+Les marqueurs d’ouverture restent conscients de leur conteneur pendant l’édition. Saisir `$$`,
+`[$$`, un bloc de code délimité par trois accents graves ou `:::` crée la construction appariée
+correspondante, préfixe chaque ligne source générée par la chaîne `>` active et conserve le sélecteur
+de type de callout pour `:::`. Dans un bloc de code ou une formule d’affichage placé dans une
+citation ou un callout, Entrée suit la règle du bloc enfant et peut créer autant de lignes vides
+consécutives que nécessaire. Un callout Div ajoute exactement un saut de ligne préfixé par Entrée,
+même lorsqu’il est imbriqué dans une autre citation ou un autre callout.
+
+La complétion des citations après `@`, des wikilinks après `[[` et des références automatiques après
+`[#` reste disponible dans les deux formes source. Choisir une ligne n’écrit que la clé ou l’ID de
+destination ; le préfixe de citation et les crochets autour restent intacts.
+
+Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.
 Une citation ordinaire révèle sa source complète selon la même règle : les marqueurs échappés, les
 préfixes `>` et les délimiteurs internes sont exactement les caractères modifiés.
@@ -199,6 +213,9 @@ citation conserve son préfixe visible sur chaque ligne insérée.
 Un callout vide garde une ancre de curseur invisible dans son corps. Left depuis le bloc suivant et
 Right depuis le bloc précédent y entrent ; la navigation seule ne modifie pas la source. Le premier
 caractère saisi matérialise la ligne de corps manquante.
+Entrée sur le marqueur d’un callout GitHub vide, ou sur l’ouverture vide d’un callout Div, crée
+exactement une ligne de corps modifiable et y place le curseur. Aucun second séparateur n’est ajouté ;
+saisir `>` sur cette ligne commence la citation imbriquée attendue.
 
 Tous les exports Pandoc transforment les deux écritures en un même Div sémantique :
 

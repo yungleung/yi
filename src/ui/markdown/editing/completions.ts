@@ -1,6 +1,6 @@
 /**
- * The two lists the editor opens as the author types: a citation's keys after an `@`, and the
- * workspace's documents between `[[` and `]]`.
+ * The lists the editor opens as the author types: a citation's keys after an `@`, a document
+ * target after `[#`, and the workspace's documents between `[[` and `]]`.
  *
  * This is the living half of the feature: `syntax/completions.ts` says what the caret is inside
  * and which entries match, the card draws them, and what is left here is when a list is open, what
@@ -20,11 +20,13 @@ import { caretRect } from '../caret/geometry';
 import { CompletionCard } from '../completion_card';
 import type { Box } from '../../floating/placement';
 import {
+  autoReferenceQuery,
   citationQuery,
   matchingChoices,
   wikilinkQuery,
   type CompletionChoice
 } from '../syntax/completions';
+import { referenceLabel } from '../document/reference_index';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 
 export class Completions {
@@ -87,6 +89,19 @@ export class Completions {
           citation.query
         )
       );
+      return;
+    }
+    const reference = autoReferenceQuery(text, caret);
+    if (reference) {
+      const seen = new Set<string>();
+      const choices = this.context.state.referenceEntries().flatMap((entry) => {
+        if (entry.id === null || seen.has(entry.id)) {
+          return [];
+        }
+        seen.add(entry.id);
+        return [{ value: entry.id, title: referenceLabel(entry) }];
+      });
+      this.offer(reference.from, matchingChoices(choices, reference.query));
       return;
     }
     const wikilink = wikilinkQuery(text, caret);

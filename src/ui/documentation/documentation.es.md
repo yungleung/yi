@@ -171,6 +171,19 @@ Los callouts pueden anidarse dentro de citas u otros callouts. Su cuerpo admite 
 tablas, bloques de código, ecuaciones, leyendas, citas y citas Markdown normales. Yi muestra el panel
 cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la fuente completa y al
 salir del bloque vuelve la vista renderizada.
+
+Los marcadores de apertura conservan el contexto del contenedor durante la edición. Escribir `$$`,
+`[$$`, un bloque de código delimitado por tres acentos graves o `:::` crea la construcción
+emparejada correspondiente, añade el prefijo `>` activo a cada línea fuente generada y conserva el
+selector de tipo de callout para `:::`. Dentro de código o fórmulas en bloque de una cita o callout,
+Enter sigue la regla del bloque hijo y puede crear cualquier número de líneas vacías consecutivas.
+Un callout Div crea exactamente una línea nueva con prefijo por cada Enter, también cuando está
+anidado en otra cita o callout.
+
+La finalización de citas después de `@`, de wikilinks después de `[[` y de referencias automáticas
+después de `[#` sigue disponible en ambas formas de origen. Al elegir una fila solo se escribe la
+clave o el ID de destino; el prefijo de cita y los corchetes que lo rodean quedan intactos.
+
 Una cita normal muestra su fuente completa con la misma regla, de modo que los marcadores escapados,
 los prefijos `>` y los delimitadores internos sean exactamente los caracteres que se editan.
 Fuera del modo fuente, una cita normal tiene margen a ambos lados y una gran comilla inicial. No
@@ -197,6 +210,9 @@ conserva su prefijo visible en cada línea insertada.
 Un callout vacío conserva un ancla invisible para el cursor del cuerpo. Left desde el bloque
 posterior y Right desde el anterior entran en ella; navegar no modifica la fuente. El primer
 carácter escrito crea la línea de cuerpo que falta.
+Enter en la línea del marcador de un callout GitHub vacío, o en la apertura vacía de un callout Div,
+crea exactamente una línea de cuerpo editable y coloca allí el cursor. No añade un segundo separador;
+escribir `>` en esa línea inicia la cita anidada prevista.
 
 Todas las exportaciones con Pandoc convierten ambas formas en el mismo Div semántico:
 

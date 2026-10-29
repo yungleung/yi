@@ -39,10 +39,11 @@ import { fenceTypedWrite, fenceNewlineWrite } from '../syntax/fence_edits';
 import { insertFenceOpen } from './fence_open';
 import { rangeInSourceText } from '../source_text';
 import {
+  calloutHasBody,
   calloutBodyInsertion,
   readCallout
 } from '../syntax/callouts';
-import { materializeCalloutBody } from '../syntax/callout_body';
+import { emptyCalloutNewline, materializeCalloutBody } from '../syntax/callout_body';
 import {
   deleteBlankQuoteLine,
   emptyQuoteTyping,
@@ -91,6 +92,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
     const relative = Math.min(offsets.from - block.charStart, block.text.length);
     if (
       callout !== null &&
+      !calloutHasBody(callout) &&
       callout.bodyFrom === callout.bodyTo &&
       relative === calloutBodyInsertion(callout)
     ) {
@@ -102,20 +104,6 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
           block.charStart + body.edit.to,
           body.edit.replacement,
           block.charStart + body.caret,
-          brackets ? 'typing' : 'commit'
-        );
-        return true;
-      }
-    }
-    if (isQuoteLike(block.kind)) {
-      const write = emptyQuoteTyping(block.text, relative, text);
-      if (write !== null) {
-        applyEdit(
-          context,
-          block.charStart + write.edit.from,
-          block.charStart + write.edit.to,
-          write.edit.replacement,
-          block.charStart + write.caret,
           brackets ? 'typing' : 'commit'
         );
         return true;
@@ -139,12 +127,40 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
       return true;
     }
   }
+  // A backtick on an empty quote line starts a possible fence. The first
+  // character must stay literal, as it does on an empty paragraph; pairing it
+  // immediately puts the caret inside the closer and prevents the next two
+  // backticks from completing the delimiter line.
+  if (
+    block &&
+    isQuoteLike(block.kind) &&
+    offsets.from === offsets.to &&
+    text === '`'
+  ) {
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const write = emptyQuoteTyping(block.text, relative, text);
+    if (write !== null) {
+      applyEdit(
+        context,
+        block.charStart + write.edit.from,
+        block.charStart + write.edit.to,
+        write.edit.replacement,
+        block.charStart + write.caret,
+        'typing'
+      );
+      return true;
+    }
+  }
   // A bracket writes its pair where prose is being written — not inside a code block or a
   // formula, where the characters are the author's own source (`syntax/brackets.ts`).
   let pair: BracketEdit | null = null;
   if (brackets && offsets.from === offsets.to) {
+    const containerSource = block?.kind === 'quote' || block?.kind === 'fencedDiv';
     const literal =
-      sourceText || block?.kind === 'fencedCode' || block?.kind === 'displayMath';
+      (!containerSource && sourceText) ||
+      block?.kind === 'fencedCode' ||
+      block?.kind === 'displayMath' ||
+      block?.kind === 'equation';
     const source = context.state.getText();
     if (skipClosingFor(source, offsets.from, text, literal)) {
       // The author typed the bracket they can see: they move past it rather than writing another.
@@ -158,7 +174,6 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   // plus the pair is a fence's ` ``` ` — so the rule sees what would be written, not the key alone.
   if (
     block !== null &&
-    !sourceText &&
     !isRawRendered(block.kind) &&
     offsets.from === offsets.to &&
     insertFenceOpen(context, offsets.from, pair ? pair.insert : text)
@@ -168,6 +183,21 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   if (pair) {
     applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, 'typing');
     return true;
+  }
+  if (block && isQuoteLike(block.kind) && offsets.from === offsets.to) {
+    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const write = emptyQuoteTyping(block.text, relative, text);
+    if (write !== null) {
+      applyEdit(
+        context,
+        block.charStart + write.edit.from,
+        block.charStart + write.edit.to,
+        write.edit.replacement,
+        block.charStart + write.caret,
+        brackets ? 'typing' : 'commit'
+      );
+      return true;
+    }
   }
   applyEdit(
     context,
@@ -262,8 +292,33 @@ export function insertNewline(context: EditorContext): boolean {
   if (!block) {
     return false;
   }
+  const relativeNewline = Math.min(offsets.from - block.charStart, block.text.length);
+  if (offsets.from === offsets.to) {
+    const emptyCallout = emptyCalloutNewline(block.text, relativeNewline);
+    if (emptyCallout !== null) {
+      applyEdit(
+        context,
+        block.charStart + emptyCallout.edit.from,
+        block.charStart + emptyCallout.edit.to,
+        emptyCallout.edit.replacement,
+        block.charStart + emptyCallout.caret
+      );
+      return true;
+    }
+  }
   if (isQuoteLike(block.kind) && offsets.from === offsets.to) {
-    const relative = Math.min(offsets.from - block.charStart, block.text.length);
+    const relative = relativeNewline;
+    const div = fencedDivNewline(block.text, relative);
+    if (div !== null) {
+      applyEdit(
+        context,
+        block.charStart + div.edit.from,
+        block.charStart + div.edit.to,
+        div.edit.replacement,
+        block.charStart + div.caret
+      );
+      return true;
+    }
     const quote = quoteContextAt(context.state, block, offsets.from);
     const line = quoteLineAt(block.text, relative);
     if (quote !== null && line !== null) {
@@ -332,7 +387,7 @@ export function insertNewline(context: EditorContext): boolean {
   if (block.kind === 'fencedDiv' && offsets.from === offsets.to) {
     const write = fencedDivNewline(
       block.text,
-      Math.min(offsets.from - block.charStart, block.text.length)
+      relativeNewline
     );
     if (write !== null) {
       applyEdit(

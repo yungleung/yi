@@ -175,6 +175,19 @@ Note, Tip, Important, Warning, Caution und Definition. Die Auswahl ändert nur d
 
 Callouts können in Zitaten oder anderen Callouts verschachtelt werden. Ihr Inhalt kann Absätze,
 Listen, Tabellen, Codeblöcke, Formeln, Beschriftungen, Zitate und normale Markdown-Zitate enthalten.
+
+Öffnende Markierungen bleiben beim Bearbeiten containerbewusst. Die Eingabe von `$$`, `[$$`, einem
+Code-Fence aus drei Backticks oder `:::` erzeugt die passende paarige Struktur, versieht jede
+erzeugte Quellzeile mit dem aktuellen `>`-Präfix und behält für `:::` die Auswahl der Callout-Art.
+In Code und Anzeigeformeln innerhalb eines Zitats oder Callouts folgt Enter der Zeilenregel des
+Kindblocks und kann beliebig viele aufeinanderfolgende Leerzeilen erzeugen. Ein Callout in einem
+eingezäunten Div fügt pro Enter genau einen präfixierten Zeilenumbruch ein, auch wenn es in einem
+anderen Zitat oder Callout verschachtelt ist.
+
+Die Vervollständigung von Zitaten nach `@`, Wikilinks nach `[[` und automatischen Referenzen nach
+`[#` bleibt in beiden Quellformen verfügbar. Die Auswahl schreibt nur den Schlüssel oder die
+Ziel-ID; das umgebende Zitatpräfix und die Klammern bleiben unverändert.
+
 Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
 Ein gewöhnliches Zitat zeigt unter derselben Cursor-Regel seinen vollständigen Quelltext, sodass
@@ -203,6 +216,10 @@ eingezäuntes Div in einem Zitat behält auf jeder neuen Zeile sein sichtbares P
 Ein leerer Callout behält einen unsichtbaren Cursoranker im Inhalt. Left vom folgenden Block und
 Right vom vorherigen Block führen hinein; reine Navigation verändert den Quelltext nicht. Das erste
 eingegebene Zeichen erzeugt die fehlende Inhaltszeile.
+Enter auf der Markierungszeile eines leeren GitHub-Callouts oder der leeren öffnenden Zeile eines
+Div-Callouts erzeugt genau eine bearbeitbare Inhaltszeile und setzt den Cursor dorthin. Es entsteht
+kein zusätzlicher Trenner; die Eingabe von `>` auf dieser Zeile beginnt das gewünschte
+verschachtelte Zitat.
 
 Jeder Pandoc-Export wandelt beide Schreibweisen in dasselbe semantische Div um:
 

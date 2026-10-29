@@ -14,7 +14,7 @@
  */
 
 import type { TextEdit } from './edit_range';
-import { readCallout } from './callouts';
+import { calloutAtOffset } from './callouts';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -150,7 +150,7 @@ export function deleteBlankQuoteLine(text: string, offset: number): QuoteEdit | 
  * lines. A quoted Div also keeps the exact quote carrier visible on its line.
  */
 export function fencedDivNewline(text: string, offset: number): QuoteEdit | null {
-  const callout = readCallout(text);
+  const callout = calloutAtOffset(text, offset);
   if (
     callout?.form !== 'div' ||
     offset < callout.bodyFrom ||

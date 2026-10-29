@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
-| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): a citation's query and the places an `@` is not one, a wikilink's query, the entries matching on either field, and the cap |
+| `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink and automatic-reference queries, the places an `@` or `[#` is not one, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
 | `check-events.mjs` | That every event the native menu sends from Rust is declared in `services/app_events.ts` — the map the event bus is typed by |
@@ -58,7 +58,7 @@ methodology; this file is the index and the conventions.
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
-| `check-quote-edits.mjs` | The pure quote/callout line rules: paragraph splits, one-level exits, child-context delegation, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, and empty GitHub/Div body materialisation |
+| `check-quote-edits.mjs` | The pure quote/callout line rules: paragraph splits, one-level exits, child-context delegation, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, Enter on an empty opening marker, and empty GitHub/Div body materialisation |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
 | `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and seventy-nine probes (`probe:all` runs 250 and skips 29, each skip for the reason its
+two hundred and ninety-one probes (`probe:all` runs 261 and skips 30, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -122,6 +122,14 @@ sibling after nested children and an empty quoted item leaves the list without l
 `quote-source-editing` — complete quote source, physical blank-line deletion, exact `>` spacing and
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
 `callout-div-open` — `:::` creates a closed Note Div and its six-kind picker;
+`container-fence-open` — quoted and called-out display math, labeled math, code fences and Div
+callouts retain paired delimiters, prefixes, chooser surfaces and caret placement;
+`container-block-enter` — quoted code and display math accept repeated blank lines while a Div nested
+in another callout keeps one context-aware newline per Enter;
+`callout-empty-enter` — Enter on an empty alert or Div opening creates one editable body line, and
+typing `>` there starts one nested quote without an extra separator;
+`container-completions` — citation, wikilink and automatic-reference completion remain available in
+quote and callout source, and accepting a row preserves the container;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
 `quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
 opening mark;

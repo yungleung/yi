@@ -169,6 +169,19 @@ Callouts podem ser aninhados em citações ou em outros callouts. O corpo aceita
 tabelas, blocos de código, equações, legendas, citações e citações Markdown comuns. O Yi mostra o
 painel quando o cursor está fora; clicar no título ou no corpo revela a origem completa, e sair do
 bloco restaura a renderização.
+
+Os marcadores de abertura continuam cientes do contêiner durante a edição. Digitar `$$`, `[$$`, um
+bloco de código delimitado por três acentos graves ou `:::` cria a construção emparelhada
+correspondente, aplica o prefixo `>` atual a cada linha física gerada e mantém o seletor de tipo de
+callout para `:::`. Dentro de código ou fórmulas em bloco numa citação ou callout, Enter segue a
+regra do bloco filho e pode criar qualquer número de linhas vazias consecutivas. Um callout com Div
+cercado cria exatamente uma nova linha prefixada por Enter, mesmo quando está aninhado noutra citação
+ou callout.
+
+A conclusão de citações depois de `@`, de wikilinks depois de `[[` e de referências automáticas
+depois de `[#` continua disponível nas duas formas de origem. Escolher uma linha grava apenas a chave
+ou o ID de destino; o prefixo de citação e os parênteses retos em volta permanecem intactos.
+
 Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
 prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
 Fora do modo de origem, uma citação comum tem margem dos dois lados e uma grande aspa inicial. Ela
@@ -195,6 +208,9 @@ citação conserva o prefixo visível em cada linha inserida.
 Um callout vazio mantém uma âncora invisível para o cursor do corpo. Left a partir do bloco seguinte
 e Right a partir do anterior entram nela; a navegação sozinha não altera a origem. O primeiro
 caractere digitado cria a linha de corpo ausente.
+Enter na linha do marcador de um callout GitHub vazio, ou na abertura vazia de um callout Div, cria
+exatamente uma linha de corpo editável e coloca ali o cursor. Não acrescenta um segundo separador;
+digitar `>` nessa linha inicia a citação aninhada pretendida.
 
 Toda exportação com Pandoc transforma as duas formas no mesmo Div semântico:
 

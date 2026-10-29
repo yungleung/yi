@@ -10,8 +10,33 @@
  * callout body in either authoring form.
  */
 
-import type { CalloutSource } from './callouts';
+import { calloutAtOffset, type CalloutSource } from './callouts';
 import type { QuoteEdit } from './quote_edits';
+
+/**
+ * Enter on an empty callout's opening marker.
+ *
+ * GitHub alerts and fenced Divs both need one quoted body line between their
+ * marker and the next source line. The ordinary paragraph rule would add a
+ * second separator for an alert, or leave the caret against a Div's closing
+ * fence.
+ */
+export function emptyCalloutNewline(text: string, offset: number): QuoteEdit | null {
+  const callout = calloutAtOffset(text, offset);
+  if (callout === null || callout.bodyFrom !== callout.bodyTo) {
+    return null;
+  }
+  const openingEnd = callout.form === 'alert' ? callout.bodyFrom : callout.markerTo;
+  if (offset !== openingEnd && !(callout.form === 'div' && offset === callout.bodyFrom)) {
+    return null;
+  }
+  const at = callout.form === 'alert' ? callout.bodyFrom : callout.markerTo;
+  const replacement = `\n${callout.quotePrefix}`;
+  return {
+    edit: { from: at, to: at, replacement },
+    caret: at + replacement.length
+  };
+}
 
 /** The edit that materialises a callout body and writes the first text. */
 export function materializeCalloutBody(

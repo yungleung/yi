@@ -817,13 +817,17 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return;
     }
     const block = this.state.getBlockAtLine(lineStart);
-    const edit = block ? calloutKindEdit(block.text, kind) : null;
+    const caret = caretOffset(this.context);
+    const relative =
+      block === null || caret === null
+        ? 0
+        : Math.min(Math.max(0, caret - block.charStart), block.text.length);
+    const edit = block ? calloutKindEdit(block.text, kind, relative) : null;
     if (block === null || edit === null) {
       return;
     }
     const from = block.charStart + edit.from;
     const to = block.charStart + edit.to;
-    const caret = caretOffset(this.context);
     const delta = edit.replacement.length - (edit.to - edit.from);
     const target =
       caret === null || (caret >= from && caret < to)

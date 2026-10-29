@@ -23,6 +23,7 @@ writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   calloutAtOffset,
   calloutBodyInsertion,
+  calloutHasBody,
   calloutKindEdit,
   calloutsForParsers,
   readCallout
@@ -50,6 +51,16 @@ check(
   'a marker-only callout inserts after the marker',
   calloutBodyInsertion(readCallout('> [!NOTE]')),
   '> [!NOTE]'.length
+);
+check(
+  'a marker-only callout has no physical body line',
+  calloutHasBody(readCallout('> [!NOTE]')),
+  false
+);
+check(
+  'an empty quoted body line belongs to the callout',
+  calloutHasBody(readCallout('> [!NOTE]\n> ')),
+  true
 );
 
 const nested = '> > [!tip]\n> > First\n> >\n> > - item\n';
@@ -164,6 +175,21 @@ check(
   {
     from: '::: {.callout .'.length,
     to: '::: {.callout .callout-tip'.length,
+    replacement: 'callout-warning'
+  }
+);
+const nestedKindSource =
+  '> [!NOTE]\n> ::: {.callout .callout-tip}\n> Inner\n> :::\n';
+check(
+  'choosing a kind edits the innermost Div inside a callout',
+  calloutKindEdit(
+    nestedKindSource,
+    'warning',
+    nestedKindSource.indexOf('Inner')
+  ),
+  {
+    from: nestedKindSource.indexOf('.callout-tip') + 1,
+    to: nestedKindSource.indexOf('.callout-tip') + '.callout-tip'.length,
     replacement: 'callout-warning'
   }
 );
