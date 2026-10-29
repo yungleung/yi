@@ -649,7 +649,9 @@ typed or committed by an input method; Tab is not needed to reveal it.
 Opening `[`, `(`, and `{` pair automatically in ordinary text, blockquotes, GitHub callouts, and
 fenced-Div callouts, including when the character arrives through an input method. In an ordinary
 same-document link destination, typing `#` after `](` also lists the document's reference targets;
-accepting a row writes only the fragment ID.
+accepting a row writes only the fragment ID. Accepting any of these completions renders the
+completed link, reference, citation, or wikilink immediately and leaves the caret just after its
+closing delimiter.
 
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.

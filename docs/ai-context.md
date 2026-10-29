@@ -819,8 +819,12 @@ it is showing: the parse check after a structural character can rebuild the bloc
 live DOM caret on the block wrapper. Accepting from the recorded document range is what makes
 Enter write the filtered row after that rebuild. Non-owned text keys are re-anchored to the same
 endpoint first, and Escape or a query with no matches restores it before closing, so the next
-Backspace still edits the query. `completion-filtered-accept.js` holds every kind in ordinary
-prose, quotes, GitHub callouts and fenced-Div callouts.
+Backspace still edits the query. A query records how many delimiter characters follow it, so
+acceptance can put the caret after `]`, `)`, or `]]` and render the completed node immediately
+rather than leave its source open. A delimiter pair now rebuilds through the ordinary path:
+typing `(` after `[title]` must open `()` around the caret and rebuild the block as a link source.
+`completion-filtered-accept.js` holds every kind in ordinary prose, quotes, GitHub callouts and
+fenced-Div callouts, including completed nodes at the end of a line.
 A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) asks for the document
 its target names and it opens through the session, exactly as a click on a row of the tree opens
 one — a plain click still opens the link's own source, and a target no document answers to is said

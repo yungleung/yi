@@ -29,7 +29,14 @@ import {
   type CompletionChoice
 } from '../syntax/completions';
 import { referenceLabel } from '../document/reference_index';
-import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
+import { setShownRange, withHeldShownSource } from '../source_mode';
+import {
+  applyEdit,
+  caretOffset,
+  placeCaret,
+  restoreCaret,
+  type EditorContext
+} from './context';
 
 export class Completions {
   private readonly card = new CompletionCard();
@@ -38,6 +45,8 @@ export class Completions {
   private from: number | null = null;
   /** The query end from the refresh that produced the visible list. */
   private to: number | null = null;
+  /** Closing delimiters after the query; accepting places the caret beyond them. */
+  private closing = 0;
   /** Guards an answer that arrives after the author has typed on. */
   private generation = 0;
 
@@ -107,6 +116,7 @@ export class Completions {
       this.offer(
         citation.from,
         caret,
+        citation.closing,
         matchingChoices(
           bibliographyManager.entries().map((entry) => ({ value: entry.key, title: entry.title })),
           citation.query
@@ -119,6 +129,7 @@ export class Completions {
       this.offer(
         reference.from,
         caret,
+        reference.closing,
         matchingChoices(this.referenceChoices(), reference.query)
       );
       return;
@@ -135,6 +146,7 @@ export class Completions {
     this.offer(
       wikilink.from,
       caret,
+      wikilink.closing,
       matchingChoices(
         this.documents().map((document) => ({ value: document.target, title: document.title })),
         wikilink.query
@@ -149,6 +161,7 @@ export class Completions {
       this.offer(
         wikilink.from,
         caret,
+        wikilink.closing,
         matchingChoices(
           documents.map((document) => ({ value: document.target, title: document.title })),
           wikilink.query
@@ -179,14 +192,21 @@ export class Completions {
   close(): void {
     this.from = null;
     this.to = null;
+    this.closing = 0;
     this.choices = [];
     this.card.close();
   }
 
   /** Puts `choices` in front of the author, with the first in hand. */
-  private offer(from: number, to: number, choices: CompletionChoice[]): void {
+  private offer(
+    from: number,
+    to: number,
+    closing: number,
+    choices: CompletionChoice[]
+  ): void {
     this.from = from;
     this.to = to;
+    this.closing = closing;
     this.choices = choices;
     if (this.selected >= choices.length) {
       this.selected = 0;
@@ -217,8 +237,20 @@ export class Completions {
     // wrapper even though the document query has not moved; the range captured
     // by `offer` is the document truth the visible list was built from.
     const to = this.to;
+    const closing = this.closing;
+    const caret = from + choice.value.length + closing;
     this.close();
-    applyEdit(this.context, from, to, choice.value, from + choice.value.length);
+    applyEdit(this.context, from, to, choice.value, caret, 'other', false);
+    const block = this.context.state.getBlockAtOffset(caret);
+    if (block && block.kind !== 'quote' && block.kind !== 'fencedDiv') {
+      // A completed inline target renders as soon as its closing delimiter is
+      // behind the caret. The ordinary edit path deliberately keeps a node in
+      // source mode at its edge so it remains editable; completion has reached
+      // the outside edge, where the rendered form is the truthful view.
+      setShownRange(null);
+      this.context.renderer.renderChanged();
+      withHeldShownSource(() => placeCaret(this.context, caret, false));
+    }
   }
 
   /**

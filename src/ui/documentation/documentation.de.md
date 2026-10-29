@@ -193,6 +193,8 @@ Die öffnenden Zeichen `[`, `(` und `{` werden in normalem Text, Zitaten, GitHub
 Callouts in eingezäunten Divs automatisch gepaart, auch wenn das Zeichen von einer Eingabemethode
 kommt. Im Ziel eines normalen Links auf dasselbe Dokument listet `#` nach `](` außerdem die
 Referenzziele des Dokuments auf; die Auswahl schreibt nur die Fragment-ID.
+Auch die übrigen aufgeführten Vervollständigungen werden nach der Auswahl sofort gerendert; der
+Cursor steht direkt hinter dem schließenden Zeichen.
 
 Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.

@@ -223,7 +223,10 @@ function insertAt(
     return true;
   }
   if (pair) {
-    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, kind);
+    // A closer can create a node the old text node cannot represent —
+    // `[title](` becomes a link source as soon as `()` is paired. Rebuild the
+    // block so source mode is decided from the inserted construct.
+    applyEdit(context, pair.from, pair.to, pair.insert, pair.caret, kind, false);
     return true;
   }
   if (block && isQuoteLike(block.kind) && offsets.from === offsets.to) {

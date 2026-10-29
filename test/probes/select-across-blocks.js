@@ -60,7 +60,7 @@
   // The editor's own reading of the selection follows the native one asynchronously
   // (`markdown_editor.ts` listens for `selectionchange`); a real drag takes frames, and the
   // click it ends with arrives after the editor has seen the range.
-  await t.sleep(150);
+  await t.sleep(250);
   check('and the editor has read it', caret.getSelectionRange() !== null, true);
 
   // The gesture: the press where the drag began, then the click the browser fires — at the

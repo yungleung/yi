@@ -25,6 +25,8 @@ export interface CompletionQuery {
   from: number;
   /** What has been typed since, and what the entries are filtered by. */
   query: string;
+  /** Closing delimiter characters immediately after the query, when the construct has one. */
+  closing: number;
 }
 
 /**
@@ -43,7 +45,11 @@ export function citationQuery(text: string, caret: number): CompletionQuery | nu
   if (text[start - 1] !== '@' || !citationPrecedesAt(text.charCodeAt(start - 2))) {
     return null;
   }
-  return { from: start, query: text.slice(start, caret) };
+  return {
+    from: start,
+    query: text.slice(start, caret),
+    closing: text[caret] === ']' ? 1 : 0
+  };
 }
 
 /**
@@ -59,7 +65,13 @@ export function wikilinkQuery(text: string, caret: number): CompletionQuery | nu
     return null;
   }
   const query = text.slice(start, caret);
-  return query.includes(']') ? null : { from: start, query };
+  return query.includes(']')
+    ? null
+    : {
+        from: start,
+        query,
+        closing: text.startsWith(']]', caret) ? 2 : 0
+      };
 }
 
 /**
@@ -80,7 +92,11 @@ export function autoReferenceQuery(text: string, caret: number): CompletionQuery
   if (text[start - 1] !== '#' || text[start - 2] !== '[' || escapedAt(text, start - 2)) {
     return null;
   }
-  return { from: start, query: text.slice(start, caret) };
+  return {
+    from: start,
+    query: text.slice(start, caret),
+    closing: text[caret] === ']' ? 1 : 0
+  };
 }
 
 /**
@@ -104,7 +120,13 @@ export function linkReferenceQuery(text: string, caret: number): CompletionQuery
     return null;
   }
   const query = text.slice(hash + 1, caret);
-  return /[\s)]/.test(query) ? null : { from: hash + 1, query };
+  return /[\s)]/.test(query)
+    ? null
+    : {
+        from: hash + 1,
+        query,
+        closing: text[caret] === ')' ? 1 : 0
+      };
 }
 
 /** Whether the character at `at` follows an odd run of backslashes. */

@@ -42,11 +42,25 @@ const check = (name, actual, expected) => {
 
 // --- the citation query ------------------------------------------------------------------------
 
-check('an @ with the caret after it asks for everything', citationQuery('@', 1), { from: 1, query: '' });
-check('and what is typed narrows it', citationQuery('see @smi', 8), { from: 5, query: 'smi' });
+check('an @ with the caret after it asks for everything', citationQuery('@', 1), {
+  from: 1,
+  query: '',
+  closing: 0
+});
+check('and what is typed narrows it', citationQuery('see @smi', 8), {
+  from: 5,
+  query: 'smi',
+  closing: 0
+});
 check('a key with pandoc punctuation is still one key', citationQuery('@smith:2020', 11), {
   from: 1,
-  query: 'smith:2020'
+  query: 'smith:2020',
+  closing: 0
+});
+check('a parenthetical citation knows its closing bracket', citationQuery('[@smith2020]', 11), {
+  from: 2,
+  query: 'smith2020',
+  closing: 1
 });
 check('an email is not a citation', citationQuery('contact@example.com', 15), null);
 check('nor is an escaped @', citationQuery('\\@key', 5), null);
@@ -56,11 +70,23 @@ check('an @ right after a key character is not a citation either', citationQuery
 
 // --- the wikilink query ------------------------------------------------------------------------
 
-check('two brackets ask for a target', wikilinkQuery('[[', 2), { from: 2, query: '' });
-check('and what is typed narrows it', wikilinkQuery('see [[Note', 10), { from: 6, query: 'Note' });
+check('two brackets ask for a target', wikilinkQuery('[[', 2), {
+  from: 2,
+  query: '',
+  closing: 0
+});
+check('and what is typed narrows it', wikilinkQuery('see [[Note', 10), {
+  from: 6,
+  query: 'Note',
+  closing: 0
+});
 check('one bracket is not a wikilink', wikilinkQuery('[', 1), null);
 check('nor is a bracket with no pair', wikilinkQuery('plain [Note', 11), null);
-check('and the caret inside a wikilink that has a target asks for that target', wikilinkQuery('[[Note]]', 6), { from: 2, query: 'Note' });
+check('and the caret inside a wikilink that has a target asks for that target', wikilinkQuery('[[Note]]', 6), {
+  from: 2,
+  query: 'Note',
+  closing: 2
+});
 check('while a caret past its closing brackets asks for nothing', wikilinkQuery('[[Note]]', 8), null);
 check('and a newline stops the query', wikilinkQuery('[[a\nb', 5), null);
 
@@ -68,15 +94,18 @@ check('and a newline stops the query', wikilinkQuery('[[a\nb', 5), null);
 
 check('`[#` asks for a document target', autoReferenceQuery('[#', 2), {
   from: 2,
-  query: ''
+  query: '',
+  closing: 0
 });
 check('and typing narrows it', autoReferenceQuery('See [#fig:sample', 16), {
   from: 6,
-  query: 'fig:sample'
+  query: 'fig:sample',
+  closing: 0
 });
 check('a caret before the closing bracket still asks', autoReferenceQuery('[#tbl:results]', 13), {
   from: 2,
-  query: 'tbl:results'
+  query: 'tbl:results',
+  closing: 1
 });
 check(
   'a caret after the closing bracket asks for nothing',
@@ -91,16 +120,18 @@ check(
 );
 check('a link fragment asks for a document target', linkReferenceQuery('[text](#', 8), {
   from: 8,
-  query: ''
+  query: '',
+  closing: 0
 });
 check('and typing narrows it', linkReferenceQuery('[text](#fig:sample', 18), {
   from: 8,
-  query: 'fig:sample'
+  query: 'fig:sample',
+  closing: 0
 });
 check(
   'a caret before the destination close still asks',
   linkReferenceQuery('[text](#fig:sample)', 18),
-  { from: 8, query: 'fig:sample' }
+  { from: 8, query: 'fig:sample', closing: 1 }
 );
 check(
   'a path fragment is not a same-document link target',

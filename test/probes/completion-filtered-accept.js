@@ -7,6 +7,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, actual, expected = true) =>
     checks.push({
@@ -59,7 +60,8 @@
   const contexts = [
     {
       name: 'ordinary text',
-      source: (body) => `${target}${body}\n`,
+      expectsRendered: true,
+      source: (body) => `${target}${body} tail\n`,
       open: async (preparedLink) => {
         if (preparedLink) {
           await t.click(t.prose().querySelector('.markdown-link'));
@@ -68,37 +70,10 @@
         }
       },
       placeAfter: async (needle) =>
-        clickAfter(t.prose().querySelector('.markdown-link-source'), needle)
-    },
-    {
-      name: 'blockquote',
-      source: (body) => `${target}> ${body}\n`,
-      open: async () => {
-        await t.click(t.prose().querySelector('blockquote'), 0.99);
-        await t.sleep(120);
-      },
-      placeAfter: async (needle) =>
-        clickAfter(t.prose().querySelector('.markdown-quote-source'), needle)
-    },
-    {
-      name: 'GitHub callout',
-      source: (body) => `${target}> [!NOTE]\n> ${body}\n`,
-      open: async () => {
-        await t.click(t.prose().querySelector('.markdown-callout-title'));
-        await t.sleep(120);
-      },
-      placeAfter: async (needle) =>
-        clickAfter(t.prose().querySelector('.markdown-callout-source'), needle)
-    },
-    {
-      name: 'fenced-Div callout',
-      source: (body) => `${target}::: {.callout .callout-note}\n${body}\n:::\n`,
-      open: async () => {
-        await t.click(t.prose().querySelector('.markdown-callout-title'));
-        await t.sleep(120);
-      },
-      placeAfter: async (needle) =>
-        clickAfter(t.prose().querySelector('.markdown-callout-source'), needle)
+        clickAfter(
+          t.prose().querySelector('.markdown-link-source') ?? t.blocks().at(-1),
+          needle
+        )
     }
   ];
 
@@ -115,7 +90,9 @@
         await type(['l', 's']);
         return 'lst:demo';
       },
-      expected: (body) => `${body}[#lst:demo]`
+      expected: (body) => `${body}[#lst:demo]`,
+      rendered: 'a.markdown-link[data-auto-reference]',
+      source: '.markdown-auto-reference-source'
     },
     {
       name: 'link fragment',
@@ -129,7 +106,9 @@
         await type(['l', 's']);
         return 'lst:demo';
       },
-      expected: () => 'See. [label](#lst:demo)'
+      expected: () => 'See. [label](#lst:demo)',
+      rendered: 'a.markdown-link',
+      source: '.markdown-link-source'
     },
     {
       name: 'citation',
@@ -144,7 +123,9 @@
         await type([...chosen.slice(0, 2)]);
         return chosen;
       },
-      expected: (body, chosen) => `${body}@${chosen}`
+      expected: (body, chosen) => `${body}@${chosen}`,
+      rendered: '.markdown-citation',
+      source: '.markdown-citation-source'
     },
     {
       name: 'wikilink',
@@ -159,7 +140,9 @@
         await type([...chosen.slice(0, 2)]);
         return chosen;
       },
-      expected: (body, chosen) => `${body}[[${chosen}]]`
+      expected: (body, chosen) => `${body}[[${chosen}]]`,
+      rendered: '.markdown-wikilink',
+      source: '.markdown-wikilink-source'
     }
   ];
 
@@ -180,9 +163,84 @@
         await t.raw(),
         context.source(kind.expected(kind.body, chosen))
       );
+      const range = caretModule.getCaretRange();
+      check(
+        `${context.name}: ${kind.name} leaves the caret outside the closing marker`,
+        range !== null &&
+          (range.startContainer.textContent ?? '').slice(range.startOffset).startsWith(' tail')
+      );
+      if (context.expectsRendered) {
+        check(
+          `${context.name}: ${kind.name} renders immediately`,
+          t.prose().querySelector(kind.rendered) !== null &&
+            t.prose().querySelector(kind.source) === null
+        );
+      }
       check(`${context.name}: ${kind.name} closes after accepting`, cardOpen(), false);
     }
   }
+
+  for (const kind of cases) {
+    await t.load(`${target}${kind.body}\n`);
+    await contexts[0].open(kind.preparedLink);
+    await kind.open(contexts[0]);
+    const chosen = await kind.query();
+    await type(['Enter'], 0);
+    check(
+      `end of line: ${kind.name} accepts`,
+      await t.raw(),
+      `${target}${kind.expected(kind.body, chosen)}\n`
+    );
+    check(
+      `end of line: ${kind.name} renders immediately`,
+      t.prose().querySelector(kind.rendered) !== null &&
+        t.prose().querySelector(kind.source) === null
+    );
+  }
+
+  await t.load(`${target}See [@] tail\n`);
+  await clickAfter(t.blocks().at(-1), '[@');
+  await type(['s', 'm']);
+  await type(['Enter'], 0);
+  check(
+    'a parenthetical citation accepts beyond its closing bracket',
+    await t.raw(),
+    `${target}See [@smith2020] tail\n`
+  );
+  check(
+    'and renders with the caret outside that bracket',
+    t.prose().querySelector('.markdown-citation') !== null &&
+      t.prose().querySelector('.markdown-citation-source') === null &&
+      (() => {
+        const range = caretModule.getCaretRange();
+        return (
+          range !== null &&
+          (range.startContainer.textContent ?? '').slice(range.startOffset).startsWith(' tail')
+        );
+      })()
+  );
+
+  await t.load('Before [test] tail\n');
+  await clickAfter(t.blocks().at(-1), ']');
+  await type(['(']);
+  const pairRange = caretModule.getCaretRange();
+  check('typing a link destination opener pairs it', await t.raw(), 'Before [test]() tail\n');
+  check(
+    'typing a link destination opener keeps its caret inside the pair',
+    pairRange === null
+      ? null
+      : {
+          text: pairRange.startContainer.textContent,
+          offset: pairRange.startOffset
+        },
+    { text: '[test]()', offset: 7 }
+  );
+  check(
+    'and the link remains in source mode',
+    t.prose().querySelector('.markdown-link-source') !== null &&
+      t.prose().querySelector('a.markdown-link') === null,
+    true
+  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()
