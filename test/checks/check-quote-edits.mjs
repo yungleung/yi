@@ -82,14 +82,27 @@ check(
     caret: 7
   }
 );
+const calloutBreak = '> [!NOTE]\n>\n>';
+check(
+  'a second Enter on the two callout lines removes their quote markers',
+  enterInQuote(calloutBreak, calloutBreak.length, 1, 'paragraph'),
+  {
+    edit: { from: 9, to: calloutBreak.length, replacement: '\n\n' },
+    caret: 11
+  }
+);
 
 const equationEnd = '> > $$\n> > x\n> > $$';
 check(
-  'completed child Enter adds one prefixed line',
+  'completed child Enter starts a full quoted paragraph break',
   enterInQuote(equationEnd, equationEnd.length, 2, 'completed-child'),
   {
-    edit: { from: equationEnd.length, to: equationEnd.length, replacement: '\n> >' },
-    caret: equationEnd.length + 4
+    edit: {
+      from: equationEnd.length,
+      to: equationEnd.length,
+      replacement: '\n> >\n> >'
+    },
+    caret: equationEnd.length + 8
   }
 );
 
@@ -208,12 +221,9 @@ for (const context of ['list', 'table', 'code', 'equation']) {
 
 const markerOnly = '> [!NOTE]';
 check(
-  'Enter on a marker-only callout creates one visible body line',
+  'Enter on a marker-only alert leaves the quote paragraph rule in charge',
   emptyCalloutNewline(markerOnly, markerOnly.length),
-  {
-    edit: { from: markerOnly.length, to: markerOnly.length, replacement: '\n> ' },
-    caret: markerOnly.length + 3
-  }
+  null
 );
 check(
   'marker-only callout materialises a quoted body',

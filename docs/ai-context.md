@@ -967,6 +967,10 @@ command that focuses the page and a command that selects it are then asking for 
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
 composition events rather than pretending to type.
 
+The same committed text also refreshes the completion list. A `[#`, `[[` or `@` arriving through
+the native seam therefore opens its choices immediately, exactly as a `keydown` path does; the next
+Tab is never the event that makes the card appear.
+
 The hand-back deliberately blurs the seam for one turn so the input method gets a
 fresh context after a structural edit. Ordinary typing and an in-place committed word do not take
 that path, because the focus round trip is slower than a burst and loses keys. App

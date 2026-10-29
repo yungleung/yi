@@ -1,7 +1,6 @@
 /**
- * Enter on an empty callout's opening line creates one editable body line:
- * GitHub alerts do not get a paragraph separator, and fenced Divs leave the
- * caret in the new body rather than on the closing fence.
+ * Enter on an empty callout's opening line follows the paragraph rule for a
+ * GitHub alert, while a fenced Div leaves the caret in one new body line.
  *
  * @covers src/ui/markdown/editing/text_commands.ts,
  *   src/ui/markdown/syntax/callout_body.ts
@@ -28,9 +27,9 @@
   t.key('Enter');
   await t.sleep(150);
   check(
-    'Enter on a GitHub marker creates one body line',
+    'Enter on a GitHub marker creates a paragraph break',
     await t.raw(),
-    'Before\n\n> [!NOTE]\n> \n\nAfter\n'
+    'Before\n\n> [!NOTE]\n>\n>\n\nAfter\n'
   );
 
   await t.load('Before\n\n> [!NOTE]\n\nAfter\n');
@@ -40,7 +39,7 @@
   await t.sleep(100);
   const caret = caretModule.getCaretRange();
   check(
-    'Enter leaves the caret at the end of the new GitHub body line',
+    'Enter leaves the caret at the end of the new GitHub paragraph line',
     caret
       ? {
           text: caret.startContainer.textContent,
@@ -48,16 +47,16 @@
         }
       : null,
     {
-      text: '> [!NOTE]\n> ',
-      offset: 12
+      text: '> [!NOTE]\n>\n>',
+      offset: 13
     }
   );
   t.key('>');
   await t.sleep(150);
   check(
-    'typing > after that Enter starts one nested quote without another separator',
+    'typing > at that caret starts one nested quote without another separator',
     await t.raw(),
-    'Before\n\n> [!NOTE]\n> >\n\nAfter\n'
+    'Before\n\n> [!NOTE]\n>\n>>\n\nAfter\n'
   );
 
   await t.load('Before\n\n::: {.callout .callout-note}\n:::\n\nAfter\n');

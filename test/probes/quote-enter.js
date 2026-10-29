@@ -107,9 +107,9 @@
   t.key('Enter');
   await t.sleep(80);
   check(
-    'after a closed equation only one prefixed line is added',
+    'after a closed equation a full quoted paragraph break is added',
     await t.raw(),
-    '> > $$\n> > x\n> > $$\n> >\n'
+    '> > $$\n> > x\n> > $$\n> >\n> >\n'
   );
 
   await t.load('> > - First\n');
@@ -129,9 +129,9 @@
   t.key('Enter');
   await t.sleep(80);
   check(
-    'Enter after a closed code block adds one prefixed line',
+    'Enter after a closed code block adds a full quoted paragraph break',
     await t.raw(),
-    '> ```js\n> const value = 1;\n> ```\n>\n'
+    '> ```js\n> const value = 1;\n> ```\n>\n>\n'
   );
 
   await t.load('Before\n\n> [!NOTE]\n\nAfter\n');

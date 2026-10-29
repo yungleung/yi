@@ -248,10 +248,12 @@ height remembered against it.
 4. Rendering rebuilds only the blocks whose content key or shape key changed; the
    rest keep their DOM, which is what keeps typing cheap in a long document.
 
-Before step 1, the key is offered to the **completion list** — a citation's keys after an `@`,
-the workspace's documents between `[[` and `]]`. While one is open the arrows, Enter, Tab and
-Escape are the list's, and every other key is the text path's, which redraws the list afterwards
-(`markdown_editor.ts: handleKeydown`, `editing/completions.ts`); a click in the document closes
+Before step 1, the key is offered to the **completion list** — a citation's keys after an `@`, a
+document target after `[#`, and the workspace's documents between `[[` and `]]`. While one is open
+the arrows, Enter, Tab and Escape are the list's, and every other key is the text path's, which
+redraws the list afterwards (`markdown_editor.ts: handleKeydown`, `editing/completions.ts`). A
+native input-method, dictation or emoji commit refreshes the same list after its one edit is
+written, so every way of entering a marker opens its choices at once. A click in the document closes
 it, because a click is not typing. Two pure rules decide everything the list shows: whether the
 caret is inside a query at all, and which entries match it (`syntax/completions.ts`), and what a
 bracket writes where the author is (`syntax/brackets.ts` — a pair in prose, nothing in a literal

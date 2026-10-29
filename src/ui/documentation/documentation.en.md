@@ -643,7 +643,8 @@ in another quote or callout.
 
 Citation completion after `@`, wikilink completion after `[[`, and automatic-reference completion
 after `[#` remain available in both source forms. Choosing a row writes only the key or target ID;
-the surrounding quote prefix and brackets stay intact.
+the surrounding quote prefix and brackets stay intact. The list opens as soon as the marker is
+typed or committed by an input method; Tab is not needed to reveal it.
 
 Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
 complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
@@ -670,8 +671,8 @@ the visible `> ` delimiter space, Yi keeps it. Backspace or Delete on a blank qu
 that complete physical line rather than removing only the `>` character.
 
 Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
-line carries the complete quote prefix. After one of these child blocks has closed, Enter adds only
-one quoted empty line, because the child block already supplies the paragraph boundary.
+line carries the complete quote prefix. Enter after one of these child blocks has closed adds the
+same two quoted empty lines as any other paragraph break.
 Enter on an empty list item removes its list marker and leaves a normal quote or callout body line.
 Inserting a table while editing a quote or GitHub-style callout prefixes every table row and separator
 with that container’s `>` chain, so the table stays inside the container.
@@ -683,9 +684,10 @@ quote prefix on each inserted line.
 Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
 ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the
 source; the first typed character creates the missing body line.
-Enter on the opening marker of an empty GitHub callout or on an empty fenced-Div opening creates
-exactly one editable body line and places the caret there. It does not add a second separator; typing
-`>` on that line starts the intended nested quote.
+Enter on the opening marker of an empty GitHub callout creates the same two quoted empty lines as a
+quoted paragraph and places the caret on the second. A further Enter removes those quote markers and
+leaves the callout. Enter on an empty fenced-Div opening creates one editable body line before its
+closing fence.
 
 Every Pandoc-backed export lowers both source forms to the same semantic Div:
 

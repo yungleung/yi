@@ -29,6 +29,7 @@ import { proseRoot } from './selection';
 import { chooseLanguage } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
+import type { MarkdownBlock } from '../document/blocks';
 import { calloutAtOffset } from '../syntax/callouts';
 import {
   prefixInsertedBreaks,
@@ -160,20 +161,27 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
 }
 
 /** Writes the block a typed delimiter opens, and asks for a code fence's language. */
-export function insertFenceOpen(context: EditorContext, at: number, typed: string): boolean {
-  const block = context.state.getBlockAtOffset(at);
+export function insertFenceOpen(
+  context: EditorContext,
+  at: number,
+  typed: string,
+  block: MarkdownBlock | null
+): boolean {
   const relative =
     block === null ? 0 : Math.min(Math.max(0, at - block.charStart), block.text.length);
+  const containerRelative =
+    block !== null && (block.kind === 'quote' || block.kind === 'fencedDiv');
   const write =
-    block !== null && (block.kind === 'quote' || block.kind === 'fencedDiv')
+    containerRelative
       ? containerFenceOpenWrite(block.text, relative, typed)
       : fenceOpenWrite(context.state.getText(), at, typed);
   if (write === null) {
     return false;
   }
-  const from = block === null ? write.from : block.charStart + write.from;
-  const to = block === null ? write.to : block.charStart + write.to;
-  const caret = block === null ? write.caret : block.charStart + write.caret;
+  const shift = containerRelative ? block.charStart : 0;
+  const from = shift + write.from;
+  const to = shift + write.to;
+  const caret = shift + write.caret;
   applyEdit(context, from, to, write.replacement, caret, 'typing');
   if (write.kind === 'fencedCode') {
     askForLanguage(context);

@@ -58,7 +58,7 @@ methodology; this file is the index and the conventions.
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
-| `check-quote-edits.mjs` | The pure quote/callout line rules: paragraph splits, one-level exits, child-context delegation, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, Enter on an empty opening marker, and empty GitHub/Div body materialisation |
+| `check-quote-edits.mjs` | The pure quote/callout line rules: two-line paragraph breaks including after child blocks, one-level exits, exact blank-carrier typing, whole-line blank deletion, fenced-Div single-newline entry, and empty GitHub/Div bodies |
 | `check-placement.mjs` | Where a floating card sits (`ui/floating/placement.ts`): under what it points at when there is room, above it when there is not, inside the window on every side, and in the bottom-right corner when it names nothing |
 | `check-workspace-setup.mjs` | Whether the app asks the reader for a workspace (`services/workspace_setup.ts`): a fresh install is asked, an empty workspace is no workspace, and a reader who has one — or has already answered — never is |
 | `check-versioning.mjs` | What the app should do about versions (`services/versioning.ts`): the reader's consent turned into a plan over the facts of the machine and the folder — nothing without consent, their repository as it stands, never nested inside another, a separate git directory where a cloud drive could reach `.git`, and none of it without git — plus the answer read back for the workspace it was given for, the name a version carries (its stamp, the subject it leaves alone and the comment that becomes the body), the path its words name, whether the status bar's button belongs there at all, and which of the empty states the list is in |
@@ -83,7 +83,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and ninety-one probes (`probe:all` runs 261 and skips 30, each skip for the reason its
+two hundred and ninety-three probes (`probe:all` runs 262 and skips 31, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -126,10 +126,14 @@ escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeat
 callouts retain paired delimiters, prefixes, chooser surfaces and caret placement;
 `container-block-enter` — quoted code and display math accept repeated blank lines while a Div nested
 in another callout keeps one context-aware newline per Enter;
-`callout-empty-enter` — Enter on an empty alert or Div opening creates one editable body line, and
-typing `>` there starts one nested quote without an extra separator;
+`callout-empty-enter` — Enter on an empty alert creates the standard two-line quoted paragraph,
+while an empty Div opening creates one editable body line before its closing fence;
 `container-completions` — citation, wikilink and automatic-reference completion remain available in
 quote and callout source, and accepting a row preserves the container;
+`callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
+and container-aware opening markers/pickers on ordinary blank lines;
+`completion-immediate` — all three completion kinds open from key input and from native input-method
+commits without requiring Tab;
 `callout-default-list-enter` — the fixture warning's last list item continues without document loss;
 `quote-style` — the quote's side rule and closing glyph are gone, with two-sided inset and one large
 opening mark;

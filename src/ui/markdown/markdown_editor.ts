@@ -374,7 +374,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
           return;
         }
         this.placeCaretForTheTextPath();
-        insertCommitted(this.context, text);
+        if (insertCommitted(this.context, text)) {
+          this.completions.refresh();
+        }
       },
       // The word being composed is written into the line, so the block it lands in can grow
       // under it: measured again, or the spacers below would be short by the line it gained.

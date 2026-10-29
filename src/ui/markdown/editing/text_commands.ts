@@ -53,6 +53,31 @@ import {
   quoteLineAt
 } from '../syntax/quote_edits';
 
+/**
+ * The block holding the rendered caret.
+ *
+ * At a shared character boundary a blank block and the block before it can
+ * carry the same offset. The DOM names the line the caret is visibly on, so
+ * the text path uses that before falling back to an offset lookup.
+ */
+function blockAtCaret(
+  context: EditorContext,
+  range: Range,
+  offset: number
+) {
+  const start = range.startContainer;
+  const element =
+    start.nodeType === Node.ELEMENT_NODE
+      ? (start as Element)
+      : start.parentElement;
+  const blockElement = element?.closest<HTMLElement>('.markdown-block') ?? null;
+  const lineStart = Number(blockElement?.dataset.lineStart);
+  const block = Number.isFinite(lineStart)
+    ? context.state.getBlockAtLine(lineStart)
+    : null;
+  return block ?? context.state.getBlockAtOffset(offset);
+}
+
 /** Inserts typed text at the caret, replacing any selection. */
 export function insertText(context: EditorContext, text: string): boolean {
   return insertAt(context, text, true);
@@ -82,7 +107,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
   if (!offsets) {
     return false;
   }
-  const block = context.state.getBlockAtOffset(offsets.from);
+  const block = blockAtCaret(context, range, offsets.from);
   const sourceText = rangeInSourceText(range);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     return materializeInsertion(context, offsets, text);
@@ -176,7 +201,7 @@ function insertAt(context: EditorContext, text: string, brackets: boolean): bool
     block !== null &&
     !isRawRendered(block.kind) &&
     offsets.from === offsets.to &&
-    insertFenceOpen(context, offsets.from, pair ? pair.insert : text)
+    insertFenceOpen(context, offsets.from, pair ? pair.insert : text, block)
   ) {
     return true;
   }
@@ -222,7 +247,7 @@ export function deleteText(context: EditorContext, forward: boolean): boolean {
   }
   let { from, to } = offsets;
   if (from === to) {
-    const block = context.state.getBlockAtOffset(from);
+    const block = blockAtCaret(context, range, from);
     if (block !== null && isQuoteLike(block.kind)) {
       const deletion = deleteBlankQuoteLine(
         block.text,
@@ -288,7 +313,7 @@ export function insertNewline(context: EditorContext): boolean {
   if (caretInTableCell(context)) {
     return true;
   }
-  const block = context.state.getBlockAtOffset(offsets.from);
+  const block = blockAtCaret(context, range, offsets.from);
   if (!block) {
     return false;
   }

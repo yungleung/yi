@@ -186,7 +186,8 @@ anderen Zitat oder Callout verschachtelt ist.
 
 Die Vervollständigung von Zitaten nach `@`, Wikilinks nach `[[` und automatischen Referenzen nach
 `[#` bleibt in beiden Quellformen verfügbar. Die Auswahl schreibt nur den Schlüssel oder die
-Ziel-ID; das umgebende Zitatpräfix und die Klammern bleiben unverändert.
+Ziel-ID; das umgebende Zitatpräfix und die Klammern bleiben unverändert. Die Liste öffnet sich,
+sobald die Markierung eingegeben oder von einer Eingabemethode übergeben wird; Tab ist nicht nötig.
 
 Außerhalb des Callouts zeigt Yi die gerenderte Karte; ein Klick auf Titel oder Inhalt zeigt den
 vollständigen Quelltext, und beim Verlassen erscheint wieder die Darstellung.
@@ -199,7 +200,8 @@ In einem normalen Zitatabsatz erzeugt Enter zwei leere Zeilen mit dem vollständ
 nächste Text beginnt einen neuen Absatz. Ein zweites Enter auf dem leeren Zitatabsatz entfernt genau
 eine Zitatebene; bei verschachtelten Zitaten wiederholt man dies pro Ebene. Listen, Tabellen,
 Codeblöcke und Formeln behalten ihr normales Enter-Verhalten, und jede eingefügte Quellzeile erhält
-das vollständige Präfix. Nach einem abgeschlossenen Kindblock genügt eine leere Zeile mit Präfix.
+das vollständige Präfix. Nach einem abgeschlossenen Kindblock fügt Enter denselben Absatz aus zwei
+leeren Zeilen mit Präfix ein.
 
 Die Eingabe auf einer leeren `>`-Zeile erzeugt genau `>B` und fügt keinen unsichtbaren Abstand ein.
 Ein bereits sichtbares `> ` bleibt erhalten. Backspace oder Delete auf einer leeren Zitatzeile
@@ -216,10 +218,10 @@ eingezäuntes Div in einem Zitat behält auf jeder neuen Zeile sein sichtbares P
 Ein leerer Callout behält einen unsichtbaren Cursoranker im Inhalt. Left vom folgenden Block und
 Right vom vorherigen Block führen hinein; reine Navigation verändert den Quelltext nicht. Das erste
 eingegebene Zeichen erzeugt die fehlende Inhaltszeile.
-Enter auf der Markierungszeile eines leeren GitHub-Callouts oder der leeren öffnenden Zeile eines
-Div-Callouts erzeugt genau eine bearbeitbare Inhaltszeile und setzt den Cursor dorthin. Es entsteht
-kein zusätzlicher Trenner; die Eingabe von `>` auf dieser Zeile beginnt das gewünschte
-verschachtelte Zitat.
+Enter auf der Markierungszeile eines leeren GitHub-Callouts erzeugt die zwei leeren Zitatzeilen
+eines Absatzes und setzt den Cursor auf die zweite; ein weiteres Enter entfernt die Markierungen und
+verlässt den Callout. Enter auf der leeren öffnenden Zeile eines Div-Callouts erzeugt eine
+bearbeitbare Inhaltszeile vor der schließenden Zeile.
 
 Jeder Pandoc-Export wandelt beide Schreibweisen in dasselbe semantische Div um:
 

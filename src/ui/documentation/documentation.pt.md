@@ -180,7 +180,8 @@ ou callout.
 
 A conclusão de citações depois de `@`, de wikilinks depois de `[[` e de referências automáticas
 depois de `[#` continua disponível nas duas formas de origem. Escolher uma linha grava apenas a chave
-ou o ID de destino; o prefixo de citação e os parênteses retos em volta permanecem intactos.
+ou o ID de destino; o prefixo de citação e os parênteses retos em volta permanecem intactos. A lista
+abre assim que o marcador é digitado ou confirmado por um método de entrada; Tab não é necessário.
 
 Uma citação comum revela a origem completa pela mesma regra, de modo que marcadores escapados,
 prefixos `>` e delimitadores internos sejam exatamente os caracteres editados.
@@ -191,7 +192,7 @@ Em um parágrafo de citação comum, Enter cria duas linhas vazias com o prefixo
 seguinte forma outro parágrafo. Um segundo Enter no parágrafo vazio remove apenas um nível de
 citação; em citações aninhadas, repita uma vez por nível. Listas, tabelas, blocos de código e
 equações mantêm o comportamento normal, e cada nova linha recebe o prefixo completo. Depois que um
-bloco filho termina, apenas uma linha vazia com prefixo é necessária.
+bloco filho termina, Enter acrescenta o mesmo parágrafo de duas linhas vazias com prefixo.
 
 Digitar numa linha `>` vazia produz exatamente `>B`, sem acrescentar um espaço invisível. Se a origem
 já tiver o espaço visível `> `, ele é preservado. Backspace ou Delete numa linha de citação vazia
@@ -208,9 +209,9 @@ citação conserva o prefixo visível em cada linha inserida.
 Um callout vazio mantém uma âncora invisível para o cursor do corpo. Left a partir do bloco seguinte
 e Right a partir do anterior entram nela; a navegação sozinha não altera a origem. O primeiro
 caractere digitado cria a linha de corpo ausente.
-Enter na linha do marcador de um callout GitHub vazio, ou na abertura vazia de um callout Div, cria
-exatamente uma linha de corpo editável e coloca ali o cursor. Não acrescenta um segundo separador;
-digitar `>` nessa linha inicia a citação aninhada pretendida.
+Enter na linha do marcador de um callout GitHub vazio cria as duas linhas vazias com prefixo de um
+parágrafo de citação e coloca o cursor na segunda; outro Enter remove essas marcas e deixa o callout.
+Enter na abertura vazia de um callout Div cria uma linha de corpo editável antes do fecho.
 
 Toda exportação com Pandoc transforma as duas formas no mesmo Div semântico:
 

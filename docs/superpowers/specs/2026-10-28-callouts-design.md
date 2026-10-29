@@ -379,11 +379,11 @@ an empty callout. Source changes happen only when the author starts typing or
 performs an edit. Multiple adjacent empty callouts keep distinct anchors and
 are traversed in document order.
 
-Enter on an empty callout's opening marker is its own source edit. A
-GitHub-alert marker creates exactly one quoted body line, with no additional
-quoted separator; a fenced-Div opening creates one body line before its closing
-fence. The caret lands at the end of that line. Typing `>` there therefore
-starts the requested nested quote rather than another callout-body wrapper.
+A GitHub alert uses the ordinary quoted-paragraph Enter rule on its opening
+marker: Enter creates two quoted empty lines and places the caret at the end of
+the second. A subsequent Enter removes those carriers and exits the callout.
+An empty fenced-Div opening is the one special case: Enter creates one body line
+before its closing fence and places the caret there.
 
 A nested empty callout uses the same rule at its innermost body position.
 Typing materialises a body line with the complete outer quote prefix, so an
@@ -563,20 +563,20 @@ continues as:
 The child block decides that a new item is needed; the quote rule only carries
 the prefix.
 
-After a structural child has closed, Enter needs one quoted empty line rather
-than the two-line paragraph break:
+After a structural child has closed, Enter uses the same two-line quoted
+paragraph break as any other non-empty line:
 
 ```markdown
 > > $$
 > > x = 1
 > > $$
 > >
+> >
 ```
 
-The equation is already a block boundary, so the single empty quoted line can
-become the next paragraph. It is the same rule after a code fence, table or
-list. A second Enter on that empty line removes one quote level, following the
-same one-level-at-a-time rule.
+The equation is already a block boundary, but the author still gets the same
+editable paragraph break as elsewhere. A second Enter on those two lines
+removes one quote level, following the same one-level-at-a-time rule.
 
 ### Fenced-Div callouts
 
@@ -776,7 +776,7 @@ Pure checks will cover:
 - Enter at the end and middle of a quoted paragraph;
 - double Enter removing exactly one quote level from empty lines;
 - context-aware Enter in lists, tables, code fences and equations;
-- one quoted separator after a completed child block;
+- a two-line quoted paragraph break after a completed child block;
 - the next text character materializing the delimiter space after a bare `>`;
 - prefix expansion for child edits at nested quote depths;
 - exact source serialization and one-step undo;
@@ -802,7 +802,7 @@ Tauri probes will cover:
   their chooser surfaces while quoted or called out;
 - citation, wikilink and automatic-reference completion inside both container
   source forms;
-- one separator line after a completed child block;
+- a two-line paragraph break after a completed child block;
 - equivalent editing through GitHub and fenced-Div callout source;
 - caret line stability across a callout rebuild;
 - empty callout editing;
@@ -812,7 +812,8 @@ Tauri probes will cover:
   edit;
 - first typing in an empty callout materialising the correct quote or Div body
   line;
-- Enter on an empty callout opening creating one body line with the caret in it;
+- Enter on an empty GitHub callout opening creating two quoted lines and a
+  second Enter exiting it; one Div body line before the closing fence;
 - multiple adjacent empty callouts remaining distinct navigation stops;
 - a nested empty callout preserving every outer quote prefix;
 - a long callout in a virtualised document;

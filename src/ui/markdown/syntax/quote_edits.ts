@@ -59,14 +59,6 @@ export function enterInQuote(
   const activeDepth = Math.max(1, Math.floor(depth));
   const prefix = quoteCarrier(activeDepth);
   const current = quoteLineAt(text, offset);
-  if (context === 'completed-child') {
-    const tail = current === null ? '' : text.slice(offset, current.end);
-    const replacement = `\n${prefix}${tail === '' || /^\s/.test(tail) ? '' : ' '}`;
-    return {
-      edit: { from: offset, to: offset, replacement },
-      caret: offset + replacement.length
-    };
-  }
 
   const emptyRun = current === null ? null : emptyQuoteRunBeforeCursor(text, current, offset);
   if (emptyRun !== null) {

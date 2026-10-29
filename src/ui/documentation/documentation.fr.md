@@ -182,7 +182,8 @@ même lorsqu’il est imbriqué dans une autre citation ou un autre callout.
 
 La complétion des citations après `@`, des wikilinks après `[[` et des références automatiques après
 `[#` reste disponible dans les deux formes source. Choisir une ligne n’écrit que la clé ou l’ID de
-destination ; le préfixe de citation et les crochets autour restent intacts.
+destination ; le préfixe de citation et les crochets autour restent intacts. La liste s’ouvre dès
+que le marqueur est saisi ou validé par une méthode de saisie ; Tab n’est pas nécessaire.
 
 Yi affiche le panneau quand le curseur est à l’extérieur ; cliquer sur le titre ou le
 corps révèle la source complète, et quitter le bloc restaure le rendu.
@@ -195,8 +196,8 @@ Dans un paragraphe de citation ordinaire, Entrée crée deux lignes vides portan
 complet. Le texte suivant forme un nouveau paragraphe. Une seconde pression sur Entrée dans le
 paragraphe vide retire une seule profondeur de citation ; dans une citation imbriquée, répétez une
 fois par niveau. Les listes, tableaux, blocs de code et équations gardent leur comportement habituel,
-et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, une
-seule ligne vide préfixée suffit.
+et chaque ligne source insérée reçoit le préfixe complet. Après la fermeture d’un bloc enfant, Entrée
+ajoute le même paragraphe de deux lignes vides préfixées.
 
 La saisie sur une ligne `>` vide produit exactement `>B`, sans espace invisible ajouté. Si la source
 contient déjà l’espace visible `> `, il est conservé. Backspace ou Delete sur une ligne de citation
@@ -213,9 +214,10 @@ citation conserve son préfixe visible sur chaque ligne insérée.
 Un callout vide garde une ancre de curseur invisible dans son corps. Left depuis le bloc suivant et
 Right depuis le bloc précédent y entrent ; la navigation seule ne modifie pas la source. Le premier
 caractère saisi matérialise la ligne de corps manquante.
-Entrée sur le marqueur d’un callout GitHub vide, ou sur l’ouverture vide d’un callout Div, crée
-exactement une ligne de corps modifiable et y place le curseur. Aucun second séparateur n’est ajouté ;
-saisir `>` sur cette ligne commence la citation imbriquée attendue.
+Entrée sur le marqueur d’un callout GitHub vide crée les deux lignes vides préfixées d’un paragraphe
+de citation et place le curseur sur la seconde ; une nouvelle Entrée retire ces marqueurs et quitte
+le callout. Entrée sur l’ouverture vide d’un callout Div crée une ligne de corps modifiable avant sa
+fermeture.
 
 Tous les exports Pandoc transforment les deux écritures en un même Div sémantique :
 
