@@ -810,7 +810,7 @@ example-latex/
   "mode": "template",
   "origin": {
     "type": "folder",
-    "path": "test/fixtures/templates/examples/latex",
+    "path": "examples/templates/latex",
     "source": null,
     "license": "CC0-1.0"
   },
@@ -1282,7 +1282,7 @@ The repository contains one complete, workable package for every kind, plus the 
 research-article design, under:
 
 ```text
-test/fixtures/templates/examples/
+examples/templates/
   html/
   latex/
   pdf/
@@ -1306,7 +1306,7 @@ manifest during import. Replace the example folder name and visual direction whe
 
 ```text
 Create an importable Yi HTML template source package in `my-html-template/`, modelled on
-`test/fixtures/templates/examples/html/`. Make a polished technical article or documentation page
+`examples/templates/html/`. Make a polished technical article or documentation page
 with a responsive main column, a sticky sidebar table of contents, accessible landmarks, and
 print-friendly styles.
 
@@ -1332,7 +1332,7 @@ that could not run.
 
 ```text
 Create an importable Yi LaTeX template source package in `my-latex-template/`, modelled on
-`test/fixtures/templates/examples/latex/`. Design a restrained journal-style article with a title,
+`examples/templates/latex/`. Design a restrained journal-style article with a title,
 author block, abstract, two-level table of contents, highlighted code, figures, tables, footnotes,
 and a bibliography.
 
@@ -1365,7 +1365,7 @@ affiliations out of the template: they must come from note metadata.
 
 ```text
 Create an importable Yi PDF template source package in `my-pdf-template/`, modelled on
-`test/fixtures/templates/examples/pdf/`. Design a polished academic report for XeLaTeX with a
+`examples/templates/pdf/`. Design a polished academic report for XeLaTeX with a
 title page, abstract, section hierarchy, code highlighting, figures, a table, footnotes, and a
 bibliography.
 
@@ -1391,7 +1391,7 @@ and report the output and diagnostics.
 
 ```text
 Create an importable Yi PDF template source package in `my-rho-template/`, modelled on
-`test/fixtures/templates/examples/rho-class/` and the CC BY 4.0 Rho Class research-article design:
+`examples/templates/rho-class/` and the CC BY 4.0 Rho Class research-article design:
 <https://latextemplates.com/template/rho-class-article/>.
 
 Preserve the upstream `rho.cls`, `rhobabel.sty`, `rhoenvs.sty`, source URL and
@@ -1420,7 +1420,7 @@ the complete example, then inspect the rendered page and report the result.
 
 ```text
 Create an importable Yi EPUB template source package in `my-epub-template/`, modelled on
-`test/fixtures/templates/examples/epub/`. Design a literary novella with a striking cover, a title
+`examples/templates/epub/`. Design a literary novella with a striking cover, a title
 and imprint page carrying publisher, edition, ISBN, rights, and dedication, followed by three short
 chapters and a visible Contents page.
 
@@ -1448,7 +1448,7 @@ epubcheck when it is available and report all diagnostics.
 
 ```text
 Create an importable Yi Word reference-document package in `my-word-template/`, modelled on
-`test/fixtures/templates/examples/docx/`. Design a clean academic or professional report whose
+`examples/templates/docx/`. Design a clean academic or professional report whose
 styles carry title, subtitle, author, date, abstract title, abstract, headings one through nine,
 body and first paragraphs, quotations, code, captions, lists, footnotes, tables, figures, and a
 bibliography.
@@ -1473,7 +1473,7 @@ and style set, and report the checks and any unavailable tooling.
 
 ```text
 Create an importable Yi OpenDocument reference package in `my-odt-template/`, modelled on
-`test/fixtures/templates/examples/odt/`. Design an A4 academic dissertation with a college-image
+`examples/templates/odt/`. Design an A4 academic dissertation with a college-image
 cover, four labelled and underlined lines for author, institution, instructor, and date, a second
 page for the abstract and keywords, a third-page two-level Contents table, and body pages starting
 at page 1.

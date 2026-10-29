@@ -6,7 +6,7 @@
   "mode": "template",
   "origin": {
     "type": "folder",
-    "path": "test/fixtures/templates/examples/rho-class",
+    "path": "examples/templates/rho-class",
     "source": "https://latextemplates.com/template/rho-class-article/",
     "license": "CC-BY-4.0 (Rho Class); CC-BY-SA-3.0 (IEEE CSL)"
   },

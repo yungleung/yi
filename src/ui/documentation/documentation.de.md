@@ -452,7 +452,7 @@ citeproc hinzufügen; Yi liefert es bereits und doppelte Filter erzeugen doppelt
 
 ## Vollständige Beispiele und KI-Prompts
 
-Unter `test/fixtures/templates/examples/` liegen vollständige Pakete für HTML, LaTeX, PDF,
+Unter `examples/templates/` liegen vollständige Pakete für HTML, LaTeX, PDF,
 Rho Class, EPUB, Word und ODT.
 
 KI-Aufträge sollen einen importierbaren Quellordner erzeugen, aber kein `template.json`:

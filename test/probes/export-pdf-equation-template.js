@@ -40,7 +40,7 @@
   try {
     await files.createEntry(home, folderName, false);
     const pkg = await templates.importTemplate({
-      source: `${checkout}test/fixtures/templates/examples/rho-class`,
+      source: `${checkout}examples/templates/rho-class`,
       name: `Equation counter ${Date.now().toString(36)}`,
       kind: 'pdf',
       entry: 'template.tex',

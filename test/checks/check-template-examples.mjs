@@ -21,7 +21,7 @@ import { pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
 
-const root = resolve('test/fixtures/templates/examples');
+const root = resolve('examples/templates');
 const appPdfDefaults = resolve('src-tauri/assets/export/export.pdf.yaml');
 const kinds = ['html', 'latex', 'pdf', 'epub', 'docx', 'odt'];
 const failures = [];
@@ -764,6 +764,7 @@ check(
     'ATTRIBUTION.txt',
     'CSL-NOTICE.txt',
     'README.md',
+    'callout.lua',
     'defaults.yaml',
     'example.md',
     'ieee.csl',
@@ -782,6 +783,7 @@ if (existsSync(join(rhoClass, 'template.json'))) {
   const defaults = parse(readFileSync(join(rhoClass, 'defaults.yaml'), 'utf8'));
   const template = readFileSync(join(rhoClass, 'template.tex'), 'utf8');
   const example = readFileSync(join(rhoClass, 'example.md'), 'utf8');
+  const calloutFilter = readFileSync(join(rhoClass, 'callout.lua'), 'utf8');
   const attribution = readFileSync(join(rhoClass, 'ATTRIBUTION.txt'), 'utf8');
   check(
     'rho-class: the manifest identifies the CC BY PDF package and its source',
@@ -818,14 +820,21 @@ if (existsSync(join(rhoClass, 'template.json'))) {
   );
   check(
     'rho-class: the example uses supported Markdown and exercises the article layout',
-    /^> /m.test(example) &&
+    /::: \{\.callout \.callout-note\}/m.test(example) &&
+      /::: \{\.callout \.callout-info title="Information"\}/m.test(example) &&
+      !/^> \*\*Calibration assumption\.\*\*/m.test(example) &&
       /^```python$/m.test(example) &&
       /^!\[[^\]]*\]\(figures\/sensor-residuals\.pdf\)$/m.test(example) &&
       /^\| Channel \|/m.test(example) &&
       /\\hat\{s\}/.test(example) &&
       /^\[\^weights\]:/m.test(example) &&
-      !/^:::/m.test(example) &&
       !/\]\{|\)\{/.test(example)
+  );
+  check(
+    'rho-class: the filter maps semantic callouts to Rho environments',
+    /callout-note/.test(calloutFilter) &&
+      /callout-info/.test(calloutFilter) &&
+      /RawBlock/.test(calloutFilter)
   );
   check(
     'rho-class: the upstream author and licence travel with the package',
@@ -878,11 +887,18 @@ if (existsSync(join(rhoClass, 'template.json'))) {
         .replace(/-\s*\r?\n\s*/g, '')
         .replace(/\s+/g, ' ');
       check(
-        'rho-class: the rendered article resolves its citation and reference once',
+        'rho-class: the rendered article resolves its citation and reference',
         rendered.status === 0 &&
           /\[1\]/.test(renderedText) &&
-          renderedText.match(/An Example Reference for the Rho Class Template/gi)?.length === 1 &&
+          /J\. Doe and J\. Roe/.test(renderedText) &&
+          /Journal of Example Studies/.test(renderedText) &&
           !/Citation .* undefined/i.test(renderedText),
+        rendered.stdout.slice(-2500)
+      );
+      check(
+        'rho-class: Note and Information titles are rendered once',
+        (renderedText.match(/\bNote\b/g) ?? []).length === 1 &&
+          (renderedText.match(/\bInformation\b/g) ?? []).length === 1,
         rendered.stdout.slice(-2500)
       );
     }

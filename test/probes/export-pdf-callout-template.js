@@ -4,7 +4,7 @@
  * The generated title and body must survive the filter in a compiled PDF.
  *
  * @covers src/ui/export/callout_rewrites.ts,
- *   test/fixtures/templates/examples/rho-class/callout.lua
+ *   examples/templates/rho-class/callout.lua
  */
 (async () => {
   const t = window.__t;
@@ -36,7 +36,7 @@
   try {
     await files.createEntry(home, folderName, false);
     const filterSource = await readText(
-      `${checkout}test/fixtures/templates/examples/rho-class/callout.lua`
+      `${checkout}examples/templates/rho-class/callout.lua`
     );
     await files.writeTextAtomically(filter, filterSource);
     await invoke('export_save_config_text', {

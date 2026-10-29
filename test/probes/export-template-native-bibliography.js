@@ -25,7 +25,7 @@
   const jsonTargetFolder = `${folder}/json-source`;
   const jsonTarget = `${jsonTargetFolder}/json-paper.tex`;
   const jsonLibrary = `${folder}/library.json`;
-  const library = `${checkout}test/fixtures/templates/examples/latex/references.bib`;
+  const library = `${checkout}examples/templates/latex/references.bib`;
   const before = await invoke('get_config');
   let templateId = null;
   const readText = async (path) => {
@@ -62,11 +62,11 @@
     await files.createEntry(folder, 'paper.md', true);
     await files.createEntry(folder, 'json-paper.md', true);
     const source = await readText(
-      `${checkout}test/fixtures/templates/examples/latex/example.md`
+      `${checkout}examples/templates/latex/example.md`
     );
     await files.writeTextAtomically(notePath, source);
     const templatePicture = await readBytes(
-      `${checkout}test/fixtures/templates/examples/latex/figures/cmb-spectrum.pdf`
+      `${checkout}examples/templates/latex/figures/cmb-spectrum.pdf`
     );
     const noteMarker = new TextEncoder().encode('\n% note-local probe picture\n');
     const notePicture = new Uint8Array(templatePicture.length + noteMarker.length);
@@ -76,7 +76,7 @@
     await t.openWorkspace(folder);
     templateId = (
       await api.importTemplate({
-        source: `${checkout}test/fixtures/templates/examples/latex`,
+        source: `${checkout}examples/templates/latex`,
         name: `Probe native bibliography ${Date.now().toString(36)}`,
         kind: 'latex',
         entry: 'template.tex',
@@ -122,7 +122,7 @@
         /\\(?:cite|citep)\{penzias1965/.test(tex) &&
         !tex.includes('\\section*{References}') &&
         tex.includes(']{figures/cmb-spectrum.pdf}') &&
-        !tex.includes(`${checkout}test/fixtures/templates/examples/latex/figures/cmb-spectrum.pdf`)
+        !tex.includes(`${checkout}examples/templates/latex/figures/cmb-spectrum.pdf`)
     );
     check(
       'the selected library is filtered to exactly the cited works',

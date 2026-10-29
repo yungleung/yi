@@ -6,7 +6,7 @@
  * caption and label and `\yiTableRef` reads the package counter.
  *
  * @covers src/ui/export/reference_header.ts, src/ui/export/preprocess.ts,
- *   test/fixtures/templates/examples/rho-class/table.lua
+ *   examples/templates/rho-class/table.lua
  */
 (async () => {
   const t = window.__t;
@@ -43,7 +43,7 @@
     await files.createEntry(home, folderName, false);
     await files.writeTextAtomically(notePath, note);
     const pkg = await templates.importTemplate({
-      source: `${checkout}test/fixtures/templates/examples/rho-class`,
+      source: `${checkout}examples/templates/rho-class`,
       name: `Table counter ${Date.now().toString(36)}`,
       kind: 'pdf',
       entry: 'template.tex',

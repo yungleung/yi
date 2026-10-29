@@ -420,7 +420,7 @@ filtros duplicam referências.
 
 ## Exemplos completos e prompts de IA
 
-`test/fixtures/templates/examples/` contém pacotes completos HTML, LaTeX, PDF, Rho Class, EPUB, Word
+`examples/templates/` contém pacotes completos HTML, LaTeX, PDF, Rho Class, EPUB, Word
 e ODT.
 
 Peça a um agente de IA uma pasta importável, sem `template.json`:

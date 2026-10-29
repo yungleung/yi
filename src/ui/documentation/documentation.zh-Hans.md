@@ -450,7 +450,7 @@ keywords:
 
 ## 完整示例
 
-`test/fixtures/templates/examples/` 包含 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
+`examples/templates/` 包含 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
 的完整可用示例。可直接打开学习，也可以把文件夹导入 Yi 的模板库。
 
 ### 给 AI 代理的提示词

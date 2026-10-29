@@ -51,7 +51,7 @@
       let pkg = null;
       try {
         pkg = await api.importTemplate({
-          source: `${checkout}test/fixtures/templates/examples/${kind}`,
+          source: `${checkout}examples/templates/${kind}`,
           name: `Example ${kind} ${stamp}`,
           kind,
           entry,
@@ -107,7 +107,7 @@
         );
         const native = await t.app('/src/ui/export/native_bibliography.ts');
         const selectedLibrary = await readText(
-          `${checkout}test/fixtures/templates/examples/latex/references.bib`
+          `${checkout}examples/templates/latex/references.bib`
         );
         const packaged = native.packageCitedBibliography(
           selectedLibrary,
@@ -122,7 +122,7 @@
           output_path: target,
           resource_paths: [],
           source_dir: null,
-          bibliography: `${checkout}test/fixtures/templates/examples/latex/references.bib`,
+          bibliography: `${checkout}examples/templates/latex/references.bib`,
           csl: null,
           references: null,
           title: 'A Wideband Transition-Edge Search for Cosmic Microwave Background Spectral Distortions',
@@ -486,7 +486,7 @@
     let rho = null;
     try {
       rho = await api.importTemplate({
-        source: `${checkout}test/fixtures/templates/examples/rho-class`,
+        source: `${checkout}examples/templates/rho-class`,
         name: `Example rho class ${stamp}`,
         kind: 'pdf',
         entry: 'template.tex',
@@ -526,7 +526,7 @@
         output_path: target,
         resource_paths: [],
         source_dir: null,
-        bibliography: `${checkout}test/fixtures/templates/examples/rho-class/rho.bib`,
+        bibliography: `${checkout}examples/templates/rho-class/rho.bib`,
         csl: null,
         references: 'References',
         title: 'Seeing Structure in a Noisy Sky',

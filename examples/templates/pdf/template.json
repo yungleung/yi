@@ -6,7 +6,7 @@
   "mode": "template",
   "origin": {
     "type": "folder",
-    "path": "test/fixtures/templates/examples/pdf",
+    "path": "examples/templates/pdf",
     "source": null,
     "license": "CC0-1.0"
   },

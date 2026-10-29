@@ -425,7 +425,7 @@ dos filtros duplican las referencias.
 
 ## Ejemplos completos y prompts de IA
 
-`test/fixtures/templates/examples/` contiene paquetes completos HTML, LaTeX, PDF, Rho Class, EPUB,
+`examples/templates/` contiene paquetes completos HTML, LaTeX, PDF, Rho Class, EPUB,
 Word y ODT.
 
 Pide a un agente de IA una carpeta fuente importable, sin `template.json`:

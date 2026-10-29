@@ -436,7 +436,7 @@ seconde fois : Yi le fournit déjà et deux filtres dupliquent les références.
 
 ## Exemples complets et prompts IA
 
-`test/fixtures/templates/examples/` contient des paquets complets HTML, LaTeX, PDF, Rho Class,
+`examples/templates/` contient des paquets complets HTML, LaTeX, PDF, Rho Class,
 EPUB, Word et ODT.
 
 Demandez à un agent IA un dossier source importable, sans `template.json` :

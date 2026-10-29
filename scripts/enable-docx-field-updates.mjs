@@ -16,7 +16,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const target = join(root, 'test/fixtures/templates/examples/docx/reference.docx');
+const target = join(root, 'examples/templates/docx/reference.docx');
 const work = mkdtempSync(join(tmpdir(), 'yi-docx-fields-'));
 
 const run = (program, args, options = {}) => {

@@ -6,7 +6,7 @@
   "mode": "reference-doc",
   "origin": {
     "type": "folder",
-    "path": "test/fixtures/templates/examples/docx",
+    "path": "examples/templates/docx",
     "source": null,
     "license": "CC0-1.0"
   },

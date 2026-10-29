@@ -496,7 +496,7 @@ keywords:
 
 ## 完全な例
 
-`test/fixtures/templates/examples/` には HTML、LaTeX、PDF、Rho Class、EPUB、Word、ODT の
+`examples/templates/` には HTML、LaTeX、PDF、Rho Class、EPUB、Word、ODT の
 実用的なパッケージがあります。各フォルダーを読み、そのまま Yi へ読み込んでテンプレート
 ライブラリーで確認してください。
 

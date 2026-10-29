@@ -6,7 +6,7 @@
   "mode": "template",
   "origin": {
     "type": "folder",
-    "path": "test/fixtures/templates/examples/latex",
+    "path": "examples/templates/latex",
     "source": "https://journals.aps.org/prl/authors#style-and-formatting",
     "license": "CC0-1.0; apsrev4-2.bst under LPPL-1.3-or-later"
   },

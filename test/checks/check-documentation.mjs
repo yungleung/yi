@@ -143,7 +143,7 @@ if (existsSync(file)) {
   );
   check(
     'the document points readers at the complete fixture packages',
-    text.includes('test/fixtures/templates/examples')
+    text.includes('examples/templates')
   );
   const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
   for (const kind of prompts) {
@@ -221,7 +221,7 @@ for (const [code, name, title] of localized) {
       ['HTML', 'LaTeX', 'PDF', 'EPUB', 'Word', 'OpenDocument'].every((kind) =>
         text.includes(kind)
       ) &&
-      text.includes('test/fixtures/templates/examples')
+      text.includes('examples/templates')
   );
   check(
     `the ${name} guide has balanced code fences and no unfinished placeholders`,

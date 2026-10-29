@@ -381,7 +381,7 @@ Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有
 
 ## 完整範例與 AI 提示
 
-`test/fixtures/templates/examples/` 有 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
+`examples/templates/` 有 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
 完整套件。可先閱讀，再匯入 Yi 的範本庫。
 
 給 AI 代理的提示應要求建立可匯入的來源資料夾，但不要建立 `template.json`：

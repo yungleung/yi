@@ -72,9 +72,11 @@ $$
 The approximation is useful only while the calibration transfer functions are
 stable over the interval being combined.
 
-> **Calibration assumption.** Shared drifts are treated as common-mode signal.
-> A detector whose drift departs from the array median is excluded before the
-> sky model is fitted, and that exclusion is recorded in the result.
+::: {.callout .callout-note}
+Shared drifts are treated as common-mode signal. A detector whose drift
+departs from the array median is excluded before the sky model is fitted,
+and that exclusion is recorded in the result.
+:::
 
 # Data and Calibration
 
@@ -149,6 +151,11 @@ Rho Class keeps the method and its uncertainty close together. The narrow grid
 supports short paragraphs and equations without turning the article into a
 technical report. The callout box is a useful place to expose an assumption
 rather than hiding it in a method paragraph.
+
+::: {.callout .callout-info title="Information"}
+Rho's `info` environment is for reference material that helps the reader
+interpret a method without interrupting the main argument.
+:::
 
 A production analysis would replace the synthetic residuals with archived
 engineering data, propagate the reference-source covariance, and test the

@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const fixture = join(root, 'test/fixtures/templates/examples/odt');
+const fixture = join(root, 'examples/templates/odt');
 const target = join(fixture, 'reference.odt');
 const coverSource = join(fixture, 'college-cover.svg');
 const cover = join(fixture, 'college-cover.png');

@@ -79,7 +79,7 @@ document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command 
 `src/ui/documentation/documentation.en.md` through the same pathless read-only reference rule
 (`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
 file without a session question. The guide includes Pandoc and TeX installation requirements and
-points to the seven complete packages under `test/fixtures/templates/examples/`, including the
+points to the seven complete packages under `examples/templates/`, including the
 CC BY 4.0 Rho Class PDF article and its required attribution.
 
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
