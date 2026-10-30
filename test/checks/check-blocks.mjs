@@ -69,6 +69,26 @@ const cases = [
   // The same two with the blank lines markdown's own reading does not need: unchanged.
   ['a fence with blank lines around it is what it was', 'text\n\n```\ncode\n```\n\nafter\n', 'paragraph@1 fencedCode@3 paragraph@7'],
   ['and so is display math', 'text\n\n$$\nx\n$$\n\nafter\n', 'paragraph@1 displayMath@3 paragraph@7'],
+  [
+    'a generic fenced Div is one block across blank body lines',
+    '::: {.columns}\nLeft\n\nRight\n:::\n\nafter\n',
+    'fencedDiv@1 paragraph@7'
+  ],
+  [
+    'a named Pandoc Div is the same block',
+    '::: notes\nSpeaker note\n:::\n\nafter\n',
+    'fencedDiv@1 paragraph@5'
+  ],
+  [
+    'nested generic fenced Divs stay one outer block',
+    ':::: {.columns}\n::: {.column width="40%"}\nLeft\n:::\n::: {.column}\nRight\n:::\n::::\n\nafter\n',
+    'fencedDiv@1 paragraph@10'
+  ],
+  [
+    'a generic Div ends at its outer fence and leaves the next fence its own block',
+    ':::: {.incremental}\n::: {.nonincremental}\n- First\n- Second\n:::\n::::\n\n```python\nprint(1)\n```\n',
+    'fencedDiv@1 fencedCode@8'
+  ],
   // The frontmatter is YAML, and YAML ends a document with `---` or `...`.
   ['frontmatter closed by ---', '---\na: b\n---\n\nbody\n', 'frontmatter@1 paragraph@5'],
   ['and one closed by ...', '---\na: b\n...\n\nbody\n', 'frontmatter@1 paragraph@5'],

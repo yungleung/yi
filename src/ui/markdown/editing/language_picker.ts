@@ -2,9 +2,10 @@
  * Choosing a fenced code block's language: the list its label opens.
  *
  * The label is a button (`nodes/fence_label.ts`), and what pressing it asks for is a card beside it
- * holding every language highlight.js ships — plus `text`, which names none. It is the whole list on
- * purpose: auto-detection is the fallback for a fence that names no language, and a short curated
- * list would be a second opinion about what a note may be written in.
+ * holding every language highlight.js ships — plus `text`, which names none. A code fence in an
+ * unrendered Pandoc Div has no label element, so the same picker also accepts the caret's measured
+ * box. It is the whole list on purpose: auto-detection is the fallback for a fence that names no
+ * language, and a short curated list would be a second opinion about what a note may be written in.
  *
  * The card never takes the keyboard: the reader clicks a language, or presses Escape, or presses
  * anywhere else, and the card goes. The choice itself is not made here — this module is a surface,
@@ -17,10 +18,11 @@
 
 import hljs from 'highlight.js';
 import { BesideCard, boxOf } from '../../floating/beside';
+import type { Box } from '../../floating/placement';
 
 /** How the editor answers a label: open the list beside `anchor`, reporting what is pressed. */
 export type LanguagePicker = (
-  anchor: HTMLElement,
+  anchor: Box | null,
   current: string,
   choose: (language: string) => void
 ) => void;
@@ -45,6 +47,11 @@ export function setLanguageChangeHandler(
 
 /** The label was pressed: the list opens for this block, and whatever is picked is applied to it. */
 export function chooseLanguage(anchor: HTMLElement, current: string, lineStart: number): void {
+  chooseLanguageAt(boxOf(anchor), current, lineStart);
+}
+
+/** Opens the list beside a measured caret, for a fence whose block has no label element. */
+export function chooseLanguageAt(anchor: Box | null, current: string, lineStart: number): void {
   installed?.(anchor, current, (language) => changed?.(lineStart, language));
 }
 
@@ -53,10 +60,10 @@ export function chooseLanguage(anchor: HTMLElement, current: string, lineStart: 
  * and one per press would leave the rest behind.
  */
 export function installLanguagePicker(): LanguagePicker {
-  let anchor: HTMLElement | null = null;
+  let anchor: Box | null = null;
   let choose: ((language: string) => void) | null = null;
   const card = new BesideCard({
-    anchor: () => (anchor === null ? null : boxOf(anchor)),
+    anchor: () => anchor,
     className: 'max-h-80 w-56 overflow-y-auto p-1'
   });
   const list = document.createElement('div');

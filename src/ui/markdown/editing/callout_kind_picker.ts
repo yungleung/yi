@@ -2,11 +2,12 @@
  * Choosing the kind of a fenced-Div callout.
  *
  * Typing `:::` creates a closed, editable Div and opens this card beside the
- * caret. The five GitHub kinds and the custom Definition kind are the six
- * choices; choosing one is a single source edit owned by the editor.
+ * caret. Default adds no opening attributes; the five GitHub kinds and the
+ * custom Definition kind add a callout class. Every choice is a single source
+ * edit owned by the editor.
  *
  * May import: the beside-card surface. Upholds: the picker holds no document
- * state and every choice is expressed by its stable callout kind name.
+ * state and every choice is expressed by its stable Div-kind name.
  */
 
 import { BesideCard } from '../../floating/beside';
@@ -20,7 +21,15 @@ export type CalloutKindPicker = (
 ) => void;
 
 const CALLBACK_KIND = 'data-callout-kind-choice';
-const KINDS = ['note', 'tip', 'important', 'warning', 'caution', 'definition'] as const;
+const KINDS = [
+  'default',
+  'note',
+  'tip',
+  'important',
+  'warning',
+  'caution',
+  'definition'
+] as const;
 
 let installed: CalloutKindPicker | null = null;
 let changed: ((lineStart: number, kind: string) => void) | null = null;
@@ -110,9 +119,12 @@ function kindRows(current: string): HTMLElement[] {
     if (kind === current) {
       row.classList.add('bg-base-300');
     }
-    row.textContent = kind === 'definition'
-      ? 'Definition'
-      : `${kind[0].toUpperCase()}${kind.slice(1)}`;
+    row.textContent =
+      kind === 'default'
+        ? 'Default'
+        : kind === 'definition'
+          ? 'Definition'
+          : `${kind[0].toUpperCase()}${kind.slice(1)}`;
     return row;
   });
 }

@@ -21,6 +21,7 @@ methodology; this file is the index and the conventions.
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
 | `check-callouts.mjs` | GitHub-alert and Pandoc fenced-Div callout grammar: nested quote depth, all five built-in labels, custom kinds/titles, kind-only class edits, exact IDs/classes/attributes, malformed and escaped markers, offset-preserving parser input, and unclosed or nested Div fences left literal |
+| `check-fenced-divs.mjs` | Generic Pandoc fenced-Div source ranges, nesting and quote carriers, plus the shared Div body and empty-body line rules |
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/book_body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
 | `check-documentation.mjs` | The bundled Documentation guide and its native F1 menu entry: stable identity, read-only source, install instructions for Pandoc, TeX Live, MacTeX and MiKTeX, package-authoring chapters, security limits, fixture-package pointer and no unfinished placeholders |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
@@ -124,14 +125,18 @@ code, equation and empty-body Enter rules; `quote-list-enter` — a quoted paren
 sibling after nested children and an empty quoted item leaves the list without leaving the quote;
 `quote-source-editing` — complete quote source, physical blank-line deletion, exact `>` spacing and
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
-`callout-div-open` — `:::` creates a closed Note Div and its six-kind picker;
+`callout-div-open` — `:::` creates a closed Default Div and its seven-kind picker;
 `container-fence-open` — quoted and called-out display math, labeled math, code fences and Div
 callouts retain paired delimiters, prefixes, chooser surfaces and caret placement;
 `container-block-enter` — quoted code and display math accept repeated blank lines while a Div nested
 in another callout keeps one context-aware newline per Enter;
+`pandoc-div-source-mode` — every complete unknown Pandoc Div stays exact source, including inside
+quotes and callouts, while known callouts still render;
+`pandoc-div-container` — Default Div insertion, empty-body materialisation, list continuation,
+single/triple backticks, bracket pairing, language choice, formulas and nested Div callouts;
 `callout-empty-enter` — Enter on an empty alert creates the standard two-line quoted paragraph,
 while an empty Div opening creates one editable body line before its closing fence;
-`container-completions` — citation, wikilink and automatic-reference completion remain available in
+`container-completions` — citation, wikilink, link-fragment and automatic-reference completion remain available in
 quote and callout source, and accepting a row preserves the container;
 `callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
 container-aware opening markers/pickers on ordinary blank lines, and a `:::` picker that stays

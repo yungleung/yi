@@ -103,6 +103,11 @@ check('a backtick after a backtick writes only itself', typed('`', 1, '`'), {
   caret: 2
 });
 check('and so does the third', typed('``', 2, '`'), { text: '```', caret: 3 });
+check(
+  'a single backtick is literal in a Pandoc Div',
+  pairingFor('Body ', 5, '`', false, false),
+  null
+);
 
 // --- where nothing is written ------------------------------------------------------------------
 

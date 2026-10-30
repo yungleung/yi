@@ -100,7 +100,8 @@ A callout body can contain ordinary Markdown blocks:
 
 Pandoc fenced-Div callouts support built-in and custom kinds:
 
-Type `:::` on an empty line in Yi to create this form and choose its kind.
+Type `:::` on an empty line in Yi to create a Default Div, then choose Default, Note, Tip, Important,
+Warning, Caution, or Definition from the picker. Default leaves the opening as a bare `:::`.
 
 ::: {.callout .callout-note}
 A fenced-Div note.
@@ -133,6 +134,33 @@ Empty callouts remain reachable:
 
 ::: {.callout .callout-tip}
 :::
+
+Other Pandoc Divs are not guessed. A complete unknown Div stays in exact source mode:
+
+:::: {.columns}
+::: {.column width="40%"}
+The left column.
+:::
+
+::: {.column}
+The right column.
+:::
+::::
+
+::: {.notes}
+A speaker note for the presentation.
+:::
+
+:::: {.incremental}
+::: {.nonincremental}
+- First point
+- Second point
+:::
+::::
+
+Inside any Pandoc Div, a single backtick stays literal. Three backticks open a nested fenced code
+block, and display math, list continuation, nested callouts, table insertion, citations, wikilinks,
+and automatic references keep their normal context-aware behavior.
 
 ## Code listings
 

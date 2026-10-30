@@ -1,7 +1,6 @@
 /**
- * Typing `:::` creates a paired fenced-Div callout and opens the six kind
- * choices; choosing one rewrites only its kind class and leaves the caret in
- * the body.
+ * Typing `:::` creates a paired default Div and opens its seven kind choices;
+ * choosing a callout adds only that callout's attributes.
  *
  * @covers src/ui/markdown/editing/fence_open.ts,
  *   src/ui/markdown/editing/callout_kind_picker.ts
@@ -38,20 +37,20 @@
   await emptyFirstLine();
   await type([':', ':', ':']);
   check(
-    'typing three colons creates a closed Note Div',
+    'typing three colons creates a closed default Div',
     await t.raw(),
-    '::: {.callout .callout-note}\n\n:::\n\nhello world\n'
+    ':::\n\n:::\n\nhello world\n'
   );
   check(
     'the Div is already showing its editable source',
-    t.prose().querySelector('.markdown-callout-source')?.textContent ?? null,
-    '::: {.callout .callout-note}\n\n:::'
+    t.prose().querySelector('.markdown-fenced-div-source')?.textContent ?? null,
+    ':::\n\n:::'
   );
   const rows = [...document.querySelectorAll('[data-callout-kind-choice]')];
   check(
-    'the picker offers all five built-in kinds and Definition',
+    'the picker offers Default, all five built-in kinds and Definition',
     rows.map((row) => row.textContent),
-    ['Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
+    ['Default', 'Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
   );
   rows.find((row) => row.getAttribute('data-callout-kind-choice') === 'warning')?.click();
   await t.sleep(300);
@@ -66,6 +65,16 @@
     'the caret stays on the new body line',
     await t.raw(),
     '::: {.callout .callout-warning}\nZ\n:::\n\nhello world\n'
+  );
+
+  await emptyFirstLine();
+  await type([':', ':', ':']);
+  document.querySelector('[data-callout-kind-choice="default"]')?.click();
+  await t.sleep(220);
+  check(
+    'choosing Default leaves the opening with no attributes',
+    await t.raw(),
+    ':::\n\n:::\n\nhello world\n'
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

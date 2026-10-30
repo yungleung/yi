@@ -157,15 +157,30 @@ check(
   '[$$\n\n$$]{}\n\n'
 );
 
-// A fenced-Div callout opens paired, on its Note kind, which the editor may then change.
+// A fenced Div opens paired with no attributes; the picker may then make it a callout.
 const calloutDiv = typed('text\n\n::', 9, ':');
 check(
-  'typing `:::` opens a paired fenced-Div callout',
+  'typing `:::` opens a paired default fenced Div',
   calloutDiv.text,
-  'text\n\n::: {.callout .callout-note}\n\n:::\n\n'
+  'text\n\n:::\n\n:::\n\n'
 );
-check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n::: {.callout .callout-note}\n'.length);
+check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n:::\n'.length);
 check('with the fenced-Div kind', calloutDiv.kind, 'fencedDiv');
+const nestedDivSource = ':::\n::\n:::\n';
+const nestedDivOpen = containerFenceOpenWrite(
+  nestedDivSource,
+  ':::\n::'.length,
+  ':'
+);
+check(
+  'a Div typed inside another Div uses a longer fence',
+  nestedDivOpen === null
+    ? null
+    : nestedDivSource.slice(0, nestedDivOpen.from) +
+        nestedDivOpen.replacement +
+        nestedDivSource.slice(nestedDivOpen.to),
+  ':::\n\n::::\n\n::::\n\n:::\n'
+);
 
 // What is not a delimiter line of its own stays ordinary typing.
 check('a delimiter made in front of text is not one', typed('x``', 1, '`').kind, null);

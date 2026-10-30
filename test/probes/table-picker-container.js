@@ -82,5 +82,21 @@
     true
   );
 
+  await t.load('::: {.columns}\nDiv body.\n:::\n');
+  await clickTextEnd('Div body.');
+  await insertFromPicker();
+  const generic = await t.raw();
+  check(
+    'the picker keeps a generic Pandoc Div open around every table row',
+    tableRows(generic).length === 4 && tableRows(generic).every((line) => line.startsWith('|')),
+    true
+  );
+  check(
+    'the generic Div opening, body and table separator stay in the Div',
+    generic.startsWith('::: {.columns}\nDiv body.\n\n|') &&
+      generic.endsWith('\n:::\n'),
+    true
+  );
+
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

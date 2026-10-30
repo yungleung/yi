@@ -22,14 +22,21 @@
     });
 
   let section = null;
-  for (let fraction = 0.1; section === null && fraction <= 1; fraction += 0.1) {
+  for (let fraction = 0.02; section === null && fraction <= 1; fraction += 0.02) {
     t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
     await t.sleep(100);
-    section = [...t.prose().querySelectorAll('h2')].find(
+    const heading = [...t.prose().querySelectorAll('h2')].find(
       (heading) => heading.textContent === 'Code listings'
     );
+    if (heading !== undefined) {
+      section = heading;
+    }
   }
-  section?.scrollIntoView({ block: 'start' });
+  if (section !== null) {
+    const viewport = t.scroller().getBoundingClientRect();
+    const heading = section.getBoundingClientRect();
+    t.scroller().scrollTop += heading.top - viewport.top - 80;
+  }
   await t.sleep(350);
 
   const listings = [...t.prose().querySelectorAll('.markdown-listing-block')];

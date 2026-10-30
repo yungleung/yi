@@ -160,6 +160,15 @@ check('a fence with no language gains one',
 check('and choosing `text` takes the language off',
   applied(code, fenceLanguageEdit(code, '')),
   '```\na\n```');
+const codeInDiv = '::: {.notes}\n```\nx\n```\n:::';
+check(
+  'choosing a language edits the code fence around the caret inside a Pandoc Div',
+  applied(
+    codeInDiv,
+    fenceLanguageEdit(codeInDiv, 'python', codeInDiv.indexOf('\nx\n') + 1)
+  ),
+  '::: {.notes}\n```python\nx\n```\n:::'
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

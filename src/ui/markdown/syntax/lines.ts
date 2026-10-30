@@ -25,6 +25,22 @@ export function isBlankItemLine(line: string): boolean {
   return listItemMarker.test(line);
 }
 
+/** A list marker, its indentation, and an optional task marker. */
+const ITEM_LINE = /^(\s*(?:[-+*]|\d+[.)])\s+)(?:(\[[ xX]\])\s+)?/;
+
+/**
+ * What Enter inserts to continue a list item, or null when the line is not one.
+ * The new item keeps the marker and indentation of the item above it; a task
+ * item continues unchecked.
+ */
+export function itemContinuation(lineText: string): string | null {
+  const match = ITEM_LINE.exec(lineText);
+  if (!match || lineText.slice(match[0].length).trim() === '') {
+    return null;
+  }
+  return `\n${match[1]}${match[2] ? '[ ] ' : ''}`;
+}
+
 /** The bounds of the line an offset sits on. */
 export function lineSpanAt(text: string, offset: number): { start: number; end: number } {
   const clamped = Math.max(0, Math.min(offset, text.length));

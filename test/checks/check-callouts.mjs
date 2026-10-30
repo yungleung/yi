@@ -167,6 +167,39 @@ check(
     replacement: 'callout-definition'
   }
 );
+const bareDiv = ':::\nBody\n:::\n';
+check('Default leaves a bare Div unchanged', calloutKindEdit(bareDiv, 'default'), null);
+check(
+  'choosing a callout turns a bare Div into that callout',
+  calloutKindEdit(bareDiv, 'warning'),
+  {
+    from: 3,
+    to: 3,
+    replacement: ' {.callout .callout-warning}'
+  }
+);
+check(
+  'choosing Default removes the callout classes from a callout Div',
+  calloutKindEdit(definitionDiv, 'default'),
+  {
+    from: 3,
+    to: '::: {.callout .callout-note}'.length,
+    replacement: ''
+  }
+);
+const genericAttributes = '::: {.columns #layout}\nBody\n:::\n';
+check(
+  'choosing a callout keeps other classes and IDs on a generic Div',
+  (() => {
+    const edit = calloutKindEdit(genericAttributes, 'warning');
+    return edit === null
+      ? null
+      : genericAttributes.slice(0, edit.from) +
+          edit.replacement +
+          genericAttributes.slice(edit.to);
+  })(),
+  '::: {.callout .callout-warning .columns #layout}\nBody\n:::\n'
+);
 const quotedClassAttribute =
   '::: {.callout .callout-tip title=".callout-note"}\nBody\n:::\n';
 check(

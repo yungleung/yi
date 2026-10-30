@@ -15,6 +15,10 @@
  * A key that closes itself (a quote, a backtick) already reads as its own pair there, so it writes
  * only itself.
  *
+ * `pairBacktick` is false in Pandoc Div source: there a single backtick is the
+ * first character of a code fence, so pairing it would add a character the
+ * author did not type.
+ *
  * May import: nothing — the text and the caret are passed in. Upholds: one answer to "what does
  * typing a bracket write", so the editor's key path and the check beside this file cannot drift.
  */
@@ -56,10 +60,11 @@ export function pairingFor(
   text: string,
   caret: number,
   key: string,
-  literal: boolean
+  literal: boolean,
+  pairBacktick = true
 ): BracketEdit | null {
   const closing = PAIRS[key];
-  if (closing === undefined || literal) {
+  if (closing === undefined || literal || (key === '`' && !pairBacktick)) {
     return null;
   }
   // A key that closes itself, typed straight after one of its own kind, is the author writing a run

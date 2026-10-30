@@ -45,12 +45,13 @@ const {
   paragraphSplit,
   paragraphStart,
   emptyLineInsertion,
-  characterRemoval,
-  itemContinuation
+  characterRemoval
 } = await bundleModule('src/ui/markdown/editing/blank_lines.ts', 'blank_lines');
-// The list rules moved to list_lines.ts in commit 473ecf2 and this check was
-// never told: it asked the blank-lines bundle for them and got undefined.
-const { itemSubtreeEnd, hasChildBlock } = await bundleModule('src/ui/markdown/syntax/lines.ts', 'list_lines');
+// The line grammar lives in syntax/lines.ts; the editing rule consumes it.
+const { itemContinuation, itemSubtreeEnd, hasChildBlock } = await bundleModule(
+  'src/ui/markdown/syntax/lines.ts',
+  'list_lines'
+);
 
 /** Applies an insertion the way the commands do, and reports the result. */
 const insert = (text, offset, inserted) => `${text.slice(0, offset)}${inserted}${text.slice(offset)}`;

@@ -17,7 +17,12 @@
 import type { EditKind } from '../document/history';
 import type { MarkdownBlock } from '../document/blocks';
 import { isEmptyParagraphLine } from '../syntax/blank_lines';
-import { hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
+import {
+  hasChildBlock,
+  itemContinuation,
+  itemSubtreeEnd,
+  lineSpanAt
+} from '../syntax/lines';
 import { applyEdit, restoreCaret, type EditorContext } from './context';
 import { lineRemoval } from './line_removal';
 
@@ -116,23 +121,6 @@ export function startEmptyParagraphAbove(
   }
   applyEdit(context, offsets.from, offsets.to, start.insert, start.caret);
   return true;
-}
-
-/** A list marker, its indentation, and an optional task marker. */
-const ITEM_LINE = /^(\s*(?:[-+*]|\d+[.)])\s+)(?:(\[[ xX]\])\s+)?/;
-
-/**
- * What `Enter` inserts to continue a list item, or null when the line is not
- * one. The new item keeps the marker and indentation of the item above it; a
- * task item continues unchecked, as every editor's list does.
- */
-export function itemContinuation(lineText: string): string | null {
-  const match = ITEM_LINE.exec(lineText);
-  if (!match || lineText.slice(match[0].length).trim() === '') {
-    // A blank item is handled by `exitBlankItem`: Enter there ends the list.
-    return null;
-  }
-  return `\n${match[1]}${match[2] ? '[ ] ' : ''}`;
 }
 
 /** `Enter` inside a list item: start a new item of the same kind below. */

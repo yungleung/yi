@@ -1,7 +1,7 @@
 /**
- * Citation, wikilink and automatic-reference completion remain available while
- * the caret is in a quote or callout, and accepting a row leaves the container
- * source intact.
+ * Citation, wikilink, link-fragment and automatic-reference completion remain
+ * available while the caret is in a quote, callout or generic Pandoc Div, and
+ * accepting a row leaves the container source intact.
  *
  * @covers src/ui/markdown/editing/completions.ts,
  *   src/ui/markdown/syntax/completions.ts
@@ -109,6 +109,49 @@
   await type('[');
   check('a wikilink query opens in a GitHub callout', cardOpen(), true);
   await acceptFirst((first) => `> [!NOTE]\n> A link: [[${first}]]\n`);
+
+  await t.load(
+    '::: {.notes}\nSee \n:::\n\n```python {#lst:generic}\nprint(1)\n```\n'
+  );
+  await clickEnd('.markdown-fenced-div-source', 'See ');
+  await type('[');
+  await type('#');
+  check('an automatic-reference query opens in a generic Pandoc Div', cardOpen(), true);
+  check(
+    'and offers the document target',
+    rows().includes('lst:generic'),
+    true
+  );
+  await type('g');
+  await acceptFirst(
+    (first) =>
+      `::: {.notes}\nSee [#${first}]\n:::\n\n\`\`\`python {#lst:generic}\nprint(1)\n\`\`\`\n`
+  );
+
+  await t.load('::: {.notes}\nA citation: \n:::\n');
+  await clickEnd('.markdown-fenced-div-source', 'A citation: ');
+  await type('@');
+  check('a citation query opens in a generic Pandoc Div', cardOpen(), true);
+  await acceptFirst((first) => `::: {.notes}\nA citation: @${first}\n:::\n`);
+
+  await t.load('::: {.notes}\nA link: \n:::\n');
+  await clickEnd('.markdown-fenced-div-source', 'A link: ');
+  await type('[');
+  await type('[');
+  check('a wikilink query opens in a generic Pandoc Div', cardOpen(), true);
+  await acceptFirst((first) => `::: {.notes}\nA link: [[${first}]]\n:::\n`);
+
+  await t.load(
+    '::: {.notes}\nA link: [text]\n:::\n\n```python {#lst:generic}\nprint(1)\n```\n'
+  );
+  await clickEnd('.markdown-fenced-div-source', 'A link: [text]');
+  await type('(');
+  await type('#');
+  check('a link-fragment query opens in a generic Pandoc Div', cardOpen(), true);
+  await acceptFirst(
+    (first) =>
+      `::: {.notes}\nA link: [text](#${first})\n:::\n\n\`\`\`python {#lst:generic}\nprint(1)\n\`\`\`\n`
+  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

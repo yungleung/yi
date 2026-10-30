@@ -1,5 +1,5 @@
 /**
- * First-text materialisation for an empty callout body.
+ * First-text materialisation for an empty GitHub alert or fenced Div body.
  *
  * Navigation may place a logical caret at an empty callout's body insertion
  * point without changing the source. The first typed character creates the
@@ -7,10 +7,14 @@
  *
  * May import: the callout source model and the shared quote-edit result.
  * Upholds: empty navigation is read-only, and the first source edit is a valid
- * callout body in either authoring form.
+ * body in either authoring form. A generic Pandoc Div uses the same Div path.
  */
 
-import { calloutAtOffset, type CalloutSource } from './callouts';
+import type { CalloutSource } from './callouts';
+import {
+  fencedDivAtOffset,
+  type FencedDivSource
+} from './fenced_divs';
 import type { QuoteEdit } from './quote_edits';
 
 /**
@@ -21,20 +25,20 @@ import type { QuoteEdit } from './quote_edits';
  * Enter is the same two-line break as every other quoted paragraph.
  */
 export function emptyCalloutNewline(text: string, offset: number): QuoteEdit | null {
-  const callout = calloutAtOffset(text, offset);
+  const div = fencedDivAtOffset(text, offset);
   if (
-    callout?.form !== 'div' ||
-    callout.bodyFrom !== callout.bodyTo
+    div === null ||
+    div.bodyFrom !== div.bodyTo
   ) {
     return null;
   }
-  if (offset !== callout.markerTo && offset !== callout.bodyFrom) {
+  if (offset !== div.markerTo && offset !== div.bodyFrom) {
     return null;
   }
-  const replacement = `\n${callout.quotePrefix}`;
+  const replacement = `\n${div.quotePrefix}`;
   return {
-    edit: { from: callout.markerTo, to: callout.markerTo, replacement },
-    caret: callout.markerTo + replacement.length
+    edit: { from: div.markerTo, to: div.markerTo, replacement },
+    caret: div.markerTo + replacement.length
   };
 }
 
@@ -65,25 +69,44 @@ export function materializeCalloutBody(
     };
   }
 
+  return materializeFencedDivBody(text, offset, callout, typed, caretWithin);
+}
+
+/** The edit that writes the first text into an empty Div body. */
+export function materializeFencedDivBody(
+  text: string,
+  offset: number,
+  div: Pick<FencedDivSource, 'quoteDepth' | 'quotePrefix'> | null,
+  typed: string,
+  caretWithin = typed.length
+): QuoteEdit | null {
+  if (div === null || typed === '') {
+    return null;
+  }
+  const caretInBody = prefixedOffset(
+    typed,
+    Math.min(caretWithin, typed.length),
+    div.quotePrefix
+  );
   let at = offset;
   if (
-    callout.quoteDepth > 0 &&
-    text.slice(at, at + callout.quotePrefix.length) === callout.quotePrefix
+    div.quoteDepth > 0 &&
+    text.slice(at, at + div.quotePrefix.length) === div.quotePrefix
   ) {
-    at += callout.quotePrefix.length;
+    at += div.quotePrefix.length;
   }
   const lineEndAt = text.indexOf('\n', at);
   const lineEnd = lineEndAt < 0 ? text.length : lineEndAt;
   const line = text.slice(at, lineEnd);
   if (line.trim() === '' && lineEndAt >= 0) {
-    const replacement = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
+    const replacement = typed.replace(/\n/g, `\n${div.quotePrefix}`);
     return {
       edit: { from: at, to: at, replacement },
       caret: at + caretInBody
     };
   }
 
-  const body = typed.replace(/\n/g, `\n${callout.quotePrefix}`);
+  const body = typed.replace(/\n/g, `\n${div.quotePrefix}`);
   const replacement = `${body}\n`;
   return {
     edit: { from: at, to: at, replacement },

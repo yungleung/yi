@@ -165,9 +165,15 @@ También vale la forma corta `.callout-note`. Para un tipo personalizado sin `ti
 deriva del nombre de clase sin depender del idioma de la interfaz. Los ID, clases y demás atributos
 se conservan para la exportación; un ID de Div es metadatos de Pandoc y no una referencia de Yi.
 
-Escribir `:::` en una línea propia crea un Div Note cerrado y abre seis opciones: Note, Tip,
-Important, Warning, Caution y Definition. La elección cambia solo la clase `.callout-<tipo>`; el
-cuerpo, el ID, las demás clases y los atributos permanecen intactos.
+Escribir `:::` en una línea propia crea un Div Default cerrado y abre siete opciones: Default, Note,
+Tip, Important, Warning, Caution y Definition. Default deja `:::` sin atributos; elegir un callout
+añade o cambia solo sus metadatos. El cuerpo, el ID, las demás clases y los atributos permanecen
+intactos.
+
+Yi no adivina cómo representar otros Div de Pandoc, como `.columns`, notas del orador, wrappers o
+listas incrementales y no incrementales. Todo Div desconocido completo se muestra siempre como fuente
+exacta. Los Div anidados usan un cercado exterior con más dos puntos. Si un Div desconocido está
+dentro de una cita o callout, ese contenedor también muestra su fuente completa.
 
 Los callouts pueden anidarse dentro de citas u otros callouts. Su cuerpo admite párrafos, listas,
 tablas, bloques de código, ecuaciones, leyendas, citas y citas Markdown normales. Yi muestra el panel
@@ -177,7 +183,9 @@ salir del bloque vuelve la vista renderizada.
 Los marcadores de apertura conservan el contexto del contenedor durante la edición. Escribir `$$`,
 `[$$`, un bloque de código delimitado por tres acentos graves o `:::` crea la construcción
 emparejada correspondiente, añade el prefijo `>` activo a cada línea fuente generada y conserva el
-selector de tipo de callout para `:::`. Dentro de código o fórmulas en bloque de una cita o callout,
+selector de tipo de Div para `:::`. En la fuente de un Div de Pandoc un solo acento grave sigue
+siendo literal; tres acentos graves abren el bloque de código anidado. Dentro de código o fórmulas
+en bloque de una cita o callout,
 Enter sigue la regla del bloque hijo y puede crear cualquier número de líneas vacías consecutivas.
 Un callout Div crea exactamente una línea nueva con prefijo por cada Enter, también cuando está
 anidado en otra cita o callout.

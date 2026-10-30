@@ -27,13 +27,14 @@ import { getCaretRange } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
 import { boxOf } from '../../floating/beside';
 import { blockPadding } from './blank_lines';
-import { applyEdit, caretOffset, type EditorContext } from './context';
+import { applyEdit, type EditorContext } from './context';
 import { proseRoot } from './selection';
-import { chooseLanguage } from './language_picker';
+import { chooseLanguage, chooseLanguageAt } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
-import { calloutAtOffset } from '../syntax/callouts';
+import { readCallout } from '../syntax/callouts';
+import { fencedDivAtOffset } from '../syntax/fenced_divs';
 import {
   prefixInsertedBreaks,
   projectQuoteSource,
@@ -67,13 +68,21 @@ export function containerFenceOpenWrite(
   at: number,
   typed: string
 ): FenceOpen | null {
+  const enclosing = fencedDivAtOffset(text, at);
+  const divFenceLength =
+    enclosing === null ? undefined : enclosing.fenceLength + 1;
   const quote = quoteLineAt(text, at);
   if (quote === null) {
-    return fenceOpenWrite(text, at, typed);
+    return fenceOpenWrite(text, at, typed, divFenceLength);
   }
   const projected = projectQuoteSource(text);
   const projectedAt = projected.projectedOffsets[at] ?? projected.text.length;
-  const write = fenceOpenWrite(projected.text, projectedAt, typed);
+  const write = fenceOpenWrite(
+    projected.text,
+    projectedAt,
+    typed,
+    divFenceLength
+  );
   if (write === null) {
     return null;
   }
@@ -99,7 +108,12 @@ export function containerFenceOpenWrite(
  * the characters are ordinary ones. `typed` is what the keystroke writes — a bracket's pair is
  * often two characters, and two backticks are the pair that completes a fence.
  */
-export function fenceOpenWrite(text: string, at: number, typed: string): FenceOpen | null {
+export function fenceOpenWrite(
+  text: string,
+  at: number,
+  typed: string,
+  divFenceLength?: number
+): FenceOpen | null {
   if (typed === '') {
     return null;
   }
@@ -135,12 +149,13 @@ export function fenceOpenWrite(text: string, at: number, typed: string): FenceOp
   if (/^ {0,3}:{3}$/.test(completed)) {
     const { leading } = blockPadding(text, line.start);
     const { trailing } = blockPadding(text, caret);
-    const opening = '::: {.callout .callout-note}';
+    const fence = ':'.repeat(divFenceLength ?? 3);
+    const opening = fence;
     return {
       kind: 'fencedDiv',
       from: line.start,
       to: line.end,
-      replacement: `${leading}${opening}\n\n:::${trailing}`,
+      replacement: `${leading}${opening}\n\n${fence}${trailing}`,
       caret: line.start + leading.length + opening.length + 1
     };
   }
@@ -187,9 +202,9 @@ export function insertFenceOpen(
   const caret = shift + write.caret;
   applyEdit(context, from, to, write.replacement, caret, 'typing');
   if (write.kind === 'fencedCode') {
-    askForLanguage(context);
+    askForLanguage(context, caret);
   } else if (write.kind === 'fencedDiv') {
-    askForCalloutKind(context);
+    askForCalloutKind(context, caret);
   }
   return true;
 }
@@ -199,9 +214,10 @@ export function insertFenceOpen(
  * naming no language — as the current answer. The block was rendered by the edit that made it, so
  * the label is found by the line the fence starts at.
  */
-function askForLanguage(context: EditorContext): void {
-  const caret = caretOffset(context);
-  const block = caret === null ? null : context.state.getBlockAtOffset(caret);
+function askForLanguage(context: EditorContext, caret: number): void {
+  const block =
+    context.state.getBlockAtOffset(caret) ??
+    context.state.getBlockAtOffset(Math.max(0, caret - 1));
   if (block === null) {
     return;
   }
@@ -210,24 +226,43 @@ function askForLanguage(context: EditorContext): void {
   );
   if (label) {
     chooseLanguage(label, '', block.lineStart);
+    return;
   }
+  const range = getCaretRange();
+  const measured = range === null ? null : caretRect(range);
+  chooseLanguageAt(
+    measured
+      ? {
+          left: measured.left,
+          top: measured.top,
+          width: 0,
+          height: measured.height
+        }
+      : null,
+    '',
+    block.lineStart
+  );
 }
 
 /** Opens the callout-kind list beside the caret that completed the Div. */
-function askForCalloutKind(context: EditorContext): void {
-  const caret = caretOffset(context);
-  const block = caret === null ? null : context.state.getBlockAtOffset(caret);
+function askForCalloutKind(context: EditorContext, caret: number): void {
+  const block =
+    context.state.getBlockAtOffset(caret) ??
+    context.state.getBlockAtOffset(Math.max(0, caret - 1));
   if (block === null) {
     return;
   }
   const source = proseRoot(context)?.querySelector<HTMLElement>(
     `.markdown-block[data-line-start="${block.lineStart}"] ` +
       '.markdown-callout-source, ' +
+      `.markdown-block[data-line-start="${block.lineStart}"] .markdown-fenced-div-source, ` +
       `.markdown-block[data-line-start="${block.lineStart}"] .markdown-quote-source`
   );
   if (source) {
-    const at = caret ?? block.charStart;
-    const relative = Math.min(Math.max(0, at - block.charStart), block.text.length);
+    const relative = Math.min(Math.max(0, caret - block.charStart), block.text.length);
+    const div = fencedDivAtOffset(block.text, relative);
+    const innerCallout =
+      div === null ? null : readCallout(block.text.slice(div.from, div.to));
     const range = getCaretRange();
     const measured = range === null ? null : caretRect(range);
     const anchor = measured
@@ -240,7 +275,7 @@ function askForCalloutKind(context: EditorContext): void {
       : boxOf(source);
     chooseCalloutKind(
       anchor,
-      calloutAtOffset(block.text, relative)?.kind ?? 'note',
+      innerCallout?.kind ?? 'default',
       block.lineStart
     );
   }

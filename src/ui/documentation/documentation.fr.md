@@ -166,9 +166,15 @@ titre vient du nom de classe sans passer par la langue de l’interface. Les ID,
 attributs sont conservés pour l’export. Un ID de Div reste une métadonnée Pandoc et ne devient pas une
 cible de référence Yi.
 
-Taper `:::` seul sur une ligne crée un Div Note fermé et ouvre six choix : Note, Tip, Important,
-Warning, Caution et Definition. Le choix ne change que la classe `.callout-<type>` ; le corps, l’ID,
-les autres classes et les attributs restent intacts.
+Taper `:::` seul sur une ligne crée un Div Default fermé et ouvre sept choix : Default, Note, Tip,
+Important, Warning, Caution et Definition. Default laisse `:::` sans attribut ; un choix de callout
+ajoute ou modifie seulement ses métadonnées. Le corps, l’ID, les autres classes et les attributs
+restent intacts.
+
+Yi ne devine pas le rendu des autres Div Pandoc, comme `.columns`, les notes d’orateur, les wrappers
+ou les listes incrémentales et non incrémentales. Un Div inconnu complet reste toujours affiché comme
+source exacte. Un Div imbriqué utilise un fence extérieur avec davantage de deux-points. Si un Div
+inconnu est dans une citation ou un callout, ce conteneur affiche aussi sa source complète.
 
 Les callouts peuvent être imbriqués dans des citations ou d’autres callouts. Leur corps accepte les
 paragraphes, listes, tableaux, blocs de code, équations, légendes, citations et citations Markdown
@@ -177,7 +183,9 @@ ordinaires.
 Les marqueurs d’ouverture restent conscients de leur conteneur pendant l’édition. Saisir `$$`,
 `[$$`, un bloc de code délimité par trois accents graves ou `:::` crée la construction appariée
 correspondante, préfixe chaque ligne source générée par la chaîne `>` active et conserve le sélecteur
-de type de callout pour `:::`. Dans un bloc de code ou une formule d’affichage placé dans une
+de type de Div pour `:::`. Dans la source d’un Div Pandoc, un accent grave seul reste littéral ;
+trois accents graves ouvrent le bloc de code imbriqué. Dans un bloc de code ou une formule
+d’affichage placé dans une
 citation ou un callout, Entrée suit la règle du bloc enfant et peut créer autant de lignes vides
 consécutives que nécessaire. Un callout Div ajoute exactement un saut de ligne préfixé par Entrée,
 même lorsqu’il est imbriqué dans une autre citation ou un autre callout.

@@ -627,9 +627,16 @@ The lone shorthand `.callout-note` is also accepted. A custom kind without `titl
 locale-independent class name, with dashes shown as spaces. IDs, classes, and other attributes are
 kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
 
-Typing `:::` on a line of its own creates a closed Note Div and opens a six-choice picker beside it:
-Note, Tip, Important, Warning, Caution, or Definition. The choice changes only the
-`.callout-<kind>` class; the body, ID, other classes, and attributes stay intact.
+Typing `:::` on a line of its own creates a closed Default Div and opens a seven-choice picker:
+Default, Note, Tip, Important, Warning, Caution, or Definition. Default leaves the opening as a bare
+`:::`; a callout choice adds or changes only the `.callout-<kind>` metadata. The body, ID, other
+classes, and attributes stay intact.
+
+Yi does not guess how to render other Pandoc Divs, such as `.columns`, speaker-note, wrapper, or
+incremental and non-incremental list Divs. A complete unknown Div is always shown as exact source,
+with or without the caret inside it. Use a longer outer colon fence for a nested Div, as Pandoc
+requires. If an unknown Div is nested in a quote or callout, that container also falls back to its
+complete source so no unknown content is rendered as a guess.
 
 Callouts may be nested inside quotes and inside other callouts. Their bodies accept ordinary
 Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
@@ -637,10 +644,10 @@ and nested quotes.
 
 Opening markers remain container-aware while editing. Typing `$$`, `[$$`, a triple-backtick code
 fence, or `:::` creates the matching paired construct, gives every generated physical line the
-current `>` prefix, and keeps the callout-kind chooser for `:::`. Inside quoted or called-out code
-and display math, Enter follows the child block's line rule and may create any number of consecutive
-blank lines. A fenced-Div callout creates one prefixed newline per Enter, including when it is nested
-in another quote or callout.
+current `>` prefix, and keeps the Div-kind chooser for `:::`. In Pandoc Div source a single backtick
+stays literal; three typed backticks open the nested code fence. Enter follows list, table, code,
+equation, and other child-block rules inside the Div. A plain Div body line creates one prefixed
+newline per Enter, including when it is nested in another quote or callout.
 
 Citation completion after `@`, wikilink completion after `[[`, and automatic-reference completion
 after `[#` remain available in both source forms. Choosing a row writes only the key or target ID;

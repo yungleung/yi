@@ -171,16 +171,25 @@ unabhängig von der Oberflächensprache aus dem Klassennamen gebildet. IDs, Klas
 Attribute bleiben für den Export erhalten; eine Div-ID ist Pandoc-Metadatum und kein
 Querverweisziel von Yi.
 
-Wer `:::` allein in eine Zeile schreibt, erhält ein geschlossenes Note-Div und eine Auswahl mit
-Note, Tip, Important, Warning, Caution und Definition. Die Auswahl ändert nur die Klasse
-`.callout-<Art>`; Inhalt, ID, weitere Klassen und Attribute bleiben unverändert.
+Wer `:::` allein in eine Zeile schreibt, erhält ein geschlossenes Default-Div und eine Auswahl mit
+Default, Note, Tip, Important, Warning, Caution und Definition. Default lässt `:::` ohne Zusatz;
+eine Callout-Auswahl ergänzt oder ändert nur die Callout-Metadaten. Inhalt, ID, weitere Klassen und
+Attribute bleiben unverändert.
+
+Andere Pandoc-Divs wie `.columns`, Sprechernotizen, Wrapper sowie inkrementelle und nicht
+inkrementelle Listen werden nicht geraten. Ein vollständiges unbekanntes Div wird immer als exakter
+Quelltext gezeigt. Verschachtelte Divs verwenden wie bei Pandoc einen längeren äußeren
+Doppelpunkt-Zaun. Liegt ein unbekanntes Div in einem Zitat oder Callout, zeigt auch dieser Container
+seinen vollständigen Quelltext.
 
 Callouts können in Zitaten oder anderen Callouts verschachtelt werden. Ihr Inhalt kann Absätze,
 Listen, Tabellen, Codeblöcke, Formeln, Beschriftungen, Zitate und normale Markdown-Zitate enthalten.
 
 Öffnende Markierungen bleiben beim Bearbeiten containerbewusst. Die Eingabe von `$$`, `[$$`, einem
 Code-Fence aus drei Backticks oder `:::` erzeugt die passende paarige Struktur, versieht jede
-erzeugte Quellzeile mit dem aktuellen `>`-Präfix und behält für `:::` die Auswahl der Callout-Art.
+erzeugte Quellzeile mit dem aktuellen `>`-Präfix und behält für `:::` die Auswahl der Div-Art. Im
+Quelltext eines Pandoc-Divs bleibt ein einzelner Backtick literal; drei Backticks öffnen den
+verschachtelten Code-Fence.
 In Code und Anzeigeformeln innerhalb eines Zitats oder Callouts folgt Enter der Zeilenregel des
 Kindblocks und kann beliebig viele aufeinanderfolgende Leerzeilen erzeugen. Ein Callout in einem
 eingezäunten Div fügt pro Enter genau einen präfixierten Zeilenumbruch ein, auch wenn es in einem

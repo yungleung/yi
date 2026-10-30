@@ -40,6 +40,7 @@ import { hasSourceMode } from './document/block_kinds';;
 import { shiftOffset, shiftRangeEnd, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
 import { quoteNeedsSourceAt } from './syntax/quote_edits';
+import { hasGenericFencedDiv } from './syntax/callouts';
 
 /** The raw source being shown, as its range in the document, or null. */
 let shownRange: { from: number; to: number } | null = null;
@@ -131,6 +132,12 @@ export function setShownRange(range: { from: number; to: number } | null): boole
 
 /** Whether this block is one that shows its own text. */
 export function isSourceBlock(block: MarkdownBlock): boolean {
+  if (
+    (block.kind === 'fencedDiv' || block.kind === 'quote') &&
+    hasGenericFencedDiv(block.text)
+  ) {
+    return true;
+  }
   if (!blockCanShowSource(block) || shownSourceWithinBlock(block) === null) {
     return false;
   }

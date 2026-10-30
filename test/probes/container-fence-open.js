@@ -99,14 +99,14 @@
     (row) => row.textContent
   );
   check(
-    'a fenced-Div callout is paired inside a quote',
-    lineIs(source()?.textContent ?? '', '> ::: {.callout .callout-note}'),
-    1
+    'a default fenced Div is paired inside a quote',
+    lineIs(source()?.textContent ?? '', '> :::'),
+    2
   );
   check(
-    'the callout kind picker still opens inside the quote',
+    'the Div kind picker still opens inside the quote',
     choices,
-    ['Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
+    ['Default', 'Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
   );
   document.querySelector('[data-callout-kind-choice="tip"]')?.click();
   await t.sleep(180);

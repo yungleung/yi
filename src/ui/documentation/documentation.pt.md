@@ -163,9 +163,15 @@ A forma curta `.callout-note` também funciona. Um tipo personalizado sem `title
 nome da classe sem depender do idioma da interface. ID, classes e outros atributos são preservados
 para exportação; um ID de Div é metadado do Pandoc e não um destino de referência do Yi.
 
-Digitar `:::` sozinho numa linha cria um Div Note fechado e abre seis opções: Note, Tip, Important,
-Warning, Caution e Definition. A escolha altera apenas a classe `.callout-<tipo>`; o corpo, o ID,
-as outras classes e os atributos permanecem intactos.
+Digitar `:::` sozinho numa linha cria um Div Default fechado e abre sete opções: Default, Note, Tip,
+Important, Warning, Caution e Definition. Default deixa `:::` sem atributos; escolher um callout
+apenas acrescenta ou altera os metadados dele. O corpo, o ID, as outras classes e os atributos
+permanecem intactos.
+
+O Yi não adivinha como renderizar outros Div do Pandoc, como `.columns`, notas do apresentador,
+wrappers ou listas incrementais e não incrementais. Um Div desconhecido completo aparece sempre como
+origem exata. Divs aninhados usam uma cerca externa com mais dois-pontos. Se um Div desconhecido
+estiver numa citação ou callout, esse contêiner também mostra a origem completa.
 
 Callouts podem ser aninhados em citações ou em outros callouts. O corpo aceita parágrafos, listas,
 tabelas, blocos de código, equações, legendas, citações e citações Markdown comuns. O Yi mostra o
@@ -175,7 +181,8 @@ bloco restaura a renderização.
 Os marcadores de abertura continuam cientes do contêiner durante a edição. Digitar `$$`, `[$$`, um
 bloco de código delimitado por três acentos graves ou `:::` cria a construção emparelhada
 correspondente, aplica o prefixo `>` atual a cada linha física gerada e mantém o seletor de tipo de
-callout para `:::`. Dentro de código ou fórmulas em bloco numa citação ou callout, Enter segue a
+Div para `:::`. Na origem de um Div Pandoc, um acento grave sozinho permanece literal; três acentos
+graves abrem o bloco de código aninhado. Dentro de código ou fórmulas em bloco numa citação ou callout, Enter segue a
 regra do bloco filho e pode criar qualquer número de linhas vazias consecutivas. Um callout com Div
 cercado cria exatamente uma nova linha prefixada por Enter, mesmo quando está aninhado noutra citação
 ou callout.

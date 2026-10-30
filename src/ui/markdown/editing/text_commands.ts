@@ -16,7 +16,6 @@ import {
   continueListItem,
   deleteEmptyParagraph,
   exitBlankItem,
-  itemContinuation,
   materializeInsertion,
   splitParagraph,
   startEmptyParagraphAbove,
@@ -32,7 +31,13 @@ import {
 } from './context';
 import { editorSelection, rangeOffsets } from './selection';
 import { isFenced, isQuoteLike, isRawRendered } from '../document/block_kinds';
-import { blankItemLineAt, hasChildBlock, itemSubtreeEnd, lineSpanAt } from '../syntax/lines';
+import {
+  blankItemLineAt,
+  hasChildBlock,
+  itemContinuation,
+  itemSubtreeEnd,
+  lineSpanAt
+} from '../syntax/lines';
 import { caretInTableCell, tableDeleteIsNoop } from './table';
 import {
   isOpeningBracket,
@@ -49,7 +54,12 @@ import {
   calloutBodyInsertion,
   readCallout
 } from '../syntax/callouts';
-import { emptyCalloutNewline, materializeCalloutBody } from '../syntax/callout_body';
+import { fencedDivAtOffset } from '../syntax/fenced_divs';
+import {
+  emptyCalloutNewline,
+  materializeCalloutBody,
+  materializeFencedDivBody
+} from '../syntax/callout_body';
 import {
   deleteBlankQuoteLine,
   emptyQuoteTyping,
@@ -121,6 +131,9 @@ function insertAt(
   let pair: BracketEdit | null = null;
   if (offsets.from === offsets.to) {
     const containerSource = block?.kind === 'quote' || block?.kind === 'fencedDiv';
+    const relative = block === null ? 0 : offsets.from - block.charStart;
+    const inPandocDiv =
+      block !== null && fencedDivAtOffset(block.text, relative) !== null;
     const literal =
       (!containerSource && sourceText) ||
       block?.kind === 'fencedCode' ||
@@ -131,7 +144,7 @@ function insertAt(
       placeCaret(context, offsets.from + 1);
       return true;
     }
-    pair = pairingFor(source, offsets.from, text, literal);
+    pair = pairingFor(source, offsets.from, text, literal, !inPandocDiv);
   }
   const materializedPair = isOpeningBracket(text) ? pair : null;
   const inserted = materializedPair?.insert ?? text;
@@ -154,6 +167,32 @@ function insertAt(
         block.text,
         relative,
         callout,
+        inserted,
+        caretWithin
+      );
+      if (body !== null) {
+        applyEdit(
+          context,
+          block.charStart + body.edit.from,
+          block.charStart + body.edit.to,
+          body.edit.replacement,
+          block.charStart + body.caret,
+          kind
+        );
+        return true;
+      }
+    }
+    const div = fencedDivAtOffset(block.text, relative);
+    if (
+      callout === null &&
+      div !== null &&
+      div.bodyFrom === div.bodyTo &&
+      relative === div.bodyFrom
+    ) {
+      const body = materializeFencedDivBody(
+        block.text,
+        relative,
+        div,
         inserted,
         caretWithin
       );
@@ -479,6 +518,10 @@ export function insertNewline(context: EditorContext): boolean {
   const source = context.state.getText();
   const item = blankItemLineAt(source, offsets.from);
   if (item) {
+    if (block.kind === 'fencedDiv') {
+      applyEdit(context, item.start, item.end, '', item.start);
+      return true;
+    }
     return exitBlankItem(context, item);
   }
   if (continueListItem(context, lineSpanAt(source, offsets.from), offsets)) {

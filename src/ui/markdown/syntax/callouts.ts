@@ -22,6 +22,7 @@ import {
   openingFence
 } from './markers';
 import type { TextEdit } from './edit_range';
+import { fencedDivAtOffset, readFencedDiv } from './fenced_divs';
 
 export type BuiltinCalloutKind =
   | 'note'
@@ -154,37 +155,108 @@ export function calloutHasBody(callout: CalloutSource): boolean {
 }
 
 /**
- * The edit that changes a closed fenced-Div callout's kind class.
+ * The edit that changes a closed fenced Div between Default and callout kinds.
  *
- * Only the existing `.callout-<kind>` token moves. IDs, other classes,
- * attributes, the body and both fences stay byte-for-byte as the author wrote
- * them.
+ * An existing callout changes only its `.callout-<kind>` token. A bare Div gains
+ * callout metadata at its opening; Default removes that metadata. IDs, other
+ * classes, attributes, the body and both fences stay byte-for-byte.
  */
 export function calloutKindEdit(text: string, kind: string, offset = 0): TextEdit | null {
-  if (!/^[a-z0-9][a-z0-9_-]*$/.test(kind)) {
+  if (kind !== 'default' && !/^[a-z0-9][a-z0-9_-]*$/.test(kind)) {
     return null;
   }
-  const callout = calloutAtOffset(text, offset);
-  const lineStart =
-    callout?.form === 'div'
-      ? text.lastIndexOf('\n', Math.max(0, callout.markerFrom - 1)) + 1
-      : 0;
+  const div = fencedDivAtOffset(text, offset);
+  if (div === null) {
+    return null;
+  }
+  const lineStart = text.lastIndexOf('\n', Math.max(0, div.markerFrom - 1)) + 1;
   const lineEnd = text.indexOf('\n', lineStart);
   const end = lineEnd < 0 ? text.length : lineEnd;
   const line = text.slice(lineStart, end);
   const attribute = attributeBlockAtEnd(line, line.length, false);
   if (attribute === null) {
-    return null;
+    return kind === 'default'
+      ? null
+      : {
+          from: div.markerFrom + div.fenceLength,
+          to: end,
+          replacement: ` {.callout .callout-${kind}}`
+        };
   }
   const token = calloutClassToken(attribute.source);
-  if (token === null) {
-    return null;
+  if (kind === 'default') {
+    const tokens = attributeTokens(attribute.source).filter(
+      (entry) => entry.text !== '.callout' && !CALLOUT_CLASS.test(entry.text.slice(1))
+    );
+    return {
+      from:
+        lineStart +
+        (tokens.length === 0
+          ? div.markerFrom + div.fenceLength
+          : attribute.from),
+      to: lineStart + attribute.to,
+      replacement:
+        tokens.length === 0
+          ? ''
+          : `{${tokens.map((entry) => entry.text).join(' ')}}`
+    };
   }
+  if (token !== null) {
+    return {
+      from: lineStart + attribute.from + token.from,
+      to: lineStart + attribute.from + token.to,
+      replacement: `callout-${kind}`
+    };
+  }
+  const tokens = attributeTokens(attribute.source);
+  const additions = [
+    ...(tokens.some((entry) => entry.text === '.callout') ? [] : ['.callout']),
+    `.callout-${kind}`
+  ];
   return {
-    from: lineStart + attribute.from + token.from,
-    to: lineStart + attribute.from + token.to,
-    replacement: `callout-${kind}`
+    from: lineStart + attribute.from + 1,
+    to: lineStart + attribute.from + 1,
+    replacement: `${additions.join(' ')} `
   };
+}
+
+function attributeTokens(source: string): Array<{ from: number; to: number; text: string }> {
+  const tokens: Array<{ from: number; to: number; text: string }> = [];
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  let start = -1;
+  for (let index = 1; index < source.length - 1; index += 1) {
+    const character = source[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (quote !== null) {
+      if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+    }
+    if (/\s/.test(character)) {
+      if (start >= 0) {
+        tokens.push({ from: start, to: index, text: source.slice(start, index) });
+        start = -1;
+      }
+    } else if (start < 0) {
+      start = index;
+    }
+  }
+  if (start >= 0) {
+    tokens.push({ from: start, to: source.length - 1, text: source.slice(start, source.length - 1) });
+  }
+  return tokens;
 }
 
 /** The class token after the dot, outside quoted attribute values. */
@@ -339,6 +411,47 @@ export function calloutsForParsers(markdown: string): string {
   return transformed;
 }
 
+/** Whether this source contains a complete fenced Div that is not a known callout. */
+export function hasGenericFencedDiv(source: string): boolean {
+  let codeFence: string | null = null;
+  let displayMath = false;
+  for (const line of sourceLines(source)) {
+    const content = quoteLine(line)?.content ?? line.text;
+    if (codeFence !== null) {
+      if (closingFence(content, codeFence)) {
+        codeFence = null;
+      }
+      continue;
+    }
+    const fence = openingFence(content);
+    if (fence !== null) {
+      codeFence = fence;
+      continue;
+    }
+    if (displayMath) {
+      if (content.trimEnd().endsWith('$$')) {
+        displayMath = false;
+      }
+      continue;
+    }
+    if (content.trimStart().startsWith('$$')) {
+      const first = content.indexOf('$$');
+      const closesOnLine =
+        content.indexOf('$$', first + 2) >= 0 && content.trimEnd().endsWith('$$');
+      displayMath = !closesOnLine;
+      continue;
+    }
+    if (!line.text.includes(':::')) {
+      continue;
+    }
+    const slice = source.slice(line.start);
+    if (readFencedDiv(slice) !== null && readCallout(slice) === null) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** A fenced Div is valid only when it and every enclosing fence closed. */
 function frameIsClosed(frame: DivFrame): boolean {
   for (let current: DivFrame | null = frame; current !== null; current = current.parent) {
@@ -432,29 +545,10 @@ function readDivCallout(
   if (opening === null) {
     return null;
   }
-  const firstQuote = quoteLine(lines[0]);
-  const depth = firstQuote?.depth ?? 0;
-  const prefix = firstQuote?.prefix ?? '';
-
-  let close = -1;
-  for (let index = 1; index < lines.length; index += 1) {
-    const quote = quoteLine(lines[index]);
-    if (depth > 0 && (quote === null || quote.depth < depth)) {
-      return null;
-    }
-    const content = quote?.content ?? lines[index].text;
-    const match = /^\s*(:{3,})\s*$/.exec(content);
-    if (match !== null && match[1].length >= opening.fenceLength) {
-      close = index;
-      break;
-    }
-  }
-  if (close < 0) {
+  const div = readFencedDiv(source);
+  if (div === null) {
     return null;
   }
-
-  const firstBody = lines[1];
-  const closing = lines[close];
   return {
     form: 'div',
     kind: opening.kind,
@@ -463,14 +557,14 @@ function readDivCallout(
     id: opening.attribute.id,
     classes: opening.attribute.classes,
     attributes: opening.attribute.attributes,
-    from,
-    to: from + closing.end,
-    markerFrom: from + (firstQuote?.prefixEnd ?? 0),
-    markerTo: from + lines[0].end,
-    bodyFrom: from + (firstBody?.start ?? closing.start),
-    bodyTo: from + closing.start,
-    quoteDepth: depth,
-    quotePrefix: prefix,
+    from: from + div.from,
+    to: from + div.to,
+    markerFrom: from + div.markerFrom,
+    markerTo: from + div.markerTo,
+    bodyFrom: from + div.bodyFrom,
+    bodyTo: from + div.bodyTo,
+    quoteDepth: div.quoteDepth,
+    quotePrefix: div.quotePrefix,
     source
   };
 }

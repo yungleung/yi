@@ -1,5 +1,5 @@
 /**
- * Pure line edits inside blockquotes, GitHub-style callouts and callout Divs.
+ * Pure line edits inside blockquotes, GitHub-style callouts and Pandoc Divs.
  *
  * The active quote depth is supplied by the editor. Paragraph breaks use the
  * full prefix chain, a second Enter removes exactly one level, and completed
@@ -14,7 +14,8 @@
  */
 
 import type { TextEdit } from './edit_range';
-import { calloutAtOffset } from './callouts';
+import { fencedDivAtOffset } from './fenced_divs';
+import { isBlankItemLine, itemContinuation, lineSpanAt } from './lines';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -142,15 +143,23 @@ export function deleteBlankQuoteLine(text: string, offset: number): QuoteEdit | 
  * lines. A quoted Div also keeps the exact quote carrier visible on its line.
  */
 export function fencedDivNewline(text: string, offset: number): QuoteEdit | null {
-  const callout = calloutAtOffset(text, offset);
+  const div = fencedDivAtOffset(text, offset);
   if (
-    callout?.form !== 'div' ||
-    offset < callout.bodyFrom ||
-    offset > callout.bodyTo
+    div === null ||
+    offset < div.bodyFrom ||
+    offset > div.bodyTo
   ) {
     return null;
   }
   const current = quoteLineAt(text, offset);
+  const plainLine = lineSpanAt(text, offset);
+  const content = current?.content ?? text.slice(plainLine.start, plainLine.end);
+  if (
+    isBlankItemLine(content) ||
+    itemContinuation(content) !== null
+  ) {
+    return null;
+  }
   const prefix =
     current === null ? '' : text.slice(current.start, current.prefixEnd);
   const replacement = `\n${prefix}`;

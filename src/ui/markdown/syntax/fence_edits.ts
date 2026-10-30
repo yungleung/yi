@@ -13,8 +13,9 @@
  * function of the block's text.
  */
 
-import { fenceBody, openingFence } from './markers';
+import { closingFence, fenceBody, openingFence } from './markers';
 import { lineSpanAt } from './lines';
+import { quoteLineAt } from './quote_edits';
 import type { TextEdit } from './edit_range';
 
 /** What a write inside a fenced block does, in the block's own offsets. */
@@ -88,18 +89,68 @@ function lineOfItsOwn(text: string, body: { start: number; end: number }, line: 
  * separator the author wrote — one space, or none at all, both of which markdown reads as the info
  * string (`syntax/markers.ts: fenceLanguage`) — is kept as they wrote it.
  */
-export function fenceLanguageEdit(text: string, language: string): TextEdit | null {
-  const line = lineSpanAt(text, 0);
-  const raw = text.slice(line.start, line.end);
-  const fence = openingFence(raw);
+export function fenceLanguageEdit(
+  text: string,
+  language: string,
+  at = 0
+): TextEdit | null {
+  const fences: Array<{
+    fence: string;
+    lineStart: number;
+    contentStart: number;
+    lineEnd: number;
+    bodyFrom: number;
+    bodyTo: number;
+  }> = [];
+  let open: (typeof fences)[number] | null = null;
+  for (let cursor = 0; cursor <= text.length; ) {
+    const line = lineSpanAt(text, cursor);
+    const quoted = quoteLineAt(text, line.start);
+    const contentStart = quoted?.prefixEnd ?? line.start;
+    const content = text.slice(contentStart, line.end);
+    if (open === null) {
+      const fence = openingFence(content);
+      if (fence !== null) {
+        open = {
+          fence,
+          lineStart: line.start,
+          contentStart,
+          lineEnd: line.end,
+          bodyFrom: Math.min(text.length, line.end + 1),
+          bodyTo: text.length
+        };
+      }
+    } else if (closingFence(content, open.fence)) {
+      open.bodyTo = line.start;
+      fences.push(open);
+      open = null;
+    }
+    if (line.end >= text.length) {
+      break;
+    }
+    cursor = line.end + 1;
+  }
+  const containing = fences.filter(
+    (entry) => at >= entry.bodyFrom && at <= entry.bodyTo
+  );
+  const target =
+    containing[containing.length - 1] ??
+    fences.find((entry) => at <= entry.lineEnd) ??
+    fences[0] ??
+    null;
+  if (target === null) {
+    return null;
+  }
+  const content = text.slice(target.contentStart, target.lineEnd);
+  const fence = openingFence(content);
   if (fence === null) {
     return null;
   }
-  const after = raw.indexOf(fence) + fence.length;
-  const separated = raw.slice(after).startsWith(' ') || raw.slice(after).startsWith('\t');
+  const after = content.indexOf(fence) + fence.length;
+  const separated = content.slice(after).startsWith(' ') || content.slice(after).startsWith('\t');
   return {
-    from: line.start + after,
-    to: line.end,
+    from: target.contentStart + after,
+    to: target.lineEnd,
     replacement: language === '' ? '' : `${separated ? ' ' : ''}${language}`
   };
 }

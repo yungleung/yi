@@ -697,7 +697,9 @@ namespaced `yilist` object counter and native labels/references, with
 and export probes hold the feature.
 
 **A callout is either a GitHub alert blockquote or an attributed Pandoc fenced
-Div.** `syntax/callouts.ts` owns both grammars, exact source ranges, five
+Div.** `syntax/fenced_divs.ts` owns complete colon fences, nesting, quote carriers
+and body ranges for all Pandoc Divs. `syntax/callouts.ts` classifies the callout
+subset and owns its metadata, exact source ranges, five
 fixed English built-in titles, custom Div titles and offset-preserving parser
 normalisation. `plugins/remark-callouts.ts` converts both forms to one
 positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
@@ -713,8 +715,14 @@ body anchor is reachable by Left or Right and materialised only on typing. An
 empty list item exits to the quote/callout body as one block-relative edit, and
 ordinary quotes render with a two-sided inset and one oversized opening mark
 instead of the typography plugin's side rule and paired quote glyphs.
-A typed `:::` creates a closed Note Div and opens
-`editing/callout_kind_picker.ts`; a Div body inserts one newline per Enter and
+Unknown Pandoc Divs such as columns, speaker notes, wrappers and incremental
+lists always render as exact source through `nodes/fenced_div_source.ts`; a
+quote or callout containing one also falls back to complete source.
+A typed `:::` creates a closed bare Default Div and opens
+`editing/callout_kind_picker.ts` with Default plus the six callout choices; a
+callout choice adds only its class metadata. A Div body inserts one newline per
+Enter after the child list/table/code/equation rules decline it, and a single
+backtick is literal there while three typed backticks open a nested code fence.
 accepts repeated blank lines with the caret left on the newest.
 `ui/export/callout_rewrites.ts` lowers both authoring forms to one semantic
 `.callout` / `.callout-<kind>` / `.callout-title` Div before all overlapping

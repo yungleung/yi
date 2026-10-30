@@ -12,7 +12,7 @@
  * - `frontmatter`: a `---` fence at the very start of the document, through its
  *   closing `---` or `...`;
  * - `quote`: one contiguous stack of lines carrying blockquote markers;
- * - `fencedDiv`: a callout-bearing Pandoc fenced Div, through its closing fence;
+ * - `fencedDiv`: any complete Pandoc fenced Div, through its closing fence;
  * - `fencedCode`: an opening fence through the closing fence (blank lines
  *   are allowed inside);
  * - `displayMath`: `$$` … `$$` (blank lines are allowed inside);
@@ -45,7 +45,7 @@ import { isTableCaptionLine } from '../syntax/table_captions';
 import { listCaptionLine } from '../syntax/list_captions';
 import { readTableSource } from '../syntax/table_source';
 import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
-import { readCallout } from '../syntax/callouts';
+import { readFencedDiv } from '../syntax/fenced_divs';
 import { BlockIndex, type BlockEntry } from './block_index';
 import { isRawRendered, type BlockKind } from './block_kinds';
 import type { DocumentEdit } from './history';
@@ -564,13 +564,13 @@ function* blocksFrom(
       continue;
     }
 
-    // A callout-bearing fenced Div must be one block even when its body has
-    // ordinary blank lines. `readCallout` has already proved that every nested
-    // fence closes for the source after this line.
+    // A fenced Div must be one block even when its body has ordinary blank
+    // lines or nested Divs. `readFencedDiv` proves that every fence closes for
+    // the source after this line.
     if (first.text.includes(':::')) {
-      const callout = readCallout(text.slice(charStart));
-      if (callout?.form === 'div' && callout.to > 0) {
-        const end = charStart + callout.to;
+      const div = readFencedDiv(text.slice(charStart));
+      if (div !== null && div.to > 0) {
+        const end = charStart + div.to;
         let close = i;
         while (close < lines.length && lines[close].end <= end) {
           lineEnd = lines[close].number;

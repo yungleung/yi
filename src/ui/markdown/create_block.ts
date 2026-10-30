@@ -18,6 +18,7 @@ import { FenceText, type FenceTextStyle } from './nodes/fence_text';
 import { Equation, EquationSource } from './nodes/equation';
 import { QuoteSourceView } from './nodes/quote_source';
 import { CalloutSourceView } from './nodes/callout_source';
+import { FencedDivSourceView } from './nodes/fenced_div_source';
 import { Caption } from './nodes/caption';
 import { fenceLabel } from './nodes/fence_label';
 import { chooseLanguage } from './editing/language_picker';
@@ -116,6 +117,10 @@ class BlockView implements BlockComponent {
     if (callout !== null) {
       element.classList.add('markdown-callout-block');
       element.appendChild(new CalloutSourceView(node).element);
+      return element;
+    }
+    if (node.kind === 'fencedDiv') {
+      element.appendChild(new FencedDivSourceView(node).element);
       return element;
     }
     if (node.kind === 'quote') {

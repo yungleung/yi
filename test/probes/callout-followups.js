@@ -109,12 +109,15 @@
     .getCaretRange()
     ?.getBoundingClientRect() ?? null;
   const cardBox = pickerCard?.getBoundingClientRect() ?? null;
+  const pickerBesideCaret =
+    caretBox !== null &&
+    cardBox !== null &&
+    Math.abs(cardBox.left - caretBox.left) < 320 &&
+    (Math.abs(cardBox.bottom - caretBox.top) < 24 ||
+      Math.abs(cardBox.top - caretBox.bottom) < 24);
   check(
     'the callout picker opens beside the caret inside a callout',
-    caretBox !== null &&
-      cardBox !== null &&
-      Math.abs(cardBox.left - caretBox.left) < 320 &&
-      Math.abs(cardBox.top - caretBox.top) < 120,
+    pickerBesideCaret,
     true
   );
   t.key('Escape');
@@ -152,9 +155,9 @@
     ['display math', ['$', '$'], 'Before\n\n$$\n\n$$\n\nAfter\n'],
     ['code fence', ['`', '`', '`'], 'Before\n\n```\n\n```\n\nAfter\n'],
     [
-      'fenced-Div callout',
+      'default fenced Div',
       [':', ':', ':'],
-      'Before\n\n::: {.callout .callout-note}\n\n:::\n\nAfter\n'
+      'Before\n\n:::\n\n:::\n\nAfter\n'
     ]
   ]) {
     await t.load('Before\n\n\nAfter\n');
@@ -168,11 +171,11 @@
       );
       t.key('Escape');
     }
-    if (name === 'fenced-Div callout') {
+    if (name === 'default fenced Div') {
       check(
-        'the callout-kind picker opens on an ordinary blank line',
+        'the Div-kind picker opens on an ordinary blank line',
         document.querySelectorAll('[data-callout-kind-choice]').length,
-        6
+        7
       );
     }
     const raw = await t.raw();
