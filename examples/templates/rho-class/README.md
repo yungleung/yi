@@ -44,10 +44,12 @@ article.
 
 Yi callouts arrive as semantic `.callout` Divs. `callout.lua` maps
 `.callout-note` and `.callout-info` to the class's **Note** and **Information**
-environments, removes Yi's generated title child, and leaves ordinary Pandoc
-output alone.
-Fenced code, figures, tables, footnotes, mathematics and citations use
-Pandoc's ordinary Markdown output rather than template-specific syntax.
+environments. It removes Yi's generated default title, while a custom callout
+title is retained as the bold lead-in used by the original example. Ordinary
+Pandoc Divs are left alone. Fenced code, figures, tables, footnotes,
+mathematics and citations use Pandoc's ordinary Markdown output rather than
+template-specific syntax. The example figure uses 70% of the column width,
+matching the upstream Rho Class example in a two-column document.
 `table.lua` turns the ordinary Markdown table into a full-width `table*`
 because `longtable` cannot run in this two-column class.
 

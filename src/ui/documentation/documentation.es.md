@@ -277,6 +277,9 @@ presentacion/
   js/dist/
 ```
 
+`examples/revealjs.md` usa una imagen incluida, por lo que su exportación local predeterminada
+también funciona sin conexión.
+
 La tarjeta ofrece dos opciones independientes, ambas desactivadas por omisión:
 
 - **Use remote Reveal.js resources** conserva las URL CDN fijadas por Pandoc. Si está desactivada,
@@ -320,6 +323,8 @@ Pandoc defaults normales para writer, motor PDF, resaltado, variables de página
 ## Paquetes de plantillas
 
 Un paquete vive en los datos de exportación de Yi, fuera del espacio de trabajo y de la sesión.
+El selector muestra solo paquetes del tipo de exportación elegido. Un paquete cuyo manifiesto no se
+puede leer sigue visible para poder eliminarlo, pero no se puede usar ni editar.
 
 ```text
 example-latex/

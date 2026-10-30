@@ -41,14 +41,29 @@
     return false;
   };
   let importedId = null;
+  let incompatibleId = null;
   try {
+    const incompatible = await api.importTemplate({
+      source: `${checkout}test/fixtures/templates/latex-kit`,
+      name: `Incompatible LaTeX ${stamp}`,
+      kind: 'latex',
+      entry: 'main.tex',
+      source_url: null,
+      license: null,
+      map_title: false,
+      map_author: false
+    });
+    incompatibleId = incompatible.id;
+    await configManager.update({
+      export_templates: { ...(configManager.get()?.export_templates ?? {}), html: incompatibleId }
+    });
     await invoke('plugin:event|emit', { event: 'export', payload: 'html' });
     check('the export card opens with a Template row', await until(() => visible('[data-export-dialog]')), {
       open: visible('[data-export-dialog]')
     });
     const row = document.querySelector('[data-export-template]');
     check(
-      'and it starts at pandoc’s default',
+      'and a package remembered for another kind is not used or shown',
       (row?.textContent ?? '').includes("Pandoc's default"),
       row?.textContent ?? null
     );
@@ -57,6 +72,14 @@
     check('Choose… opens the package library', await until(() => visible('[data-template-library]')), {
       open: visible('[data-template-library]')
     });
+    check(
+      'the chooser lists only packages for the chosen HTML kind',
+      document.querySelector(`[data-template-package-id="${incompatibleId}"]`) === null,
+      {
+        incompatible: document.querySelector(`[data-template-package-id="${incompatibleId}"]`)
+          ?.textContent
+      }
+    );
     document.querySelector('[data-template-import-path]').value = `${checkout}test/fixtures/templates/html-marker`;
     document.querySelector('[data-template-inspect-path]').click();
     check(
@@ -178,9 +201,12 @@
     );
     document.querySelector('[data-export-cancel]').click();
   } finally {
-    if (importedId !== null) {
+    for (const id of [importedId, incompatibleId]) {
+      if (id === null) {
+        continue;
+      }
       try {
-        await api.removeTemplate(importedId);
+        await api.removeTemplate(id);
       } catch {
         // A package the probe never got as far as making.
       }

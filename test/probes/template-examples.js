@@ -513,6 +513,7 @@
         'rho-class: the example is a supported Markdown research article',
         [
           'Seeing Structure in a Noisy Sky',
+          'Calibration assumption.',
           'Shared drifts are treated as common-mode signal',
           'Observing Model'
         ].every((text) => visible.includes(text)) &&
@@ -554,6 +555,7 @@
           'mirachen',
           'eliasward',
           'noorpatel',
+          'calibrationassumption',
           'shareddriftsaretreatedascommonmodesignal',
           'rhosinfoenvironment',
           'figure1',

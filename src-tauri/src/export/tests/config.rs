@@ -38,6 +38,27 @@
 
         let _ = fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn the_first_reveal_defaults_copy_is_migrated_but_an_edit_is_kept() {
+        let dir = scratch("reveal-defaults-migration");
+        let kind = kind_of("revealjs").unwrap();
+        let path = ensure_defaults_in(&dir, kind).unwrap();
+        let legacy = kind.defaults.replace(
+            "variables:\n  incremental: false\n  controls: true\n  progress: true\n  history: true",
+            "incremental: false\ncontrols: true\nprogress: true\nhistory: true\nvariables: {}"
+        );
+        fs::write(&path, &legacy).unwrap();
+
+        ensure_defaults_in(&dir, kind).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), kind.defaults);
+
+        fs::write(&path, format!("{legacy}\n# reader edit\n")).unwrap();
+        ensure_defaults_in(&dir, kind).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), format!("{legacy}\n# reader edit\n"));
+        let _ = fs::remove_dir_all(dir);
+    }
+
     #[test]
     fn the_kind_pandoc_does_not_write_is_the_kind_with_no_defaults_file() {
         // One fact, one home: a row that says the app writes this kind says it by having nothing to

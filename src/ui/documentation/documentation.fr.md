@@ -281,6 +281,9 @@ presentation/
   js/dist/
 ```
 
+`examples/revealjs.md` utilise une image fournie ; son export local par défaut fonctionne donc
+aussi hors connexion.
+
 La carte propose deux choix indépendants, désactivés par défaut :
 
 - **Use remote Reveal.js resources** conserve les URL CDN fixées par Pandoc. Sinon, Yi télécharge
@@ -324,7 +327,9 @@ ressources.
 ## Paquets de modèles
 
 Un paquet est un dossier dans les données d’export de Yi. Il n’appartient pas à l’espace de travail et
-n’entre pas dans la pile de session.
+n’entre pas dans la pile de session. Le sélecteur ne montre que les paquets du type d’export choisi.
+Un paquet dont le manifeste est illisible reste visible pour pouvoir être supprimé, mais ne peut être
+ni utilisé ni modifié.
 
 ```text
 example-latex/

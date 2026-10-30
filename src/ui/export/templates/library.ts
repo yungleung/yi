@@ -32,6 +32,7 @@ import { templateDetailsDialog } from './details';
 import { templateEditorPanel } from './editor';
 import { importProposalDialog } from './import_dialog';
 import { kindLabel } from './kind_label';
+import { offeredForKind, offeredPackages } from './offering';
 
 /** What the chooser answers: an id, null for pandoc's default, or nothing for cancel. */
 export interface TemplateChoice {
@@ -162,7 +163,7 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
     this.path.value = '';
     this.heading.textContent = t('template.libraryTitle', { kind: kindLabel(kind) });
     this.packages = await exportTemplates();
-    if (this.selected !== null && !this.packages.some((summary) => summary.id === this.selected)) {
+    if (!this.offeredPackages().some((summary) => summary.id === this.selected)) {
       this.selected = null;
     }
     this.render();
@@ -184,10 +185,11 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
   private render(): void {
     this.list.replaceChildren();
     this.list.append(this.defaultRow());
-    for (const summary of this.packages) {
+    for (const summary of this.offeredPackages()) {
       this.list.append(this.packageRow(summary));
     }
-    const selected = this.packages.find((summary) => summary.id === this.selected) ?? null;
+    const selected =
+      this.offeredPackages().find((summary) => summary.id === this.selected) ?? null;
     const usable =
       selected === null ||
       (selected.manifest !== null && selected.manifest.kind === this.kind);
@@ -195,6 +197,15 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
     this.detailsButton.disabled = selected === null || selected.manifest === null;
     this.duplicateButton.disabled = selected === null || selected.manifest === null;
     this.removeButton.disabled = selected === null;
+  }
+
+  /**
+   * The packages this export kind can offer. A broken manifest has no readable kind, but remains
+   * visible so the reader can still select and remove it; a readable package for another kind is
+   * not a choice here at all.
+   */
+  private offeredPackages(): TemplateSummary[] {
+    return offeredPackages(this.packages, this.kind);
   }
 
   private defaultRow(): HTMLElement {
@@ -310,7 +321,7 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
 
   private async afterCreated(created: TemplateSummary): Promise<void> {
     this.packages = await exportTemplates();
-    this.selected = created.id;
+    this.selected = offeredForKind(created, this.kind) ? created.id : null;
     this.render();
     // The generated entry is what the reader came for, so it opens ready to read and edit.
     await templateEditorPanel.openPackage(created, () => void this.refresh());
@@ -320,7 +331,7 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
     this.packages = await exportTemplates();
     if (
       this.selected !== null &&
-      !this.packages.some((summary) => summary.id === this.selected)
+      !this.offeredPackages().some((summary) => summary.id === this.selected)
     ) {
       this.selected = null;
     }

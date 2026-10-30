@@ -234,6 +234,8 @@ presentation/
   js/dist/
 ```
 
+`examples/revealjs.md` 使用隨附圖片，因此預設的本機匯出可在離線時正常運作。
+
 卡片有兩個彼此獨立的選項，預設都關閉：
 
 - **Use remote Reveal.js resources** 保留 Pandoc 固定的 CDN URL；關閉時，Yi 將 Reveal.js 的
@@ -277,7 +279,8 @@ PDF 以外的格式仍可使用。缺少的 TeX 套件由安裝 TeX 的套件管
 
 ## 範本套件
 
-範本套件位於 Yi 匯出資料目錄，不屬於工作區，也不會進入工作階段堆疊。
+範本套件位於 Yi 匯出資料目錄，不屬於工作區，也不會進入工作階段堆疊。選擇器只顯示符合目前
+匯出類型的範本套件。清單無法讀取的範本套件仍會顯示以便刪除，但不能使用或編輯。
 
 ```text
 example-latex/

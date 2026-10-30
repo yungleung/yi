@@ -1,13 +1,17 @@
 use super::*;
 use super::run::{named_arguments, request_in};
+use crate::export::revealjs::{revealjs_download_url, REVEALJS_CDN};
 
 #[test]
 fn revealjs_output_is_a_folder_with_a_named_page() {
     let root = scratch("revealjs-output");
-    let (bundle, page) = revealjs_output(root.join("talk").to_str().unwrap()).unwrap();
+    let (bundle, page, created) = revealjs_output(root.join("talk").to_str().unwrap()).unwrap();
     assert_eq!(bundle, root.join("talk"));
     assert_eq!(page, bundle.join("talk.html"));
+    assert!(created);
     assert!(bundle.is_dir());
+    let (_, _, created_again) = revealjs_output(root.join("talk").to_str().unwrap()).unwrap();
+    assert!(!created_again);
     let _ = fs::remove_dir_all(root);
 }
 
@@ -42,6 +46,15 @@ fn revealjs_local_asset_references_are_unique() {
             PathBuf::from("js/dist/reveal.js")
         ]
     );
+}
+
+#[test]
+fn revealjs_downloads_distribution_files_from_the_package_dist_folder() {
+    assert_eq!(
+        revealjs_download_url(REVEALJS_CDN, "js/dist/theme/black.css").unwrap(),
+        "https://unpkg.com/reveal.js@6.0.1/dist/theme/black.css"
+    );
+    assert!(revealjs_download_url(REVEALJS_CDN, "images/shot.png").is_err());
 }
 
 #[test]

@@ -210,6 +210,40 @@
         remoteAll.page.includes(imageUrl),
       remoteAll.page?.match(/https:\/\/unpkg\.com\/[^"']+/g)?.slice(0, 2)
     );
+
+    await invoke('export_use_revealjs_cdn', {
+      base: `${window.__probeHttpBase}/missing-revealjs`
+    });
+    const failureTarget = `${folder}/failed`;
+    const messagesBefore = new Set(
+      [...document.querySelectorAll('[data-message-text]')].map((element) => element.textContent)
+    );
+    await invoke('plugin:event|emit', { event: 'export', payload: 'revealjs' });
+    await until(() => open(), 60);
+    const failureCard = card();
+    const failureInput = failureCard.querySelector('[data-export-target]');
+    failureInput.value = failureTarget;
+    failureInput.dispatchEvent(new Event('input', { bubbles: true }));
+    failureCard.querySelector('[data-export-run]').click();
+    const failed = await until(
+      () =>
+        [...document.querySelectorAll('[data-message-text]')].some(
+          (element) => !messagesBefore.has(element.textContent)
+        ),
+      200
+    );
+    const failedEntries = await files.listFolderFiles(failureTarget).catch(() => []);
+    check(
+      'a failed Reveal.js export reports the error and removes its new partial bundle',
+      failed && failedEntries.length === 0 && !(await exists(failureTarget)),
+      {
+        failed,
+        entries: failedEntries.map((entry) => entry.basename),
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
+      }
+    );
   } finally {
     try {
       await files.deleteEntry(folder);

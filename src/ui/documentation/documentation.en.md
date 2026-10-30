@@ -753,6 +753,8 @@ presentation/
   js/dist/
 ```
 
+`examples/revealjs.md` uses a bundled picture, so its default local export also works offline.
+
 The card offers two independent choices, both off by default:
 
 - **Use remote Reveal.js resources** keeps Pandoc's pinned CDN URLs. Otherwise Yi downloads the
@@ -815,7 +817,9 @@ the same Pandoc vocabulary.
 ## Template packages
 
 A template package is a directory under Yi's export-data folder. It is not a note, never appears in
-the workspace tree, and never enters the session stack.
+the workspace tree, and never enters the session stack. The package chooser lists only packages for
+the export kind you chose. A package whose manifest cannot be read remains listed so you can select
+and remove it, but it cannot be used or edited.
 
 ```text
 example-latex/

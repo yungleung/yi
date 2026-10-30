@@ -33,10 +33,11 @@ presentation metadata.
 
 ## Pictures can be local or remote
 
-![A web picture](https://placehold.co/600x240/png)
+![A local slide picture](assets/presentation-demo.svg)
 
-By default, Yi downloads pictures into `images/` and Reveal.js into `js/dist/`. The export card
-can keep either family remote for a particular export.
+This picture travels with the example, so the default fully local export works offline. Yi copies
+local pictures into `images/` and Reveal.js into `js/dist/`. The export card can keep either family
+remote for a particular export.
 
 ## Markdown features still work
 

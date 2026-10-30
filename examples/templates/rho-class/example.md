@@ -72,7 +72,7 @@ $$
 The approximation is useful only while the calibration transfer functions are
 stable over the interval being combined.
 
-::: {.callout .callout-note}
+::: {.callout .callout-note title="Calibration assumption."}
 Shared drifts are treated as common-mode signal. A detector whose drift
 departs from the array median is excluded before the sky model is fitted,
 and that exclusion is recorded in the result.
@@ -86,7 +86,7 @@ measurement from a stable reference source. The reference route is deliberately
 independent of the sky path, which makes the calibration residual available as
 a diagnostic rather than an assumption.
 
-![Residuals from the six-channel demonstration. The common mode is removed before the weighted mean is formed.](figures/sensor-residuals.pdf)
+![Residuals from the six-channel demonstration. The common mode is removed before the weighted mean is formed.](figures/sensor-residuals.pdf){width=70%}
 
 Table 1 summarizes the channel weights and the resulting uncertainty before and
 after shared calibration.[^weights]

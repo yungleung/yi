@@ -40,8 +40,35 @@ pub(super) fn ensure_defaults_in(dir: &Path, kind: &ExportKind) -> Result<PathBu
     if !path.exists() {
         fs::write(&path, kind.defaults)
             .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
+    } else if fs::read_to_string(&path)
+        .ok()
+        .is_some_and(|text| legacy_revealjs_defaults(kind).as_deref() == Some(text.as_str()))
+    {
+        // The first Reveal.js build wrote four template variables as top-level Pandoc options,
+        // which Pandoc rejects. Replace only that exact shipped copy; any reader edit changes the
+        // bytes and is therefore kept.
+        crate::files::write_atomically(&path, kind.defaults).map_err(|error| {
+            crate::i18n::now(
+                "export.cannotWrite",
+                &[
+                    ("path", &path.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
+            )
+        })?;
     }
     Ok(path)
+}
+
+/// The exact defaults text the first Reveal.js build wrote, derived from the corrected shipped
+/// copy so the migration has one source for every other byte.
+fn legacy_revealjs_defaults(kind: &ExportKind) -> Option<String> {
+    (kind.kind == "revealjs").then(|| {
+        kind.defaults.replace(
+            "variables:\n  incremental: false\n  controls: true\n  progress: true\n  history: true",
+            "incremental: false\ncontrols: true\nprogress: true\nhistory: true\nvariables: {}",
+        )
+    })
 }
 
 /// The name a style file may have: the style's own name when it is one, and `style` when it is not.

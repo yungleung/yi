@@ -243,6 +243,8 @@ presentation/
   js/dist/
 ```
 
+`examples/revealjs.md` 使用随附图片，因此默认的本地导出可在离线时正常工作。
+
 导出卡片有两个相互独立的选项，默认都关闭：
 
 - **Use remote Reveal.js resources** 保留 Pandoc 固定的 CDN URL；关闭时，Yi 把 Reveal.js 的
@@ -293,7 +295,8 @@ xelatex --version
 
 ## 模板包
 
-模板包位于 Yi 的导出数据目录，不属于工作区，也不会进入会话栈。
+模板包位于 Yi 的导出数据目录，不属于工作区，也不会进入会话栈。选择器只显示与当前导出类型
+匹配的模板包。清单无法读取的模板包仍会显示以便删除，但不能使用或编辑。
 
 ```text
 example-latex/

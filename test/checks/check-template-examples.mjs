@@ -45,6 +45,13 @@ for (const [kind, path] of Object.entries(presentationExamples)) {
         /^slide-level: 2$/m.test(source) &&
         /^## /m.test(source)
     );
+    if (kind === 'revealjs') {
+      check(
+        'the Reveal.js example uses a bundled picture rather than depending on the network',
+        /^!\[[^\]]*\]\(assets\/presentation-demo\.svg\)$/m.test(source) &&
+          existsSync(join(exampleRoot, 'assets/presentation-demo.svg'))
+      );
+    }
   }
 }
 for (const kind of kinds) {
@@ -837,20 +844,20 @@ if (existsSync(join(rhoClass, 'template.json'))) {
   );
   check(
     'rho-class: the example uses supported Markdown and exercises the article layout',
-    /::: \{\.callout \.callout-note\}/m.test(example) &&
+    /::: \{\.callout \.callout-note title="Calibration assumption\."\}/m.test(example) &&
       /::: \{\.callout \.callout-info title="Information"\}/m.test(example) &&
       !/^> \*\*Calibration assumption\.\*\*/m.test(example) &&
       /^```python$/m.test(example) &&
-      /^!\[[^\]]*\]\(figures\/sensor-residuals\.pdf\)$/m.test(example) &&
+      /^!\[[^\]]*\]\(figures\/sensor-residuals\.pdf\)\{width=70%\}$/m.test(example) &&
       /^\| Channel \|/m.test(example) &&
       /\\hat\{s\}/.test(example) &&
-      /^\[\^weights\]:/m.test(example) &&
-      !/\]\{|\)\{/.test(example)
+      /^\[\^weights\]:/m.test(example)
   );
   check(
-    'rho-class: the filter maps semantic callouts to Rho environments',
+    'rho-class: the filter maps semantic callouts to Rho environments and keeps custom titles',
     /callout-note/.test(calloutFilter) &&
       /callout-info/.test(calloutFilter) &&
+      /pandoc\.Strong/.test(calloutFilter) &&
       /RawBlock/.test(calloutFilter)
   );
   check(
@@ -913,9 +920,10 @@ if (existsSync(join(rhoClass, 'template.json'))) {
         rendered.stdout.slice(-2500)
       );
       check(
-        'rho-class: Note and Information titles are rendered once',
+        'rho-class: Note, Information and the author callout title are rendered once',
         (renderedText.match(/\bNote\b/g) ?? []).length === 1 &&
-          (renderedText.match(/\bInformation\b/g) ?? []).length === 1,
+          (renderedText.match(/\bInformation\b/g) ?? []).length === 1 &&
+          (renderedText.match(/\bCalibration assumption\b/g) ?? []).length === 1,
         rendered.stdout.slice(-2500)
       );
     }

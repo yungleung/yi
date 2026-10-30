@@ -274,6 +274,9 @@ apresentacao/
   js/dist/
 ```
 
+`examples/revealjs.md` usa uma imagem incluída, então sua exportação local padrão também funciona
+offline.
+
 O cartão oferece duas opções independentes, ambas desativadas por padrão:
 
 - **Use remote Reveal.js resources** mantém as URLs CDN fixadas pelo Pandoc. Caso contrário, o Yi
@@ -315,7 +318,9 @@ comuns para writer, motor PDF, realce, variáveis de página, filtros e caminhos
 
 ## Pacotes de modelos
 
-O pacote fica nos dados de exportação do Yi, fora do espaço de trabalho e da sessão.
+O pacote fica nos dados de exportação do Yi, fora do espaço de trabalho e da sessão. O seletor
+mostra apenas pacotes do tipo de exportação escolhido. Um pacote cujo manifesto não pode ser lido
+continua visível para remoção, mas não pode ser usado nem editado.
 
 ```text
 example-latex/

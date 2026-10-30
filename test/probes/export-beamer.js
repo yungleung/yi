@@ -10,6 +10,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
+  const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -84,6 +85,9 @@
     await files.createEntry(folder, 'talk.md', true);
     await files.writeTextAtomically(notePath, note);
     await t.openWorkspace(folder);
+    await configManager.update({
+      bibliography_file: `${window.__probePaths.checkout}test/fixtures/workspace/zotero.bib`
+    });
     await show();
 
     await invoke('plugin:event|emit', { event: 'export', payload: 'beamer' });

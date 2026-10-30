@@ -287,6 +287,9 @@ praesentation/
   js/dist/
 ```
 
+`examples/revealjs.md` verwendet ein mitgeliefertes Bild; der standardmäßig lokale Export
+funktioniert daher auch offline.
+
 Die Karte bietet zwei unabhängige Optionen, standardmäßig beide aus:
 
 - **Use remote Reveal.js resources** behält die von Pandoc festgelegten CDN-URLs. Sonst lädt Yi
@@ -333,6 +336,8 @@ Ressourcenpfade.
 ## Vorlagenpakete
 
 Vorlagenpakete liegen im Exportdatenordner von Yi, nicht im Arbeitsbereich und nicht in der Sitzung.
+Die Paketauswahl zeigt nur Pakete für die gewählte Exportart. Ein Paket mit unlesbarem Manifest
+bleibt auswählbar, damit es entfernt werden kann; verwenden oder bearbeiten lässt es sich nicht.
 
 ```text
 example-latex/

@@ -40,7 +40,7 @@ pub(crate) fn use_revealjs_cdn(base: Option<String>) -> Result<(), String> {
 }
 
 /// The bundle folder and its generated page.
-pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf), String> {
+pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf, bool), String> {
     let requested = Path::new(requested);
     let extension = requested
         .extension()
@@ -61,6 +61,7 @@ pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf), Str
             &[("file", &bundle.display().to_string())],
         ));
     }
+    let created = !bundle.exists();
     fs::create_dir_all(&bundle).map_err(|error| {
         crate::i18n::now(
             "export.cannotMake",
@@ -76,7 +77,7 @@ pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf), Str
         .filter(|name| !name.is_empty())
         .unwrap_or_else(|| "presentation".to_string());
     let page = bundle.join(format!("{name}.html"));
-    Ok((bundle, page))
+    Ok((bundle, page, created))
 }
 
 /// Validate one relative Reveal.js distribution path.
@@ -112,6 +113,19 @@ pub(crate) fn revealjs_asset_references(html: &str) -> Vec<PathBuf> {
     references
 }
 
+/// The upstream distribution URL for one page-local `js/dist/...` reference.
+///
+/// Pandoc's local Reveal.js URL is the output folder's `js` directory, so it writes `js/dist/...`.
+/// The pinned package root, however, contains `dist/...`; the downloader must remove that local
+/// `js/` prefix instead of asking the CDN for a path that does not exist.
+pub(crate) fn revealjs_download_url(base: &str, reference: &str) -> Result<String, String> {
+    let relative = reference
+        .strip_prefix("js/")
+        .ok_or_else(|| crate::i18n::now("template.badPath", &[("file", reference)]))?
+        .replace('\\', "/");
+    Ok(format!("{}/{relative}", base.trim_end_matches('/')))
+}
+
 /// Fetch every local Reveal.js asset referenced by the finished page.
 pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> {
     let html = fs::read_to_string(page).map_err(|error| {
@@ -131,10 +145,14 @@ pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> 
     for path in revealjs_asset_references(&html) {
         let target = bundle.join(&path);
         let relative = path.to_string_lossy().replace('\\', "/");
-        let bytes = fetch_resource(&format!("{base}/{relative}"), REVEALJS_ASSET_LIMIT)
+        let url = revealjs_download_url(&base, &relative)?;
+        let bytes = fetch_resource(&url, REVEALJS_ASSET_LIMIT)
             .await
             .map_err(|error| {
-                crate::i18n::now("export.revealAsset", &[("url", &format!("{base}/{relative}")), ("reason", &error)])
+                crate::i18n::now(
+                    "export.revealAsset",
+                    &[("url", &url), ("reason", &error)]
+                )
             })?;
         downloads.push((target, bytes));
     }

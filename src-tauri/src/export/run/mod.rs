@@ -136,19 +136,29 @@ pub async fn run_export(
     mut request: ExportRequest,
 ) -> Result<ExportOutcome, String> {
     let kind = kind_of(&request.kind)?;
-    if kind.kind == "html" || kind.kind == "revealjs" {
-        let (_, page) = if kind.kind == "html" {
-            super::html_media::html_output(&request.output_path)?
-        } else {
-            super::revealjs::revealjs_output(&request.output_path)?
-        };
+    let mut new_reveal_bundle = None;
+    if kind.kind == "html" {
+        let (_, page) = super::html_media::html_output(&request.output_path)?;
+        request.output_path = page.to_string_lossy().into_owned();
+    } else if kind.kind == "revealjs" {
+        let (bundle, page, created) =
+            super::revealjs::revealjs_output(&request.output_path)?;
+        if created {
+            new_reveal_bundle = Some(bundle);
+        }
         request.output_path = page.to_string_lossy().into_owned();
     }
-    if kind.needs_pandoc {
+    let result = if kind.needs_pandoc {
         export_with_pandoc(&app, kind, &request).await
     } else {
         export_own_text(&request)
+    };
+    if result.is_err() {
+        if let Some(bundle) = new_reveal_bundle {
+            let _ = fs::remove_dir_all(bundle);
+        }
     }
+    result
 }
 
 /// The kind the app writes itself: the text it was handed is the answer.

@@ -49,6 +49,7 @@ import { isLatexKind } from './kind_family';
 import { exportDialog } from './export_dialog';
 import type { ExportProgress } from './export_progress';
 import { uncoveredCharacters } from './font_hint';
+import { offeredForKind } from './templates/offering';
 import {
   destinationsThatNameNoImage,
   imageDestinations,
@@ -103,8 +104,15 @@ export async function exportNote(
   }
   const note = documentSession.current();
   const templates = await exportTemplates();
+  const rememberedTemplateId = configManager.get()?.export_templates?.[first.kind] ?? null;
   const selectedTemplateId =
-    configManager.get()?.export_templates?.[first.kind] ?? null;
+    rememberedTemplateId !== null &&
+    templates.some(
+      (summary) =>
+        summary.id === rememberedTemplateId && offeredForKind(summary, first.kind)
+    )
+      ? rememberedTemplateId
+      : null;
   const folder = await targetFolder(note?.path ?? null);
   // The note's own path with no extension: the card adds the chosen kind's name suffix and
   // extension to it, because the *kind* is what the card knows and this is what it is asked with.

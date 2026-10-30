@@ -70,7 +70,7 @@ methodology; this file is the index and the conventions.
 | `check-table-source.mjs` | Reading and writing a table's raw source, and a mapper bounded by the table so a following line never resolves to its final cell |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
-| `check-template-examples.mjs` | One complete, readable template package for each template-backed kind under `examples/templates/`, plus the root-level Reveal.js and Beamer reference decks: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
+| `check-template-examples.mjs` | One complete, readable template package for each template-backed kind under `examples/templates/`, plus the root-level Reveal.js and Beamer reference decks: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; the Reveal.js deck uses a bundled picture, and the Rho Class example keeps its custom callout lead-in and 70% column figure. It runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
@@ -306,8 +306,9 @@ the reader has written one into their own copy; its captioned tables keep native
 does not advance the counter, an ID-only listing advances it through a zero-width native caption,
 and a fully captioned listing follows;
 `export-revealjs` — the Reveal.js presentation path: both resource switches default off, a local
-bundle contains the deck page, `images/`, and the referenced `js/dist/` files, and each switch is
-tested independently in both states; `export-beamer` — the Beamer card has no template or page-size
+bundle contains the deck page, `images/`, and the referenced `js/dist/` files, the downloader maps
+those names to the CDN’s real `dist/` tree, each switch is tested independently in both states, and
+a failed new export leaves no partial bundle; `export-beamer` — the Beamer card has no template or page-size
 control and produces a real PDF from frontmatter and section/frame headings;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`

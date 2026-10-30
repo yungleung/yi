@@ -521,7 +521,8 @@ package/storage.rs    package paths, naming and file classification
 `scan/mod.rs` and `package/mod.rs` remain the stable orchestration and IPC-facing boundaries.
 
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
-row changes it for later exports too. `ExportRequest.template_id` carries only the id: `run/arguments.rs`
+row changes it for later exports too. The chooser filters readable packages to the export kind it was
+opened for; an unreadable manifest remains available only so it can be removed. `ExportRequest.template_id` carries only the id: `run/arguments.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
 folder as the first `--resource-path`. A PDF run works from the entry file's folder, so a sample's
@@ -551,12 +552,20 @@ Beamer uses Pandoc's Beamer writer and the shared LaTeX source-rewriting family;
 controls sections, frames, theme and geometry, and it writes one PDF without the PDF card's page-size
 controls. Reveal.js uses Pandoc's Reveal.js writer and the HTML-like rewrite family, but always writes
 a non-self-contained folder named after the deck: `<deck>/<deck>.html`, `images/`, and `js/dist/`.
-`src-tauri/src/export/revealjs.rs` owns the output shape and bounded HTTP downloads. The export card
+`src-tauri/src/export/revealjs.rs` owns the output shape and bounded HTTP downloads. Pandoc names
+local distribution files `js/dist/...`, while the pinned package root contains `dist/...`; the
+downloader removes the local `js/` prefix before building the CDN URL. A newly created Reveal.js
+bundle is removed when its export fails, while an existing destination is never deleted. The first
+Reveal.js build wrote four template variables as invalid top-level defaults; `ensure_defaults_in`
+migrates that exact shipped byte sequence to the corrected file without replacing any edited copy.
+The export card
 has two independent choices, both off: keeping the pinned Reveal.js CDN URLs, and keeping remote
 picture URLs. Local mode downloads every referenced distribution file into `js/dist/`; local
 pictures are always copied into `images/`, while remote pictures are fetched there unless the picture
 switch is on. The Reveal.js downloader and picture packager run after Pandoc has produced the page,
 so they consume the HTML's actual asset references rather than a second list that could drift.
+The Rho Class example preserves the original callout title as a bold lead-in inside the class's
+native Note/Information environment and constrains its figure to 70% of the two-column text width.
 
 **A native-BibTeX LaTeX package receives a cited-only bibliography from Settings → Citation.**
 `src/ui/export/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`
