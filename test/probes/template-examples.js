@@ -511,9 +511,11 @@
       const visible = (t.prose().textContent ?? '').normalize('NFKC');
       check(
         'rho-class: the example is a supported Markdown research article',
-        ['Seeing Structure in a Noisy Sky', 'Calibration assumption', 'Channel weights'].every(
-          (text) => visible.includes(text)
-        ) &&
+        [
+          'Seeing Structure in a Noisy Sky',
+          'Shared drifts are treated as common-mode signal',
+          'Observing Model'
+        ].every((text) => visible.includes(text)) &&
           !visible.includes(':::') &&
           !visible.includes('{#fig:')
       );
@@ -552,7 +554,9 @@
           'mirachen',
           'eliasward',
           'noorpatel',
-          'calibrationassumption',
+          'shareddriftsaretreatedascommonmodesignal',
+          'rhosinfoenvironment',
+          'figure1',
           'table1',
           'references',
           'anexamplereferencefortherhoclasstemplate'

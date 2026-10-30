@@ -1,7 +1,7 @@
 /**
- * A PDF settings Lua filter receives Yi's semantic callout Div.
+ * The Rho Class PDF package receives Yi's semantic callout Div.
  *
- * The generated title and body must survive the filter in a compiled PDF.
+ * The package filter maps the callout to Rho's native note environment.
  *
  * @covers src/ui/export/callout_rewrites.ts,
  *   examples/templates/rho-class/callout.lua
@@ -10,39 +10,36 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const exportApi = await t.app('/src/api/export.ts');
+  const templates = await t.app('/src/api/templates.ts');
   const { exportSource } = await t.app('/src/ui/export/preprocess.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 
-  const readText = async (path) => {
-    const read = await invoke('plugin:fs|read_file', { path });
-    return new TextDecoder().decode(
-      read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read)
-    );
-  };
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const checkout = window.__probePaths.checkout;
   const folderName = `yi-probe-callout-template-${Date.now().toString(36)}`;
   const folder = `${home}/${folderName}`;
   const target = `${folder}/note.pdf`;
-  const filter = `${folder}/callout.lua`;
   const note =
     '> [!NOTE]\n' +
     '> Callout body through a package filter.\n';
-  const settings = (await invoke('export_config_path', { kind: 'pdf' })) ?? '';
-  const settingsBefore = await readText(settings);
 
+  const before = await invoke('get_config');
+  let templateId = null;
   try {
     await files.createEntry(home, folderName, false);
-    const filterSource = await readText(
-      `${checkout}examples/templates/rho-class/callout.lua`
-    );
-    await files.writeTextAtomically(filter, filterSource);
-    await invoke('export_save_config_text', {
+    const pkg = await templates.importTemplate({
+      source: `${checkout}examples/templates/rho-class`,
+      name: `Callout ${Date.now().toString(36)}`,
       kind: 'pdf',
-      text: `${settingsBefore.trimEnd()}\nfilters:\n  - "${filter}"\n`
+      entry: 'template.tex',
+      source_url: 'https://latextemplates.com/template/rho-class-article/',
+      license: 'CC-BY-4.0 (Rho Class); CC-BY-SA-3.0 (IEEE CSL)',
+      map_title: false,
+      map_author: false
     });
+    templateId = pkg.id;
 
     const prepared = await exportSource(note, {
       kind: 'pdf',
@@ -66,7 +63,7 @@
       paper: null,
       landscape: null,
       suppress_references: false,
-      template_id: null,
+      template_id: pkg.id,
       self_contained: false,
       native_bibliography: null,
       note_assets: [],
@@ -78,22 +75,29 @@
     const text = (await t.pdfText(bytes)).replace(/\s+/g, ' ');
     const compact = text.replace(/\s+/g, '');
     check(
-      'the filter receives the callout title Div',
-      compact.includes('FilteredNote'),
+      'the package filter maps the semantic callout to Rho’s note environment',
+      compact.startsWith('NoteCalloutbodythroughapackage'),
       text
     );
     check(
       'the callout body survives the filter',
-      compact.includes('Calloutbodythroughapackagefilter.'),
+      compact.includes('Calloutbodythroughapackage'),
       text
     );
   } finally {
-    await invoke('export_save_config_text', { kind: 'pdf', text: settingsBefore });
+    if (templateId !== null) {
+      try {
+        await templates.removeTemplate(templateId);
+      } catch {
+        // A package the run never finished importing.
+      }
+    }
     try {
       await files.deleteEntry(folder);
     } catch {
       // Nothing to tidy.
     }
+    await t.restoreWorkspace(before);
   }
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

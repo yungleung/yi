@@ -92,9 +92,12 @@ for (const file of sources) {
   }
   const source = readFileSync(file, 'utf8');
   // `t('area.key')`, `t("area.key")` and Rust's `t(language, "area.key", &[…])` are one call — and
-  // Rust's `now("area.key", &[…])` is the same one where no config is at hand (`i18n::now`).
-  for (const match of source.matchAll(/\b(?:t|now)\(\s*(?:"|')([a-z][\w.]*)(?:"|')/g)) {
-    used.set(match[1], file);
+  // Rust's `now("area.key", &[…])` is the same one where no config is at hand (`i18n::now`). A
+  // `nameKey` field is the same use one indirection away: a caller passes it back to `t`.
+  for (const match of source.matchAll(
+    /\b(?:t|now)\(\s*(?:"|')([a-z][\w.]*)(?:"|')|\bnameKey\s*:\s*(?:"|')([a-z][\w.]*)(?:"|')/g
+  )) {
+    used.set(match[1] ?? match[2], file);
   }
 }
 for (const [key, file] of used) {

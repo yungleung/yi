@@ -68,7 +68,16 @@
     const scroller = desk();
     scroller.style.flex = 'none';
     scroller.style.width = `${width}px`;
-    await t.sleep(250);
+    // WebKit delivers the ResizeObserver callback after layout. Wait for the page to stop
+    // overflowing instead of guessing how many frames that callback needs after a cold start.
+    for (
+      let attempt = 0;
+      attempt < 10 && scroller.scrollWidth > scroller.clientWidth + 1;
+      attempt += 1
+    ) {
+      await t.sleep(100);
+    }
+    await t.sleep(50);
   };
   const releasePane = async () => {
     desk().style.flex = '';
@@ -216,15 +225,23 @@
   );
 
   // The layout changed, not the editing: a click in a paragraph still lands and types.
+  document.querySelector('.markdown-composition-input')?.focus();
+  await t.sleep(80);
   const paragraphText = paragraph.textContent ?? '';
   const text = t.textNodesIn(sheet().querySelector('p'))[0];
   const range = document.createRange();
   range.setStart(text, 4);
   range.collapse(true);
   const caretRect = range.getBoundingClientRect();
-  text.parentElement.dispatchEvent(
-    new MouseEvent('click', { bubbles: true, clientX: caretRect.left + 1, clientY: caretRect.top + 2 })
-  );
+  const clickAt = {
+    bubbles: true,
+    cancelable: true,
+    clientX: caretRect.left + 1,
+    clientY: caretRect.top + 2
+  };
+  text.parentElement.dispatchEvent(new PointerEvent('pointerdown', clickAt));
+  text.parentElement.dispatchEvent(new PointerEvent('pointerup', clickAt));
+  text.parentElement.dispatchEvent(new MouseEvent('click', clickAt));
   await t.sleep(200);
   t.key('X');
   await t.sleep(250);

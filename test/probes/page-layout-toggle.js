@@ -56,7 +56,7 @@
   const setPane = async (width) => {
     scroller().style.flex = 'none';
     scroller().style.width = `${width}px`;
-    await t.sleep(250);
+    await t.sleep(400);
   };
   const releasePane = async () => {
     scroller().style.flex = '';
@@ -155,15 +155,23 @@
   );
 
   // The layout is a view of the document, not a change to it: a click still lands and types.
+  document.querySelector('.markdown-composition-input')?.focus();
+  await t.sleep(80);
   const paragraphText = sheet().querySelector('p').textContent ?? '';
   const text = t.textNodesIn(sheet().querySelector('p'))[0];
   const range = document.createRange();
   range.setStart(text, 4);
   range.collapse(true);
   const rect = range.getBoundingClientRect();
-  text.parentElement.dispatchEvent(
-    new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-  );
+  const clickAt = {
+    bubbles: true,
+    cancelable: true,
+    clientX: rect.left + 1,
+    clientY: rect.top + 2
+  };
+  text.parentElement.dispatchEvent(new PointerEvent('pointerdown', clickAt));
+  text.parentElement.dispatchEvent(new PointerEvent('pointerup', clickAt));
+  text.parentElement.dispatchEvent(new MouseEvent('click', clickAt));
   await t.sleep(200);
   const placed = caretModule.getCaretRange();
   t.key('X');
