@@ -145,6 +145,14 @@ if (existsSync(file)) {
     'the document points readers at the complete fixture packages',
     text.includes('examples/templates')
   );
+  check(
+    'the document explains template-free Reveal.js and Beamer exports',
+    /^### Presentation exports$/m.test(text) &&
+      /Reveal\.js and Beamer take no template package/.test(text) &&
+      /Use remote Reveal\.js resources/.test(text) &&
+      /Use remote pictures/.test(text) &&
+      /level-one headings for sections and level-two headings for\s+frames/i.test(text)
+  );
   const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
   for (const kind of prompts) {
     check(
@@ -241,6 +249,12 @@ for (const [code, name, title] of localized) {
       'Word',
       'ODT'
     ].every((needle) => text.includes(needle))
+  );
+  check(
+    `${name} guide explains template-free presentation exports`,
+    ['Reveal.js', 'Beamer', 'js/dist/', 'images/', 'examples/revealjs.md', 'examples/beamer.md'].every(
+      (needle) => text.includes(needle)
+    )
   );
 }
 

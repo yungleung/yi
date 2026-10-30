@@ -80,7 +80,9 @@ document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command 
 (`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
 file without a session question. The guide includes Pandoc and TeX installation requirements and
 points to the seven complete packages under `examples/templates/`, including the
-CC BY 4.0 Rho Class PDF article and its required attribution.
+CC BY 4.0 Rho Class PDF article and its required attribution. The complete Reveal.js and Beamer
+reference decks sit beside that directory as `examples/revealjs.md` and `examples/beamer.md`.
+`examples/` is reader-facing reference material; `test/fixtures/` is separate controlled test data.
 
 Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — the system dialog
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
@@ -147,6 +149,9 @@ reader's and is left alone; one with nothing under it gets the app's. A readable
 with a root `metadata.yaml` may also seed one new note. `services/new_document_templates.ts` lists
 those choices and reads the chosen file; the package's keys win over the configured frontmatter,
 the configured template supplies keys the package omits, and `date`/`id` remain the app's stamps.
+`services/new_document_builtins.ts` adds two app-owned presentation starters,
+`builtin:revealjs` and `builtin:beamer`; they carry metadata for an export kind and are not template
+packages in the library.
 The choice belongs to that note only and is never written into `export_templates`; there is a
 template-only card for the tree's *New file*, where the folder is already known.
 `services/workspace_folders.ts`
@@ -539,6 +544,19 @@ reader defaults file cannot silently turn embedding back on. For EPUB, `epub_pac
 chapter links to an `assets/` folder, copies the package's web resources there and declares them in
 `content.opf`. DOCX, ODT and PDF are containers and need no sidecars. The app never runs TeX's
 unrestricted shell escape or `tlmgr`, and it does not download journal kits.
+
+**Reveal.js and Beamer are first-class, template-free export kinds.** Their rows in
+`src-tauri/src/export/kinds.rs` use `KindTemplate::None`, so the card exposes no package choice.
+Beamer uses Pandoc's Beamer writer and the shared LaTeX source-rewriting family; its frontmatter
+controls sections, frames, theme and geometry, and it writes one PDF without the PDF card's page-size
+controls. Reveal.js uses Pandoc's Reveal.js writer and the HTML-like rewrite family, but always writes
+a non-self-contained folder named after the deck: `<deck>/<deck>.html`, `images/`, and `js/dist/`.
+`src-tauri/src/export/revealjs.rs` owns the output shape and bounded HTTP downloads. The export card
+has two independent choices, both off: keeping the pinned Reveal.js CDN URLs, and keeping remote
+picture URLs. Local mode downloads every referenced distribution file into `js/dist/`; local
+pictures are always copied into `images/`, while remote pictures are fetched there unless the picture
+switch is on. The Reveal.js downloader and picture packager run after Pandoc has produced the page,
+so they consume the HTML's actual asset references rather than a second list that could drift.
 
 **A native-BibTeX LaTeX package receives a cited-only bibliography from Settings → Citation.**
 `src/ui/export/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`

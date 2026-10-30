@@ -27,7 +27,8 @@ keywords:
 
 `title` 是文件標題，`id` 是不可編輯的穩定識別碼，`lang` 可供 EPUB 等匯出使用。其他欄位會傳給
 Pandoc 和範本套件。**Settings → New note** 控制新筆記的初始內容；套件 `metadata.yaml` 的選擇
-只用於那一則筆記，不會改變之後的匯出範本。
+只用於那一則筆記，不會改變之後的匯出範本。New note 也提供內建的
+**Reveal.js presentation** 和 **Beamer presentation**；它們是簡報中繼資料，不是匯出範本套件。
 
 Yi 以 Markdown 原文為準，同時顯示呈現結果。游標進入連結、公式或圍欄程式碼時，可在原處編輯
 Markdown。常用快捷鍵為 ⌘S / Ctrl+S 儲存、⌘N / Ctrl+N 新增、⌘F / Ctrl+F 尋找、
@@ -206,7 +207,9 @@ filter 之前，因此 filter 使用這個穩定結構，而不用處理 GitHub 
 | 類型 | 輸出 |
 | --- | --- |
 | HTML | 含頁面與本地資源的組合資料夾 |
+| Reveal.js | 預設含本地 `images/` 和 `js/dist/` 的簡報組合包 |
 | LaTeX | `.tex` 與範本資源 |
+| Beamer | XeLaTeX 產生的簡報 PDF |
 | PDF | TeX 引擎產生的 PDF |
 | EPUB | EPUB 電子書 |
 | Word | `.docx` |
@@ -215,6 +218,32 @@ filter 之前，因此 filter 使用這個穩定結構，而不用處理 GitHub 
 
 除 Markdown 外都需要 Pandoc；PDF 另需 XeLaTeX 等 TeX 環境。Yi 會從常見位置及 `PATH` 尋找
 Pandoc，但不會自動安裝軟體，也不會執行 TeX Live Manager。
+
+匯出卡片會選擇目標，並在支援的類型中選擇範本包或資源。Reveal.js 與 Beamer 不接受範本包。
+記住的範本選擇依匯出類型保存，不依筆記保存。
+
+### 簡報匯出
+
+Reveal.js 從前置中繼資料讀取 `title`、`subtitle`、`author`、`theme`、`transition`、
+`slide-level` 等設定，而且一律輸出非自包含資料夾：
+
+```text
+presentation/
+  presentation.html
+  images/
+  js/dist/
+```
+
+卡片有兩個彼此獨立的選項，預設都關閉：
+
+- **Use remote Reveal.js resources** 保留 Pandoc 固定的 CDN URL；關閉時，Yi 將 Reveal.js 的
+  JavaScript、樣式表、主題和外掛下載到 `js/dist/`。
+- **Use remote pictures** 保留網頁圖片 URL；關閉時，每張遠端圖片會下載到 `images/`。本地圖片
+  一律複製到該資料夾。
+
+Beamer 從中繼資料讀取 `title`、`subtitle`、`author`、`institute`、`theme`、`colortheme`、
+`fonttheme`、`aspectratio`、`navigation` 和 `section-titles`。它輸出一個 PDF，不提供範本或頁面
+尺寸控制。一級標題是章節，二級標題是投影片。
 
 ### 安裝 Pandoc 與 TeX
 
@@ -381,8 +410,9 @@ Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有
 
 ## 完整範例與 AI 提示
 
-`examples/templates/` 有 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
-完整套件。可先閱讀，再匯入 Yi 的範本庫。
+`examples/templates/` 有供讀者使用的 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
+完整套件。上一層還有完整參考簡報 `examples/revealjs.md` 和 `examples/beamer.md`。
+`examples/` 是讀者資料；`test/fixtures/` 是用途不同、受控的測試資料。
 
 給 AI 代理的提示應要求建立可匯入的來源資料夾，但不要建立 `template.json`：
 

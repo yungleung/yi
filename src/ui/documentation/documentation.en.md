@@ -46,7 +46,8 @@ template packages.
 
 **Settings → New note** controls the frontmatter a new note starts from. A template package can
 also supply starting metadata for one particular note; that does not remember the template as your
-export template.
+export template. New note also offers built-in **Reveal.js presentation** and **Beamer
+presentation** starters; they are presentation metadata, not export template packages.
 
 ### Editing
 
@@ -723,7 +724,9 @@ work with this stable structure rather than Yi's GitHub or fenced-Div source.
 | Kind | What Yi writes |
 | --- | --- |
 | HTML | A bundle folder containing a page and its local assets |
+| Reveal.js | A presentation bundle with `images/` and local `js/dist/` by default |
 | LaTeX | A standalone `.tex` file plus package assets |
+| Beamer | A presentation PDF produced by XeLaTeX |
 | PDF | A PDF produced by a TeX engine |
 | EPUB | An EPUB book |
 | Word | A `.docx` document |
@@ -734,8 +737,33 @@ Except for Markdown, export needs Pandoc. PDF also needs a TeX distribution and 
 XeLaTeX. Yi finds Pandoc in the usual application locations and on `PATH`; it never installs
 software or runs TeX Live Manager for you.
 
-The export card chooses a destination, a template package and, for HTML, whether the page should be
-self-contained. The remembered template choice is per export kind, not per note.
+The export card chooses a destination and, for kinds that support them, a template package or
+resource choice. Reveal.js and Beamer take no template package. The remembered template choice is
+per export kind, not per note.
+
+### Presentation exports
+
+Reveal.js reads presentation controls from frontmatter, including `title`, `subtitle`, `author`,
+`theme`, `transition`, and `slide-level`. It always exports a non-self-contained folder:
+
+```text
+presentation/
+  presentation.html
+  images/
+  js/dist/
+```
+
+The card offers two independent choices, both off by default:
+
+- **Use remote Reveal.js resources** keeps Pandoc's pinned CDN URLs. Otherwise Yi downloads the
+  Reveal.js JavaScript, stylesheets, theme and plugins into `js/dist/`.
+- **Use remote pictures** keeps web image URLs. Otherwise every remote picture is downloaded into
+  `images/`; local pictures are always copied there.
+
+Beamer uses frontmatter for `title`, `subtitle`, `author`, `institute`, `theme`, `colortheme`,
+`fonttheme`, `aspectratio`, `navigation`, and `section-titles`. It writes one PDF and offers no
+template or page-size control. Use level-one headings for sections and level-two headings for
+frames.
 
 ### Install Pandoc and TeX
 
@@ -1295,6 +1323,18 @@ examples/templates/
 Each package contains `template.json`, its text entry or binary reference document,
 `defaults.yaml`, `metadata.yaml`, and an explanatory `README.md`. Open those folders as authoring
 references, then import the same folder into Yi to see the package in the Template library.
+
+The user-facing presentations sit one level above the packages:
+
+```text
+examples/
+  revealjs.md
+  beamer.md
+  templates/
+```
+
+They are complete reference decks. `examples/` is material for readers; `test/fixtures/` is
+controlled test data and serves a separate purpose.
 
 ### Prompts for AI agents
 

@@ -35,6 +35,7 @@ methodology; this file is the index and the conventions.
 | `check-epub-valid.mjs` | The book the app writes, held to W3C's `epubcheck`: `pandoc` over the note `ui/export/book_body.ts` prepares (the app's own rule, bundled rather than retyped) with the *shipped* `export.epub.yaml` and the note's name as the book's title, then the validator over what comes out — the shape whose two `Duplicate ID "going-out"` errors either half of the fix alone leaves behind (the file's old `shift-heading-level-by: 1`, or the note handed over with no level-1 heading written in), and which the file's `0` *and* that rule together take away. It **skips with a line naming what is missing** when `pandoc`, `java` or the jar is not on the machine (`YI_EPUBCHECK` names a jar anywhere else), so `npm run check` stays green without them; it is also the one check that spends seconds rather than milliseconds, on the JVM the validator runs in |
 | `check-export.mjs` | The export's shared pre-process (`ui/export/preprocess.ts`): a wikilink written as the words it renders as — its own title, the title of the note it names, or its target — and an image's destination written as the file the app resolves it to (`/notes/shot%20with%20space.png`, from either of the two folders and whichever spelling the author used; a picture on the web as the file the app fetched for it, once per URL; or left exactly as written when neither is there), both walked out of the parse, so a fence's body, an inline code span, frontmatter and a `data:` URL are left alone — and the third rule, for the kind whose conversion is the app's own: a citation written as the words it reads as with the works it names listed under them, each work asked about once in the order it is written, and no list at all when there is nothing to list. Captioned tables and lists cover every writer: shared caption and target behavior for HTML/EPUB/DOCX/ODT, semantic HTML for processed Markdown, and the native LaTeX/PDF reference macros |
 | `check-export-font.mjs` | The card's font hint (`ui/export/font_hint.ts`): which characters of a note no font its settings name can draw — the covered set written down **character by character**, because the blocks are irregular (measured: `ə` draws and `ʃ ɐ ʰ` do not; `← ↑ → ↓` draw and `↔` does not; `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not; `♪` draws and `♭ ✓ ☺ ★ ☆` do not; `Δ Ω` draw and `α β γ` do not), `CJKmainfont` answering for CJK punctuation, kana and Han and **not** Hangul, `mainfont` for anything its font has — and that a character inside `$…$` is left alone, because a formula is set with the maths font |
+| `check-export-families.mjs` | Which export kinds share LaTeX source rewriting (`latex`, `pdf`, `beamer`) and which share the HTML-like path (`html`, `epub`, `revealjs`), so a new kind cannot quietly diverge by spelling its own list |
 | `check-footnotes.mjs` | Footnote definitions, labels and appending notes |
 | `check-heading-attributes.mjs` | Pandoc heading attributes on ATX and setext headings: separation from the title, quoted and escaped values, malformed braces left as text, and exact serialization |
 | `check-heading-index.mjs` | Pandoc automatic identifiers, Unicode, fallback and duplicate suffixes, explicit IDs staying literal, same-document target order, and first-match lookup |
@@ -69,7 +70,7 @@ methodology; this file is the index and the conventions.
 | `check-table-source.mjs` | Reading and writing a table's raw source, and a mapper bounded by the table so a following line never resolves to its final cell |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
-| `check-template-examples.mjs` | One complete, readable template package for each export kind under `examples/templates/`: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
+| `check-template-examples.mjs` | One complete, readable template package for each template-backed kind under `examples/templates/`, plus the root-level Reveal.js and Beamer reference decks: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; it runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
@@ -83,7 +84,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-two hundred and ninety-eight probes (`probe:all` runs 264 and skips 34, each skip for the reason its
+three hundred and one probes (`probe:all` runs 267 and skips 34, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -95,7 +96,9 @@ where it was asked for with its frontmatter on screen and its title selected, an
 *New file* through the same command; `new-note-template` — a template written through the app's
 config, the settings tab that shows it, and the note that comes out;
 `new-note-package-metadata` — a package chosen for one note, its metadata merged over the configured
-frontmatter with app-owned stamps, and the tree's next note keeping the configured default), blocks and spacing
+frontmatter with app-owned stamps, and the tree's next note keeping the configured default;
+`new-note-presentation-metadata` — the built-in Reveal.js and Beamer starters create the expected
+frontmatter without becoming export-template choices), blocks and spacing
 (`block-gaps`, `spacing`,
 `empty-*`, `enter-new-paragraph` — a letter typed after `Enter` at the end of a block is a
 paragraph of its own, whether a block follows it or the block is the file's last, and the
@@ -302,6 +305,10 @@ the reader has written one into their own copy; its captioned tables keep native
 `yilist` counter with `\yiListRef`. Under idiomatic highlighting, a caption-only listing title
 does not advance the counter, an ID-only listing advances it through a zero-width native caption,
 and a fully captioned listing follows;
+`export-revealjs` — the Reveal.js presentation path: both resource switches default off, a local
+bundle contains the deck page, `images/`, and the referenced `js/dist/` files, and each switch is
+tested independently in both states; `export-beamer` — the Beamer card has no template or page-size
+control and produces a real PDF from frontmatter and section/frame headings;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
 (pandoc's default template and reference document, and a validation that names a deleted entry),

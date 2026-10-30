@@ -35,7 +35,8 @@ keywords:
 Pandoc 和模板包。
 
 **Settings → New note** 决定新笔记的初始元数据。使用模板包 `metadata.yaml` 的选择只属于当前新
-笔记，不会改变后续导出的模板选择。
+笔记，不会改变后续导出的模板选择。New note 还提供内置的 **Reveal.js presentation** 和
+**Beamer presentation** 起始模板；它们是演示文稿元数据，不是导出模板包。
 
 ### 编辑
 
@@ -215,7 +216,9 @@ HTML、EPUB、DOCX、ODT 和 LaTeX/PDF 模板可分别通过 CSS、参考文档�
 | 类型 | 输出 |
 | --- | --- |
 | HTML | 包含页面和本地资源的捆绑文件夹 |
+| Reveal.js | 默认包含本地 `images/` 和 `js/dist/` 的演示文稿捆绑包 |
 | LaTeX | `.tex` 文件及模板资源 |
+| Beamer | XeLaTeX 生成的演示文稿 PDF |
 | PDF | TeX 引擎生成的 PDF |
 | EPUB | EPUB 电子书 |
 | Word | `.docx` |
@@ -224,6 +227,32 @@ HTML、EPUB、DOCX、ODT 和 LaTeX/PDF 模板可分别通过 CSS、参考文档�
 
 除 Markdown 外都需要 Pandoc；PDF 还需要 XeLaTeX 等 TeX 环境。Yi 会从常见应用位置和 `PATH`
 查找 Pandoc，但不会自动安装软件或运行 TeX Live Manager。
+
+导出卡片选择目标，并在支持的格式中选择模板包或资源。Reveal.js 和 Beamer 不接受模板包。记住的
+模板选择按导出类型保存，不按笔记保存。
+
+### 演示文稿导出
+
+Reveal.js 从前置元数据读取 `title`、`subtitle`、`author`、`theme`、`transition`、
+`slide-level` 等设置。它始终导出非自包含文件夹：
+
+```text
+presentation/
+  presentation.html
+  images/
+  js/dist/
+```
+
+导出卡片有两个相互独立的选项，默认都关闭：
+
+- **Use remote Reveal.js resources** 保留 Pandoc 固定的 CDN URL；关闭时，Yi 把 Reveal.js 的
+  JavaScript、样式表、主题和插件下载到 `js/dist/`。
+- **Use remote pictures** 保留网页图片 URL；关闭时，每张远程图片都会下载到 `images/`。本地
+  图片始终复制到该目录。
+
+Beamer 从元数据读取 `title`、`subtitle`、`author`、`institute`、`theme`、`colortheme`、
+`fonttheme`、`aspectratio`、`navigation` 和 `section-titles`。它导出一个 PDF，不提供模板或页面
+尺寸控制。一级标题是章节，二级标题是幻灯片。
 
 ### 安装 Pandoc 与 TeX
 
@@ -450,8 +479,9 @@ keywords:
 
 ## 完整示例
 
-`examples/templates/` 包含 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
-的完整可用示例。可直接打开学习，也可以把文件夹导入 Yi 的模板库。
+`examples/templates/` 包含面向读者的 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
+完整包。上一级目录还有完整参考演示文稿 `examples/revealjs.md` 和 `examples/beamer.md`。
+`examples/` 是读者资料；`test/fixtures/` 是用途不同、受控的测试数据。
 
 ### 给 AI 代理的提示词
 

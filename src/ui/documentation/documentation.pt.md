@@ -36,7 +36,9 @@ keywords:
 
 `title` nomeia o documento, `id` é sua identidade fixa e `lang` declara o idioma para EPUB e outros
 formatos. Outras chaves ficam disponíveis ao Pandoc e aos pacotes. **Settings → New note** define o
-frontmatter inicial; o `metadata.yaml` de um pacote vale apenas para aquela nova nota.
+frontmatter inicial; o `metadata.yaml` de um pacote vale apenas para aquela nova nota. New note
+também oferece os iniciadores integrados **Reveal.js presentation** e **Beamer presentation**:
+são metadados de apresentação, não pacotes de modelos de exportação.
 
 O Yi mantém Markdown como fonte da verdade enquanto exibe o resultado. Ao entrar em link, fórmula ou
 bloco cercado, seu Markdown aparece para edição. Atalhos: ⌘S / Ctrl+S salvar, ⌘N / Ctrl+N nova,
@@ -244,7 +246,9 @@ sintaxe GitHub ou do Div original.
 | Tipo | Saída |
 | --- | --- |
 | HTML | Pasta com página e recursos locais |
+| Reveal.js | Pacote de apresentação com `images/` e `js/dist/` local por padrão |
 | LaTeX | `.tex` e recursos do pacote |
+| Beamer | PDF de apresentação gerado pelo XeLaTeX |
 | PDF | PDF gerado por TeX |
 | EPUB | Livro EPUB |
 | Word | `.docx` |
@@ -253,6 +257,33 @@ sintaxe GitHub ou do Div original.
 
 Tudo exceto Markdown exige Pandoc; PDF também exige XeLaTeX ou outro motor TeX. O Yi procura Pandoc
 em locais comuns e no `PATH`, mas não instala software nem executa TeX Live Manager.
+
+O cartão de exportação escolhe o destino e, nos tipos que os aceitam, um pacote de modelos ou de
+recursos. Reveal.js e Beamer não aceitam pacotes de modelos. A escolha lembrada é por tipo de
+exportação, não por nota.
+
+### Apresentações
+
+Reveal.js lê do frontmatter `title`, `subtitle`, `author`, `theme`, `transition`,
+`slide-level` e outros controles do Pandoc. Sempre grava uma pasta não autocontida:
+
+```text
+apresentacao/
+  apresentacao.html
+  images/
+  js/dist/
+```
+
+O cartão oferece duas opções independentes, ambas desativadas por padrão:
+
+- **Use remote Reveal.js resources** mantém as URLs CDN fixadas pelo Pandoc. Caso contrário, o Yi
+  baixa JavaScript, folhas de estilo, tema e plugins do Reveal.js para `js/dist/`.
+- **Use remote pictures** mantém as URLs de imagens da web. Caso contrário, cada imagem remota é
+  baixada para `images/`; imagens locais sempre são copiadas para lá.
+
+Beamer usa `title`, `subtitle`, `author`, `institute`, `theme`, `colortheme`, `fonttheme`,
+`aspectratio`, `navigation` e `section-titles`. Grava um único PDF e não oferece modelo nem tamanho
+de página. Títulos de nível um são seções e os de nível dois são slides.
 
 ### Instalar Pandoc e TeX
 
@@ -420,8 +451,10 @@ filtros duplicam referências.
 
 ## Exemplos completos e prompts de IA
 
-`examples/templates/` contém pacotes completos HTML, LaTeX, PDF, Rho Class, EPUB, Word
-e ODT.
+`examples/templates/` contém pacotes completos para leitores em HTML, LaTeX, PDF, Rho Class, EPUB,
+Word e ODT. Um nível acima ficam as apresentações de referência completas
+`examples/revealjs.md` e `examples/beamer.md`. `examples/` é material para leitores;
+`test/fixtures/` contém dados de teste controlados e tem outro propósito.
 
 Peça a um agente de IA uma pasta importável, sem `template.json`:
 

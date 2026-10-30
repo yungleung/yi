@@ -22,6 +22,7 @@ import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
 
 const root = resolve('examples/templates');
+const exampleRoot = resolve('examples');
 const appPdfDefaults = resolve('src-tauri/assets/export/export.pdf.yaml');
 const kinds = ['html', 'latex', 'pdf', 'epub', 'docx', 'odt'];
 const failures = [];
@@ -30,6 +31,22 @@ const check = (name, pass, actual = null) => {
 };
 
 check('the examples have a guide', existsSync(join(root, 'README.md')));
+const presentationExamples = {
+  revealjs: join(exampleRoot, 'revealjs.md'),
+  beamer: join(exampleRoot, 'beamer.md')
+};
+for (const [kind, path] of Object.entries(presentationExamples)) {
+  check(`the ${kind} presentation example exists`, existsSync(path));
+  if (existsSync(path)) {
+    const source = readFileSync(path, 'utf8');
+    check(
+      `the ${kind} presentation example uses frontmatter and slide headings`,
+      /^---\n[\s\S]*?\n---\n/.test(source) &&
+        /^slide-level: 2$/m.test(source) &&
+        /^## /m.test(source)
+    );
+  }
+}
 for (const kind of kinds) {
   const folder = join(root, kind);
   const manifestPath = join(folder, 'template.json');

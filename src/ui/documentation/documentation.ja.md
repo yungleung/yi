@@ -40,7 +40,9 @@ keywords:
 
 **Settings → New note** では新しいノートの初期フロントマターを設定できます。テンプレート
 パッケージの `metadata.yaml` を使う選択はそのノートだけに適用され、書き出しテンプレートの選択は
-変更しません。
+変更しません。New note には組み込みの **Reveal.js presentation** と
+**Beamer presentation** もあり、これらは書き出しテンプレートではなくプレゼンテーション用の
+メタデータです。
 
 ### 編集
 
@@ -240,7 +242,9 @@ Div ではなく、この安定した構造を扱えます。
 | 種類 | 出力 |
 | --- | --- |
 | HTML | ページとローカル資産を含むバンドルフォルダー |
+| Reveal.js | 既定でローカルの `images/` と `js/dist/` を含むプレゼンテーションバンドル |
 | LaTeX | パッケージ資産を伴う `.tex` ファイル |
+| Beamer | XeLaTeX が生成するプレゼンテーション PDF |
 | PDF | TeX エンジンが生成する PDF |
 | EPUB | EPUB ブック |
 | Word | `.docx` |
@@ -250,6 +254,34 @@ Div ではなく、この安定した構造を扱えます。
 Markdown 以外の書き出しには Pandoc が必要です。PDF には XeLaTeX などの TeX 環境も必要です。
 Yi は Pandoc を一般的なアプリケーションの場所と `PATH` から探し、ソフトウェアを自動導入したり
 TeX Live Manager を実行したりしません。
+
+書き出しカードでは保存先と、対応する種類ではテンプレートパッケージまたはリソースを選びます。
+Reveal.js と Beamer はテンプレートパッケージを受け付けません。選択はノートごとではなく、
+書き出しの種類ごとに記憶されます。
+
+### プレゼンテーションの書き出し
+
+Reveal.js は `title`、`subtitle`、`author`、`theme`、`transition`、`slide-level` などの
+設定をフロントマターから読みます。常に自己完結しないフォルダーを書き出します。
+
+```text
+presentation/
+  presentation.html
+  images/
+  js/dist/
+```
+
+カードには独立した二つの選択肢があり、どちらも既定ではオフです。
+
+- **Use remote Reveal.js resources** は Pandoc が固定した CDN URL を残します。オフの場合、Yi は
+  Reveal.js の JavaScript、スタイルシート、テーマ、プラグインを `js/dist/` にダウンロードします。
+- **Use remote pictures** はウェブ画像の URL を残します。オフの場合、各リモート画像を `images/`
+  にダウンロードします。ローカル画像は常にそこへコピーされます。
+
+Beamer は `title`、`subtitle`、`author`、`institute`、`theme`、`colortheme`、`fonttheme`、
+`aspectratio`、`navigation`、`section-titles` をフロントマターから使います。PDF を一つ書き出し、
+テンプレートやページサイズの設定は表示しません。レベル 1 の見出しがセクション、レベル 2 が
+スライドになります。
 
 ### Pandoc と TeX のインストール
 
@@ -496,9 +528,10 @@ keywords:
 
 ## 完全な例
 
-`examples/templates/` には HTML、LaTeX、PDF、Rho Class、EPUB、Word、ODT の
-実用的なパッケージがあります。各フォルダーを読み、そのまま Yi へ読み込んでテンプレート
-ライブラリーで確認してください。
+`examples/templates/` には読者向けの HTML、LaTeX、PDF、Rho Class、EPUB、Word、ODT の
+実用的なパッケージがあります。一つ上の階層には完全な参照用プレゼンテーション
+`examples/revealjs.md` と `examples/beamer.md` があります。`examples/` は読者向け資料で、
+`test/fixtures/` は目的の異なる管理されたテストデータです。
 
 ### AI エージェント向けプロンプト
 

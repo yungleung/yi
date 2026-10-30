@@ -39,7 +39,9 @@ keywords:
 und andere Exporte. Weitere Schlüssel stehen Pandoc und Vorlagenpaketen zur Verfügung.
 
 **Settings → New note** legt das anfängliche Frontmatter fest. `metadata.yaml` eines Pakets gilt nur
-für die aktuell erzeugte Notiz und ändert nicht die Exportvorlage späterer Exporte.
+für die aktuell erzeugte Notiz und ändert nicht die Exportvorlage späterer Exporte. Für neue Notizen
+gibt es außerdem die eingebauten Präsentationsstarter **Reveal.js presentation** und
+**Beamer presentation**; sie liefern Metadaten, keine Vorlagenpakete.
 
 ### Bearbeiten
 
@@ -256,7 +258,9 @@ GitHub- oder Div-Quelle.
 | Art | Ausgabe |
 | --- | --- |
 | HTML | Bundled-Ordner mit Seite und lokalen Ressourcen |
+| Reveal.js | Präsentationsordner mit `images/` und standardmäßig lokalem `js/dist/` |
 | LaTeX | `.tex` und Vorlagenressourcen |
+| Beamer | Präsentations-PDF von XeLaTeX |
 | PDF | PDF aus einer TeX-Engine |
 | EPUB | EPUB-Buch |
 | Word | `.docx` |
@@ -266,6 +270,33 @@ GitHub- oder Div-Quelle.
 Außer Markdown benötigen alle Formate Pandoc; PDF benötigt zusätzlich XeLaTeX oder eine andere
 TeX-Engine. Yi sucht Pandoc an üblichen Orten und in `PATH`, installiert aber keine Software und
 startet nicht TeX Live Manager.
+
+Die Exportkarte wählt das Ziel und, bei Arten, die dies unterstützen, ein Vorlagenpaket oder
+Ressourcen. Reveal.js und Beamer nehmen keine Vorlagenpakete an. Die gemerkte Vorlagenwahl gilt je
+Exportart, nicht je Notiz.
+
+### Präsentationen
+
+Reveal.js liest `title`, `subtitle`, `author`, `theme`, `transition`, `slide-level` und weitere
+Pandoc-Steuerungen aus dem Frontmatter. Es schreibt immer einen nicht eigenständigen Ordner:
+
+```text
+praesentation/
+  praesentation.html
+  images/
+  js/dist/
+```
+
+Die Karte bietet zwei unabhängige Optionen, standardmäßig beide aus:
+
+- **Use remote Reveal.js resources** behält die von Pandoc festgelegten CDN-URLs. Sonst lädt Yi
+  JavaScript, Stylesheets, Theme und Plugins von Reveal.js nach `js/dist/`.
+- **Use remote pictures** behält URL von Web-Bildern. Sonst wird jedes entfernte Bild nach
+  `images/` geladen; lokale Bilder werden immer dorthin kopiert.
+
+Beamer verwendet `title`, `subtitle`, `author`, `institute`, `theme`, `colortheme`, `fonttheme`,
+`aspectratio`, `navigation` und `section-titles`. Es schreibt eine PDF und bietet weder Vorlage noch
+Seitengröße an. Überschriften der ersten Ebene sind Abschnitte, der zweiten Ebene Folien.
 
 ### Pandoc und TeX installieren
 
@@ -452,8 +483,10 @@ citeproc hinzufügen; Yi liefert es bereits und doppelte Filter erzeugen doppelt
 
 ## Vollständige Beispiele und KI-Prompts
 
-Unter `examples/templates/` liegen vollständige Pakete für HTML, LaTeX, PDF,
-Rho Class, EPUB, Word und ODT.
+Unter `examples/templates/` liegen vollständige benutzerseitige Pakete für HTML, LaTeX, PDF,
+Rho Class, EPUB, Word und ODT. Eine Ebene darüber liegen die vollständigen Referenzpräsentationen
+`examples/revealjs.md` und `examples/beamer.md`. `examples/` dient Lesern;
+`test/fixtures/` enthält getrennte, kontrollierte Testdaten.
 
 KI-Aufträge sollen einen importierbaren Quellordner erzeugen, aber kein `template.json`:
 

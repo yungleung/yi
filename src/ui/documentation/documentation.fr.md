@@ -38,6 +38,8 @@ keywords:
 `title` nomme le document, `id` est son identité stable et `lang` sa langue pour EPUB et les autres
 exports. Les autres clés sont transmises à Pandoc et aux paquets de modèles. **Settings → New note**
 définit l’en-tête initial ; le choix d’un `metadata.yaml` de paquet ne vaut que pour cette note.
+New note propose aussi les modèles intégrés **Reveal.js presentation** et
+**Beamer presentation** : ce sont des métadonnées de présentation, pas des paquets de modèles.
 
 Yi conserve le Markdown comme source de vérité tout en l’affichant mis en forme. Un lien, une formule
 ou un bloc délimité révèle son Markdown quand le curseur y entre. Raccourcis : ⌘S / Ctrl+S,
@@ -250,7 +252,9 @@ structure stable plutôt que la syntaxe GitHub ou le Div source.
 | Type | Sortie |
 | --- | --- |
 | HTML | Dossier groupé avec page et ressources locales |
+| Reveal.js | Paquet de présentation avec `images/` et `js/dist/` local par défaut |
 | LaTeX | Fichier `.tex` et ressources du modèle |
+| Beamer | PDF de présentation produit par XeLaTeX |
 | PDF | PDF produit par une moteur TeX |
 | EPUB | Livre EPUB |
 | Word | `.docx` |
@@ -260,6 +264,33 @@ structure stable plutôt que la syntaxe GitHub ou le Div source.
 Sauf Markdown, l’export exige Pandoc ; le PDF exige aussi XeLaTeX ou un autre moteur TeX. Yi cherche
 Pandoc aux emplacements habituels et dans `PATH`, mais n’installe rien et ne lance pas TeX Live
 Manager.
+
+La carte d’export choisit la destination et, pour les types qui les acceptent, un paquet de modèles
+ou de ressources. Reveal.js et Beamer n’acceptent pas de paquet de modèles. Le choix mémorisé vaut par
+type d’export, pas par note.
+
+### Exports de présentation
+
+Reveal.js lit dans l’en-tête `title`, `subtitle`, `author`, `theme`, `transition`,
+`slide-level` et les autres contrôles Pandoc. Il écrit toujours un dossier non autonome :
+
+```text
+presentation/
+  presentation.html
+  images/
+  js/dist/
+```
+
+La carte propose deux choix indépendants, désactivés par défaut :
+
+- **Use remote Reveal.js resources** conserve les URL CDN fixées par Pandoc. Sinon, Yi télécharge
+  le JavaScript, les feuilles de style, le thème et les extensions Reveal.js dans `js/dist/`.
+- **Use remote pictures** conserve les URL des images web. Sinon, chaque image distante est
+  téléchargée dans `images/` ; les images locales y sont toujours copiées.
+
+Beamer utilise `title`, `subtitle`, `author`, `institute`, `theme`, `colortheme`, `fonttheme`,
+`aspectratio`, `navigation` et `section-titles`. Il écrit un seul PDF et ne propose ni modèle ni
+taille de page. Les titres de niveau un sont des sections et ceux de niveau deux des diapositives.
 
 ### Installer Pandoc et TeX
 
@@ -436,8 +467,10 @@ seconde fois : Yi le fournit déjà et deux filtres dupliquent les références.
 
 ## Exemples complets et prompts IA
 
-`examples/templates/` contient des paquets complets HTML, LaTeX, PDF, Rho Class,
-EPUB, Word et ODT.
+`examples/templates/` contient des paquets complets destinés aux lecteurs pour HTML, LaTeX, PDF,
+Rho Class, EPUB, Word et ODT. Les présentations de référence complètes se trouvent un niveau
+au-dessus, dans `examples/revealjs.md` et `examples/beamer.md`. `examples/` est destiné aux lecteurs ;
+`test/fixtures/` contient des données de test contrôlées et remplit un autre rôle.
 
 Demandez à un agent IA un dossier source importable, sans `template.json` :
 
