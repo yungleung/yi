@@ -24,6 +24,7 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/commands/` | 7 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
 | `src/events/` | 1 | typed synchronous delivery for facts that stay inside one window |
 | `src/ui/markdown/*` (top level) | 21 | the editor facade and blocks, plus focused editor render-context and caret/view-state adapters |
+| `src/ui/markdown/renderer_*.ts` | 4 | renderer DOM creation, measured-height policy, scroll/spacer geometry, and mounted-element caching |
 | `src/ui/**` outside `markdown/` (the shell) | 57 | 5,905 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions, the image URLs |
 | `src/services/` | 20 | 2,844 | the living state: session, workspace, bibliography, i18n, hints, versioning, the event map |
 | `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
