@@ -15,7 +15,7 @@ import { configManager } from '../../../services/config_manager';
 import { t } from '../../../services/i18n';
 import { FloatingSurface } from '../../floating/surface';
 import { defaultsState, KindPage } from './kind_page';
-import { managerGroups } from './manager_rules';
+import { managerGroups, unassignedPackages } from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
 
 export interface ExportManagerSnapshot {
@@ -137,12 +137,7 @@ export class ExportManager extends FloatingSurface {
       },
       activate: (id) => void this.setActivePackage(this.selectedKind ?? '', id),
       packagesChanged: (packages, keepId) => {
-        if (this.snapshot === null) {
-          return;
-        }
-        this.snapshot.packages = packages;
-        this.inspectedId = keepId;
-        this.render();
+        void this.packagesChanged(packages, keepId);
       }
     });
     this.status = document.createElement('div');
@@ -178,9 +173,15 @@ export class ExportManager extends FloatingSurface {
     this.status.replaceChildren();
     try {
       this.snapshot = await this.source.load();
+      const unassigned = unassignedPackages(
+        this.snapshot.kinds,
+        this.snapshot.packages
+      );
       if (
         this.selectedKind === null ||
-        !this.snapshot.kinds.some((kind) => kind.kind === this.selectedKind)
+        (this.selectedKind !== 'unassigned' &&
+          !this.snapshot.kinds.some((kind) => kind.kind === this.selectedKind)) ||
+        (this.selectedKind === 'unassigned' && unassigned.length === 0)
       ) {
         this.selectedKind = this.snapshot.kinds[0]?.kind ?? null;
         this.inspectedId = this.snapshot.exportTemplates[this.selectedKind ?? ''] ?? null;
@@ -189,11 +190,15 @@ export class ExportManager extends FloatingSurface {
       this.showStandingStatus();
     } catch (error) {
       const message = document.createElement('span');
+      message.setAttribute('data-export-manager-error', 'true');
       message.textContent = t('exportManager.libraryFailed', {
         message: error instanceof Error ? error.message : String(error)
       });
       const retry = button('btn btn-ghost btn-xs', t('exportManager.retry'), 'data-export-manager-retry');
       retry.addEventListener('click', () => void this.load());
+      this.snapshot = null;
+      this.sidebar.replaceChildren();
+      this.page.element.replaceChildren();
       this.status.replaceChildren(message, retry);
     }
   }
@@ -255,6 +260,41 @@ export class ExportManager extends FloatingSurface {
       }
     }
 
+    const unassigned = unassignedPackages(snapshot.kinds, snapshot.packages);
+    if (unassigned.length > 0) {
+      const label = document.createElement('p');
+      label.className =
+        'px-2 pb-1 pt-3 text-[0.65rem] font-semibold uppercase tracking-wide opacity-60';
+      label.textContent = groupLabel('unassigned');
+      this.sidebar.append(label);
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className =
+        this.selectedKind === 'unassigned'
+          ? 'mb-1 block w-full rounded bg-primary/10 px-2 py-2 text-left ring-1 ring-primary/30'
+          : 'mb-1 block w-full rounded px-2 py-2 text-left hover:bg-base-300';
+      item.dataset.exportManagerKind = 'unassigned';
+      item.setAttribute('aria-current', String(this.selectedKind === 'unassigned'));
+      const name = document.createElement('span');
+      name.className = 'block truncate text-sm font-medium';
+      name.textContent = t('exportManager.group.unassigned');
+      const count = document.createElement('span');
+      count.className = 'block text-[0.7rem] opacity-60';
+      count.textContent = String(unassigned.length);
+      item.append(name, count);
+      item.addEventListener('click', () => {
+        this.selectedKind = 'unassigned';
+        this.inspectedId = null;
+        this.render();
+      });
+      this.sidebar.append(item);
+    }
+
+    if (this.selectedKind === 'unassigned') {
+      this.page.updateUnassigned(unassigned);
+      return;
+    }
+
     const info = snapshot.kinds.find((kind) => kind.kind === this.selectedKind);
     if (info === undefined) {
       this.page.element.replaceChildren();
@@ -294,6 +334,47 @@ export class ExportManager extends FloatingSurface {
     } catch (error) {
       this.status.textContent = error instanceof Error ? error.message : String(error);
     }
+  }
+
+  private async packagesChanged(
+    packages: TemplateSummary[],
+    keepId: string | null
+  ): Promise<void> {
+    if (this.snapshot === null) {
+      return;
+    }
+    const kind = this.selectedKind;
+    const activeId = kind === null ? null : this.snapshot.exportTemplates[kind] ?? null;
+    if (
+      kind !== null &&
+      kind !== 'unassigned' &&
+      activeId !== null &&
+      !packages.some((summary) => summary.id === activeId)
+    ) {
+      const remembered = { ...this.snapshot.exportTemplates };
+      delete remembered[kind];
+      try {
+        await this.source.updateTemplates(remembered);
+        this.snapshot.exportTemplates = remembered;
+      } catch (error) {
+        this.snapshot.packages = packages;
+        this.inspectedId = keepId;
+        this.render();
+        this.status.textContent = error instanceof Error ? error.message : String(error);
+        return;
+      }
+    }
+    this.snapshot.packages = packages;
+    this.inspectedId = keepId;
+    if (
+      this.selectedKind === 'unassigned' &&
+      unassignedPackages(this.snapshot.kinds, packages).length === 0
+    ) {
+      this.selectedKind = this.snapshot.kinds[0]?.kind ?? null;
+      this.inspectedId = this.snapshot.exportTemplates[this.selectedKind ?? ''] ?? null;
+    }
+    this.render();
+    this.showStandingStatus();
   }
 
   /** Restores the selected kind's non-actionable state after replacing a transient error. */

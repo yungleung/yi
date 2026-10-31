@@ -31,7 +31,10 @@ import { prompt } from '../../prompt';
 import { drivenByTools } from '../../under_test';
 import { packageActionAvailability } from '../manager/manager_rules';
 import { createDefaultDialog } from './create_default_dialog';
-import { templateDetailsDialog } from './details';
+import {
+  showBrokenTemplateDetails,
+  templateDetailsDialog
+} from './details';
 import { templateEditorPanel } from './editor';
 import { importProposalDialog } from './import_dialog';
 import { kindLabel } from './kind_label';
@@ -69,6 +72,25 @@ function button(name: string, label: string, className: string): HTMLButtonEleme
   element.textContent = label;
   element.setAttribute(`data-template-${name}`, 'true');
   return element;
+}
+
+/** The one removal question shared by the package browser and unassigned-package page. */
+export async function removeTemplatePackage(
+  summary: TemplateSummary
+): Promise<boolean> {
+  const agreed = await prompt.ask({
+    title: t('template.remove'),
+    message: t('template.removeQuestion', {
+      name: summary.manifest?.name ?? summary.id
+    }),
+    yes: t('template.remove'),
+    no: t('template.cancel')
+  });
+  if (!agreed) {
+    return false;
+  }
+  await removeTemplate(summary.id);
+  return true;
 }
 
 export class TemplatePackageBrowser extends BaseComponent {
@@ -227,9 +249,7 @@ export class TemplatePackageBrowser extends BaseComponent {
         selected.manifest.kind === state.info.kind &&
         selected.error === null);
     this.primary.disabled = !defaultCanActivate;
-    // A broken package's read-only details arrive with the Export Manager's edge-case task. Until
-    // then the chooser keeps its established refusal rather than offering a button that cannot act.
-    this.details.disabled = !actions.details || this.selected()?.manifest === null;
+    this.details.disabled = !actions.details;
     this.duplicate.disabled = !actions.duplicate;
     this.edit.disabled = !actions.edit;
     this.validate.disabled = !actions.validate;
@@ -397,7 +417,7 @@ export class TemplatePackageBrowser extends BaseComponent {
       return;
     }
     if (summary.manifest === null) {
-      this.status.textContent = summary.error ?? t('template.broken');
+      showBrokenTemplateDetails(summary);
       return;
     }
     const patch = await templateDetailsDialog.ask(summary);
@@ -474,19 +494,10 @@ export class TemplatePackageBrowser extends BaseComponent {
     if (summary === null) {
       return;
     }
-    const agreed = await prompt.ask({
-      title: t('template.remove'),
-      message: t('template.removeQuestion', {
-        name: summary.manifest?.name ?? summary.id
-      }),
-      yes: t('template.remove'),
-      no: t('template.cancel')
-    });
-    if (!agreed) {
-      return;
-    }
     try {
-      await removeTemplate(summary.id);
+      if (!(await removeTemplatePackage(summary))) {
+        return;
+      }
       await this.refresh(null);
     } catch (error) {
       this.status.textContent = error instanceof Error ? error.message : String(error);

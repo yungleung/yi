@@ -48,6 +48,7 @@
   const fixture = `${window.__probePaths.checkout}test/fixtures/templates/html-marker`;
   const proposal = await templates.inspectTemplate(fixture);
   const created = [];
+  let brokenId = null;
   const cleanupPackages = async (ids, exportTemplates) => {
     await configManager.update({ export_templates: exportTemplates });
     for (const id of ids) {
@@ -82,6 +83,27 @@
       map_author: false
     });
     created.push(beta.id);
+    const broken = await templates.importTemplate({
+      source: fixture,
+      name: `Manager Broken ${Date.now().toString(36)}`,
+      kind: 'html',
+      entry: proposal.entry,
+      source_url: null,
+      license: 'CC0-1.0',
+      map_title: false,
+      map_author: false
+    });
+    brokenId = broken.id;
+    created.push(broken.id);
+    await window.__TAURI_INTERNALS__.invoke(
+      'plugin:fs|write_text_file',
+      new TextEncoder().encode(
+        JSON.stringify({ ...broken.manifest, schema: 99 }, null, 2)
+      ),
+      {
+        headers: { path: encodeURIComponent(`${broken.path}/template.json`) }
+      }
+    );
 
     const { ExportManager } = await t.app('/src/ui/export/manager/export_manager.ts');
     const noPandoc = new ExportManager({
@@ -144,7 +166,18 @@
   check(
     'the sidebar lists every kind in its group',
     JSON.stringify(listedKinds) ===
-      JSON.stringify(['docx', 'odt', 'latex', 'html', 'epub', 'pdf', 'revealjs', 'beamer', 'markdown']),
+      JSON.stringify([
+        'docx',
+        'odt',
+        'latex',
+        'html',
+        'epub',
+        'pdf',
+        'revealjs',
+        'beamer',
+        'markdown',
+        'unassigned'
+      ]),
     { listedKinds }
   );
   check(
@@ -154,6 +187,55 @@
       text().includes(words('template.pandocDefault')),
     { first: kindButton('docx')?.getAttribute('aria-current'), text: text().slice(0, 160) }
   );
+
+  kindButton('unassigned')?.click();
+  await t.sleep(120);
+  check(
+    'an unreadable package appears once in Unassigned',
+    kindButton('unassigned') !== null &&
+      document.querySelector(
+        `[data-template-package="${CSS.escape(brokenId)}"]`
+      ) !== null,
+    { brokenId }
+  );
+  document.querySelector(
+    `[data-template-package="${CSS.escape(brokenId)}"]`
+  )?.click();
+  await t.sleep(120);
+  check(
+    'a broken package can be inspected and removed but not used',
+    document.querySelector('[data-template-primary]') === null &&
+      document.querySelector('[data-template-details-button]') !== null &&
+      document.querySelector('[data-template-remove]') !== null,
+    {
+      primary: document.querySelector('[data-template-primary]') !== null,
+      details: document.querySelector('[data-template-details-button]') !== null,
+      remove: document.querySelector('[data-template-remove]') !== null
+    }
+  );
+  document.querySelector('[data-template-details-button]')?.click();
+  await t.sleep(120);
+  check(
+    'broken details show the id, path and reason without an editable form',
+    document
+      .querySelector('[data-broken-template-details]')
+      ?.textContent?.includes(brokenId) === true &&
+      document
+        .querySelector('[data-broken-template-details]')
+        ?.textContent?.includes('schema') === true &&
+      document.querySelector('[data-template-details-form]') === null,
+    {
+      details:
+        document
+          .querySelector('[data-broken-template-details]')
+          ?.textContent?.slice(0, 200) ?? null
+    }
+  );
+  document.querySelector('[data-broken-template-details-close]')?.click();
+  await t.sleep(80);
+  kindButton('docx')?.click();
+  await t.sleep(120);
+
   const editDefaults = document.querySelector('[data-export-manager-edit-defaults]');
   check(
     'the shipped defaults are named and offered for editing without a restore action',
@@ -260,6 +342,62 @@
       { configured: cleared.export_templates?.html ?? null }
     );
 
+    await configManager.update({
+      export_templates: {
+        ...(configManager.get()?.export_templates ?? {}),
+        docx: 'missing-manager-package'
+      }
+    });
+    document.querySelector('[data-export-manager-close]')?.click();
+    await t.sleep(120);
+    await openManager();
+    const missing = words('exportManager.missingPackage', {
+      id: 'missing-manager-package'
+    });
+    check(
+      'a missing active package is named and can be cleared',
+      text().includes(missing),
+      { text: text().slice(0, 240) }
+    );
+    document.querySelector('[data-template-default]')?.click();
+    document.querySelector('[data-template-primary]')?.click();
+    await t.sleep(200);
+    check(
+      'Pandoc’s default clears a missing active package id',
+      (await invoke('get_config')).export_templates?.docx === undefined,
+      {
+        configured:
+          (await invoke('get_config')).export_templates?.docx ?? null
+      }
+    );
+
+    kindButton('html')?.click();
+    await t.sleep(120);
+    document.querySelector(
+      `[data-template-package="${CSS.escape(beta.id)}"]`
+    )?.click();
+    document.querySelector('[data-template-primary]')?.click();
+    await t.sleep(200);
+    document.querySelector('[data-template-remove]')?.click();
+    await t.sleep(100);
+    document.querySelector('[data-prompt-yes]')?.click();
+    await t.sleep(250);
+    const afterRemoval = await invoke('get_config');
+    check(
+      'removing the active package clears its selection',
+      afterRemoval.export_templates?.html === undefined &&
+        document.querySelector(
+          `[data-template-package="${CSS.escape(beta.id)}"]`
+        ) === null,
+      {
+        configured: afterRemoval.export_templates?.html ?? null,
+        remains:
+          document.querySelector(
+            `[data-template-package="${CSS.escape(beta.id)}"]`
+          ) !== null
+      }
+    );
+
   kindButton('markdown')?.click();
   await t.sleep(120);
   check(
@@ -281,6 +419,72 @@
   );
     document.querySelector('[data-export-manager-close]')?.click();
     await t.sleep(120);
+
+    const failedLoad = new ExportManager({
+      load: async () => {
+        throw new Error('probe library failure');
+      },
+      updateTemplates: async () => {},
+      restoreDefaults: async () => ''
+    });
+    await failedLoad.open(() => {});
+    await t.sleep(160);
+    check(
+      'a package-library read failure is shown with a retry action',
+      failedLoad.element.textContent?.includes('probe library failure') === true &&
+        failedLoad.element.querySelector('[data-export-manager-error]') !== null &&
+        failedLoad.element.querySelector('[data-export-manager-retry]') !== null,
+      {
+        text: failedLoad.element.textContent?.slice(0, 200) ?? null,
+        error:
+          failedLoad.element.querySelector('[data-export-manager-error]') !== null
+      }
+    );
+    await failedLoad.requestClose();
+    failedLoad.element.remove();
+
+    const { kinds } = await exportApi.exportKinds();
+    const packages = await templates.exportTemplates();
+    const snapshot = {
+      pandoc: '/bin/pandoc',
+      kinds,
+      packages,
+      exportTemplates: {}
+    };
+    const failedSave = new ExportManager({
+      load: async () => structuredClone(snapshot),
+      updateTemplates: async () => {
+        throw new Error('probe config failure');
+      },
+      restoreDefaults: async () => ''
+    });
+    await failedSave.open(() => {});
+    failedSave.element
+      .querySelector('[data-export-manager-kind="html"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await t.sleep(120);
+    failedSave.element
+      .querySelector(`[data-template-package="${CSS.escape(alpha.id)}"]`)
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    failedSave.element
+      .querySelector('[data-template-primary]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await t.sleep(180);
+    check(
+      'a failed config write leaves the active selection unchanged and reports the error',
+      snapshot.exportTemplates.html === undefined &&
+        failedSave.element.textContent?.includes('probe config failure') === true &&
+        failedSave.element.querySelector('[data-export-manager-status]') !== null &&
+        failedSave.element
+          .querySelector(`[data-template-package="${CSS.escape(alpha.id)}"]`)
+          ?.getAttribute('data-template-active') === 'false',
+      {
+        configured: snapshot.exportTemplates.html ?? null,
+        text: failedSave.element.textContent?.slice(0, 200) ?? null
+      }
+    );
+    await failedSave.requestClose();
+    failedSave.element.remove();
   } finally {
     await cleanupPackages(created, priorTemplates);
   }

@@ -7,7 +7,7 @@
  */
 
 import type { ExportKindInfo } from '../../../api/export';
-import type { TemplateSummary } from '../../../api/templates';
+import { exportTemplates, type TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
@@ -15,7 +15,11 @@ import { prompt } from '../../prompt';
 import { defaultsActionAvailability } from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
-import { TemplatePackageBrowser } from '../templates/package_browser';
+import {
+  removeTemplatePackage,
+  TemplatePackageBrowser
+} from '../templates/package_browser';
+import { showBrokenTemplateDetails } from '../templates/details';
 
 export type DefaultsState = 'none' | 'not-created' | 'shipped' | 'customized';
 
@@ -108,6 +112,46 @@ export class KindPage extends BaseComponent {
     const defaultsSection = this.defaultsSection(info);
     const templatesSection = this.templatesSection(state);
     this.element.replaceChildren(title, summary, defaultsSection, templatesSection);
+  }
+
+  /** The one page that is not an export kind: packages whose intended kind cannot be read. */
+  updateUnassigned(packages: TemplateSummary[]): void {
+    const title = document.createElement('h2');
+    title.className = 'text-lg font-semibold';
+    title.textContent = t('exportManager.group.unassigned');
+    const explanation = paragraph(t('template.broken'), 'mt-2 text-xs opacity-70');
+    const list = document.createElement('div');
+    list.className = 'mt-4 flex flex-col gap-2';
+    for (const summary of packages) {
+      const row = document.createElement('div');
+      row.className = 'rounded-lg border border-base-300 bg-base-100 p-3';
+      row.setAttribute('data-template-package', summary.id);
+      const name = document.createElement('p');
+      name.className = 'text-sm font-medium';
+      name.textContent = summary.id;
+      const path = document.createElement('code');
+      path.className = 'mt-1 block break-all text-xs opacity-70';
+      path.textContent = summary.path;
+      const error = paragraph(summary.error ?? t('template.broken'), 'mt-1 text-xs text-error');
+      const actions = document.createElement('div');
+      actions.className = 'mt-2 flex justify-end gap-2';
+      const details = document.createElement('button');
+      details.type = 'button';
+      details.className = 'btn btn-ghost btn-sm';
+      details.textContent = t('template.details');
+      details.setAttribute('data-template-details-button', 'true');
+      details.addEventListener('click', () => showBrokenTemplateDetails(summary));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn-ghost btn-sm';
+      remove.textContent = t('template.remove');
+      remove.setAttribute('data-template-remove', 'true');
+      remove.addEventListener('click', () => void this.removeUnassigned(summary));
+      actions.append(details, remove);
+      row.append(name, path, error, actions);
+      list.append(row);
+    }
+    this.element.replaceChildren(title, explanation, list);
   }
 
   /** Clears state that belongs to one opening of the manager. */
@@ -205,6 +249,17 @@ export class KindPage extends BaseComponent {
     try {
       await this.handlers.restoreDefaults(info.kind);
       await this.handlers.refresh();
+    } catch (error) {
+      notify('Export Manager', error);
+    }
+  }
+
+  private async removeUnassigned(summary: TemplateSummary): Promise<void> {
+    try {
+      if (!(await removeTemplatePackage(summary))) {
+        return;
+      }
+      this.handlers.packagesChanged(await exportTemplates(), null);
     } catch (error) {
       notify('Export Manager', error);
     }
