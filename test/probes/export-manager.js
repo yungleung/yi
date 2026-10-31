@@ -232,7 +232,9 @@
       document
         .querySelector('[data-broken-template-details]')
         ?.textContent?.includes('schema') === true &&
-      document.querySelector('[data-template-details-form]') === null,
+      document.querySelector(
+        '[data-broken-template-details] [data-template-details-form]'
+      ) === null,
     {
       details:
         document
