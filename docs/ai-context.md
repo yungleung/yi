@@ -272,7 +272,8 @@ be told apart from here. Escape leaves the file exactly as it was.
 one item per kind (`src-tauri/src/menu.rs`, built from `src-tauri/src/export/kinds.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
-(`src/ui/export/export_flow.ts`), and what it opens is a card (`src/ui/export/export_dialog.ts`)
+(`src/ui/export/export_flow.ts`), and what it opens is a card whose workflow lives in
+`src/ui/export/export_dialog.ts` and whose form lives in `src/ui/export/export_form.ts`
 **about that one kind**: the target the file is written to, and the
 **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
