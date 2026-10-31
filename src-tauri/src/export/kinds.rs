@@ -32,9 +32,24 @@ pub enum TemplateMode {
     ReferenceDoc,
 }
 
+/// Where the Export Manager lists a kind.
+///
+/// This is a fact of the kind catalogue so a new kind cannot be added without deciding where a
+/// reader finds it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExportGroup {
+    Documents,
+    Presentations,
+    Other,
+}
+
 /// One kind of export the app knows.
 #[derive(Debug)]
 pub struct ExportKind {
+    /// Where the Export Manager lists this kind: with the documents, the presentations, or the
+    /// kinds that are neither.
+    pub group: ExportGroup,
     /// The name this kind is asked for by, and the one in its config file's name.
     pub kind: &'static str,
     /// The extension an output of this kind is written under.
@@ -161,6 +176,7 @@ pub const PAPER_SIZES: &[(&str, &str)] = &[
 /// Every kind of export this build ships, in the order the dialog shows them.
 pub const KINDS: &[ExportKind] = &[
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "docx",
         extension: "docx",
         name_suffix: "",
@@ -178,6 +194,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::ReferenceDoc,
     },
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "odt",
         extension: "odt",
         name_suffix: "",
@@ -193,6 +210,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::ReferenceDoc,
     },
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "latex",
         // The one kind whose output is *not* named after its writer: pandoc's `latex` writer writes
         // a `.tex`, and `every_shipped_kind...` below is where those two facts are held together.
@@ -210,6 +228,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::Text,
     },
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "html",
         extension: "html",
         name_suffix: "",
@@ -227,6 +246,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::Text,
     },
     ExportKind {
+        group: ExportGroup::Presentations,
         kind: "revealjs",
         extension: "html",
         name_suffix: "",
@@ -244,6 +264,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::None,
     },
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "epub",
         extension: "epub",
         name_suffix: "",
@@ -262,6 +283,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::Text,
     },
     ExportKind {
+        group: ExportGroup::Documents,
         kind: "pdf",
         extension: "pdf",
         name_suffix: "",
@@ -284,6 +306,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::Text,
     },
     ExportKind {
+        group: ExportGroup::Presentations,
         kind: "beamer",
         extension: "pdf",
         name_suffix: "",
@@ -300,6 +323,7 @@ pub const KINDS: &[ExportKind] = &[
         template_mode: KindTemplate::None,
     },
     ExportKind {
+        group: ExportGroup::Other,
         kind: "markdown",
         extension: "md",
         // Not the note's own name: `note.md` beside `note.md` is the note.

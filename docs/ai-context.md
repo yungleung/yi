@@ -527,7 +527,15 @@ package/storage.rs    package paths, naming and file classification
 
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
 row changes it for later exports too. The chooser filters readable packages to the export kind it was
-opened for; an unreadable manifest remains available only so it can be removed. `ExportRequest.template_id` carries only the id: `run/arguments.rs`
+opened for. A package whose manifest cannot be read remains available for read-only details and
+removal; when its kind cannot be read either, the Export Manager lists it once under **Unassigned**.
+**File → Manage Export Templates…** opens one kind-first manager from the typed
+`manage_export_templates` menu event and `export:manageTemplates` command. The manager and the export
+card share `src/ui/export/templates/package_browser.ts`; the manager owns the selected kind,
+inspected package, defaults state and active-package writes, while the card owns transient per-export
+choices. The manager changes only the existing `AppConfig.export_templates` map and existing
+`export.{kind}.yaml` files, never a session document or a second package registry.
+`ExportRequest.template_id` carries only the id: `run/arguments.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
 folder as the first `--resource-path`. A PDF run works from the entry file's folder, so a sample's

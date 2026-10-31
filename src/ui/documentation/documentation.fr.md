@@ -299,6 +299,27 @@ La carte d’export choisit la destination et, pour les types qui les acceptent,
 ou de ressources. Reveal.js et Beamer n’acceptent pas de paquet de modèles. Le choix mémorisé vaut par
 type d’export, pas par note.
 
+### Gérer les modèles d’export
+
+Choisissez **Fichier → Gérer les modèles d’export…** pour administrer tous les types d’export au même
+endroit. Pour chaque type, le gestionnaire affiche les réglages de conversion
+(`export.{kind}.yaml`), le paquet de modèles sélectionné et les paquets compatibles de votre
+bibliothèque.
+
+Les réglages de conversion constituent la base de chaque export de ce type. Un paquet sélectionné
+peut fournir ses propres fichiers `export.yaml` ou `defaults.yaml` ; ses réglages s’appliquent après
+ceux de l’application. Les choix de la carte d’export, comme le format de page ou la suppression de
+la liste des références, ne valent que pour cet export.
+
+Sélectionner une ligne de paquet ne fait que l’examiner. Choisissez **Utiliser ce modèle** pour
+l’activer, ou **Modèle par défaut de Pandoc** pour n’en utiliser aucun. La même fenêtre permet
+d’importer, créer, dupliquer, examiner, modifier, valider, tester et supprimer les paquets.
+
+**Restaurer le fichier fourni** remplace les réglages de conversion de ce type par la copie fournie
+avec cette version ; l’action n’apparaît que si votre copie diffère. Reveal.js et Beamer possèdent
+des réglages de conversion mais n’acceptent pas de paquets de modèles. Le Markdown prétraité n’a ni
+les uns ni les autres.
+
 ### Exports de présentation
 
 Reveal.js lit dans l’en-tête `title`, `subtitle`, `author`, `theme`, `transition`,

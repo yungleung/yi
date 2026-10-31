@@ -36,6 +36,7 @@ export type CommandId =
   | 'file:save'
   | 'file:saveAs'
   | 'file:export'
+  | 'export:manageTemplates'
   | 'file:newMarkdown'
   | 'help:tutorial'
   | 'help:documentation'

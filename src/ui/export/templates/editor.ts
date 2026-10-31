@@ -115,6 +115,7 @@ export class TemplateEditorPanel {
   private baseline = '';
   private readOnlyFile = false;
   private onClose: (() => void) | null = null;
+  private closing = false;
 
   constructor() {
     this.element = document.createElement('div');
@@ -147,7 +148,9 @@ export class TemplateEditorPanel {
     this.testPdfButton = this.button('test-pdf', t('template.testPdf'), 'btn btn-ghost btn-xs', () =>
       void this.testPdf()
     );
-    const close = this.button('close', '✕', 'btn btn-ghost btn-xs', () => void this.close());
+    const close = this.button('close', '✕', 'btn btn-ghost btn-xs', () =>
+      void this.requestClose()
+    );
     close.setAttribute('aria-label', t('template.close'));
     header.append(this.title, this.dirtyMark, spacer, this.saveButton, this.validateButton, this.testPdfButton, close);
 
@@ -172,13 +175,15 @@ export class TemplateEditorPanel {
     // A press in the panel belongs to the panel, not to the window drag behind it.
     this.panel.addEventListener('mousedown', (event) => event.stopPropagation());
     document.addEventListener('keydown', (event) => {
-      if (!this.isOpen()) {
+      if (
+        event.key !== 'Escape' ||
+        event.isComposing ||
+        event.defaultPrevented ||
+        !this.handleEscape()
+      ) {
         return;
       }
-      if (event.key === 'Escape' && this.searchClosed()) {
-        event.preventDefault();
-        void this.close();
-      }
+      event.preventDefault();
     });
   }
 
@@ -211,10 +216,14 @@ export class TemplateEditorPanel {
   }
 
   /** Shows one kind's defaults YAML: not a package, and never written anywhere but where it lives. */
-  async openDefaults(kind: string, label: string): Promise<void> {
+  async openDefaults(
+    kind: string,
+    label: string,
+    onClose: (() => void) | null = null
+  ): Promise<void> {
     this.summary = null;
     this.defaultsKind = kind;
-    this.onClose = null;
+    this.onClose = onClose;
     this.title.textContent = t('template.defaultsTitle', { kind: label });
     this.testPdfButton.classList.add('hidden');
     this.mount();
@@ -436,17 +445,43 @@ export class TemplateEditorPanel {
     return this.view?.dom.querySelector('.cm-search') === null;
   }
 
-  private async close(): Promise<void> {
-    if (this.isDirty() && !(await this.confirmDiscard())) {
+  /**
+   * Handles one Escape at the editor's own priority.
+   *
+   * An open search panel is the editor's inner state, so Escape is left to CodeMirror. Once that
+   * state is closed, the key dismisses the editor. The manager uses this same path from its capture
+   * listener so a search panel and the editor never both close on one key.
+   */
+  handleEscape(): boolean {
+    if (!this.isOpen() || !this.searchClosed()) {
+      return false;
+    }
+    void this.requestClose();
+    return true;
+  }
+
+  /** Closes every way the editor can be dismissed through one dirty-checked path. */
+  async requestClose(): Promise<void> {
+    if (this.closing) {
       return;
     }
-    this.element.classList.add('hidden');
-    this.element.classList.remove('flex');
-    this.view?.destroy();
-    this.view = null;
-    this.currentFile = null;
-    this.baseline = '';
-    this.onClose?.();
+    this.closing = true;
+    try {
+      if (this.isDirty() && !(await this.confirmDiscard())) {
+        return;
+      }
+      this.element.classList.add('hidden');
+      this.element.classList.remove('flex');
+      this.view?.destroy();
+      this.view = null;
+      this.currentFile = null;
+      this.baseline = '';
+      const callback = this.onClose;
+      this.onClose = null;
+      callback?.();
+    } finally {
+      this.closing = false;
+    }
   }
 
   private button(

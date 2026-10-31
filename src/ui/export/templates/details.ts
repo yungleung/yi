@@ -172,4 +172,51 @@ export class TemplateDetailsDialog extends QuestionCard<DetailsPatch | null> {
   }
 }
 
+/** A broken package has no editable form; its identity, path and reason are still useful. */
+class BrokenTemplateDetailsDialog extends QuestionCard<void> {
+  constructor() {
+    super('w-[34rem]');
+    this.element.setAttribute('data-broken-template-details', 'true');
+  }
+
+  protected cautious(): void {}
+
+  async show(summary: TemplateSummary): Promise<void> {
+    const heading = document.createElement('p');
+    heading.className = 'text-sm font-semibold';
+    heading.textContent = t('template.detailsTitle');
+    const facts = document.createElement('dl');
+    facts.className = 'mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs';
+    for (const [label, value] of [
+      [t('template.name'), summary.id],
+      [t('template.source'), summary.path],
+      [t('template.broken'), summary.error ?? '']
+    ]) {
+      const term = document.createElement('dt');
+      term.className = 'font-semibold';
+      term.textContent = label;
+      const description = document.createElement('dd');
+      description.className = 'break-all';
+      description.textContent = value;
+      facts.append(term, description);
+    }
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn btn-ghost btn-sm';
+    close.textContent = t('template.closeBrokenDetails');
+    close.setAttribute('data-broken-template-details-close', 'true');
+    close.addEventListener('click', () => this.settle());
+    const actions = document.createElement('div');
+    actions.className = 'mt-3 flex justify-end';
+    actions.append(close);
+    await this.askWith(() => this.card.append(heading, facts, actions));
+  }
+}
+
 export const templateDetailsDialog = new TemplateDetailsDialog();
+const brokenTemplateDetailsDialog = new BrokenTemplateDetailsDialog();
+
+/** Shows the exact diagnostic state of a package whose manifest cannot be read. */
+export function showBrokenTemplateDetails(summary: TemplateSummary): void {
+  void brokenTemplateDetailsDialog.show(summary);
+}

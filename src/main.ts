@@ -30,6 +30,7 @@ import { registerSessionCommands } from './ui/session/session_commands';
 import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
 import { registerVersionCommand } from './ui/versioning/save_version';
 import { registerExportCommand } from './ui/export/export_flow';
+import { registerExportManagerCommand } from './ui/export/manager/export_manager_flow';
 import { ExportProgressStatus } from './ui/export/export_progress';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/tutorial_flow';
 import { registerDocumentationCommand } from './ui/documentation/documentation_flow';
@@ -130,6 +131,7 @@ function createAppShell(): MarkdownEditor {
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is
   // the text on screen rather than the session's debounced copy of it.
   registerExportCommand({ text: () => editor.getContent(), progress: exportProgress });
+  registerExportManagerCommand({ focusEditor: () => editor.focusText() });
 
   // Seed the initial word count (the component's own event listener may not
   // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).

@@ -35,12 +35,16 @@
   };
 
   let mounted = false;
-  for (let fraction = 0.1; !mounted && fraction <= 1; fraction += 0.1) {
+  for (let fraction = 0.1; !mounted && fraction <= 1; fraction += 0.05) {
     t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
     await t.sleep(150);
     mounted =
       t.prose().querySelector('[id="list:steps"]') !== null &&
-      t.prose().querySelector('[id="list:ordered"]') !== null;
+      t.prose().querySelector('[id="list:ordered"]') !== null &&
+      t.prose().querySelector('[data-auto-reference="list:steps"]') !== null &&
+      t.prose().querySelector(
+        'a.markdown-link[href="#list:steps"]:not([data-auto-reference])'
+      ) !== null;
   }
   await t.sleep(250);
 

@@ -290,6 +290,25 @@ O cartão de exportação escolhe o destino e, nos tipos que os aceitam, um paco
 recursos. Reveal.js e Beamer não aceitam pacotes de modelos. A escolha lembrada é por tipo de
 exportação, não por nota.
 
+### Gerenciar modelos de exportação
+
+Escolha **Arquivo → Gerenciar modelos de exportação…** para administrar todos os tipos de exportação
+em um só lugar. Para cada tipo, o gerenciador mostra as configurações de conversão
+(`export.{kind}.yaml`), o pacote de modelo selecionado e os pacotes compatíveis da sua biblioteca.
+
+As configurações de conversão são a base de toda exportação daquele tipo. Um pacote selecionado pode
+fornecer seus próprios `export.yaml` ou `defaults.yaml`; as configurações do pacote são aplicadas
+depois das configurações do aplicativo. Escolhas do cartão de exportação, como tamanho da página ou
+ocultação da lista de referências, valem apenas para aquela exportação.
+
+Selecionar um pacote apenas o inspeciona sem alterar a exportação. Escolha **Usar este modelo** para
+ativá-lo, ou **Padrão do Pandoc** para não usar pacote. Na mesma janela é possível importar, criar,
+duplicar, inspecionar, editar, validar, testar e remover pacotes.
+
+**Restaurar arquivo incluído** substitui as configurações daquele tipo pela cópia incluída nesta
+versão e só aparece quando sua cópia difere. Reveal.js e Beamer têm configurações de conversão, mas
+não aceitam pacotes de modelos. Markdown pré-processado não possui nenhum dos dois.
+
 ### Apresentações
 
 Reveal.js lê do frontmatter `title`, `subtitle`, `author`, `theme`, `transition`,

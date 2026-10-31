@@ -68,9 +68,9 @@
     row.click();
     await sleep(100);
     check(
-      'Use and Details are refused, and Remove is offered',
+      'Use is refused while read-only Details and Remove are offered',
       document.querySelector('[data-template-use]').disabled === true &&
-        document.querySelector('[data-template-details-button]').disabled === true &&
+        document.querySelector('[data-template-details-button]').disabled === false &&
         document.querySelector('[data-template-remove]').disabled === false,
       {
         use: document.querySelector('[data-template-use]').disabled,
@@ -78,6 +78,28 @@
         remove: document.querySelector('[data-template-remove]').disabled
       }
     );
+    document.querySelector('[data-template-details-button]').click();
+    await until(() => visible('[data-broken-template-details]'));
+    check(
+      'and Details explains the broken manifest without an editable form',
+      document
+        .querySelector('[data-broken-template-details]')
+        ?.textContent?.includes(id) === true &&
+        document
+          .querySelector('[data-broken-template-details]')
+          ?.textContent?.includes('2') === true &&
+        document.querySelector(
+          '[data-broken-template-details] [data-template-details-form]'
+        ) === null,
+      {
+        details:
+          document
+            .querySelector('[data-broken-template-details]')
+            ?.textContent?.slice(0, 180) ?? null
+      }
+    );
+    document.querySelector('[data-broken-template-details-close]').click();
+    await sleep(100);
     document.querySelector('[data-template-remove]').click();
     await until(() => visible('[data-prompt]'));
     document.querySelector('[data-prompt-yes]').click();

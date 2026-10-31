@@ -308,6 +308,26 @@ Die Exportkarte wählt das Ziel und, bei Arten, die dies unterstützen, ein Vorl
 Ressourcen. Reveal.js und Beamer nehmen keine Vorlagenpakete an. Die gemerkte Vorlagenwahl gilt je
 Exportart, nicht je Notiz.
 
+### Exportvorlagen verwalten
+
+Wählen Sie **Datei → Exportvorlagen verwalten…**, um alle Exportarten an einem Ort zu verwalten. Für
+jede Art zeigt der Manager die Konvertierungseinstellungen (`export.{kind}.yaml`), das für Exporte
+ausgewählte Vorlagenpaket und die kompatiblen Pakete Ihrer Bibliothek.
+
+Die Konvertierungseinstellungen bilden die Grundlage für jeden Export dieser Art. Ein ausgewähltes
+Paket kann eigene `export.yaml`- oder `defaults.yaml`-Dateien mitbringen; Paketeinstellungen gelten
+nach den App-Einstellungen. Optionen der Exportkarte, etwa Seitenformat oder das Unterdrücken der
+Literaturliste, gelten nur für diesen Export.
+
+Ein Klick auf ein Paket zeigt es nur an und ändert den Export nicht. Mit **Diese Vorlage verwenden**
+wird es zum aktiven Paket; **Pandocs Standard** verwendet kein Paket. Pakete lassen sich im selben
+Fenster importieren, erstellen, duplizieren, prüfen, bearbeiten, validieren, testen und entfernen.
+
+**Mitgelieferte Datei wiederherstellen** ersetzt die Konvertierungseinstellungen dieser Art durch die
+mit diesem Build gelieferte Kopie. Die Aktion erscheint nur, wenn Ihre Kopie abweicht. Reveal.js und
+Beamer haben Konvertierungseinstellungen, nehmen aber keine Vorlagenpakete an. Verarbeitetes
+Markdown hat weder das eine noch das andere.
+
 ### Präsentationen
 
 Reveal.js liest `title`, `subtitle`, `author`, `theme`, `transition`, `slide-level` und weitere

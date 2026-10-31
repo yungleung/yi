@@ -11,12 +11,16 @@ use std::fs;
 use std::path::Path;
 
 use super::config::export_dir;
-use super::kinds::{config_file_name, ExportKind, KindTemplate, PaperSize, KINDS, PAPER_SIZES};
+use super::kinds::{
+    config_file_name, ExportGroup, ExportKind, KindTemplate, PaperSize, KINDS, PAPER_SIZES,
+};
 use super::pandoc::find_pandoc;
 
 /// A kind of export as the window reads it: its own facts, and where its config file lives.
 #[derive(Debug, Serialize, Clone)]
 pub struct ExportKindInfo {
+    /// Where the Export Manager lists this kind: documents, presentations or other.
+    pub group: ExportGroup,
     pub kind: String,
     pub extension: String,
     /// What the output's name adds to the note's own (`note.processed.md` for the one kind whose
@@ -88,6 +92,7 @@ pub(super) fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
         .map(|path| fs::read(path).map(|bytes| bytes == kind.defaults.as_bytes()).unwrap_or(true))
         .unwrap_or(false);
     ExportKindInfo {
+        group: kind.group,
         kind: kind.kind.to_string(),
         extension: kind.extension.to_string(),
         name_suffix: kind.name_suffix.to_string(),

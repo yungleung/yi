@@ -294,6 +294,26 @@ La tarjeta de exportación elige el destino y, para los tipos que los admiten, u
 o recursos. Reveal.js y Beamer no aceptan paquetes de plantillas. La elección recordada es por tipo de
 exportación, no por nota.
 
+### Gestionar las plantillas de exportación
+
+Elija **Archivo → Gestionar plantillas de exportación…** para administrar todos los tipos de
+exportación en un solo lugar. Para cada tipo, el gestor muestra la configuración de conversión
+(`export.{kind}.yaml`), el paquete de plantilla seleccionado y los paquetes compatibles de su
+biblioteca.
+
+La configuración de conversión es la base de todas las exportaciones de ese tipo. Un paquete
+seleccionado puede incluir sus propios `export.yaml` o `defaults.yaml`; su configuración se aplica
+después de la de la aplicación. Las opciones de la tarjeta de exportación, como el tamaño de página
+o la supresión de la lista de referencias, solo afectan a esa exportación.
+
+Seleccionar un paquete solo lo inspecciona; no cambia la exportación. Elija **Usar esta plantilla**
+para activarlo o **Valor predeterminado de Pandoc** para no usar ninguno. Desde la misma ventana puede
+importar, crear, duplicar, inspeccionar, editar, validar, probar y eliminar paquetes.
+
+**Restaurar archivo incluido** sustituye la configuración de ese tipo por la copia incluida con esta
+versión y solo se ofrece cuando su copia difiere. Reveal.js y Beamer tienen configuración de
+conversión pero no aceptan paquetes de plantilla. El Markdown procesado no tiene ninguna de las dos.
+
 ### Presentaciones
 
 Reveal.js lee del frontmatter `title`, `subtitle`, `author`, `theme`, `transition`,
