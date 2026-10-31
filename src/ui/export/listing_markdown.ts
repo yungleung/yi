@@ -10,6 +10,7 @@
 
 import type { ListingNode } from '../markdown/syntax/listings';
 import { escapeHtml, htmlAttributeName } from './html';
+import { attributeValue, escapeMarkdownText } from './markdown_escaping';
 
 /** A processed-Markdown listing all common Markdown readers can draw. */
 export function listingHtml(listing: ListingNode, label: string | null): string {
@@ -98,14 +99,4 @@ function fencedListing(
 /** Keep an opening-fence command from being closed by a backtick run in its body. */
 function longestBacktickRun(value: string): number {
   return Math.max(0, ...(value.match(/`+/g) ?? []).map((run) => run.length));
-}
-
-/** Escape document text placed in a generated Markdown caption paragraph. */
-function escapeMarkdownText(text: string): string {
-  return text.replace(/([\\`*_[\]{}<>#+\-!|])/g, '\\$1');
-}
-
-/** A quoted Pandoc attribute value. */
-function attributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }

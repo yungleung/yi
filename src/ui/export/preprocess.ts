@@ -38,11 +38,9 @@
 
 import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
 import type { ListingNode } from '../markdown/syntax/listings';
-import { destinationPaths } from '../../services/workspace_folders';
 import { parseMarkdown } from '../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
 import { spansOfType, type Span, type Walkable } from './node_spans';
-import { isWebDestination } from './picture_hint';
 import type { FigureNode } from '../markdown/syntax/figures';
 import { escapeHtml, htmlAttributeName } from './html';
 import { tableRewrites } from './table_rewrites';
@@ -55,6 +53,18 @@ import {
   listingHtml,
   pandocListing
 } from './listing_markdown';
+import {
+  imageDestination,
+  imageMarkdown,
+  imageMarkdownUnchanged,
+  imageRewrites
+} from './image_rewrites';
+import {
+  attributeValue,
+  encodeFragment,
+  encodedPath,
+  escapeLinkText
+} from './markdown_escaping';
 import {
   firstReference,
   referenceIndex,
@@ -122,7 +132,7 @@ export interface CitationRendering {
 }
 
 /** One span of the document, and the text it is rewritten to. */
-interface Rewrite {
+export interface Rewrite {
   start: number;
   end: number;
   text: string;
@@ -329,100 +339,6 @@ function listingRewrites(
   });
 }
 
-/**
- * Every image whose destination names a file that is there, as that file's own absolute path. A
- * destination that names no *file* (a web URL, a scheme of its own) is left as written, and so is
- * one whose file cannot be found: pandoc says so itself, and a note that shows a broken image
- * exports as a broken image rather than as something the app invented.
- */
-async function imageRewrites(
-  tree: Walkable,
-  answers: ExportAnswers,
-  fetched: Map<string, string | null>,
-  figures: readonly Span[],
-  tables: readonly Span[]
-): Promise<Rewrite[]> {
-  const rewrites: Rewrite[] = [];
-  // One URL is one download, however many times a note names it.
-  for (const span of spansOfType(tree, 'image')) {
-    if (figures.some((figure) => span.start >= figure.start && span.end <= figure.end)) {
-      continue;
-    }
-    // Processed Markdown renders its table itself; an image rewrite inside that
-    // replacement would fetch an asset whose path the HTML renderer then discards.
-    if (
-      answers.kind === 'markdown' &&
-      tables.some((table) => span.start >= table.start && span.end <= table.end)
-    ) {
-      continue;
-    }
-    const image = span.node as AstImage;
-    const destination = await imageDestination(image, answers, fetched);
-    if (destination !== null) {
-      const target = answers.imageTarget?.(destination, image.url) ?? destination;
-      rewrites.push({ start: span.start, end: span.end, text: imageMarkdown(image, target) });
-    }
-  }
-  return rewrites;
-}
-
-/** The local file an image resolves to, or null when its destination stays as written. */
-async function imageDestination(
-  image: AstImage,
-  answers: ExportAnswers,
-  fetched: Map<string, string | null>
-): Promise<string | null> {
-  return (
-    answers.rasterised?.(image.url) ??
-    (await resolvedFile(image.url, answers)) ??
-    (await remoteFile(image.url, answers, fetched))
-  );
-}
-
-/** The local file a picture on the web was fetched to, or null when it names no such picture. */
-async function remoteFile(
-  destination: string,
-  answers: ExportAnswers,
-  fetched: Map<string, string | null>
-): Promise<string | null> {
-  const url = destination.trim();
-  if (!isWebDestination(url)) {
-    return null;
-  }
-  const known = fetched.get(url);
-  if (known !== undefined) {
-    return known;
-  }
-  const file = await answers.fetchRemote(url);
-  fetched.set(url, file);
-  return file;
-}
-
-/** The file an image's destination names, or null when it names none that is there. */
-async function resolvedFile(destination: string, answers: ExportAnswers): Promise<string | null> {
-  const candidates = destinationPaths(destination, answers.bases.images, answers.bases.document);
-  for (const candidate of candidates) {
-    if (await answers.exists(candidate)) {
-      return candidate;
-    }
-  }
-  return null;
-}
-
-/** The markdown of an image whose destination is now a file path: `![alt](path "title")`. */
-function imageMarkdown(image: AstImage, file: string): string {
-  const alt = (image.alt ?? '').replace(/[[\]]/g, '\\$&');
-  const title = image.title == null ? '' : ` "${image.title.replace(/"/g, '\\"')}"`;
-  return `![${alt}](${encodedPath(file)}${title})`;
-}
-
-/** An image whose destination is already a readable Markdown destination. */
-function imageMarkdownUnchanged(image: AstImage, destination: string): string {
-  const alt = (image.alt ?? '').replace(/[[\]]/g, '\\$&');
-  const title = image.title == null ? '' : ` "${image.title.replace(/"/g, '\\"')}"`;
-  return `![${alt}](${destination}${title})`;
-}
-
 /** A processed-Markdown figure that common Markdown readers can display. */
 function figureHtml(
   figure: FigureNode,
@@ -466,33 +382,6 @@ function figureAttributes(figure: FigureNode, includeId: boolean): string {
     : `${figure.attribute?.separator ?? ''}{${tokens.join(' ')}}`;
 }
 
-/** Escape text used as an ordinary Markdown link label. */
-function escapeLinkText(text: string): string {
-  return text.replace(/[\\[\]]/g, (character) => `\\${character}`);
-}
-
-/** Escape one fragment identifier for a Markdown destination. */
-function encodeFragment(id: string): string {
-  return encodeURI(id);
-}
-
-/** A quoted Pandoc attribute value. */
-function attributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
-
-/**
- * A path written so markdown reads it as itself, and pandoc fetches the file it names: every
- * character a destination could mean something else by is percent-encoded (a space, a `#`, a `(`,
- * a `"`, a `%` itself), and pandoc decodes them again when it goes to fetch the picture — measured,
- * with a file for each of those characters in its name.
- */
-function encodedPath(path: string): string {
-  return path
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
-}
 
 /** `text` with the rewrites made, from the end back, so none of them moves another's span. */
 function applyRewrites(text: string, rewrites: Rewrite[]): string {
