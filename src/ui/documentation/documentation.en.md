@@ -774,6 +774,24 @@ The export card chooses a destination and, for kinds that support them, a templa
 resource choice. Reveal.js and Beamer take no template package. The remembered template choice is
 per export kind, not per note.
 
+### Managing export templates
+
+Choose **File → Manage Export Templates…** to manage every export kind in one place. For each kind,
+the manager shows the conversion settings file (`export.{kind}.yaml`), the template package selected
+for exports, and the compatible packages in your library.
+
+The conversion settings are the base for every export of that kind. A selected package may provide
+its own `export.yaml` or `defaults.yaml`; package settings apply after the app settings. Choices made
+in the export card, such as page size or citation-list suppression, apply only to that export.
+
+Selecting a package row inspects it without changing your export. Choose **Use This Template** to
+make it the active package, or choose **Pandoc’s default** to use no package. You can import, create,
+duplicate, inspect, edit, validate, test and remove packages from the same window.
+
+**Restore Shipped File** replaces the kind’s conversion settings with the copy shipped by this
+build. It is offered only when your copy differs. Reveal.js and Beamer have conversion settings but
+do not accept template packages. Processed Markdown has neither.
+
 ### Presentation exports
 
 Reveal.js reads presentation controls from frontmatter, including `title`, `subtitle`, `author`,

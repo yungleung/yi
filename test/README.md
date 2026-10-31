@@ -323,7 +323,11 @@ and a fully captioned listing follows;
 bundle contains the deck page, `images/`, and the referenced `js/dist/` files, the downloader maps
 those names to the CDN’s real `dist/` tree, each switch is tested independently in both states, and
 a failed new export leaves no partial bundle; `export-beamer` — the Beamer card has no template or page-size
-control and produces a real PDF from frontmatter and section/frame headings;
+control and produces a real PDF from frontmatter and section/frame headings; `export-manager` — the
+native File-menu event opens one kind-first Export Manager with the complete sidebar, defaults
+state/edit/restore, package inspection and explicit activation, selected-package reflection in the
+export card, broken and Unassigned packages, defaults-only and no-configuration kinds, load retry,
+config-write failure, editor-first Escape layering and focus return;
 the template package probes sit beside them: `export-template-import` (a folder, a zip with one root,
 a wrapper, a duplicate and a remove; the session stack stays empty), `export-template-defaults`
 (pandoc's default template and reference document, and a validation that names a deleted entry),

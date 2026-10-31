@@ -17,6 +17,12 @@ reference-number-prefixes:
 
 This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~~strikethrough~~.
 
+## Export setup
+
+Choose **File → Manage Export Templates…** to manage each export kind's conversion settings and
+template packages together. Selecting a package inspects it; **Use This Template** makes it the
+package exports of that kind will use.
+
 ## Session stack
 
 Press `Cmd+P` (or `Ctrl+P`) to add this document to the session stack or remove it. `Cmd+T` opens
