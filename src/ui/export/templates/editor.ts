@@ -10,19 +10,7 @@
  * as a file here.
  */
 
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { bracketMatching, indentOnInput, StreamLanguage } from '@codemirror/language';
-import { yaml } from '@codemirror/legacy-modes/mode/yaml';
-import { stex } from '@codemirror/legacy-modes/mode/stex';
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-import { EditorState } from '@codemirror/state';
-import {
-  EditorView,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  keymap,
-  lineNumbers
-} from '@codemirror/view';
+import type { EditorView } from '@codemirror/view';
 import { join } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
 import {
@@ -38,63 +26,8 @@ import {
 import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { prompt } from '../../prompt';
-
-/** The editor's own colours: the app's daisyUI theme, never a second palette. */
-const THEME = EditorView.theme({
-  '&': {
-    height: '100%',
-    backgroundColor: 'var(--color-base-100)',
-    color: 'var(--color-base-content)',
-    fontSize: '0.8125rem'
-  },
-  '.cm-scroller': {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    lineHeight: '1.55'
-  },
-  '.cm-content': {
-    caretColor: 'var(--color-primary)',
-    padding: '0.5rem 0'
-  },
-  '.cm-gutters': {
-    backgroundColor: 'var(--color-base-200)',
-    color: 'color-mix(in oklab, var(--color-base-content) 55%, var(--color-base-200))',
-    borderRight: '1px solid var(--color-base-300)'
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'color-mix(in oklab, var(--color-base-content) 5%, transparent)'
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: 'color-mix(in oklab, var(--color-base-content) 8%, transparent)'
-  },
-  '&.cm-focused': { outline: 'none' },
-  '.cm-selectionBackground, ::selection': {
-    backgroundColor: 'color-mix(in oklab, var(--color-primary) 28%, transparent)'
-  },
-  '.cm-searchMatch': {
-    backgroundColor: 'color-mix(in oklab, var(--color-warning) 35%, transparent)'
-  }
-});
-
-function languageFor(file: string): ReturnType<typeof StreamLanguage.define> | null {
-  const extension = file.split('.').pop()?.toLowerCase() ?? '';
-  if (extension === 'yaml' || extension === 'yml') {
-    return StreamLanguage.define(yaml);
-  }
-  if (['tex', 'cls', 'sty', 'bst', 'bbx', 'cbx'].includes(extension)) {
-    return StreamLanguage.define(stex);
-  }
-  return null;
-}
-
-function sizeLabel(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { createTemplateCodeEditor } from './template_code_editor';
+import { renderTemplateFiles } from './template_file_list';
 
 /** One code panel for the whole window; it is the only thing on screen while it is open. */
 export class TemplateEditorPanel {
@@ -245,41 +178,15 @@ export class TemplateEditorPanel {
   }
 
   private renderFiles(only: string | null = null): void {
-    this.files.replaceChildren();
     const files =
       only === null
         ? this.summary?.files ?? []
         : [{ name: only, size: 0, editable: true }];
-    for (const file of files) {
-      const row = document.createElement('div');
-      row.className = 'flex items-center gap-1 rounded px-1 py-1';
-      row.setAttribute('data-template-file', file.name);
-      const name = document.createElement('button');
-      name.type = 'button';
-      name.className =
-        'min-w-0 flex-1 truncate rounded px-1 py-0.5 text-left text-xs hover:bg-base-300';
-      name.textContent = file.name;
-      name.title = file.name;
-      name.addEventListener('click', () => void this.chooseFile(file.name, file.editable));
-      row.append(name);
-      if (!file.editable) {
-        const size = document.createElement('span');
-        size.className = 'text-[0.65rem] opacity-50';
-        size.textContent = sizeLabel(file.size);
-        row.append(size);
-        if (this.summary !== null && !file.name.endsWith('.json')) {
-          const open = document.createElement('button');
-          open.type = 'button';
-          open.className = 'btn btn-ghost btn-xs px-1';
-          open.textContent = '↗';
-          open.title = t('template.openInSystem');
-          open.setAttribute('aria-label', t('template.openInSystem'));
-          open.addEventListener('click', () => void this.openInSystem(file.name));
-          row.append(open);
-        }
-      }
-      this.files.append(row);
-    }
+    renderTemplateFiles(this.files, files, {
+      choose: (file, editable) => void this.chooseFile(file, editable),
+      openExternally: (file) => void this.openInSystem(file),
+      canOpenExternally: this.summary !== null
+    });
   }
 
   private async chooseFile(file: string, editable: boolean): Promise<void> {
@@ -313,44 +220,16 @@ export class TemplateEditorPanel {
     this.baseline = text;
     this.dirtyMark.textContent = '';
     this.saveButton.disabled = readOnly;
-    const language = languageFor(file);
     this.view?.destroy();
-    this.view = new EditorView({
+    this.view = createTemplateCodeEditor({
       parent: this.editorHost,
-      state: EditorState.create({
-        doc: text,
-        extensions: [
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          highlightActiveLine(),
-          history(),
-          bracketMatching(),
-          indentOnInput(),
-          highlightSelectionMatches(),
-          EditorState.readOnly.of(readOnly),
-          EditorView.editable.of(!readOnly),
-          ...(language === null ? [] : [language]),
-          keymap.of([
-            {
-              key: 'Mod-s',
-              run: () => {
-                void this.save();
-                return true;
-              }
-            },
-            ...defaultKeymap,
-            ...historyKeymap,
-            ...searchKeymap,
-            indentWithTab
-          ]),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              this.dirtyMark.textContent = this.isDirty() ? t('template.dirty') : '';
-            }
-          }),
-          THEME
-        ]
-      })
+      file,
+      text,
+      readOnly,
+      onDocumentChanged: () => {
+        this.dirtyMark.textContent = this.isDirty() ? t('template.dirty') : '';
+      },
+      onSave: () => void this.save()
     });
     this.view.focus();
     this.status.textContent = readOnly ? t('template.readOnlyFile') : '';

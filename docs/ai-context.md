@@ -602,11 +602,12 @@ the output folder, skips the package's sample file, and writes the generated `.b
 falling back. `export-template-native-bibliography.js` drives both a `.bib` and CSL-JSON selection
 through the running app and proves uncited works do not reach the source tree.
 
-The editor is `src/ui/export/templates/editor.ts`: a CodeMirror 6 panel (YAML and TeX through
-`StreamLanguage`, line numbers, search, undo, bracket matching), never the markdown editor and never a
-session document. It lists the package's files, shows binaries read-only with *Open in system*, saves
-with `Mod-S` atomically, and **Validate** / **Test PDF** run pandoc on a one-paragraph fixture and
-show its stderr. The same panel edits a kind's defaults YAML, which is why the export card's old
+The editor is `src/ui/export/templates/editor.ts`, a panel that never becomes the markdown editor or
+a session document. `template_code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
+`StreamLanguage`, line numbers, search, undo, bracket matching), while `template_file_list.ts` draws
+editable and binary rows. The panel owns loading, dirty state, discard confirmation, atomic save and
+**Validate** / **Test PDF**; binaries remain read-only with *Open in system*. The same panel edits a
+kind's defaults YAML, which is why the export card's old
 *Reveal in folder* is now **Edit defaults**. The library is `library.ts` (choose, import, create,
 details, duplicate, remove), the confirmation is `import_dialog.ts`, and the manifest shape is held
 by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.json`. The probes are
