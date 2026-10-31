@@ -87,6 +87,7 @@ export class ExportManager extends FloatingSurface {
   private readonly status: HTMLDivElement;
   private snapshot: ExportManagerSnapshot | null = null;
   private selectedKind: string | null = null;
+  private inspectedId: string | null = null;
   private onClose: (() => void) | null = null;
 
   constructor(private readonly source: ExportManagerSource = liveExportManagerSource) {
@@ -129,7 +130,20 @@ export class ExportManager extends FloatingSurface {
     content.className = 'flex min-w-0 flex-1 flex-col';
     this.page = new KindPage({
       restoreDefaults: async (kind) => await this.source.restoreDefaults(kind),
-      refresh: async () => await this.load()
+      refresh: async () => await this.load(),
+      inspect: (id) => {
+        this.inspectedId = id;
+        this.render();
+      },
+      activate: (id) => void this.setActivePackage(this.selectedKind ?? '', id),
+      packagesChanged: (packages, keepId) => {
+        if (this.snapshot === null) {
+          return;
+        }
+        this.snapshot.packages = packages;
+        this.inspectedId = keepId;
+        this.render();
+      }
     });
     this.status = document.createElement('div');
     this.status.className = 'min-h-5 border-t border-base-300 px-4 py-1 text-xs text-error';
@@ -141,6 +155,7 @@ export class ExportManager extends FloatingSurface {
 
   async open(onClose: () => void = () => {}): Promise<void> {
     this.onClose = onClose;
+    this.page.resetTransient();
     super.open();
     await this.load();
   }
@@ -152,6 +167,7 @@ export class ExportManager extends FloatingSurface {
   close(): void {
     super.close();
     this.selectedKind = null;
+    this.inspectedId = null;
     this.snapshot = null;
     const callback = this.onClose;
     this.onClose = null;
@@ -167,6 +183,7 @@ export class ExportManager extends FloatingSurface {
         !this.snapshot.kinds.some((kind) => kind.kind === this.selectedKind)
       ) {
         this.selectedKind = this.snapshot.kinds[0]?.kind ?? null;
+        this.inspectedId = this.snapshot.exportTemplates[this.selectedKind ?? ''] ?? null;
       }
       this.render();
       if (this.snapshot.pandoc === null) {
@@ -233,6 +250,7 @@ export class ExportManager extends FloatingSurface {
         item.append(name, details);
         item.addEventListener('click', () => {
           this.selectedKind = row.info.kind;
+          this.inspectedId = snapshot.exportTemplates[row.info.kind] ?? null;
           this.render();
         });
         this.sidebar.append(item);
@@ -245,15 +263,39 @@ export class ExportManager extends FloatingSurface {
       return;
     }
     const activeId = snapshot.exportTemplates[info.kind] ?? null;
+    const row = managerGroups(snapshot.kinds, snapshot.packages)
+      .flatMap((group) => group.rows)
+      .find((candidate) => candidate.info.kind === info.kind);
     this.page.update({
       info,
       activeId,
       activePackage:
         snapshot.packages.find((summary) => summary.id === activeId) ?? null,
-      packageCount: snapshot.packages.filter(
-        (summary) => summary.manifest?.kind === info.kind
-      ).length
+      inspectedId: this.inspectedId,
+      packages: row?.packages ?? [],
+      pandoc: snapshot.pandoc
     });
+  }
+
+  private async setActivePackage(kind: string, id: string | null): Promise<void> {
+    if (this.snapshot === null || kind === '') {
+      return;
+    }
+    const remembered = { ...this.snapshot.exportTemplates };
+    if (id === null) {
+      delete remembered[kind];
+    } else {
+      remembered[kind] = id;
+    }
+    try {
+      await this.source.updateTemplates(remembered);
+      this.snapshot.exportTemplates = remembered;
+      this.inspectedId = id;
+      this.status.replaceChildren();
+      this.render();
+    } catch (error) {
+      this.status.textContent = error instanceof Error ? error.message : String(error);
+    }
   }
 
   protected mountForShow(): void {

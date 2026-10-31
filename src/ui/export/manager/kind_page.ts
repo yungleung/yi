@@ -15,6 +15,7 @@ import { prompt } from '../../prompt';
 import { defaultsActionAvailability } from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
+import { TemplatePackageBrowser } from '../templates/package_browser';
 
 export type DefaultsState = 'none' | 'not-created' | 'shipped' | 'customized';
 
@@ -32,13 +33,18 @@ export function defaultsState(info: ExportKindInfo): DefaultsState {
 export interface KindPageHandlers {
   restoreDefaults(kind: string): Promise<string>;
   refresh(): Promise<void>;
+  inspect(id: string | null): void;
+  activate(id: string | null): void;
+  packagesChanged(packages: TemplateSummary[], keepId: string | null): void;
 }
 
 export interface KindPageState {
   info: ExportKindInfo;
   activeId: string | null;
   activePackage: TemplateSummary | null;
-  packageCount: number;
+  inspectedId: string | null;
+  packages: TemplateSummary[];
+  pandoc: string | null;
 }
 
 function paragraph(text: string, className: string, data?: string): HTMLParagraphElement {
@@ -53,9 +59,17 @@ function paragraph(text: string, className: string, data?: string): HTMLParagrap
 
 /** The right-hand side of the export manager. */
 export class KindPage extends BaseComponent {
+  private readonly packageBrowser: TemplatePackageBrowser;
+
   constructor(private readonly handlers: KindPageHandlers) {
     super('section', ['min-h-0', 'flex-1', 'overflow-auto', 'p-5']);
     this.element.setAttribute('data-export-manager-page', 'true');
+    this.packageBrowser = new TemplatePackageBrowser({
+      inspect: (id) => this.handlers.inspect(id),
+      primary: (id) => this.handlers.activate(id),
+      changed: (packages, keepId) =>
+        this.handlers.packagesChanged(packages, keepId)
+    });
   }
 
   update(state: KindPageState): void {
@@ -94,6 +108,11 @@ export class KindPage extends BaseComponent {
     const defaultsSection = this.defaultsSection(info);
     const templatesSection = this.templatesSection(state);
     this.element.replaceChildren(title, summary, defaultsSection, templatesSection);
+  }
+
+  /** Clears state that belongs to one opening of the manager. */
+  resetTransient(): void {
+    this.packageBrowser.resetTransient();
   }
 
   private defaultsSection(info: ExportKindInfo): HTMLElement {
@@ -161,12 +180,15 @@ export class KindPage extends BaseComponent {
       );
       return section;
     }
-    const packages = paragraph(
-      `${state.packageCount}`,
-      'mt-2 text-xs opacity-70'
-    );
-    packages.setAttribute('data-export-manager-package-count', 'true');
-    section.append(packages);
+    this.packageBrowser.update({
+      info: state.info,
+      packages: state.packages,
+      activeId: state.activeId,
+      inspectedId: state.inspectedId,
+      pandoc: state.pandoc,
+      primaryLabel: t('template.use')
+    });
+    section.append(this.packageBrowser.element);
     return section;
   }
 
