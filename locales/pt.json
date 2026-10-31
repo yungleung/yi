@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "Pandoc não foi encontrado; as ações que o executam não estão disponíveis.",
   "exportManager.missingPackage": "Pacote ausente · {id}",
   "exportManager.brokenCount": "Quebrados: {count}",
+  "exportManager.packageCount": "Pacotes: {count}",
   "exportManager.retry": "Tentar novamente",
   "exportManager.libraryFailed": "Não foi possível ler a biblioteca de modelos: {message}",
   "exportManager.selectionFailed": "Não foi possível salvar a seleção de modelo: {message}",

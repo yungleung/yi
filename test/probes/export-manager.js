@@ -428,6 +428,31 @@
 
     kindButton('html')?.click();
     await t.sleep(120);
+    const htmlSummary = component('[data-export-manager-summary]');
+    const liveHtmlPackageCount = (await templates.exportTemplates()).filter(
+      (summary) => summary.manifest?.kind === 'html'
+    ).length;
+    check(
+      'the kind summary shows its package count and omits a zero broken count',
+      htmlSummary
+        ?.querySelector('[data-export-manager-package-count]')
+        ?.textContent ===
+        words('exportManager.packageCount', { count: liveHtmlPackageCount }) &&
+        htmlSummary?.querySelector('[data-export-manager-broken-count]') === null,
+      {
+        packages:
+          htmlSummary
+            ?.querySelector('[data-export-manager-package-count]')
+            ?.textContent ?? null,
+        expected: words('exportManager.packageCount', {
+          count: liveHtmlPackageCount
+        }),
+        broken:
+          htmlSummary
+            ?.querySelector('[data-export-manager-broken-count]')
+            ?.textContent ?? null
+      }
+    );
     const alphaRow = component(
       `[data-template-package="${CSS.escape(alpha.id)}"]`
     );
@@ -651,6 +676,55 @@
     );
     await failedLoad.requestClose();
     failedLoad.element.remove();
+
+    const knownBroken = {
+      ...structuredClone(alpha),
+      id: 'manager-known-broken',
+      error: 'probe known broken',
+      manifest: {
+        ...structuredClone(alpha.manifest),
+        id: 'manager-known-broken',
+        name: 'Known broken probe package',
+        kind: 'html'
+      }
+    };
+    const countsManager = new ExportManager({
+      load: async () => ({
+        ...structuredClone(snapshot),
+        packages: [structuredClone(alpha), knownBroken]
+      }),
+      updateTemplates: async () => {},
+      restoreDefaults: async () => ''
+    });
+    await countsManager.open(() => {});
+    countsManager.element
+      .querySelector('[data-export-manager-kind="html"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await t.sleep(120);
+    const countsSummary = countsManager.element.querySelector(
+      '[data-export-manager-summary]'
+    );
+    check(
+      'the kind summary shows a broken count when the kind has broken packages',
+      countsSummary
+        ?.querySelector('[data-export-manager-package-count]')
+        ?.textContent === words('exportManager.packageCount', { count: 2 }) &&
+        countsSummary
+          ?.querySelector('[data-export-manager-broken-count]')
+          ?.textContent === words('exportManager.brokenCount', { count: 1 }),
+      {
+        packages:
+          countsSummary
+            ?.querySelector('[data-export-manager-package-count]')
+            ?.textContent ?? null,
+        broken:
+          countsSummary
+            ?.querySelector('[data-export-manager-broken-count]')
+            ?.textContent ?? null
+      }
+    );
+    await countsManager.requestClose();
+    countsManager.element.remove();
 
     const failedSave = new ExportManager({
       load: async () => structuredClone(snapshot),

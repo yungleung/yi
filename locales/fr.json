@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "Pandoc est introuvable ; les actions qui l’exécutent sont indisponibles.",
   "exportManager.missingPackage": "Paquet manquant · {id}",
   "exportManager.brokenCount": "Endommagés : {count}",
+  "exportManager.packageCount": "Paquets : {count}",
   "exportManager.retry": "Réessayer",
   "exportManager.libraryFailed": "Impossible de lire la bibliothèque de modèles : {message}",
   "exportManager.selectionFailed": "Impossible d’enregistrer la sélection de modèle : {message}",

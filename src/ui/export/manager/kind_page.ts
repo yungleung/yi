@@ -95,6 +95,25 @@ export class KindPage extends BaseComponent {
     );
     defaults.setAttribute('data-export-manager-defaults-state', 'true');
     summary.append(summaryTitle, active, defaults);
+    if (info.template_mode !== 'none') {
+      const packageCount = paragraph(
+        t('exportManager.packageCount', { count: state.packages.length }),
+        'mt-1 text-xs opacity-70'
+      );
+      packageCount.setAttribute('data-export-manager-package-count', 'true');
+      summary.append(packageCount);
+      const broken = state.packages.filter(
+        (summary) => summary.error !== null
+      ).length;
+      if (broken > 0) {
+        const brokenCount = paragraph(
+          t('exportManager.brokenCount', { count: broken }),
+          'mt-1 text-xs text-error'
+        );
+        brokenCount.setAttribute('data-export-manager-broken-count', 'true');
+        summary.append(brokenCount);
+      }
+    }
 
     const defaultsSection = this.defaultsSection(info);
     const templatesSection = this.templatesSection(state);

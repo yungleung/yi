@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "No se encontró Pandoc; las acciones que lo ejecutan no están disponibles.",
   "exportManager.missingPackage": "Paquete ausente · {id}",
   "exportManager.brokenCount": "Dañados: {count}",
+  "exportManager.packageCount": "Paquetes: {count}",
   "exportManager.retry": "Reintentar",
   "exportManager.libraryFailed": "No se pudo leer la biblioteca de plantillas: {message}",
   "exportManager.selectionFailed": "No se pudo guardar la selección de plantilla: {message}",

@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "Pandoc was not found; actions that run it are unavailable.",
   "exportManager.missingPackage": "Missing package · {id}",
   "exportManager.brokenCount": "Broken: {count}",
+  "exportManager.packageCount": "Packages: {count}",
   "exportManager.retry": "Retry",
   "exportManager.libraryFailed": "The template library could not be read: {message}",
   "exportManager.selectionFailed": "The template selection could not be saved: {message}",

@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "Pandoc が見つかりません。実行する操作は利用できません。",
   "exportManager.missingPackage": "見つからないパッケージ · {id}",
   "exportManager.brokenCount": "破損: {count}",
+  "exportManager.packageCount": "パッケージ: {count}",
   "exportManager.retry": "再試行",
   "exportManager.libraryFailed": "テンプレートライブラリを読み込めませんでした: {message}",
   "exportManager.selectionFailed": "テンプレートの選択を保存できませんでした: {message}",

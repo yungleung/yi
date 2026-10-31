@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "未找到 Pandoc；需要运行它的操作不可用。",
   "exportManager.missingPackage": "缺少模板包 · {id}",
   "exportManager.brokenCount": "损坏: {count}",
+  "exportManager.packageCount": "模板包: {count}",
   "exportManager.retry": "重试",
   "exportManager.libraryFailed": "无法读取模板库：{message}",
   "exportManager.selectionFailed": "无法保存模板选择：{message}",

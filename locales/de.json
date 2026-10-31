@@ -98,6 +98,7 @@
   "exportManager.pandocMissing": "Pandoc wurde nicht gefunden; Aktionen, die es ausführen, sind nicht verfügbar.",
   "exportManager.missingPackage": "Fehlendes Paket · {id}",
   "exportManager.brokenCount": "Beschädigt: {count}",
+  "exportManager.packageCount": "Pakete: {count}",
   "exportManager.retry": "Erneut versuchen",
   "exportManager.libraryFailed": "Die Vorlagenbibliothek konnte nicht gelesen werden: {message}",
   "exportManager.selectionFailed": "Die Vorlagenauswahl konnte nicht gespeichert werden: {message}",
