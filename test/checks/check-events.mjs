@@ -45,6 +45,15 @@ for (const name of boundaries.keys()) {
 if (boundaryEntries.length !== boundaries.size) {
   failures.push(`${eventsFile} declares a transport boundary more than once`);
 }
+if (!declared.has('document_changed')) {
+  failures.push(`${eventsFile} does not declare document_changed`);
+}
+if (declared.has('editor_edited') || declared.has('markdown_content_changed')) {
+  failures.push(`${eventsFile} still declares one of the split document-change events`);
+}
+if (boundaries.get('document_changed') !== 'local') {
+  failures.push(`${eventsFile} must mark document_changed local`);
+}
 
 for (const name of readdirSync(rustDirectory).filter((entry) => entry.endsWith('.rs'))) {
   const source = readFileSync(join(rustDirectory, name), 'utf8');

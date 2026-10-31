@@ -15,7 +15,11 @@
 
 import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
-import type { AppEventName } from '../../services/app_events';
+import {
+  DOCUMENT_CHANGED,
+  type AppEventName,
+  type DocumentChangeReason
+} from '../../services/app_events';
 import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
 import { documentManager } from '../../services/document_manager';
 import { imageSourceCandidates } from '../image/image_urls';
@@ -98,8 +102,6 @@ const A4_WIDTH_PX = (210 * 96) / 25.4;
 /** The event that says which layout the editor is drawn in, for the button that switches it. */
 export const EDITOR_LAYOUT_CHANGED = 'editor_layout_changed';
 
-/** The event that says the document's text changed, for whatever keeps a copy of it. */
-export const EDITOR_EDITED = 'editor_edited';
 export const INPUT_SOURCE_CHANGED = 'input_source_changed';
 
 /** A page of A4, or the column at the width of the pane. */
@@ -237,7 +239,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // Every edit funnels through `applyEdit`, and this is how the session behind the editor
       // hears about one: the event carries nothing, since the text is the state's.
       onChanged: (kind) => {
-        void eventManager.emit(EDITOR_EDITED);
+        this.announceDocumentChange('edit', this.state.getRevision() - 1);
         // Ordinary typed characters and an exact committed word stay in the same input context.
         // A structural edit does not: resetting the seam around it restores the next text
         // context after the block it rebuilt has changed.
@@ -510,6 +512,26 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView.scrollTop = 0;
     this.state.loadText(content);
     this.renderer.render();
+    this.announceDocumentChange('load', null);
+  }
+
+  /**
+   * Announces the one committed document state after a load, edit, undo or redo.
+   *
+   * Example: an edit from revision 4 to 5 emits `document_changed` once with
+   * `previousRevision: 4`, `revision: 5` and the new raw markdown.
+   */
+  private announceDocumentChange(
+    reason: DocumentChangeReason,
+    previousRevision: number | null
+  ): void {
+    void eventManager.emit(DOCUMENT_CHANGED, {
+      documentKey: this.state.getDocumentKey(),
+      previousRevision,
+      revision: this.state.getRevision(),
+      reason,
+      text: this.state.getText()
+    });
   }
 
   /** The raw markdown source. */
@@ -867,6 +889,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** Undo/redo keeps the caret at the same document offset when it can. */
   private applyHistory(direction: 'undo' | 'redo'): void {
     const current = caretOffset(this.context) ?? this.state.getText().length;
+    const previousRevision = this.state.getRevision();
     const anchor = this.contentView.scrollTop;
     const edit = direction === 'undo' ? this.state.undo() : this.state.redo();
     if (!edit) {
@@ -901,7 +924,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       this.composition.regainKeyboard();
     }
     // An undo is a change like any other: whatever keeps a copy of the document has to hear it.
-    void eventManager.emit(EDITOR_EDITED);
+    this.announceDocumentChange(direction, previousRevision);
   }
 
 }

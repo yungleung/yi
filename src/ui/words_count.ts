@@ -9,7 +9,7 @@ import { getWordsCount } from '../api/stats';
 import { eventManager } from '../services/event_manager';
 import { t } from '../services/i18n';
 import { BaseComponent } from './component';
-import { MARKDOWN_CONTENT_CHANGED } from './editor_panel';
+import { DOCUMENT_CHANGED } from '../services/app_events';
 
 export class WordsCountStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;
@@ -22,9 +22,10 @@ export class WordsCountStatus extends BaseComponent {
 
     // Keep the word count in sync with the document without being registered
     // as a global component.
-    void eventManager.on(MARKDOWN_CONTENT_CHANGED, (event: any) => {
-      const markdown = event?.payload ?? event;
-      void this.update(markdown);
+    void eventManager.on(DOCUMENT_CHANGED, (event) => {
+      if (event.payload.reason === 'load') {
+        void this.update(event.payload.text);
+      }
     });
   }
 

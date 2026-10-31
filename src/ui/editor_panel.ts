@@ -23,7 +23,7 @@
 import { BaseComponent } from './component';
 import { eventManager } from '../services/event_manager';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
-import { EDITOR_EDITED, type EditorLayout } from './markdown/markdown_editor';
+import type { EditorLayout } from './markdown/markdown_editor';
 import type { DocumentView, SeenView } from '../services/session_rules';
 import { documentSession } from '../services/session';
 import { documentManager } from '../services/document_manager';
@@ -34,8 +34,7 @@ import { setOpenRequestHandler, type OpenRequest } from './markdown/link_opens';
 import { configManager } from '../services/config_manager';
 import { destinationPaths } from '../services/workspace_folders';
 import * as imageSources from './image/image_urls';
-
-export const MARKDOWN_CONTENT_CHANGED = 'markdown_content_changed';
+import { DOCUMENT_CHANGED } from '../services/app_events';
 
 export class MarkdownEditor extends BaseComponent {
   private readonly innerEditor: WysiwygMarkdownEditor;
@@ -61,7 +60,11 @@ export class MarkdownEditor extends BaseComponent {
     // Every edit is news to the session, which keeps the document's own copy — and through it
     // the file the document is written to — in step. The event carries nothing: the session
     // reads the text when it captures, and it debounces both the copy and the write.
-    void eventManager.on(EDITOR_EDITED, () => documentSession.noteMoved());
+    void eventManager.on(DOCUMENT_CHANGED, (event) => {
+      if (event.payload.reason !== 'load') {
+        documentSession.noteMoved();
+      }
+    });
 
     // Scrolling is news too, and for a different reason: the reader who quits the app from the
     // middle of a note expects to come back to the middle of it. A scroll event does not bubble,
@@ -84,7 +87,6 @@ export class MarkdownEditor extends BaseComponent {
 
   setContent(content: string): void {
     this.innerEditor.setContent(content);
-    void eventManager.emit(MARKDOWN_CONTENT_CHANGED, this.getContent());
   }
 
   /**

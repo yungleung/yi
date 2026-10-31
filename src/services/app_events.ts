@@ -24,6 +24,18 @@ import type { Hint } from './hints';
 import type { Message } from './messages';
 import type { SessionState } from './session_rules';
 
+/** Why the document's committed text or revision changed. */
+export type DocumentChangeReason = 'load' | 'edit' | 'undo' | 'redo';
+
+/** One committed document state, announced after the editor owns the change. */
+export interface DocumentChanged {
+  readonly documentKey: string;
+  readonly previousRevision: number | null;
+  readonly revision: number;
+  readonly reason: DocumentChangeReason;
+  readonly text: string;
+}
+
 /** One event's payload. `null` is "the event *is* the news". */
 export interface AppEvents {
   // The app's own events.
@@ -41,12 +53,10 @@ export interface AppEvents {
   message: Message;
   /** Something the reader only has to notice. */
   hint: Hint;
-  /** The editor's text, on every change. */
-  markdown_content_changed: string;
+  /** The committed document text and revision after a load, edit, undo or redo. */
+  document_changed: DocumentChanged;
   /** Which layout the editor is drawn in now. */
   editor_layout_changed: 'page' | 'auto';
-  /** The editor's document was edited (a keystroke, a command, an undo). */
-  editor_edited: null;
   /** The system selected a different keyboard input source. */
   input_source_changed: null;
   /** The bibliography was reloaded, so anything showing a citation must render again. */
@@ -79,6 +89,9 @@ export interface AppEvents {
   check_for_updates: null;
 }
 
+/** The one document-change fact emitted by the live editor. */
+export const DOCUMENT_CHANGED = 'document_changed' as const;
+
 /** One event's name. */
 export type AppEventName = keyof AppEvents;
 
@@ -101,9 +114,8 @@ export const EVENT_BOUNDARIES: Readonly<
   versions_changed: 'local',
   message: 'local',
   hint: 'local',
-  markdown_content_changed: 'local',
+  document_changed: 'local',
   editor_layout_changed: 'local',
-  editor_edited: 'local',
   input_source_changed: 'inbound',
   citation_updated: 'local',
   setting: 'inbound',

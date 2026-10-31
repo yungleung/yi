@@ -11,7 +11,7 @@ import { platform } from '@tauri-apps/plugin-os';
 import { eventManager } from './services/event_manager';
 import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
-import { MarkdownEditor, MARKDOWN_CONTENT_CHANGED } from './ui/editor_panel';
+import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
 import { WorkspaceTree } from './ui/workspace/tree';
 import { ContentShell } from './ui/content_shell';
@@ -133,10 +133,8 @@ function createAppShell(): MarkdownEditor {
   registerExportCommand({ text: () => editor.getContent(), progress: exportProgress });
   registerExportManagerCommand({ focusEditor: () => editor.focusText() });
 
-  // Seed the initial word count (the component's own event listener may not
-  // be registered yet when the first MARKDOWN_CONTENT_CHANGED emit fires).
+  // Seed the empty editor before any document load can announce its own count.
   void wordsCount.update(editor.getContent());
-  void eventManager.emit(MARKDOWN_CONTENT_CHANGED, editor.getContent());
   // Saving is the session's: a document may have been read from a file, may have no file yet,
   // and may be one of several — only the session knows which.
   void eventManager.on('save', () => void documentSession.save());

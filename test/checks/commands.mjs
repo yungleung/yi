@@ -28,7 +28,7 @@ const crossWindowEvents = [
   'citation_updated',
   'citation_config_changed',
   'message',
-  'markdown_content_changed'
+  'document_changed'
 ];
 
 const files = [];
