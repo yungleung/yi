@@ -203,7 +203,7 @@ class BrokenTemplateDetailsDialog extends QuestionCard<void> {
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'btn btn-ghost btn-sm';
-    close.textContent = t('template.close');
+    close.textContent = t('template.closeBrokenDetails');
     close.setAttribute('data-broken-template-details-close', 'true');
     close.addEventListener('click', () => this.settle());
     const actions = document.createElement('div');

@@ -14,8 +14,12 @@ import { exportTemplates, type TemplateSummary } from '../../../api/templates';
 import { configManager } from '../../../services/config_manager';
 import { t } from '../../../services/i18n';
 import { FloatingSurface } from '../../floating/surface';
-import { defaultsState, KindPage } from './kind_page';
-import { managerGroups, unassignedPackages } from './manager_rules';
+import { KindPage } from './kind_page';
+import {
+  defaultsState,
+  managerGroups,
+  unassignedPackages
+} from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
 
@@ -270,7 +274,9 @@ export class ExportManager extends FloatingSurface {
               : state === 'customized'
                 ? t('exportManager.customized')
                 : t('exportManager.shipped'),
-          row.broken > 0 ? String(row.broken) : null
+          row.broken > 0
+            ? t('exportManager.brokenCount', { count: row.broken })
+            : null
         ]
           .filter((part): part is string => part !== null)
           .join(' · ');

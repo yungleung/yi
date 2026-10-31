@@ -186,6 +186,25 @@ check(
   }
 );
 check(
+  'a PDF-capable package enables Test PDF when pandoc is present',
+  rules.packageActionAvailability(
+    kind('pdf', 'documents'),
+    '/bin/pandoc',
+    summary('pdf-package', 'pdf')
+  ),
+  {
+    importPackage: true,
+    createPackage: true,
+    use: true,
+    details: true,
+    duplicate: true,
+    edit: true,
+    validate: true,
+    testPdf: true,
+    remove: true
+  }
+);
+check(
   'defaults can be edited whenever the kind has a file and restored only when it differs',
   {
     plain: rules.defaultsActionAvailability(kinds[0]),
@@ -198,6 +217,32 @@ check(
     plain: { edit: true, restore: false },
     custom: { edit: true, restore: true },
     markdown: { edit: false, restore: false }
+  }
+);
+check(
+  'a missing defaults file is editable but has nothing to restore',
+  rules.defaultsActionAvailability(
+    kind('docx', 'documents', { config_exists: false })
+  ),
+  { edit: true, restore: false }
+);
+check(
+  'the defaults state follows pandoc, existence and shipped-ness',
+  {
+    none: rules.defaultsState(kinds[3]),
+    missing: rules.defaultsState(
+      kind('docx', 'documents', { config_exists: false })
+    ),
+    shipped: rules.defaultsState(kinds[0]),
+    customized: rules.defaultsState(
+      kind('docx', 'documents', { config_is_shipped: false })
+    )
+  },
+  {
+    none: 'none',
+    missing: 'not-created',
+    shipped: 'shipped',
+    customized: 'customized'
   }
 );
 

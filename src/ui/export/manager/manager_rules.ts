@@ -1,8 +1,9 @@
 /**
- * Which kind and package actions the Export Manager can offer.
+ * The Export Manager's pure rules: kind grouping, package compatibility, action availability and
+ * each kind's defaults-file state.
  *
- * May import: export-kind/template vocabulary types only. Upholds: compatibility, grouping and
- * action availability are decided once for every renderer.
+ * May import: export-kind/template vocabulary types only. Upholds: grouping, compatibility,
+ * action availability and the defaults-file state are decided once for every renderer.
  */
 import type { ExportGroup, ExportKindInfo } from '../../../api/export';
 import type { TemplateSummary } from '../../../api/templates';
@@ -108,4 +109,17 @@ export function defaultsActionAvailability(
       info.config_exists &&
       !info.config_is_shipped
   };
+}
+
+export type DefaultsState = 'none' | 'not-created' | 'shipped' | 'customized';
+
+/** The one reading of a kind's defaults-file state. */
+export function defaultsState(info: ExportKindInfo): DefaultsState {
+  if (!info.needs_pandoc || info.config_path === '') {
+    return 'none';
+  }
+  if (!info.config_exists) {
+    return 'not-created';
+  }
+  return info.config_is_shipped ? 'shipped' : 'customized';
 }

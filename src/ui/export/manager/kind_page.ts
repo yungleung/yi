@@ -12,7 +12,7 @@ import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
 import { prompt } from '../../prompt';
-import { defaultsActionAvailability } from './manager_rules';
+import { defaultsActionAvailability, defaultsState } from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
 import {
@@ -20,19 +20,6 @@ import {
   TemplatePackageBrowser
 } from '../templates/package_browser';
 import { showBrokenTemplateDetails } from '../templates/details';
-
-export type DefaultsState = 'none' | 'not-created' | 'shipped' | 'customized';
-
-/** The one reading of a kind's defaults-file state. */
-export function defaultsState(info: ExportKindInfo): DefaultsState {
-  if (!info.needs_pandoc || info.config_path === '') {
-    return 'none';
-  }
-  if (!info.config_exists) {
-    return 'not-created';
-  }
-  return info.config_is_shipped ? 'shipped' : 'customized';
-}
 
 export interface KindPageHandlers {
   restoreDefaults(kind: string): Promise<string>;
