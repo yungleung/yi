@@ -115,10 +115,10 @@ when this document was written (the class names and the offset tags) are checked
 
 ## Sizes, and when a module is too big
 
-Most modules are small: the median is 90 lines, 145 of the 209 are under 150, and 18 are over 300.
-Big is not the same as bad — `syntax/parser.ts` is long because the remark pipeline is, and
-`offsets.ts` because the mapping has four flavours to keep straight. A module is too big when it
-holds **two jobs that change for different reasons**. Five did, and each is split now (item 6):
+Most modules are small. Big is not the same as bad — the caption and description-list
+repairs are long because Markdown's edge cases are, and `offsets.ts` because the mapping has
+four flavours to keep straight. A module is too big when it holds **two jobs that change for
+different reasons**. Several did, and each is split now:
 
 | Module, then | Still holds (lines) | And the module the other job moved to |
 | --- | --- | --- |
