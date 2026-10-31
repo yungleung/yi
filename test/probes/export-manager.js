@@ -169,6 +169,25 @@
         pageRect.left >= navigationRect.right - 1,
       { panelRect, navigationRect, pageRect, window: [window.innerWidth, window.innerHeight] }
     );
+    const closeButton = document.querySelector('[data-export-manager-close]');
+    const closeRect = closeButton?.getBoundingClientRect() ?? null;
+    check(
+      'the close button sits at the manager panel’s top-right corner',
+      closeButton !== null &&
+        closeRect !== null &&
+        panelRect !== null &&
+        navigationRect !== null &&
+        closeButton.closest('[data-export-manager-navigation]') === null &&
+        closeRect.right <= panelRect.right &&
+        closeRect.right > navigationRect.right &&
+        Math.abs(closeRect.top - panelRect.top) <= 12,
+      {
+        close: closeRect,
+        inSidebar: closeButton?.closest('[data-export-manager-navigation]') !== null,
+        panel: panelRect,
+        navigation: navigationRect
+      }
+    );
     const listedKinds = [...document.querySelectorAll('[data-export-manager-kind]')].map(
       (row) => row.dataset.exportManagerKind
     );
@@ -240,6 +259,27 @@
           document
             .querySelector('[data-broken-template-details]')
             ?.textContent?.slice(0, 200) ?? null
+      }
+    );
+    const brokenDetails = document.querySelector('[data-broken-template-details]');
+    const brokenDetailsRect = brokenDetails?.getBoundingClientRect() ?? null;
+    const frontmost =
+      brokenDetailsRect === null
+        ? null
+        : document.elementFromPoint(
+            brokenDetailsRect.left + brokenDetailsRect.width / 2,
+            brokenDetailsRect.top + brokenDetailsRect.height / 2
+          );
+    check(
+      'the details dialog is in front of the Export Manager',
+      brokenDetails !== null &&
+        frontmost !== null &&
+        brokenDetails.contains(frontmost),
+      {
+        detailsZ: brokenDetails === null ? null : getComputedStyle(brokenDetails).zIndex,
+        managerZ:
+          manager() === null ? null : getComputedStyle(manager()).zIndex,
+        frontmost: frontmost?.className ?? null
       }
     );
     document.querySelector('[data-broken-template-details-close]')?.click();

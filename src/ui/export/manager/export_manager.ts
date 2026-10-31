@@ -99,7 +99,7 @@ export class ExportManager extends FloatingSurface {
     super([
       'fixed',
       'inset-0',
-      'z-[65]',
+      'z-[59]',
       'flex',
       'items-center',
       'justify-center',
@@ -109,7 +109,7 @@ export class ExportManager extends FloatingSurface {
 
     const panel = document.createElement('div');
     panel.className =
-      'flex h-[min(48rem,88vh)] w-[min(70rem,94vw)] overflow-hidden rounded-lg border border-base-300 bg-base-200 shadow-xl';
+      'relative flex h-[min(48rem,88vh)] w-[min(70rem,94vw)] overflow-hidden rounded-lg border border-base-300 bg-base-200 shadow-xl';
     panel.setAttribute('data-export-manager-panel', 'true');
     panel.addEventListener('mousedown', (event) => event.stopPropagation());
 
@@ -123,9 +123,10 @@ export class ExportManager extends FloatingSurface {
     heading.className = 'flex-1 text-sm font-semibold';
     heading.textContent = t('exportManager.title');
     const close = button('btn btn-ghost btn-xs', '✕', 'data-export-manager-close');
+    close.className += ' absolute right-2 top-2 z-10';
     close.setAttribute('aria-label', t('exportManager.close'));
     close.addEventListener('click', () => void this.requestClose());
-    header.append(heading, close);
+    header.append(heading);
     this.sidebar = document.createElement('div');
     this.sidebar.className = 'min-h-0 flex-1 overflow-auto p-2';
     this.sidebar.setAttribute('data-export-manager-kinds', 'true');
@@ -149,7 +150,7 @@ export class ExportManager extends FloatingSurface {
     this.status.className = 'min-h-5 border-t border-base-300 px-4 py-1 text-xs text-error';
     this.status.setAttribute('data-export-manager-status', 'true');
     content.append(this.page.element, this.status);
-    panel.append(navigation, content);
+    panel.append(navigation, content, close);
     this.element.append(panel);
     document.addEventListener(
       'keydown',
