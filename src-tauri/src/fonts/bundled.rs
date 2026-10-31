@@ -204,12 +204,8 @@ pub fn write_header(dir: &Path, fonts: &Path, settings: &str) -> Result<PathBuf,
         .replace("@@FONTS@@", &format!("{{{}}}", folder(fonts)))
         .replace("@@FACES@@", faces.trim_end());
     let path = dir.join(HEADER_FILE);
-    crate::files::write_atomically(&path, &text).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    crate::files::write_atomically(&path, &text)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))?;
     Ok(path)
 }
 

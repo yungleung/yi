@@ -62,15 +62,8 @@ pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf, bool
         ));
     }
     let created = !bundle.exists();
-    fs::create_dir_all(&bundle).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotMake",
-            &[
-                ("path", &bundle.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::create_dir_all(&bundle)
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", bundle.display(), error))?;
     let name = bundle
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -128,15 +121,8 @@ pub(crate) fn revealjs_download_url(base: &str, reference: &str) -> Result<Strin
 
 /// Fetch every local Reveal.js asset referenced by the finished page.
 pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> {
-    let html = fs::read_to_string(page).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotRead",
-            &[
-                ("path", &page.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    let html = fs::read_to_string(page)
+        .map_err(|error| crate::i18n::path_error("export.cannotRead", page.display(), error))?;
     let bundle = page
         .parent()
         .ok_or_else(|| crate::i18n::now("export.noTarget", &[]))?;
@@ -149,33 +135,18 @@ pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> 
         let bytes = fetch_resource(&url, REVEALJS_ASSET_LIMIT)
             .await
             .map_err(|error| {
-                crate::i18n::now(
-                    "export.revealAsset",
-                    &[("url", &url), ("reason", &error)]
-                )
+                crate::i18n::now("export.revealAsset", &[("url", &url), ("reason", &error)])
             })?;
         downloads.push((target, bytes));
     }
     for (target, bytes) in downloads {
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(|error| {
-                crate::i18n::now(
-                    "export.cannotMake",
-                    &[
-                        ("path", &parent.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("export.cannotMake", parent.display(), error)
             })?;
         }
         crate::files::write_bytes_atomically(&target, &bytes).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[
-                    ("path", &target.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotWrite", target.display(), error)
         })?;
     }
     Ok(())

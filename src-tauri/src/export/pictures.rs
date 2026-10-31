@@ -62,23 +62,21 @@ pub(super) fn remote_file_name(url: &str) -> String {
         .next()
         .unwrap_or("")
         .chars()
-        .filter(|character| {
-            character.is_ascii_alphanumeric() || matches!(character, '-' | '_')
-        })
+        .filter(|character| character.is_ascii_alphanumeric() || matches!(character, '-' | '_'))
         .take(40)
         .collect();
-    let stem = if stem.is_empty() { "picture" } else { stem.as_str() };
+    let stem = if stem.is_empty() {
+        "picture"
+    } else {
+        stem.as_str()
+    };
     format!("{stem}-{:016x}", url_hash(url))
 }
 
 /// One picture from the web, downloaded into a run's own folder, and where it landed.
 pub(super) async fn download_image(dir: &Path, url: &str) -> Result<PathBuf, String> {
-    fs::create_dir_all(dir).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotMake",
-            &[("path", &dir.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    fs::create_dir_all(dir)
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", dir.display(), error))?;
     let name = remote_file_name(url);
     // The name carries the picture's type, and the type is only known once the server has answered —
     // so it is fetched under a name of its own first and named properly afterwards.
@@ -115,12 +113,8 @@ pub(super) async fn download_image(dir: &Path, url: &str) -> Result<PathBuf, Str
         }
     };
     let mut response = response;
-    let mut file = fs::File::create(&partial).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[("path", &partial.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    let mut file = fs::File::create(&partial)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", partial.display(), error))?;
     while let Some(chunk) = response.chunk().await.map_err(|error| {
         crate::i18n::now(
             "export.pictureUnreadable",
@@ -128,20 +122,13 @@ pub(super) async fn download_image(dir: &Path, url: &str) -> Result<PathBuf, Str
         )
     })? {
         file.write_all(&chunk).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[("path", &partial.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("export.cannotWrite", partial.display(), error)
         })?;
     }
     drop(file);
     let path = dir.join(format!("{name}.{extension}"));
-    fs::rename(&partial, &path).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotName",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    fs::rename(&partial, &path)
+        .map_err(|error| crate::i18n::path_error("export.cannotName", path.display(), error))?;
     Ok(path)
 }
 
@@ -149,7 +136,10 @@ pub(super) async fn download_image(dir: &Path, url: &str) -> Result<PathBuf, Str
 /// thirty seconds. A status that is not a success is an error even when its body is a picture.
 async fn fetch_once(url: &str) -> Result<reqwest::Response, String> {
     let response = client()?.get(url).send().await.map_err(|error| {
-        crate::i18n::now("export.fetchFailed", &[("url", &url), ("reason", &error.to_string())])
+        crate::i18n::now(
+            "export.fetchFailed",
+            &[("url", &url), ("reason", &error.to_string())],
+        )
     })?;
     if !response.status().is_success() {
         return Err(crate::i18n::now(

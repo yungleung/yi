@@ -45,12 +45,8 @@ pub fn rename_entry(path: String, name: String) -> Result<String, String> {
     if target.exists() && !is_same_entry(&source, &target) {
         return Err(crate::i18n::now("files.alreadyThere", &[("name", &name)]));
     }
-    fs::rename(&source, &target).map_err(|err| {
-        crate::i18n::now(
-            "files.renameFailed",
-            &[("path", &as_path(&source)), ("reason", &err.to_string())],
-        )
-    })?;
+    fs::rename(&source, &target)
+        .map_err(|err| crate::i18n::path_error("files.renameFailed", as_path(&source), err))?;
     Ok(as_path(&target))
 }
 
@@ -97,12 +93,7 @@ pub fn delete_entry(path: String) -> Result<(), String> {
     } else {
         fs::remove_file(&target)
     };
-    removed.map_err(|err| {
-        crate::i18n::now(
-            "files.deleteFailed",
-            &[("path", &as_path(&target)), ("reason", &err.to_string())],
-        )
-    })
+    removed.map_err(|err| crate::i18n::path_error("files.deleteFailed", as_path(&target), err))
 }
 
 /// Moves an entry into another folder, keeping its name, and answers its new path.
@@ -141,12 +132,8 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
             return Err(crate::i18n::now("files.intoItself", &[]));
         }
     }
-    fs::rename(&source, &target).map_err(|err| {
-        crate::i18n::now(
-            "files.moveFailed",
-            &[("path", &as_path(&source)), ("reason", &err.to_string())],
-        )
-    })?;
+    fs::rename(&source, &target)
+        .map_err(|err| crate::i18n::path_error("files.moveFailed", as_path(&source), err))?;
     Ok(as_path(&target))
 }
 

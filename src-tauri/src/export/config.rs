@@ -1,4 +1,3 @@
-
 //! Where an export's files live: the app's export folder, a kind's defaults file and CSL styles.
 //!
 //! The reader's copies are written once and never replaced behind their back. This module owns the
@@ -35,11 +34,12 @@ pub(super) fn export_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// keeping it on the disk is that an edited one stays edited.
 pub(super) fn ensure_defaults_in(dir: &Path, kind: &ExportKind) -> Result<PathBuf, String> {
     fs::create_dir_all(dir)
-        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &dir.display().to_string()), ("reason", &error.to_string())]))?;
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", dir.display(), error))?;
     let path = dir.join(config_file_name(kind.kind));
     if !path.exists() {
-        fs::write(&path, kind.defaults)
-            .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
+        fs::write(&path, kind.defaults).map_err(|error| {
+            crate::i18n::path_error("export.cannotWrite", path.display(), error)
+        })?;
     } else if fs::read_to_string(&path)
         .ok()
         .is_some_and(|text| legacy_revealjs_defaults(kind).as_deref() == Some(text.as_str()))
@@ -48,13 +48,7 @@ pub(super) fn ensure_defaults_in(dir: &Path, kind: &ExportKind) -> Result<PathBu
         // which Pandoc rejects. Replace only that exact shipped copy; any reader edit changes the
         // bytes and is therefore kept.
         crate::files::write_atomically(&path, kind.defaults).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[
-                    ("path", &path.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotWrite", path.display(), error)
         })?;
     }
     Ok(path)
@@ -98,11 +92,12 @@ pub(super) fn style_file_name(name: &str) -> String {
 pub(super) fn ensure_csl_in(dir: &Path, style: &CslStyle) -> Result<PathBuf, String> {
     let styles = dir.join("styles");
     fs::create_dir_all(&styles)
-        .map_err(|error| crate::i18n::now("export.cannotMake", &[("path", &styles.display().to_string()), ("reason", &error.to_string())]))?;
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", styles.display(), error))?;
     let path = styles.join(format!("{}.csl", style_file_name(&style.name)));
     if fs::read_to_string(&path).ok().as_deref() != Some(style.xml.as_str()) {
-        fs::write(&path, &style.xml)
-            .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
+        fs::write(&path, &style.xml).map_err(|error| {
+            crate::i18n::path_error("export.cannotWrite", path.display(), error)
+        })?;
     }
     Ok(path)
 }
@@ -130,7 +125,10 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
     if !kind.needs_pandoc {
         // A kind whose conversion is the app's own has no configuration to read — and a file made of
         // nothing would be a file a reader could edit with no effect.
-        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+        return Err(crate::i18n::now(
+            "export.noConfiguration",
+            &[("kind", kind.kind)],
+        ));
     }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
     Ok(path.to_string_lossy().into_owned())
@@ -141,15 +139,14 @@ pub fn export_config_path(app: tauri::AppHandle, kind: String) -> Result<String,
 pub fn export_config_text(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
     if !kind.needs_pandoc {
-        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+        return Err(crate::i18n::now(
+            "export.noConfiguration",
+            &[("kind", kind.kind)],
+        ));
     }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
-    fs::read_to_string(&path).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotRead",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
+    fs::read_to_string(&path)
+        .map_err(|error| crate::i18n::path_error("export.cannotRead", path.display(), error))
 }
 
 /// Writes the reader's defaults text atomically. This is one of the two text files the export UI
@@ -161,15 +158,14 @@ pub fn export_save_config_text(
 ) -> Result<(), String> {
     let kind = kind_of(&kind)?;
     if !kind.needs_pandoc {
-        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+        return Err(crate::i18n::now(
+            "export.noConfiguration",
+            &[("kind", kind.kind)],
+        ));
     }
     let path = ensure_defaults_in(&export_dir(&app)?, kind)?;
-    crate::files::write_atomically(&path, &text).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
+    crate::files::write_atomically(&path, &text)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))
 }
 
 /// Writes the copy this build ships over the reader's own, because the reader asked for it.
@@ -182,11 +178,14 @@ pub fn export_save_config_text(
 pub fn export_restore_config(app: tauri::AppHandle, kind: String) -> Result<String, String> {
     let kind = kind_of(&kind)?;
     if !kind.needs_pandoc {
-        return Err(crate::i18n::now("export.noConfiguration", &[("kind", kind.kind)]));
+        return Err(crate::i18n::now(
+            "export.noConfiguration",
+            &[("kind", kind.kind)],
+        ));
     }
     let path = export_dir(&app)?.join(config_file_name(kind.kind));
     crate::files::write_atomically(&path, kind.defaults)
-        .map_err(|error| crate::i18n::now("export.cannotWrite", &[("path", &path.display().to_string()), ("reason", &error.to_string())]))?;
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))?;
     Ok(path.to_string_lossy().into_owned())
 }
 /// The settings a kind would be run with, as their own text: the reader's copy when it has been
@@ -197,4 +196,3 @@ pub(super) fn settings_text(app: &tauri::AppHandle, kind: &ExportKind) -> Result
     let path = dir.join(config_file_name(kind.kind));
     Ok(fs::read_to_string(&path).unwrap_or_else(|_| kind.defaults.to_string()))
 }
-

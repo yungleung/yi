@@ -13,25 +13,11 @@ use std::path::{Path, PathBuf};
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
 pub(super) fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {
     let scratch = dir.join("tmp");
-    fs::create_dir_all(&scratch).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotMake",
-            &[
-                ("path", &scratch.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::create_dir_all(&scratch)
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", scratch.display(), error))?;
     let path = scratch.join(format!("note-{}-{}.md", std::process::id(), nanos()));
-    fs::write(&path, text).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[
-                ("path", &path.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::write(&path, text)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))?;
     Ok(path)
 }
 

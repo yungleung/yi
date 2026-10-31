@@ -36,35 +36,21 @@ pub(crate) fn pack_epub(
         return Ok(());
     }
 
-    let file = fs::File::open(epub).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &epub.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
-    let mut archive = ZipArchive::new(file).map_err(|error| {
-        crate::i18n::now(
-            "template.badZip",
-            &[("path", &epub.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    let file = fs::File::open(epub)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", epub.display(), error))?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|error| crate::i18n::path_error("template.badZip", epub.display(), error))?;
     let mut entries: Vec<(String, Vec<u8>)> = Vec::new();
     for index in 0..archive.len() {
-        let mut entry = archive.by_index(index).map_err(|error| {
-            crate::i18n::now(
-                "template.badZip",
-                &[("path", &epub.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
+        let mut entry = archive
+            .by_index(index)
+            .map_err(|error| crate::i18n::path_error("template.badZip", epub.display(), error))?;
         if entry.is_dir() {
             continue;
         }
         let mut bytes = Vec::new();
         entry.read_to_end(&mut bytes).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[("path", &epub.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("template.cannotRead", epub.display(), error)
         })?;
         entries.push((entry.name().to_string(), bytes));
     }
@@ -144,10 +130,7 @@ pub(crate) fn pack_epub(
     ));
     let written = (|| {
         let out = fs::File::create(&temporary).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &temporary.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("template.cannotWrite", temporary.display(), error)
         })?;
         let mut zip = ZipWriter::new(out);
         let stored = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
@@ -169,12 +152,8 @@ pub(crate) fn pack_epub(
             if entries.iter().any(|(existing, _)| existing == &name) {
                 continue;
             }
-            let bytes = fs::read(file_in(package, asset)?).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotRead",
-                    &[("path", asset), ("reason", &error.to_string())],
-                )
-            })?;
+            let bytes = fs::read(file_in(package, asset)?)
+                .map_err(|error| crate::i18n::path_error("template.cannotRead", asset, error))?;
             zip.start_file(name.as_str(), deflated).map_err(zip_error)?;
             zip.write_all(&bytes).map_err(zip_write_error)?;
         }
@@ -187,19 +166,16 @@ pub(crate) fn pack_epub(
     }
     fs::rename(&temporary, epub).map_err(|error| {
         let _ = fs::remove_file(&temporary);
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[("path", &epub.display().to_string()), ("reason", &error.to_string())],
-        )
+        crate::i18n::path_error("template.cannotWrite", epub.display(), error)
     })
 }
 
 fn zip_error(error: zip::result::ZipError) -> String {
-    crate::i18n::now("template.badZip", &[("path", ""), ("reason", &error.to_string())])
+    crate::i18n::path_error("template.badZip", "", error)
 }
 
 fn zip_write_error(error: std::io::Error) -> String {
-    crate::i18n::now("template.cannotWrite", &[("path", ""), ("reason", &error.to_string())])
+    crate::i18n::path_error("template.cannotWrite", "", error)
 }
 
 fn nanos() -> u128 {
@@ -214,11 +190,8 @@ mod tests {
     use super::*;
 
     fn temp_dir() -> std::path::PathBuf {
-        let folder = std::env::temp_dir().join(format!(
-            "yi-epub-pack-{}-{}",
-            std::process::id(),
-            nanos()
-        ));
+        let folder =
+            std::env::temp_dir().join(format!("yi-epub-pack-{}-{}", std::process::id(), nanos()));
         fs::create_dir_all(&folder).unwrap();
         folder
     }

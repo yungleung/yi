@@ -12,8 +12,8 @@ use serde::Serialize;
 use std::fs;
 use std::path::Path;
 
-use super::config::{CslStyle, ensure_defaults_in, export_dir, remote_dir, settings_text};
-use super::kinds::{ExportKind, kind_of};
+use super::config::{ensure_defaults_in, export_dir, remote_dir, settings_text, CslStyle};
+use super::kinds::{kind_of, ExportKind};
 use super::pandoc::{find_pandoc, run_pandoc_with_env};
 
 mod arguments;
@@ -141,8 +141,7 @@ pub async fn run_export(
         let (_, page) = super::html_media::html_output(&request.output_path)?;
         request.output_path = page.to_string_lossy().into_owned();
     } else if kind.kind == "revealjs" {
-        let (bundle, page, created) =
-            super::revealjs::revealjs_output(&request.output_path)?;
+        let (bundle, page, created) = super::revealjs::revealjs_output(&request.output_path)?;
         if created {
             new_reveal_bundle = Some(bundle);
         }
@@ -169,15 +168,7 @@ pub async fn run_export(
 /// of a text that is already the answer.
 fn export_own_text(request: &ExportRequest) -> Result<ExportOutcome, String> {
     crate::files::write_atomically(Path::new(&request.output_path), &request.text).map_err(
-        |error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[
-                    ("path", request.output_path.as_str()),
-                    ("reason", &error.to_string()),
-                ],
-            )
-        },
+        |error| crate::i18n::path_error("export.cannotWrite", request.output_path.as_str(), error),
     )?;
     Ok(ExportOutcome {
         warnings: Vec::new(),
@@ -235,21 +226,25 @@ async fn export_with_pandoc(
         .transpose()?;
     let reference_header =
         super::reference_header::write_reference_header(&dir, &request.reference_header)?;
-    let headers: Vec<_> = header.iter().chain(reference_header.iter()).cloned().collect();
+    let headers: Vec<_> = header
+        .iter()
+        .chain(reference_header.iter())
+        .cloned()
+        .collect();
     let note = write_note(&dir, &request.text)?;
     let result = async {
         let arguments = pandoc_arguments(
-        &dir,
-        &defaults,
-        &note,
-        request,
-        kind,
-        &headers,
-        template_defaults.as_deref(),
-        template
-            .as_ref()
-            .map(|(path, manifest)| (path.as_path(), manifest)),
-        alias.as_ref().map(|(root, _)| root.as_path()),
+            &dir,
+            &defaults,
+            &note,
+            request,
+            kind,
+            &headers,
+            template_defaults.as_deref(),
+            template
+                .as_ref()
+                .map(|(path, manifest)| (path.as_path(), manifest)),
+            alias.as_ref().map(|(root, _)| root.as_path()),
         )?;
         // The PDF engine resolves `\documentclass{journal}` and `\usepackage{…}` from the folder
         // it is run in, so a package is that folder. The note, defaults and output are absolute,
@@ -269,9 +264,8 @@ async fn export_with_pandoc(
                 Vec::new(),
             ),
         };
-        let outcome =
-            run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment)
-                .map(|warnings| ExportOutcome { warnings })?;
+        let outcome = run_pandoc_with_env(&pandoc, &arguments, working.as_deref(), &environment)
+            .map(|warnings| ExportOutcome { warnings })?;
         if kind.kind == "odt" {
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());
             super::odt_toc::cache_contents(&output)?;

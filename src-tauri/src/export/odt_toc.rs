@@ -51,7 +51,8 @@ pub(super) fn with_cached_contents(content: &str) -> Option<String> {
         .rfind("<text:index-title-template")
         .and_then(|start| {
             let end = start + content[start..source_close_at].find('>')?;
-            let close = source_close_at.min(content[start..source_close_at].find("</text:index-title-template>")? + start);
+            let close = source_close_at
+                .min(content[start..source_close_at].find("</text:index-title-template>")? + start);
             Some(inner_text(&content[end + 1..close]))
         })
         .filter(|text| !text.is_empty())
@@ -101,7 +102,10 @@ pub(super) fn cache_contents(path: &Path) -> Result<(), String> {
         entries.push((entry.name().to_string(), bytes, entry.compression()));
     }
 
-    let Some(content_index) = entries.iter().position(|(name, _, _)| name == "content.xml") else {
+    let Some(content_index) = entries
+        .iter()
+        .position(|(name, _, _)| name == "content.xml")
+    else {
         return Ok(());
     };
     let Ok(content) = String::from_utf8(entries[content_index].1.clone()) else {
@@ -232,7 +236,9 @@ fn decode(text: &str) -> String {
 }
 
 fn escape_text(text: &str) -> String {
-    text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 fn escape_attr(text: &str) -> String {
@@ -240,32 +246,23 @@ fn escape_attr(text: &str) -> String {
 }
 
 fn cannot_read(path: &Path, error: &std::io::Error) -> String {
-    crate::i18n::now(
-        "template.cannotRead",
-        &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-    )
+    crate::i18n::path_error("template.cannotRead", path.display(), error)
 }
 
 fn cannot_write(path: &Path, error: &std::io::Error) -> String {
-    crate::i18n::now(
-        "template.cannotWrite",
-        &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-    )
+    crate::i18n::path_error("template.cannotWrite", path.display(), error)
 }
 
 fn bad_zip(path: &Path, reason: &str) -> String {
-    crate::i18n::now(
-        "template.badZip",
-        &[("path", &path.display().to_string()), ("reason", reason)],
-    )
+    crate::i18n::path_error("template.badZip", path.display(), reason)
 }
 
 fn zip_error(error: zip::result::ZipError) -> String {
-    crate::i18n::now("template.badZip", &[("path", ""), ("reason", &error.to_string())])
+    crate::i18n::path_error("template.badZip", "", error)
 }
 
 fn zip_write_error(error: std::io::Error) -> String {
-    crate::i18n::now("template.cannotWrite", &[("path", ""), ("reason", &error.to_string())])
+    crate::i18n::path_error("template.cannotWrite", "", error)
 }
 
 fn nanos() -> u128 {

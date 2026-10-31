@@ -45,15 +45,8 @@ pub(crate) fn stage_alias(
     manifest: &TemplateManifest,
     root: &Path,
 ) -> Result<Vec<String>, String> {
-    fs::create_dir_all(root).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[
-                ("path", &root.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::create_dir_all(root)
+        .map_err(|error| crate::i18n::path_error("template.cannotMake", root.display(), error))?;
     let names = alias_names(manifest);
     for name in &names {
         let target = root.join(name);

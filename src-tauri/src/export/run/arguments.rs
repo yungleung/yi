@@ -5,10 +5,10 @@
 //! package arguments follow reader arguments where the package must win, and a template id resolves
 //! only through the app's own package library.
 
-use super::ExportRequest;
 use super::environment::absolute_output;
+use super::ExportRequest;
 use crate::export::config::ensure_csl_in;
-use crate::export::kinds::{ExportKind, KindTemplate, PAPER_SIZES, TemplateMode};
+use crate::export::kinds::{ExportKind, KindTemplate, TemplateMode, PAPER_SIZES};
 use crate::export::templates::TemplateManifest;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -42,10 +42,7 @@ pub(crate) fn pandoc_arguments(
     if kind.kind == "revealjs" {
         arguments.push(OsString::from("--variable"));
         arguments.push(OsString::from(if request.revealjs_remote_js {
-            format!(
-                "revealjs-url={}",
-                crate::export::revealjs::REVEALJS_CDN
-            )
+            format!("revealjs-url={}", crate::export::revealjs::REVEALJS_CDN)
         } else {
             "revealjs-url=js".to_string()
         }));
@@ -73,13 +70,7 @@ pub(crate) fn pandoc_arguments(
         paths.extend(request.resource_paths.iter().map(PathBuf::from));
         if !paths.is_empty() {
             let joined = std::env::join_paths(&paths).map_err(|error| {
-                crate::i18n::now(
-                    "export.cannotSearch",
-                    &[
-                        ("path", request.output_path.as_str()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("export.cannotSearch", request.output_path.as_str(), error)
             })?;
             arguments.push(OsString::from("--resource-path"));
             arguments.push(joined);

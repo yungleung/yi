@@ -31,12 +31,8 @@ pub(crate) fn append_defaults(arguments: &mut Vec<OsString>, path: &Path) {
 /// execution on top of that widens the trust boundary to every TeX command in the kit, which the
 /// product explicitly does not do.
 pub(crate) fn ensure_pdf_defaults_safe(path: &Path) -> Result<(), String> {
-    let text = std::fs::read_to_string(path).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", path.display(), error))?;
     let compact: String = text
         .to_ascii_lowercase()
         .chars()
@@ -74,10 +70,16 @@ mod tests {
         assert_eq!(package_defaults(&package), None);
 
         std::fs::write(package.join("defaults.yaml"), "metadata: {}\n").unwrap();
-        assert_eq!(package_defaults(&package), Some(package.join("defaults.yaml")));
+        assert_eq!(
+            package_defaults(&package),
+            Some(package.join("defaults.yaml"))
+        );
 
         std::fs::write(package.join("export.yaml"), "metadata: {}\n").unwrap();
-        assert_eq!(package_defaults(&package), Some(package.join("export.yaml")));
+        assert_eq!(
+            package_defaults(&package),
+            Some(package.join("export.yaml"))
+        );
         let _ = std::fs::remove_dir_all(package);
     }
 

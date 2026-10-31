@@ -41,12 +41,8 @@ pub(super) fn html_output(requested: &str) -> Result<(PathBuf, PathBuf), String>
             &[("file", &bundle.display().to_string())],
         ));
     }
-    fs::create_dir_all(&bundle).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotMake",
-            &[("path", &bundle.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    fs::create_dir_all(&bundle)
+        .map_err(|error| crate::i18n::path_error("export.cannotMake", bundle.display(), error))?;
     let name = bundle
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -106,12 +102,8 @@ pub(super) fn package_local_media(output: &Path, asset_folder: &str) -> Result<(
     for (from, to) in replacements {
         rewritten = rewritten.replace(&from, &to);
     }
-    crate::files::write_atomically(output, &rewritten).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[("path", &output.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
+    crate::files::write_atomically(output, &rewritten)
+        .map_err(|error| crate::i18n::path_error("template.cannotWrite", output.display(), error))
 }
 
 /// Every image source attribute, including Reveal.js's lazy `data-src`.
@@ -126,10 +118,9 @@ fn attribute_values(html: &str, attribute: &str) -> Vec<String> {
     let needle = format!("{attribute}=");
     for (at, _) in html.match_indices(&needle) {
         if at > 0
-            && html[..at]
-                .chars()
-                .next_back()
-                .is_some_and(|character| character.is_alphanumeric() || matches!(character, '-' | ':'))
+            && html[..at].chars().next_back().is_some_and(|character| {
+                character.is_alphanumeric() || matches!(character, '-' | ':')
+            })
         {
             continue;
         }
@@ -223,18 +214,11 @@ fn unique_name(source: &Path, used: &std::collections::HashSet<String>) -> Strin
 fn copy_media(source: &Path, target: &Path) -> Result<(), String> {
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotMake",
-                &[("path", &parent.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("export.cannotMake", parent.display(), error)
         })?;
     }
-    fs::copy(source, target).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[("path", &target.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    fs::copy(source, target)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", target.display(), error))?;
     Ok(())
 }
 
@@ -297,8 +281,7 @@ mod tests {
         assert_eq!(bundle, dir.join("note"));
         assert!(bundle.is_dir());
         assert_eq!(page, dir.join("note").join("note.html"));
-        let (bundle_again, page_again) =
-            html_output(&dir.join("note").to_string_lossy()).unwrap();
+        let (bundle_again, page_again) = html_output(&dir.join("note").to_string_lossy()).unwrap();
         assert_eq!(bundle_again, bundle);
         assert_eq!(page_again, page);
         let _ = fs::remove_dir_all(dir);
@@ -333,9 +316,18 @@ mod tests {
         .unwrap();
         package_html_media(&output).unwrap();
         let html = fs::read_to_string(&output).unwrap();
-        assert!(html.contains(r#"src="note.assets/shot%20one.png""#), "{html}");
-        assert!(html.contains(r#"src="https://example.com/a.png""#), "{html}");
-        assert_eq!(fs::read(dir.join("note.assets/shot one.png")).unwrap(), b"png");
+        assert!(
+            html.contains(r#"src="note.assets/shot%20one.png""#),
+            "{html}"
+        );
+        assert!(
+            html.contains(r#"src="https://example.com/a.png""#),
+            "{html}"
+        );
+        assert_eq!(
+            fs::read(dir.join("note.assets/shot one.png")).unwrap(),
+            b"png"
+        );
         let _ = fs::remove_dir_all(dir);
     }
 }

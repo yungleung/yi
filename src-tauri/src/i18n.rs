@@ -11,6 +11,7 @@
 //! the two to the same files and the same expectations.
 
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::sync::{OnceLock, RwLock};
 
 use crate::settings::AppConfig;
@@ -118,6 +119,16 @@ pub fn now(key: &str, params: &[(&str, &str)]) -> String {
   t(&language, key, params)
 }
 
+/// The sentence for a file operation, with the path and the system's reason.
+///
+/// Example: `path_error("files.writeFailed", "/tmp/note.md", "permission denied")` fills
+/// `Failed to write {path}: {reason}` once, so callers need not repeat those two parameter names.
+pub fn path_error(key: &str, path: impl Display, reason: impl Display) -> String {
+  let path = path.to_string();
+  let reason = reason.to_string();
+  now(key, &[("path", &path), ("reason", &reason)])
+}
+
 /// The language a system locale asks for: `zh-Hant-TW` and `zh-TW` are Traditional Chinese, `zh`
 /// and `zh-CN` are Simplified, and anything else this app does not speak is English. Chinese is
 /// the one place a locale has to be read rather than matched by its first two letters — the script
@@ -179,6 +190,10 @@ mod tests {
     assert_eq!(
       now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")]),
       t("zh-Hans", "export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
+    );
+    assert_eq!(
+      path_error("export.cannotWrite", "/tmp/x", "no such file"),
+      now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
     );
     assert_ne!(now("export.noPandoc", &[]), t("en", "export.noPandoc", &[]));
     // A language the app does not speak falls back to English rather than to a blank.

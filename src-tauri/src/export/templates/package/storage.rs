@@ -135,32 +135,13 @@ fn extension_of(name: &str) -> &str {
 }
 
 pub(crate) fn copy_directory(source: &Path, target: &Path) -> Result<(), String> {
-    fs::create_dir_all(target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
-    for entry in fs::read_dir(source).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[
-                ("path", &source.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })? {
+    fs::create_dir_all(target)
+        .map_err(|error| crate::i18n::path_error("template.cannotMake", target.display(), error))?;
+    for entry in fs::read_dir(source)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", source.display(), error))?
+    {
         let entry = entry.map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[
-                    ("path", &source.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotRead", source.display(), error)
         })?;
         let path = entry.path();
         let destination = target.join(entry.file_name());
@@ -168,13 +149,7 @@ pub(crate) fn copy_directory(source: &Path, target: &Path) -> Result<(), String>
             copy_directory(&path, &destination)?;
         } else {
             fs::copy(&path, &destination).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[
-                        ("path", &destination.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("template.cannotWrite", destination.display(), error)
             })?;
         }
     }

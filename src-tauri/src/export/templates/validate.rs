@@ -15,8 +15,8 @@ use std::path::{Path, PathBuf};
 
 use super::super::config::{export_dir, settings_text};
 use super::super::kinds::{kind_of, KindTemplate};
-use super::super::pandoc::{find_pandoc, run_pandoc};
 use super::super::pandoc::run_pandoc_with_env;
+use super::super::pandoc::{find_pandoc, run_pandoc};
 use super::super::run::pdf_environment;
 use super::package::resolve_package;
 
@@ -29,19 +29,13 @@ pub struct ValidationResult {
 }
 
 /// Runs a one-paragraph conversion through this package.
-pub fn validate_template(
-    app: &tauri::AppHandle,
-    id: String,
-) -> Result<ValidationResult, String> {
+pub fn validate_template(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, String> {
     let (package, manifest) = resolve_package(app, &id)?;
     let entry = package.join(super::manifest::relative_path(manifest.entry())?);
     if !entry.is_file() {
         return Ok(ValidationResult {
             ok: false,
-            message: crate::i18n::now(
-                "template.entryMissing",
-                &[("file", manifest.entry())],
-            ),
+            message: crate::i18n::now("template.entryMissing", &[("file", manifest.entry())]),
             warnings: Vec::new(),
         });
     }
@@ -51,18 +45,14 @@ pub fn validate_template(
     let workspace = check_folder(app, "validate")?;
     let result = (|| {
         let note = workspace.join("fixture.md");
-        fs::write(&note, "# A template check\n\nOne paragraph, one conversion.\n").map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &note.display().to_string()), ("reason", &error.to_string())],
-            )
-        })?;
+        fs::write(
+            &note,
+            "# A template check\n\nOne paragraph, one conversion.\n",
+        )
+        .map_err(|error| crate::i18n::path_error("template.cannotWrite", note.display(), error))?;
         let defaults = workspace.join("export.yaml");
         fs::write(&defaults, settings_text(app, kind_of(&manifest.kind)?)?).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &defaults.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("template.cannotWrite", defaults.display(), error)
         })?;
         let (writer, extension) = match manifest.kind.as_str() {
             "html" => ("html5", "html"),
@@ -72,10 +62,7 @@ pub fn validate_template(
             _ => ("latex", "tex"),
         };
         let output = workspace.join(format!("check.{extension}"));
-        let mut arguments: Vec<OsString> = vec![
-            "--defaults".into(),
-            defaults.into_os_string(),
-        ];
+        let mut arguments: Vec<OsString> = vec!["--defaults".into(), defaults.into_os_string()];
         if let Some(package_defaults) = super::defaults::package_defaults(&package) {
             super::defaults::append_defaults(&mut arguments, &package_defaults);
         }
@@ -117,36 +104,20 @@ pub fn test_pdf(app: &tauri::AppHandle, id: String) -> Result<ValidationResult, 
     let workspace = check_folder(app, "pdf")?;
     let result = (|| {
         let note = workspace.join("fixture.md");
-        fs::write(
-            &note,
-            "# A template check\n\nOne paragraph, one page.\n",
-        )
-        .map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &note.display().to_string()), ("reason", &error.to_string())],
-            )
+        fs::write(&note, "# A template check\n\nOne paragraph, one page.\n").map_err(|error| {
+            crate::i18n::path_error("template.cannotWrite", note.display(), error)
         })?;
         let defaults = workspace.join("export.yaml");
         fs::write(&defaults, settings_text(app, kind_of(&manifest.kind)?)?).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[("path", &defaults.display().to_string()), ("reason", &error.to_string())],
-            )
+            crate::i18n::path_error("template.cannotWrite", defaults.display(), error)
         })?;
         let output = workspace.join("check.pdf");
-        let mut arguments: Vec<OsString> = vec![
-            "--defaults".into(),
-            defaults.into_os_string(),
-        ];
+        let mut arguments: Vec<OsString> = vec!["--defaults".into(), defaults.into_os_string()];
         if let Some(package_defaults) = super::defaults::package_defaults(&package) {
             super::defaults::ensure_pdf_defaults_safe(&package_defaults)?;
             super::defaults::append_defaults(&mut arguments, &package_defaults);
         }
-        arguments.extend([
-            "--output".into(),
-            output.as_os_str().to_os_string(),
-        ]);
+        arguments.extend(["--output".into(), output.as_os_str().to_os_string()]);
         package_arguments(&package, &manifest, &mut arguments)?;
         arguments.push(note.as_os_str().to_os_string());
         let (working, environment) = pdf_environment(&package, &manifest);
@@ -174,14 +145,10 @@ fn package_arguments(
 ) -> Result<(), String> {
     if manifest.mode == super::super::kinds::TemplateMode::ReferenceDoc {
         arguments.push("--reference-doc".into());
-        arguments.push(
-            super::manifest::file_in(package, manifest.entry())?.into_os_string(),
-        );
+        arguments.push(super::manifest::file_in(package, manifest.entry())?.into_os_string());
     } else {
         arguments.push("--template".into());
-        arguments.push(
-            super::manifest::file_in(package, manifest.entry())?.into_os_string(),
-        );
+        arguments.push(super::manifest::file_in(package, manifest.entry())?.into_os_string());
     }
     if let Some(csl) = &manifest.csl {
         arguments.push("--csl".into());
@@ -193,15 +160,13 @@ fn package_arguments(
 }
 
 fn check_folder(app: &tauri::AppHandle, label: &str) -> Result<PathBuf, String> {
-    let folder = export_dir(app)?
-        .join("tmp")
-        .join(format!("template-{label}-{}-{}", std::process::id(), nanos()));
-    fs::create_dir_all(&folder).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[("path", &folder.display().to_string()), ("reason", &error.to_string())],
-        )
-    })?;
+    let folder = export_dir(app)?.join("tmp").join(format!(
+        "template-{label}-{}-{}",
+        std::process::id(),
+        nanos()
+    ));
+    fs::create_dir_all(&folder)
+        .map_err(|error| crate::i18n::path_error("template.cannotMake", folder.display(), error))?;
     Ok(folder)
 }
 

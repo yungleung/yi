@@ -96,13 +96,7 @@ pub fn import_template(
     let result = built.and_then(|manifest| {
         write_manifest(&staging, &manifest)?;
         fs::rename(&staging, &target).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotMake",
-                &[
-                    ("path", &target.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotMake", target.display(), error)
         })?;
         Ok(summary_at(&id, &target))
     });
@@ -163,25 +157,13 @@ fn build_package(
             let original_path = staging.join(relative_path(chosen)?);
             let kept = staging.join(&original_name);
             fs::rename(&original_path, &kept).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[
-                        ("path", &kept.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("template.cannotWrite", kept.display(), error)
             })?;
             assets.push(original_name);
             entry = unique_entry_name(&assets, &scan::wrapper_entry(chosen));
             let wrapped_path = staging.join(&entry);
             crate::files::write_atomically(&wrapped_path, &wrapped).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[
-                        ("path", &wrapped_path.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("template.cannotWrite", wrapped_path.display(), error)
             })?;
         }
         (Some(entry.clone()), None)
@@ -289,22 +271,14 @@ pub fn create_default(
     let target = dir.join(&id);
     let built = (|| {
         fs::create_dir_all(&staging).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotMake",
-                &[
-                    ("path", &staging.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotMake", staging.display(), error)
         })?;
         let entry = format!("template.{extension}");
         fs::write(staging.join(&entry), &bytes).map_err(|error| {
-            crate::i18n::now(
+            crate::i18n::path_error(
                 "template.cannotWrite",
-                &[
-                    ("path", &staging.join(&entry).display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
+                staging.join(&entry).display(),
+                error,
             )
         })?;
         let mode = if kind.template_mode == KindTemplate::ReferenceDoc {
@@ -333,13 +307,7 @@ pub fn create_default(
         };
         write_manifest(&staging, &manifest)?;
         fs::rename(&staging, &target).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotMake",
-                &[
-                    ("path", &target.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotMake", target.display(), error)
         })?;
         Ok(summary_at(&id, &target))
     })();

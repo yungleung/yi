@@ -21,15 +21,8 @@ pub(crate) fn templates_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| {
             crate::i18n::now("export.noDataFolder", &[("reason", &error.to_string())])
         })?;
-    fs::create_dir_all(&dir).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[
-                ("path", &dir.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::create_dir_all(&dir)
+        .map_err(|error| crate::i18n::path_error("template.cannotMake", dir.display(), error))?;
     Ok(dir)
 }
 
@@ -37,15 +30,8 @@ pub(crate) fn templates_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 pub fn list_templates(app: &tauri::AppHandle) -> Result<Vec<TemplateSummary>, String> {
     let dir = templates_dir(app)?;
     let mut packages = Vec::new();
-    let entries = fs::read_dir(&dir).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[
-                ("path", &dir.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    let entries = fs::read_dir(&dir)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", dir.display(), error))?;
     for entry in entries {
         let Ok(entry) = entry else {
             continue;
@@ -102,15 +88,8 @@ pub fn duplicate_template(app: &tauri::AppHandle, id: String) -> Result<Template
 pub fn remove_template(app: &tauri::AppHandle, id: String) -> Result<(), String> {
     let dir = templates_dir(app)?;
     let path = package_path(&dir, &id)?;
-    fs::remove_dir_all(&path).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotDelete",
-            &[
-                ("path", &path.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })
+    fs::remove_dir_all(&path)
+        .map_err(|error| crate::i18n::path_error("template.cannotDelete", path.display(), error))
 }
 
 /// One package's folder, by id. A config value is never trusted as a path.

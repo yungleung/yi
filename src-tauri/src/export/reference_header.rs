@@ -24,15 +24,8 @@ pub(super) fn write_reference_header(
         .map(|duration| duration.as_nanos())
         .unwrap_or_default();
     let path = directory.join(format!("reference-header-{stamp}.tex"));
-    crate::files::write_atomically(&path, text).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[
-                ("path", path.to_string_lossy().as_ref()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    crate::files::write_atomically(&path, text)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))?;
     Ok(Some(path))
 }
 
@@ -43,10 +36,8 @@ mod tests {
 
     #[test]
     fn an_empty_header_writes_no_run_file() {
-        let directory = std::env::temp_dir().join(format!(
-            "yi-reference-header-empty-{}",
-            std::process::id()
-        ));
+        let directory =
+            std::env::temp_dir().join(format!("yi-reference-header-empty-{}", std::process::id()));
         let _ = fs::remove_dir_all(&directory);
         fs::create_dir_all(&directory).unwrap();
         assert_eq!(write_reference_header(&directory, "  \n").unwrap(), None);

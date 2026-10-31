@@ -5,8 +5,8 @@
 //! file is reported rather than overwritten, and a native bibliography carries only the supplied
 //! cited entries.
 
-use super::ExportRequest;
 use super::environment::absolute_output;
+use super::ExportRequest;
 use crate::export::kinds::ExportKind;
 use crate::export::templates::TemplateManifest;
 use crate::export::templates::{reference_to, safe_prefix};
@@ -80,23 +80,11 @@ pub(crate) fn deliver_latex_assets(
         }
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(|error| {
-                crate::i18n::now(
-                    "export.cannotMake",
-                    &[
-                        ("path", &parent.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("export.cannotMake", parent.display(), error)
             })?;
         }
         crate::files::write_atomically(&target, &bibliography.text).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[
-                    ("path", &target.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotWrite", target.display(), error)
         })?;
     }
     Ok(())
@@ -232,35 +220,16 @@ fn copy_bundle_asset(source: &Path, target: &Path) -> Result<(), String> {
     }
     if target.exists() {
         fs::remove_file(target).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotWrite",
-                &[
-                    ("path", &target.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotWrite", target.display(), error)
         })?;
     }
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotMake",
-                &[
-                    ("path", &parent.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotMake", parent.display(), error)
         })?;
     }
-    fs::copy(source, target).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::copy(source, target)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", target.display(), error))?;
     Ok(())
 }
 
@@ -308,23 +277,10 @@ fn copy_asset(source: &Path, target: &Path) -> Result<(), String> {
     }
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|error| {
-            crate::i18n::now(
-                "export.cannotMake",
-                &[
-                    ("path", &parent.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("export.cannotMake", parent.display(), error)
         })?;
     }
-    fs::copy(source, target).map_err(|error| {
-        crate::i18n::now(
-            "export.cannotWrite",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::copy(source, target)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", target.display(), error))?;
     Ok(())
 }

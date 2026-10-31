@@ -91,21 +91,12 @@ pub fn update_details(
                     .collect();
                 let source = unique_asset_name(&names, &scan::wrapper_source(&entry));
                 fs::copy(file_in(&path, &entry)?, file_in(&path, &source)?).map_err(|error| {
-                    crate::i18n::now(
-                        "template.cannotWrite",
-                        &[("path", &source), ("reason", &error.to_string())],
-                    )
+                    crate::i18n::path_error("template.cannotWrite", &source, error)
                 })?;
             }
             let target = file_in(&path, &wrapper)?;
             crate::files::write_atomically(&target, &wrapped).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotWrite",
-                    &[
-                        ("path", &target.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("template.cannotWrite", target.display(), error)
             })?;
             manifest.mode = TemplateMode::Wrapper;
             manifest.template = Some(wrapper.clone());

@@ -32,10 +32,6 @@ pub fn write_bytes_atomically(path: &Path, contents: &[u8]) -> std::io::Result<(
 /// Saves a document's text through the app's atomic write command.
 #[tauri::command]
 pub fn write_text_atomically(path: String, contents: String) -> Result<(), String> {
-    write_atomically(Path::new(&path), &contents).map_err(|error| {
-        crate::i18n::now(
-            "files.writeFailed",
-            &[("path", &path), ("reason", &error.to_string())],
-        )
-    })
+    write_atomically(Path::new(&path), &contents)
+        .map_err(|error| crate::i18n::path_error("files.writeFailed", &path, error))
 }

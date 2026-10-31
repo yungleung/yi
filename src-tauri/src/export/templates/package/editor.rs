@@ -23,15 +23,8 @@ pub fn read_package_file(
             &[("file", &file)],
         ));
     }
-    fs::read_to_string(&target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })
+    fs::read_to_string(&target)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", target.display(), error))
 }
 
 /// Writes one of a package's text files atomically. The app's manifest is not editable here.
@@ -53,13 +46,6 @@ pub fn write_package_file(
             &[("file", &file)],
         ));
     }
-    crate::files::write_atomically(&target, &text).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })
+    crate::files::write_atomically(&target, &text)
+        .map_err(|error| crate::i18n::path_error("template.cannotWrite", target.display(), error))
 }

@@ -3,8 +3,8 @@
 //! May import: std and the scan facade's file vocabulary. Upholds: every listed or copied file is
 //! regular, inside the source, and reported by a safe relative package path.
 
-use super::ScannedFile;
 use super::archive;
+use super::ScannedFile;
 use std::fs;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
@@ -74,13 +74,7 @@ pub(crate) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
     if source.is_dir() {
         let path = source.join(relative(name)?);
         return fs::read(&path).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[
-                    ("path", &path.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotRead", path.display(), error)
         });
     }
     if source_type(source) == "zip" {
@@ -88,33 +82,20 @@ pub(crate) fn read_file(source: &Path, name: &str) -> Result<Vec<u8>, String> {
     }
     let path = single_name(source)?;
     if name != path {
-        return Err(crate::i18n::now(
+        return Err(crate::i18n::path_error(
             "template.cannotRead",
-            &[("path", name), ("reason", "not in source")],
+            name,
+            "not in source",
         ));
     }
-    fs::read(source).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[
-                ("path", &source.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })
+    fs::read(source)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", source.display(), error))
 }
 
 /// Copies a source into the folder a package is being built in.
 pub(crate) fn copy_into(source: &Path, target: &Path) -> Result<(), String> {
-    fs::create_dir_all(target).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotMake",
-            &[
-                ("path", &target.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    fs::create_dir_all(target)
+        .map_err(|error| crate::i18n::path_error("template.cannotMake", target.display(), error))?;
     if source_type(source) == "zip" {
         return archive::extract(source, target);
     }
@@ -123,33 +104,15 @@ pub(crate) fn copy_into(source: &Path, target: &Path) -> Result<(), String> {
         let destination = target.join(relative(&file.name)?);
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).map_err(|error| {
-                crate::i18n::now(
-                    "template.cannotMake",
-                    &[
-                        ("path", &parent.display().to_string()),
-                        ("reason", &error.to_string()),
-                    ],
-                )
+                crate::i18n::path_error("template.cannotMake", parent.display(), error)
             })?;
         }
         let bytes = read_file(source, &file.name)?;
         let mut written = fs::File::create(&destination).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[
-                    ("path", &destination.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotWrite", destination.display(), error)
         })?;
         written.write_all(&bytes).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotWrite",
-                &[
-                    ("path", &destination.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotWrite", destination.display(), error)
         })?;
     }
     Ok(())
@@ -220,15 +183,8 @@ fn folder_files(root: &Path) -> Result<Vec<ScannedFile>, String> {
 }
 
 fn walk_folder(root: &Path, folder: &Path, files: &mut Vec<ScannedFile>) -> Result<(), String> {
-    let entries = fs::read_dir(folder).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotRead",
-            &[
-                ("path", &folder.display().to_string()),
-                ("reason", &error.to_string()),
-            ],
-        )
-    })?;
+    let entries = fs::read_dir(folder)
+        .map_err(|error| crate::i18n::path_error("template.cannotRead", folder.display(), error))?;
     let mut paths: Vec<PathBuf> = entries
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
         .collect();
@@ -244,13 +200,7 @@ fn walk_folder(root: &Path, folder: &Path, files: &mut Vec<ScannedFile>) -> Resu
             continue;
         }
         let metadata = fs::symlink_metadata(&path).map_err(|error| {
-            crate::i18n::now(
-                "template.cannotRead",
-                &[
-                    ("path", &path.display().to_string()),
-                    ("reason", &error.to_string()),
-                ],
-            )
+            crate::i18n::path_error("template.cannotRead", path.display(), error)
         })?;
         if metadata.file_type().is_symlink() {
             return Err(crate::i18n::now(

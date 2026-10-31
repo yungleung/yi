@@ -37,15 +37,7 @@ pub fn list_folder_files(folder_path: String) -> Result<Vec<FileInfo>, String> {
     }
 
     let mut entries = fs::read_dir(&folder)
-        .map_err(|err| {
-            crate::i18n::now(
-                "files.readFailed",
-                &[
-                    ("path", &folder.display().to_string()),
-                    ("reason", &err.to_string()),
-                ],
-            )
-        })?
+        .map_err(|err| crate::i18n::path_error("files.readFailed", folder.display(), err))?
         .filter_map(|entry| {
             entry.ok().and_then(|entry| {
                 let path = entry.path();

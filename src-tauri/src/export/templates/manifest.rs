@@ -100,7 +100,10 @@ impl TemplateManifest {
             }
         } else {
             if kind.template_mode != KindTemplate::Text {
-                return Err(crate::i18n::now("template.textKind", &[("kind", &self.kind)]));
+                return Err(crate::i18n::now(
+                    "template.textKind",
+                    &[("kind", &self.kind)],
+                ));
             }
             if self.reference_doc.is_some() || self.template.is_none() {
                 return Err(crate::i18n::now("template.textEntry", &[]));
@@ -129,16 +132,10 @@ impl TemplateManifest {
 pub(super) fn read_manifest(package: &Path) -> Result<TemplateManifest, String> {
     let path = package.join("template.json");
     let text = fs::read_to_string(&path).map_err(|error| {
-        crate::i18n::now(
-            "template.manifestUnreadable",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
+        crate::i18n::path_error("template.manifestUnreadable", path.display(), error)
     })?;
     let manifest: TemplateManifest = serde_json::from_str(&text).map_err(|error| {
-        crate::i18n::now(
-            "template.manifestInvalid",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
+        crate::i18n::path_error("template.manifestInvalid", path.display(), error)
     })?;
     manifest.validate()?;
     Ok(manifest)
@@ -147,15 +144,12 @@ pub(super) fn read_manifest(package: &Path) -> Result<TemplateManifest, String> 
 /// Writes the manifest in one step, so a reader or a launcher never sees half of it.
 pub(super) fn write_manifest(package: &Path, manifest: &TemplateManifest) -> Result<(), String> {
     manifest.validate()?;
-    let text = serde_json::to_string_pretty(manifest)
-        .map_err(|error| crate::i18n::now("template.manifestInvalid", &[("path", package.display().to_string().as_str()), ("reason", &error.to_string())]))?;
+    let text = serde_json::to_string_pretty(manifest).map_err(|error| {
+        crate::i18n::path_error("template.manifestInvalid", package.display(), error)
+    })?;
     let path = package.join("template.json");
-    crate::files::write_atomically(&path, &(text + "\n")).map_err(|error| {
-        crate::i18n::now(
-            "template.cannotWrite",
-            &[("path", &path.display().to_string()), ("reason", &error.to_string())],
-        )
-    })
+    crate::files::write_atomically(&path, &(text + "\n"))
+        .map_err(|error| crate::i18n::path_error("template.cannotWrite", path.display(), error))
 }
 
 /// A path that is a package-relative path: one or more normal components, no absolute root, no
@@ -306,15 +300,28 @@ mod tests {
 
     #[test]
     fn a_path_may_not_leave_the_package() {
-        for name in ["../note.tex", "/etc/passwd", "a\\b.tex", "", "./a.tex", "a/../b"] {
+        for name in [
+            "../note.tex",
+            "/etc/passwd",
+            "a\\b.tex",
+            "",
+            "./a.tex",
+            "a/../b",
+        ] {
             assert!(relative_path(name).is_err(), "{name}");
         }
-        assert_eq!(relative_path("assets/logo.png").unwrap(), PathBuf::from("assets/logo.png"));
+        assert_eq!(
+            relative_path("assets/logo.png").unwrap(),
+            PathBuf::from("assets/logo.png")
+        );
     }
 
     #[test]
     fn a_slug_is_ascii_and_unique_with_a_number() {
-        assert_eq!(slugify("Journal X — LaTeX submission"), "journal-x-latex-submission");
+        assert_eq!(
+            slugify("Journal X — LaTeX submission"),
+            "journal-x-latex-submission"
+        );
         assert_eq!(slugify("  ***  "), "template");
         let folder = std::env::temp_dir().join(format!(
             "yi-slug-{}-{}",
