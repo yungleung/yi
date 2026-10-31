@@ -29,19 +29,31 @@
     t.prose().querySelector('blockquote .markdown-callout') !== null,
     true
   );
+
+  // The demo gained a section above these callouts. The renderer mounts blocks around the
+  // viewport, so reach the complex warning callout before asking what its body rendered.
+  let complexCallout = null;
+  for (let fraction = 0; complexCallout === null && fraction <= 0.6; fraction += 0.04) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(120);
+    complexCallout =
+      [...t.prose().querySelectorAll('[data-callout-kind="warning"]')].find((callout) =>
+        callout.textContent?.includes('First check')
+      ) ?? null;
+  }
   check(
     'the callout body renders a table',
-    t.prose().querySelector('.markdown-callout-body table') !== null,
+    complexCallout?.querySelector('.markdown-callout-body table') !== null,
     true
   );
   check(
     'the callout body renders a code block',
-    t.prose().querySelector('.markdown-callout-body pre') !== null,
+    complexCallout?.querySelector('.markdown-callout-body pre') !== null,
     true
   );
   check(
     'the callout body renders an equation',
-    t.prose().querySelector('.markdown-callout-body [data-math]') !== null,
+    complexCallout?.querySelector('.markdown-callout-body [data-math]') !== null,
     true
   );
   t.scroller().scrollTop = t.scroller().scrollHeight * 0.22;
