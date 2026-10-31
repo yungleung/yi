@@ -11,33 +11,19 @@
  * it touches rather than a copy of the document; everyone above this file still
  * asks for the text and gets a string.
  *
- * May import: the block model (`blocks.ts`), the text store (`text_store.ts`) and
- * the parser (`syntax/parser.ts` with its repairs). Upholds: the raw document is
- * the only source of truth — blocks, parses and the undo history are all derived
- * from it, and an edit re-splits only what it touched.
+ * May import: the block model (`blocks.ts`), text store, history, target indexes
+ * and the derived block parse cache. Upholds: the raw document is the only source
+ * of truth — blocks, parses and undo history derive from it, and an edit re-splits
+ * only what it touched.
  */
 
-import { blockContentKey, splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
-import { isRawRendered } from './block_kinds';;
+import { splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
 import type { RootContent } from 'mdast';
-import {
-  containsReference,
-  footnoteLabels,
-  isOwnNode,
-  labelsAfterEdit,
-  sameLabels,
-  withFootnoteDefinitions
-} from '../syntax/footnotes';
-import { parseMarkdown } from '../syntax/parser';
-import { blockParseInput } from './blocks';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
 import type { HeadingTarget } from './heading_index';
 import { referenceIndex, type ReferenceEntry } from './reference_index';
 import { TextStore } from './text_store';
-import { listingFenceData } from '../syntax/code_fences';
-
-/** Parsed blocks kept before the oldest is dropped. */
-const PARSED_BLOCK_LIMIT = 400;
+import { BlockParseCache } from './block_parse_cache';
 
 let nextDocumentNumber = 0;
 
@@ -70,24 +56,14 @@ export class MarkdownEditorState {
    */
   private cachedText: string | null = null;
   private blocks: MarkdownBlock[];
-  /**
-   * Parses per block content (`kind:text`), with block-relative positions.
-   * Keyed by content, not by line number: an edit shifts every line below it,
-   * and a shifted block's parse is still valid.
-   */
-  private readonly blockContent = new Map<string, RootContent[]>();
-  /** The labels the document defines, read once per text. */
-  private labels: ReadonlySet<string> | null = null;
-  /** How many times the set of labels has changed (see {@link parseKey}). */
-  private labelsVersion = 0;
+  /** Derived block parses and the label/reference versions that key them. */
+  private readonly parses = new BlockParseCache();
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
   /** Shared targets for the current text, computed only when navigation asks. */
   private cachedReferences: readonly ReferenceEntry[] | null = null;
   /** Heading projection of the shared target index. */
   private cachedHeadings: readonly HeadingTarget[] | null = null;
-  /** Moves every rendering that displays a target-derived caption or label. */
-  private referencesVersion = 0;
 
   constructor(text = '') {
     this.text = new TextStore(text);
@@ -158,16 +134,7 @@ export class MarkdownEditorState {
    * remembered against these keys — of blocks the change cannot reach.
    */
   parseKey(block: MarkdownBlock): string {
-    const key = blockContentKey(block);
-    const labeled = containsReference(block.text) ? `${key}:labels@${this.labelsVersion}` : key;
-    const referenceSensitive =
-      block.text.includes('[#') ||
-      /(?:^|\n)[ \t]*!\[/.test(block.text) ||
-      /(?:^|\n):\s+/.test(block.text) ||
-      (block.kind === 'fencedCode' && listingFenceData(block.text) !== null);
-    return referenceSensitive
-      ? `${labeled}:references@${this.referencesVersion}`
-      : labeled;
+    return this.parses.key(block);
   }
 
   /**
@@ -175,35 +142,7 @@ export class MarkdownEditorState {
    * block-relative positions, and cached per block.
    */
   getBlockContent(block: MarkdownBlock): RootContent[] {
-    if (block.kind === 'blank') {
-      return [];
-    }
-    const key = this.parseKey(block);
-    const cached = this.blockContent.get(key);
-    if (cached) {
-      return cached;
-    }
-    // Markdown reads `[^1]` as a footnote reference only when its definition is
-    // in the same parse, and this parses one block at a time: the definitions
-    // the block's references need are borrowed from the rest of the document
-    // (see `footnotes.ts`), and the nodes they parse into are dropped again.
-    const prepared = blockParseInput(block);
-    // A raw block (code, math, html) has no footnote references: its brackets
-    // are text, so its parse input is left exactly as it stands.
-    const withContext = isRawRendered(block.kind)
-      ? prepared
-      : withFootnoteDefinitions(prepared, this.footnoteLabels());
-    const content = parseMarkdown(withContext)
-      .children.filter((child) => isOwnNode(child, prepared.length));
-    this.blockContent.set(key, content);
-    // Every edit mints one new key, so the cache needs a bound of its own.
-    if (this.blockContent.size > PARSED_BLOCK_LIMIT) {
-      const oldest = this.blockContent.keys().next().value as string | undefined;
-      if (oldest !== undefined && oldest !== key) {
-        this.blockContent.delete(oldest);
-      }
-    }
-    return content;
+    return this.parses.get(block, this.getText());
   }
 
   /**
@@ -244,28 +183,8 @@ export class MarkdownEditorState {
     this.cachedText = null;
     this.cachedHeadings = null;
     this.cachedReferences = null;
-    this.referencesVersion += 1;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
-    // The labels follow the edit rather than being thrown away with it: reading
-    // every definition in the document is a scan per keystroke on a note with
-    // footnotes in it, and an edit that cannot touch a definition line does not
-    // change which labels exist (`labelsAfterEdit`).
-    if (this.labels) {
-      const next = labelsAfterEdit(this.labels, this.getText(), edit);
-      // A rescan that finds the same labels is not a change: the version moves only
-      // when the set itself does, so that blocks which borrowed the labels are
-      // re-parsed and re-rendered then and not on every keystroke (`parseKey`).
-      if (!sameLabels(this.labels, next)) {
-        this.labels = next;
-        this.labelsVersion += 1;
-      }
-    }
-  }
-
-  /** The labels the document defines, read once per text. */
-  private footnoteLabels(): ReadonlySet<string> {
-    this.labels ??= footnoteLabels(this.getText());
-    return this.labels;
+    this.parses.afterEdit(this.getText(), edit);
   }
 
   /**
@@ -318,7 +237,7 @@ export class MarkdownEditorState {
     });
     this.documentKeyValue = newDocumentKey();
     this.revisionValue = 0;
-    this.blockContent.clear();
+    this.parses.clear();
     this.history.clear();
   }
 

@@ -71,7 +71,7 @@ There is no second `editor_edited` or `markdown_content_changed` notification.
 | Layer | Files | May import |
 | --- | --- | --- |
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
-| Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
+| Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_parse_cache.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `format_dom_tags.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | document, syntax, the shared tag names (`offset_tags.ts`) — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
 | Commands | `src/commands/*`, `editing/*`, `markdown_editor.ts`, `click_routing.ts` | everything above; `src/commands/contracts.ts` owns the shared command vocabulary |
@@ -249,7 +249,7 @@ whose content key changed (`test/probes/undo-after-scroll.js` is the case where
 the edit's block had left the window entirely). One input is more than the block's
 own text: a block holding a footnote marker is parsed with the document's
 definitions borrowed (`syntax/footnotes.ts: withFootnoteDefinitions`), so its key
-carries the version of the labels it borrowed (`state.ts: parseKey`), and renaming
+carries the version of the labels it borrowed (`block_parse_cache.ts: key`), and renaming
 or removing a definition re-parses and re-renders every block that named it. A
 block with no marker in it keeps the key it had — and, with it, the parse and the
 height remembered against it.
