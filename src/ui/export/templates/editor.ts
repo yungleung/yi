@@ -147,7 +147,9 @@ export class TemplateEditorPanel {
     this.testPdfButton = this.button('test-pdf', t('template.testPdf'), 'btn btn-ghost btn-xs', () =>
       void this.testPdf()
     );
-    const close = this.button('close', '✕', 'btn btn-ghost btn-xs', () => void this.close());
+    const close = this.button('close', '✕', 'btn btn-ghost btn-xs', () =>
+      void this.requestClose()
+    );
     close.setAttribute('aria-label', t('template.close'));
     header.append(this.title, this.dirtyMark, spacer, this.saveButton, this.validateButton, this.testPdfButton, close);
 
@@ -177,7 +179,7 @@ export class TemplateEditorPanel {
       }
       if (event.key === 'Escape' && this.searchClosed()) {
         event.preventDefault();
-        void this.close();
+        void this.requestClose();
       }
     });
   }
@@ -440,7 +442,8 @@ export class TemplateEditorPanel {
     return this.view?.dom.querySelector('.cm-search') === null;
   }
 
-  private async close(): Promise<void> {
+  /** Closes every way the editor can be dismissed through one dirty-checked path. */
+  async requestClose(): Promise<void> {
     if (this.isDirty() && !(await this.confirmDiscard())) {
       return;
     }
@@ -450,7 +453,9 @@ export class TemplateEditorPanel {
     this.view = null;
     this.currentFile = null;
     this.baseline = '';
-    this.onClose?.();
+    const callback = this.onClose;
+    this.onClose = null;
+    callback?.();
   }
 
   private button(

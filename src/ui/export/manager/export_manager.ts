@@ -17,6 +17,7 @@ import { FloatingSurface } from '../../floating/surface';
 import { defaultsState, KindPage } from './kind_page';
 import { managerGroups, unassignedPackages } from './manager_rules';
 import { kindLabel } from '../templates/kind_label';
+import { templateEditorPanel } from '../templates/editor';
 
 export interface ExportManagerSnapshot {
   pandoc: string | null;
@@ -146,6 +147,21 @@ export class ExportManager extends FloatingSurface {
     content.append(this.page.element, this.status);
     panel.append(navigation, content);
     this.element.append(panel);
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (
+          event.key === 'Escape' &&
+          this.isOpen() &&
+          templateEditorPanel.isOpen()
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          void templateEditorPanel.requestClose();
+        }
+      },
+      true
+    );
   }
 
   async open(onClose: () => void = () => {}): Promise<void> {
@@ -156,6 +172,10 @@ export class ExportManager extends FloatingSurface {
   }
 
   async requestClose(): Promise<void> {
+    if (templateEditorPanel.isOpen()) {
+      await templateEditorPanel.requestClose();
+      return;
+    }
     this.close();
   }
 

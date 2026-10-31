@@ -8,6 +8,7 @@
   const { t: words } = await t.app('/src/services/i18n.ts');
   const templates = await t.app('/src/api/templates.ts');
   const exportApi = await t.app('/src/api/export.ts');
+  const files = await t.app('/src/api/files.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
@@ -43,6 +44,13 @@
   }
 
   const priorTemplates = (await invoke('get_config')).export_templates ?? {};
+  const priorKinds = await exportApi.exportKinds();
+  const docxBefore = priorKinds.kinds.find((kind) => kind.kind === 'docx');
+  if (docxBefore === undefined) {
+    throw new Error('the probe could not find the DOCX export kind');
+  }
+  const docxConfigPath = docxBefore.config_path;
+  const priorDocxDefaults = await templates.exportConfigText('docx');
   const withoutHtml = { ...priorTemplates };
   delete withoutHtml.html;
   await configManager.update({ export_templates: withoutHtml });
@@ -291,16 +299,72 @@
       title: document.querySelector('[data-template-editor-title]')?.textContent ?? null
     }
   );
-  document.querySelector('[data-template-editor-close]')?.click();
+  t.scroller().dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  );
   await t.sleep(180);
   check(
-    'closing the defaults editor returns to the manager',
+    'Escape closes the editor first and leaves the manager open',
     document.querySelector('[data-template-editor]')?.classList.contains('hidden') === true &&
       visible(manager()),
     {
       editorOpen:
         document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false,
       managerOpen: visible(manager())
+    }
+  );
+  t.scroller().dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  await t.sleep(180);
+  check(
+    'the next Escape closes the manager and restores editor focus',
+    visible(manager()) === false &&
+      document.activeElement?.classList.contains('markdown-composition-input') === true,
+    {
+      managerOpen: visible(manager()),
+      active: document.activeElement?.className ?? null
+    }
+  );
+
+  const customizedDefaults = `${priorDocxDefaults}\n# export manager probe\n`;
+  await templates.saveExportConfigText('docx', customizedDefaults);
+  await openManager();
+  kindButton('docx')?.click();
+  await t.sleep(150);
+  check(
+    'customized defaults expose Restore Shipped File',
+    component('[data-export-manager-restore-defaults]') !== null &&
+      component('[data-export-manager-defaults-state]')?.textContent ===
+        words('exportManager.customized'),
+    {
+      restore: component('[data-export-manager-restore-defaults]') !== null,
+      state:
+        component('[data-export-manager-defaults-state]')?.textContent ?? null
+    }
+  );
+  component('[data-export-manager-restore-defaults]')?.click();
+  await t.sleep(100);
+  document.querySelector('[data-prompt-yes]')?.click();
+  await t.sleep(250);
+  check(
+    'Restore Shipped File restores the app copy and refreshes the manager',
+    (await templates.exportConfigText('docx')) === priorDocxDefaults &&
+      component('[data-export-manager-defaults-state]')?.textContent ===
+        words('exportManager.shipped') &&
+      component('[data-export-manager-restore-defaults]') === null,
+    {
+      restored: (await templates.exportConfigText('docx')) === priorDocxDefaults,
+      state:
+        component('[data-export-manager-defaults-state]')?.textContent ?? null
     }
   );
 
@@ -311,6 +375,26 @@
   );
   alphaRow?.click();
   await t.sleep(120);
+  component('[data-template-edit]')?.click();
+  await t.sleep(200);
+  t.scroller().dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  await t.sleep(180);
+  check(
+    'Escape closes a package editor before its manager',
+    document.querySelector('[data-template-editor]')?.classList.contains('hidden') === true &&
+      visible(manager()),
+    {
+      editorOpen:
+        document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false,
+      managerOpen: visible(manager())
+    }
+  );
   const inspectedAlphaRow = component(
     `[data-template-package="${CSS.escape(alpha.id)}"]`
   );
@@ -545,6 +629,15 @@
     await failedSave.requestClose();
     failedSave.element.remove();
   } finally {
+    if (docxBefore.config_exists) {
+      await templates.saveExportConfigText('docx', priorDocxDefaults);
+    } else {
+      try {
+        await files.deleteEntry(docxConfigPath);
+      } catch {
+        // The defaults file was already absent.
+      }
+    }
     await cleanupPackages(created, priorTemplates);
   }
 
