@@ -539,7 +539,8 @@ opened for. A package whose manifest cannot be read remains available for read-o
 removal; when its kind cannot be read either, the Export Manager lists it once under **Unassigned**.
 **File → Manage Export Templates…** opens one kind-first manager from the typed
 `manage_export_templates` menu event and `export:manageTemplates` command. The manager and the export
-card share `src/ui/export/templates/package_browser.ts`; the manager owns the selected kind,
+card share `src/ui/export/templates/package_browser.ts` for package operations and
+`package_rows.ts` for row presentation; the manager owns the selected kind,
 inspected package, defaults state and active-package writes, while the card owns transient per-export
 choices. The manager changes only the existing `AppConfig.export_templates` map and existing
 `export.{kind}.yaml` files, never a session document or a second package registry.

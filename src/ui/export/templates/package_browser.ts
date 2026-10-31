@@ -37,8 +37,11 @@ import {
 } from './details';
 import { templateEditorPanel } from './editor';
 import { importProposalDialog } from './import_dialog';
-import { kindLabel } from './kind_label';
 import { offeredForKind, offeredPackages } from './offering';
+import {
+  createDefaultPackageRow,
+  createPackageRow
+} from './package_rows';
 
 export interface PackageBrowserState {
   info: ExportKindInfo;
@@ -53,16 +56,6 @@ export interface PackageBrowserHandlers {
   inspect(id: string | null): void;
   primary(id: string | null): void;
   changed(packages: TemplateSummary[], keepId: string | null): void;
-}
-
-function modeLabel(mode: string): string {
-  if (mode === 'template') {
-    return t('template.mode.template');
-  }
-  if (mode === 'wrapper') {
-    return t('template.mode.wrapper');
-  }
-  return t('template.mode.referenceDoc');
 }
 
 function button(name: string, label: string, className: string): HTMLButtonElement {
@@ -235,9 +228,16 @@ export class TemplatePackageBrowser extends BaseComponent {
     if (state === null) {
       return;
     }
+    const rowState = {
+      kind: state.info.kind,
+      activeId: state.activeId,
+      inspectedId: state.inspectedId
+    };
     this.list.replaceChildren(
-      this.defaultRow(),
-      ...this.offered().map((summary) => this.packageRow(summary))
+      createDefaultPackageRow(rowState, (id) => this.handlers.inspect(id)),
+      ...this.offered().map((summary) =>
+        createPackageRow(summary, rowState, (id) => this.handlers.inspect(id))
+      )
     );
     this.primary.textContent = state.primaryLabel;
     const actions = packageActionAvailability(state.info, state.pandoc, this.selected());
@@ -259,66 +259,6 @@ export class TemplatePackageBrowser extends BaseComponent {
     this.importFile.disabled = !actions.importPackage;
     this.importFolder.disabled = !actions.importPackage;
     this.createPackage.disabled = !actions.createPackage;
-  }
-
-  private defaultRow(): HTMLElement {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = `rounded border px-2 py-1 text-left text-sm ${
-      this.state?.inspectedId === null
-        ? 'border-primary bg-primary/10'
-        : 'border-base-300 hover:bg-base-300'
-    }`;
-    row.setAttribute('data-template-default', 'true');
-    row.dataset.templateActive = String(this.state?.activeId === null);
-    row.dataset.templateInspected = String(this.state?.inspectedId === null);
-    row.textContent = t('template.pandocDefault');
-    row.addEventListener('click', () => this.handlers.inspect(null));
-    return row;
-  }
-
-  private packageRow(summary: TemplateSummary): HTMLElement {
-    const row = document.createElement('button');
-    row.type = 'button';
-    const compatible =
-      summary.manifest !== null &&
-      summary.manifest.kind === this.state?.info.kind &&
-      summary.error === null;
-    row.className = `rounded border px-2 py-1 text-left text-sm ${
-      this.state?.inspectedId === summary.id
-        ? 'border-primary bg-primary/10'
-        : 'border-base-300 hover:bg-base-300'
-    } ${compatible ? '' : 'opacity-65'}`;
-    row.setAttribute('data-template-package', summary.id);
-    row.setAttribute('data-template-package-id', summary.id);
-    row.dataset.templateActive = String(this.state?.activeId === summary.id);
-    row.dataset.templateInspected = String(this.state?.inspectedId === summary.id);
-
-    const name = document.createElement('span');
-    name.className = 'block truncate font-medium';
-    name.textContent = summary.manifest?.name ?? summary.id;
-    if (this.state?.activeId === summary.id) {
-      const active = document.createElement('span');
-      active.className = 'ml-2 text-xs text-success';
-      active.textContent = t('template.inUse');
-      name.append(active);
-    }
-    const facts = document.createElement('span');
-    facts.className = 'block truncate text-xs opacity-60';
-    facts.textContent =
-      summary.error !== null
-        ? summary.error
-        : [
-            kindLabel(summary.manifest?.kind ?? ''),
-            modeLabel(summary.manifest?.mode ?? ''),
-            summary.manifest?.origin.license,
-            summary.manifest?.origin.source
-          ]
-            .filter((fact): fact is string => typeof fact === 'string' && fact !== '')
-            .join(' · ');
-    row.append(name, facts);
-    row.addEventListener('click', () => this.handlers.inspect(summary.id));
-    return row;
   }
 
   private async pick(folder: boolean): Promise<void> {
