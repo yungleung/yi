@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "缺少模板包 · {id}",
   "exportManager.retry": "重试",
   "exportManager.libraryFailed": "无法读取模板库：{message}",
+  "exportManager.selectionFailed": "无法保存模板选择：{message}",
   "export.ownHand": "这一份由 Yi 自己写出：不需要 pandoc。",
   "export.target": "保存到",
   "export.choose": "选择…",

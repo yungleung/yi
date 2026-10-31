@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "Paquete ausente · {id}",
   "exportManager.retry": "Reintentar",
   "exportManager.libraryFailed": "No se pudo leer la biblioteca de plantillas: {message}",
+  "exportManager.selectionFailed": "No se pudo guardar la selección de plantilla: {message}",
   "export.ownHand": "Este lo escribe Yi mismo: sin pandoc.",
   "export.target": "Guardar en",
   "export.choose": "Elegir…",

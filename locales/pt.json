@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "Pacote ausente · {id}",
   "exportManager.retry": "Tentar novamente",
   "exportManager.libraryFailed": "Não foi possível ler a biblioteca de modelos: {message}",
+  "exportManager.selectionFailed": "Não foi possível salvar a seleção de modelo: {message}",
   "export.ownHand": "Este é escrito pelo próprio Yi: sem pandoc.",
   "export.target": "Salvar em",
   "export.choose": "Escolher…",

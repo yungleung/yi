@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "Paquet manquant · {id}",
   "exportManager.retry": "Réessayer",
   "exportManager.libraryFailed": "Impossible de lire la bibliothèque de modèles : {message}",
+  "exportManager.selectionFailed": "Impossible d’enregistrer la sélection de modèle : {message}",
   "export.ownHand": "Celui-ci est écrit par Yi lui-même : sans pandoc.",
   "export.target": "Enregistrer sous",
   "export.choose": "Choisir…",

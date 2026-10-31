@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "Fehlendes Paket · {id}",
   "exportManager.retry": "Erneut versuchen",
   "exportManager.libraryFailed": "Die Vorlagenbibliothek konnte nicht gelesen werden: {message}",
+  "exportManager.selectionFailed": "Die Vorlagenauswahl konnte nicht gespeichert werden: {message}",
   "export.ownHand": "Dieses schreibt Yi selbst: kein pandoc nötig.",
   "export.target": "Speichern unter",
   "export.choose": "Auswählen…",

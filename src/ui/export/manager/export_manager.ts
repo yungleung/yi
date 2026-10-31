@@ -45,7 +45,15 @@ export const liveExportManagerSource: ExportManagerSource = {
     };
   },
   updateTemplates: async (exportTemplates) => {
-    await configManager.update({ export_templates: exportTemplates });
+    try {
+      await configManager.update({ export_templates: exportTemplates });
+    } catch (error) {
+      throw new Error(
+        t('exportManager.selectionFailed', {
+          message: error instanceof Error ? error.message : String(error)
+        })
+      );
+    }
   },
   restoreDefaults: async (kind) => await restoreExportConfig(kind)
 };

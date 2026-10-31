@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "見つからないパッケージ · {id}",
   "exportManager.retry": "再試行",
   "exportManager.libraryFailed": "テンプレートライブラリを読み込めませんでした: {message}",
+  "exportManager.selectionFailed": "テンプレートの選択を保存できませんでした: {message}",
   "export.ownHand": "これは Yi 自身が書き出します（pandoc は不要）。",
   "export.target": "保存先",
   "export.choose": "選択…",

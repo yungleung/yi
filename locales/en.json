@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "Missing package · {id}",
   "exportManager.retry": "Retry",
   "exportManager.libraryFailed": "The template library could not be read: {message}",
+  "exportManager.selectionFailed": "The template selection could not be saved: {message}",
   "export.ownHand": "Yi writes this one itself: no pandoc needed.",
   "export.target": "Save to",
   "export.choose": "Choose…",

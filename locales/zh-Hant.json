@@ -99,6 +99,7 @@
   "exportManager.missingPackage": "缺少範本套件 · {id}",
   "exportManager.retry": "重試",
   "exportManager.libraryFailed": "無法讀取範本庫：{message}",
+  "exportManager.selectionFailed": "無法儲存範本選擇：{message}",
   "export.ownHand": "這一份由 Yi 自己寫出：不需要 pandoc。",
   "export.target": "儲存至",
   "export.choose": "選擇…",
