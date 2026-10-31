@@ -22,6 +22,7 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/ui/markdown/editing/` | 24 | 3,765 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing |
 | `src/ui/markdown/commands/` | 1 | editor command registration: the typed behaviours the editor owns |
 | `src/commands/` | 7 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
+| `src/events/` | 1 | typed synchronous delivery for facts that stay inside one window |
 | `src/ui/markdown/*` (top level) | 19 | 3,630 | the renderer, the registry, source mode, the render context, the offset tags, the editor, the DOM patch, the shared cards |
 | `src/ui/**` outside `markdown/` (the shell) | 57 | 5,905 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions, the image URLs |
 | `src/services/` | 20 | 2,844 | the living state: session, workspace, bibliography, i18n, hints, versioning, the event map |

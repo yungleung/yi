@@ -47,6 +47,13 @@ The precise contracts, future agent/MCP adapters, module splits, and phased migr
 `docs/superpowers/specs/2026-10-31-human-maintainable-command-event-architecture-design.md`.
 This section is the design rule; that specification is the implementation design.
 
+Same-window events are delivered by `src/events/local_bus.ts` and adapted by
+`src/services/event_manager.ts`. `EVENT_BOUNDARIES` in `src/services/app_events.ts` is the one map
+that says whether a name stays local or arrives through Tauri. Native menu events and Rust settings
+events are inbound; editor, session, workspace and notification facts are local. A local listener
+runs before `eventManager.emit` resolves, and every delivery carries an event id and optional
+correlation id.
+
 ## Layers and import rules
 
 | Layer | Files | May import |

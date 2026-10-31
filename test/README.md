@@ -31,6 +31,7 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-command-contracts.mjs` | The typed command catalogue: every command family is present, each parser accepts its real trigger shape, malformed external input is refused, and every contract declares effect, timing, exposure and description |
 | `check-command-dispatch.mjs` | The one command dispatch path: duplicate registration is refused; invalid, forbidden, unavailable and thrown commands cannot report success; source authority distinguishes writable, read-only and unconfigured automation; sync and async results keep their correlation id |
+| `check-event-manager.mjs` | That the app event manager uses the typed local bus for same-window facts and Tauri only for declared inbound events |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink, automatic-reference and same-document link-fragment queries, the places an `@`, `[#` or `](#` is not one, path fragments and escapes, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
@@ -51,6 +52,7 @@ methodology; this file is the index and the conventions.
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
 | `check-latex-images.mjs` | Where pictures go in a LaTeX source tree (`ui/export/latex_images.ts`): package pictures keep their relative path, a note picture may replace a package asset, and other or unsafe destinations are reduced to unique relative files under `<output>.assets/` |
+| `check-local-events.mjs` | Typed same-window fact delivery: subscription order, unsubscribe, unique envelopes, correlation, and isolation from a failing listener |
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |
 | `check-list-edits.mjs` | List markers, indentation and item continuation |
 | `check-list-captions.mjs` | A list's following `: …` caption line: direct and one-blank attachment, base indentation, ID-only and caption-only forms, trailing Pandoc attributes, malformed attributes left as text, and exact ranges |
@@ -87,10 +89,11 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and seven probes (`probe:all` runs 273 and skips 34, each skip for the reason its
+three hundred and eight probes (`probe:all` runs 274 and skips 34, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
-execution, and has one runtime dispatcher), the workspace tree (`tree-rename` — a name edited
+execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
+before emit settles while a native event still arrives through Tauri), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

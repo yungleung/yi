@@ -1,6 +1,6 @@
 # Local Event Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Deliver same-window app events through one synchronous typed bus while preserving Tauri transport for native-menu and cross-window inputs.
 
@@ -39,7 +39,7 @@
   - `on<Name>(name, listener): () => void`
   - `emit<Name>(name, payload, options?): EventEnvelope<Name, Events[Name]>`
 
-- [ ] **Step 1: Write the failing check**
+- [x] **Step 1: Write the failing check**
 
 Create `test/checks/check-local-events.mjs`:
 
@@ -116,7 +116,7 @@ if (failures.length > 0) {
 console.log('local events: one typed synchronous delivery path');
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 ```bash
 node test/checks/check-local-events.mjs
@@ -124,7 +124,7 @@ node test/checks/check-local-events.mjs
 
 Expected: FAIL because `src/events/local_bus.ts` does not exist.
 
-- [ ] **Step 3: Implement the bus**
+- [x] **Step 3: Implement the bus**
 
 Create `src/events/local_bus.ts` with a generic event map constrained to JSON-compatible records. The implementation uses `Map<keyof Events, Set<Listener>>`, catches each listener independently, and creates deterministic incrementing event ids with a per-bus prefix.
 
@@ -139,7 +139,7 @@ The comment for `emit` includes this example:
  */
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 ```bash
 node test/checks/check-local-events.mjs
@@ -148,7 +148,7 @@ npx tsc --noEmit
 
 Expected: both pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/events/local_bus.ts test/checks/check-local-events.mjs
@@ -170,7 +170,7 @@ git commit -m "refactor(events): add a typed local event bus"
   - `EVENT_BOUNDARIES: Readonly<Record<AppEventName, EventBoundary>>`
   - `isInboundEvent(name): boolean`
 
-- [ ] **Step 1: Extend the event check first**
+- [x] **Step 1: Extend the event check first**
 
 Update `test/checks/check-events.mjs` to fail unless every interface event has one boundary
 declaration and every Rust `.emit("…")` name is `inbound`.
@@ -188,7 +188,7 @@ const boundaries = new Set(
 
 and compare the declared interface names to the boundary keys.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 ```bash
 node test/checks/check-events.mjs
@@ -196,7 +196,7 @@ node test/checks/check-events.mjs
 
 Expected: FAIL because `EVENT_BOUNDARIES` does not exist.
 
-- [ ] **Step 3: Add the boundary map**
+- [x] **Step 3: Add the boundary map**
 
 Every frontend-owned fact is `local`. These Rust-native inputs are `inbound`:
 
@@ -230,7 +230,7 @@ tutorial
 
 Everything else in `AppEvents` is local.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 ```bash
 node test/checks/check-events.mjs
@@ -252,7 +252,7 @@ git commit -m "refactor(events): declare local and inbound boundaries"
 - Consumes: `LocalEventBus`, `EVENT_BOUNDARIES`, `isInboundEvent`.
 - Produces: the existing `eventManager` API, with synchronous local delivery and lazy Tauri listeners for inbound names.
 
-- [ ] **Step 1: Write adapter expectations**
+- [x] **Step 1: Write adapter expectations**
 
 The check reads `src/services/event_manager.ts` and requires:
 
@@ -273,7 +273,7 @@ node test/checks/check-event-manager.mjs
 
 Expected: FAIL because the manager still imports and calls Tauri `emit` for every event.
 
-- [ ] **Step 2: Replace broadcast internals**
+- [x] **Step 2: Replace broadcast internals**
 
 `EventManager.on`:
 
@@ -291,14 +291,14 @@ Expected: FAIL because the manager still imports and calls Tauri `emit` for ever
 The Tauri event object passed to listeners retains `event` and `payload`; extra envelope fields
 (`id`, `emittedAt`, `correlationId`) are present on locally emitted events.
 
-- [ ] **Step 3: Verify adapter and TypeScript**
+- [x] **Step 3: Verify adapter and TypeScript**
 
 ```bash
 node test/checks/check-event-manager.mjs
 npx tsc --noEmit
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/services/event_manager.ts test/checks/check-event-manager.mjs
@@ -321,7 +321,7 @@ git commit -m "refactor(events): deliver local facts without Tauri"
 - Produces: a running-app proof that a local fact reaches a listener before the emit Promise settles,
   while a native event still crosses Tauri.
 
-- [ ] **Step 1: Add the probe**
+- [x] **Step 1: Add the probe**
 
 The probe subscribes to `document_session_changed` and `config_changed`, emits a local layout event,
 and confirms:
@@ -330,7 +330,7 @@ and confirms:
 - the event has an envelope id;
 - a native menu event emitted through Tauri still reaches its listener.
 
-- [ ] **Step 2: Run affected probes**
+- [x] **Step 2: Run affected probes**
 
 ```bash
 npm run probe -- test/probes/event-transport.js
@@ -339,7 +339,7 @@ npm run probe -- test/probes/workspace-outside-home.js
 npm run probe -- test/probes/command-contract.js
 ```
 
-- [ ] **Step 3: Final verification and commit**
+- [x] **Step 3: Final verification and commit**
 
 ```bash
 npx tsc --noEmit
