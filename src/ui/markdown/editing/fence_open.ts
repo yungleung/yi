@@ -7,10 +7,10 @@
  * to the end of the note: a ` ``` ` above a paragraph turns that paragraph into code, and a `$$`
  * turns it into the formula's content. So the line becomes both delimiters at once, with the blank
  * lines markdown needs around the block, which come from `blank_lines.ts` so nothing above or below
- * it is swallowed either. A formula or frontmatter caret lands in the body. A code-fence caret
- * stays after its opening backticks so typed text filters the language choice and a following space
- * can begin Pandoc attributes. A Div waits for a space after three or more colons, then retains
- * that exact fence length on both lines.
+ * it is swallowed either. A formula or frontmatter caret lands in the body. Code and Div carets
+ * stay after their opening markers: typed code-fence text filters the language choice, a following
+ * space can begin Pandoc attributes, and a Div kind picker opens beside the colon fence. A Div waits
+ * for a space after three or more colons, then retains that exact fence length on both lines.
  *
  * Only a delimiter of its own line opens anything, and only the very first line of the note opens
  * frontmatter: a `---` anywhere else is a thematic break, and stays one. A code fence's label asks
@@ -56,7 +56,7 @@ export interface FenceOpen {
   from: number;
   to: number;
   replacement: string;
-  /** Where the caret lands: the opening fence for code, otherwise the first body line. */
+  /** Where the caret lands: the opening marker, or a formula/frontmatter body line. */
   caret: number;
 }
 
@@ -149,7 +149,7 @@ export function fenceOpenWrite(
       from: line.start,
       to: line.end,
       replacement: `${leading}${opening}\n\n${fence}${trailing}`,
-      caret: line.start + leading.length + opening.length + 1
+      caret: line.start + leading.length + opening.length
     };
   }
   const delimiter = soleDelimiter(`${text.slice(line.start, line.end)}${typed}`);

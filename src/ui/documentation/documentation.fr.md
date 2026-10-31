@@ -178,7 +178,8 @@ Important, Warning, Caution et Definition. Les deux-points restent littéraux ju
 Default laisse la clôture d’ouverture sans attribut ; un choix de callout ajoute ou modifie seulement
 ses métadonnées. Le corps, l’ID, les autres classes et les attributs restent intacts. Un Div imbriqué
 utilise plus de deux-points que sa clôture extérieure, et choisir un type ne modifie que son ouverture
-la plus interne.
+la plus interne. Le curseur reste juste après les deux-points d’ouverture ; appuyez sur Bas pour
+passer dans le corps.
 
 Yi ne devine pas le rendu des autres Div Pandoc, comme `.columns`, les notes d’orateur, les wrappers
 ou les listes incrémentales et non incrémentales. Un Div inconnu complet reste toujours affiché comme

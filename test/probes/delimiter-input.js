@@ -111,6 +111,13 @@
     visible('[data-callout-kind-choice]').length,
     7
   );
+  t.key('X');
+  await t.sleep(220);
+  check(
+    'and leaves the caret immediately after the opening colon fence',
+    await t.raw(),
+    '::::X\n\n::::\n\nhello world\n'
+  );
   await emptyFirstLine();
   await type(['`', '`', '`']);
   check(

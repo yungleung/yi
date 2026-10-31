@@ -183,7 +183,8 @@ Default, Note, Tip, Important, Warning, Caution und Definition. Bis zu diesem Le
 die Doppelpunkte literal. Default lässt den öffnenden Zaun ohne Zusatz; eine Callout-Auswahl ergänzt
 oder ändert nur die Callout-Metadaten. Inhalt, ID, weitere Klassen und Attribute bleiben unverändert.
 Ein verschachteltes Div verwendet mehr Doppelpunkte als sein äußerer Zaun; eine Typauswahl ändert
-nur dessen innerste öffnende Zeile.
+nur dessen innerste öffnende Zeile. Der Cursor bleibt direkt hinter dem öffnenden
+Doppelpunktzaun; mit ↓ gelangst du in den Inhalt.
 
 Andere Pandoc-Divs wie `.columns`, Sprechernotizen, Wrapper sowie inkrementelle und nicht
 inkrementelle Listen werden nicht geraten. Ein vollständiges unbekanntes Div wird immer als exakter

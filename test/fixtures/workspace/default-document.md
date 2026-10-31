@@ -108,7 +108,8 @@ Pandoc fenced-Div callouts support built-in and custom kinds:
 Type three or more colons and then a space on an empty line in Yi to create a Default Div with the
 same fence length on both lines, then choose Default, Note, Tip, Important, Warning, Caution, or
 Definition from the picker. The colons stay literal until the space arrives. Default leaves the
-opening as a bare colon fence. An inner Div uses a longer run than its outer fence.
+opening as a bare colon fence. The caret stays immediately after it; move down to edit the body. An
+inner Div uses a longer run than its outer fence.
 
 ::: {.callout .callout-note}
 A fenced-Div note.

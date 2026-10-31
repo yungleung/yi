@@ -690,8 +690,9 @@ semantic callout even when it does not render native GitHub alerts.
 - Typing three or more colons and then a space on a line of its own creates a
   closed colon fence with the same count on both lines and opens the picker for
   Default, Note, Tip, Important, Warning, Caution and Definition. The colons
-  stay literal until the space arrives. An inner Div uses a longer run than
-  its outer fence, and a choice rewrites only the innermost opening's
+  stay literal until the space arrives, and the caret stays immediately after
+  the opening run. An inner Div uses a longer run than its outer fence, and a
+  choice rewrites only the innermost opening's
   `.callout-<kind>`; other source bytes do not move.
 - Deleting or malforming a GitHub marker makes that innermost quote level an
   ordinary blockquote after the edit settles; outer quote levels remain.

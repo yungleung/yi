@@ -75,10 +75,12 @@
     await t.raw(),
     '::: {.callout .callout-warning}\n\n:::\n\nhello world\n'
   );
+  t.key('ArrowDown');
+  await t.sleep(120);
   t.key('Z');
   await t.sleep(250);
   check(
-    'the caret stays on the new body line',
+    'the caret can move from the opener into the body',
     await t.raw(),
     '::: {.callout .callout-warning}\nZ\n:::\n\nhello world\n'
   );

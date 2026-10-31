@@ -1,8 +1,8 @@
 /**
  * Checks what typing a delimiter line opens, in Node: the line becomes both of a fenced
  * block's delimiter lines, formula/frontmatter carets land in the body, a code-fence caret
- * stays after the opening backticks, and the blank lines markdown needs around the block
- * are added where they are missing.
+ * stays after the opening backticks, a Div caret stays after its opening colons, and the blank
+ * lines markdown needs around the block are added where they are missing.
  *
  * The rule is a pure function of the text, the caret and the character typed, so it is
  * asserted here; the editor's key path over it — including the language list a typed
@@ -165,7 +165,11 @@ check(
   calloutDiv.text,
   'text\n\n::::\n\n::::\n\n'
 );
-check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n::::\n'.length);
+check(
+  'and the caret stays immediately after the opening colon fence',
+  calloutDiv.caret,
+  'text\n\n::::'.length
+);
 check('with the fenced-Div kind', calloutDiv.kind, 'fencedDiv');
 check(
   'the third colon alone does not open a Div',

@@ -638,7 +638,8 @@ the same colon count on both fences, and opens a seven-choice picker: Default, N
 Warning, Caution, or Definition. The colons remain literal until that space arrives. Default leaves
 the opening as a bare colon fence; a callout choice adds or changes only the `.callout-<kind>`
 metadata. The body, ID, other classes, and attributes stay intact. A nested Div uses a longer colon
-run than its outer fence, and choosing a kind edits only that innermost opening.
+run than its outer fence, and choosing a kind edits only that innermost opening. The caret stays
+immediately after the opening colon run; press Down to move into the body.
 
 Yi does not guess how to render other Pandoc Divs, such as `.columns`, speaker-note, wrapper, or
 incremental and non-incremental list Divs. A complete unknown Div is always shown as exact source,

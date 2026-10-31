@@ -913,7 +913,8 @@ blank lines markdown needs around them. Formula and frontmatter carets land in t
 fence keeps its caret after the opening backticks: typed characters filter the language list, Enter
 chooses, Escape closes without a source change, and Space closes filtering while staying in the
 opening line so attributes can follow. A Div waits for a space after its three-or-more-colon run,
-then retains the exact fence length and asks for a Div kind. Both pickers are
+then retains the exact fence length and keeps its caret on that opening run while asking for a Div
+kind. Both pickers are
 `markdown/choice_card.ts`: one active list, no focus capture, filtering where requested, and Arrow
 Up/Down, Home/End, Enter, Space and Escape handled by the editor key path. `$$` needs no such thing,
 and `---` is frontmatter *only* on the note's very first line, where it would otherwise be a

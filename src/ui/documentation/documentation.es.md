@@ -176,7 +176,8 @@ con la misma cantidad de dos puntos en ambos cercados, y abre siete opciones: De
 Important, Warning, Caution y Definition. Los dos puntos siguen siendo literales hasta que llega ese
 espacio. Default deja el cercado de apertura sin atributos; elegir un callout añade o cambia solo sus
 metadatos. El cuerpo, el ID, las demás clases y los atributos permanecen intactos. Un Div anidado usa
-más dos puntos que su cercado exterior, y elegir un tipo modifica solo su apertura más interna.
+más dos puntos que su cercado exterior, y elegir un tipo modifica solo su apertura más interna. El
+cursor permanece justo después de los dos puntos de apertura; pulsa Abajo para entrar en el cuerpo.
 
 Yi no adivina cómo representar otros Div de Pandoc, como `.columns`, notas del orador, wrappers o
 listas incrementales y no incrementales. Todo Div desconocido completo se muestra siempre como fuente

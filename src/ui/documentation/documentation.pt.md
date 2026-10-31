@@ -175,6 +175,7 @@ Important, Warning, Caution e Definition. Os dois-pontos permanecem literais at�
 deixa a cerca de abertura sem atributos; escolher um callout apenas acrescenta ou altera os
 metadados dele. O corpo, o ID, as outras classes e os atributos permanecem intactos. Um Div aninhado
 usa mais dois-pontos que a cerca externa, e escolher um tipo altera somente sua abertura mais interna.
+O cursor permanece logo depois dos dois-pontos de abertura; pressione Abaixo para entrar no corpo.
 
 O Yi não adivinha como renderizar outros Div do Pandoc, como `.columns`, notas do apresentador,
 wrappers ou listas incrementais e não incrementais. Um Div desconhecido completo aparece sempre como
