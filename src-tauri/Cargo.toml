@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "A Versatile Note App"
 authors = ["urshanabi"]
 edition = "2021"
+default-run = "Yi"
+
+[[bin]]
+name = "Yi"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
