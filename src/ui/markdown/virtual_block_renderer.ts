@@ -24,16 +24,16 @@
  * sync — the DOM is a view of that arithmetic, never a second record of it.
  */
 
-import { BLOCK_GAP } from './block_sizes';
 import { createBlockComponent } from './create_block';
 import { type BlockNode, type MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
-import { MIN_SPARE_ELEMENTS, spacerHeights, windowRange } from './viewport_window';
+import { MIN_SPARE_ELEMENTS, windowRange } from './viewport_window';
 import { CHAR_START, LINE_END, LINE_START, setOffset } from './offset_tags';
 import { withRenderContext, type RenderContext } from './render_context';
 import { RendererBlockCache } from './renderer_block_cache';
 import { RendererMeasurements } from './renderer_measurements';
+import { RendererGeometry, type ScrollAnchor } from './renderer_geometry';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -57,16 +57,7 @@ export class VirtualBlockRenderer {
     mountedAt: (lineStart) => this.cache.mountedAt(lineStart),
     schedule: () => this.schedule()
   });
-  /**
-   * The scroller's own geometry as it was last read, so a rebuild does not have to ask for it.
-   *
-   * Reading `scrollTop` or `clientHeight` makes the browser lay the document out first, and inside
-   * the task a reader's click runs in, that layout is the cost of the click (measured: ~150 ms, the
-   * first read ~45 ms of it and the window measure that follows the same again). The scroller only
-   * changes size when the window does, and only scrolls when something scrolls it — both of which
-   * the renderer already hears — so the numbers are kept here and a rebuild reads nothing.
-   */
-  private geometry: { scrollTop: number; clientHeight: number } | null = null;
+  private readonly geometry: RendererGeometry;
   private range: { first: number; last: number } | null = null;
   private syncing = false;
   /** What a rendering may ask the app for; the editor sets it (see `render_context.ts`). */
@@ -76,10 +67,18 @@ export class VirtualBlockRenderer {
     private readonly scroller: HTMLElement,
     private readonly state: MarkdownEditorState
   ) {
+    this.geometry = new RendererGeometry({
+      scroller: this.scroller,
+      root: () => this.root,
+      blocks: () => this.state.getBlocks(),
+      sizes: this.measurements.sizes,
+      range: () => this.range,
+      syncWindow: (force) => this.syncWindow(force)
+    });
     this.scroller.addEventListener(
       'scroll',
       () => {
-        this.readGeometry();
+        this.geometry.read();
         this.schedule();
       },
       { passive: true }
@@ -263,42 +262,7 @@ export class VirtualBlockRenderer {
 
   /** Scrolls so the block containing `offset` is visible, then mounts it. */
   revealOffset(offset: number): void {
-    const blocks = this.state.getBlocks();
-    const index = blocks.findIndex(
-      (block) => offset >= block.charStart && offset <= block.charEnd
-    );
-    if (index < 0) {
-      return;
-    }
-    this.scroller.scrollTop = Math.max(
-      0,
-      this.contentTop() +
-        this.measurements.sizes.offsetOf(this.state.getBlocks(), index) -
-        (this.geometry ?? this.readGeometry()).clientHeight / 3
-    );
-    this.readGeometry();
-    this.syncWindow(true);
-  }
-
-  /**
-   * Where the first block sits, in the scroller's own pixels.
-   *
-   * A block's remembered offset is measured from the top of the prose, and the prose is not the
-   * top of the scroller: on a page (`styles.css`) there is the desk's padding and the sheet's
-   * margin above it — 118px of them at the default size. Every place that turns a block's
-   * offset into a scroll position has to add them, and every place that reads a scroll position
-   * back has to take them off; this is that one number.
-   */
-  private contentTop(): number {
-    const root = this.root;
-    if (!root) {
-      return 0;
-    }
-    return (
-      root.getBoundingClientRect().top -
-      this.scroller.getBoundingClientRect().top +
-      this.scroller.scrollTop
-    );
+    this.geometry.reveal(offset);
   }
 
   /**
@@ -311,24 +275,7 @@ export class VirtualBlockRenderer {
    * viewport, so it costs the window rather than the document.
    */
   scrollAnchor(): { offset: number; within: number } | null {
-    const blocks = this.state.getBlocks();
-    if (blocks.length === 0) {
-      return null;
-    }
-    // The scroll position in the blocks' own pixels: the prose is not the top of the scroller.
-    const scrollTop = Math.max(0, this.scroller.scrollTop - this.contentTop());
-    const first = Math.max(0, Math.min(this.range?.first ?? 0, blocks.length - 1));
-    let index = first;
-    let top = this.measurements.sizes.offsetOf(blocks, first);
-    while (index < blocks.length - 1) {
-      const height = this.measurements.sizes.heightOf(blocks[index]) + BLOCK_GAP;
-      if (top + height > scrollTop) {
-        break;
-      }
-      top += height;
-      index += 1;
-    }
-    return { offset: blocks[index].charStart, within: Math.max(0, scrollTop - top) };
+    return this.geometry.scrollAnchor();
   }
 
   /**
@@ -338,33 +285,7 @@ export class VirtualBlockRenderer {
    * are, because until then their heights are estimates.
    */
   scrollToAnchor(anchor: { offset: number; within: number } | null): void {
-    const blocks = this.state.getBlocks();
-    if (blocks.length === 0) {
-      return;
-    }
-    const offset = anchor?.offset ?? 0;
-    let index = 0;
-    for (let i = 0; i < blocks.length; i += 1) {
-      if (blocks[i].charStart <= offset) {
-        index = i;
-      } else {
-        break;
-      }
-    }
-    const top =
-      this.measurements.sizes.offsetOf(blocks, index) +
-      Math.max(0, anchor?.within ?? 0);
-    this.scroller.scrollTop = Math.max(0, this.contentTop() + top);
-    this.readGeometry();
-    this.syncWindow(true);
-    // That sync mounts the blocks around the anchor and measures them, so the offsets above it
-    // are the real ones now: the first pass was close enough to bring them in, and this one
-    // lands on the place itself. (Blocks still outside the window keep their estimates, so a
-    // restore into a very long document can still be a few pixels out.)
-    const refined =
-      this.measurements.sizes.offsetOf(blocks, index) +
-      Math.max(0, anchor?.within ?? 0);
-    this.scroller.scrollTop = Math.max(0, this.contentTop() + refined);
+    this.geometry.scrollToAnchor(anchor as ScrollAnchor | null);
   }
 
   /**
@@ -394,7 +315,7 @@ export class VirtualBlockRenderer {
     }
     this.frame = requestAnimationFrame(() => {
       this.frame = null;
-      this.readGeometry();
+      this.geometry.read();
       // A frame has been laid out since the last sync: whatever was inserted before this point has
       // a height now, so the elements it was carrying are the ones to measure (`pendingLayout`).
       this.measurements.resetPending();
@@ -421,7 +342,7 @@ export class VirtualBlockRenderer {
         return;
       }
 
-      const geometry = this.geometry ?? this.readGeometry();
+      const geometry = this.geometry.read();
       const [first, last] = windowRange(
         this.measurements.sizes,
         this.state.getBlocks(),
@@ -440,7 +361,7 @@ export class VirtualBlockRenderer {
         this.cache.clear(true);
         this.cache.dropSpare();
       }
-      const desired: Node[] = [this.spacer('top')];
+      const desired: Node[] = [this.geometry.spacer('top')];
       const keep = new Set<number>();
       for (let index = first; index <= last; index += 1) {
         const block = blocks[index];
@@ -456,7 +377,7 @@ export class VirtualBlockRenderer {
         }
         desired.push(element);
       }
-      desired.push(this.spacer('bottom'));
+      desired.push(this.geometry.spacer('bottom'));
 
       for (const [lineStart, element] of this.cache.entries()) {
         if (!keep.has(lineStart)) {
@@ -537,56 +458,15 @@ export class VirtualBlockRenderer {
     return element;
   }
 
-  /** Reads the scroller's geometry and keeps it: the one place that asks the browser. */
-  private readGeometry(): { scrollTop: number; clientHeight: number } {
-    const geometry = {
-      scrollTop: this.scroller.scrollTop,
-      clientHeight: this.scroller.clientHeight
-    };
-    this.geometry = geometry;
-    return geometry;
-  }
-
   /** The number of heavy elements retained for work just outside the window. */
   private spareLimit(): number {
     const windowSize = this.range ? this.range.last - this.range.first + 1 : MIN_SPARE_ELEMENTS;
     return Math.max(MIN_SPARE_ELEMENTS, windowSize);
   }
 
-  /** The spacer element for a position, created on first use. */
-  private spacer(position: 'top' | 'bottom'): HTMLElement {
-    const existing = this.root?.querySelector<HTMLElement>(
-      `[data-virtual-spacer="${position}"]`
-    );
-    if (existing) {
-      return existing;
-    }
-    const spacer = document.createElement('div');
-    spacer.dataset.virtualSpacer = position;
-    spacer.style.pointerEvents = 'none';
-    return spacer;
-  }
-
   /** Sizes the spacers from the remembered block heights. */
   private updateSpacers(): void {
-    const root = this.root;
-    if (!root) {
-      return;
-    }
-    const topSpacer = this.spacer('top');
-    const bottomSpacer = this.spacer('bottom');
-    if (!this.range || this.range.last < this.range.first) {
-      topSpacer.style.height = '0px';
-      bottomSpacer.style.height = '0px';
-      return;
-    }
-    const { top, bottom } = spacerHeights(
-      this.measurements.sizes,
-      this.state.getBlocks(),
-      this.range
-    );
-    topSpacer.style.height = `${Math.round(top)}px`;
-    bottomSpacer.style.height = `${Math.round(bottom)}px`;
+    this.geometry.updateSpacers();
   }
 }
 
