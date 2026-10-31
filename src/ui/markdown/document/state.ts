@@ -39,6 +39,14 @@ import { listingFenceData } from '../syntax/code_fences';
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
 
+let nextDocumentNumber = 0;
+
+/** Mints the identity an agent can use to tell one loaded document from another. */
+function newDocumentKey(): string {
+  nextDocumentNumber += 1;
+  return `document-${nextDocumentNumber.toString(36)}`;
+}
+
 /**
  * Where an edit leaves the caret, as its caller can state it: an offset, or a rule
  * that reads the *new* text for one. A rule is what `Enter` at the end of a block
@@ -49,6 +57,10 @@ const PARSED_BLOCK_LIMIT = 400;
 export type EditCaret = number | ((state: MarkdownEditorState) => number);
 
 export class MarkdownEditorState {
+  /** Stable while this text is open; replaced when another document loads. */
+  private documentKeyValue = newDocumentKey();
+  /** Committed text changes in this document, including undo and redo. */
+  private revisionValue = 0;
   /** The document's text, as the pieces every edit is applied to. */
   private readonly text: TextStore;
   /**
@@ -86,6 +98,21 @@ export class MarkdownEditorState {
   getText(): string {
     this.cachedText ??= this.text.toString();
     return this.cachedText;
+  }
+
+  /** The current document's identity, retained across its edits. */
+  getDocumentKey(): string {
+    return this.documentKeyValue;
+  }
+
+  /**
+   * The committed change number for the current document.
+   *
+   * Example: after loading a note the value is 0; one edit, undo and redo leave
+   * it at 3, while loading another note starts again at 0 with a new key.
+   */
+  getRevision(): number {
+    return this.revisionValue;
   }
 
   /** The document's blocks, in document order. */
@@ -213,6 +240,7 @@ export class MarkdownEditorState {
   private updateText(edit: DocumentEdit, apply: () => void): void {
     const previous = this.blocks;
     apply();
+    this.revisionValue += 1;
     this.cachedText = null;
     this.cachedHeadings = null;
     this.cachedReferences = null;
@@ -288,6 +316,8 @@ export class MarkdownEditorState {
       this.text.replace(0, this.text.length, text);
       this.text.compact();
     });
+    this.documentKeyValue = newDocumentKey();
+    this.revisionValue = 0;
     this.blockContent.clear();
     this.history.clear();
   }
