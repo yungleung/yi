@@ -32,7 +32,7 @@ export interface LocalEventBusOptions {
   readonly onListenerError?: (error: unknown) => void;
 }
 
-type EventMap = Record<PropertyKey, unknown>;
+type EventMap = object;
 type AnyEnvelope<Events extends EventMap> = {
   [Name in keyof Events]: EventEnvelope<Name, Events[Name]>;
 }[keyof Events];
