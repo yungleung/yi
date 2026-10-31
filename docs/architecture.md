@@ -59,6 +59,11 @@ The document state also owns a key and monotonic revision. `document:getRevision
 returns `stale` without changing text. Successful range edits use the same `applyEdit` funnel as a
 human command, so rendering, history, caret and scroll behavior do not fork for agents.
 
+Every committed load, edit, undo and redo emits one local `document_changed` fact. Its payload names
+the document key, previous and new revision, the reason, and the current raw text. The session
+listens for edit/undo/redo to keep its debounced copy current; the word count consumes load facts.
+There is no second `editor_edited` or `markdown_content_changed` notification.
+
 ## Layers and import rules
 
 | Layer | Files | May import |

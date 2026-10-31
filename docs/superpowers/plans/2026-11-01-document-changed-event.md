@@ -1,6 +1,6 @@
 # Unified Document Change Event Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace separate `editor_edited` and `markdown_content_changed` notifications with one typed `document_changed` fact for edits, undo, redo and document loads.
 
@@ -51,7 +51,7 @@ export interface DocumentChanged {
 }
 ```
 
-- [ ] **Step 1: Extend the event source check**
+- [x] **Step 1: Extend the event source check**
 
 Update `check-events.mjs` to require:
 
@@ -69,7 +69,7 @@ node test/checks/check-events.mjs
 
 Expected: FAIL because the new event is absent.
 
-- [ ] **Step 2: Replace the event entries**
+- [x] **Step 2: Replace the event entries**
 
 Remove the two old payload entries and add `document_changed`. Export:
 
@@ -79,7 +79,7 @@ export const DOCUMENT_CHANGED = 'document_changed' as const;
 
 Mark it local in `EVENT_BOUNDARIES`.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```bash
 node test/checks/check-events.mjs
@@ -100,7 +100,7 @@ git commit -m "refactor(events): declare one document change fact"
 - Modify: `src/services/event_manager.ts` only for typing compatibility
 - Test: `test/checks/check-document-event-source.mjs`
 
-- [ ] **Step 1: Write the source contract**
+- [x] **Step 1: Write the source contract**
 
 Create a source check requiring:
 
@@ -117,7 +117,7 @@ node test/checks/check-document-event-source.mjs
 
 Expected: FAIL on both old event constants.
 
-- [ ] **Step 2: Emit on edit**
+- [x] **Step 2: Emit on edit**
 
 Add a private helper in `WysiwygMarkdownEditor`:
 
@@ -148,7 +148,7 @@ In `setContent`, after loading and rendering, emit reason `load` with
 In `applyHistory`, after the state undo/redo and caret restoration, emit reason `undo` or `redo`
 with the revision before the history action. Remove the old `EDITOR_EDITED` emit.
 
-- [ ] **Step 3: Update consumers**
+- [x] **Step 3: Update consumers**
 
 `MarkdownEditor` (editor panel) listens to `DOCUMENT_CHANGED` and calls
 `documentSession.noteMoved()` only when `reason !== 'load'`.
@@ -161,7 +161,7 @@ initial `wordsCount.update(editor.getContent())`.
 
 Remove the old exported constants.
 
-- [ ] **Step 4: Run TypeScript and all pure checks**
+- [x] **Step 4: Run TypeScript and all pure checks**
 
 ```bash
 npx tsc --noEmit
@@ -170,7 +170,7 @@ npm run check
 
 Expected: both pass with the new source/event checks.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/markdown_editor.ts src/ui/editor_panel.ts \
@@ -190,7 +190,7 @@ git commit -m "refactor(editor): emit one document change fact"
 - Modify: `docs/structure.md`
 - Modify: `test/README.md`
 
-- [ ] **Step 1: Write the probe**
+- [x] **Step 1: Write the probe**
 
 The probe loads `Alpha.\n`, subscribes to `document_changed`, then:
 
@@ -201,7 +201,7 @@ The probe loads `Alpha.\n`, subscribes to `document_changed`, then:
 
 The listener records every event, so a duplicate legacy notification fails the exact-count checks.
 
-- [ ] **Step 2: Run the probe and affected checks**
+- [x] **Step 2: Run the probe and affected checks**
 
 ```bash
 npm run probe -- test/probes/document-change-event.js
@@ -212,12 +212,12 @@ npm run probe -- test/probes/in-place-prose-typing.js
 
 Expected: every probe reports `failed: []`.
 
-- [ ] **Step 3: Document the event**
+- [x] **Step 3: Document the event**
 
 Document that a document change is one local fact with key, previous/new revision, reason and text;
 commands request work, and the committed editor change announces it.
 
-- [ ] **Step 4: Final verify and commit**
+- [x] **Step 4: Final verify and commit**
 
 ```bash
 npx tsc --noEmit

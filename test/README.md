@@ -25,6 +25,7 @@ methodology; this file is the index and the conventions.
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/book_body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
 | `check-documentation.mjs` | The bundled Documentation guide and its native F1 menu entry: stable identity, read-only source, install instructions for Pandoc, TeX Live, MacTeX and MiKTeX, package-authoring chapters, security limits, fixture-package pointer and no unfinished placeholders |
 | `check-document-revision.mjs` | Document identity and revision: edits, undo and redo advance once; loading another document creates a new key and starts again at revision zero |
+| `check-document-event-source.mjs` | That the live editor is the one producer of `document_changed`, while session and word-count consumers read that event and the old split notifications are gone |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
 | `check-hints.mjs` | Where a hint goes (`services/hints.ts`): the tree row a file's hint is found by, and the escaping a quote, a backslash or a newline in a file name needs |
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
@@ -90,13 +91,14 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and nine probes (`probe:all` runs 275 and skips 34, each skip for the reason its
+three hundred and ten probes (`probe:all` runs 276 and skips 34, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
 before emit settles while a native event still arrives through Tauri; `agent-range-edit` — a range
 edit tied to the current document revision succeeds, while an old plan returns `stale` and cannot
-overwrite newer text), the workspace tree (`tree-rename` — a name edited
+overwrite newer text; `document-change-event` — one edit and one undo each emit exactly one typed
+local fact with the expected revision and text), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
