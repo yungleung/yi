@@ -129,7 +129,7 @@ different reasons**. Several did, and each is split now:
 | `editing/context.ts`, 515 | the edit funnel, source decision and caret placement | selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
 | `editing/text_commands.ts`, 16 | the stable text-path facade | insertion in `text_insertion.ts`, deletion in `text_deletion.ts`, Enter in `text_newline.ts`, and task toggling in `task_command.ts` |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
-| `caret/navigation.ts`, 520 | the four directions (401) | the line hit-testing: `caret/line_hits.ts` (136) |
+| `caret/navigation.ts`, 75 | the public direction/dispatch facade | neighbor discovery in `navigation_nodes.ts`, horizontal traversal in `navigation_horizontal.ts`, vertical geometry in `navigation_vertical.ts`, and line hit-testing in `line_hits.ts` |
 
 ## What was improved, in the order it was taken
 

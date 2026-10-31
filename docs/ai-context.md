@@ -997,7 +997,7 @@ drawn on the line below it, never a space past the line the newline closed: a ca
 end of a text node whose last character is a newline belongs to the text that follows it
 (`caret/dom.ts: afterNewline`, read by the caret's own drawing in `caret/caret.ts: onTheLineItNames`
 and by the position a raw offset resolves to in `caret/dom_position.ts`). Stepping *left* onto such
-a line lands one character in from the node's end (`caret/navigation.ts: endOfPreviousText`), since
+a line lands one character in from the node's end (`caret/navigation_horizontal.ts: endOfPreviousText`), since
 the end itself is the line the caret is already on. `fence-source-caret.js` holds both through the
 editor.
 
