@@ -39,7 +39,23 @@ export type CommandFailureCode =
   | 'unavailable'
   | 'forbidden'
   | 'invalid-input'
+  | 'stale'
+  | 'cancelled'
   | 'failed';
+
+/** A feature-level refusal whose meaning must survive at the command boundary. */
+export class CommandExecutionError extends Error {
+  constructor(
+    readonly code: Exclude<
+      CommandFailureCode,
+      'not-found' | 'unavailable'
+    >,
+    message: string
+  ) {
+    super(message);
+    this.name = 'CommandExecutionError';
+  }
+}
 
 /** A command that did not complete successfully. */
 export interface CommandFailure {
@@ -167,12 +183,22 @@ export class CommandDispatcher {
             value: value ?? null
           }))
           .catch((error: unknown) =>
-            failure(id, correlationId, 'failed', errorMessage(error))
+            failure(
+              id,
+              correlationId,
+              error instanceof CommandExecutionError ? error.code : 'failed',
+              errorMessage(error)
+            )
           );
       }
       return { ok: true, commandId: id, correlationId, value: output ?? null };
     } catch (error) {
-      return failure(id, correlationId, 'failed', errorMessage(error));
+      return failure(
+        id,
+        correlationId,
+        error instanceof CommandExecutionError ? error.code : 'failed',
+        errorMessage(error)
+      );
     }
   }
 }

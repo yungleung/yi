@@ -22,7 +22,7 @@ import {
   type TableCommand,
   type TableTarget
 } from '../editing/table';
-import type { EditorContext } from '../editing/context';
+import { applyEdit, type EditorContext } from '../editing/context';
 import { cutSelection, selectAll } from '../editing/clipboard';
 import { applyFormatting } from '../editing/formatting';
 import { insertFootnote } from '../editing/footnotes';
@@ -30,6 +30,7 @@ import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
 import { insertImage } from '../../image/image_flow';
 import { registerCommand } from '../../../commands/runtime';
+import { CommandExecutionError } from '../../../commands/dispatch';
 
 /** What a command needs from the editor that registers it. */
 export interface CommandHost {
@@ -170,6 +171,50 @@ export function registerEditorCommands(host: CommandHost): void {
     run: (size) => {
       insertTable(context, size);
       return null;
+    }
+  });
+
+  registerCommand({
+    id: 'document:getRevision',
+    run: () => ({
+      documentKey: context.state.getDocumentKey(),
+      revision: context.state.getRevision()
+    })
+  });
+
+  /**
+   * Replaces one range only when an external caller read the current document.
+   *
+   * Example: an agent plans against `document-7@42`. A person types first, moving
+   * the document to revision 43; this command refuses the stale plan and leaves
+   * the new text untouched.
+   */
+  registerCommand({
+    id: 'document:replaceRange',
+    run: (input) => {
+      const position = {
+        documentKey: context.state.getDocumentKey(),
+        revision: context.state.getRevision()
+      };
+      if (
+        input.documentKey !== position.documentKey ||
+        input.revision !== position.revision
+      ) {
+        throw new CommandExecutionError(
+          'stale',
+          `document moved to ${position.documentKey}@${position.revision}`
+        );
+      }
+      if (input.to > context.state.getText().length) {
+        throw new CommandExecutionError('invalid-input', 'range is past the document end');
+      }
+      if (!applyEdit(context, input.from, input.to, input.replacement)) {
+        throw new CommandExecutionError('forbidden', 'the document id is locked');
+      }
+      return {
+        documentKey: context.state.getDocumentKey(),
+        revision: context.state.getRevision()
+      };
     }
   });
 }

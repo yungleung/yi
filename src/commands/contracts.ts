@@ -60,6 +60,19 @@ export interface TableSizeInput {
   readonly columns: number;
 }
 
+/** The identity and revision an agent plans a document edit against. */
+export interface DocumentPosition {
+  readonly documentKey: string;
+  readonly revision: number;
+}
+
+/** One revision-checked raw-text replacement. */
+export interface ReplaceRangeInput extends DocumentPosition {
+  readonly from: number;
+  readonly to: number;
+  readonly replacement: string;
+}
+
 type NoInputContract = CommandContract<null>;
 type FormattingContracts = {
   [Id in `format:${FormattingStyle}`]: NoInputContract;
@@ -102,6 +115,8 @@ export type CommandContracts = FormattingContracts &
     'find:replace': NoInputContract;
     'find:close': NoInputContract;
     'table:insert': CommandContract<TableSizeInput>;
+    'document:getRevision': CommandContract<null, DocumentPosition>;
+    'document:replaceRange': CommandContract<ReplaceRangeInput, DocumentPosition>;
   };
 
 /** One command id from the catalogue. */
@@ -197,6 +212,44 @@ function parseTableSize(value: unknown): TableSizeInput {
     throw new CommandInputError('table rows and columns must be positive integers');
   }
   return { rows, columns };
+}
+
+/** Requires a non-negative integer. */
+function parseNonNegativeInteger(value: unknown, name: string): number {
+  const number = parseFiniteNumber(value, name);
+  if (!Number.isInteger(number) || number < 0) {
+    throw new CommandInputError(`${name} must be a non-negative integer`);
+  }
+  return number;
+}
+
+/**
+ * Reads one revision-checked range replacement.
+ *
+ * Example: `{ documentKey: 'document-7', revision: 42, from: 6, to: 11,
+ * replacement: 'Bob' }` is accepted; revision `1.5` or `from > to` is refused
+ * before the editor sees it.
+ */
+function parseReplaceRangeInput(value: unknown): ReplaceRangeInput {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new CommandInputError('range edit input must be an object');
+  }
+  const input = value as Record<string, unknown>;
+  const from = parseNonNegativeInteger(input.from, 'from');
+  const to = parseNonNegativeInteger(input.to, 'to');
+  if (from > to) {
+    throw new CommandInputError('from must not be past to');
+  }
+  if (typeof input.replacement !== 'string') {
+    throw new CommandInputError('replacement must be a string');
+  }
+  return {
+    documentKey: parseRequiredString(input.documentKey, 'documentKey'),
+    revision: parseNonNegativeInteger(input.revision, 'revision'),
+    from,
+    to,
+    replacement: input.replacement
+  };
 }
 
 /** The common declaration for a command that takes no input. */
@@ -324,6 +377,20 @@ export const commandContracts: CommandContracts = {
     exposure: 'public',
     description: 'insert a table',
     parse: parseTableSize
+  },
+  'document:getRevision': {
+    effect: 'none',
+    timing: 'sync',
+    exposure: 'public',
+    description: 'read the current document key and revision',
+    parse: parseNoInput
+  },
+  'document:replaceRange': {
+    effect: 'document.write',
+    timing: 'sync',
+    exposure: 'public',
+    description: 'replace one document range against an expected revision',
+    parse: parseReplaceRangeInput
   }
 };
 

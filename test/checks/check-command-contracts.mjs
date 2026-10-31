@@ -42,9 +42,10 @@ check(
     'list:indent' in commandContracts,
     'table:insert' in commandContracts,
     'file:newMarkdown' in commandContracts,
-    'session:restore' in commandContracts
+    'session:restore' in commandContracts,
+    'document:replaceRange' in commandContracts
   ],
-  [true, true, true, true, true]
+  [true, true, true, true, true, true]
 );
 
 check(
@@ -99,6 +100,43 @@ check(
   null
 );
 rejects('an export kind cannot be a number', 'file:export', 3);
+
+check(
+  'the document position command takes no input',
+  parseCommandInput('document:getRevision', null),
+  null
+);
+check(
+  'a range edit preserves its document key and revision',
+  parseCommandInput('document:replaceRange', {
+    documentKey: 'document-7',
+    revision: 42,
+    from: 6,
+    to: 11,
+    replacement: 'Bob'
+  }),
+  {
+    documentKey: 'document-7',
+    revision: 42,
+    from: 6,
+    to: 11,
+    replacement: 'Bob'
+  }
+);
+rejects('a range edit refuses a fractional revision', 'document:replaceRange', {
+  documentKey: 'document-7',
+  revision: 1.5,
+  from: 0,
+  to: 1,
+  replacement: 'x'
+});
+rejects('a range edit refuses reversed offsets', 'document:replaceRange', {
+  documentKey: 'document-7',
+  revision: 1,
+  from: 4,
+  to: 2,
+  replacement: 'x'
+});
 
 const incomplete = Object.entries(commandContracts).filter(
   ([, contract]) =>

@@ -384,12 +384,12 @@ export function applyEdit(
   caret: EditCaret = from + replacement.length,
   kind: EditKind = 'other',
   allowFastPath = true
-): void {
+): boolean {
   if (editsId(context.state.getText(), from, to)) {
     // Refusing the write still consumes the keystroke: the editor's text is the truth, and a
     // native insertion after this return would be the very edit the pin exists to stop.
     showHint(t('session.idLocked'), null);
-    return;
+    return false;
   }
   const anchor = context.contentView.scrollTop;
   // Where the author was before the edit — a caret, or the selection this edit is about
@@ -467,7 +467,7 @@ export function applyEdit(
     withHeldShownSource(() => restoreCaret(context, target));
     keepScroll(context, anchor);
     context.onChanged?.(kind);
-    return;
+    return true;
   }
   // The source the caret lands in is the source that is shown (see
   // `source_mode.ts`). Deciding that before the rebuild is what has the blocks
@@ -479,6 +479,7 @@ export function applyEdit(
   restoreCaret(context, target);
   keepScroll(context, anchor);
   context.onChanged?.(kind);
+  return true;
 }
 
 /**

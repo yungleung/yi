@@ -20,7 +20,10 @@ async function bundleModule(input, name) {
 }
 
 const { CommandRegistry } = await bundleModule('src/commands/registry.ts', 'registry');
-const { CommandDispatcher } = await bundleModule('src/commands/dispatch.ts', 'dispatch');
+const { CommandDispatcher, CommandExecutionError } = await bundleModule(
+  'src/commands/dispatch.ts',
+  'dispatch'
+);
 const { accessForOrigin, localAccess, setDocumentWritable } = await bundleModule(
   'src/commands/authority.ts',
   'authority'
@@ -134,6 +137,28 @@ const failed = new CommandDispatcher(throwingRegistry, () => access).dispatch(
 );
 check('a thrown feature error becomes a failed result', failed.code, 'failed');
 check('and the result preserves the reason', failed.message, 'no selection');
+
+const staleRegistry = new CommandRegistry();
+staleRegistry.register({
+  id: 'document:replaceRange',
+  run: () => {
+    throw new CommandExecutionError('stale', 'document moved');
+  }
+});
+const stale = new CommandDispatcher(staleRegistry, () => access).dispatch(
+  'document:replaceRange',
+  {
+    documentKey: 'document-1',
+    revision: 4,
+    from: 0,
+    to: 1,
+    replacement: 'x'
+  },
+  origin,
+  { correlationId: 'run-stale' }
+);
+check('a stale document command has its own failure code', stale.code, 'stale');
+check('and the reason stays readable', stale.message, 'document moved');
 
 let duplicate = '';
 const duplicateRegistry = new CommandRegistry();
