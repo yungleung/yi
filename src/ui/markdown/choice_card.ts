@@ -34,6 +34,11 @@ export function handleChoiceCardKey(event: KeyboardEvent): boolean {
   return active?.handleKey(event) ?? false;
 }
 
+/** Whether a choice card was already open before an edit reaches the text path. */
+export function choiceCardIsOpen(): boolean {
+  return active?.isOpen() ?? false;
+}
+
 /** Lets text committed by an input method participate in an open filter. */
 export function handleChoiceCardText(text: string): void {
   active?.handleText(text);
@@ -122,6 +127,10 @@ export class ChoiceCard {
 
   close(): void {
     this.card.close();
+  }
+
+  isOpen(): boolean {
+    return this.card.isOpen();
   }
 
   private draw(): void {

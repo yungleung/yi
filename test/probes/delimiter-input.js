@@ -144,6 +144,25 @@
   );
 
   await emptyFirstLine();
+  const fenceCommits = [];
+  for (let typed = 0; typed < 3; typed += 1) {
+    fenceCommits.push(await commitText('`'));
+  }
+  check(
+    'a committed fence marker opens the unfiltered language picker',
+    {
+      committed: fenceCommits.every(Boolean),
+      open: languageRows().length > 100,
+      raw: await t.raw()
+    },
+    {
+      committed: true,
+      open: true,
+      raw: '```\n\n```\n\nhello world\n'
+    }
+  );
+
+  await emptyFirstLine();
   await type(['`', '`', '`']);
   check(
     'a textarea commit filters the open language choices too',
