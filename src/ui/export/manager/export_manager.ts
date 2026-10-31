@@ -345,14 +345,32 @@ export class ExportManager extends FloatingSurface {
     }
     const kind = this.selectedKind;
     const activeId = kind === null ? null : this.snapshot.exportTemplates[kind] ?? null;
+    const remaining = new Set(packages.map((summary) => summary.id));
+    const removed = new Set(
+      this.snapshot.packages
+        .map((summary) => summary.id)
+        .filter((id) => !remaining.has(id))
+    );
+    const remembered = { ...this.snapshot.exportTemplates };
+    let selectionsChanged = false;
     if (
       kind !== null &&
       kind !== 'unassigned' &&
       activeId !== null &&
-      !packages.some((summary) => summary.id === activeId)
+      removed.has(activeId)
     ) {
-      const remembered = { ...this.snapshot.exportTemplates };
       delete remembered[kind];
+      selectionsChanged = true;
+    }
+    if (kind === 'unassigned' && removed.size > 0) {
+      for (const [selectedKind, id] of Object.entries(remembered)) {
+        if (removed.has(id)) {
+          delete remembered[selectedKind];
+          selectionsChanged = true;
+        }
+      }
+    }
+    if (selectionsChanged) {
       try {
         await this.source.updateTemplates(remembered);
         this.snapshot.exportTemplates = remembered;

@@ -18,6 +18,7 @@
   const kindButton = (kind) =>
     document.querySelector(`[data-export-manager-kind="${CSS.escape(kind)}"]`);
   const text = () => manager()?.textContent ?? '';
+  const component = (selector) => manager()?.querySelector(selector) ?? null;
   const openManager = async () => {
     if (!visible(manager())) {
       await invoke('plugin:event|emit', { event: 'manage_export_templates' });
@@ -193,27 +194,27 @@
   check(
     'an unreadable package appears once in Unassigned',
     kindButton('unassigned') !== null &&
-      document.querySelector(
+      component(
         `[data-template-package="${CSS.escape(brokenId)}"]`
       ) !== null,
     { brokenId }
   );
-  document.querySelector(
+  component(
     `[data-template-package="${CSS.escape(brokenId)}"]`
   )?.click();
   await t.sleep(120);
   check(
     'a broken package can be inspected and removed but not used',
-    document.querySelector('[data-template-primary]') === null &&
-      document.querySelector('[data-template-details-button]') !== null &&
-      document.querySelector('[data-template-remove]') !== null,
+    component('[data-template-primary]') === null &&
+      component('[data-template-details-button]') !== null &&
+      component('[data-template-remove]') !== null,
     {
-      primary: document.querySelector('[data-template-primary]') !== null,
-      details: document.querySelector('[data-template-details-button]') !== null,
-      remove: document.querySelector('[data-template-remove]') !== null
+      primary: component('[data-template-primary]') !== null,
+      details: component('[data-template-details-button]') !== null,
+      remove: component('[data-template-remove]') !== null
     }
   );
-  document.querySelector('[data-template-details-button]')?.click();
+  component('[data-template-details-button]')?.click();
   await t.sleep(120);
   check(
     'broken details show the id, path and reason without an editable form',
@@ -233,6 +234,34 @@
   );
   document.querySelector('[data-broken-template-details-close]')?.click();
   await t.sleep(80);
+
+  await configManager.update({
+    export_templates: {
+      ...(configManager.get()?.export_templates ?? {}),
+      html: brokenId
+    }
+  });
+  document.querySelector('[data-export-manager-close]')?.click();
+  await t.sleep(120);
+  await openManager();
+  kindButton('unassigned')?.click();
+  await t.sleep(120);
+  component(
+    `[data-template-package="${CSS.escape(brokenId)}"] [data-template-remove]`
+  )?.click();
+  await t.sleep(100);
+  document.querySelector('[data-prompt-yes]')?.click();
+  await t.sleep(250);
+  const afterBrokenRemoval = await invoke('get_config');
+  check(
+    'removing an Unassigned package clears every selection that names it',
+    Object.values(afterBrokenRemoval.export_templates ?? {}).includes(brokenId) === false,
+    {
+      selections: afterBrokenRemoval.export_templates ?? {},
+      removed: brokenId
+    }
+  );
+
   kindButton('docx')?.click();
   await t.sleep(120);
 
@@ -275,128 +304,128 @@
     }
   );
 
-    kindButton('html')?.click();
-    await t.sleep(120);
-    const alphaRow = document.querySelector(
-      `[data-template-package="${CSS.escape(alpha.id)}"]`
-    );
-    alphaRow?.click();
-    await t.sleep(120);
-    const inspectedAlphaRow = document.querySelector(
-      `[data-template-package="${CSS.escape(alpha.id)}"]`
-    );
-    const beforeUse = await invoke('get_config');
-    check(
-      'inspecting a package does not activate it',
-      (beforeUse.export_templates ?? {}).html === undefined &&
-        inspectedAlphaRow?.dataset.templateInspected === 'true' &&
-        inspectedAlphaRow?.dataset.templateActive === 'false',
-      {
-        active: inspectedAlphaRow?.dataset.templateActive,
-        inspected: inspectedAlphaRow?.dataset.templateInspected,
-        config: beforeUse.export_templates
-      }
-    );
+  kindButton('html')?.click();
+  await t.sleep(120);
+  const alphaRow = component(
+    `[data-template-package="${CSS.escape(alpha.id)}"]`
+  );
+  alphaRow?.click();
+  await t.sleep(120);
+  const inspectedAlphaRow = component(
+    `[data-template-package="${CSS.escape(alpha.id)}"]`
+  );
+  const beforeUse = await invoke('get_config');
+  check(
+    'inspecting a package does not activate it',
+    (beforeUse.export_templates ?? {}).html === undefined &&
+      inspectedAlphaRow?.dataset.templateInspected === 'true' &&
+      inspectedAlphaRow?.dataset.templateActive === 'false',
+    {
+      active: inspectedAlphaRow?.dataset.templateActive,
+      inspected: inspectedAlphaRow?.dataset.templateInspected,
+      config: beforeUse.export_templates
+    }
+  );
 
-    document.querySelector('[data-template-primary]')?.click();
-    await t.sleep(250);
-    const afterUse = await invoke('get_config');
-    check(
-      'Use This Template persists the inspected package',
-      afterUse.export_templates?.html === alpha.id &&
-        document.querySelector(
-          `[data-template-package="${CSS.escape(alpha.id)}"]`
-        )?.dataset.templateActive === 'true',
-      { configured: afterUse.export_templates?.html ?? null, expected: alpha.id }
-    );
+  component('[data-template-primary]')?.click();
+  await t.sleep(250);
+  const afterUse = await invoke('get_config');
+  check(
+    'Use This Template persists the inspected package',
+    afterUse.export_templates?.html === alpha.id &&
+      component(
+        `[data-template-package="${CSS.escape(alpha.id)}"]`
+      )?.dataset.templateActive === 'true',
+    { configured: afterUse.export_templates?.html ?? null, expected: alpha.id }
+  );
 
-    document.querySelector('[data-export-manager-close]')?.click();
-    await t.sleep(120);
-    await exportApi.exportKinds();
-    await invoke('plugin:event|emit', { event: 'export', payload: 'html' });
-    const cardOpened = await waitFor(exportDialogVisible);
-    check(
-      'the export card reads the package selected in the manager',
-      cardOpened &&
-        document.querySelector('[data-export-dialog]')?.textContent?.includes(
-          alpha.manifest?.name ?? alpha.id
-        ) === true,
-      {
-        open: exportDialogVisible(),
-        text: document.querySelector('[data-export-dialog]')?.textContent?.slice(0, 240) ?? null
-      }
-    );
-    document.querySelector('[data-export-cancel]')?.click();
-    await t.sleep(120);
+  component('[data-export-manager-close]')?.click();
+  await t.sleep(120);
+  await exportApi.exportKinds();
+  await invoke('plugin:event|emit', { event: 'export', payload: 'html' });
+  const cardOpened = await waitFor(exportDialogVisible);
+  check(
+    'the export card reads the package selected in the manager',
+    cardOpened &&
+      document.querySelector('[data-export-dialog]')?.textContent?.includes(
+        alpha.manifest?.name ?? alpha.id
+      ) === true,
+    {
+      open: exportDialogVisible(),
+      text: document.querySelector('[data-export-dialog]')?.textContent?.slice(0, 240) ?? null
+    }
+  );
+  document.querySelector('[data-export-cancel]')?.click();
+  await t.sleep(120);
 
-    await openManager();
-    kindButton('html')?.click();
-    await t.sleep(120);
-    document.querySelector('[data-template-default]')?.click();
-    document.querySelector('[data-template-primary]')?.click();
-    await t.sleep(250);
-    const cleared = await invoke('get_config');
-    check(
-      'Pandoc’s default clears the kind selection',
-      cleared.export_templates?.html === undefined,
-      { configured: cleared.export_templates?.html ?? null }
-    );
+  await openManager();
+  kindButton('html')?.click();
+  await t.sleep(120);
+  component('[data-template-default]')?.click();
+  component('[data-template-primary]')?.click();
+  await t.sleep(250);
+  const cleared = await invoke('get_config');
+  check(
+    'Pandoc’s default clears the kind selection',
+    cleared.export_templates?.html === undefined,
+    { configured: cleared.export_templates?.html ?? null }
+  );
 
-    await configManager.update({
-      export_templates: {
-        ...(configManager.get()?.export_templates ?? {}),
-        docx: 'missing-manager-package'
-      }
-    });
-    document.querySelector('[data-export-manager-close]')?.click();
-    await t.sleep(120);
-    await openManager();
-    const missing = words('exportManager.missingPackage', {
-      id: 'missing-manager-package'
-    });
-    check(
-      'a missing active package is named and can be cleared',
-      text().includes(missing),
-      { text: text().slice(0, 240) }
-    );
-    document.querySelector('[data-template-default]')?.click();
-    document.querySelector('[data-template-primary]')?.click();
-    await t.sleep(200);
-    check(
-      'Pandoc’s default clears a missing active package id',
-      (await invoke('get_config')).export_templates?.docx === undefined,
-      {
-        configured:
-          (await invoke('get_config')).export_templates?.docx ?? null
-      }
-    );
+  await configManager.update({
+    export_templates: {
+      ...(configManager.get()?.export_templates ?? {}),
+      docx: 'missing-manager-package'
+    }
+  });
+  component('[data-export-manager-close]')?.click();
+  await t.sleep(120);
+  await openManager();
+  const missing = words('exportManager.missingPackage', {
+    id: 'missing-manager-package'
+  });
+  check(
+    'a missing active package is named and can be cleared',
+    text().includes(missing),
+    { text: text().slice(0, 240) }
+  );
+  component('[data-template-default]')?.click();
+  component('[data-template-primary]')?.click();
+  await t.sleep(200);
+  check(
+    'Pandoc’s default clears a missing active package id',
+    (await invoke('get_config')).export_templates?.docx === undefined,
+    {
+      configured:
+        (await invoke('get_config')).export_templates?.docx ?? null
+    }
+  );
 
-    kindButton('html')?.click();
-    await t.sleep(120);
-    document.querySelector(
-      `[data-template-package="${CSS.escape(beta.id)}"]`
-    )?.click();
-    document.querySelector('[data-template-primary]')?.click();
-    await t.sleep(200);
-    document.querySelector('[data-template-remove]')?.click();
-    await t.sleep(100);
-    document.querySelector('[data-prompt-yes]')?.click();
-    await t.sleep(250);
-    const afterRemoval = await invoke('get_config');
-    check(
-      'removing the active package clears its selection',
-      afterRemoval.export_templates?.html === undefined &&
-        document.querySelector(
+  kindButton('html')?.click();
+  await t.sleep(120);
+  component(
+    `[data-template-package="${CSS.escape(beta.id)}"]`
+  )?.click();
+  component('[data-template-primary]')?.click();
+  await t.sleep(200);
+  component('[data-template-remove]')?.click();
+  await t.sleep(100);
+  document.querySelector('[data-prompt-yes]')?.click();
+  await t.sleep(250);
+  const afterRemoval = await invoke('get_config');
+  check(
+    'removing the active package clears its selection',
+    afterRemoval.export_templates?.html === undefined &&
+      component(
+        `[data-template-package="${CSS.escape(beta.id)}"]`
+      ) === null,
+    {
+      configured: afterRemoval.export_templates?.html ?? null,
+      remains:
+        component(
           `[data-template-package="${CSS.escape(beta.id)}"]`
-        ) === null,
-      {
-        configured: afterRemoval.export_templates?.html ?? null,
-        remains:
-          document.querySelector(
-            `[data-template-package="${CSS.escape(beta.id)}"]`
-          ) !== null
-      }
-    );
+        ) !== null
+    }
+  );
 
   kindButton('markdown')?.click();
   await t.sleep(120);
@@ -419,6 +448,44 @@
   );
     document.querySelector('[data-export-manager-close]')?.click();
     await t.sleep(120);
+
+    const { kinds } = await exportApi.exportKinds();
+    const packages = await templates.exportTemplates();
+    const snapshot = {
+      pandoc: '/bin/pandoc',
+      kinds,
+      packages,
+      exportTemplates: {}
+    };
+    let retryAttempts = 0;
+    const retryManager = new ExportManager({
+      load: async () => {
+        retryAttempts += 1;
+        if (retryAttempts === 1) {
+          throw new Error('probe retry failure');
+        }
+        return structuredClone(snapshot);
+      },
+      updateTemplates: async () => {},
+      restoreDefaults: async () => ''
+    });
+    await retryManager.open(() => {});
+    await t.sleep(160);
+    retryManager.element.querySelector('[data-export-manager-retry]')?.click();
+    await t.sleep(180);
+    check(
+      'Retry reloads after a package-library read failure',
+      retryAttempts === 2 &&
+        retryManager.element.querySelector('[data-export-manager-error]') === null &&
+        retryManager.element.querySelector('[data-export-manager-kind="docx"]') !== null,
+      {
+        attempts: retryAttempts,
+        error:
+          retryManager.element.querySelector('[data-export-manager-error]') !== null
+      }
+    );
+    await retryManager.requestClose();
+    retryManager.element.remove();
 
     const failedLoad = new ExportManager({
       load: async () => {
@@ -443,14 +510,6 @@
     await failedLoad.requestClose();
     failedLoad.element.remove();
 
-    const { kinds } = await exportApi.exportKinds();
-    const packages = await templates.exportTemplates();
-    const snapshot = {
-      pandoc: '/bin/pandoc',
-      kinds,
-      packages,
-      exportTemplates: {}
-    };
     const failedSave = new ExportManager({
       load: async () => structuredClone(snapshot),
       updateTemplates: async () => {
