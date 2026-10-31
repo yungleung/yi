@@ -93,6 +93,46 @@ What is not worth writing:
   module and the function (`editing/context.ts: keepScroll`) and let the reader
   search.
 
+## Function comments: show the contract when an example is clearer
+
+A function or method comment should not stop at saying what the function intends to do when one
+short example can show the behaviour precisely. This is especially important for functions with:
+
+- text in and text out;
+- state before and after a mutation;
+- an easy-to-confuse edge case;
+- a failure that the function prevents; or
+- a command or event contract that another client will call.
+
+Put the example beside the contract, not in a separate document:
+
+```ts
+/**
+ * Separates a paragraph from the block that follows it.
+ *
+ * Example: `breakParagraph('alpha\nbeta', 6)` returns `'alpha\n\nbeta'`.
+ * A newline already at the split point is reused rather than doubled.
+ */
+export function breakParagraph(text: string, at: number): string;
+```
+
+For a command, showing the important failure is often clearer than describing the goal:
+
+```ts
+/**
+ * Replaces a range only if the caller read the current document revision.
+ *
+ * Example: an agent plans against revision 42 while a person types at revision 43.
+ * The command returns `stale` and changes nothing instead of replacing the person's new text.
+ */
+export function replaceRange(input: ReplaceRangeInput): CommandResult;
+```
+
+An example should be minimal, concrete, and deterministic. It may be pseudocode when dependency
+objects would obscure the point, but its values and result must be clear enough to test mentally.
+Do not add a ceremonial example to a trivial getter, setter, or one-line helper whose name and
+signature already make the contract unambiguous.
+
 ## When a module is narrower than the shape
 
 Two headers in this tree are deliberately narrower than the template, and they are

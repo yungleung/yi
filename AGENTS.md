@@ -49,9 +49,10 @@ brief — read it first; this file is the short version and the non-negotiables.
   permissions, failure modes, and tests before implementing it. Avoid speculative generic layers.
 - Refactorings preserve behaviour unless the task explicitly asks for a behaviour change. Prove
   the boundary with a focused test first, then run the affected app probes.
-- New module headers and non-obvious contracts include a compact human-readable example when an
-  example explains the problem, input, or failure better than the type alone. Do not write comments
-  that merely restate code.
+- When writing a method or function, include a compact concrete example whenever it can explain the
+  purpose or contract more clearly than prose alone. Show an input and result, a before-and-after
+  state, or a failure it prevents. Do not leave a maintainer with only a restatement of the goal.
+  Skip examples only when the function is genuinely obvious without one.
 - Every module header says what the file is for, what it may import, and the
   invariant it upholds — `docs/writing-comments.md` has the shape, and
   `test/checks/headers.mjs` fails without it.

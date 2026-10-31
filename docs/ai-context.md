@@ -1127,8 +1127,10 @@ The design rules for new code extend the invariants above:
     ownership or removes real duplication; it is not a requirement to add ceremony.
 12. A refactor preserves behaviour unless change is requested. Its focused test must fail without
     the new boundary, and interface changes must include the affected app probes.
-13. When a human-readable example clarifies a command, event, or non-obvious rule, put it beside the
-    contract. Show the real problem or failure it prevents rather than paraphrasing the code.
+13. When writing a method or function, include a short concrete example whenever it explains the
+    purpose or contract better than prose. Show an input and result, a before-and-after state, or
+    the failure it prevents; do not stop at restating the goal. Trivial getters and obvious
+    one-line helpers do not need a ceremonial example.
 
 The approved target architecture, including typed command results, origin-based authority,
 document revisions, stale-agent-edit rejection, event correlation, and the phased migration, is
