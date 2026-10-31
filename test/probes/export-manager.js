@@ -47,27 +47,7 @@
   await configManager.update({ export_templates: withoutHtml });
   const fixture = `${window.__probePaths.checkout}test/fixtures/templates/html-marker`;
   const proposal = await templates.inspectTemplate(fixture);
-  const alpha = await templates.importTemplate({
-    source: fixture,
-    name: `Manager Alpha ${Date.now().toString(36)}`,
-    kind: 'html',
-    entry: proposal.entry,
-    source_url: null,
-    license: 'CC0-1.0',
-    map_title: false,
-    map_author: false
-  });
-  const beta = await templates.importTemplate({
-    source: fixture,
-    name: `Manager Beta ${Date.now().toString(36)}`,
-    kind: 'html',
-    entry: proposal.entry,
-    source_url: null,
-    license: 'CC0-1.0',
-    map_title: false,
-    map_author: false
-  });
-  const created = [alpha.id, beta.id];
+  const created = [];
   const cleanupPackages = async (ids, exportTemplates) => {
     await configManager.update({ export_templates: exportTemplates });
     for (const id of ids) {
@@ -80,6 +60,63 @@
   };
 
   try {
+    const alpha = await templates.importTemplate({
+      source: fixture,
+      name: `Manager Alpha ${Date.now().toString(36)}`,
+      kind: 'html',
+      entry: proposal.entry,
+      source_url: null,
+      license: 'CC0-1.0',
+      map_title: false,
+      map_author: false
+    });
+    created.push(alpha.id);
+    const beta = await templates.importTemplate({
+      source: fixture,
+      name: `Manager Beta ${Date.now().toString(36)}`,
+      kind: 'html',
+      entry: proposal.entry,
+      source_url: null,
+      license: 'CC0-1.0',
+      map_title: false,
+      map_author: false
+    });
+    created.push(beta.id);
+
+    const { ExportManager } = await t.app('/src/ui/export/manager/export_manager.ts');
+    const noPandoc = new ExportManager({
+      load: async () => ({
+        pandoc: null,
+        kinds: (await exportApi.exportKinds()).kinds,
+        packages: await templates.exportTemplates(),
+        exportTemplates: {}
+      }),
+      updateTemplates: async () => {},
+      restoreDefaults: async () => ''
+    });
+    await noPandoc.open(() => {});
+    noPandoc.element
+      .querySelector('[data-export-manager-kind="html"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    noPandoc.element
+      .querySelector(`[data-template-package="${CSS.escape(alpha.id)}"]`)
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    noPandoc.element
+      .querySelector('[data-template-primary]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await t.sleep(180);
+    check(
+      'a successful selection keeps the standing Pandoc-missing warning',
+      noPandoc.element.textContent?.includes(words('exportManager.pandocMissing')) === true,
+      {
+        status: noPandoc.element
+          .querySelector('[data-export-manager-status]')
+          ?.textContent ?? null
+      }
+    );
+    await noPandoc.requestClose();
+    noPandoc.element.remove();
+
     await openManager();
 
   check('the native menu event opens the manager', visible(manager()), {

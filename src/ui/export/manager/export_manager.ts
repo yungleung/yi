@@ -186,9 +186,7 @@ export class ExportManager extends FloatingSurface {
         this.inspectedId = this.snapshot.exportTemplates[this.selectedKind ?? ''] ?? null;
       }
       this.render();
-      if (this.snapshot.pandoc === null) {
-        this.status.textContent = t('exportManager.pandocMissing');
-      }
+      this.showStandingStatus();
     } catch (error) {
       const message = document.createElement('span');
       message.textContent = t('exportManager.libraryFailed', {
@@ -291,10 +289,18 @@ export class ExportManager extends FloatingSurface {
       await this.source.updateTemplates(remembered);
       this.snapshot.exportTemplates = remembered;
       this.inspectedId = id;
-      this.status.replaceChildren();
+      this.showStandingStatus();
       this.render();
     } catch (error) {
       this.status.textContent = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  /** Restores the selected kind's non-actionable state after replacing a transient error. */
+  private showStandingStatus(): void {
+    this.status.replaceChildren();
+    if (this.snapshot?.pandoc === null) {
+      this.status.textContent = t('exportManager.pandocMissing');
     }
   }
 
