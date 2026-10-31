@@ -7,14 +7,14 @@
  * and that opening a file while it is on screen asks nothing and leaves no "push" behind.
  *
  * @covers src-tauri/src/menu.rs (the Help item and its event), src/ui/tutorial/tutorial_flow.ts,
- *   src/ui/tutorial/tutorial_text.ts, src/ui/markdown/commands/menu.ts,
+ *   src/ui/tutorial/tutorial_text.ts, src/commands/triggers/native_menu.ts,
  *   src/services/session_rules.ts (a read-only document is replaceable)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session.ts');
-  const registry = await t.app('/src/ui/markdown/commands/registry.ts');
+  const registry = await t.app('/src/commands/runtime.ts');
   const i18n = await t.app('/src/services/i18n.ts');
   const { tutorialText } = await t.app('/src/ui/tutorial/tutorial_text.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);

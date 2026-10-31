@@ -7,7 +7,7 @@
  */
 
 import { eventManager } from '../../services/event_manager';
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from '../markdown/markdown_editor';
 import { t } from '../../services/i18n';
 import { STATUS_BUTTON, Toolbar } from './toolbar';
@@ -41,7 +41,7 @@ export class LayoutToolbar extends Toolbar {
     this.button = this.addButton(
       { label: t('toolbar.page'), icon: PAGE_ICON, className: STATUS_BUTTON },
       () => {
-        runCommand('view:togglePage');
+        runCommand('view:togglePage', null, 'toolbar');
       }
     );
     this.showLayout('page');

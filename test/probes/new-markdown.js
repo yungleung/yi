@@ -2,7 +2,7 @@
  * Making a new note: the card the menu's command opens, and the tree's own *New file*.
  *
  * The menu item is native and nothing but a person can choose it (`docs/testing.md`), so the
- * command it names — `file:newMarkdown`, mapped in `commands/menu.ts` — is run here, which is
+ * command it names — `file:newMarkdown`, mapped in `src/commands/triggers/native_menu.ts` — is run here, which is
  * what the menu's own event does. Everything after that is driven for real: the card's folder
  * rows are clicked, the name field is typed into, Create is pressed, and the session's question
  * about the document on screen is answered on its card.
@@ -19,7 +19,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const registry = await t.app('/src/ui/markdown/commands/registry.ts');
+  const registry = await t.app('/src/commands/runtime.ts');
   const ops = await t.app('/src/ui/workspace/tree_ops.ts');
   const caret = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
@@ -85,7 +85,7 @@
       registry.registeredCommands().some((command) => command.id === 'file:newMarkdown'),
       registry.registeredCommands().map((command) => command.id)
     );
-    // The Rust menu emits this event; `commands/menu.ts` is the one place that says which
+    // The Rust menu emits this event; `src/commands/triggers/native_menu.ts` is the one place that says which
     // command it means, and the editor is the one that hears it.
     await invoke('plugin:event|emit', { event: 'new_markdown' });
     await t.sleep(350);

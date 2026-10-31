@@ -21,7 +21,10 @@ async function bundleModule(input, name) {
 
 const { CommandRegistry } = await bundleModule('src/commands/registry.ts', 'registry');
 const { CommandDispatcher } = await bundleModule('src/commands/dispatch.ts', 'dispatch');
-const { localAccess } = await bundleModule('src/commands/authority.ts', 'authority');
+const { accessForOrigin, localAccess, setDocumentWritable } = await bundleModule(
+  'src/commands/authority.ts',
+  'authority'
+);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -32,6 +35,27 @@ const check = (name, actual, expected) => {
 
 const origin = { kind: 'toolbar', windowId: 'main' };
 const access = localAccess(true);
+check(
+  'an unconfigured agent has no command effects',
+  accessForOrigin({ kind: 'builtin-agent' }).effects.size,
+  0
+);
+check(
+  'a local keyboard gets the writable document capability',
+  accessForOrigin({ kind: 'keyboard' }).effects.has('document.write'),
+  true
+);
+setDocumentWritable(false);
+check(
+  'a read-only document removes only its write capability',
+  [
+    accessForOrigin({ kind: 'keyboard' }).effects.has('document.write'),
+    accessForOrigin({ kind: 'keyboard' }).effects.has('workspace.write')
+  ],
+  [false, true]
+);
+setDocumentWritable(true);
+
 const registry = new CommandRegistry();
 const dispatcher = new CommandDispatcher(registry, () => access);
 registry.register({

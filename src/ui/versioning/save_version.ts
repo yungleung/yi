@@ -37,13 +37,19 @@ import {
   versionMessage,
   versioningPlan
 } from '../../services/versioning';
-import { registerCommand } from '../markdown/commands/registry';
+import { registerCommand } from '../../commands/runtime';
 import { versionCommentDialog, type VersionCommentDialog } from './version_comment_dialog';
 import { versioningDialog, type VersioningChooser } from './versioning_dialog';
 
 /** Registers the command the File menu's *Save a Version* item names. */
 export function registerVersionCommand(chooser: VersioningChooser = versioningDialog): void {
-  registerCommand({ id: 'version:save', run: () => void saveVersion(chooser) });
+  registerCommand({
+    id: 'version:save',
+    run: async () => {
+      await saveVersion(chooser);
+      return null;
+    }
+  });
 }
 
 /** Asks what the facts and the reader's answer call for, and does exactly that. */

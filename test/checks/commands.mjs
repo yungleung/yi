@@ -2,7 +2,7 @@
  * Says what a command is, and where it is allowed to live.
  *
  * One command has one name (a `namespace:name` id typed in
- * `src/ui/markdown/commands/registry.ts`), one place that registers it, and one
+ * `src/commands/contracts.ts`), one place that registers it, and one
  * way to run it. Triggers — a key chord, a toolbar button, the table menu, the
  * native menu — resolve that name; they do not invent one, and they do not each
  * emit their own app-wide event.
@@ -14,9 +14,12 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const editorRoot = 'src/ui/markdown';
-const registry = `${editorRoot}/commands/registry.ts`;
+const commandRoot = 'src/commands';
+const registry = `${commandRoot}/registry.ts`;
+const runtime = `${commandRoot}/runtime.ts`;
 const editor = `${editorRoot}/markdown_editor.ts`;
-const menuBridge = `${editorRoot}/commands/menu.ts`;
+const menuBridge = `${commandRoot}/triggers/native_menu.ts`;
+const keymap = `${commandRoot}/triggers/keymap.ts`;
 
 /** Events that genuinely cross windows, so they stay on the Tauri bus. */
 const crossWindowEvents = [
@@ -47,11 +50,29 @@ const check = (name, condition) => {
   }
 };
 
-check(`${registry} exists`, files.includes(registry));
-const registrySource = files.includes(registry) ? readFileSync(registry, 'utf8') : '';
-for (const symbol of ['registerCommand', 'runCommand', 'registeredCommands']) {
+check(`${registry} exists`, statSync(registry, { throwIfNoEntry: false })?.isFile() === true);
+const registrySource = statSync(registry, { throwIfNoEntry: false })?.isFile()
+  ? readFileSync(registry, 'utf8')
+  : '';
+for (const symbol of ['registerCommand', 'registeredCommands']) {
   check(`${registry} exports ${symbol}`, new RegExp(`export function ${symbol}\\b`).test(registrySource));
 }
+check(
+  `${registry} exports CommandRegistry`,
+  /export class CommandRegistry\b/.test(registrySource)
+);
+
+check(`${runtime} exists`, statSync(runtime, { throwIfNoEntry: false })?.isFile() === true);
+const runtimeSource = statSync(runtime, { throwIfNoEntry: false })?.isFile()
+  ? readFileSync(runtime, 'utf8')
+  : '';
+for (const symbol of ['runCommand', 'dispatchCommand', 'dispatchRawCommand']) {
+  check(`${runtime} exports ${symbol}`, new RegExp(`export function ${symbol}\\b`).test(runtimeSource));
+}
+check(
+  `${runtime} exports commandDispatcher`,
+  /export const commandDispatcher\b/.test(runtimeSource)
+);
 
 // One command, one name: no other module may declare a command of its own.
 // The scan covers the whole UI, not just the editor: the producers that used to
@@ -70,13 +91,14 @@ const uiFiles = [];
 })('src/ui');
 
 for (const file of uiFiles) {
-  if (file === registry) {
-    continue;
-  }
   const source = readFileSync(file, 'utf8');
   check(
     `${file} does not declare its own command event`,
     !/(?:^|\n)\s*export const [A-Z_]*COMMAND =/.test(source)
+  );
+  check(
+    `${file} imports no retired command module`,
+    !/from ['"][^'"]*ui\/markdown\/commands\/(?:registry|keymap|menu)['"]/.test(source)
   );
 }
 
@@ -91,7 +113,8 @@ for (const match of editorSource.matchAll(/eventManager\.on\(\s*'([^']+)'/g)) {
   );
 }
 
-check(`${menuBridge} exists`, files.includes(menuBridge));
+check(`${menuBridge} exists`, statSync(menuBridge, { throwIfNoEntry: false })?.isFile() === true);
+check(`${keymap} exists`, statSync(keymap, { throwIfNoEntry: false })?.isFile() === true);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));

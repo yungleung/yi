@@ -20,7 +20,7 @@ import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
 import { AnchoredPanel } from '../floating/panel';
-import { registerCommand, runCommand } from '../markdown/commands/registry';
+import { registerCommand, runCommand } from '../../commands/runtime';
 
 export class StackPopover extends AnchoredPanel {
   private readonly list: HTMLDivElement;
@@ -33,7 +33,13 @@ export class StackPopover extends AnchoredPanel {
     this.list.dataset.stackList = 'true';
     this.element.appendChild(this.list);
 
-    registerCommand({ id: 'session:openStack', run: () => this.toggle() });
+    registerCommand({
+      id: 'session:openStack',
+      run: () => {
+        this.toggle();
+        return null;
+      }
+    });
     void eventManager.on(DOCUMENT_SESSION_CHANGED, () => {
       if (this.isOpen()) {
         this.render();
@@ -101,7 +107,7 @@ export class StackPopover extends AnchoredPanel {
     });
     open.addEventListener('click', () => {
       this.close();
-      runCommand('session:restore', id);
+      runCommand('session:restore', id, 'toolbar');
     });
 
     const drop = document.createElement('button');
@@ -116,7 +122,7 @@ export class StackPopover extends AnchoredPanel {
       event.stopPropagation();
     });
     drop.addEventListener('click', () => {
-      runCommand('session:drop', id);
+      runCommand('session:drop', id, 'toolbar');
     });
 
     row.append(open, drop);

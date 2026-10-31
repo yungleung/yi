@@ -9,7 +9,7 @@
 
 import { eventManager } from '../../services/event_manager';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { StackPopover } from '../session/stack_popover';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
@@ -61,13 +61,13 @@ export class SessionToolbar extends Toolbar {
     this.stackButton = this.addButton(
       { label: t('session.push'), icon: STACK_PUSH, className: TOOL_ICON_SIZE },
       () => {
-        runCommand('session:toggleStack');
+        runCommand('session:toggleStack', null, 'toolbar');
       }
     );
     this.addButton(
       { label: t('session.open'), icon: STACK_OPEN, className: TOOL_ICON_SIZE },
       () => {
-        runCommand('session:openStack');
+        runCommand('session:openStack', null, 'toolbar');
       }
     );
     this.appendChild(this.popover.element);

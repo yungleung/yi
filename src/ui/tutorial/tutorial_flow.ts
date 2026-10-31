@@ -14,7 +14,7 @@
  */
 
 import { documentSession } from '../../services/session';
-import { registerCommand } from '../markdown/commands/registry';
+import { registerCommand } from '../../commands/runtime';
 import { openReferenceDocument } from '../reference_document';
 import { tutorialText } from './tutorial_text';
 import { shouldOpenTutorial } from './tutorial_rules';
@@ -33,5 +33,11 @@ export async function openTutorialForFirstStart(firstStart: boolean): Promise<vo
 
 /** Registers the command the Help menu's *Open Tutorial* item names. */
 export function registerTutorialCommand(): void {
-  registerCommand({ id: 'help:tutorial', run: () => void openTutorial() });
+  registerCommand({
+    id: 'help:tutorial',
+    run: async () => {
+      await openTutorial();
+      return null;
+    }
+  });
 }

@@ -119,7 +119,9 @@ export class CommandDispatcher {
     input: unknown,
     origin: CommandOrigin,
     options: DispatchOptions = {}
-  ): CommandResult<CommandOutput<Id>> | Promise<CommandResult<CommandOutput<Id>>> {
+  ):
+    | CommandResult<CommandOutput<Id> | null>
+    | Promise<CommandResult<CommandOutput<Id> | null>> {
     const correlationId = options.correlationId ?? nextCorrelationId();
     const command = this.registry.get(id);
     if (command === null) {
@@ -140,7 +142,7 @@ export class CommandDispatcher {
       return failure(id, correlationId, 'forbidden', errorMessage(error));
     }
 
-    const contract = commandContractsFor(id);
+    const contract = commandContracts[id];
     if (contract.effect !== 'none' && !access.effects.has(contract.effect)) {
       return failure(
         id,
@@ -162,20 +164,15 @@ export class CommandDispatcher {
             ok: true as const,
             commandId: id,
             correlationId,
-            value
+            value: value ?? null
           }))
           .catch((error: unknown) =>
             failure(id, correlationId, 'failed', errorMessage(error))
           );
       }
-      return { ok: true, commandId: id, correlationId, value: output };
+      return { ok: true, commandId: id, correlationId, value: output ?? null };
     } catch (error) {
       return failure(id, correlationId, 'failed', errorMessage(error));
     }
   }
-}
-
-/** Reads one contract while keeping the dispatcher's public id typed. */
-function commandContractsFor(id: CommandId) {
-  return commandContracts[id];
 }

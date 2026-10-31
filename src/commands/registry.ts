@@ -12,15 +12,16 @@ import type {
   CommandInput,
   CommandOutput
 } from './contracts';
+import type { CommandContext } from './dispatch';
 
 /** One command implementation. Input and output types come from the catalogue. */
 export interface CommandDefinition<Id extends CommandId> {
   readonly id: Id;
   run(
     input: CommandInput<Id>,
-    context: import('./dispatch').CommandContext
-  ): CommandOutput<Id> | Promise<CommandOutput<Id>>;
-  available?(context: import('./dispatch').CommandContext): boolean;
+    context: CommandContext
+  ): CommandOutput<Id> | void | Promise<CommandOutput<Id> | void>;
+  available?(context: CommandContext): boolean;
 }
 
 /** A registry that can be used by the app or isolated by a test. */

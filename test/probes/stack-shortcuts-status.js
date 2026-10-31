@@ -8,7 +8,7 @@
  * edited, and muted when it is outside the stack or read-only.
  *
  * @covers src/services/session_rules.ts, src/services/session.ts,
- *   src/ui/markdown/commands/keymap.ts, src/ui/session/session_commands.ts,
+ *   src/commands/triggers/keymap.ts, src/ui/session/session_commands.ts,
  *   src/ui/document_status.ts
  * @needs-workspace — navigation starts from the fixture workspace's default Markdown.
  */

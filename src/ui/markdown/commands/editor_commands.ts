@@ -4,7 +4,7 @@
  * The editor wires the events and keeps the caret; what each command *does* is
  * a function under `editing/`, and this is the table that says which name
  * reaches which of them — filled once, in the one place
- * `commands/registry.ts` expects to be filled from, so a chord, a toolbar
+ * `src/commands/runtime.ts` expects to be filled from, so a chord, a toolbar
  * button, a menu item and the keymap all land on the same code.
  *
  * May import: the registry, the editing rules the commands apply and the
@@ -29,7 +29,7 @@ import { insertFootnote } from '../editing/footnotes';
 import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
 import { insertImage } from '../../image/image_flow';
-import { registerCommand } from './registry';
+import { registerCommand } from '../../../commands/runtime';
 
 /** What a command needs from the editor that registers it. */
 export interface CommandHost {
@@ -47,23 +47,101 @@ export interface CommandHost {
 /** Registers every command the editor owns against the registry. */
 export function registerEditorCommands(host: CommandHost): void {
   const { context } = host;
-  registerCommand({ id: 'history:undo', run: () => host.applyHistory('undo') });
-  registerCommand({ id: 'history:redo', run: () => host.applyHistory('redo') });
-  registerCommand({ id: 'edit:cut', run: () => void cutSelection(context) });
-  registerCommand({ id: 'edit:selectAll', run: () => selectAll(context) });
-  registerCommand({ id: 'edit:insertFootnote', run: () => insertFootnote(context) });
-  registerCommand({ id: 'edit:insertLink', run: () => void insertLink(context) });
-  registerCommand({ id: 'edit:insertImage', run: () => void insertImage(context) });
-  registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(context) });
-  registerCommand({ id: 'view:togglePage', run: () => host.toggleLayout() });
-  registerCommand({ id: 'find:open', run: () => host.openFind(false) });
-  registerCommand({ id: 'find:replace', run: () => host.openFind(true) });
-  registerCommand({ id: 'find:close', run: () => host.closeFind() });
+  registerCommand({
+    id: 'history:undo',
+    run: () => {
+      host.applyHistory('undo');
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'history:redo',
+    run: () => {
+      host.applyHistory('redo');
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:cut',
+    run: () => {
+      cutSelection(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:selectAll',
+    run: () => {
+      selectAll(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:insertFootnote',
+    run: () => {
+      insertFootnote(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:insertLink',
+    run: () => {
+      void insertLink(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:insertImage',
+    run: () => {
+      void insertImage(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:insertRule',
+    run: () => {
+      insertThematicBreak(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'view:togglePage',
+    run: () => {
+      host.toggleLayout();
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'find:open',
+    run: () => {
+      host.openFind(false);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'find:replace',
+    run: () => {
+      host.openFind(true);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'find:close',
+    run: () => {
+      host.closeFind();
+      return null;
+    }
+  });
   // One command per inline style, per list command and per table operation,
   // enumerated from the modules that own those lists: a button or a menu item
   // can only name a command that is registered here.
   for (const style of FORMATTING_STYLES) {
-    registerCommand({ id: `format:${style}`, run: () => applyFormatting(context, style) });
+    registerCommand({
+      id: `format:${style}`,
+      run: () => {
+        applyFormatting(context, style);
+        return null;
+      }
+    });
   }
   for (const command of LIST_COMMANDS) {
     // A list command applies where there is a list line to move, and Tab has to
@@ -72,36 +150,34 @@ export function registerEditorCommands(host: CommandHost): void {
     registerCommand({
       id: `list:${command}`,
       available: () => listCommandEdit(context, command) !== null,
-      run: () => applyListCommand(context, command)
+      run: () => {
+        applyListCommand(context, command);
+        return null;
+      }
     });
   }
   for (const command of TABLE_COMMANDS) {
-    registerCommand({ id: `table:${command}`, run: (target) => runTableOperation(context, command, target) });
+    registerCommand({
+      id: `table:${command}`,
+      run: (target) => {
+        runTableOperation(context, command, target);
+        return null;
+      }
+    });
   }
-  registerCommand({ id: 'table:insert', run: (size) => insertPickedTable(context, size) });
+  registerCommand({
+    id: 'table:insert',
+    run: (size) => {
+      insertTable(context, size);
+      return null;
+    }
+  });
 }
 
 /**
  * Runs one table-menu operation on the cell the menu captured before it took
  * focus. The payload comes from a native menu, so it is checked, not trusted.
  */
-function runTableOperation(context: EditorContext, command: TableCommand, payload: unknown): void {
-  const target = payload as TableTarget | null;
-  if (
-    !target ||
-    !Number.isFinite(target.lineStart) ||
-    !Number.isFinite(target.row) ||
-    !Number.isFinite(target.column)
-  ) {
-    return;
-  }
+function runTableOperation(context: EditorContext, command: TableCommand, target: TableTarget): void {
   runTableCommand(context, target, command);
-}
-
-/** Creates the table of the size the picker handed over. */
-function insertPickedTable(context: EditorContext, payload: unknown): void {
-  const size = payload as { rows?: number; columns?: number } | null;
-  if (size?.rows && size.columns) {
-    insertTable(context, { rows: size.rows, columns: size.columns });
-  }
 }

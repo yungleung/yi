@@ -17,7 +17,7 @@
  *
  * May import: the registry, the session, the app's own answers (config, images, titles), the export
  * seam and the dialog. Upholds: one command has one name, one home and one way in — the File menu's
- * *Export* reaches this through `commands/menu.ts` and `registry.ts` like every other command.
+ * *Export* reaches this through the native-menu adapter and typed dispatcher like every other command.
  */
 
 import { join } from '@tauri-apps/api/path';
@@ -43,7 +43,7 @@ import { documentSession } from '../../services/session';
 import { bibliographyPath, homeFolderPath, imageFolderPath } from '../../services/settings_paths';
 import { fileName, parentFolder } from '../../services/workspace_folders';
 import { imageBases } from '../image/image_urls';
-import { registerCommand } from '../markdown/commands/registry';
+import { registerCommand } from '../../commands/runtime';
 import { bodyWithItsName } from './book_body';
 import { isLatexKind } from './kind_family';
 import { exportDialog } from './export_dialog';
@@ -77,12 +77,10 @@ export interface ExportHost {
 export function registerExportCommand(host: ExportHost): void {
   registerCommand({
     id: 'file:export',
-    run: (payload) =>
-      void exportNote(
-        host.text(),
-        typeof payload === 'string' ? payload : null,
-        host.progress
-      )
+    run: async (kind) => {
+      await exportNote(host.text(), kind, host.progress);
+      return null;
+    }
   });
 }
 

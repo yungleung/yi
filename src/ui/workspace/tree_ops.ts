@@ -25,7 +25,7 @@ import { eventManager } from '../../services/event_manager';
 import { showHint, type HintPlace } from '../../services/hints';
 import { MESSAGE_EVENT, notify } from '../../services/messages';
 import { parentFolder } from '../../services/workspace_folders';
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { prompt } from '../prompt';
 import type { TreeMenuAction } from './tree_menu_model';
@@ -84,7 +84,7 @@ export async function runTreeAction(action: TreeMenuAction, entry: TreeEntry): P
       // A new note is the app's own command, not the tree's private business: the row's folder
       // is the place it goes, and everything else about it — the id it is named after, the
       // frontmatter it opens with, the title it selects — is `file:newMarkdown`'s.
-      runCommand('file:newMarkdown', { folder: entry.path });
+      runCommand('file:newMarkdown', { folder: entry.path }, 'toolbar');
       return;
     case 'new-folder':
       await createAndRename(tree, entry.path, 'New folder');

@@ -38,7 +38,7 @@ import {
   type NewNoteTemplate
 } from '../../services/new_document_templates';
 import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
-import { registerCommand } from '../markdown/commands/registry';
+import { registerCommand } from '../../commands/runtime';
 import { refreshTreeFolders } from '../workspace/tree_ops';
 import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
 import { newDocumentTemplatePicker } from './template_picker';
@@ -60,13 +60,9 @@ export function registerNewDocumentCommand(
 ): void {
   registerCommand({
     id: 'file:newMarkdown',
-    run: (payload) => {
-      const folder = (payload as { folder?: unknown } | undefined)?.folder;
-      void newDocument(
-        typeof folder === 'string' ? folder : null,
-        chooser,
-        templateChooser
-      );
+    run: async (input) => {
+      await newDocument(input?.folder ?? null, chooser, templateChooser);
+      return null;
     }
   });
 }

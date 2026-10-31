@@ -1,19 +1,18 @@
 /**
- * The native menu, in one place.
+ * The native menu's wire names and the command ids they request.
  *
- * The app menu lives on the Rust side, so its items reach the webview as Tauri
- * events named by strings. Rather than each of those names appearing as a
- * literal somewhere in the editor, they are mapped here, once, to command ids —
- * and this is the only module that may name them.
+ * Example: Rust emits `save_as`, and this adapter resolves it to
+ * `file:saveAs`; the menu does not know the command implementation.
  *
- * May import: the command ids (`./registry`). Upholds: an event name reaches the
- * editor as a command id in one place, so no other module has to know what the
- * native menu calls things.
+ * May import: command ids and the app event-name type. Upholds: menu names
+ * become command ids in one place.
  */
-import type { CommandId } from './registry';
+
+import type { AppEventName } from '../../services/app_events';
+import type { CommandId } from '../contracts';
 
 /** The menu event names the app sends, and the command each one runs. */
-export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
+export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> = {
   undo: 'history:undo',
   redo: 'history:redo',
   cut: 'edit:cut',
@@ -35,5 +34,5 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
 
 /** The command a menu event runs, or null when the name is not a command. */
 export function commandForMenuEvent(event: string): CommandId | null {
-  return MENU_COMMANDS[event] ?? null;
+  return MENU_COMMANDS[event as AppEventName] ?? null;
 }

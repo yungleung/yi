@@ -5,7 +5,7 @@
  * the command; the clipboard, the card and the file it writes stay with the image flow.
  */
 
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
@@ -30,7 +30,7 @@ export class ImageToolbar extends Toolbar {
   constructor() {
     super();
     this.addButton({ label: t('toolbar.image'), icon: IMAGE_ICON, className: TOOL_ICON_SIZE }, () => {
-      runCommand('edit:insertImage');
+      runCommand('edit:insertImage', null, 'toolbar');
     });
   }
 }

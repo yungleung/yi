@@ -6,7 +6,7 @@
  * button names the command; what a table's source looks like stays with the table edits.
  */
 
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { TablePicker, type TableSize } from './table_picker';
 import { t } from '../../services/i18n';
 import { Toolbar } from './toolbar';
@@ -37,7 +37,7 @@ export class TableToolbar extends Toolbar {
     // in the page.
     super(['relative', 'flex', 'items-center']);
     this.picker = new TablePicker((size: TableSize) => {
-      runCommand('table:insert', size);
+      runCommand('table:insert', size, 'toolbar');
     });
     this.addButton(
       { label: t('toolbar.table'), icon: TABLE_ICON, className: 'text-[1.1em]' },

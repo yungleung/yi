@@ -5,7 +5,7 @@
  * command, and closing the manager returns keyboard focus through the editor host.
  */
 
-import { registerCommand } from '../../markdown/commands/registry';
+import { registerCommand } from '../../../commands/runtime';
 import { exportManager } from './export_manager';
 
 export interface ExportManagerHost {
@@ -15,6 +15,9 @@ export interface ExportManagerHost {
 export function registerExportManagerCommand(host: ExportManagerHost): void {
   registerCommand({
     id: 'export:manageTemplates',
-    run: () => void exportManager.open(host.focusEditor)
+    run: async () => {
+      await exportManager.open(host.focusEditor);
+      return null;
+    }
   });
 }

@@ -12,7 +12,7 @@
  */
 (async () => {
   const t = window.__t;
-  const registry = await t.app('/src/ui/markdown/commands/registry.ts');
+  const registry = await t.app('/src/commands/runtime.ts');
   const insert = (rows, columns) => registry.runCommand('table:insert', { rows, columns });
   /** The markdown `tableMarkdown` writes, so the expectation is the same shape. */
   const table = (columns, rows) => {

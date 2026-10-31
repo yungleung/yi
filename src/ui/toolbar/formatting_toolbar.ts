@@ -8,7 +8,7 @@
  */
 
 import type { FormattingStyle } from '../markdown/format';
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { Toolbar, type ToolbarButtonSpec } from './toolbar';
 
@@ -67,7 +67,7 @@ export class FormattingToolbar extends Toolbar {
   constructor() {
     super();
     this.addButtons(formattingButtons(), (spec) => {
-      runCommand(`format:${spec.command}`);
+      runCommand(`format:${spec.command}`, null, 'toolbar');
     });
   }
 }

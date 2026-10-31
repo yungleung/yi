@@ -7,7 +7,7 @@
  */
 
 import type { ListCommand } from '../markdown/editing/lists';
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './toolbar';
 
@@ -71,7 +71,7 @@ export class ListToolbar extends Toolbar {
   constructor() {
     super();
     this.addButtons(listButtons(), (spec) => {
-      runCommand(`list:${spec.command}`);
+      runCommand(`list:${spec.command}`, null, 'toolbar');
     });
   }
 }

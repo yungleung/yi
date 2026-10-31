@@ -75,9 +75,14 @@ import {
   routeTaskClick,
   routeWikilinkClick
 } from './click_routing';
-import { commandForKey } from './commands/keymap';
-import { MENU_COMMANDS } from './commands/menu';
-import { runCommand, setEditingAllowed, type CommandId } from './commands/registry';
+import { commandForKey } from '../../commands/triggers/keymap';
+import { MENU_COMMANDS } from '../../commands/triggers/native_menu';
+import {
+  dispatchRawCommand,
+  runCommand,
+  type CommandId
+} from '../../commands/runtime';
+import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
 import {
   equationBlockNumber,
@@ -482,7 +487,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.composition.element.readOnly = readOnly;
     this.contentView.dataset.readOnly = String(readOnly);
     this.find.setReadOnly(readOnly);
-    setEditingAllowed(!readOnly);
+    setDocumentWritable(!readOnly);
   }
 
   /** The layout the editor is drawn in. */
@@ -642,7 +647,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // that knows which string means which command.
     for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<[AppEventName, CommandId]>) {
       // The payload travels: the Export submenu's items are one event whose payload is the kind.
-      void eventManager.on(event, (event: any) => runCommand(command, event?.payload ?? null));
+      void eventManager.on(event, (event) => {
+        const settled = dispatchRawCommand(
+          command,
+          event.payload,
+          { kind: 'native-menu' }
+        );
+        void Promise.resolve(settled).then((result) => {
+          if (!result.ok) {
+            console.error(`command ${result.commandId}: ${result.message}`);
+          }
+        });
+      });
     }
   }
 
@@ -653,7 +669,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       return false;
     }
     event.preventDefault();
-    runCommand(command);
+    runCommand(command, null, 'keyboard');
     return true;
   }
 

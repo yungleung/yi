@@ -5,7 +5,7 @@
  * the command and nothing else, so the footnote rule stays in `editing/footnotes.ts`.
  */
 
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
@@ -25,7 +25,7 @@ export class FootnoteToolbar extends Toolbar {
   constructor() {
     super();
     this.addButton({ label: t('toolbar.footnote'), icon: FOOTNOTE_ICON, className: TOOL_ICON_SIZE }, () => {
-      runCommand('edit:insertFootnote');
+      runCommand('edit:insertFootnote', null, 'toolbar');
     });
   }
 }

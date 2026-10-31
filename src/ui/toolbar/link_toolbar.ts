@@ -5,7 +5,7 @@
  * the command; what a link is and where the clipboard is read stay with the link flow.
  */
 
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
 
@@ -32,7 +32,7 @@ export class LinkToolbar extends Toolbar {
   constructor() {
     super();
     this.addButton({ label: t('toolbar.link'), icon: LINK_ICON, className: TOOL_ICON_SIZE }, () => {
-      runCommand('edit:insertLink');
+      runCommand('edit:insertLink', null, 'toolbar');
     });
   }
 }

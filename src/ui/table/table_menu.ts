@@ -6,7 +6,7 @@
  * the pure model (`table_menu_model.ts`), so what it offers and what it does cannot drift.
  */
 
-import { runCommand } from '../markdown/commands/registry';
+import { runCommand } from '../../commands/runtime';
 import type { TableCommand, TableTarget } from '../markdown/editing/table';
 import type { TableMenuNode } from './table_menu_model';
 import type { MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
@@ -57,7 +57,7 @@ async function toNode(
     text: node.label,
     enabled: node.enabled,
     action: () => {
-      runCommand(`table:${command}`, target);
+      runCommand(`table:${command}`, target, 'context-menu');
     }
   });
 }

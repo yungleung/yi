@@ -3,7 +3,7 @@
  * is, with the blank lines markdown needs to read it as a rule — one glued to
  * the line above is a setext heading — and the block renders as a rule.
  *
- * @covers src/ui/markdown/editing/thematic_break.ts, src/ui/markdown/commands/keymap.ts
+ * @covers src/ui/markdown/editing/thematic_break.ts, src/commands/triggers/keymap.ts
  */
 (async () => {
   const t = window.__t;

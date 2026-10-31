@@ -91,12 +91,12 @@
   );
   // The two floating surfaces should not disagree about their corners: open the find bar and
   // compare what the browser says each is rounded by.
-  const { runCommand } = await t.app('/src/ui/markdown/commands/registry.ts');
+  const { runCommand } = await t.app('/src/commands/runtime.ts');
   await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'find' });
   await t.sleep(250);
   const bar = document.querySelector('[data-find-bar]');
   const barRadius = bar ? getComputedStyle(bar).borderRadius : null;
-  runCommand('find:close');
+  runCommand('find:close', null, 'test');
   await t.sleep(150);
   check(
     'and its corners are the find bar`s',
