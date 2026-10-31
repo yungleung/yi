@@ -21,6 +21,7 @@ import { applyCodeIndent } from './code';
 import { continueTableDown, moveTableCell } from './table';
 import { deleteText, insertNewline, insertText } from './text_commands';
 import { runCommand } from '../commands/registry';
+import { handleChoiceCardKey } from '../choice_card';
 import type { EditorContext } from './context';
 import type { Completions } from './completions';
 import type { CompositionInput } from './composition_input';
@@ -63,6 +64,12 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
   // with `zhongguo` being composed lost 好, and the same happens inside an English word,
   // which is the same event with a different word around it.
   if (event.key === 'Backspace' && host.composition.markedText()) {
+    return;
+  }
+  // A language or Div-kind picker owns the same selection keys as the
+  // completion list, from any caret context.
+  if (handleChoiceCardKey(event)) {
+    event.preventDefault();
     return;
   }
   // A list in hand owns the arrows, Enter and Escape; every other key is the text path's, and

@@ -16,8 +16,14 @@
 
 import { getSelectionRange } from '../caret/caret';
 import { documentOffsetAt } from '../caret/offsets';
-import { formatRange, type FormattingStyle, type FormatUnit } from '../format';
+import {
+  formattingMarker,
+  formatRange,
+  type FormattingStyle,
+  type FormatUnit
+} from '../format';
 import { patchFormatDom } from '../format_dom';
+import { moveShownSourceForFormatting } from '../source_mode';
 import { restoreSelection, type EditorContext } from './context';
 import { proseRoot } from './selection';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, TEXT_FROM, offsetOf } from './../offset_tags';
@@ -60,6 +66,11 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
     before: { from, to },
     after: { from: edit.from, to: edit.to }
   });
+  moveShownSourceForFormatting(
+    edit.wrapFrom,
+    edit.wrapTo,
+    (edit.unwrap ? -2 : 2) * formattingMarker(style).length
+  );
 
   const root = proseRoot(context);
   // The blocks the edit left behind, asked for by offset. A block object from *before*

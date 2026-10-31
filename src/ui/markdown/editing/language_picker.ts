@@ -7,18 +7,21 @@
  * box. It is the whole list on purpose: auto-detection is the fallback for a fence that names no
  * language, and a short curated list would be a second opinion about what a note may be written in.
  *
- * The card never takes the keyboard: the reader clicks a language, or presses Escape, or presses
- * anywhere else, and the card goes. The choice itself is not made here — this module is a surface,
- * and the editor owns the edit (`markdown_editor.ts`, over the pure rule in
+ * The card never takes focus: the reader chooses a language with the pointer or
+ * arrows and Enter, presses Escape, or presses anywhere else. The choice itself
+ * is not made here — this module is a surface, and the editor owns the edit
+ * (`markdown_editor.ts`, over the pure rule in
  * `syntax/fence_edits.ts: fenceLanguageEdit`).
  *
- * May import: highlight.js and the card kind (`ui/floating/beside.ts`). Upholds: the picker holds no
- * document state — it is told which block's language is current and hands back what was pressed.
+ * May import: highlight.js, the beside measurement and the shared choice card.
+ * Upholds: the picker holds no document state — it is told which block's
+ * language is current and hands back what was chosen.
  */
 
 import hljs from 'highlight.js';
-import { BesideCard, boxOf } from '../../floating/beside';
+import { boxOf } from '../../floating/beside';
 import type { Box } from '../../floating/placement';
+import { ChoiceCard } from '../choice_card';
 
 /** How the editor answers a label: open the list beside `anchor`, reporting what is pressed. */
 export type LanguagePicker = (
@@ -60,75 +63,20 @@ export function chooseLanguageAt(anchor: Box | null, current: string, lineStart:
  * and one per press would leave the rest behind.
  */
 export function installLanguagePicker(): LanguagePicker {
-  let anchor: Box | null = null;
-  let choose: ((language: string) => void) | null = null;
-  const card = new BesideCard({
-    anchor: () => anchor,
-    className: 'max-h-80 w-56 overflow-y-auto p-1'
-  });
-  const list = document.createElement('div');
-  list.className = 'flex flex-col';
-  card.element.appendChild(list);
-
-  const close = (): void => {
-    anchor = null;
-    choose = null;
-    card.close();
-  };
-
-  card.element.addEventListener('click', (event) => {
-    const row = (event.target as Element | null)?.closest<HTMLElement>('[data-language]');
-    const picked = row?.dataset.language;
-    if (picked === undefined || choose === null) {
-      return;
-    }
-    const answer = choose;
-    close();
-    answer(picked);
-  });
-
-  // A press on the list is a press on the app's own chrome, like the titlebar's buttons: it must not
-  // read as a click outside the document, which is what takes the caret away (`caret/caret.ts`). The
-  // reader is naming the language of the block they are writing in, so the caret has to still be
-  // there — in the body below the fence — when the choice lands.
-  card.element.addEventListener('click', (event) => event.stopPropagation());
-
-  // A press anywhere else is the reader's: the list goes, and nothing is chosen. A press on a
-  // *label* is that label's own click, which opens the list again for the block it belongs to.
-  document.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (!card.isOpen()) {
-        return;
-      }
-      const target = event.target as Element | null;
-      if (target !== null && (card.element.contains(target) || target.closest('[data-chrome]') !== null)) {
-        return;
-      }
-      close();
-    },
-    true
+  const card = new ChoiceCard(
+    'data-language',
+    'max-h-80 w-56 overflow-y-auto p-1'
   );
 
   return (label, current, answer) => {
-    anchor = label;
-    choose = answer;
-    list.replaceChildren(...languageRows(current));
-    card.open();
+    card.open(label, current, languageChoices(), answer);
   };
 }
 
-/** The rows: `text` for a fence that names no language, then every language, alphabetically. */
-function languageRows(current: string): HTMLElement[] {
-  return ['', ...hljs.listLanguages().sort()].map((language) => {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.dataset.language = language;
-    row.className = 'rounded px-2 py-1 text-left text-sm hover:bg-base-300';
-    if (language === current) {
-      row.classList.add('bg-base-300');
-    }
-    row.textContent = language === '' ? 'text' : language;
-    return row;
-  });
+/** `text` for a fence that names no language, then every language, alphabetically. */
+function languageChoices(): Array<{ value: string; label: string }> {
+  return ['', ...hljs.listLanguages().sort()].map((language) => ({
+    value: language,
+    label: language === '' ? 'text' : language
+  }));
 }

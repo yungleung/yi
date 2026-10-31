@@ -126,6 +126,8 @@ sibling after nested children and an empty quoted item leaves the list without l
 `quote-source-editing` — complete quote source, physical blank-line deletion, exact `>` spacing and
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
 `callout-div-open` — `:::` creates a closed Default Div and its seven-kind picker;
+`picker-keyboard` — the language and Div-kind pickers move through their rows with
+`ArrowUp`/`ArrowDown` and choose with `Enter` without moving the document caret;
 `container-fence-open` — quoted and called-out display math, labeled math, code fences and Div
 callouts retain paired delimiters, prefixes, chooser surfaces and caret placement;
 `container-block-enter` — quoted code and display math accept repeated blank lines while a Div nested
@@ -141,6 +143,8 @@ quote and callout source, and accepting a row preserves the container;
 `callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
 container-aware opening markers/pickers on ordinary blank lines, and a `:::` picker that stays
 beside a caret deep in the callout;
+`format-containers` — bold applied inside quotes, GitHub callouts, fenced-Div callouts and generic
+Div source wraps only the selected text and preserves every source line;
 `completion-immediate` — all three marker-triggered completion kinds open from key input and from
 native input-method commits without requiring Tab, and `#` in an ordinary same-document link
 destination offers and accepts a fragment target;

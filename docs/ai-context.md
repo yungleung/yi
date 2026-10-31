@@ -909,8 +909,11 @@ one (`test/probes/select-across-blocks.js`).
 character rather than markup**. `editing/fence_open.ts` writes both delimiter lines at once — with
 the blank lines markdown needs around them — and puts the caret on the blank line between them,
 where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
-(`editing/language_picker.ts`), `$$` needs no such thing, and `---` is frontmatter *only* on the
-note's very first line, where it would otherwise be a thematic break. That frontmatter is YAML,
+(`editing/language_picker.ts`), and `:::` asks for a Div kind
+(`editing/callout_kind_picker.ts`). Both are `markdown/choice_card.ts`: one active list, no focus
+capture, and Arrow Up/Down, Home/End and Enter/Space handled by the editor key path. `$$` needs no
+such thing, and `---` is frontmatter *only* on the note's very first line, where it would otherwise
+be a thematic break. That frontmatter is YAML,
 closed by `---` or its `...` end marker; `+++` is ordinary text, not a fence. `syntax/bare_markers.ts` is
 the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
 paragraph line, as a setext underline, while a lone `#` is an empty heading. The repair makes those

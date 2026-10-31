@@ -25,6 +25,11 @@ const MARKERS: Record<FormattingStyle, string> = {
   inlineCode: '`'
 };
 
+/** The marker characters one formatting style wraps its content with. */
+export function formattingMarker(style: FormattingStyle): string {
+  return MARKERS[style];
+}
+
 /** The raw text edit produced by a formatting command. */
 export interface FormattingEdit {
   /** The updated document text. */
@@ -73,7 +78,7 @@ export function formatRange(
   style: FormattingStyle,
   unit?: FormatUnit
 ): FormattingEdit {
-  const marker = MARKERS[style];
+  const marker = formattingMarker(style);
   const wrapped =
     wrappedEdges(text, from, to, marker) ??
     (unit ? wrappedEdges(text, unit.from, unit.to, marker) : null);

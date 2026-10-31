@@ -27,6 +27,7 @@ import { bibliographyManager } from '../../../services/bibliography';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { markerShape } from '../syntax/footnotes';
+import { projectQuoteSource } from '../syntax/quote_edits';
 import { readTableSource } from '../syntax/table_source';
 import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { getCaretRange } from './caret';
@@ -144,7 +145,10 @@ export function documentOffsetAt(
         const within = placeholder
           ? 0
           : textOffsetInElement(textSpan, containerNode, positionOffset) ?? positionOffset;
-        const offset = block.charStart + from + within;
+        const blockOffset = textSpan.matches(SOURCE_TEXT_SELECTOR)
+          ? from + within
+          : quoteProjectedOffset(block, from, within) ?? from + within;
+        const offset = block.charStart + blockOffset;
         return { block, offset, blockOffset: offset - block.charStart };
       }
     }
@@ -185,6 +189,31 @@ export function documentOffsetAt(
     return null;
   }
   return { block, offset, blockOffset: offset - block.charStart };
+}
+
+/**
+ * A rendered blockquote leaf omits every `>` carrier, while its source keeps
+ * them. Its first line happens to line up; every later line does not. Project
+ * the block's carriers away before adding the offset inside the leaf, then map
+ * that projected position back to the source character.
+ */
+function quoteProjectedOffset(
+  block: MarkdownBlock,
+  from: number,
+  within: number
+): number | null {
+  if (block.kind !== 'quote' && block.kind !== 'fencedDiv') {
+    return null;
+  }
+  if (!block.text.split('\n').some((line) => /^\s*>/.test(line))) {
+    return null;
+  }
+  const projected = projectQuoteSource(block.text);
+  const start = projected.projectedOffsets[from];
+  if (start === undefined) {
+    return null;
+  }
+  return projected.sourceOffsets[start + within] ?? null;
 }
 
 function closestBlockElement(node: Node): HTMLElement | null {

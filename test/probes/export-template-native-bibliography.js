@@ -111,7 +111,9 @@
       exists: await exists(target)
     });
     const tex = await readText(target);
-    const bibliography = await readText(`${targetFolder}/references.bib`);
+    const bibliographyPath = `${targetFolder}/references.bib`;
+    const bibliographyWritten = await until(() => exists(bibliographyPath));
+    const bibliography = bibliographyWritten ? await readText(bibliographyPath) : '';
     check(
       'the generated TeX keeps three metadata authors and native citations',
       tex.includes('\\documentclass[') &&
@@ -126,9 +128,11 @@
     );
     check(
       'the selected library is filtered to exactly the cited works',
-      ['penzias1965', 'dicke1965', 'mather1994', 'smoot1992', 'fixsen2009', 'planck2020'].every(
-        (key) => bibliography.includes(`{${key},`)
-      ) && !bibliography.includes('uncited2024'),
+      bibliographyWritten &&
+        ['penzias1965', 'dicke1965', 'mather1994', 'smoot1992', 'fixsen2009', 'planck2020'].every(
+          (key) => bibliography.includes(`{${key},`)
+        ) &&
+        !bibliography.includes('uncited2024'),
       bibliography
     );
     check(

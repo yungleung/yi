@@ -69,6 +69,36 @@ export function moveShownSource(edit: TextEdit): void {
 }
 
 /**
+ * Moves the shown range for a formatting edit that inserted or removed two
+ * markers at the edges of one raw range.
+ *
+ * A formatting command writes two disjoint insertions or deletions, while the
+ * range model stores one replacement. Its net length change is all the source
+ * range needs, so this keeps the complete block shown without manufacturing a
+ * replacement string as large as the selected text.
+ */
+export function moveShownSourceForFormatting(
+  from: number,
+  to: number,
+  delta: number
+): void {
+  if (!shownRange) {
+    return;
+  }
+  const move = (offset: number): number => {
+    if (offset <= from) {
+      return offset;
+    }
+    return offset >= to ? offset + delta : from;
+  };
+  const movedFrom = move(shownRange.from);
+  shownRange = {
+    from: movedFrom,
+    to: Math.max(movedFrom, move(shownRange.to))
+  };
+}
+
+/**
  * Whether an edit belongs strictly inside the source that is being shown.
  *
  * The caret at either edge still belongs to the revealable node, so its source stays open

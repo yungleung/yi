@@ -63,6 +63,13 @@ export function patchFormatDom(
   if (!block) {
     return false;
   }
+  // A quote or Div can omit its carriers and structural fences from the
+  // rendered tree. Its raw formatting range is still correct, but the local
+  // text tags are not a contiguous source map, so the document path must
+  // rebuild the block rather than moving a range through that view.
+  if (block.kind === 'quote' || block.kind === 'fencedDiv') {
+    return false;
+  }
   const blockElement = root.querySelector<HTMLElement>(
     `.markdown-block[data-${LINE_START}="${block.lineStart}"]`
   );
