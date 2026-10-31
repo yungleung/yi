@@ -24,16 +24,16 @@
  * sync — the DOM is a view of that arithmetic, never a second record of it.
  */
 
-import { createBlockComponent } from './create_block';
-import { type BlockNode, type MarkdownBlock } from './document/blocks';
+import type { MarkdownBlock } from './document/blocks';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, windowRange } from './viewport_window';
 import { CHAR_START, LINE_END, LINE_START, setOffset } from './offset_tags';
-import { withRenderContext, type RenderContext } from './render_context';
+import type { RenderContext } from './render_context';
 import { RendererBlockCache } from './renderer_block_cache';
 import { RendererMeasurements } from './renderer_measurements';
 import { RendererGeometry, type ScrollAnchor } from './renderer_geometry';
+import { RendererDom } from './renderer_dom';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:
@@ -57,6 +57,8 @@ export class VirtualBlockRenderer {
     mountedAt: (lineStart) => this.cache.mountedAt(lineStart),
     schedule: () => this.schedule()
   });
+  /** Root and block DOM construction plus renderer-owned reconciliation. */
+  private readonly dom: RendererDom;
   private readonly geometry: RendererGeometry;
   private range: { first: number; last: number } | null = null;
   private syncing = false;
@@ -67,6 +69,13 @@ export class VirtualBlockRenderer {
     private readonly scroller: HTMLElement,
     private readonly state: MarkdownEditorState
   ) {
+    this.dom = new RendererDom({
+      state: this.state,
+      cache: this.cache,
+      measurements: this.measurements,
+      keyOf: (block) => this.renderKey(block),
+      renderContext: () => this.renderContext
+    });
     this.geometry = new RendererGeometry({
       scroller: this.scroller,
       root: () => this.root,
@@ -116,7 +125,7 @@ export class VirtualBlockRenderer {
     this.cache.dropSpare();
     this.cache.clear(false);
     this.range = null;
-    const root = this.createRoot();
+    const root = this.dom.createRoot();
     // The renderer owns the root it drew, not the scroller's whole contents: the scroller is
     // the editor's, and holds things of its own — the system's input seam
     // (`editing/composition_input.ts`) sits in it and must survive a document opening or a
@@ -386,7 +395,7 @@ export class VirtualBlockRenderer {
         }
       }
 
-      this.reconcile(root, desired);
+      this.dom.reconcile(root, desired);
       this.range = { first, last };
       // The measuring waits for the frame (`schedule`), because it is 47 ms of the task the reader's
       // click runs in (measured), and because a block measured in the very task that inserted it
@@ -402,60 +411,8 @@ export class VirtualBlockRenderer {
     }
   }
 
-  /**
-   * Reorders/inserts only what changed: nodes already in the right position
-   * are left untouched, which keeps the caret's DOM anchors valid.
-   */
-  private reconcile(root: HTMLElement, desired: Node[]): void {
-    let cursor = root.firstChild;
-    for (const node of desired) {
-      if (node === cursor) {
-        cursor = cursor.nextSibling;
-        continue;
-      }
-      root.insertBefore(node, cursor);
-    }
-    const keep = new Set(desired);
-    while (cursor) {
-      const next = cursor.nextSibling;
-      // Only nodes this renderer created are removed: anything else living
-      // inside the prose root (the caret span, for instance) is left alone.
-      if (!keep.has(cursor) && isRendererOwned(cursor)) {
-        cursor.remove();
-      }
-      cursor = next;
-    }
-  }
-
-  private createRoot(): HTMLElement {
-    const root = document.createElement('div');
-    // The page carries its own line height (`styles.css: .prose.markdown-page`), scaled with
-    // the rest of its rhythm, so the fixed `leading-6` is not wanted here.
-    root.className = 'prose prose-slate prose-tight markdown-page outline-none';
-    root.tabIndex = 0;
-    return root;
-  }
-
   private createBlockElement(block: MarkdownBlock): HTMLElement {
-    const key = this.renderKey(block);
-    const spare = this.cache.takeSpare(key);
-    if (spare) {
-      // The same content, rendered before: reuse it instead of rebuilding.
-      this.measurements.setIntrinsicSize(spare, this.measurements.sizes.heightOf(block));
-      this.measurements.markPending(spare);
-      return spare;
-    }
-    const node: BlockNode = { ...block, type: 'block' };
-    const element = withRenderContext(this.renderContext, () =>
-      createBlockComponent(node, this.state.getBlockContent(block)).element
-    );
-    this.measurements.setIntrinsicSize(
-      element,
-      this.measurements.sizes.heightOf(block)
-    );
-    this.cache.markBuilt(element, key);
-    this.measurements.markPending(element);
-    return element;
+    return this.dom.createBlock(block);
   }
 
   /** The number of heavy elements retained for work just outside the window. */
@@ -468,12 +425,4 @@ export class VirtualBlockRenderer {
   private updateSpacers(): void {
     this.geometry.updateSpacers();
   }
-}
-
-/** Whether a node inside the prose root belongs to the renderer. */
-function isRendererOwned(node: Node): boolean {
-  if (!(node instanceof HTMLElement)) {
-    return false;
-  }
-  return node.classList.contains('markdown-block') || node.hasAttribute('data-virtual-spacer');
 }
