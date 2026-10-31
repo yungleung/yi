@@ -50,6 +50,7 @@ import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
 import { insertCommitted } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
+import { handleChoiceCardText } from './choice_card';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
 import {
   installCalloutKindPicker,
@@ -375,6 +376,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         }
         this.placeCaretForTheTextPath();
         if (insertCommitted(this.context, text)) {
+          handleChoiceCardText(text);
           this.completions.refresh();
         }
       },

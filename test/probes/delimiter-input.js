@@ -1,8 +1,8 @@
 /**
  * Colon fences wait for their delimiter space, while a code fence collects
- * its language in the opening line and filters the picker without moving the
- * caret out of that line. The first case edits the default document at the
- * blank line under its Code instructions.
+ * its language in the opening line and filters the picker from both keydown
+ * and input-method commits without moving the caret out of that line. The
+ * first case edits the default document under its Code instructions.
  *
  * @covers src/ui/markdown/editing/fence_open.ts,
  *   src/ui/markdown/editing/language_picker.ts,
@@ -39,6 +39,22 @@
       (row) => row.closest('.hidden') === null
     );
   const languageRows = () => visible('[data-language]');
+  const commitText = async (text) => {
+    const seam = document.querySelector('.markdown-composition-input');
+    if (!(seam instanceof HTMLTextAreaElement)) {
+      return false;
+    }
+    seam.value = text;
+    seam.dispatchEvent(
+      new InputEvent('input', {
+        data: text,
+        inputType: 'insertText',
+        bubbles: true
+      })
+    );
+    await t.sleep(220);
+    return true;
+  };
 
   const fixture = await t.raw();
   const instruction = [...t.prose().querySelectorAll('p')].find((paragraph) =>
@@ -125,6 +141,34 @@
     'typed language characters filter the choices and Enter stays on the opening line',
     await t.raw(),
     '```python-replX\n\n```\n\nhello world\n'
+  );
+
+  await emptyFirstLine();
+  await type(['`', '`', '`']);
+  check(
+    'a textarea commit filters the open language choices too',
+    {
+      committed: await commitText('py'),
+      rows: languageRows().map((row) => row.dataset.language)
+    },
+    {
+      committed: true,
+      rows: ['python', 'python-repl']
+    }
+  );
+  const committedSpace = await commitText(' ');
+  check(
+    'and a committed space closes them while staying in the opening line',
+    {
+      committed: committedSpace,
+      rows: languageRows().length,
+      raw: await t.raw()
+    },
+    {
+      committed: true,
+      rows: 0,
+      raw: '```py \n\n```\n\nhello world\n'
+    }
   );
 
   await emptyFirstLine();

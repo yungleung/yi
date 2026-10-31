@@ -145,9 +145,9 @@ quote and callout source, and accepting a row preserves the container;
 `callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
 container-aware opening markers/pickers on ordinary blank lines, and a space-triggered colon picker
 that stays beside a caret deep in the callout;
-`delimiter-input` — colon runs wait for a space, code-fence typing filters its language list, Space
-stays available for attributes, Escape keeps the opening line, and a nested Div choice edits the
-innermost fence;
+`delimiter-input` — colon runs wait for a space; keydown and input-method commits filter the code
+fence's language list; Space stays available for attributes; Escape keeps the opening line; and a
+nested Div choice edits the innermost fence;
 `format-containers` — bold applied inside quotes, GitHub callouts, fenced-Div callouts and generic
 Div source wraps only the selected text and preserves every source line;
 `completion-immediate` — all three marker-triggered completion kinds open from key input and from

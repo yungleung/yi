@@ -4,10 +4,11 @@
  * Language and Div-kind pickers differ only in the values they offer and the
  * attribute their probes read. This module owns their shared selection state:
  * one active choice card, Arrow Up/Down movement wrapped through the rows,
- * Home/End, and Enter or Space to choose. A filtering card writes printable
- * keys through to the source, narrows its rows by that query, and leaves a
- * space to the source so a code fence can name attributes after its language.
- * The card never takes focus, so the caret stays in the document under it.
+ * Home/End, and Enter or Space to choose. A filtering card narrows its rows by
+ * both keydown characters and text committed through the input seam, and
+ * leaves a space to the source so a code fence can name attributes after its
+ * language. The card never takes focus, so the caret stays in the document
+ * under it.
  *
  * May import: the beside-card and its placement types. Upholds: one open choice
  * card at a time, and its highlighted row is the row a key will choose.
@@ -31,6 +32,11 @@ let active: ChoiceCard | null = null;
 /** Lets the editor's key path offer a key to the open choice card first. */
 export function handleChoiceCardKey(event: KeyboardEvent): boolean {
   return active?.handleKey(event) ?? false;
+}
+
+/** Lets text committed by an input method participate in an open filter. */
+export function handleChoiceCardText(text: string): void {
+  active?.handleText(text);
 }
 
 export class ChoiceCard {
@@ -190,6 +196,19 @@ export class ChoiceCard {
     const choose = this.choose;
     this.close();
     choose?.(value);
+  }
+
+  /** Applies text that reached the document through the input seam rather than keydown. */
+  handleText(text: string): void {
+    if (!this.card.isOpen() || !this.typeToFilter || text === '') {
+      return;
+    }
+    if (/\s/u.test(text)) {
+      this.close();
+      return;
+    }
+    this.filter(`${this.query}${text}`);
+    this.draw();
   }
 
   /** Offers a key to this open card; false leaves it to the editor. */
