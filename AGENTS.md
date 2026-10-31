@@ -34,6 +34,24 @@ brief — read it first; this file is the short version and the non-negotiables.
 
 - Keep the layers honest: no DOM in the syntax modules, no reaching upwards.
 - One fact has one home; if you find the same rule twice, merge it and say so.
+- Apply SOLID boundaries and established design patterns when they clarify ownership or remove real
+  duplication. Do not add a pattern, wrapper, or abstraction only for ceremony.
+- Design for change: a module should have one reason to change, expose the smallest stable interface
+  its consumers need, and depend on a named port rather than reaching across feature boundaries.
+- Prefer composition and explicit dependencies over inheritance, hidden globals, mode flags, and
+  cross-feature imports. Small focused modules are better than large files with several jobs.
+- Keep commands, events, and state distinct. Commands are typed requests for work; events are typed
+  facts emitted after authoritative state changes; the state owner remains the source of truth.
+- New UI, built-in-AI, and MCP actions must use the same command contract. Do not add a second
+  editing API. Normal typing and IME input stay on the synchronous text path, and same-window facts
+  do not make an unnecessary round trip through Tauri.
+- Design a new feature by naming its state owner, command inputs and results, emitted facts,
+  permissions, failure modes, and tests before implementing it. Avoid speculative generic layers.
+- Refactorings preserve behaviour unless the task explicitly asks for a behaviour change. Prove
+  the boundary with a focused test first, then run the affected app probes.
+- New module headers and non-obvious contracts include a compact human-readable example when an
+  example explains the problem, input, or failure better than the type alone. Do not write comments
+  that merely restate code.
 - Every module header says what the file is for, what it may import, and the
   invariant it upholds — `docs/writing-comments.md` has the shape, and
   `test/checks/headers.mjs` fails without it.
@@ -41,6 +59,11 @@ brief — read it first; this file is the short version and the non-negotiables.
   those four offset flavours are where the bugs live.
 - Prefer a small, well-named module over a large one; if a unit needs a paragraph to
   explain itself, it is doing too much.
+
+The approved command/event architecture and its phased migration are described in
+`docs/superpowers/specs/2026-10-31-human-maintainable-command-event-architecture-design.md`.
+Until each phase lands, follow that contract for new code and do not create a parallel registry,
+event vocabulary, or editing API.
 
 ## Working style
 

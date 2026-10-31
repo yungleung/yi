@@ -1112,6 +1112,30 @@ decision was taken on.
 5. One fact about markdown syntax has one home.
 6. A syntax module never imports the DOM.
 
+The design rules for new code extend the invariants above:
+
+7. Commands are typed requests; events are typed facts emitted after an authoritative state change.
+   State owners remain the source of truth, and events never become a second copy of that state.
+8. A UI trigger, built-in agent, MCP client, menu, and test use the same command catalogue and
+   dispatcher. They differ by origin and authority, not by a second implementation of the action.
+9. Ordinary typing and IME input stay synchronous. Local same-window facts use the typed local event
+   path; Tauri transport is for facts or triggers that genuinely cross a window or process boundary.
+10. A module has one clear reason to change. Prefer small stable interfaces, dependency inversion,
+    composition, and named adapters over hidden globals, cross-feature reaches, inheritance for code
+    reuse, or flags that make one base class behave as several classes.
+11. Abstract only a rule that is genuinely shared. A design pattern belongs where it names real
+    ownership or removes real duplication; it is not a requirement to add ceremony.
+12. A refactor preserves behaviour unless change is requested. Its focused test must fail without
+    the new boundary, and interface changes must include the affected app probes.
+13. When a human-readable example clarifies a command, event, or non-obvious rule, put it beside the
+    contract. Show the real problem or failure it prevents rather than paraphrasing the code.
+
+The approved target architecture, including typed command results, origin-based authority,
+document revisions, stale-agent-edit rejection, event correlation, and the phased migration, is
+`docs/superpowers/specs/2026-10-31-human-maintainable-command-event-architecture-design.md`.
+New work follows that direction while the migration is in progress; it must not introduce a second
+command registry, event vocabulary, or editing API.
+
 ## The four offsets (learn these first)
 
 `document` (index into the raw markdown) → `block-relative` (minus

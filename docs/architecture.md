@@ -24,6 +24,29 @@ layers, the invariants that hold them together, and where a change belongs.
   always has, and the one a fenced block takes while the caret is in it — its own
   text, delimiters included (`source_mode.ts`, `nodes/fence_text.ts`).
 
+## Commands, events and state
+
+New code follows an explicit command/event direction while the existing modules are migrated:
+
+- **A command is a typed request.** Keyboard shortcuts, toolbar buttons, native menus, the built-in
+  agent, MCP clients, and tests are origins of the same command. They do not each own an editing
+  implementation.
+- **An event is a typed fact.** It says what has already changed, such as `document_changed` or
+  `document_session_changed`. A listener may update a view or invalidate a cache; an event is not a
+  request to mutate the document.
+- **The state owner is authoritative.** The document owns its text and revision; the session owns
+  open documents and stack state. Events announce those owners' decisions and never replace them.
+- **Input remains synchronous.** Typing and IME composition use the direct local editor path. They
+  do not cross Tauri's asynchronous event boundary. Tauri remains the transport for facts or menu
+  triggers that genuinely cross a window or process boundary.
+- **Authority is explicit.** A command declares its effect and checks the origin and current state.
+  A read-only document or limited MCP connection cannot bypass the editing rules by selecting a
+  different trigger.
+
+The precise contracts, future agent/MCP adapters, module splits, and phased migration are in
+`docs/superpowers/specs/2026-10-31-human-maintainable-command-event-architecture-design.md`.
+This section is the design rule; that specification is the implementation design.
+
 ## Layers and import rules
 
 | Layer | Files | May import |
