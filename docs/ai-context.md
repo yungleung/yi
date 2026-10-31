@@ -450,6 +450,9 @@ so a `[[…]]` in a fence or in code, and an image inside one, stay exactly as w
 scratch note (written under its data folder, because pandoc reads files) is deleted whether pandoc
 succeeded or not — and pandoc's own warnings are **kept** (`ExportOutcome.warnings`) and shown to the
 reader as a message, so a document missing a piece says why instead of leaving a hole.
+The pre-process delegates image resolution to `ui/export/image_rewrites.ts`, listing output to
+`ui/export/listing_markdown.ts`, and shared Markdown escaping to
+`ui/export/markdown_escaping.ts`.
 
 The same pre-process lowers listings: HTML/EPUB/DOCX/ODT get one identified `.listing` Div with a
 visible `.listing-caption` paragraph, processed Markdown gets an HTML figure, and LaTeX/PDF keep
