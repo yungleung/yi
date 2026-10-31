@@ -1,6 +1,6 @@
 # Document Revision and Agent-Safe Edit Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Give future agents a typed way to inspect the current document position and apply a range edit only when their plan is against the current document revision.
 
@@ -35,7 +35,7 @@
   - `MarkdownEditorState.getDocumentKey(): string`
   - `MarkdownEditorState.getRevision(): number`
 
-- [ ] **Step 1: Write the failing check**
+- [x] **Step 1: Write the failing check**
 
 Create `test/checks/check-document-revision.mjs` by bundling `state.ts` and asserting:
 
@@ -56,7 +56,7 @@ check('loading a document starts a new revision series', state.getRevision(), 0)
 check('and creates a different document key', state.getDocumentKey() !== firstKey, true);
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 ```bash
 node test/checks/check-document-revision.mjs
@@ -64,7 +64,7 @@ node test/checks/check-document-revision.mjs
 
 Expected: FAIL because the revision/key methods do not exist.
 
-- [ ] **Step 3: Implement the counter**
+- [x] **Step 3: Implement the counter**
 
 In `MarkdownEditorState`:
 
@@ -74,7 +74,7 @@ In `MarkdownEditorState`:
 - in `loadText`, assign a new key and reset revision to zero after `updateText`;
 - expose getters with comments showing a concrete revision sequence.
 
-- [ ] **Step 4: Verify GREEN and commit**
+- [x] **Step 4: Verify GREEN and commit**
 
 ```bash
 node test/checks/check-document-revision.mjs
@@ -104,7 +104,7 @@ git commit -m "refactor(document): track revision and document identity"
   - `CommandExecutionError` with `code: 'stale' | 'invalid-input' | 'forbidden' | 'cancelled' | 'failed'`
   - `applyEdit(...): boolean`
 
-- [ ] **Step 1: Extend contract checks first**
+- [x] **Step 1: Extend contract checks first**
 
 Add cases proving:
 
@@ -158,7 +158,7 @@ node test/checks/check-command-dispatch.mjs
 
 Expected: FAIL for the missing command ids/error type.
 
-- [ ] **Step 2: Add shared inputs and parsers**
+- [x] **Step 2: Add shared inputs and parsers**
 
 Add the two command ids to `CommandContracts`:
 
@@ -179,7 +179,7 @@ Its parser requires:
 - `from <= to`;
 - string replacement.
 
-- [ ] **Step 3: Add typed execution failure**
+- [x] **Step 3: Add typed execution failure**
 
 In `dispatch.ts`, add:
 
@@ -198,12 +198,12 @@ export class CommandExecutionError extends Error {
 Add `stale` to `CommandFailureCode`. In the dispatcher's catch, map a
 `CommandExecutionError.code` into the failure result; other errors remain `failed`.
 
-- [ ] **Step 4: Make the edit funnel report refusal**
+- [x] **Step 4: Make the edit funnel report refusal**
 
 Change `applyEdit` to return `boolean`: false when the frontmatter id pin refuses the edit, true
 after either the fast or rebuilt path succeeds. Existing callers may ignore the return.
 
-- [ ] **Step 5: Register document commands**
+- [x] **Step 5: Register document commands**
 
 In `editor_commands.ts`:
 
@@ -254,7 +254,7 @@ An agent plans against document-7@42. A person types first, moving it to
 document-7@43; the agent's command returns stale and the new text remains.
 ```
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 ```bash
 node test/checks/check-command-contracts.mjs
@@ -281,7 +281,7 @@ git commit -m "feat(commands): add revision-checked range edits"
 - Consumes: `/src/commands/runtime.ts`.
 - Produces: a real app proof that stale edits change nothing and a matching edit changes one range.
 
-- [ ] **Step 1: Write the probe**
+- [x] **Step 1: Write the probe**
 
 The probe:
 
@@ -296,7 +296,7 @@ The probe:
 Use origin `{ kind: 'toolbar' }` for this probe; unconfigured agent/MCP origins remain denied by the
 authority policy until an adapter grants explicit capability.
 
-- [ ] **Step 2: Run the app proof**
+- [x] **Step 2: Run the app proof**
 
 ```bash
 npm run probe -- test/probes/agent-range-edit.js
@@ -305,7 +305,7 @@ npm run probe -- test/probes/agent-range-edit.js
 Expected: `failed: []`; the stale retry reports `stale`, and the document contains exactly the
 successful replacements.
 
-- [ ] **Step 3: Document the contract**
+- [x] **Step 3: Document the contract**
 
 Explain in the architecture and command recipe:
 
@@ -315,7 +315,7 @@ Explain in the architecture and command recipe:
 - successful results include the new position;
 - normal human editing still supplies no revision because it acts on the live caret.
 
-- [ ] **Step 4: Final verification and commit**
+- [x] **Step 4: Final verification and commit**
 
 ```bash
 npx tsc --noEmit

@@ -1132,6 +1132,9 @@ The design rules for new code extend the invariants above:
     purpose or contract better than prose. Show an input and result, a before-and-after state, or
     the failure it prevents; do not stop at restating the goal. Trivial getters and obvious
     one-line helpers do not need a ceremonial example.
+14. External document edits must read `document:getRevision` and send its document key and revision
+    to `document:replaceRange`. A mismatch is `stale` and changes nothing; an agent must re-read and
+    replan rather than guess offsets against newer text.
 
 The approved target architecture, including typed command results, origin-based authority,
 document revisions, stale-agent-edit rejection, event correlation, and the phased migration, is

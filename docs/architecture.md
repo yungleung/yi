@@ -54,6 +54,11 @@ events are inbound; editor, session, workspace and notification facts are local.
 runs before `eventManager.emit` resolves, and every delivery carries an event id and optional
 correlation id.
 
+The document state also owns a key and monotonic revision. `document:getRevision` returns both, and
+`document:replaceRange` accepts both before a raw-text replacement. A key or revision mismatch
+returns `stale` without changing text. Successful range edits use the same `applyEdit` funnel as a
+human command, so rendering, history, caret and scroll behavior do not fork for agents.
+
 ## Layers and import rules
 
 | Layer | Files | May import |

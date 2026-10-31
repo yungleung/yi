@@ -131,6 +131,11 @@ Normal typing, Enter, Backspace, Tab and arrow movement remain the synchronous
 text path. Do not simulate a keystroke to give an agent an editing capability;
 give it a semantic command such as a range replacement or formatting command.
 
+For an external document edit, read `document:getRevision` first. Send its
+`documentKey` and `revision` with `document:replaceRange`. If a person edits
+between the read and the write, the command returns `stale` and changes nothing.
+The caller must read the new position and plan again.
+
 ## 6. Prove the command
 
 Run:
