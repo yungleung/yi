@@ -30,7 +30,7 @@ shape (the tree, the class families, and which convention each check enforces).
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
-through the app's own file commands (`src-tauri/src/files.rs`, wrapped in `src/api/files.ts`)
+through the app's own file commands (`src-tauri/src/files/`, wrapped in `src/api/files.ts`)
 and it re-reads the disk after a change instead of patching its own rows. What a row may be
 offered is a pure model (`src/ui/workspace/tree_menu_model.ts`), what a rename selects and
 which drops are allowed are pure rules (`src/ui/workspace/tree_rules.ts`), and a row's name
@@ -195,7 +195,7 @@ directory outside the folder), the decision is pure (`services/versioning.ts: ve
 `consentFrom` and the config's `versioning`/`versioning_workspace` — an answer given for another
 folder is *no answer*), and the doing asks the plan's own question first (`versioning_dialog.ts`,
 the two hands `ui/prompt.ts` has), refuses a note with no file in one sentence, captures the
-editor's text and writes it atomically (`files.rs: write_atomically` — temp file plus rename, the
+editor's text and writes it atomically (`files/atomic.rs: write_atomically` — temp file plus rename, the
 shape the session's own write uses too, so a cloud or git client reading mid-save never sees half a
 note), and commits **only** the file it wrote: `git add -- <path>` then `git commit -m <message> --
 <path>`. A repository the reader already has is used as it stands and never nested into; a folder a

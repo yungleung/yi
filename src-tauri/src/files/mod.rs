@@ -1,110 +1,20 @@
+//! Workspace file commands: listing, entry mutations, names and atomic writes.
+//!
+//! Example: renaming `draft.md` to `Notes` creates `Notes.md` in the same
+//! folder, while moving a folder into itself is refused before touching disk.
+//!
+//! May import: the focused file submodules and std filesystem. Upholds: the
+//! frontend sees one stable command facade while each file rule has one home.
+
+pub(crate) mod atomic;
+pub(crate) mod listing;
+mod names;
+
+pub use atomic::{write_atomically, write_bytes_atomically};
+
+use names::entry_name;
 use std::fs;
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
-pub struct FileInfo {
-    pub path: String,
-    pub basename: String,
-    pub is_file: bool,
-}
-
-#[tauri::command]
-pub fn list_folder_files(folder_path: String) -> Result<Vec<FileInfo>, String> {
-    let folder = PathBuf::from(folder_path);
-
-    if !folder.exists() {
-        return Err(crate::i18n::now("files.folderMissing", &[("path", &folder.display().to_string())]));
-    }
-
-    if !folder.is_dir() {
-        return Err(crate::i18n::now("files.notADirectory", &[("path", &folder.display().to_string())]));
-    }
-
-    let mut entries = fs::read_dir(&folder)
-        .map_err(|err| crate::i18n::now("files.readFailed", &[("path", &folder.display().to_string()), ("reason", &err.to_string())]))?
-        .filter_map(|entry| {
-            entry.ok().and_then(|entry| {
-                let path = entry.path();
-                let basename = entry.file_name().to_string_lossy().into_owned();
-
-                if basename.starts_with('.') {
-                    return None;
-                }
-
-                if path.is_dir() {
-                    return Some(FileInfo {
-                        path: path.to_string_lossy().into_owned(),
-                        basename,
-                        is_file: false,
-                    });
-                }
-
-                let is_markdown = path
-                    .extension()
-                    .and_then(|ext| ext.to_str())
-                    .is_some_and(|ext| matches!(ext.to_ascii_lowercase().as_str(), "md" | "markdown" | "mdx"));
-
-                if is_markdown {
-                    Some(FileInfo {
-                        path: path.to_string_lossy().into_owned(),
-                        basename,
-                        is_file: true,
-                    })
-                } else {
-                    None
-                }
-            })
-        })
-        .collect::<Vec<_>>();
-
-    entries.sort_by(|left, right| left.basename.cmp(&right.basename));
-
-    Ok(entries)
-}
-
-/// The extensions the tree shows, and the one a new file is written with.
-const MARKDOWN_EXTENSIONS: [&str; 3] = ["md", "markdown", "mdx"];
-const NEW_FILE_EXTENSION: &str = "md";
-
-/// Whether a name is one the tree can show at all.
-fn is_markdown(name: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| MARKDOWN_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()))
-}
-
-/// The name to use for a new entry, or a reason it cannot be one.
-///
-/// The rules are the tree's own: it lists one folder's markdown files, so a name with a
-/// path separator in it would escape that folder, a hidden name would vanish from the
-/// listing, and a file without a markdown extension would too. A file named without an
-/// extension at all gets `.md`, which is what the author meant.
-fn entry_name(name: &str, is_file: bool) -> Result<String, String> {
-    let trimmed = name.trim();
-    if trimmed.is_empty() {
-        return Err(crate::i18n::now("files.nameEmpty", &[]));
-    }
-    if trimmed.contains(['/', '\\']) {
-        return Err(crate::i18n::now("files.nameSeparator", &[]));
-    }
-    if trimmed.starts_with('.') {
-        return Err(crate::i18n::now("files.nameHidden", &[]));
-    }
-    if !is_file {
-        return Ok(trimmed.to_string());
-    }
-    if Path::new(trimmed).extension().is_none() {
-        return Ok(format!("{trimmed}.{NEW_FILE_EXTENSION}"));
-    }
-    if !is_markdown(trimmed) {
-        return Err(crate::i18n::now(
-            "files.markdownOnly",
-            &[("extension", NEW_FILE_EXTENSION)],
-        ));
-    }
-    Ok(trimmed.to_string())
-}
 
 /// Whether two paths name the same entry on disk (so a rename may pick either spelling).
 fn is_same_entry(left: &Path, right: &Path) -> bool {
@@ -132,13 +42,15 @@ pub fn rename_entry(path: String, name: String) -> Result<String, String> {
         .to_path_buf();
     let name = entry_name(&name, source.is_file())?;
     let target = parent.join(&name);
-    // A name already taken is a clash — unless it is this very entry under another
-    // spelling, which is how a rename fixes capitalisation on a case-insensitive disk.
     if target.exists() && !is_same_entry(&source, &target) {
         return Err(crate::i18n::now("files.alreadyThere", &[("name", &name)]));
     }
-    fs::rename(&source, &target)
-        .map_err(|err| crate::i18n::now("files.renameFailed", &[("path", &as_path(&source)), ("reason", &err.to_string())]))?;
+    fs::rename(&source, &target).map_err(|err| {
+        crate::i18n::now(
+            "files.renameFailed",
+            &[("path", &as_path(&source)), ("reason", &err.to_string())],
+        )
+    })?;
     Ok(as_path(&target))
 }
 
@@ -155,9 +67,19 @@ pub fn create_entry(parent: String, name: String, is_file: bool) -> Result<Strin
         return Err(crate::i18n::now("files.alreadyThere", &[("name", &name)]));
     }
     let created = if is_file {
-        fs::write(&target, "").map_err(|err| crate::i18n::now("files.createFailed", &[("name", &name), ("reason", &err.to_string())]))
+        fs::write(&target, "").map_err(|err| {
+            crate::i18n::now(
+                "files.createFailed",
+                &[("name", &name), ("reason", &err.to_string())],
+            )
+        })
     } else {
-        fs::create_dir(&target).map_err(|err| crate::i18n::now("files.createFailed", &[("name", &name), ("reason", &err.to_string())]))
+        fs::create_dir(&target).map_err(|err| {
+            crate::i18n::now(
+                "files.createFailed",
+                &[("name", &name), ("reason", &err.to_string())],
+            )
+        })
     };
     created?;
     Ok(as_path(&target))
@@ -175,7 +97,12 @@ pub fn delete_entry(path: String) -> Result<(), String> {
     } else {
         fs::remove_file(&target)
     };
-    removed.map_err(|err| crate::i18n::now("files.deleteFailed", &[("path", &as_path(&target)), ("reason", &err.to_string())]))
+    removed.map_err(|err| {
+        crate::i18n::now(
+            "files.deleteFailed",
+            &[("path", &as_path(&target)), ("reason", &err.to_string())],
+        )
+    })
 }
 
 /// Moves an entry into another folder, keeping its name, and answers its new path.
@@ -187,14 +114,15 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
     }
     let folder = PathBuf::from(&target_dir);
     if !folder.is_dir() {
-        return Err(crate::i18n::now("files.notAFolder", &[("path", &target_dir)]));
+        return Err(crate::i18n::now(
+            "files.notAFolder",
+            &[("path", &target_dir)],
+        ));
     }
     let name = source
         .file_name()
         .ok_or_else(|| crate::i18n::now("files.noName", &[("path", &path)]))?;
     let target = folder.join(name);
-    // Dropped where it already is — onto its own folder, or onto the folder it lives in:
-    // nothing to do, and saying so is better than a rename that would only touch the disk.
     if target == source || is_same_entry(&source, &target) || is_same_entry(&source, &folder) {
         return Ok(as_path(&source));
     }
@@ -204,8 +132,6 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
             &[("name", &name.to_string_lossy())],
         ));
     }
-    // A folder cannot be moved inside itself: that would take it off the tree and leave
-    // its children unreachable.
     if source.is_dir() {
         let inside = fs::canonicalize(&folder)
             .ok()
@@ -215,58 +141,24 @@ pub fn move_entry(path: String, target_dir: String) -> Result<String, String> {
             return Err(crate::i18n::now("files.intoItself", &[]));
         }
     }
-    fs::rename(&source, &target)
-        .map_err(|err| crate::i18n::now("files.moveFailed", &[("path", &as_path(&source)), ("reason", &err.to_string())]))?;
-    Ok(as_path(&target))
-}
-
-/// Writes a file's text in one step: the text goes to a temporary file beside it, and that
-/// temporary file is renamed over the target.
-///
-/// A reader of the file — a cloud client syncing it, a git client committing it, the app opening
-/// it — never sees half a document, and a crash mid-write leaves the file that was already there.
-/// The temporary is a *sibling* on purpose: a rename across volumes copies rather than moves, which
-/// is the very half-written window this closes.
-pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
-    write_bytes_atomically(path, contents.as_bytes())
-}
-
-/// Writes bytes through the same sibling-temporary rename as [`write_atomically`].
-pub fn write_bytes_atomically(path: &Path, contents: &[u8]) -> std::io::Result<()> {
-    use std::io::Write;
-
-    let mut temporary = path.as_os_str().to_os_string();
-    temporary.push(".tmp");
-    let temporary = PathBuf::from(temporary);
-    {
-        let mut file = fs::File::create(&temporary)?;
-        file.write_all(contents)?;
-        file.sync_all()?;
-    }
-    fs::rename(&temporary, path)
-}
-
-/// Saves a document's text. The session and the new-note flow write through this rather than the
-/// file plugin's truncate-and-write, so a save is never half a file for anything else to read.
-#[tauri::command]
-pub fn write_text_atomically(path: String, contents: String) -> Result<(), String> {
-    write_atomically(Path::new(&path), &contents).map_err(|error| {
+    fs::rename(&source, &target).map_err(|err| {
         crate::i18n::now(
-            "files.writeFailed",
-            &[("path", &path), ("reason", &error.to_string())],
+            "files.moveFailed",
+            &[("path", &as_path(&source)), ("reason", &err.to_string())],
         )
-    })
+    })?;
+    Ok(as_path(&target))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::files::atomic::write_text_atomically;
+    use crate::files::listing::list_folder_files;
     use std::fs;
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    /// A folder of its own for one test. The clock alone is not enough: two tests
-    /// starting in the same nanosecond would share a folder and then share its files.
     static NEXT_DIRECTORY: AtomicU32 = AtomicU32::new(0);
 
     fn create_temp_dir() -> PathBuf {
@@ -361,7 +253,6 @@ mod tests {
 
         assert_eq!(fs::read_to_string(&note).unwrap(), "the second text");
         assert!(!dir.join("note.md.tmp").exists(), "the temporary is gone");
-        // Nothing there to replace yet: the same write makes the file.
         let fresh = dir.join("fresh.md");
         write_text_atomically(as_path(&fresh), "new".into()).unwrap();
         assert_eq!(fs::read_to_string(&fresh).unwrap(), "new");
@@ -380,7 +271,10 @@ mod tests {
 
         assert!(!dir.join("loose.md").exists());
         assert!(!folder.exists());
-        assert!(delete_entry(as_path(&folder)).is_err(), "deleting nothing is an error");
+        assert!(
+            delete_entry(as_path(&folder)).is_err(),
+            "deleting nothing is an error"
+        );
     }
 
     #[test]
@@ -410,15 +304,12 @@ mod tests {
         fs::write(folder.join("note.md"), "hi").unwrap();
         fs::write(inner.join("note.md"), "hi").unwrap();
 
-        // Where it already is: not a move at all.
         assert_eq!(
             move_entry(as_path(&folder.join("note.md")), as_path(&folder)).unwrap(),
             as_path(&folder.join("note.md"))
         );
-        // Inside itself, and inside its own subtree.
         assert!(move_entry(as_path(&folder), as_path(&folder)).is_ok());
         assert!(move_entry(as_path(&folder), as_path(&inner)).is_err());
-        // Where that name is taken.
         assert!(move_entry(as_path(&inner.join("note.md")), as_path(&folder)).is_err());
 
         assert!(folder.join("note.md").exists());

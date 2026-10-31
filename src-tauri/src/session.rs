@@ -5,7 +5,7 @@
 //! it wants kept and discards a file it cannot read. So there is no shape to parse here, and
 //! nothing to migrate: one reader of the format, in one place.
 //!
-//! The write is atomic — `files.rs` holds the one shape for it — because a session is the reader's
+//! The write is atomic — `files/atomic.rs` holds the one shape for it — because a session is the reader's
 //! work in progress, and a half-written one is worth nothing to anybody.
 
 use std::{fs, path::Path, path::PathBuf};
