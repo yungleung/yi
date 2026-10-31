@@ -16,18 +16,21 @@ use std::path::PathBuf;
 use super::manifest::TemplateManifest;
 
 mod alias;
+mod details;
 mod editor;
 mod import;
+mod inspect;
 mod library;
+mod options;
 mod storage;
 
 pub(crate) use alias::{alias_names, stage_alias};
+pub use details::update_details;
 pub use editor::{
     read_package_file as read_template_file, write_package_file as write_template_file,
 };
-pub use import::{
-    create_default, import_template, inspect_template, update_details, wrapper_preview,
-};
+pub use import::{create_default, import_template};
+pub use inspect::{inspect_template, wrapper_preview};
 pub(crate) use library::resolve_package;
 pub use library::{duplicate_template, list_templates, remove_template};
 #[cfg(test)]

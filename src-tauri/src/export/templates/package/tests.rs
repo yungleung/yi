@@ -50,20 +50,14 @@ fn a_package_file_list_says_which_files_are_editable() {
     fs::write(folder.join("main.tex"), "$body$").unwrap();
     fs::write(folder.join("reference.docx"), b"PK").unwrap();
     let files = package_files(&folder);
-    assert!(
-        files
-            .iter()
-            .any(|file| file.name == "main.tex" && file.editable)
-    );
-    assert!(
-        files
-            .iter()
-            .any(|file| file.name == "template.json" && !file.editable)
-    );
-    assert!(
-        files
-            .iter()
-            .any(|file| file.name == "reference.docx" && !file.editable)
-    );
+    assert!(files
+        .iter()
+        .any(|file| file.name == "main.tex" && file.editable));
+    assert!(files
+        .iter()
+        .any(|file| file.name == "template.json" && !file.editable));
+    assert!(files
+        .iter()
+        .any(|file| file.name == "reference.docx" && !file.editable));
     let _ = fs::remove_dir_all(folder);
 }

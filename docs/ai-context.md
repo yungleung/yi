@@ -521,7 +521,10 @@ scan/archive.rs       ZIP safety and extraction
 scan/detection.rs     entry, kind and mode detection
 scan/source.rs        file/folder listing, limits and copies
 scan/wrapper.rs       complete-document conversion
-package/import.rs     creation, import and details mutation
+package/import.rs     staged creation, import and Pandoc-default factories
+package/inspect.rs    source inspection and wrapper preview
+package/details.rs    manifest, entry and mode updates
+package/options.rs    optional provenance normalization
 package/library.rs    discovery, summaries and resolution
 package/editor.rs     code-panel file access
 package/alias.rs      export-time alias staging

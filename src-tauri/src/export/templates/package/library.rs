@@ -3,10 +3,10 @@
 //! May import: std, tauri, manifest rules and storage helpers. Upholds: package ids resolve only
 //! below the app export template directory and broken packages remain listable for removal.
 
-use super::TemplateSummary;
 use super::storage::{copy_directory, package_files, package_path};
+use super::TemplateSummary;
 use crate::export::templates::manifest::{
-    TemplateManifest, TemplateOrigin, read_manifest, today, unique_id, write_manifest,
+    read_manifest, today, unique_id, write_manifest, TemplateManifest, TemplateOrigin,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
