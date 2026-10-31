@@ -70,6 +70,7 @@ export class TemplateLibraryDialog extends QuestionCard<TemplateChoice | null> {
     this.pandoc = pandoc;
     this.selected = selected;
     this.heading.textContent = t('template.libraryTitle', { kind: kindLabel(info.kind) });
+    this.browser.resetTransient();
     this.packages = await exportTemplates();
     if (
       this.selected !== null &&

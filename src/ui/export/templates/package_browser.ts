@@ -164,11 +164,21 @@ export class TemplatePackageBrowser extends BaseComponent {
   }
 
   update(state: PackageBrowserState): void {
+    const kindChanged = this.state !== null && this.state.info.kind !== state.info.kind;
     this.state = {
       ...state,
       inspectedId: this.validInspectedId(state)
     };
+    if (kindChanged) {
+      this.resetTransient();
+    }
     this.render();
+  }
+
+  /** Clears state that belongs to one opening or one manager kind, never to the packages. */
+  resetTransient(): void {
+    this.path.value = '';
+    this.status.textContent = '';
   }
 
   inspectedId(): string | null {
@@ -203,7 +213,10 @@ export class TemplatePackageBrowser extends BaseComponent {
     if (state === null) {
       return;
     }
-    this.list.replaceChildren(this.defaultRow(), ...this.offered().map((summary) => this.packageRow(summary)));
+    this.list.replaceChildren(
+      this.defaultRow(),
+      ...this.offered().map((summary) => this.packageRow(summary))
+    );
     this.primary.textContent = state.primaryLabel;
     const actions = packageActionAvailability(state.info, state.pandoc, this.selected());
     const selected = this.selected();
@@ -373,7 +386,8 @@ export class TemplatePackageBrowser extends BaseComponent {
     }
     const packages = await exportTemplates();
     const stillThere =
-      keepId !== null && this.offered({ ...this.state, packages }).some((summary) => summary.id === keepId);
+      keepId !== null &&
+      this.offered({ ...this.state, packages }).some((summary) => summary.id === keepId);
     this.handlers.changed(packages, stillThere ? keepId : null);
   }
 

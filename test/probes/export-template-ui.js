@@ -80,6 +80,23 @@
           ?.textContent
       }
     );
+    document.querySelector('[data-template-inspect-path]').click();
+    await sleep(80);
+    document.querySelector('[data-template-import-path]').value =
+      `${checkout}test/fixtures/templates/html-marker`;
+    document.querySelector('[data-template-cancel]').click();
+    await sleep(120);
+    document.querySelector('[data-export-choose-template]').click();
+    check(
+      'reopening the chooser clears the previous import path and status',
+      (await until(() => visible('[data-template-library]'))) &&
+        document.querySelector('[data-template-import-path]')?.value === '' &&
+        document.querySelector('[data-template-library-status]')?.textContent === '',
+      {
+        path: document.querySelector('[data-template-import-path]')?.value ?? null,
+        status: document.querySelector('[data-template-library-status]')?.textContent ?? null
+      }
+    );
     document.querySelector('[data-template-import-path]').value = `${checkout}test/fixtures/templates/html-marker`;
     document.querySelector('[data-template-inspect-path]').click();
     check(
