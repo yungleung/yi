@@ -109,6 +109,11 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
         .text("version_save", t(language, "menu.file.saveVersion", &[]))
         .separator()
         .item(&export_submenu(app, language)?)
+        .item(
+            &MenuItemBuilder::new(t(language, "menu.file.manageExportTemplates", &[]))
+                .id("manage_export_templates")
+                .build(app)?,
+        )
         .separator()
         .close_window_with_text(t(language, "menu.window.close", &[]))
         .build()?;
@@ -262,6 +267,9 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
             "version_save" => {
                 app_handle.emit("version_save", ()).unwrap();
             }
+            "manage_export_templates" => {
+                app_handle.emit("manage_export_templates", ()).unwrap();
+            }
             "undo" => {
                 app_handle.emit("undo", ()).unwrap();
             }
@@ -335,7 +343,13 @@ mod tests {
             );
         }
         // And the ids of the items beside them are not read as kinds — the menu is full of those.
-        for other in ["save", "version_save", "export", "settings"] {
+        for other in [
+            "save",
+            "version_save",
+            "manage_export_templates",
+            "export",
+            "settings",
+        ] {
             assert_eq!(kind_of_export_item(other), None, "{other}");
         }
     }

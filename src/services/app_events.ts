@@ -61,6 +61,7 @@ export interface AppEvents {
   save: null;
   save_as: null;
   version_save: null;
+  manage_export_templates: null;
   undo: null;
   redo: null;
   cut: null;

@@ -211,10 +211,14 @@ export class TemplateEditorPanel {
   }
 
   /** Shows one kind's defaults YAML: not a package, and never written anywhere but where it lives. */
-  async openDefaults(kind: string, label: string): Promise<void> {
+  async openDefaults(
+    kind: string,
+    label: string,
+    onClose: (() => void) | null = null
+  ): Promise<void> {
     this.summary = null;
     this.defaultsKind = kind;
-    this.onClose = null;
+    this.onClose = onClose;
     this.title.textContent = t('template.defaultsTitle', { kind: label });
     this.testPdfButton.classList.add('hidden');
     this.mount();

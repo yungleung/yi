@@ -24,6 +24,7 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
   save: 'file:save',
   save_as: 'file:saveAs',
   export: 'file:export',
+  manage_export_templates: 'export:manageTemplates',
   version_save: 'version:save',
   toggle_stack: 'session:toggleStack',
   next_stacked: 'session:nextStacked',
