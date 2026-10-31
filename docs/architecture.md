@@ -259,7 +259,9 @@ height remembered against it.
    an invisible textarea (`editing/composition_input.ts`), so a key can also arrive as a
    composition: what an input method, dictation or the emoji panel commits is inserted through
    the same text path as typing, as one edit of its own
-   (`text_commands.ts: insertCommitted`). An explicit 229 key belongs to that method; Caps Lock
+   (`text_commands.ts: insertCommitted`). `text_commands.ts` is the stable facade over
+   `text_insertion.ts`, `text_deletion.ts`, `text_newline.ts` and `task_command.ts`; all four
+   resolve the visible block through `text_command_context.ts`. An explicit 229 key belongs to that method; Caps Lock
    alone does not, because in the English source it is ordinary editor input. What a method has
    *marked* —
    the pinyin, the kana, the

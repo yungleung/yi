@@ -19,7 +19,7 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
 | `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
 | `src/ui/markdown/caret/` | 9 | 2,292 | the caret, its drawn span, its geometry, the offsets in and out, movement, the layout watcher |
-| `src/ui/markdown/editing/` | 24 | 3,765 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing |
+| `src/ui/markdown/editing/` | 34 | 5,149 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing, and their focused helpers |
 | `src/ui/markdown/commands/` | 1 | editor command registration: the typed behaviours the editor owns |
 | `src/commands/` | 7 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
 | `src/events/` | 1 | typed synchronous delivery for facts that stay inside one window |
@@ -124,7 +124,8 @@ different reasons**. Several did, and each is split now:
 | --- | --- | --- |
 | `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
 | `markdown_editor.ts`, 671 | the shell — document, view and command wiring | key routing in `editing/keys.ts`, page/column state and scale in `editor_page_layout.ts`, and shared picker caret arithmetic in `editing/block_opening_edit.ts` |
-| `editing/context.ts`, 621 | the edit funnel (463) | reading the selection: `editing/selection.ts` (175) |
+| `editing/context.ts`, 515 | the edit funnel, source decision and caret placement | selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
+| `editing/text_commands.ts`, 16 | the stable text-path facade | insertion in `text_insertion.ts`, deletion in `text_deletion.ts`, Enter in `text_newline.ts`, and task toggling in `task_command.ts` |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
 | `caret/navigation.ts`, 520 | the four directions (401) | the line hit-testing: `caret/line_hits.ts` (136) |
 
