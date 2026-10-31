@@ -361,6 +361,7 @@
   "template.referenceEntry": "A reference-document package names a reference document and no text template.",
   "template.referenceKind": "A {kind} package can only be a text template.",
   "template.remove": "Remove",
+  "template.inUse": "Utilisé",
   "template.removeQuestion": "Remove the package “{name}” and every file in it? This cannot be undone.",
   "template.rowLabel": "Template",
   "template.save": "Save",

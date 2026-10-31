@@ -528,7 +528,7 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
       return;
     }
     const choice = await templateLibraryDialog.ask(
-      info.kind,
+      info,
       this.selectedTemplateId,
       this.question?.pandoc ?? null
     );
