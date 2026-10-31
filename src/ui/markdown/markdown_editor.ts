@@ -20,15 +20,11 @@ import {
   type AppEventName,
   type DocumentChangeReason
 } from '../../services/app_events';
-import { bibliographyManager, CITATION_UPDATED } from '../../services/bibliography';
-import { documentManager } from '../../services/document_manager';
-import { imageSourceCandidates } from '../image/image_urls';
+import { CITATION_UPDATED } from '../../services/bibliography';
 import { registerEditorCommands } from './commands/editor_commands';
 import {
-  ensureCaretRendered,
   getCaretRange,
   getSelectionRange,
-  hideCaret,
   onCaretRangeChanged,
   setSelectionRange
 } from './caret/caret';
@@ -45,11 +41,10 @@ import {
   keepScroll,
   restoreCaret,
   restoreMark,
-  restoreSelection,
   showSourceAt,
   type EditorContext
 } from './editing/context';
-import { editorSelection, isDocumentRange, proseRoot, rangeOffsets } from './editing/selection';
+import { isDocumentRange, proseRoot } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
 import { copySelection, pasteText } from './editing/clipboard';
 import { insertCommitted } from './editing/text_commands';
@@ -88,13 +83,10 @@ import {
 } from '../../commands/runtime';
 import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
-import {
-  equationBlockNumber,
-  firstReference,
-  referenceLabel
-} from './document/reference_index';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
+import { createEditorRenderContext } from './editor_render_context';
+import { EditorViewState } from './editor_view_state';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;
@@ -135,6 +127,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly contentView: HTMLElement;
   private readonly renderer: VirtualBlockRenderer;
   private readonly context: EditorContext;
+  private readonly view: EditorViewState;
   private readonly findBar: FindBar;
   private readonly find: FindController;
   /** The system's text input seam; it holds the keyboard while the caret is here. */
@@ -147,19 +140,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private layout: EditorLayout = 'page';
   /** A reference document is shown, not written: typing and editing commands are refused. */
   private readOnly = false;
-  /** A caret offset whose block is not mounted (restored on a later sync). */
-  private pendingCaretOffset: number | null = null;
-  /**
-   * Whether a caret has been placed in the document on screen at all.
-   *
-   * A document the session opens with nothing remembered is shown *without* a caret
-   * (`services/session_rules.ts`), which keeps a note that opens on a picture from rendering that
-   * picture's markdown. The reader's first keystroke still has to write somewhere, so it places a
-   * caret at the text's own start first ({@link placeCaretForTheTextPath}) — but only while this is
-   * false: a caret that was *taken away* later (a click outside the document does that) must stay
-   * away, which is what makes the next keystroke write nothing.
-   */
-  private caretPlaced = false;
   /** The citation and wikilink lists, which own the arrows and Enter while one is open. */
   private completions!: Completions;
   /** What the key path needs of this editor (see `editing/keys.ts`). */
@@ -177,53 +157,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.contentView.dataset.layout = this.layout;
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
-    // What a rendering may ask the app for: the two texts a node cannot make from its own markdown,
-    // and the URLs an image destination may be. Handed in here, so the render layer imports no
-    // service (see `render_context.ts`).
-    this.renderer.setRenderContext({
-      citation: (source, cached) =>
-        cached ? bibliographyManager.formatCached(source) : bibliographyManager.format(source),
-      wikilinkTitle: (target) => documentManager.getTitle(target),
-      imageSources: (destination) => imageSourceCandidates(destination),
-      headingId: (from) =>
-        this.state.headingTargets().find((target) => target.from === from)?.id ?? null,
-      referenceText: (id) => {
-        const target = firstReference(this.state.referenceEntries(), id);
-        return target
-          ? { text: referenceLabel(target), resolved: true }
-          : { text: `#${id}`, resolved: false };
-      },
-      figureLabelAt: (from) => {
-        const target = this.state.referenceEntries().find(
-          (entry) => entry.kind === 'figure' && entry.from === from
-        );
-        return target?.number == null ? null : referenceLabel(target);
-      },
-      listingLabelAt: (from) => {
-        const target = this.state.referenceEntries().find(
-          (entry) => entry.kind === 'listing' && entry.from === from
-        );
-        return target?.number == null ? null : referenceLabel(target);
-      },
-      tableLabelAt: (from) => {
-        const target = this.state.referenceEntries().find(
-          (entry) => entry.kind === 'table' && entry.from === from
-        );
-        return target?.number == null ? null : referenceLabel(target);
-      },
-      listLabelAt: (from) => {
-        const target = this.state.referenceEntries().find(
-          (entry) => entry.kind === 'list' && entry.from === from
-        );
-        return target?.number == null ? null : referenceLabel(target);
-      },
-      equationNumberAt: (from) => {
-        const target = this.state.referenceEntries().find(
-          (entry) => entry.kind === 'equation' && entry.from === from
-        );
-        return target === undefined ? null : equationBlockNumber(target);
-      }
-    });
+    // What a rendering may ask the app for is assembled at this boundary, so
+    // node modules and the render layer import no shell service.
+    this.renderer.setRenderContext(createEditorRenderContext(this.state));
     // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
     // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
     // type are drawn at (`styles.css`), and watching the pane keeps it right when the window
@@ -256,15 +192,18 @@ export class WysiwygMarkdownEditor extends BaseComponent {
         }
       }
     };
+    this.view = new EditorViewState({
+      context: this.context,
+      renderer: this.renderer,
+      contentView: this.contentView
+    });
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
     // Source mode follows the caret: the block the caret is in shows its own
     // text (see `source_mode.ts`). A click on a block's rendering asks the
     // editor to enter it, because only the editor knows the block's text.
     onCaretRangeChanged((range) => {
-      if (range !== null) {
-        this.caretPlaced = true;
-      }
+      this.view.noteCaret(range !== null);
       this.followCaret();
     });
     setSourceEntryHandler((blockElement, offset) => this.enterSource(blockElement, offset));
@@ -272,7 +211,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // The window is rebuilt as the user scrolls; re-anchor the caret only
     // when the block it lived in was dropped, so scrolling never moves it.
     this.renderer.setSyncHooks({
-      capture: () => this.pendingCaretOffset ?? caretOffset(this.context),
+      capture: () => this.view.captureCaretOffset(),
       // The restore puts the caret back where it already was, so the source decision cannot have
       // changed while it runs — and asking again is not harmless: `showSourceAt` would rebuild
       // this block a second time, *inside* the sync that is still running. That second build's own
@@ -280,7 +219,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // it now needs has no remembered height), so the block is left out of the page — blank, with
       // its space in a spacer, until the window's range changes. Holding the decision is what the
       // plain write's caret placement already does for the same reason (`source_mode.ts`).
-      restore: (snapshot) => withHeldShownSource(() => this.reanchorCaret(snapshot))
+      restore: (snapshot) => withHeldShownSource(() => this.view.reanchor(snapshot))
     });
 
     this.findBar = new FindBar({
@@ -294,7 +233,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.element.appendChild(this.findBar.element);
 
     const handleKey = (event: KeyboardEvent): void => {
-      this.placeCaretForTheTextPath();
+      this.view.placeForTextPath();
       handleEditorKey(event, this.keyHost);
     };
     this.contentView.addEventListener('keydown', handleKey);
@@ -382,7 +321,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
           return;
         }
         const filteringPickerWasOpen = choiceCardIsOpen();
-        this.placeCaretForTheTextPath();
+        this.view.placeForTextPath();
         if (insertCommitted(this.context, text)) {
           if (filteringPickerWasOpen) {
             handleChoiceCardText(text);
@@ -562,49 +501,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * view is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
    */
   captureView(): SeenView {
-    return {
-      // The remembered offset first: a caret whose block the window has since dropped has a
-      // range the browser has *relocated* rather than lost (`docs/architecture.md`, the four
-      // offsets), and reading it back would put the reader where they never were. Null when
-      // neither can say, so the session keeps the offset it already had for this document. The
-      // renderer's own caret hook reads it in the same order, for the same reason.
-      caret: this.pendingCaretOffset ?? caretOffset(this.context),
-      to: this.selectionEnd(),
-      scroll: this.renderer.scrollAnchor()
-    };
-  }
-
-  /**
-   * The document offset a selection ends at, or null when the reader left a plain caret — or
-   * when the editor cannot see one of its ends.
-   *
-   * Read through the same mapping the commands edit by (`rangeOffsets`), so what the session
-   * remembers and what an edit would replace cannot disagree.
-   */
-  private selectionEnd(): number | null {
-    const range = editorSelection(this.context, true);
-    if (!range || range.collapsed) {
-      return null;
-    }
-    const offsets = rangeOffsets(this.context, range);
-    return offsets && offsets.to > offsets.from ? offsets.to : null;
-  }
-
-  /**
-   * Gives the text path a caret to write at, in a document that has never had one.
-   *
-   * A document the session opens with nothing remembered is shown without a caret
-   * ({@link caretPlaced}). A keystroke still means "write here", so the first one places the caret
-   * where the text starts — the position the editor would have put it in — and then the key is
-   * handled as usual. Once a caret has been placed this does nothing, because a caret that was
-   * *taken away* (a click outside the document does that) has to stay away: that is what makes the
-   * next keystroke write nothing (`click-away-deselects.js`).
-   */
-  private placeCaretForTheTextPath(): void {
-    if (this.caretPlaced) {
-      return;
-    }
-    restoreCaret(this.context, 0, false);
+    return this.view.capture();
   }
 
   /**
@@ -616,37 +513,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * caret at the end it can reach.
    */
   restoreView(view: DocumentView): void {
-    if (view.caret !== null) {
-      // The view below is what names the place, and it is asserted two frames later; the caret
-      // is being put where the document says it was, not moved by the reader, so it does not
-      // scroll a page the view is about to place.
-      const placed =
-        view.to !== null && view.to !== view.caret
-          ? restoreSelection(this.context, view.caret, view.to, false) ||
-            restoreCaret(this.context, view.caret, false)
-          : restoreCaret(this.context, view.caret, false);
-      this.pendingCaretOffset = placed ? null : view.caret;
-    } else {
-      // A view that says nothing about a caret leaves the document *without* one. What the page
-      // shows follows the caret, so a caret invented here would decide it — and one the previous
-      // document left behind is a range the browser relocated into this one, which is a caret
-      // nobody chose either. The reader's first click or keystroke places one.
-      this.pendingCaretOffset = null;
-      this.caretPlaced = false;
-      hideCaret();
-    }
-    this.renderer.scrollToAnchor(view.scroll);
-    const anchor = this.contentView.scrollTop;
-    // Two frames, the way `keepScroll` waits out an edit: placing a caret makes the browser
-    // scroll it into view, and that scroll arrives *after* the one just set here — a reader who
-    // left the view a screen away from their caret gets the view they left, not the caret.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (Math.abs(this.contentView.scrollTop - anchor) > 0.5) {
-          this.contentView.scrollTop = anchor;
-        }
-      });
-    });
+    this.view.restore(view);
   }
 
   /** Re-renders the mounted blocks (bibliography or settings changed). */
@@ -772,56 +639,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     const anchor = this.contentView.scrollTop;
     restoreCaret(this.context, block.charStart + within);
     keepScroll(this.context, anchor);
-  }
-
-  /**
-   * Keeps the caret alive across virtualized window changes: if its block
-   * survived the swap only the caret span has to be re-created, and if the
-   * block was dropped the offset is restored once it is mounted again.
-   *
-   * A caret survived only if it still names a document offset. Being connected is
-   * not enough: replacing a block relocates the caret's live range to the point
-   * the old element occupied — connected, sitting between blocks, and not a
-   * position any edit can use (the browser relocates a range rather than dropping
-   * it; see the four offsets in `docs/architecture.md`).
-   */
-  private reanchorCaret(snapshot: unknown): void {
-    const caret = getCaretRange();
-    const survived =
-      caret !== null &&
-      caret.startContainer.isConnected &&
-      documentOffsetAt(this.state, caret.startContainer, caret.startOffset) !== null;
-    if (survived) {
-      this.pendingCaretOffset = null;
-      ensureCaretRendered();
-      return;
-    }
-    // A reader who has *selected* something is looking at the selection, not at the caret, and
-    // a window change must not throw it away to put a caret back — restoring one is what makes
-    // Select All followed by Copy come back empty when the page re-syncs under it (measured:
-    // the selection a `select_all` had just made was gone 40 ms later, and the copy with it).
-    // The remembered offset is kept, so the caret returns the moment they click or type.
-    const selection = window.getSelection();
-    const selected = proseRoot(this.context);
-    if (
-      selected !== null &&
-      selection !== null &&
-      !selection.isCollapsed &&
-      selection.anchorNode !== null &&
-      selected.contains(selection.anchorNode)
-    ) {
-      return;
-    }
-    const offset = this.pendingCaretOffset ?? (typeof snapshot === 'number' ? snapshot : null);
-    if (offset === null) {
-      return;
-    }
-    // Put back, not moved: the caret is where it already was, and the reader scrolled the page
-    // themselves — so this placement must not scroll. It is the whole of a bug that showed while
-    // scrolling up: the caret's block left the window and came back, the caret was placed again
-    // a deferred frame later, and `scrollCaretIntoView` took the view to it — measured, one 24px
-    // step up from the end of the demo document jumped the page **1097px**.
-    this.pendingCaretOffset = restoreCaret(this.context, offset, false) ? null : offset;
   }
 
   /**
