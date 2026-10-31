@@ -21,6 +21,17 @@ A pasta exibida à esquerda é o espaço de trabalho. Não há conta nem cópia 
 - Só documentos adicionados explicitamente entram na pilha de sessão. O tutorial e este guia são
   referências e não entram nela.
 
+### Pilha de sessão
+
+**⌘P** ou **Ctrl+P** adiciona o documento atual à pilha de sessão ou o remove dela. **⌘T** ou
+**Ctrl+T** abre o próximo documento da pilha, e **⇧⌘T** ou **Ctrl+Shift+T** abre o anterior. A ordem
+é a do painel da pilha; depois do fim, a navegação continua pelo outro extremo.
+
+Se o documento atual ainda não estiver na pilha, o Yi o adiciona antes de mudar. Assim, o documento
+que está sendo deixado é preservado. Referências somente leitura, como este guia, permanecem fora da
+pilha. Na barra de status, a pilha fica verde quando o documento está nela e atenuada quando não;
+**Saved** é verde, **Editing** âmbar e **Read-only** atenuado.
+
 ### Frontmatter
 
 ```yaml

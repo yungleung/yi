@@ -25,6 +25,9 @@ export const MENU_COMMANDS: Readonly<Record<string, CommandId>> = {
   save_as: 'file:saveAs',
   export: 'file:export',
   version_save: 'version:save',
+  toggle_stack: 'session:toggleStack',
+  next_stacked: 'session:nextStacked',
+  previous_stacked: 'session:previousStacked',
   find: 'find:open',
   replace: 'find:replace'
 };

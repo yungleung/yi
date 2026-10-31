@@ -22,6 +22,17 @@ Le dossier affiché à gauche est l’espace de travail. Il n’y a ni compte ni
 - Seuls les documents ajoutés explicitement entrent dans la pile de session. Le tutoriel et ce guide
   sont des références et n’y entrent pas.
 
+### Pile de session
+
+**⌘P** ou **Ctrl+P** ajoute le document courant à la pile de session ou l’en retire. **⌘T** ou
+**Ctrl+T** ouvre le document suivant de la pile, et **⇧⌘T** ou **Ctrl+Shift+T** le précédent. L’ordre
+est celui du panneau de la pile ; après la fin, la navigation reprend à l’autre extrémité.
+
+Si le document courant n’est pas encore dans la pile, Yi l’y ajoute avant de changer de document.
+Le document que vous quittez est donc conservé. Les références en lecture seule, comme ce guide,
+restent hors de la pile. Dans la barre d’état, la pile est verte quand le document y est et atténuée
+sinon ; **Saved** est vert, **Editing** ambre et **Read-only** atténué.
+
 ### En-tête YAML
 
 ```yaml

@@ -258,6 +258,43 @@ export function setStacked(state: SessionState, id: string, stacked: boolean): S
   };
 }
 
+/** The state and document a stack-navigation command moves to. */
+export interface StackNavigation {
+  state: SessionState;
+  id: string | null;
+}
+
+/**
+ * Moves to the next or previous document in stack order.
+ *
+ * The current document is put in the stack first unless it is a read-only reference. A reference
+ * never enters a stack, so navigation from one chooses the first or last existing member, or does
+ * nothing when there is no stack to move through.
+ */
+export function stackNavigation(
+  state: SessionState,
+  direction: 1 | -1
+): StackNavigation {
+  const current = currentDocument(state);
+  if (!current) {
+    return { state, id: null };
+  }
+  const navigable =
+    current.readOnly || current.stacked ? state : setStacked(state, current.id, true);
+  const stack = stackedDocuments(navigable);
+  if (stack.length === 0) {
+    return { state: navigable, id: null };
+  }
+  const index = stack.findIndex((document) => document.id === current.id);
+  const next =
+    index === -1
+      ? direction === 1
+        ? 0
+        : stack.length - 1
+      : (index + direction + stack.length) % stack.length;
+  return { state: navigable, id: stack[next].id };
+}
+
 /** Brings a document from the stack to the screen. */
 export function restore(state: SessionState, id: string): SessionState {
   if (!state.documents.some((document) => document.id === id)) {

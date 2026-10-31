@@ -25,6 +25,9 @@ const CHORDS: Readonly<Record<string, CommandId>> = {
   'a': 'edit:selectAll',
   'f': 'find:open',
   'h': 'find:replace',
+  'p': 'session:toggleStack',
+  't': 'session:nextStacked',
+  'shift+t': 'session:previousStacked',
   'shift+r': 'edit:insertRule'
 };
 

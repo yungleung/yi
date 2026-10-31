@@ -50,6 +50,7 @@ import {
   serializeSession,
   setPath,
   setStacked,
+  stackNavigation,
   stackedDocuments,
   type DocumentView,
   type IncomingDocument,
@@ -295,6 +296,23 @@ class DocumentSession {
     }
     this.capture();
     this.state = setStacked(this.state, document.id, !document.stacked);
+    this.announce();
+    void this.persist();
+  }
+
+  /** Moves to the next or previous stacked document, keeping the current one if it was not stacked. */
+  navigateStack(direction: 1 | -1): void {
+    const before = this.state.current;
+    this.capture();
+    const movement = stackNavigation(this.state, direction);
+    this.state = movement.state;
+    if (movement.id !== null && movement.id !== before) {
+      this.state = restoreDocument(this.state, movement.id);
+      const document = this.current();
+      if (document) {
+        this.show(document);
+      }
+    }
     this.announce();
     void this.persist();
   }

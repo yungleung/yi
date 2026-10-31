@@ -157,6 +157,25 @@ pub fn build(app: &AppHandle, language: &str) -> Result<tauri::menu::Menu<tauri:
         .build()?;
 
     let view_submenu = SubmenuBuilder::new(app, t(language, "menu.view", &[]))
+        .item(
+            &MenuItemBuilder::new(t(language, "menu.view.toggleStack", &[]))
+                .accelerator("CmdOrCtrl+P")
+                .id("toggle_stack")
+                .build(app)?,
+        )
+        .item(
+            &MenuItemBuilder::new(t(language, "menu.view.nextStacked", &[]))
+                .accelerator("CmdOrCtrl+T")
+                .id("next_stacked")
+                .build(app)?,
+        )
+        .item(
+            &MenuItemBuilder::new(t(language, "menu.view.previousStacked", &[]))
+                .accelerator("CmdOrCtrl+Shift+T")
+                .id("previous_stacked")
+                .build(app)?,
+        )
+        .separator()
         .fullscreen_with_text(t(language, "menu.view.fullscreen", &[]))
         .build()?;
 
@@ -260,6 +279,15 @@ pub fn set_as_main_menu(app: &mut App) -> Result<(), Box<dyn Error>> {
             }
             "replace" => {
                 app_handle.emit("replace", ()).unwrap();
+            }
+            "toggle_stack" => {
+                app_handle.emit("toggle_stack", ()).unwrap();
+            }
+            "next_stacked" => {
+                app_handle.emit("next_stacked", ()).unwrap();
+            }
+            "previous_stacked" => {
+                app_handle.emit("previous_stacked", ()).unwrap();
             }
             "documentation" => {
                 app_handle.emit("documentation", ()).unwrap();

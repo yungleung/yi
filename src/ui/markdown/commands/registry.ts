@@ -41,6 +41,8 @@ export type CommandId =
   | 'help:documentation'
   | 'version:save'
   | 'session:toggleStack'
+  | 'session:nextStacked'
+  | 'session:previousStacked'
   | 'session:openStack'
   | 'session:restore'
   | 'session:drop'

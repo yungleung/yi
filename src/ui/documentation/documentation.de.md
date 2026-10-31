@@ -22,6 +22,19 @@ Der Ordner links im Baum ist der Arbeitsbereich. Es gibt kein Konto und keine en
 - Nur ausdrücklich hinzugefügte Dokumente liegen im Sitzungsstapel. Tutorial und Anleitung sind
   Referenzdokumente und gelangen nicht hinein.
 
+### Sitzungsstapel
+
+**⌘P** bzw. **Ctrl+P** legt das aktuelle Dokument in den Sitzungsstapel oder nimmt es wieder heraus.
+**⌘T** bzw. **Ctrl+T** öffnet das nächste Dokument im Stapel, **⇧⌘T** bzw. **Ctrl+Shift+T** das
+vorherige. Die Reihenfolge entspricht dem Stapelbereich; nach dem letzten Dokument geht es wieder am
+Anfang weiter.
+
+Ist das aktuelle Dokument noch nicht im Stapel, legt Yi es vor dem Wechsel zuerst hinein. So bleibt
+das Dokument, das Sie verlassen, erhalten. Schreibgeschützte Referenzen wie diese Anleitung bleiben
+außerhalb des Stapels. In der Statusleiste ist der Stapelstatus grün, wenn das Dokument im Stapel
+liegt, und gedämpft, wenn nicht; **Saved** ist grün, **Editing** bernsteinfarben und **Read-only**
+gedämpft.
+
 ### Frontmatter
 
 ```yaml

@@ -25,6 +25,22 @@ account or remote copy.
 - The session stack keeps documents you explicitly pushed there. The tutorial and this guide are
   references: they never enter the stack.
 
+### The session stack
+
+Press **⌘P** or **Ctrl+P** to put the current document into the session stack or take it out.
+**⌘T** or **Ctrl+T** opens the next stacked document, and **⇧⌘T** or **Ctrl+Shift+T** opens the
+previous one. The order is the order shown in the stack panel, and moving past either end wraps to
+the other end.
+
+If the current document is not yet stacked when you use either navigation shortcut, Yi puts it in
+the stack first. This makes a quick reading sequence safe: the document you are leaving is kept,
+then Yi moves to the next or previous stacked document. Read-only references such as this guide
+remain outside the stack.
+
+The status bar uses colour as a second cue: the stack status is green when the document is in the
+stack and muted when it is not; the save status is green for **Saved**, amber for **Editing**, and
+muted for **Read-only**.
+
 ### Frontmatter
 
 Frontmatter is the YAML block at the top of a note:

@@ -43,6 +43,7 @@ const {
   serializeSession,
   setPath,
   setStacked,
+  stackNavigation,
   stackedDocuments
 } = session;
 const { documentId, documentTitle, readFrontmatterLang } = identity;
@@ -356,6 +357,42 @@ check(
   [{ id: noteId, stacked: true }, { id: 'other', stacked: true }, { id: 'third', stacked: false }]
 );
 check('and it is still current', currentDocument(dropFromStack(three, 'third'))?.id, 'third');
+
+// --- moving through the stack -------------------------------------------------------------
+
+const forward = stackNavigation(three, 1);
+check(
+  'moving forward stacks an unstacked current document before choosing its neighbour',
+  stackedDocuments(forward.state).map((document) => document.id),
+  [noteId, 'other', 'third']
+);
+check('and wraps from the current last document to the first', forward.id, noteId);
+const backward = stackNavigation(three, -1);
+check('moving backward stacks it too', stackedDocuments(backward.state).map((document) => document.id), [noteId, 'other', 'third']);
+check('and chooses the document before it', backward.id, 'other');
+const fromMiddle = stackNavigation(restore(three, 'other'), 1);
+check('a current document already in the stack is not moved', stackedDocuments(fromMiddle.state).map((document) => document.id), [noteId, 'other']);
+check('and navigation wraps to the first', fromMiddle.id, noteId);
+const only = stackNavigation(openNote('/notes/alone.md', '# Alone\n'), 1);
+check('one document is stacked and remains its own neighbour', {
+  current: only.id,
+  stacked: stackedDocuments(only.state).map((document) => document.id)
+}, {
+  current: currentDocument(only.state)?.id,
+  stacked: [currentDocument(only.state)?.id]
+});
+const readOnlyNavigation = stackNavigation(tutorial, 1);
+check('a read-only reference never enters the stack through navigation', {
+  id: readOnlyNavigation.id,
+  stacked: stackedDocuments(readOnlyNavigation.state).length
+}, {
+  id: null,
+  stacked: 0
+});
+check('navigation with no document does nothing', stackNavigation(emptySession(), 1), {
+  state: emptySession(),
+  id: null
+});
 
 // --- the file -----------------------------------------------------------------------------
 

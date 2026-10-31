@@ -17,6 +17,16 @@ reference-number-prefixes:
 
 This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~~strikethrough~~.
 
+## Session stack
+
+Press `Cmd+P` (or `Ctrl+P`) to add this document to the session stack or remove it. `Cmd+T` opens
+the next stacked document and `Cmd+Shift+T` opens the previous one. If this document is not yet in
+the stack, either navigation shortcut adds it first; the navigation follows the stack panel's order
+and wraps at either end.
+
+The status bar colours the same state: **In the stack** and **Saved** are green, **Editing** is
+amber, and **Not stacked** and **Read-only** are muted.
+
 ## Task lists
 
 - [x] Completed task

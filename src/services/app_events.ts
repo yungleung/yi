@@ -67,6 +67,9 @@ export interface AppEvents {
   select_all: null;
   find: null;
   replace: null;
+  toggle_stack: null;
+  next_stacked: null;
+  previous_stacked: null;
   /** The kind the Export submenu's own item names — the event *is* the choice of kind. */
   export: string | null;
   documentation: null;

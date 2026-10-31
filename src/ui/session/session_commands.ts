@@ -20,6 +20,14 @@ export function registerSessionCommands(): void {
   registerCommand({ id: 'file:saveAs', run: () => void documentSession.saveAs() });
   registerCommand({ id: 'session:toggleStack', run: () => documentSession.toggleStack() });
   registerCommand({
+    id: 'session:nextStacked',
+    run: () => documentSession.navigateStack(1)
+  });
+  registerCommand({
+    id: 'session:previousStacked',
+    run: () => documentSession.navigateStack(-1)
+  });
+  registerCommand({
     id: 'session:restore',
     run: (payload) => documentSession.restore(String(payload))
   });

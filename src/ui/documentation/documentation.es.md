@@ -21,6 +21,17 @@ La carpeta del árbol izquierdo es el espacio de trabajo. No hay cuenta ni copia
 - Solo los documentos añadidos explícitamente entran en la pila de sesión. El tutorial y esta guía
   son referencias y nunca entran.
 
+### Pila de sesión
+
+**⌘P** o **Ctrl+P** añade el documento actual a la pila de sesión o lo quita de ella. **⌘T** o
+**Ctrl+T** abre el siguiente documento de la pila, y **⇧⌘T** o **Ctrl+Shift+T** abre el anterior.
+El orden es el que muestra el panel de la pila y, al pasar del final, continúa por el otro extremo.
+
+Si el documento actual aún no está en la pila, Yi lo añade antes de cambiar. Así se conserva el
+documento que se abandona. Las referencias de solo lectura, como esta guía, nunca entran en la
+pila. En la barra de estado, la pila es verde cuando el documento está dentro y queda atenuada
+cuando no; **Saved** es verde, **Editing** ámbar y **Read-only** atenuado.
+
 ### Frontmatter
 
 ```yaml

@@ -121,6 +121,11 @@ would lose the reader's words — a document whose text its file holds is the fi
 replaced silently — and the reader may answer it in advance: the General tab's switch
 (`push_unstacked_on_open`, off by default) pushes such a document into the stack instead of asking.
 Pushing a *saved* document is never done for them; the stack button is where they choose that.
+`⌘P`/`Ctrl+P`, `⌘T`/`Ctrl+T` and `⇧⌘T`/`Ctrl+Shift+T` are the same stack facts from the keyboard:
+toggle membership, then move through the stack in panel order and wrap; a writable current document
+is added before either navigation move, while a read-only reference stays out. The status bar reads
+membership and savedness directly, tinting stack/saved green, editing amber and the absent/read-only
+states muted.
 Three things bite: a document's id is read at the *top* of it
 (`document_identity.ts` — a note that links to another by id must not become it), a block's
 offset is not the scroller's (a page puts 118px of desk and margin above the prose;
