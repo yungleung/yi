@@ -8,9 +8,11 @@
  * language, and a short curated list would be a second opinion about what a note may be written in.
  *
  * The card never takes focus: the reader chooses a language with the pointer or
- * arrows and Enter, presses Escape, or presses anywhere else. The choice itself
- * is not made here — this module is a surface, and the editor owns the edit
- * (`markdown_editor.ts`, over the pure rule in
+ * arrows and Enter, types into the opening fence to filter, presses Escape, or
+ * presses anywhere else. A newly opened fence keeps its caret after the opening
+ * backticks for this purpose; a space closes filtering but remains source so
+ * Pandoc attributes can follow. The choice itself is not made here — this module
+ * is a surface, and the editor owns the edit (`markdown_editor.ts`, over the pure rule in
  * `syntax/fence_edits.ts: fenceLanguageEdit`).
  *
  * May import: highlight.js, the beside measurement and the shared choice card.
@@ -27,7 +29,8 @@ import { ChoiceCard } from '../choice_card';
 export type LanguagePicker = (
   anchor: Box | null,
   current: string,
-  choose: (language: string) => void
+  choose: (language: string) => void,
+  typeToFilter?: boolean
 ) => void;
 
 /** What the labels ask, or null before an editor has installed its picker. */
@@ -53,9 +56,19 @@ export function chooseLanguage(anchor: HTMLElement, current: string, lineStart: 
   chooseLanguageAt(boxOf(anchor), current, lineStart);
 }
 
-/** Opens the list beside a measured caret, for a fence whose block has no label element. */
-export function chooseLanguageAt(anchor: Box | null, current: string, lineStart: number): void {
-  installed?.(anchor, current, (language) => changed?.(lineStart, language));
+/** Opens the list beside a measured caret, optionally filtering as source is typed. */
+export function chooseLanguageAt(
+  anchor: Box | null,
+  current: string,
+  lineStart: number,
+  typeToFilter = false
+): void {
+  installed?.(
+    anchor,
+    current,
+    (language) => changed?.(lineStart, language),
+    typeToFilter
+  );
 }
 
 /**
@@ -68,8 +81,8 @@ export function installLanguagePicker(): LanguagePicker {
     'max-h-80 w-56 overflow-y-auto p-1'
   );
 
-  return (label, current, answer) => {
-    card.open(label, current, languageChoices(), answer);
+  return (label, current, answer, typeToFilter = false) => {
+    card.open(label, current, languageChoices(), answer, { typeToFilter });
   };
 }
 

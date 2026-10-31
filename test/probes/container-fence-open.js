@@ -77,6 +77,9 @@
   await clickEnd(source(), '>');
   await type(['`', '`', '`']);
   t.key('Escape');
+  await t.sleep(100);
+  t.key('ArrowDown');
+  await t.sleep(100);
   t.key('Z');
   await t.sleep(220);
   const code = await t.raw();
@@ -94,7 +97,7 @@
   await t.load('> Intro\n> ');
   await t.click(t.prose().querySelector('blockquote'), 0.99);
   await clickEnd(source(), '>');
-  await type([':', ':', ':']);
+  await type([':', ':', ':', ' ']);
   const choices = [...document.querySelectorAll('[data-callout-kind-choice]')].map(
     (row) => row.textContent
   );
@@ -137,6 +140,9 @@
   await clickEnd(source(), '>');
   await type(['`', '`', '`']);
   t.key('Escape');
+  await t.sleep(100);
+  t.key('ArrowDown');
+  await t.sleep(100);
   t.key('Z');
   await t.sleep(220);
   const calloutCode = await t.raw();

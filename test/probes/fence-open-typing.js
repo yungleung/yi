@@ -1,9 +1,10 @@
 /**
  * Typing a delimiter line of its own opens the fenced block it names: ` ``` ` and `$$`
- * become both of the block's delimiter lines with the caret on the blank line between
- * them, and `---` does the same at the very top of a note — frontmatter — where anywhere
- * else it is still a thematic break. A typed ` ``` `'s label also opens the language list,
- * and choosing a language leaves the caret in the body it was in.
+ * become both of the block's delimiter lines, and `---` does the same at the very top of
+ * a note — frontmatter — where anywhere else it is still a thematic break. Formula and
+ * frontmatter carets land in the body. A new code fence keeps the caret after its opening
+ * backticks so the language picker can filter and accept a language before the author
+ * moves into the body.
  *
  * @covers src/ui/markdown/editing/fence_open.ts, src/ui/markdown/editing/text_commands.ts,
  *         src/ui/markdown/editing/language_picker.ts
@@ -74,11 +75,11 @@
   await t.sleep(250);
   check('the caret was on the blank line between the fences', await t.raw(), '---\nQ\n---\n\nhello world\n');
 
-  // A typed ` ``` ` closes itself off, so the paragraph below it is not code.
+  // A typed ` ``` ` closes itself off and keeps the language field on its opening line.
   await emptyFirstLine();
   await type(['`', '`', '`']);
   check('a typed ` ``` ` makes a closed code fence', await t.raw(), '```\n\n```\n\nhello world\n');
-  check('and the caret is drawn on the body’s blank line', Math.abs(caretBelowBodyLine() ?? 99) <= 8, true);
+  check('and the caret stays on the opening fence line', (caretBelowBodyLine() ?? 0) < -8, true);
   check('and the block is the code fence', classes().includes('markdown-fenced-code'), true);
   check('its label asks for the language', label(), { tag: 'BUTTON', text: 'text' });
   const rows = [...document.querySelectorAll('[data-language]')];
@@ -101,9 +102,12 @@
   rows.find((row) => row.dataset.language === 'python')?.click();
   await t.sleep(300);
   check('choosing a language names the fence', await t.raw(), '```python\n\n```\n\nhello world\n');
+  check('and leaves the caret on the opening fence line', (caretBelowBodyLine() ?? 0) < -8, true);
+  t.key('ArrowDown');
+  await t.sleep(150);
   t.key('Q');
   await t.sleep(250);
-  check('and the caret stayed in the body below the fence', await t.raw(), '```python\nQ\n```\n\nhello world\n');
+  check('the author can move into the body below the fence', await t.raw(), '```python\nQ\n```\n\nhello world\n');
 
   // A typed `$$` closes itself off the same way.
   await emptyFirstLine();

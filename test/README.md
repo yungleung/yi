@@ -56,7 +56,7 @@ methodology; this file is the index and the conventions.
 | `check-fence-edits.mjs` | Where a write inside a fenced block lands: a character typed at either edge of a body goes *in* the body, one with no content line gets a line of its own, `Enter` leaves a blank content line rather than a caret on a delimiter, and choosing a language rewrites the opening fence's own line |
 | `check-bare-markers.mjs` | What the parser makes of a marker-only line (`syntax/bare_markers.ts`): an empty item when the marker has its delimiter space (`- `), text when it has not (`-`), and never a setext heading that swallows the paragraph above it |
 | `check-spaced-destinations.mjs` | What the parser makes of a path with spaces in it, in an image or a link (`syntax/spaced_destinations.ts`): the run is the node it names wherever it stands, the words around it stay text, a title after the path is the title, the `%20` spelling stays a link, and an escaped `\![` or a run in code is left as the characters it is |
-| `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): fenced code, formulas, frontmatter and a six-kind fenced-Div callout, each with its closing delimiter and the caret on the blank body line |
+| `check-fence-open.mjs` | What typing a delimiter line opens (`editing/fence_open.ts`): fenced code, formulas, frontmatter and an arbitrary-length fenced Div; code stays on its opening line for language and attributes, while the other blocks put the caret in the body |
 | `check-new-document.mjs` | The shape of a new note (`services/new_document.ts`): the id's fourteen digits and the local clock they read, the frontmatter built from the reader's template with the four required keys guaranteed, a package's `metadata.yaml` winning every key it names except the app's date/id, broken metadata refused, and the range the title's value sits in |
 | `check-native-bibliography.mjs` | Native-LaTeX bibliography packaging (`ui/export/native_bibliography.ts`): package opt-in, citation-key extraction, cited-only filtering for BibTeX and CSL-JSON, key precedence, missing-key reporting, and safe relative output paths |
 | `check-plain-edit.mjs` | Which edits cannot change how the text parses, and that every edit the rule accepts leaves the parse's shape unchanged (`syntax/plain_edit.ts`) |
@@ -85,7 +85,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and one probes (`probe:all` runs 267 and skips 34, each skip for the reason its
+three hundred and six probes (`probe:all` runs 272 and skips 34, each skip for the reason its
 header names), grouped by area: the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
@@ -105,8 +105,9 @@ frontmatter without becoming export-template choices), blocks and spacing
 paragraph of its own, whether a block follows it or the block is the file's last, and the
 same for a new note's blank body line — `insert-rule`), code and lists (`code-tab`,
 `code-shift-tab`, `list-*`, `fence-open-typing` — a typed ` ``` `, `$$` and top-of-note `---`
-become the whole fenced block with the caret on the blank line in it, and a fresh code fence's
-label opens the language list — and `bare-marker-typing` — a typed `-` stays the character, and
+become the whole fenced block; code keeps its caret on the opening line for language filtering and
+attributes while the other blocks put it in the body — and `bare-marker-typing` — a typed `-` stays
+the character, and
 the item begins at the space that follows it; `fence-source-mode` — a fenced block renders its body
 while the caret is elsewhere and its own text, delimiters and all, while the caret is inside it;
 `fence-exit` — the closing fence is a line the caret can sit on, and `Enter` at its end makes a
@@ -125,7 +126,8 @@ code, equation and empty-body Enter rules; `quote-list-enter` — a quoted paren
 sibling after nested children and an empty quoted item leaves the list without leaving the quote;
 `quote-source-editing` — complete quote source, physical blank-line deletion, exact `>` spacing and
 escaped-note Enter; `callout-div-enter` — one newline per Div Enter and repeated blank lines;
-`callout-div-open` — `:::` creates a closed Default Div and its seven-kind picker;
+`callout-div-open` — a colon run remains literal until its space creates a closed Default Div and
+its seven-kind picker;
 `picker-keyboard` — the language and Div-kind pickers move through their rows with
 `ArrowUp`/`ArrowDown` and choose with `Enter` without moving the document caret;
 `container-fence-open` — quoted and called-out display math, labeled math, code fences and Div
@@ -141,8 +143,11 @@ while an empty Div opening creates one editable body line before its closing fen
 `container-completions` — citation, wikilink, link-fragment and automatic-reference completion remain available in
 quote and callout source, and accepting a row preserves the container;
 `callout-followups` — GitHub paragraph breaks, rendered empty-body clicks, completed child exits,
-container-aware opening markers/pickers on ordinary blank lines, and a `:::` picker that stays
-beside a caret deep in the callout;
+container-aware opening markers/pickers on ordinary blank lines, and a space-triggered colon picker
+that stays beside a caret deep in the callout;
+`delimiter-input` — colon runs wait for a space, code-fence typing filters its language list, Space
+stays available for attributes, Escape keeps the opening line, and a nested Div choice edits the
+innermost fence;
 `format-containers` — bold applied inside quotes, GitHub callouts, fenced-Div callouts and generic
 Div source wraps only the selected text and preserves every source line;
 `completion-immediate` — all three marker-triggered completion kinds open from key input and from

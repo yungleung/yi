@@ -5,10 +5,12 @@
  * characters is how a reader asks for one: ` ``` `, `$$`, and — at the very top of a note — `---`.
  * What they would get otherwise is the one line they typed, which markdown reads as a fence running
  * to the end of the note: a ` ``` ` above a paragraph turns that paragraph into code, and a `$$`
- * turns it into the formula's content. So the line becomes both delimiters at once, with the caret
- * on the blank line between them — the body the author is about to write in — and with the blank
+ * turns it into the formula's content. So the line becomes both delimiters at once, with the blank
  * lines markdown needs around the block, which come from `blank_lines.ts` so nothing above or below
- * it is swallowed either.
+ * it is swallowed either. A formula or frontmatter caret lands in the body. A code-fence caret
+ * stays after its opening backticks so typed text filters the language choice and a following space
+ * can begin Pandoc attributes. A Div waits for a space after three or more colons, then retains
+ * that exact fence length on both lines.
  *
  * Only a delimiter of its own line opens anything, and only the very first line of the note opens
  * frontmatter: a `---` anywhere else is a thematic break, and stays one. A code fence's label asks
@@ -17,8 +19,7 @@
  *
  * May import: the marker's home (`syntax/markers.ts`), the line spans beside it (`syntax/lines.ts`),
  * the blank-line rule (`./blank_lines`), the editing context and the language list's surface. Upholds:
- * the document text is the only source of truth — one `applyEdit` writes the block, and the caret
- * lands on the blank line between the delimiters.
+ * the document text is the only source of truth — one `applyEdit` writes the block.
  */
 
 import { soleDelimiter } from '../syntax/markers';
@@ -29,7 +30,7 @@ import { boxOf } from '../../floating/beside';
 import { blockPadding } from './blank_lines';
 import { applyEdit, type EditorContext } from './context';
 import { proseRoot } from './selection';
-import { chooseLanguage, chooseLanguageAt } from './language_picker';
+import { chooseLanguageAt } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
@@ -55,7 +56,7 @@ export interface FenceOpen {
   from: number;
   to: number;
   replacement: string;
-  /** Where the caret lands: the blank line between the delimiters. */
+  /** Where the caret lands: the opening fence for code, otherwise the first body line. */
   caret: number;
 }
 
@@ -68,21 +69,13 @@ export function containerFenceOpenWrite(
   at: number,
   typed: string
 ): FenceOpen | null {
-  const enclosing = fencedDivAtOffset(text, at);
-  const divFenceLength =
-    enclosing === null ? undefined : enclosing.fenceLength + 1;
   const quote = quoteLineAt(text, at);
   if (quote === null) {
-    return fenceOpenWrite(text, at, typed, divFenceLength);
+    return fenceOpenWrite(text, at, typed);
   }
   const projected = projectQuoteSource(text);
   const projectedAt = projected.projectedOffsets[at] ?? projected.text.length;
-  const write = fenceOpenWrite(
-    projected.text,
-    projectedAt,
-    typed,
-    divFenceLength
-  );
+  const write = fenceOpenWrite(projected.text, projectedAt, typed);
   if (write === null) {
     return null;
   }
@@ -111,8 +104,7 @@ export function containerFenceOpenWrite(
 export function fenceOpenWrite(
   text: string,
   at: number,
-  typed: string,
-  divFenceLength?: number
+  typed: string
 ): FenceOpen | null {
   if (typed === '') {
     return null;
@@ -146,10 +138,11 @@ export function fenceOpenWrite(
   if (caret !== line.end) {
     return null;
   }
-  if (/^ {0,3}:{3}$/.test(completed)) {
+  const div = /^( {0,3})(:{3,}) $/.exec(completed);
+  if (typed === ' ' && div !== null) {
     const { leading } = blockPadding(text, line.start);
     const { trailing } = blockPadding(text, caret);
-    const fence = ':'.repeat(divFenceLength ?? 3);
+    const fence = div[2];
     const opening = fence;
     return {
       kind: 'fencedDiv',
@@ -169,12 +162,19 @@ export function fenceOpenWrite(
   }
   const { leading } = blockPadding(text, line.start);
   const { trailing } = blockPadding(text, caret);
+  const kind =
+    delimiter === '$$'
+      ? 'displayMath'
+      : delimiter === '---'
+        ? 'frontmatter'
+        : 'fencedCode';
+  const openingEnd = line.start + leading.length + delimiter.length;
   return {
-    kind: delimiter === '$$' ? 'displayMath' : delimiter === '---' ? 'frontmatter' : 'fencedCode',
+    kind,
     from: line.start,
     to: line.end,
     replacement: `${leading}${delimiter}\n\n${delimiter}${trailing}`,
-    caret: line.start + leading.length + delimiter.length + 1
+    caret: kind === 'fencedCode' ? openingEnd : openingEnd + 1
   };
 }
 
@@ -225,7 +225,7 @@ function askForLanguage(context: EditorContext, caret: number): void {
     `.markdown-block[data-line-start="${block.lineStart}"] .markdown-fence-label`
   );
   if (label) {
-    chooseLanguage(label, '', block.lineStart);
+    chooseLanguageAt(boxOf(label), '', block.lineStart, true);
     return;
   }
   const range = getCaretRange();
@@ -240,7 +240,8 @@ function askForLanguage(context: EditorContext, caret: number): void {
         }
       : null,
     '',
-    block.lineStart
+    block.lineStart,
+    true
   );
 }
 

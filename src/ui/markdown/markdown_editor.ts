@@ -786,10 +786,9 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * nothing else, replaced in one edit (`syntax/fence_edits.ts: fenceLanguageEdit`). The body is
    * the author's text and is left exactly as it stands.
    *
-   * The reader's caret is in that body — they are about to write the code — and the fence's own
-   * line is not a place the rendering holds a caret, since the delimiters are hidden. So the caret
-   * keeps its place below, moved by the length the choice added or took away, rather than landing
-   * where the edit ends and being dropped for good.
+   * A newly opened fence keeps the reader's caret at the end of the opening line so the language
+   * and attributes can be edited there. A choice at that edge leaves the caret there; a caret below
+   * it moves by the length the choice added or took away. Both cases stay in source.
    */
   private changeFenceLanguage(lineStart: number, language: string): void {
     if (this.readOnly) {
@@ -809,7 +808,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     const to = block.charStart + edit.to;
     const delta = edit.replacement.length - (edit.to - edit.from);
     const target =
-      caret === null || (caret >= from && caret < to)
+      caret === null || (caret >= from && caret <= to)
         ? undefined
         : caret > to
           ? caret + delta

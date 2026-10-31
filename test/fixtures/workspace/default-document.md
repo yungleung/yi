@@ -40,6 +40,11 @@ This paragraph has *italic*, **bold**, ***both*** text, plus `inline code` and ~
 
 ## Code
 
+Typing three backticks on an empty line creates a paired code fence with the caret after the
+opening backticks. Typing filters the language choices; Enter chooses one, Escape dismisses the
+choices without editing the fence, and Space closes the list while remaining on the opening line
+for Pandoc attributes. Move down when you are ready to write the code.
+
 ```ts
 function greet(name: string) {
   console.log(`Hello, ${name}`);
@@ -100,8 +105,10 @@ A callout body can contain ordinary Markdown blocks:
 
 Pandoc fenced-Div callouts support built-in and custom kinds:
 
-Type `:::` on an empty line in Yi to create a Default Div, then choose Default, Note, Tip, Important,
-Warning, Caution, or Definition from the picker. Default leaves the opening as a bare `:::`.
+Type three or more colons and then a space on an empty line in Yi to create a Default Div with the
+same fence length on both lines, then choose Default, Note, Tip, Important, Warning, Caution, or
+Definition from the picker. The colons stay literal until the space arrives. Default leaves the
+opening as a bare colon fence. An inner Div uses a longer run than its outer fence.
 
 ::: {.callout .callout-note}
 A fenced-Div note.

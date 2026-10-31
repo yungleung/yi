@@ -1,6 +1,7 @@
 /**
- * Typing `:::` creates a paired default Div and opens its seven kind choices;
- * choosing a callout adds only that callout's attributes.
+ * A colon run stays literal until its delimiter space creates a paired default
+ * Div and opens its seven kind choices; choosing a callout adds only that
+ * callout's attributes.
  *
  * @covers src/ui/markdown/editing/fence_open.ts,
  *   src/ui/markdown/editing/callout_kind_picker.ts
@@ -22,6 +23,10 @@
     }
     await t.sleep(250);
   };
+  const visibleKinds = () =>
+    [...document.querySelectorAll('[data-callout-kind-choice]')].filter(
+      (row) => row.closest('.hidden') === null
+    );
   const emptyFirstLine = async () => {
     await t.load('hello world\n');
     await t.click(t.blocks()[0], 0.5, 0.5);
@@ -37,7 +42,18 @@
   await emptyFirstLine();
   await type([':', ':', ':']);
   check(
-    'typing three colons creates a closed default Div',
+    'typing three colons remains ordinary source',
+    await t.raw(),
+    ':::\n\nhello world\n'
+  );
+  check(
+    'and does not open the Div-kind picker',
+    visibleKinds().length,
+    0
+  );
+  await type([' ']);
+  check(
+    'a space after the colons creates a closed default Div',
     await t.raw(),
     ':::\n\n:::\n\nhello world\n'
   );
@@ -46,7 +62,7 @@
     t.prose().querySelector('.markdown-fenced-div-source')?.textContent ?? null,
     ':::\n\n:::'
   );
-  const rows = [...document.querySelectorAll('[data-callout-kind-choice]')];
+  const rows = visibleKinds();
   check(
     'the picker offers Default, all five built-in kinds and Definition',
     rows.map((row) => row.textContent),
@@ -69,6 +85,7 @@
 
   await emptyFirstLine();
   await type([':', ':', ':']);
+  await type([' ']);
   document.querySelector('[data-callout-kind-choice="default"]')?.click();
   await t.sleep(220);
   check(

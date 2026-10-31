@@ -175,10 +175,12 @@
 
   await t.load(':::\n\n:::\n');
   await clickOffset(':::\n'.length);
-  for (let typed = 0; typed < 3; typed += 1) {
+  for (let typed = 0; typed < 4; typed += 1) {
     t.key(':');
     await t.sleep(80);
   }
+  t.key(' ');
+  await t.sleep(100);
   check(
     'a nested callout opens from a generic Div',
     [...document.querySelectorAll('[data-callout-kind-choice]')].map(
@@ -191,16 +193,27 @@
   await t.click(t.prose().querySelector('.markdown-callout-title'));
   await t.sleep(160);
   await clickOffset('::: {.callout .callout-note}\n'.length);
-  for (let typed = 0; typed < 3; typed += 1) {
+  for (let typed = 0; typed < 4; typed += 1) {
     t.key(':');
     await t.sleep(80);
   }
+  t.key(' ');
+  await t.sleep(100);
+  const visibleKinds = [...document.querySelectorAll('[data-callout-kind-choice]')].filter(
+    (row) => row.closest('.hidden') === null
+  );
   check(
-    'a nested default Div is selected as Default inside a callout',
-    document
-      .querySelector('[data-callout-kind-choice="default"]')
-      ?.classList.contains('bg-base-300'),
-    true
+    'a nested default Div opens the kind picker inside a callout',
+    visibleKinds.find((row) => row.classList.contains('bg-base-300'))?.dataset
+      .calloutKindChoice ?? null,
+    'default'
+  );
+  visibleKinds.find((row) => row.dataset.calloutKindChoice === 'warning')?.click();
+  await t.sleep(220);
+  check(
+    'choosing a nested kind changes the inner Div and preserves the outer attributes',
+    await t.raw(),
+    '::: {.callout .callout-note}\n\n:::: {.callout .callout-warning}\n\n::::\n\n\n:::\n'
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

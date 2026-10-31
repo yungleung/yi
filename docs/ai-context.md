@@ -718,9 +718,11 @@ instead of the typography plugin's side rule and paired quote glyphs.
 Unknown Pandoc Divs such as columns, speaker notes, wrappers and incremental
 lists always render as exact source through `nodes/fenced_div_source.ts`; a
 quote or callout containing one also falls back to complete source.
-A typed `:::` creates a closed bare Default Div and opens
+A run of three or more colons stays literal until its following space creates a
+closed bare Default Div with the same fence length on both lines and opens
 `editing/callout_kind_picker.ts` with Default plus the six callout choices; a
-callout choice adds only its class metadata. A Div body inserts one newline per
+callout choice adds only its class metadata, and an inner Div uses a longer run
+so its choice edits only that inner opening. A Div body inserts one newline per
 Enter after the child list/table/code/equation rules decline it, and a single
 backtick is literal there while three typed backticks open a nested code fence.
 accepts repeated blank lines with the caret left on the newest.
@@ -906,14 +908,16 @@ a few pixels and left a selection; a margin click the pointer merely jittered th
 one (`test/probes/select-across-blocks.js`).
 
 **A delimiter line typed on its own opens the block it names**, and **a bare block marker is the
-character rather than markup**. `editing/fence_open.ts` writes both delimiter lines at once — with
-the blank lines markdown needs around them — and puts the caret on the blank line between them,
-where the author is about to write: ` ``` ` asks for its language as soon as the fence exists
-(`editing/language_picker.ts`), and `:::` asks for a Div kind
-(`editing/callout_kind_picker.ts`). Both are `markdown/choice_card.ts`: one active list, no focus
-capture, and Arrow Up/Down, Home/End and Enter/Space handled by the editor key path. `$$` needs no
-such thing, and `---` is frontmatter *only* on the note's very first line, where it would otherwise
-be a thematic break. That frontmatter is YAML,
+character rather than markup**. `editing/fence_open.ts` writes both delimiter lines at once with the
+blank lines markdown needs around them. Formula and frontmatter carets land in the body. A code
+fence keeps its caret after the opening backticks: typed characters filter the language list, Enter
+chooses, Escape closes without a source change, and Space closes filtering while staying in the
+opening line so attributes can follow. A Div waits for a space after its three-or-more-colon run,
+then retains the exact fence length and asks for a Div kind. Both pickers are
+`markdown/choice_card.ts`: one active list, no focus capture, filtering where requested, and Arrow
+Up/Down, Home/End, Enter, Space and Escape handled by the editor key path. `$$` needs no such thing,
+and `---` is frontmatter *only* on the note's very first line, where it would otherwise be a
+thematic break. That frontmatter is YAML,
 closed by `---` or its `...` end marker; `+++` is ordinary text, not a fence. `syntax/bare_markers.ts` is
 the parse repair behind the other half: markdown reads a lone `-` as an empty item and, under a
 paragraph line, as a setext underline, while a lone `#` is an empty heading. The repair makes those

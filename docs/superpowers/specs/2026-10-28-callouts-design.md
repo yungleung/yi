@@ -687,10 +687,12 @@ semantic callout even when it does not render native GitHub alerts.
 - Changing the innermost callout class from `.callout-note` to
   `.callout-tip` re-renders the fenced-Div callout with the new title and
   colour.
-- Typing `:::` on a line of its own creates
-  `::: {.callout .callout-note}` with a closed `:::` fence and opens a picker
-  for Note, Tip, Important, Warning, Caution and Definition. A choice rewrites
-  only `.callout-<kind>`; other source bytes do not move.
+- Typing three or more colons and then a space on a line of its own creates a
+  closed colon fence with the same count on both lines and opens the picker for
+  Default, Note, Tip, Important, Warning, Caution and Definition. The colons
+  stay literal until the space arrives. An inner Div uses a longer run than
+  its outer fence, and a choice rewrites only the innermost opening's
+  `.callout-<kind>`; other source bytes do not move.
 - Deleting or malforming a GitHub marker makes that innermost quote level an
   ordinary blockquote after the edit settles; outer quote levels remain.
 - Malforming or removing a fenced-Div callout class makes the source an

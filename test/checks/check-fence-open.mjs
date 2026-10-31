@@ -1,7 +1,8 @@
 /**
  * Checks what typing a delimiter line opens, in Node: the line becomes both of a fenced
- * block's delimiter lines, the caret lands on the blank line between them, and the blank
- * lines markdown needs around the block are added where they are missing.
+ * block's delimiter lines, formula/frontmatter carets land in the body, a code-fence caret
+ * stays after the opening backticks, and the blank lines markdown needs around the block
+ * are added where they are missing.
  *
  * The rule is a pure function of the text, the caret and the character typed, so it is
  * asserted here; the editor's key path over it — including the language list a typed
@@ -95,7 +96,7 @@ check('`---` below the first line is not frontmatter', typed('text\n--', 7, '-')
 // A typed code fence makes its own closing delimiter, so the note below it is not the code.
 const code = 'text\n\n``';
 check('a typed ` ``` ` closes itself off', typed(code, 8, '`').text, 'text\n\n```\n\n```\n\n');
-check('and the caret goes to the blank line between the fences', typed(code, 8, '`').caret, 'text\n\n```\n'.length);
+check('and the caret stays after the opening fence', typed(code, 8, '`').caret, 'text\n\n```'.length);
 check('with the kind', typed(code, 8, '`').kind, 'fencedCode');
 check('a tilde fence does the same', typed('text\n\n~~', 8, '~').text, 'text\n\n~~~\n\n~~~\n\n');
 // The app writes a backtick's pair, so the pair — not the single key — is what completes the fence.
@@ -104,7 +105,7 @@ check(
   typed('`\n\nhello world\n', 1, '``').text,
   '```\n\n```\n\nhello world\n'
 );
-check('and its caret is on the blank line too', typed('`\n\nhello world\n', 1, '``').caret, '```\n'.length);
+check('and its caret stays after the opening fence', typed('`\n\nhello world\n', 1, '``').caret, '```'.length);
 const quotedCode = '> Intro\n> ``\n';
 const quotedCodeOpen = containerFenceOpenWrite(quotedCode, 12, '`');
 check(
@@ -122,7 +123,7 @@ check(
   {
     kind: 'fencedCode',
     text: '> Intro\n> \n> ```\n> \n> ```\n> \n',
-    caret: 19
+    caret: 16
   }
 );
 
@@ -157,23 +158,28 @@ check(
   '[$$\n\n$$]{}\n\n'
 );
 
-// A fenced Div opens paired with no attributes; the picker may then make it a callout.
-const calloutDiv = typed('text\n\n::', 9, ':');
+// A fenced Div waits for its delimiter space, then preserves every colon typed.
+const calloutDiv = typed('text\n\n::::', 10, ' ');
 check(
-  'typing `:::` opens a paired default fenced Div',
+  'a space after the colons opens a paired default fenced Div',
   calloutDiv.text,
-  'text\n\n:::\n\n:::\n\n'
+  'text\n\n::::\n\n::::\n\n'
 );
-check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n:::\n'.length);
+check('and the caret lands on its first body line', calloutDiv.caret, 'text\n\n::::\n'.length);
 check('with the fenced-Div kind', calloutDiv.kind, 'fencedDiv');
-const nestedDivSource = ':::\n::\n:::\n';
+check(
+  'the third colon alone does not open a Div',
+  typed('text\n\n::', 9, ':').kind,
+  null
+);
+const nestedDivSource = ':::\n::::\n:::\n';
 const nestedDivOpen = containerFenceOpenWrite(
   nestedDivSource,
-  ':::\n::'.length,
-  ':'
+  ':::\n::::'.length,
+  ' '
 );
 check(
-  'a Div typed inside another Div uses a longer fence',
+  'a Div typed inside another Div keeps the colon count the author typed',
   nestedDivOpen === null
     ? null
     : nestedDivSource.slice(0, nestedDivOpen.from) +

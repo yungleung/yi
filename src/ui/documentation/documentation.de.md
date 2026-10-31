@@ -139,6 +139,12 @@ Listennummerierung genau dem Tabellenzähler der Vorlage folgen, müssen beide Z
 Stelle und mit derselben Rücksetzebene eingerichtet werden; Yi kann die Regeln einer beliebigen
 Klasse nicht automatisch ableiten.
 
+Wenn du in einer leeren Zeile drei Backticks eingibst, entsteht ein paariger Code-Fence, dessen
+Cursor direkt nach den öffnenden Backticks bleibt. Eingegebene Zeichen filtern die Sprachliste.
+Enter wählt die markierte Sprache, Escape schließt die Liste ohne Änderung, und Leertaste schließt
+sie, schreibt das Leerzeichen und lässt den Cursor auf der öffnenden Zeile, damit Attribute wie
+`{#lst:sample}` folgen können. Bewege den Cursor nach unten, wenn du den Inhalt schreiben willst.
+
 ## Callouts
 
 Ein GitHub-Alert erzeugt einen Callout:
@@ -171,10 +177,13 @@ unabhängig von der Oberflächensprache aus dem Klassennamen gebildet. IDs, Klas
 Attribute bleiben für den Export erhalten; eine Div-ID ist Pandoc-Metadatum und kein
 Querverweisziel von Yi.
 
-Wer `:::` allein in eine Zeile schreibt, erhält ein geschlossenes Default-Div und eine Auswahl mit
-Default, Note, Tip, Important, Warning, Caution und Definition. Default lässt `:::` ohne Zusatz;
-eine Callout-Auswahl ergänzt oder ändert nur die Callout-Metadaten. Inhalt, ID, weitere Klassen und
-Attribute bleiben unverändert.
+Wer drei oder mehr Doppelpunkte und danach ein Leerzeichen in eine eigene Zeile schreibt, erhält ein
+geschlossenes Default-Div mit derselben Doppelpunktzahl in beiden Zäunen und eine Auswahl mit
+Default, Note, Tip, Important, Warning, Caution und Definition. Bis zu diesem Leerzeichen bleiben
+die Doppelpunkte literal. Default lässt den öffnenden Zaun ohne Zusatz; eine Callout-Auswahl ergänzt
+oder ändert nur die Callout-Metadaten. Inhalt, ID, weitere Klassen und Attribute bleiben unverändert.
+Ein verschachteltes Div verwendet mehr Doppelpunkte als sein äußerer Zaun; eine Typauswahl ändert
+nur dessen innerste öffnende Zeile.
 
 Andere Pandoc-Divs wie `.columns`, Sprechernotizen, Wrapper sowie inkrementelle und nicht
 inkrementelle Listen werden nicht geraten. Ein vollständiges unbekanntes Div wird immer als exakter
@@ -186,10 +195,11 @@ Callouts können in Zitaten oder anderen Callouts verschachtelt werden. Ihr Inha
 Listen, Tabellen, Codeblöcke, Formeln, Beschriftungen, Zitate und normale Markdown-Zitate enthalten.
 
 Öffnende Markierungen bleiben beim Bearbeiten containerbewusst. Die Eingabe von `$$`, `[$$`, einem
-Code-Fence aus drei Backticks oder `:::` erzeugt die passende paarige Struktur, versieht jede
-erzeugte Quellzeile mit dem aktuellen `>`-Präfix und behält für `:::` die Auswahl der Div-Art. Im
-Quelltext eines Pandoc-Divs bleibt ein einzelner Backtick literal; drei Backticks öffnen den
-verschachtelten Code-Fence.
+Code-Fence aus drei Backticks oder drei oder mehr Doppelpunkten mit folgendem Leerzeichen erzeugt
+die passende paarige Struktur und versieht jede erzeugte Quellzeile mit dem aktuellen
+`>`-Präfix. Sprach- und Div-Auswahl funktionieren auf dieser öffnenden Zeile wie außerhalb eines
+Containers. Im Quelltext eines Pandoc-Divs bleibt ein einzelner Backtick literal; drei Backticks
+öffnen den verschachtelten Code-Fence.
 In Code und Anzeigeformeln innerhalb eines Zitats oder Callouts folgt Enter der Zeilenregel des
 Kindblocks und kann beliebig viele aufeinanderfolgende Leerzeilen erzeugen. Ein Callout in einem
 eingezäunten Div fügt pro Enter genau einen präfixierten Zeilenumbruch ein, auch wenn es in einem

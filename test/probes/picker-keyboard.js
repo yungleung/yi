@@ -62,7 +62,7 @@
   }
   press('Enter');
   await t.sleep(180);
-  for (const key of [':', ':', ':']) {
+  for (const key of [':', ':', ':', ' ']) {
     press(key);
     await t.sleep(70);
   }

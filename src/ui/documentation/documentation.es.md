@@ -134,6 +134,12 @@ exactamente con el contador de tablas de una plantilla, ambos contadores deben c
 mismo lugar y con el mismo nivel de reinicio; Yi no puede inferir automáticamente las reglas de una
 clase arbitraria.
 
+Escribir tres acentos graves en una línea vacía crea un bloque de código emparejado y deja el cursor
+después de los acentos de apertura. Los caracteres escritos filtran la lista de lenguajes. Enter
+acepta el lenguaje resaltado; Escape cierra la lista sin cambiar el bloque; Espacio la cierra,
+escribe el espacio y deja el cursor en la línea de apertura para que puedan seguir atributos como
+`{#lst:sample}`. Baja cuando quieras escribir el cuerpo.
+
 ## Callouts
 
 Una alerta de estilo GitHub crea un callout:
@@ -165,10 +171,12 @@ También vale la forma corta `.callout-note`. Para un tipo personalizado sin `ti
 deriva del nombre de clase sin depender del idioma de la interfaz. Los ID, clases y demás atributos
 se conservan para la exportación; un ID de Div es metadatos de Pandoc y no una referencia de Yi.
 
-Escribir `:::` en una línea propia crea un Div Default cerrado y abre siete opciones: Default, Note,
-Tip, Important, Warning, Caution y Definition. Default deja `:::` sin atributos; elegir un callout
-añade o cambia solo sus metadatos. El cuerpo, el ID, las demás clases y los atributos permanecen
-intactos.
+Escribir tres o más dos puntos y después un espacio en una línea propia crea un Div Default cerrado,
+con la misma cantidad de dos puntos en ambos cercados, y abre siete opciones: Default, Note, Tip,
+Important, Warning, Caution y Definition. Los dos puntos siguen siendo literales hasta que llega ese
+espacio. Default deja el cercado de apertura sin atributos; elegir un callout añade o cambia solo sus
+metadatos. El cuerpo, el ID, las demás clases y los atributos permanecen intactos. Un Div anidado usa
+más dos puntos que su cercado exterior, y elegir un tipo modifica solo su apertura más interna.
 
 Yi no adivina cómo representar otros Div de Pandoc, como `.columns`, notas del orador, wrappers o
 listas incrementales y no incrementales. Todo Div desconocido completo se muestra siempre como fuente
@@ -181,11 +189,12 @@ cuando el cursor está fuera; al hacer clic en el título o el cuerpo aparece la
 salir del bloque vuelve la vista renderizada.
 
 Los marcadores de apertura conservan el contexto del contenedor durante la edición. Escribir `$$`,
-`[$$`, un bloque de código delimitado por tres acentos graves o `:::` crea la construcción
-emparejada correspondiente, añade el prefijo `>` activo a cada línea fuente generada y conserva el
-selector de tipo de Div para `:::`. En la fuente de un Div de Pandoc un solo acento grave sigue
-siendo literal; tres acentos graves abren el bloque de código anidado. Dentro de código o fórmulas
-en bloque de una cita o callout,
+`[$$`, un bloque de código delimitado por tres acentos graves o tres o más dos puntos seguidos de un
+espacio crea la construcción emparejada correspondiente y añade el prefijo `>` activo a cada línea
+fuente generada. Los selectores de lenguaje y tipo de Div funcionan en esa línea de apertura igual
+que fuera de un contenedor. En la fuente de un Div de Pandoc un solo acento grave sigue siendo
+literal; tres acentos graves abren el bloque de código anidado. Dentro de código o fórmulas en bloque
+de una cita o callout,
 Enter sigue la regla del bloque hijo y puede crear cualquier número de líneas vacías consecutivas.
 Un callout Div crea exactamente una línea nueva con prefijo por cada Enter, también cuando está
 anidado en otra cita o callout.

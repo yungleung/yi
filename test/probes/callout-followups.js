@@ -101,7 +101,7 @@
   await t.load(`Before\n\n> [!NOTE]\n${pickerBody}\n> \n\nAfter\n`);
   const pickerSource = await openCalloutSource();
   await clickEnd(pickerSource, '> ');
-  await type([':', ':', ':']);
+  await type([':', ':', ':', ' ']);
   const pickerCard = document
     .querySelector('[data-callout-kind-choice]')
     ?.parentElement?.parentElement ?? null;
@@ -156,7 +156,7 @@
     ['code fence', ['`', '`', '`'], 'Before\n\n```\n\n```\n\nAfter\n'],
     [
       'default fenced Div',
-      [':', ':', ':'],
+      [':', ':', ':', ' '],
       'Before\n\n:::\n\n:::\n\nAfter\n'
     ]
   ]) {

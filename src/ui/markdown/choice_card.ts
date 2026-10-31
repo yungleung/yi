@@ -4,8 +4,10 @@
  * Language and Div-kind pickers differ only in the values they offer and the
  * attribute their probes read. This module owns their shared selection state:
  * one active choice card, Arrow Up/Down movement wrapped through the rows,
- * Home/End, and Enter or Space to choose. The card never takes focus, so the
- * caret stays in the document under it.
+ * Home/End, and Enter or Space to choose. A filtering card writes printable
+ * keys through to the source, narrows its rows by that query, and leaves a
+ * space to the source so a code fence can name attributes after its language.
+ * The card never takes focus, so the caret stays in the document under it.
  *
  * May import: the beside-card and its placement types. Upholds: one open choice
  * card at a time, and its highlighted row is the row a key will choose.
@@ -19,6 +21,11 @@ export interface Choice {
   label: string;
 }
 
+export interface ChoiceCardOptions {
+  /** Write typed characters into the editor and filter the rows by them. */
+  typeToFilter?: boolean;
+}
+
 let active: ChoiceCard | null = null;
 
 /** Lets the editor's key path offer a key to the open choice card first. */
@@ -30,9 +37,12 @@ export class ChoiceCard {
   private readonly card: BesideCard;
   private readonly list: HTMLElement;
   private readonly attribute: string;
+  private allChoices: Choice[] = [];
   private choices: Choice[] = [];
   private selected = 0;
   private choose: ((value: string) => void) | null = null;
+  private query = '';
+  private typeToFilter = false;
 
   constructor(attribute: string, className: string) {
     this.attribute = attribute;
@@ -85,15 +95,19 @@ export class ChoiceCard {
     anchor: Box | null,
     current: string,
     choices: readonly Choice[],
-    choose: (value: string) => void
+    choose: (value: string) => void,
+    options: ChoiceCardOptions = {}
   ): void {
     if (active !== null && active !== this) {
       active.close();
     }
     active = this;
     this.anchor = anchor;
-    this.choices = [...choices];
+    this.allChoices = [...choices];
     this.choose = choose;
+    this.query = '';
+    this.typeToFilter = options.typeToFilter ?? false;
+    this.filter('');
     const currentIndex = this.choices.findIndex((choice) => choice.value === current);
     this.selected = Math.max(0, currentIndex);
     this.draw();
@@ -116,6 +130,21 @@ export class ChoiceCard {
     });
     this.list.replaceChildren(...rows);
     rows[this.selected]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  /** Filters the rows by what has been typed into the source field. */
+  private filter(query: string): void {
+    this.query = query;
+    const wanted = query.toLocaleLowerCase();
+    this.choices =
+      this.typeToFilter && wanted !== ''
+        ? this.allChoices.filter(
+            (choice) =>
+              choice.value.toLocaleLowerCase().includes(wanted) ||
+              choice.label.toLocaleLowerCase().includes(wanted)
+          )
+        : [...this.allChoices];
+    this.selected = 0;
   }
 
   private mark(row: HTMLElement, index: number): void {
@@ -184,16 +213,48 @@ export class ChoiceCard {
       this.edge(this.choices.length - 1);
       return true;
     }
+    if (event.key === 'Escape') {
+      this.close();
+      return true;
+    }
+    if (this.typeToFilter) {
+      if (event.key === ' ') {
+        // The source field needs this space before attributes can follow the
+        // language. Leaving the key to the editor writes it after closing us.
+        this.close();
+        return false;
+      }
+      if (
+        event.key === 'Backspace' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+      ) {
+        if (this.query === '') {
+          this.close();
+        } else {
+          this.filter(this.query.slice(0, -1));
+          this.draw();
+        }
+        return false;
+      }
+      if (
+        event.key.length === 1 &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey
+      ) {
+        this.filter(`${this.query}${event.key}`);
+        this.draw();
+        return false;
+      }
+    }
     const value = this.choices[this.selected]?.value;
     if (
       value !== undefined &&
-      (event.key === 'Enter' || event.key === ' ')
+      (event.key === 'Enter' || (event.key === ' ' && !this.typeToFilter))
     ) {
       this.answer(value);
-      return true;
-    }
-    if (event.key === 'Escape') {
-      this.close();
       return true;
     }
     return false;

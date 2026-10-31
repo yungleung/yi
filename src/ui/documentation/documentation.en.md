@@ -145,6 +145,12 @@ language.
 
 ### Code listings
 
+Typing three backticks on an empty line creates a paired code fence and leaves the caret after the
+opening backticks. Typed characters filter the language list. Enter accepts the highlighted
+language; Escape closes the list without changing the fence; Space closes the list, writes the
+space, and leaves the caret on the opening line so attributes such as `{#lst:sample}` can follow.
+Move down when you are ready to write the body.
+
 A fenced code block becomes a listing when its opening fence has an ID, a `caption`, or both.
 Pandoc's two usual spellings are supported:
 
@@ -627,10 +633,12 @@ The lone shorthand `.callout-note` is also accepted. A custom kind without `titl
 locale-independent class name, with dashes shown as spaces. IDs, classes, and other attributes are
 kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
 
-Typing `:::` on a line of its own creates a closed Default Div and opens a seven-choice picker:
-Default, Note, Tip, Important, Warning, Caution, or Definition. Default leaves the opening as a bare
-`:::`; a callout choice adds or changes only the `.callout-<kind>` metadata. The body, ID, other
-classes, and attributes stay intact.
+Typing three or more colons and then a space on a line of its own creates a closed Default Div with
+the same colon count on both fences, and opens a seven-choice picker: Default, Note, Tip, Important,
+Warning, Caution, or Definition. The colons remain literal until that space arrives. Default leaves
+the opening as a bare colon fence; a callout choice adds or changes only the `.callout-<kind>`
+metadata. The body, ID, other classes, and attributes stay intact. A nested Div uses a longer colon
+run than its outer fence, and choosing a kind edits only that innermost opening.
 
 Yi does not guess how to render other Pandoc Divs, such as `.columns`, speaker-note, wrapper, or
 incremental and non-incremental list Divs. A complete unknown Div is always shown as exact source,
@@ -643,9 +651,10 @@ Markdown blocks, including paragraphs, lists, tables, code fences, equations, ca
 and nested quotes.
 
 Opening markers remain container-aware while editing. Typing `$$`, `[$$`, a triple-backtick code
-fence, or `:::` creates the matching paired construct, gives every generated physical line the
-current `>` prefix, and keeps the Div-kind chooser for `:::`. In Pandoc Div source a single backtick
-stays literal; three typed backticks open the nested code fence. Enter follows list, table, code,
+fence, or three or more colons followed by a space creates the matching paired construct and gives
+every generated physical line the current `>` prefix. The code-fence and Div choosers work at that
+opening line in the same way as outside a container. In Pandoc Div source a single backtick stays
+literal; three typed backticks open the nested code fence. Enter follows list, table, code,
 equation, and other child-block rules inside the Div. A plain Div body line creates one prefixed
 newline per Enter, including when it is nested in another quote or callout.
 
