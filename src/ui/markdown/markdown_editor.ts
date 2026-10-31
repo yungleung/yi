@@ -37,7 +37,6 @@ import {
 import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
   caretOffset,
-  applyEdit,
   keepScroll,
   restoreCaret,
   restoreMark,
@@ -87,17 +86,11 @@ import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session_rules';
 import { createEditorRenderContext } from './editor_render_context';
 import { EditorViewState } from './editor_view_state';
-
-/** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
-const A4_WIDTH_PX = (210 * 96) / 25.4;
-
-/** The event that says which layout the editor is drawn in, for the button that switches it. */
-export const EDITOR_LAYOUT_CHANGED = 'editor_layout_changed';
+import { EditorPageLayout, type EditorLayout } from './editor_page_layout';
+import { applyBlockOpeningEdit } from './editing/block_opening_edit';
 
 export const INPUT_SOURCE_CHANGED = 'input_source_changed';
-
-/** A page of A4, or the column at the width of the pane. */
-export type EditorLayout = 'page' | 'auto';
+export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor_page_layout';
 
 /**
  * The WYSIWYG markdown editor.
@@ -126,18 +119,13 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly state = new MarkdownEditorState();
   private readonly contentView: HTMLElement;
   private readonly renderer: VirtualBlockRenderer;
+  private readonly pageLayout: EditorPageLayout;
   private readonly context: EditorContext;
   private readonly view: EditorViewState;
   private readonly findBar: FindBar;
   private readonly find: FindController;
   /** The system's text input seam; it holds the keyboard while the caret is here. */
   private readonly composition: CompositionInput;
-  /** Keeps the page's scale in step with the width of the pane it is held in. */
-  private readonly pageFitter: ResizeObserver;
-  /** The scale the page is drawn at: A4 until the pane cannot hold it (`fitPage`). */
-  private pageScale = 1;
-  /** A4 (`page`) or the column at the pane's width (`auto`); see `styles.css`. */
-  private layout: EditorLayout = 'page';
   /** A reference document is shown, not written: typing and editing commands are refused. */
   private readOnly = false;
   /** The citation and wikilink lists, which own the arrows and Enter while one is open. */
@@ -154,19 +142,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // editor hands it back (`focusText`). WebKit makes a scroll container focusable on its own only
     // when it has something to scroll, so this says it outright.
     this.contentView.setAttribute('tabindex', '-1');
-    this.contentView.dataset.layout = this.layout;
     this.appendChild(this.contentView);
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     // What a rendering may ask the app for is assembled at this boundary, so
     // node modules and the render layer import no shell service.
     this.renderer.setRenderContext(createEditorRenderContext(this.state));
-    // The page is a fixed sheet of A4, and a pane too narrow to hold it gets a smaller page
-    // rather than a sideways scroll: `fitPage` sets the scale the sheet, its margin and its
-    // type are drawn at (`styles.css`), and watching the pane keeps it right when the window
-    // or the workspace tree changes size.
-    this.pageFitter = new ResizeObserver(() => this.fitPage());
-    this.pageFitter.observe(this.contentView);
-    this.fitPage();
+    this.pageLayout = new EditorPageLayout(this.contentView, this.renderer);
     this.context = {
       state: this.state,
       renderer: this.renderer,
@@ -378,29 +359,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** Loads a document and renders its first window. */
   /**
-   * Draws the page at the largest scale the pane can hold, never larger than A4.
-   *
-   * What is left of the pane once the desk has its own margin is what the sheet may use.
-   * That margin is read from the stylesheet rather than repeated here, so the two cannot
-   * disagree about how much desk there is.
-   */
-  private fitPage(): void {
-    const desk = parseFloat(getComputedStyle(this.contentView).paddingLeft) || 0;
-    const available = Math.max(0, this.contentView.clientWidth - 2 * desk);
-    // Rounded, so a resize that lands a third of a pixel elsewhere is not a new scale.
-    // The full-width column is not a page: its measurements are the ones the document was
-    // written in, at 1, whatever the pane is.
-    const scale =
-      this.layout === 'page' ? Math.round(Math.min(1, available / A4_WIDTH_PX) * 1000) / 1000 : 1;
-    if (scale === this.pageScale) {
-      return;
-    }
-    this.pageScale = scale;
-    this.contentView.style.setProperty('--page-scale', String(scale));
-    this.renderer.setPageScale(scale);
-  }
-
-  /**
    * Draws the editor as a page of A4 or as a column the width of the pane.
    *
    * The two are one attribute on the scroller: `styles.css` scopes the sheet, the desk and
@@ -409,13 +367,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * switches it hears which way it went.
    */
   setLayout(layout: EditorLayout): void {
-    if (this.contentView.dataset.layout === layout) {
-      return;
-    }
-    this.layout = layout;
-    this.contentView.dataset.layout = layout;
-    this.fitPage();
-    void eventManager.emit(EDITOR_LAYOUT_CHANGED, layout);
+    this.pageLayout.set(layout);
   }
 
   /**
@@ -433,7 +385,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /** The layout the editor is drawn in. */
   getLayout(): EditorLayout {
-    return this.layout;
+    return this.pageLayout.get();
   }
 
   setContent(content: string): void {
@@ -530,7 +482,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       openFind: (replace) => this.find.open(replace),
       closeFind: () => this.find.close(),
       applyHistory: (direction) => this.applyHistory(direction),
-      toggleLayout: () => this.setLayout(this.layout === 'page' ? 'auto' : 'page')
+      toggleLayout: () => this.setLayout(this.pageLayout.get() === 'page' ? 'auto' : 'page')
     });
     // The native menu names these commands by string; the bridge is the one place
     // that knows which string means which command.
@@ -654,26 +606,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (this.readOnly) {
       return;
     }
-    const block = this.state.getBlockAtLine(lineStart);
-    const caret = caretOffset(this.context);
-    const relative =
-      block === null || caret === null
-        ? 0
-        : Math.min(Math.max(0, caret - block.charStart), block.text.length);
-    const edit = block ? fenceLanguageEdit(block.text, language, relative) : null;
-    if (block === null || edit === null) {
-      return;
-    }
-    const from = block.charStart + edit.from;
-    const to = block.charStart + edit.to;
-    const delta = edit.replacement.length - (edit.to - edit.from);
-    const target =
-      caret === null || (caret >= from && caret <= to)
-        ? undefined
-        : caret > to
-          ? caret + delta
-          : caret;
-    applyEdit(this.context, from, to, edit.replacement, target);
+    applyBlockOpeningEdit(
+      this.context,
+      lineStart,
+      (text, relative) => fenceLanguageEdit(text, language, relative),
+      true
+    );
   }
 
   /** The fenced-Div kind the reader chose, with the body and caret left in place. */
@@ -681,26 +619,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     if (this.readOnly) {
       return;
     }
-    const block = this.state.getBlockAtLine(lineStart);
-    const caret = caretOffset(this.context);
-    const relative =
-      block === null || caret === null
-        ? 0
-        : Math.min(Math.max(0, caret - block.charStart), block.text.length);
-    const edit = block ? calloutKindEdit(block.text, kind, relative) : null;
-    if (block === null || edit === null) {
-      return;
-    }
-    const from = block.charStart + edit.from;
-    const to = block.charStart + edit.to;
-    const delta = edit.replacement.length - (edit.to - edit.from);
-    const target =
-      caret === null || (caret >= from && caret < to)
-        ? undefined
-        : caret > to
-          ? caret + delta
-          : caret;
-    applyEdit(this.context, from, to, edit.replacement, target);
+    applyBlockOpeningEdit(
+      this.context,
+      lineStart,
+      (text, relative) => calloutKindEdit(text, kind, relative),
+      false
+    );
   }
 
   /** Undo/redo keeps the caret at the same document offset when it can. */

@@ -123,7 +123,7 @@ different reasons**. Several did, and each is split now:
 | Module, then | Still holds (lines) | And the module the other job moved to |
 | --- | --- | --- |
 | `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
-| `markdown_editor.ts`, 717 | the shell — layout, view, commands (642) | the key routing: `editing/keys.ts` (129) |
+| `markdown_editor.ts`, 671 | the shell — document, view and command wiring | key routing in `editing/keys.ts`, page/column state and scale in `editor_page_layout.ts`, and shared picker caret arithmetic in `editing/block_opening_edit.ts` |
 | `editing/context.ts`, 621 | the edit funnel (463) | reading the selection: `editing/selection.ts` (175) |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
 | `caret/navigation.ts`, 520 | the four directions (401) | the line hit-testing: `caret/line_hits.ts` (136) |

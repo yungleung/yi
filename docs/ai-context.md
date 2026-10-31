@@ -23,7 +23,7 @@ shape (the tree, the class families, and which convention each check enforces).
 | --- | --- | --- |
 | Syntax (pure, no DOM) | `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (window orchestration), `renderer_dom.ts` (root/block DOM), `renderer_measurements.ts` (height policy), `renderer_geometry.ts` (scroll/spacers), `renderer_block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts`, with `editor_render_context.ts` adapting services and `editor_view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
+| Render | `virtual_block_renderer.ts` (window orchestration), `renderer_dom.ts` (root/block DOM), `renderer_measurements.ts` (height policy), `renderer_geometry.ts` (scroll/spacers), `renderer_block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts`, with `editor_render_context.ts` adapting services, `editor_page_layout.ts` owning A4/column scale, and `editor_view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
 | Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path |
 | Events | `src/events/local_bus.ts` and `src/services/event_manager.ts` over the payload/boundary map in `src/services/app_events.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
@@ -616,8 +616,8 @@ packaging, and `template-examples.js` validates and exports the seven authoring 
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
-named in `virtual_block_renderer.ts`, and scaled to fit the pane by `markdown_editor.ts:
-fitPage` — the sheet, its margin and its type take one `--page-scale`, capped at 1, so a
+named in `virtual_block_renderer.ts`, and `editor_page_layout.ts` scales it to fit the pane —
+the sheet, its margin and its type take one `--page-scale`, capped at 1, so a
 narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
 layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
 as it was before the page, switched by the status bar's layout button (`view:togglePage`) and
