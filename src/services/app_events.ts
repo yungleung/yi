@@ -11,9 +11,10 @@
  *
  * Both are declared here, because that is what makes the bus typed: `eventManager.emit(name,
  * payload)` and `on(name, callback)` take a name from this map and the payload that goes with it,
- * so a listener's payload is checked and a constant that drifts from its name fails to compile. The
- * menu's strings cannot be checked by the compiler — the emitter is Rust — so
- * `test/checks/check-events.mjs` reads the Rust side and fails on a name this map does not have.
+ * so a listener's payload is checked and a constant that drifts from its name fails to compile.
+ * The boundary map says whether a name stays in this window or arrives from Rust/Tauri, which keeps
+ * local facts synchronous without giving up the native menu. The menu's strings cannot be checked
+ * by the compiler, so `test/checks/check-events.mjs` holds the Rust emitters to the inbound side.
  *
  * May import: the payload types, as types only. Upholds: one home for which events exist and what
  * they carry, so the two sides of one event cannot disagree about its shape.
@@ -80,3 +81,57 @@ export interface AppEvents {
 
 /** One event's name. */
 export type AppEventName = keyof AppEvents;
+
+/** Whether one event stays local or must cross the Tauri boundary into this window. */
+export type EventBoundary = 'local' | 'inbound';
+
+/**
+ * How each event reaches this window.
+ *
+ * Example: `editor_layout_changed` is emitted and consumed in the main window,
+ * so it is local; `undo` comes from the Rust native menu, so it is inbound.
+ */
+export const EVENT_BOUNDARIES: Readonly<
+  Record<AppEventName, EventBoundary>
+> = {
+  workspace_changed: 'local',
+  document_session_changed: 'local',
+  document_opened: 'local',
+  tutorial: 'inbound',
+  versions_changed: 'local',
+  message: 'local',
+  hint: 'local',
+  markdown_content_changed: 'local',
+  editor_layout_changed: 'local',
+  editor_edited: 'local',
+  input_source_changed: 'inbound',
+  citation_updated: 'local',
+  setting: 'inbound',
+  config_changed: 'inbound',
+  citation_config_changed: 'inbound',
+  new_markdown: 'inbound',
+  open_file: 'inbound',
+  open_folder: 'inbound',
+  save: 'inbound',
+  save_as: 'inbound',
+  version_save: 'inbound',
+  manage_export_templates: 'inbound',
+  undo: 'inbound',
+  redo: 'inbound',
+  cut: 'inbound',
+  select_all: 'inbound',
+  find: 'inbound',
+  replace: 'inbound',
+  toggle_stack: 'inbound',
+  next_stacked: 'inbound',
+  previous_stacked: 'inbound',
+  export: 'inbound',
+  documentation: 'inbound',
+  report_issue: 'inbound',
+  check_for_updates: 'inbound'
+};
+
+/** Whether one event name arrives through Tauri from outside this window. */
+export function isInboundEvent(name: AppEventName): boolean {
+  return EVENT_BOUNDARIES[name] === 'inbound';
+}
