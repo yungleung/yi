@@ -299,6 +299,62 @@
       title: document.querySelector('[data-template-editor-title]')?.textContent ?? null
     }
   );
+
+  const code = document.querySelector('[data-template-editor-code] .cm-content');
+  code?.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'f',
+      metaKey: true,
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  await t.sleep(150);
+  const search = document.querySelector('[data-template-editor] .cm-search');
+  const searchInput = search?.querySelector('input');
+  searchInput?.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  await t.sleep(180);
+  check(
+    'Escape closes CodeMirror search without closing the editor or manager',
+    search !== null &&
+      document.querySelector('[data-template-editor] .cm-search') === null &&
+      document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false &&
+      visible(manager()),
+    {
+      searchFound: search !== null,
+      searchOpen: document.querySelector('[data-template-editor] .cm-search') !== null,
+      editorOpen:
+        document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false,
+      managerOpen: visible(manager())
+    }
+  );
+
+  code?.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  await t.sleep(180);
+  check(
+    'a composing Escape closes neither the editor nor the manager',
+    document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false &&
+      visible(manager()),
+    {
+      editorOpen:
+        document.querySelector('[data-template-editor]')?.classList.contains('hidden') === false,
+      managerOpen: visible(manager())
+    }
+  );
+
   t.scroller().dispatchEvent(
     new KeyboardEvent('keydown', {
       key: 'Escape',

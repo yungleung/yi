@@ -153,11 +153,12 @@ export class ExportManager extends FloatingSurface {
         if (
           event.key === 'Escape' &&
           this.isOpen() &&
-          templateEditorPanel.isOpen()
+          templateEditorPanel.isOpen() &&
+          !event.isComposing &&
+          templateEditorPanel.handleEscape()
         ) {
           event.preventDefault();
           event.stopImmediatePropagation();
-          void templateEditorPanel.requestClose();
         }
       },
       true
@@ -180,6 +181,9 @@ export class ExportManager extends FloatingSurface {
   }
 
   close(): void {
+    if (templateEditorPanel.isOpen()) {
+      return;
+    }
     super.close();
     this.selectedKind = null;
     this.inspectedId = null;
