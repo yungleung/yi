@@ -71,7 +71,9 @@ renderer.
 **The block model.** `document/blocks.ts: MarkdownBlock`/`BlockView` is the model — a slice of lines
 with a kind, a raw range and a content key — and `create_block.ts: BlockView` is the DOM component
 built from it. The public type is `MarkdownBlock`, so the duplicate class name is local to its file,
-but it is the one name in the tree that means two things (item 9 below).
+but it is the one name in the tree that means two things (item 9 below). The source walk is
+`document/block_scanner.ts`; `document/block_scan_rules.ts` owns the ordered multi-line container
+rules for fences, equations, indented code, terminated HTML, quotes and fenced Divs.
 
 ## Which way the imports point
 

@@ -10,9 +10,7 @@
 
 import {
   closesFrontmatter,
-  closingFence,
   frontmatterDelimiter,
-  htmlBlockTerminator,
   listMarker,
   openingFence
 } from '../syntax/markers';
@@ -20,9 +18,9 @@ import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lin
 import { isTableCaptionLine } from '../syntax/table_captions';
 import { listCaptionLine } from '../syntax/list_captions';
 import { readTableSource } from '../syntax/table_source';
-import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
-import { readFencedDiv } from '../syntax/fenced_divs';
+import { isEquationOpening } from '../syntax/equation_blocks';
 import type { BlockKind } from './block_kinds';
+import { scanContainerBlock } from './block_scan_rules';
 
 /** A line with its 1-based number and raw character range. */
 export interface SourceLine {
@@ -139,147 +137,19 @@ export function* scanBlocks(
     let j = i + 1;
     let kind: BlockKind = 'paragraph';
 
-    // Fenced code: consume through the closing fence (or to the end).
-    const fence = openingFence(first.text);
-    if (fence) {
-      kind = 'fencedCode';
-      while (j < lines.length && !closingFence(lines[j].text, fence)) {
-        lineEnd = lines[j].number;
-        charEnd = lines[j].end;
-        j += 1;
-      }
-      if (j < lines.length) {
-        lineEnd = lines[j].number;
-        charEnd = lines[j].end;
-        j += 1;
-      }
-      yield makeSeed(kind, text, lineStart, lineEnd, charStart, charEnd);
-      i = j;
+    const container = scanContainerBlock(text, lines, i);
+    if (container !== null) {
+      const last = lines[container.last];
+      yield makeSeed(
+        container.kind,
+        text,
+        lineStart,
+        last.number,
+        charStart,
+        last.end
+      );
+      i = container.next;
       continue;
-    }
-
-    // Labeled display math: `[$$` through `$$]…`, one block including its attributes.
-    if (isEquationOpening(first.text)) {
-      let close = -1;
-      for (let scan = j; scan < lines.length; scan += 1) {
-        if (closesEquation(lines[scan].text)) {
-          close = scan;
-          break;
-        }
-      }
-      if (close >= 0) {
-        const last = lines[close];
-        yield makeSeed('equation', text, lineStart, last.number, charStart, last.end);
-        i = close + 1;
-        continue;
-      }
-    }
-
-    // Display math: `$$` on its own line through the closing `$$`.
-    if (first.text.trimStart().startsWith('$$')) {
-      kind = 'displayMath';
-      const open = first.text.indexOf('$$');
-      const closesOnLine =
-        first.text.indexOf('$$', open + 2) >= 0 && first.text.trimEnd().endsWith('$$');
-      if (!closesOnLine) {
-        while (j < lines.length) {
-          const candidate = lines[j].text;
-          lineEnd = lines[j].number;
-          charEnd = lines[j].end;
-          j += 1;
-          if (candidate.trim().startsWith('$$') || candidate.trim().endsWith('$$')) {
-            break;
-          }
-        }
-      }
-      yield makeSeed(kind, text, lineStart, lineEnd, charStart, charEnd);
-      i = j;
-      continue;
-    }
-
-    // Indented code may contain blank lines (when followed by indented
-    // lines), so an indented run continues across them.
-    if (/^(?: {4}|\t)/.test(first.text)) {
-      kind = 'indentedCode';
-      let scan = j;
-      while (scan < lines.length) {
-        while (scan < lines.length && lines[scan].text.trim() === '') {
-          scan += 1;
-        }
-        if (scan >= lines.length) {
-          break;
-        }
-        if (!/^(?: {4}|\t)/.test(lines[scan].text)) {
-          break;
-        }
-        while (scan < lines.length && lines[scan].text.trim() !== '') {
-          lineEnd = lines[scan].number;
-          charEnd = lines[scan].end;
-          scan += 1;
-        }
-      }
-      if (scan > j) {
-        j = scan;
-      }
-      yield makeSeed(kind, text, lineStart, lineEnd, charStart, charEnd);
-      i = j;
-      continue;
-    }
-
-    // HTML blocks that continue until a terminator (script/pre/style/
-    // textarea, comments, processing instructions, declarations, CDATA) may
-    // contain blank lines; consume them whole so one block maps to one
-    // `html` node.
-    const htmlTerminator = htmlBlockTerminator(first.text);
-    if (htmlTerminator) {
-      kind = 'html';
-      while (j < lines.length && !htmlTerminator.test(lines[j].text)) {
-        lineEnd = lines[j].number;
-        charEnd = lines[j].end;
-        j += 1;
-      }
-      if (j < lines.length) {
-        lineEnd = lines[j].number;
-        charEnd = lines[j].end;
-        j += 1;
-      }
-      yield makeSeed(kind, text, lineStart, lineEnd, charStart, charEnd);
-      i = j;
-      continue;
-    }
-
-    // Blockquotes carry Markdown container prefixes that cannot be split into
-    // ordinary paragraphs: quoted blank lines (`>`) belong to the same quote,
-    // and an ordinary blank line without the carrier ends it.
-    if (isQuoteCarrier(first.text)) {
-      kind = 'quote';
-      while (j < lines.length && isQuoteCarrier(lines[j].text)) {
-        lineEnd = lines[j].number;
-        charEnd = lines[j].end;
-        j += 1;
-      }
-      yield makeSeed(kind, text, lineStart, lineEnd, charStart, charEnd);
-      i = j;
-      continue;
-    }
-
-    // A fenced Div must be one block even when its body has ordinary blank
-    // lines or nested Divs. `readFencedDiv` proves that every fence closes for
-    // the source after this line.
-    if (first.text.includes(':::')) {
-      const div = readFencedDiv(text.slice(charStart));
-      if (div !== null && div.to > 0) {
-        const end = charStart + div.to;
-        let close = i;
-        while (close < lines.length && lines[close].end <= end) {
-          lineEnd = lines[close].number;
-          charEnd = lines[close].end;
-          close += 1;
-        }
-        yield makeSeed('fencedDiv', text, lineStart, lineEnd, charStart, charEnd);
-        i = close;
-        continue;
-      }
     }
 
     // A run of consecutive non-blank lines — which stops before a fence or a display formula.
@@ -474,9 +344,4 @@ function makeSeed(
   charEnd: number
 ): BlockSeed {
   return { kind, lineStart, lineEnd, charStart, charEnd, text: text.slice(charStart, charEnd) };
-}
-
-/** Whether a line carries one blockquote level. */
-function isQuoteCarrier(line: string): boolean {
-  return /^ {0,3}>/.test(line);
 }
