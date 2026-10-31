@@ -15,6 +15,7 @@
  */
 
 import type { MarkdownBlock } from '../document/blocks';
+import { TABLE_COMMANDS, type TableCommand } from '../syntax/table_commands';
 import { lineSpanAt } from '../syntax/lines';
 import { caretLocation } from '../caret/offsets';
 import {
@@ -56,36 +57,7 @@ export interface TableTarget {
   column: number;
 }
 
-/**
- * Every operation the table menu offers, in the order the menu lists them.
- *
- * The registry registers one command per entry, so this list — not the menu's
- * markup — is what decides which table commands exist, and the item a menu
- * carries names one of them by type.
- */
-export const TABLE_COMMANDS = [
-  'insertRowAbove',
-  'insertRowBelow',
-  'deleteRow',
-  'clearRow',
-  'moveRowUp',
-  'moveRowDown',
-  'insertColumnLeft',
-  'insertColumnRight',
-  'deleteColumn',
-  'clearColumn',
-  'moveColumnLeft',
-  'moveColumnRight',
-  'alignLeft',
-  'alignCenter',
-  'alignRight',
-  'clearCell',
-  'clearTable',
-  'deleteTable'
-] as const;
-
-/** One of the table commands above. */
-export type TableCommand = (typeof TABLE_COMMANDS)[number];
+export { TABLE_COMMANDS, type TableCommand };
 
 /** The table a target points at: its block, its raw text and its model. */
 export function tableSnapshot(
