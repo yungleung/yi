@@ -1029,7 +1029,9 @@ bridge screenshot re-renders the page and cannot show it; measure with `screenca
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
 `editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
-system has something to compose into and puts its candidate window at the caret — and what it
+system has something to compose into and puts its candidate window at the caret.
+`composition_position.ts` owns caret/frame placement and `composition_keyboard.ts` owns the
+focus and selection hand-back rules; the seam owns composition state and commit detection. What it
 commits is inserted by `text_commands.ts: insertCommitted` as one step of its own. Nothing of a
 composition is drawn in the seam: it is invisible because its *ink and background* are transparent,
 never with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what

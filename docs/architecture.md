@@ -262,7 +262,9 @@ height remembered against it.
    the same text path as typing, as one edit of its own
    (`text_commands.ts: insertCommitted`). `text_commands.ts` is the stable facade over
    `text_insertion.ts`, `text_deletion.ts`, `text_newline.ts` and `task_command.ts`; all four
-   resolve the visible block through `text_command_context.ts`. An explicit 229 key belongs to that method; Caps Lock
+   resolve the visible block through `text_command_context.ts`. The IME seam's caret/frame
+   placement is `composition_position.ts`, and its focus hand-back rules are
+   `composition_keyboard.ts`. An explicit 229 key belongs to that method; Caps Lock
    alone does not, because in the English source it is ordinary editor input. What a method has
    *marked* —
    the pinyin, the kana, the
@@ -459,7 +461,7 @@ still places one (`test/probes/select-across-blocks.js`).
 | Where the caret goes, or how it maps | `caret/*` (`offsets.ts`, `dom_position.ts`); a click that lands on no node is `editing/pointer.ts`, routed by `click_routing.ts: routePointerClick` |
 | When raw source is shown instead of a rendering | `source_mode.ts` |
 | An inline run while the caret is inside it — bold, italic, strikethrough, inline code | `nodes/strong.ts`, `nodes/emphasis.ts`, `nodes/delete.ts`, `nodes/inline_code.ts` over `nodes/revealable_node.ts`; the source classes are in `caret/offsets.ts: SOURCE_SELECTOR` and the styling in `styles.css` |
-| The word an input method is composing, as the reader sees it | `editing/composition_view.ts`, driven by the seam (`editing/composition_input.ts`) — written into the line at the caret, never in the document, and taken out again when the word commits |
+| The word an input method is composing, as the reader sees it | `editing/composition_view.ts`, driven by the seam (`editing/composition_input.ts`) — written into the line at the caret, never in the document, and taken out again when the word commits. `composition_position.ts` places the native field at the caret and the clip; `composition_keyboard.ts` owns focus/selection hand-back |
 | Spacing, laziness, virtualisation | `virtual_block_renderer.ts`, `block_sizes.ts`, `styles.css` — the page's rhythm is written in the page's own scale (`.prose`'s `--md-page-scale`), and the estimator of an unmeasured block's height reads the same line height and paragraph skip, so a page drawn smaller estimates smaller |
 | How big a page the editor is, and the desk under it | `styles.css` (`.markdown-page`, `.markdown-scroller`) — the root's class list in `virtual_block_renderer.ts` names the page, and `editor_page_layout.ts` owns the A4/column state and sets `--page-scale` from the width of the pane (capped at 1, watched by a `ResizeObserver`) so the sheet, its margin and its type shrink together rather than the pane scrolling sideways; a document opens at its own top (`setContent`), because a 297 mm sheet is taller than the pane and nothing clamps an old scroll away. Which of the two layouts is on is one attribute the layout controller owns (`data-layout` — `page` or the full-width `auto`), switched by the `view:togglePage` command and drawn by `layout_toolbar.ts` in the status bar; the choice is remembered in the app config |
 | A colour — a syntax token, a surface, the ink on it | `styles.css`, and only in daisyUI's own tokens: a fixed palette is what made highlighted source illegible in the light theme |

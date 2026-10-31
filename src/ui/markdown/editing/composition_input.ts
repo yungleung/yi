@@ -24,9 +24,15 @@
  * being composed, and what commits is the system's own text, once.
  */
 
-import { getCaretRange, onCaretRangeChanged } from '../caret/caret';
-import { caretRect } from '../caret/geometry';
+import { onCaretRangeChanged } from '../caret/caret';
 import { createCompositionView } from './composition_view';
+import {
+  isCompositionControl,
+  keepCompositionKeyboard,
+  regainCompositionKeyboard,
+  resetCompositionKeyboard
+} from './composition_keyboard';
+import { installCompositionPosition } from './composition_position';
 
 /** What the editor holds while the seam's element is in the DOM. */
 export interface CompositionInput {
@@ -65,9 +71,6 @@ export interface CompositionInput {
    */
   regainKeyboard(): void;
 }
-
-/** The controls whose focus is their own: a field of the app's, never the page's. */
-const CONTROLS = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
 
 /**
  * How long a composition's own key is still the method's once it has ended: the space that
@@ -174,60 +177,19 @@ export function installCompositionInput(
     clearLater();
   };
 
-  /** Where the caret is, which is where the seam sits and the candidate window opens. */
-  const caretBox = () => {
-    const range = getCaretRange();
-    return range ? caretRect(range) : null;
-  };
-
   /** The word the method is holding: being composed now, or let go a moment ago. */
   const markedText = (): boolean => composing || performance.now() - committedAt < MOMENT_MS;
 
   /** Whether the system is using the field: a composition open, or marked text left in it. */
   const fieldInUse = (): boolean => composing || element.value !== '';
 
-  /** The editor's own box: the frame the field is drawn inside, in viewport coordinates. */
-  let frame = { left: 0, top: 0 };
-
-  /**
-   * Reads the editor's box — a frame after the seam is made, when the window is resized, and while
-   * the system is using the field. Never on the caret path of a plain keystroke: that path must
-   * read no layout at all (`test/probes/typed-text.js` counts those), and an earlier version that
-   * read here on every caret move is what broke it.
-   */
-  const measureFrame = (): void => {
-    const rect = host.getBoundingClientRect();
-    frame = { left: rect.left, top: rect.top };
-    clip.style.left = `${rect.left}px`;
-    clip.style.top = `${rect.top}px`;
-    clip.style.width = `${rect.width}px`;
-    clip.style.height = `${rect.height}px`;
-  };
-  requestAnimationFrame(measureFrame);
-  window.addEventListener('resize', measureFrame);
-
-  /** Where the system should open its candidate window: the caret's own box, inside the clip. */
-  const followCaret = () => {
-    const box = caretBox();
-    if (!box) {
-      element.style.left = '-1000px';
-      element.style.top = '-1000px';
-      return;
-    }
-    if (fieldInUse()) {
-      measureFrame();
-    }
-    element.style.left = `${box.left - frame.left}px`;
-    element.style.top = `${box.top - frame.top}px`;
-  };
-
-  /** Draws what the method has marked so far, at the caret it is being written at. */
-  const drawMarked = (): void => {
-    view.show(element.value, getCaretRange());
-    // The field has to be where the system will draw that word, and it is only placed again on a
-    // caret move otherwise.
-    followCaret();
-  };
+  const { followCaret, drawMarked } = installCompositionPosition({
+    host,
+    element,
+    clip,
+    view,
+    fieldInUse
+  });
 
   element.addEventListener('compositionstart', () => {
     composing = true;
@@ -281,52 +243,8 @@ export function installCompositionInput(
     return selection !== null && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
   };
 
-  /**
-   * Puts the keyboard back where the caret is — a turn later, never in the same one.
-   *
-   * A structural edit or a caret moved by a click, undo or arrow needs it: each costs the field
-   * its input context, and without a fresh one the first letter of the next word arrived as a
-   * Latin keystroke instead of opening a composition (`nihao` came out `ni` and 好). A click
-   * also leaves the keyboard on the page because the browser focuses the focusable prose root
-   * on mousedown, and the hand-over above stands back for that gesture. Ordinary typed
-   * characters and an in-place committed word do not take this path; see `keepKeyboard`.
-   *
-   * A control of the app's keeps its own keyboard, and a selection the reader is showing is kept
-   * — a focus change would drop it. A field that has just lost the keyboard does not compose
-   * again if it takes it back inside the same turn, which is why the focus is raised on the next
-   * frame.
-   */
-  const regainKeyboard = (): void => {
-    const active = document.activeElement;
-    if (active !== element) {
-      // Not ours: only the keyboard that is *in the editor* comes back here. A control of
-      // the app's — a field in the find bar, a card's own — keeps its own.
-      const inEditor = active instanceof Node && host.contains(active);
-      if (!inEditor || (active instanceof Element && active.matches(CONTROLS))) {
-        return;
-      }
-    }
-    if (showingSelection()) {
-      return;
-    }
-    element.blur();
-    requestAnimationFrame(() => element.focus({ preventScroll: true }));
-  };
-
-  /** Keeps ordinary character typing in the seam without the deliberate focus reset. */
-  const keepKeyboard = (): void => {
-    const active = document.activeElement;
-    if (active === element) {
-      return;
-    }
-    if (active instanceof Element && active.matches(CONTROLS)) {
-      return;
-    }
-    if (showingSelection()) {
-      return;
-    }
-    requestAnimationFrame(() => element.focus({ preventScroll: true }));
-  };
+  const regainKeyboard = (): void => regainCompositionKeyboard(host, element);
+  const keepKeyboard = (): void => keepCompositionKeyboard(element);
 
   /** Releases a native burst so its textarea context cannot outlive an editor-handled key. */
   const settleNativeInput = (): void => {
@@ -341,8 +259,7 @@ export function installCompositionInput(
     committedValue = '';
     methodLetterLowercase = false;
     nativeBurstActive = false;
-    element.blur();
-    element.focus({ preventScroll: true });
+    resetCompositionKeyboard(element);
   };
 
   /** Rebinds the focused seam to the input source the system has just selected. */
@@ -362,8 +279,7 @@ export function installCompositionInput(
     committedValue = '';
     element.value = '';
     view.hide();
-    element.blur();
-    element.focus({ preventScroll: true });
+    resetCompositionKeyboard(element);
   };
 
   // A pointer that is down means the reader is working with the page itself — dragging
@@ -395,8 +311,8 @@ export function installCompositionInput(
     pointerDown = false;
     // The gesture is over, and the caret it placed is where the keyboard belongs: a click
     // on the page leaves the keyboard *on the page*, and the first letter typed after it is
-    // the page's. A drag that selected text is not a caret — `regainKeyboard` keeps it.
-    regainKeyboard();
+    // the page's. A drag that selected text is not a caret, and regain keeps it.
+    regainCompositionKeyboard(host, element);
   }, true);
 
   // The keyboard belongs here whenever it is in the editor: a click that places a caret, a
@@ -406,7 +322,7 @@ export function installCompositionInput(
     const target = event.target;
     if (
       target === element ||
-      (target instanceof Element && target.matches(CONTROLS)) ||
+      isCompositionControl(target) ||
       pointerDown ||
       showingSelection()
     ) {
