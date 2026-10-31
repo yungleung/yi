@@ -29,6 +29,8 @@ methodology; this file is the index and the conventions.
 | `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
+| `check-command-contracts.mjs` | The typed command catalogue: every command family is present, each parser accepts its real trigger shape, malformed external input is refused, and every contract declares effect, timing, exposure and description |
+| `check-command-dispatch.mjs` | The one command dispatch path: duplicate registration is refused; invalid, forbidden, unavailable and thrown commands cannot report success; source authority distinguishes writable, read-only and unconfigured automation; sync and async results keep their correlation id |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink, automatic-reference and same-document link-fragment queries, the places an `@`, `[#` or `](#` is not one, path fragments and escapes, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
 | `check-equation-blocks.mjs` | Labeled `[$$…$$]{…}` syntax, trailing attribute whitespace, unfinished editor source, the complete plain/starred/inner environment matrix, unnumbered lowering, and one outer LaTeX equation |
@@ -77,7 +79,7 @@ methodology; this file is the index and the conventions.
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
 | `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
 | `check-workspace-folders.mjs` | Where a new note may go (`services/workspace_folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read — including which file an image destination names, and that a `%20` spelling is tried *resolved* before it is tried as written |
-| `commands.mjs` | That a command has one name, one home and one way in: no module but the registry declares a command, and the editor reaches commands by name |
+| `commands.mjs` | That a command has one typed name, one home and one dispatch path: retired editor-local registries cannot return, and triggers name ids from the app-wide command catalogue |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `probe-markers.mjs` | That a probe opening the native table menu carries `@needs-foreground-window`, so `probe:all` skips it instead of leaving the menu open for every probe after it |
@@ -85,8 +87,10 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and six probes (`probe:all` runs 272 and skips 34, each skip for the reason its
-header names), grouped by area: the workspace tree (`tree-rename` — a name edited
+three hundred and seven probes (`probe:all` runs 273 and skips 34, each skip for the reason its
+header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
+typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
+execution, and has one runtime dispatcher), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

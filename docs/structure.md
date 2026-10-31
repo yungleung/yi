@@ -20,7 +20,8 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
 | `src/ui/markdown/caret/` | 9 | 2,292 | the caret, its drawn span, its geometry, the offsets in and out, movement, the layout watcher |
 | `src/ui/markdown/editing/` | 24 | 3,765 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing |
-| `src/ui/markdown/commands/` | 4 | 260 | the command table, the keymap, the native menu |
+| `src/ui/markdown/commands/` | 1 | editor command registration: the typed behaviours the editor owns |
+| `src/commands/` | 7 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
 | `src/ui/markdown/*` (top level) | 19 | 3,630 | the renderer, the registry, source mode, the render context, the offset tags, the editor, the DOM patch, the shared cards |
 | `src/ui/**` outside `markdown/` (the shell) | 57 | 5,905 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions, the image URLs |
 | `src/services/` | 20 | 2,844 | the living state: session, workspace, bibliography, i18n, hints, versioning, the event map |
@@ -100,7 +101,7 @@ when this document was written (the class names and the offset tags) are checked
 | --- | --- | --- |
 | A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 201 modules) |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
-| A command has one name, one home, one way in | `adding-a-command.md` | `test/checks/commands.mjs` |
+| A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
 | A probe that opens a native menu says so | `testing.md` | `test/checks/probe-markers.mjs` |
 | The `data-*` tags that carry offsets | `offset_tags.ts`, with `caret/offsets.ts` documenting the mapping | `test/checks/check-tag-offsets.mjs`: every `setOffset` names a tag from that module, and the fast path's moved list is read through it |

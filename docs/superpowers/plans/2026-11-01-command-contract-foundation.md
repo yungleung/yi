@@ -1,6 +1,6 @@
 # Command Contract Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the editor-local command registry with one app-wide typed command catalogue, dispatcher, authority model, and trigger boundary without changing user-visible behaviour.
 
@@ -41,7 +41,7 @@
   - `parseCommandInput<Id extends CommandId>(id: Id, value: unknown): CommandInput<Id>`
   - `CommandInputError`
 
-- [ ] **Step 1: Write the failing contract check**
+- [x] **Step 1: Write the failing contract check**
 
 Create `test/checks/check-command-contracts.mjs` with a real rolldown import and hand-derived input expectations:
 
@@ -154,7 +154,7 @@ if (failures.length > 0) {
 console.log('command contracts: every command has one typed input');
 ```
 
-- [ ] **Step 2: Run the check and verify RED**
+- [x] **Step 2: Run the check and verify RED**
 
 Run:
 
@@ -164,7 +164,7 @@ node test/checks/check-command-contracts.mjs
 
 Expected: FAIL because `src/commands/contracts.ts` does not exist.
 
-- [ ] **Step 3: Implement the contract catalogue**
+- [x] **Step 3: Implement the contract catalogue**
 
 Create `src/commands/contracts.ts`. Use explicit mapped families for formatting, list, and table commands so the type and runtime catalogue derive from the existing command vocabularies.
 
@@ -476,7 +476,7 @@ export function parseCommandInput<Id extends CommandId>(
 The mapped interfaces and runtime catalogue both derive from the existing constants, so adding a
 formatting style, list kind, or table operation fails at compile time until its contract exists.
 
-- [ ] **Step 4: Run the contract check and verify GREEN**
+- [x] **Step 4: Run the contract check and verify GREEN**
 
 Run:
 
@@ -486,7 +486,7 @@ node test/checks/check-command-contracts.mjs
 
 Expected: `command contracts: every command has one typed input`
 
-- [ ] **Step 5: Run type and full pure checks**
+- [x] **Step 5: Run type and full pure checks**
 
 ```bash
 npx tsc --noEmit
@@ -495,7 +495,7 @@ npm run check
 
 Expected: both pass; the check count increases by one.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/commands/contracts.ts test/checks/check-command-contracts.mjs
@@ -522,7 +522,7 @@ git commit -m "refactor(commands): declare one typed command contract"
   - `type CommandAccess`
   - `type CommandResult`
 
-- [ ] **Step 1: Write the failing dispatcher check**
+- [x] **Step 1: Write the failing dispatcher check**
 
 Create `test/checks/check-command-dispatch.mjs` covering duplicate registration, parsing, availability, authority, sync result, async result, and thrown errors:
 
@@ -658,7 +658,7 @@ if (failures.length > 0) {
 console.log('command dispatch: one typed, authorized result path');
 ```
 
-- [ ] **Step 2: Run the check and verify RED**
+- [x] **Step 2: Run the check and verify RED**
 
 ```bash
 node test/checks/check-command-dispatch.mjs
@@ -666,7 +666,7 @@ node test/checks/check-command-dispatch.mjs
 
 Expected: FAIL because the command modules do not exist.
 
-- [ ] **Step 3: Implement `authority.ts`**
+- [x] **Step 3: Implement `authority.ts`**
 
 Create `src/commands/authority.ts` with a closed origin/effect vocabulary. `localAccess(true)` permits `document.write`; `localAccess(false)` does not. `accessForOrigin` permits current local UI origins and denies automation origins until an explicit adapter grants access.
 
@@ -700,7 +700,7 @@ export function accessForOrigin(origin: CommandOrigin): CommandAccess;
 
 `localAccess(false)` excludes exactly `document.write` and keeps the other current effects. `accessForOrigin` grants that local access for the five local UI origin kinds and returns an empty effect set for `builtin-agent`, `mcp`, and `test`.
 
-- [ ] **Step 4: Implement `registry.ts`**
+- [x] **Step 4: Implement `registry.ts`**
 
 Create a class-based registry plus singleton registration helpers. The classes are what tests instantiate; the singleton helpers preserve the existing import style during migration.
 
@@ -729,7 +729,7 @@ export function registeredCommands(): readonly CommandDefinition<CommandId>[];
 
 The duplicate error is exactly `duplicate command: <id>`.
 
-- [ ] **Step 5: Implement `dispatch.ts`**
+- [x] **Step 5: Implement `dispatch.ts`**
 
 Define `CommandContext`, `CommandResult`, and a dispatcher whose result is direct for sync commands and a Promise for async commands.
 
@@ -779,7 +779,7 @@ export class CommandDispatcher {
 
 Dispatch order is: registered command, parsed input, declared effect allowed, availability, execution.
 
-- [ ] **Step 6: Run dispatcher checks**
+- [x] **Step 6: Run dispatcher checks**
 
 ```bash
 node test/checks/check-command-dispatch.mjs
@@ -788,7 +788,7 @@ npx tsc --noEmit
 
 Expected: the check prints `command dispatch: one typed, authorized result path`; TypeScript is silent.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/commands/registry.ts src/commands/dispatch.ts src/commands/authority.ts test/checks/check-command-dispatch.mjs
@@ -827,7 +827,7 @@ git commit -m "refactor(commands): add typed authorized dispatch"
   - `dispatchCommand<Id extends CommandId>(id, input, origin, options?): CommandResult | Promise<CommandResult>`
   - `dispatchRawCommand<Id extends CommandId>(id, value, origin, options?)`
 
-- [ ] **Step 1: Update `test/checks/commands.mjs` first**
+- [x] **Step 1: Update `test/checks/commands.mjs` first**
 
 Change the check to read `src/commands/registry.ts`, `src/commands/runtime.ts`,
 `src/commands/triggers/native_menu.ts`, and `src/commands/triggers/keymap.ts`. It must fail
@@ -856,7 +856,7 @@ export function dispatchCommand
 export function dispatchRawCommand
 ```
 
-- [ ] **Step 2: Run the command check and verify RED**
+- [x] **Step 2: Run the command check and verify RED**
 
 ```bash
 node test/checks/commands.mjs
@@ -864,7 +864,7 @@ node test/checks/commands.mjs
 
 Expected: FAIL naming the missing new command files.
 
-- [ ] **Step 3: Create the runtime facade**
+- [x] **Step 3: Create the runtime facade**
 
 `src/commands/runtime.ts` owns the one singleton registry and dispatcher:
 
@@ -930,13 +930,13 @@ export function runCommand<Id extends CommandId>(
 
 For no-input commands, declare the overload with `input?: null` so existing `runCommand('find:close')` calls stay valid.
 
-- [ ] **Step 4: Move trigger adapters**
+- [x] **Step 4: Move trigger adapters**
 
 Move `keymap.ts` and `menu.ts` under `src/commands/triggers/`. Keep their vocabulary and behavior
 unchanged. The native-menu adapter uses `AppEventName` type-only and maps each event to a
 `CommandId`.
 
-- [ ] **Step 5: Migrate registrations**
+- [x] **Step 5: Migrate registrations**
 
 Every existing `run(payload)` reads its typed input instead of casting:
 
@@ -964,7 +964,7 @@ registerCommand({
 For table commands, use the parsed `TableTarget` directly. Remove the local
 `runTableOperation(context, command, payload: unknown)` cast and make it accept `TableTarget`.
 
-- [ ] **Step 6: Migrate triggers and origins**
+- [x] **Step 6: Migrate triggers and origins**
 
 Pass the real trigger kind:
 
@@ -987,7 +987,7 @@ if (settled instanceof Promise) {
 The editor's `setReadOnly` calls `setDocumentWritable(!readOnly)` instead of
 `setEditingAllowed`.
 
-- [ ] **Step 7: Update tests and probes that import the old registry**
+- [x] **Step 7: Update tests and probes that import the old registry**
 
 Use `/src/commands/runtime.ts` in probes and `src/commands/contracts.ts` or
 `src/commands/runtime.ts` in checks. Keep test triggers explicit:
@@ -999,7 +999,7 @@ runtime.runCommand('find:close', null, 'test');
 Test origins are denied write effects by default, so read-only/cleanup commands remain valid and
 write-command tests continue through the real keyboard or toolbar trigger.
 
-- [ ] **Step 8: Run TypeScript, pure checks, and command probes**
+- [x] **Step 8: Run TypeScript, pure checks, and command probes**
 
 ```bash
 npx tsc --noEmit
@@ -1024,7 +1024,7 @@ npm run probe -- test/probes/documentation.js
 
 Expected: each reports `failed: []`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/commands src/ui test docs
@@ -1047,7 +1047,7 @@ git commit -m "refactor(commands): route every trigger through one dispatcher"
 - Produces: a running-app proof that the catalogue is present, menu payloads parse, invalid input
   is refused, and a real toolbar command still edits through the same route.
 
-- [ ] **Step 1: Write the failing app probe**
+- [x] **Step 1: Write the failing app probe**
 
 Create `test/probes/command-contract.js`:
 
@@ -1089,7 +1089,7 @@ Create `test/probes/command-contract.js`:
 })()
 ```
 
-- [ ] **Step 2: Run the probe and verify its initial state**
+- [x] **Step 2: Run the probe and verify its initial state**
 
 Start a fresh app on this branch and run:
 
@@ -1100,7 +1100,7 @@ npm run probe -- test/probes/command-contract.js
 Expected before final documentation wiring: the app loads the modules and reports the catalogue
 checks. If the module paths are wrong, the probe fails with `failed` naming each missing contract.
 
-- [ ] **Step 3: Update the command recipe and architecture maps**
+- [x] **Step 3: Update the command recipe and architecture maps**
 
 `docs/adding-a-command.md` must say:
 
@@ -1126,7 +1126,7 @@ src/commands/triggers/          keyboard and native-menu adapters
 
 Document that commands are requests, events are facts, and the state owner remains authoritative.
 
-- [ ] **Step 4: Run final command verification**
+- [x] **Step 4: Run final command verification**
 
 ```bash
 npx tsc --noEmit
@@ -1139,7 +1139,7 @@ npm run probe -- test/probes/documentation.js
 
 Expected: TypeScript silent; all pure checks pass; every probe reports `failed: []`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add test/probes/command-contract.js docs

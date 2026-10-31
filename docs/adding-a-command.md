@@ -1,135 +1,188 @@
 # Adding a command
 
-A command is something the author asks for by name — bold the selection, insert a
-table, write a rule. One command has one name, one home and one way in, so the job
-is always the same five steps. This recipe was written by adding `edit:insertRule`
-(a thematic break on its own line) and following it.
+A command is something the app can be asked to do by name: bold the selection,
+open find, save a version, or create a note. Every command has one typed contract,
+one implementation, and one dispatch path.
 
-## 1. Say where the work lives
+The same command must be usable by a keyboard chord, toolbar button, native menu,
+test, and future built-in agent or MCP client. Those sources differ by **origin**
+and **authority**, not by a second implementation.
 
-The behaviour belongs in `src/ui/markdown/editing/<area>.ts`, as one function that
-takes the editor context and calls `applyEdit` — one edit, so one undo. Read the
-caret with `caretOffset(context)` and return `false` when there is none:
+## 1. Write the failing proof
+
+Start with the smallest test that proves the missing behaviour:
+
+- a pure rule goes in `test/checks/`;
+- a command that needs the real caret, DOM, keyboard or menu goes in
+  `test/probes/`;
+- a payload parser or authority rule belongs in `test/checks/check-command-contracts.mjs`
+  or `test/checks/check-command-dispatch.mjs`.
+
+Run the test before implementation and confirm it fails for the missing command,
+not because of a typo or missing import.
+
+Example: to add `edit:insertRule`, first drive Cmd+Shift+R in a probe and observe
+that no thematic rule is inserted.
+
+## 2. Put the rule in the right module
+
+The behaviour belongs where its state lives:
+
+| Work | Home |
+| --- | --- |
+| Markdown arithmetic | `src/ui/markdown/syntax/` |
+| Editing a document through the caret | `src/ui/markdown/editing/` |
+| The editor's view or interaction wiring | `src/ui/markdown/` |
+| Session, files, versions, export or settings | their feature modules under `src/ui/`, `src/services/` or `src/api/` |
+
+A command is a rule plus the smallest adapter that asks the rule to run. Pure
+markdown rules stay testable in Node; DOM or native integration stays with its
+owner.
+
+## 3. Declare the typed contract
+
+Add the command id and its contract to `src/commands/contracts.ts`. The contract
+owns the input parser, effect, timing, exposure, description, and input/output
+types.
+
+Example:
 
 ```ts
-// src/ui/markdown/editing/thematic_break.ts
-export function insertThematicBreak(context: EditorContext): boolean {
-  const caret = caretOffset(context);
-  if (caret === null) {
-    return false;
-  }
-  applyEdit(context, caret, caret, thematicBreakInsertion(context.state.getText(), caret));
-  return true;
+'edit:insertRule': {
+  effect: 'document.write',
+  timing: 'sync',
+  exposure: 'public',
+  description: 'insert a thematic rule',
+  parse: parseNoInput
 }
 ```
 
-**A command is a rule plus a call.** Anything that is a pure function of the text —
-which offsets the edit covers, what it inserts, where the caret lands — belongs in
-a syntax module (`src/ui/markdown/syntax/*.ts`) or beside the other rules for that
-area (`editing/blank_lines.ts`), *not* inside the command. Then `test/checks` can
-bundle it and assert it in Node. `thematicBreakInsertion` is the rule; the command
-is three lines.
-
-**A command need not be an edit.** `view:togglePage` (the A4-page/width switch) is the
-editor's own view state, so its behaviour is a method on `markdown_editor.ts` beside the
-scroller it changes — and there is no pure rule to bundle when the rule is one boolean. What
-every command owes the rest of the app is the same either way: one id, one home, one way in.
-
-## 2. Name it
-
-Add the id to the union in `src/ui/markdown/commands/registry.ts`:
+For a command with input, parse the transport shape once:
 
 ```ts
-export type CommandId =
-  | `format:${FormattingStyle}`
-  …
-  | 'edit:insertRule'
+function parseTableTarget(value: unknown): TableTarget {
+  // ...
+}
 ```
 
-Ids are `namespace:name`, always in the same camelCase as the other ids
-(`edit:insertFootnote`, `table:insertRowAbove`). The union is what makes a typo a
-compile error instead of a command that silently does nothing, so add the id here
-before you register anything.
+No feature module receives unchecked menu, MCP, agent or test input. If a payload
+cannot be parsed, dispatch returns `invalid-input` and the implementation does not
+run.
 
-## 3. Register it where the behaviour is
+`effect` is part of the authority contract:
 
-In `src/ui/markdown/markdown_editor.ts`, `registerCommandEvents` registers every
-command the editor owns. A single command is one line:
+- `none` reads or opens UI;
+- `document.write` changes the current note;
+- `session.write` changes open documents or the stack;
+- `workspace.write` changes files or folders;
+- `export.run` runs an export;
+- `version.write` writes a version.
+
+## 4. Implement and register the behaviour
+
+Implement the work in the module that owns it. Register against the app-wide
+runtime near that behaviour:
 
 ```ts
-registerCommand({ id: 'edit:insertRule', run: () => insertThematicBreak(this.context) });
+import { registerCommand } from '../../commands/runtime';
+
+registerCommand({
+  id: 'edit:insertRule',
+  run: () => {
+    insertThematicBreak(context);
+    return null;
+  }
+});
 ```
 
-A *family* of commands (one per style, per list command, per table operation) is a
-loop over the list its module exports, so a trigger cannot name a command nobody
-registered:
+A family of commands is registered by looping over the module that owns the
+family:
 
 ```ts
 for (const style of FORMATTING_STYLES) {
-  registerCommand({ id: `format:${style}`, run: () => applyFormatting(this.context, style) });
+  registerCommand({
+    id: `format:${style}`,
+    run: () => {
+      applyFormatting(context, style);
+      return null;
+    }
+  });
 }
 ```
 
-## 4. Give it a trigger
+Registering one id twice throws during startup. Do not replace an existing
+command from another module.
 
-Three kinds, and a command may have several:
+## 5. Add the trigger
+
+Triggers only dispatch command ids. They do not implement the work.
 
 | Trigger | File | Shape |
 | --- | --- | --- |
-| A key chord | `src/ui/markdown/commands/keymap.ts` | `'shift+r': 'edit:insertRule'` |
-| A toolbar button | `src/ui/toolbar/<toolbar>.ts` | the button's press handler calls `runCommand('…')` |
-| A table menu item | `src/ui/table/table_menu.ts` | the item's action calls `runCommand('table:<entry>', target)` |
-| The native app menu | `src/ui/markdown/commands/menu.ts` | the Rust menu emits an event; the table maps it to an id |
+| Key chord | `src/commands/triggers/keymap.ts` | map the chord to a `CommandId`; the editor passes origin `keyboard` |
+| Toolbar | `src/ui/toolbar/` | `runCommand('…', null, 'toolbar')` |
+| Table context menu | `src/ui/table/table_menu.ts` | dispatch the captured target with origin `context-menu` |
+| Native app menu | `src/commands/triggers/native_menu.ts` | map the Rust event to a `CommandId`; the editor passes raw payload with origin `native-menu` |
 
-Triggering code calls `runCommand` and nothing else: no module outside
-`commands/registry.ts` names a command event, and the check
-`test/checks/commands.mjs` fails if one does. A chord the native menu already
-claims arrives as a menu event instead (`menu.ts`); a chord it does not claim
-(`Cmd+Shift+R`) is handled in the webview by `keymap.ts`.
+Typed local callers use `runCommand` or `dispatchCommand`. A transport adapter
+that has not parsed its payload uses `dispatchRawCommand`.
 
-## 5. Prove it
+Normal typing, Enter, Backspace, Tab and arrow movement remain the synchronous
+text path. Do not simulate a keystroke to give an agent an editing capability;
+give it a semantic command such as a range replacement or formatting command.
 
-Two tests, one for the rule and one for the command:
+## 6. Prove the command
 
-```js
-// test/checks/check-thematic-break.mjs — the rule, in Node
-check('a paragraph line right above is separated, not underlined',
-  applied('a\nb\n', 2), 'a\n\n---\n\nb\n');
-```
-
-```js
-// test/probes/insert-rule.js — the command, in the app
-t.scroller().dispatchEvent(new KeyboardEvent('keydown', {
-  key: 'R', shiftKey: true, metaKey: true, bubbles: true, cancelable: true
-}));
-```
-
-The probe drives the real trigger and asserts the raw document *and* what is
-rendered. Write it before the command exists and watch it fail — with no
-registration the chord does nothing, and the probe reports `rules: 0` and
-`failed: [...]`.
-
-Then run everything, from a freshly started app for the probe:
+Run:
 
 ```bash
 npx tsc --noEmit
 npm run check
-npm run tauri dev                                   # terminal 1
-npm run probe -- test/probes/<your-probe>.js        # terminal 2
-npm run probe:all
 ```
 
-## Traps
+Start a fresh app on the current branch:
 
-- **The caret is a decision.** `applyEdit`'s default puts it after the inserted
-  text; that is wrong when the insertion ends in a marker — the next keystroke
-  joins the `---` line and takes the rule with it. Pass a target, and pass a
-  function of the new state (`(state) => …`) when the answer depends on the blocks
-  the edit just made. A blank line *between* two blocks is not a place a caret can
-  be (`state.getBlocks()` has no block for it), so "the line below" is the next
-  block's `charStart`, or the end of the text.
-- **Text entry is not a command.** Typing, `Enter`, `Backspace`, `Tab` and the
-  arrows stay in the editor's keydown handler and call `editing/*` directly.
-- **Adding a syntax fact?** It needs one home — put it in
-  `src/ui/markdown/syntax/markers.ts` and add its name to the facts list in
-  `test/checks/syntax-home.mjs`, which fails if the fact is defined twice.
+```bash
+npm run tauri dev
+```
+
+Run the probe from another terminal:
+
+```bash
+npm run probe -- test/probes/<your-probe>.js
+```
+
+The probe must drive a real trigger or the explicit command runtime, then assert:
+
+- the raw document or state changed as intended;
+- the visible DOM, caret and scroll are correct when relevant;
+- a read-only or unauthorized origin cannot perform the effect;
+- an invalid payload is refused before implementation code runs.
+
+Run `npm run probe:all` when the change affects the shared command path.
+
+## Command or event?
+
+- A **command** asks for work: `format:bold`, `file:save`, `session:open`.
+- An **event** reports a fact after work commits: `document_changed`,
+  `document_session_changed`, `workspace_changed`.
+
+Never emit an event as a disguised command. Never mutate state from an event
+listener. The document or session owner applies the change; the event announces it.
+
+## Comments
+
+When a command or its parser is not obvious from its name and types, put a short
+concrete example in the comment:
+
+```ts
+/**
+ * Reads the table target captured before a context menu took focus.
+ *
+ * Example: `{ lineStart: 12, row: 1, column: 0 }` means the first body cell
+ * of the table beginning on line 12.
+ */
+```
+
+Show the input and result or the failure the function prevents. Do not merely
+restate its goal.

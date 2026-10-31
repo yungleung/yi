@@ -25,7 +25,7 @@ shape (the tree, the class families, and which convention each check enforces).
 | Document | `document/state.ts`, `document/blocks.ts` (the text, its blocks, the parse cache) and `document/history.ts` (the edit log) | the text and everything derived from it |
 | Render | `virtual_block_renderer.ts` (the DOM), `block_sizes.ts` (the pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts` | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a rendered position back into the document, `dom_position.ts` places one from it | the logical caret, and mapping offsets |
-| Commands | `editing/*`, `commands/*` (the registry, the native-menu bridge, the keymap), `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one command, one name, one way in |
+| Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
@@ -815,7 +815,7 @@ into the binary with `include_str!` for the **menu**, which is built before any 
 to survive one that never loads (that is why the menu is Rust's, and stays Rust's). Tauri's
 predefined items are English unless they are given text, so every label is passed from the
 catalogue through the `*_with_text` forms; ids and accelerators are *not* translated, because an id
-is what `commands/menu.ts` maps to a command. The language is a config field whose empty default
+is what `src/commands/triggers/native_menu.ts` maps to a command. The language is a config field whose empty default
 means *the reader's system locale* (`src/services/language.ts`, `i18n::language_for`), offered by
 its own name in the General tab; changing it rebuilds the menu in Rust and **reloads** the windows,
 because a label is read where it is drawn and the session brings the document, the caret and the
