@@ -23,29 +23,24 @@
 
 import type { FormattingEdit, FormattingStyle } from './format';
 import type { MarkdownEditorState } from './document/state';
-import { preserveSpaces } from './text_spacing';
-import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf, setOffset } from './offset_tags';
-
-const FORMAT_TAGS: Record<FormattingStyle, string> = {
-  bold: 'strong',
-  italic: 'em',
-  strikethrough: 'del',
-  inlineCode: 'code'
-};
-
-const MARKER_LENGTH: Record<FormattingStyle, number> = {
-  bold: 2,
-  italic: 1,
-  strikethrough: 2,
-  inlineCode: 1
-};
-
-/** A rendered text leaf (span or inline code) with its block-relative raw range. */
-interface TaggedText {
-  element: HTMLElement;
-  start: number;
-  end: number;
-}
+import {
+  FORMAT_FROM,
+  FORMAT_TO,
+  LINE_START,
+  TEXT_FROM,
+  offsetOf,
+  setOffset
+} from './offset_tags';
+import {
+  createFormatElement,
+  formatTag,
+  isWidget,
+  isolatePiece,
+  makeTaggedSpan,
+  markerLength,
+  shiftTags,
+  taggedTexts
+} from './format_dom_tags';
 
 /**
  * Applies a formatting edit to the rendered block in place.
@@ -86,81 +81,6 @@ export function patchFormatDom(
   const contentTo = edit.contentTo - block.charStart;
   return wrapRange(blockElement, style, wrapFrom, wrapTo, contentFrom, contentTo);
 }
-
-/** The block's text leaves in DOM order, with their raw ranges. */
-function taggedTexts(blockElement: HTMLElement): TaggedText[] {
-  const texts: TaggedText[] = [];
-  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`)) {
-    const text = element.firstChild;
-    if (!text || text.nodeType !== Node.TEXT_NODE) {
-      continue;
-    }
-    const start = offsetOf(element, TEXT_FROM);
-    if (!Number.isFinite(start)) {
-      continue;
-    }
-    texts.push({ element, start, end: start + (text as Text).data.length });
-  }
-  return texts;
-}
-
-/**
- * Whether the element is a widget's own drawing rather than the document's text: a citation or a
- * link at rest (`markdown-citation`, `markdown-link`, …), or any of the sources a widget shows
- * while the caret is inside it (`markdown-…-source`).
- *
- * The names are the ones the app actually sets; a name here that nothing in `src/` sets would be
- * dead, which is what `test/checks/class-names.mjs` fails on.
- */
-function isWidget(element: HTMLElement): boolean {
-  return (
-    element.closest(
-      '.markdown-citation, .markdown-wikilink, .markdown-link, ' +
-        '.markdown-link-source, .markdown-image-source, .markdown-citation-source, ' +
-        '.markdown-wikilink-source, .markdown-math-source, .markdown-break-source, ' +
-        '.markdown-thematic-break-source, .markdown-footnote-source'
-    ) !== null
-  );
-}
-
-/** Creates the formatting element for a style, without raw tags yet. */
-function createFormatElement(style: FormattingStyle): HTMLElement {
-  const element = document.createElement(FORMAT_TAGS[style]);
-  if (style === 'inlineCode') {
-    element.className = 'markdown-inline-code';
-  }
-  element.classList.add('markdown-node');
-  return element;
-}
-
-/** Creates a text span tagged with a raw start (adjusted by the shift pass). */
-function makeTaggedSpan(oldStart: number, text: Text): HTMLElement {
-  const span = document.createElement('span');
-  span.classList.add('markdown-node');
-  setOffset(span, TEXT_FROM, oldStart);
-  span.appendChild(document.createTextNode(preserveSpaces(text.data)));
-  return span;
-}
-
-/**
- * Splits `element`'s text node so the piece `[pieceStart, pieceEnd)` is an
- * isolated text node, and returns that node. The element keeps any prefix
- * and suffix as sibling text nodes.
- */
-function isolatePiece(element: HTMLElement, pieceStart: number, pieceEnd: number): Text {
-  const text = element.firstChild as Text;
-  const prefixLen = Math.max(0, pieceStart - (offsetOf(element, TEXT_FROM) || 0));
-  let node = text;
-  if (prefixLen > 0) {
-    node = text.splitText(prefixLen);
-  }
-  const pieceLen = Math.max(0, pieceEnd - pieceStart);
-  if (pieceLen < node.data.length) {
-    node.splitText(pieceLen);
-  }
-  return node;
-}
-
 /** Wraps the content range in a new formatting element. */
 function wrapRange(
   blockElement: HTMLElement,
@@ -217,7 +137,7 @@ function wrapRange(
     return false;
   }
 
-  const markerLen = MARKER_LENGTH[style];
+  const markerLen = markerLength(style);
   const wrapper = createFormatElement(style);
   const textPieces: { start: number; text: Text }[] = [];
   const appended = new Set<HTMLElement>();
@@ -324,7 +244,7 @@ function unwrapUnit(
   wrapFrom: number,
   wrapTo: number
 ): boolean {
-  const tag = FORMAT_TAGS[style].toUpperCase();
+  const tag = formatTag(style).toUpperCase();
   let unit: HTMLElement | null = null;
   for (const element of blockElement.querySelectorAll<HTMLElement>(`${tag}[data-${FORMAT_FROM}]`)) {
     if (offsetOf(element, FORMAT_FROM) === wrapFrom && offsetOf(element, FORMAT_TO) === wrapTo) {
@@ -350,73 +270,7 @@ function unwrapUnit(
     unit.remove();
   }
 
-  const markerLen = MARKER_LENGTH[style];
+  const markerLen = markerLength(style);
   shiftTags(blockElement, wrapFrom, wrapTo, markerLen, -1);
   return true;
-}
-
-/**
- * Shifts every raw tag in the block by the marker delta: elements inside the
- * wrap range shift by one marker, elements after it by two.
- */
-function shiftTags(
-  blockElement: HTMLElement,
-  wrapFrom: number,
-  wrapTo: number,
-  markerLen: number,
-  direction: 1 | -1
-): void {
-  const deltaStart = (start: number): number => {
-    if (direction > 0) {
-      if (start >= wrapTo) {
-        return 2 * markerLen;
-      }
-      if (start >= wrapFrom) {
-        return markerLen;
-      }
-      return 0;
-    }
-    if (start >= wrapTo) {
-      return -2 * markerLen;
-    }
-    if (start >= wrapFrom + markerLen) {
-      return -markerLen;
-    }
-    return 0;
-  };
-  // Format ends are exclusive (past the closing marker): an end at or inside
-  // the wrap range shifts by one marker, an end past it by two.
-  const deltaEnd = (end: number): number => {
-    if (direction > 0) {
-      if (end <= wrapFrom) {
-        return 0;
-      }
-      return end <= wrapTo ? markerLen : 2 * markerLen;
-    }
-    if (end <= wrapFrom) {
-      return 0;
-    }
-    return end <= wrapTo - markerLen ? -markerLen : -2 * markerLen;
-  };
-
-  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${TEXT_FROM}]`)) {
-    const start = offsetOf(element, TEXT_FROM);
-    if (Number.isFinite(start)) {
-      setOffset(element, TEXT_FROM, start + deltaStart(start));
-    }
-  }
-  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${FORMAT_FROM}]`)) {
-    const start = offsetOf(element, FORMAT_FROM);
-    const end = offsetOf(element, FORMAT_TO);
-    if (Number.isFinite(start) && Number.isFinite(end)) {
-      setOffset(element, FORMAT_FROM, start + deltaStart(start));
-      setOffset(element, FORMAT_TO, end + deltaEnd(end));
-    }
-  }
-  for (const element of blockElement.querySelectorAll<HTMLElement>(`[data-${SOURCE_FROM}]`)) {
-    const start = offsetOf(element, SOURCE_FROM);
-    if (Number.isFinite(start)) {
-      setOffset(element, SOURCE_FROM, start + deltaStart(start));
-    }
-  }
 }

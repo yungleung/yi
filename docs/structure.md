@@ -159,7 +159,7 @@ what keeps it that way.
    their three lines, and the check reads `src/` (it says 201 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
-   with its reason), and the other way round. Writing it found four names `format_dom.ts` looked
+   with its reason), and the other way round. Writing it found four names `format_dom_tags.ts` looked
    for that nothing sets — a widget's rest form is drawn by its own tag — and they are gone.
 6. **Split the five two-job modules**, moving no behaviour. Done, a commit each: the kind vocabulary
    (`document/block_kinds.ts`), the key routing (`editing/keys.ts`), the selection reading

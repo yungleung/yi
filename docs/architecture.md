@@ -71,7 +71,7 @@ There is no second `editor_edited` or `markdown_content_changed` notification.
 | --- | --- | --- |
 | Syntax (pure) | `syntax/**` | other syntax modules, mdast types, the remark plugins |
 | Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
-| Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `lazy.ts` | document, syntax |
+| Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `format_dom_tags.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `dom_position.ts` out) | document, syntax, the shared tag names (`offset_tags.ts`) — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
 | Commands | `src/commands/*`, `editing/*`, `markdown_editor.ts`, `click_routing.ts` | everything above; `src/commands/contracts.ts` owns the shared command vocabulary |
 
@@ -357,6 +357,9 @@ Two writers put text into a mounted block without the renderer building it: the 
 above writes into the tagged text node, and a formatting command patches the block's own
 markup in place (`format_dom.ts`). Both leave the element holding content the renderer did
 not build, so both tell it — `measureEditedBlock`, and `notePatchedBlock` for the patch.
+`format_dom_tags.ts` owns the reusable tagged-text scan, widget boundary, formatting
+element and raw-offset shift primitives used by that patch; `format_dom.ts` owns only
+the safe wrap/unwrap decision and DOM surgery.
 An element is remembered by the content it was built from, and without that record the
 next edit back to the older text looks like nothing to re-render: undoing a formatting
 command left its `<strong>` on screen, with the selection mapped through the tags the
