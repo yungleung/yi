@@ -37,6 +37,7 @@ const {
   openDecision,
   openInto,
   parseSession,
+  recordContent,
   reachable,
   replaceReference,
   restore,
@@ -306,6 +307,11 @@ check('capturing writes the text and the view into the current document', {
 }, { content: true, view });
 check('and it is editing, not saved, once it differs', isSaved(currentDocument(captured)), false);
 check('the title follows the text', currentDocument(captured)?.title, 'A note about things');
+const recorded = recordContent(captured, `${NOTE}Another.\n`);
+check('recording event text updates the document without reading or replacing its view', {
+  content: currentDocument(recorded)?.content.endsWith('Another.\n'),
+  view: currentDocument(recorded)?.view
+}, { content: true, view });
 // A capture that cannot see the caret — the block holding it has been unmounted — keeps the one
 // the document already had, or a reader who scrolled away from their caret would be put back at
 // the beginning of the document.

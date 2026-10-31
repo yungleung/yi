@@ -7,8 +7,8 @@
  * the block's element — and therefore the layout of everything below it — exactly
  * where it was (see `test/probes/block-rebuild-cost.js`: rebuilding the fixture note's
  * last block costs ~26 ms, writing into one of its text nodes ~0). A character that
- * may change the parse is checked once after the typing burst (`context.ts:
- * scheduleVerify`); the write itself never waits.
+ * may change the parse is checked once after the typing burst
+ * (`edit_verification.ts: scheduleEditVerification`); the write itself never waits.
  *
  * It refuses whenever the mapping is not exact, and it decides that *before* the
  * edit is applied: both ends of the edit must land in one text node, and the text

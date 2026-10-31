@@ -45,6 +45,7 @@ import {
   openDecision,
   openInto,
   parseSession,
+  recordContent,
   replaceReference,
   restore as restoreDocument,
   serializeSession,
@@ -415,11 +416,30 @@ class DocumentSession {
   noteMoved(): void {
     this.capture();
     this.announce();
+    this.schedulePersist(false);
+  }
+
+  /**
+   * A committed document edit arrived: record its authoritative text now, then capture the view
+   * and persist after the same debounce. Recording text is free; the view reads layout, so it
+   * waits until typing has stopped rather than adding two rectangle reads to every keystroke.
+   */
+  noteDocumentChanged(content: string): void {
+    this.state = recordContent(this.state, content);
+    this.announce();
+    this.schedulePersist(true);
+  }
+
+  private schedulePersist(captureView: boolean): void {
     if (this.timer !== null) {
       clearTimeout(this.timer);
     }
     this.timer = setTimeout(() => {
       this.timer = null;
+      if (captureView) {
+        this.capture();
+        this.announce();
+      }
       void this.persist();
     }, SAVE_DELAY_MS);
   }

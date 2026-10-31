@@ -58,11 +58,11 @@ export class MarkdownEditor extends BaseComponent {
     });
 
     // Every edit is news to the session, which keeps the document's own copy — and through it
-    // the file the document is written to — in step. The event carries nothing: the session
-    // reads the text when it captures, and it debounces both the copy and the write.
+    // the file the document is written to — in step. The event's committed text updates the
+    // copy without reading layout; the caret/view capture waits for the debounced write.
     void eventManager.on(DOCUMENT_CHANGED, (event) => {
       if (event.payload.reason !== 'load') {
-        documentSession.noteMoved();
+        documentSession.noteDocumentChanged(event.payload.text);
       }
     });
 

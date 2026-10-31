@@ -61,7 +61,8 @@ human command, so rendering, history, caret and scroll behavior do not fork for 
 
 Every committed load, edit, undo and redo emits one local `document_changed` fact. Its payload names
 the document key, previous and new revision, the reason, and the current raw text. The session
-listens for edit/undo/redo to keep its debounced copy current; the word count consumes load facts.
+records edit/undo/redo text synchronously, then captures its layout-dependent view with the
+debounced save so a keystroke does no geometry reads; the word count consumes load facts.
 There is no second `editor_edited` or `markdown_content_changed` notification.
 
 ## Layers and import rules
@@ -332,7 +333,7 @@ captioned lists.
 For rendered prose, the in-place write captures the block's parse shape (from the parse
 the renderer already cached) and checks it once the typing stops: one coalesced check a
 burst, one parse a burst, and a block whose parse no longer has that shape is rendered
-again (`editing/context.ts: scheduleVerify`). Characters and caret movement are
+again (`editing/edit_verification.ts: scheduleEditVerification`). Characters and caret movement are
 immediate; only that optional render waits. The same deferred reconciliation refreshes
 blocks whose parse depends on another block — a footnote marker whose definition was
 renamed, for example — once per burst rather than once per key. A source view remains

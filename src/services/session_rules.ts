@@ -319,15 +319,12 @@ export function dropFromStack(state: SessionState, id: string): SessionState {
 }
 
 /**
- * Writes what the editor knows into the document it is showing: its text, and where the reader
- * is. Called as the reader types and when they switch away, which is what makes a stacked
- * document always its own latest version.
+ * Records the text of the document on screen without reading its view.
+ *
+ * Example: a `document_changed` event carrying `Body.` updates the session copy and title while
+ * leaving the last known caret and scroll anchor intact until the debounced view capture.
  */
-export function capture(
-  state: SessionState,
-  content: string,
-  view: SeenView
-): SessionState {
+export function recordContent(state: SessionState, content: string): SessionState {
   return {
     ...state,
     documents: state.documents.map((document) =>
@@ -335,9 +332,29 @@ export function capture(
         ? {
             ...document,
             content,
-            title: documentTitle(content, document.path),
-            view: mergeView(document.view, view)
+            title: documentTitle(content, document.path)
           }
+        : document
+    )
+  };
+}
+
+/**
+ * Writes what the editor knows into the document it is showing: its text, and where the reader
+ * is. Called when the reader switches away or just before a debounced save, which is what makes
+ * a stacked document always its own latest version.
+ */
+export function capture(
+  state: SessionState,
+  content: string,
+  view: SeenView
+): SessionState {
+  const recorded = recordContent(state, content);
+  return {
+    ...recorded,
+    documents: recorded.documents.map((document) =>
+      document.id === recorded.current
+        ? { ...document, view: mergeView(document.view, view) }
         : document
     )
   };

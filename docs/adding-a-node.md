@@ -158,7 +158,7 @@ change the parse. It accepts a letter, a digit, a space or punctuation that mean
 itself where no marker, line beginning, line edge, autolink or setext underline could
 change what the line means. A direct prose write outside that set still appears
 immediately, then captures its old shape and lets
-`editing/context.ts: scheduleVerify` render once after the burst if the parse moved.
+`editing/edit_verification.ts: scheduleEditVerification` render once after the burst if the parse moved.
 
 What the rule *assumes* is that every construct needs a character it does not accept:
 a marker (`*`, `` ` ``, `[`, `|`, `$`, `@`, `/`, …), a line's own beginning (`1. `, `#`,
@@ -177,7 +177,7 @@ it, and that has one home and two proofs:
 - `test/probes/typed-text.js`: a case that types where the construct is, and says
   which path took the keystroke.
 
-The deferred check behind the fast path (`editing/context.ts: scheduleVerify`) is what
+The deferred check behind the fast path (`editing/edit_verification.ts: scheduleEditVerification`) is what
 renders marker syntax after the burst: it renders a block again when the parse it now
 has is not the shape it was built from. A construct that changes rendering without
 adding or removing nodes still needs a distinct node shape for this check to see it.

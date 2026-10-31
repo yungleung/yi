@@ -354,7 +354,7 @@
   const originalRender = VirtualBlockRenderer.prototype.renderBlock;
   MarkdownEditorState.prototype.getBlockContent = function (block) {
     const stack = String(new Error().stack ?? '');
-    if (stack.includes('scheduleVerify')) {
+    if (stack.includes('scheduleEditVerification')) {
       calls.capture += 1;
     } else if (stack.includes('verifyBlock') && !stack.includes('renderBlock')) {
       calls.check += 1;

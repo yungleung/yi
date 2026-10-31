@@ -117,7 +117,9 @@ file it is written to. It keeps the document on screen, the stack behind it, and
 was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,
 `scrollAnchor`/`scrollToAnchor` on the renderer), and the workspace tree hands a clicked file to
 the session rather than to the editor, because whether the document on screen has to be asked
-about is the session's decision. That question is only asked when replacing the document on screen
+about is the session's decision. A `document_changed` fact records its authoritative text
+immediately; the session's caret/view capture waits for the debounced save because that capture
+reads layout. That question is only asked when replacing the document on screen
 would lose the reader's words — a document whose text its file holds is the file's copy, and is
 replaced silently — and the reader may answer it in advance: the General tab's switch
 (`push_unstacked_on_open`, off by default) pushes such a document into the stack instead of asking.

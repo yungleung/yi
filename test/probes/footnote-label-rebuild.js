@@ -3,7 +3,7 @@
  *
  * Typing in a label is a plain write into the tag the source view carries, and the
  * deferred check parses once the burst stops (`editing/context.ts:
- * scheduleVerify`), so a keystroke in a label ends by rebuilding the very block the
+ * scheduleEditVerification`), so a keystroke in a label ends by rebuilding the very block the
  * caret is in. Two shapes of that: the label still names a definition and the
  * caret has to stay at the end of the characters it was typing. If the label stops
  * being a footnote, it stays editable as its source until the caret leaves; no marker
