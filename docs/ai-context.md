@@ -719,10 +719,12 @@ and export probes hold the feature.
 
 **A callout is either a GitHub alert blockquote or an attributed Pandoc fenced
 Div.** `syntax/fenced_divs.ts` owns complete colon fences, nesting, quote carriers
-and body ranges for all Pandoc Divs. `syntax/callouts.ts` classifies the callout
-subset and owns its metadata, exact source ranges, five
-fixed English built-in titles, custom Div titles and offset-preserving parser
-normalisation. `plugins/remark-callouts.ts` converts both forms to one
+and body ranges for all Pandoc Divs. `syntax/callouts.ts` is the stable facade;
+`callout_model.ts` owns the value, built-in titles and class grammar,
+`callout_reader.ts` classifies alerts and complete Divs with exact source ranges,
+`callout_parser_source.ts` performs offset-preserving parser normalisation, and
+`callout_kind_edit.ts` builds the minimal kind/Default edit.
+`plugins/remark-callouts.ts` converts both forms to one
 positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
 draws the rendered panel, and `nodes/quote_source.ts` exposes exact block
 source while editing for both ordinary quotes and callouts, including escaped
