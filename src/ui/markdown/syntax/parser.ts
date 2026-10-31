@@ -20,7 +20,6 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
-import remarkStringify from 'remark-stringify';
 import type { Root, RootContent } from 'mdast';
 import { restoreEmptyItems } from './empty_items';
 import { restoreBareMarkers } from './bare_markers';
@@ -49,6 +48,13 @@ import { remarkWikilink } from '../plugins/remark-wikilink/index';
 import {
   remarkCallouts
 } from '../plugins/remark-callouts';
+import {
+  flattenUnwritableNodes,
+  serializeMarkdown,
+  stringifyMarkdownNode
+} from './serializer';
+
+export { serializeMarkdown };
 
 const parseProcessor = unified()
   .use(remarkParse)
@@ -74,64 +80,6 @@ const fragmentProcessor = unified()
   .use(remarkCitation)
   .use(remarkAutoReferences)
   .use(remarkHeadingAttributes)
-  .use(remarkWikilink);
-
-const stringifyProcessor = unified()
-  .use(remarkStringify as any, {
-    fences: true,
-    bullet: '-',
-    incrementListMarker: false,
-    closeAtx: true,
-    listItemIndent: 'one',
-    handlers: {
-      autoReference(node: any): string {
-        return String(node.value ?? `[#${node.id}]`);
-      },
-      figure(node: any): string {
-        return `${String(node.source ?? '').trimEnd()}\n`;
-      },
-      listing(node: any): string {
-        return `${String(node.source ?? '').trimEnd()}\n`;
-      },
-      table(node: any): string {
-        return `${String(node.source ?? '')}\n`;
-      },
-      tableCaption(node: any): string {
-        return `${String(node.source ?? '')}\n`;
-      },
-      list(node: any, _parent: any, state: any, info: any): string {
-        return typeof node.source === 'string'
-          ? `${node.source}\n`
-          : state.containerFlow(node, info);
-      },
-      heading(node: any, _parent: any, state: any, info: any): string {
-        const depth = Math.max(1, Math.min(6, Number(node.depth) || 1));
-        const content = state.containerPhrasing(node, info);
-        const attributes = node.headingAttributes;
-        return `${'#'.repeat(depth)} ${content}${attributes ? attributes.separator + attributes.source : ''}\n`;
-      },
-      descriptionlist(node: any, _parent: any, state: any, info: any): string {
-        return state.containerFlow(node, info);
-      },
-      descriptionterm(node: any, _parent: any, state: any, info: any): string {
-        return state.containerPhrasing(node, info);
-      },
-      descriptiondetails(node: any, _parent: any, state: any, info: any): string {
-        return `: ${state.containerPhrasing(node, info)}`;
-      },
-      callout(node: any): string {
-        return `${String(node.callout?.source ?? '').trimEnd()}\n`;
-      },
-      delete(node: any, _parent: any, state: any, info: any): string {
-        return `~~${state.containerPhrasing(node, info)}~~`;
-      }
-    }
-  })
-  .use(remarkGfm)
-  .use(remarkDeflist)
-  .use(remarkMath)
-  .use(remarkFrontmatter, ['yaml'])
-  .use(remarkCitation)
   .use(remarkWikilink);
 
 export function parseMarkdown(markdown: string): Root {
@@ -517,48 +465,13 @@ function remarkDeflistCompat() {
       if (node.type !== 'paragraph') {
         return;
       }
-      const text = String(stringifyProcessor.stringify(node as never));
+      const text = stringifyMarkdownNode(node);
       if (!/^:\s/.test(text) && !/\n:\s/.test(text)) {
         return;
       }
       flattenUnwritableNodes(node);
     });
   };
-}
-
-/**
- * The node types that writer cannot serialize. `delete` is GFM's; the rest are this
- * editor's own (a citation, a wikilink), remark-math's and remark-gfm's — each one a
- * node `stringifyProcessor` can write back as the source it was parsed from.
- */
-const UNWRITABLE_NODES = new Set([
-  'delete',
-  'citation',
-  'wikilink',
-  'inlineMath',
-  'footnoteReference'
-]);
-
-/** Replaces the nodes the list writer cannot serialize with the text they came from. */
-function flattenUnwritableNodes(node: unknown): void {
-  const children = (node as { children?: unknown[] }).children;
-  if (!Array.isArray(children)) {
-    return;
-  }
-  for (let index = 0; index < children.length; index += 1) {
-    const child = children[index] as { type?: string; children?: unknown[] };
-    if (child.type !== undefined && UNWRITABLE_NODES.has(child.type)) {
-      children[index] = {
-        type: 'text',
-        // Stringify appends a document-level trailing newline; without
-        // trimming it, the marker could land on a fresh line and make the
-        // detail fragment parse as a paragraph plus a list item.
-        value: String(stringifyProcessor.stringify(child as never)).trimEnd()
-      };
-    } else if (Array.isArray(child.children)) {
-      flattenUnwritableNodes(child);
-    }
-  }
 }
 
 /**
@@ -773,25 +686,3 @@ function walk(node: unknown, callback: (node: any) => void): void {
   }
 }
 
-function sanitizeNode(node: any): any {
-  if (!node || typeof node !== 'object') {
-    return node;
-  }
-
-  if (Array.isArray(node.children)) {
-    return {
-      ...node,
-      children: node.children.map((child: any) => sanitizeNode(child))
-    };
-  }
-
-  return node;
-}
-
-export function serializeMarkdown(tree: Root | RootContent[]): string {
-  const sanitizedTree = Array.isArray(tree)
-    ? { type: 'root', children: tree.map((node) => sanitizeNode(node)) } as Root
-    : sanitizeNode(tree);
-
-  return String(stringifyProcessor.stringify(sanitizedTree));
-}
