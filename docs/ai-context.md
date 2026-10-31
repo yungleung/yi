@@ -527,7 +527,8 @@ package/storage.rs    package paths, naming and file classification
 
 The choice is per kind in `AppConfig.export_templates` (kind → package id) and the card's **Template**
 row changes it for later exports too. The chooser filters readable packages to the export kind it was
-opened for; an unreadable manifest remains available only so it can be removed.
+opened for. A package whose manifest cannot be read remains available for read-only details and
+removal; when its kind cannot be read either, the Export Manager lists it once under **Unassigned**.
 **File → Manage Export Templates…** opens one kind-first manager from the typed
 `manage_export_templates` menu event and `export:manageTemplates` command. The manager and the export
 card share `src/ui/export/templates/package_browser.ts`; the manager owns the selected kind,
