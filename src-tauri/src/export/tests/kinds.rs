@@ -70,5 +70,31 @@
             );
         }
     }
+
+    #[test]
+    fn every_kind_has_the_export_manager_group_that_owns_it() {
+        use crate::export::kinds::ExportGroup;
+
+        let expected = [
+            ("docx", ExportGroup::Documents),
+            ("odt", ExportGroup::Documents),
+            ("latex", ExportGroup::Documents),
+            ("html", ExportGroup::Documents),
+            ("revealjs", ExportGroup::Presentations),
+            ("epub", ExportGroup::Documents),
+            ("pdf", ExportGroup::Documents),
+            ("beamer", ExportGroup::Presentations),
+            ("markdown", ExportGroup::Other),
+        ];
+
+        assert_eq!(
+            crate::export::KINDS
+                .iter()
+                .map(|kind| (kind.kind, kind.group))
+                .collect::<Vec<_>>(),
+            expected
+        );
+    }
+
 use super::*;
 

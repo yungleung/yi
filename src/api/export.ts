@@ -9,8 +9,13 @@
 
 import { invoke } from '@tauri-apps/api/core';
 
+/** Where the Export Manager lists a kind: with the documents, the presentations, or neither. */
+export type ExportGroup = 'documents' | 'presentations' | 'other';
+
 /** One kind of export the app ships, as the dialog offers it. */
 export interface ExportKindInfo {
+  /** Where the Export Manager lists this kind. */
+  group: ExportGroup;
   kind: string;
   extension: string;
   /** What the output's name adds to the note's own (the markdown kind's `.processed`). */

@@ -28,7 +28,7 @@ pub use font_hints::NamedFonts;
 #[allow(unused_imports)]
 pub use info::{ExportKindInfo, ExportKinds};
 #[allow(unused_imports)]
-pub use kinds::{ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES};
+pub use kinds::{ExportGroup, ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES};
 #[allow(unused_imports)]
 pub(super) use revealjs::{
     download_revealjs_assets, package_revealjs_media, reveal_asset_path,
