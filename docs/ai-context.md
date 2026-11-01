@@ -289,7 +289,8 @@ menu, before any card is drawn. That event runs the command `file:export`
 card's read-only question, `workflow/request.ts` performs the confirmed answer, `workflow/bibliography.ts`
 filters a package's native BibTeX, `workflow/paths.ts` owns output-name and search-folder rules, and
 `workflow/notice.ts` reports the finished result. What the command opens is a card whose workflow lives
-in `src/ui/export/dialog/index.ts` and whose form lives in `src/ui/export/dialog/form.ts`
+in `src/ui/export/dialog/index.ts`, whose form state lives in `src/ui/export/dialog/form.ts`,
+and whose small DOM controls live in `src/ui/export/dialog/controls.ts`
 **about that one kind**: the target the file is written to, and the
 **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The

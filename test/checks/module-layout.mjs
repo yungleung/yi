@@ -73,6 +73,7 @@ expectFile('src/ui/workspace/tree/node.ts');
 expectFile('src/ui/export/manager/source.ts');
 expectFile('src/ui/export/manager/navigation.ts');
 expectFile('src/ui/export/templates/operations.ts');
+expectFile('src/ui/export/dialog/controls.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -122,6 +123,11 @@ expectNoDefinition(
   'src/ui/export/templates/browser.ts',
   /\b(?:createDefaultTemplate|duplicateTemplate|exportTemplates|importTemplate|inspectTemplate|removeTemplate|testTemplatePdf|updateTemplate|validateTemplate)\s*\(/,
   'still owns template lifecycle calls; move them to operations.ts'
+);
+expectNoDefinition(
+  'src/ui/export/dialog/form.ts',
+  /\b(?:private\s+button\s*\(|function\s+(?:element|label|textBlock|select|checkbox|diagnostic|option|labelledRow|rowGroup|buttonRow|checkboxRow)\s*\()/,
+  'still owns export-form DOM controls; move them to controls.ts'
 );
 
 const legacy = [

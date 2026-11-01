@@ -11,6 +11,20 @@
 import { t } from '../../../services/i18n';
 import type { TemplateSummary } from '../../../api/templates';
 import type { ExportAnswer, ExportQuestion } from '../dialog';
+import {
+  buttonRow,
+  checkbox,
+  checkboxRow,
+  diagnostic,
+  element,
+  formButton,
+  label,
+  labelledRow,
+  option,
+  rowGroup,
+  select,
+  textBlock
+} from './controls';
 
 /** Workflow actions the form invokes when a reader presses its controls. */
 export interface ExportFormHandlers {
@@ -65,7 +79,7 @@ export class ExportForm {
     this.target.addEventListener('input', handlers.targetEdited);
     this.targetLabel = label(t('export.target'));
 
-    const choose = this.button(
+    const choose = formButton(
       'export-choose',
       t('export.choose'),
       'btn btn-ghost btn-sm',
@@ -74,13 +88,13 @@ export class ExportForm {
     const configLabel = textBlock(t('export.configLabel'), 'block text-xs opacity-70');
     this.configPath = textBlock('', 'block break-all text-xs opacity-60');
     this.configPath.setAttribute('data-export-config', 'true');
-    const openConfig = this.button(
+    const openConfig = formButton(
       'export-open-config',
       t('export.editDefaults'),
       'btn btn-ghost btn-xs px-0',
       handlers.editDefaults
     );
-    this.replaceConfig = this.button(
+    this.replaceConfig = formButton(
       'export-replace-config',
       t('export.replaceConfig'),
       'btn btn-ghost btn-xs px-0',
@@ -99,19 +113,19 @@ export class ExportForm {
     const templateLabel = textBlock(t('template.rowLabel'), 'block text-xs opacity-70');
     this.templateValue = textBlock('', 'block break-all text-xs');
     this.templateValue.setAttribute('data-export-template', 'true');
-    const chooseTemplate = this.button(
+    const chooseTemplate = formButton(
       'export-choose-template',
       t('template.choose'),
       'btn btn-ghost btn-xs px-0',
       handlers.chooseTemplate
     );
-    this.createTemplateButton = this.button(
+    this.createTemplateButton = formButton(
       'export-create-template',
       t('template.create'),
       'btn btn-ghost btn-xs px-0',
       handlers.createTemplate
     );
-    this.editTemplateButton = this.button(
+    this.editTemplateButton = formButton(
       'export-edit-template',
       t('template.edit'),
       'btn btn-ghost btn-xs px-0',
@@ -145,13 +159,13 @@ export class ExportForm {
       'mt-1 hidden text-xs opacity-70'
     );
 
-    const cancel = this.button(
+    const cancel = formButton(
       'export-cancel',
       t('export.cancel'),
       'btn btn-ghost btn-sm',
       handlers.cancel
     );
-    const run = this.button(
+    const run = formButton(
       'export-run',
       t('export.run'),
       'btn btn-primary btn-sm',
@@ -323,110 +337,8 @@ export class ExportForm {
     };
   }
 
-  private button(
-    name: string,
-    labelText: string,
-    className: string,
-    onClick: (() => void) | null,
-    type: 'button' | 'submit' = 'button'
-  ): HTMLButtonElement {
-    const control = document.createElement('button');
-    control.type = type;
-    control.className = className;
-    control.textContent = labelText;
-    control.setAttribute(`data-${name}`, 'true');
-    if (onClick) {
-      control.addEventListener('click', onClick);
-    }
-    return control;
-  }
 }
 
 function shownCharacters(characters: string[]): string {
   return characters.slice(0, 8).join('') + (characters.length > 8 ? '…' : '');
-}
-
-function element<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className: string,
-  text: string
-): HTMLElementTagNameMap[K] {
-  const result = document.createElement(tag);
-  result.className = className;
-  result.textContent = text;
-  return result;
-}
-
-function label(text: string): HTMLLabelElement {
-  return element('label', 'label-text text-xs', text);
-}
-
-function textBlock(text: string, className: string): HTMLSpanElement {
-  return element('span', className, text);
-}
-
-function select(dataName: string): HTMLSelectElement {
-  const control = document.createElement('select');
-  control.className = 'select select-bordered select-sm';
-  control.setAttribute(dataName, 'true');
-  return control;
-}
-
-function checkbox(dataName: string): HTMLInputElement {
-  const control = document.createElement('input');
-  control.type = 'checkbox';
-  control.className = 'checkbox checkbox-sm';
-  control.setAttribute(dataName, 'true');
-  return control;
-}
-
-function diagnostic(dataName: string, className: string): HTMLParagraphElement {
-  const paragraph = element('p', className, '');
-  paragraph.setAttribute(dataName, 'true');
-  return paragraph;
-}
-
-function option(text: string, value: string): HTMLOptionElement {
-  const control = document.createElement('option');
-  control.value = value;
-  control.textContent = text;
-  return control;
-}
-
-function labelledRow(
-  labelElement: HTMLElement,
-  control: HTMLElement,
-  ...rest: HTMLElement[]
-): HTMLElement {
-  const group = document.createElement('div');
-  group.className = 'flex flex-col gap-1';
-  const line = document.createElement('div');
-  line.className = 'flex items-center gap-2';
-  line.append(control, ...rest);
-  group.append(labelElement, line);
-  return group;
-}
-
-function rowGroup(...children: HTMLElement[]): HTMLElement {
-  const group = document.createElement('div');
-  group.className = 'mt-3 flex flex-col gap-1';
-  group.append(...children);
-  return group;
-}
-
-function buttonRow(...buttons: HTMLButtonElement[]): HTMLElement {
-  const row = document.createElement('div');
-  row.className = 'flex items-center gap-3';
-  row.append(...buttons);
-  return row;
-}
-
-function checkboxRow(box: HTMLInputElement, labelText: string): HTMLElement {
-  const group = document.createElement('div');
-  group.className = 'mt-3 flex items-center gap-2';
-  const words = document.createElement('label');
-  words.className = 'label-text flex items-center gap-2 text-xs';
-  words.append(box, document.createTextNode(labelText));
-  group.append(words);
-  return group;
 }
