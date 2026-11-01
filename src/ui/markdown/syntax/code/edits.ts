@@ -13,10 +13,10 @@
  * and what Tab does to the lines between two of them lives here.
  */
 
-import { isDelimiterLine } from './markers';
+import { isDelimiterLine } from '../markers';
 
-import type { TextEdit } from './edit_range';
-import { lineSpanAt, touchedLines } from './lines';
+import type { TextEdit } from '../edit_range';
+import { lineSpanAt, touchedLines } from '../lines';
 
 /** The two spaces one Tab stands for. */
 const STEP = '  ';

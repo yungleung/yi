@@ -21,11 +21,11 @@ import {
 } from './description_repairs';
 import { restoreBareMarkers } from './bare_markers';
 import { calloutsForParsers } from './callout';
+import { restoreListings } from './code';
 import { restoreEmptyItems } from './empty_items';
 import { equationsForParsers } from './equation';
 import { restoreFigures } from './figures';
 import { listCaptionsForParsers } from './list';
-import { restoreListings } from './listings';
 import { frontmatterForParsers } from './markers';
 import { createParseProcessor } from './remark_pipeline';
 import { serializeMarkdown } from './serializer';

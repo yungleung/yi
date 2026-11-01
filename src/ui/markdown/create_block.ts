@@ -29,7 +29,7 @@ import {
   innerEquationBody,
   readEquationBlockSource
 } from './syntax/equation';
-import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code_fences';
+import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code';
 import { readCallout } from './syntax/callout';
 import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';

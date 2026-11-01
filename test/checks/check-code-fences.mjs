@@ -11,13 +11,13 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-code-fences-'));
 const bundle = await rolldown({
-  input: 'src/ui/markdown/syntax/code_fences.ts',
+  input: 'src/ui/markdown/syntax/code/fences.ts',
   logLevel: 'silent',
   platform: 'node'
 });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
-const file = join(directory, 'code_fences.mjs');
+const file = join(directory, 'fences.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { codeFenceData, listingFenceData } = await import(file);
 

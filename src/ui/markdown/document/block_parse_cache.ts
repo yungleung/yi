@@ -28,7 +28,7 @@ import {
   withFootnoteDefinitions
 } from '../syntax/footnotes';
 import { parseMarkdown } from '../syntax/parser';
-import { listingFenceData } from '../syntax/code_fences';
+import { listingFenceData } from '../syntax/code';
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;

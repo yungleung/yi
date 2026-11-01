@@ -9,7 +9,7 @@
  */
 
 import type { Code, Root, RootContent } from 'mdast';
-import { listingFenceData, type CodeFenceData } from './code_fences';
+import { listingFenceData, type CodeFenceData } from './fences';
 
 /** A fenced code block with a listing ID, caption, or both. */
 export type ListingNode = Omit<Code, 'type'> & CodeFenceData & {

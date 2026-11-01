@@ -8,7 +8,7 @@
  * rule and listing serializers. Upholds: each parsed listing produces exactly one source rewrite.
  */
 
-import type { ListingNode } from '../../markdown/syntax/listings';
+import type { ListingNode } from '../../markdown/syntax/code';
 import type { ReferenceEntry } from '../../markdown/document/reference_index';
 import { referenceLabel } from '../../markdown/document/reference_index';
 import type { Span } from './node_spans';

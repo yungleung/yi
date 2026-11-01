@@ -14,7 +14,7 @@ import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { FigureNode } from './syntax/figures';
 import type { TableCaptionNode } from './syntax/table';
 import type { ListCaptionNode } from './syntax/list';
-import type { ListingNode } from './syntax/listings';
+import type { ListingNode } from './syntax/code';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 import type { CalloutNode } from './plugins/remark-callouts';

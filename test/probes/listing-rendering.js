@@ -1,7 +1,7 @@
 /**
  * Listings render their labels, captions, IDs, and complete editable source.
  *
- * @covers src/ui/markdown/create_block.ts, src/ui/markdown/syntax/code_fences.ts,
+ * @covers src/ui/markdown/create_block.ts, src/ui/markdown/syntax/code/fences.ts,
  *   src/ui/markdown/document/reference_index.ts
  * @fixture test/fixtures/workspace/default-document.md
  */

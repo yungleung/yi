@@ -8,11 +8,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/syntax/code_edits.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/markdown/syntax/code/edits.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-code-'));
-const file = join(directory, 'code_edits.mjs');
+const file = join(directory, 'edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { codeIndentEdit } = await import(file);
 

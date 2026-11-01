@@ -784,7 +784,7 @@ source rewrites, so template Lua filters receive one stable AST shape.
 default-fixture probe, and the export/filter probes hold the feature.
 
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
-`syntax/code_fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/listings.ts`
+`syntax/code/fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/code/listings.ts`
 creates an ID/caption listing block, while `create_block.ts` keeps the code body editable and
 draws the caption below it. Only an ID consumes a listing number; a caption alone is visible but
 unnumbered. Export rewrites automatic references to ordinary links, lowers non-LaTeX listings to

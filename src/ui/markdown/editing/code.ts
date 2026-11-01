@@ -2,18 +2,18 @@
  * Tab inside a fenced block: one `Tab` is two spaces, so a multi-line code
  * block or formula lines up the way the text around it does.
  *
- * The rule itself is pure (`code_edits.ts`); this module is the part that
+ * The rule itself is pure (`syntax/code/edits.ts`); this module is the part that
  * knows where the caret is and applies the edit. Anywhere else in the document
  * this command declines, so the browser keeps its own Tab.
  *
- * May import: the block model, the pure code rules (`syntax/code_edits.ts`) and
+ * May import: the block model, the pure code rules (`syntax/code`) and
  * the editing context. Upholds: the document text is the only source of truth —
  * the rule is a pure function of the text, and this module only decides whether
  * the caret is somewhere it applies.
  */
 
 import { isFenced } from '../document/block_kinds';;
-import { codeIndentEdit } from '../syntax/code_edits';
+import { codeIndentEdit } from '../syntax/code';
 import { shiftOffset } from '../syntax/edit_range';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 import { editorSelection, rangeOffsets } from './selection';

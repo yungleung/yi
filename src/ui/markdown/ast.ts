@@ -35,7 +35,7 @@ export type {
 import type { FigureNode } from './syntax/figures';
 import type { TableCaptionNode } from './syntax/table';
 import type { ListCaptionNode } from './syntax/list';
-import type { ListingNode } from './syntax/listings';
+import type { ListingNode } from './syntax/code';
 
 /**
  * Custom node types registered into mdast via `mdast.d.ts`. The augmentation
