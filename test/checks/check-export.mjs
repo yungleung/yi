@@ -1,5 +1,5 @@
 /**
- * Checks the export's shared pre-process (`ui/export/preprocess.ts`) in Node. Three rules, each about
+ * Checks the export's shared pre-process (`ui/export/pipeline/preprocess.ts`) in Node. Three rules, each about
  * what the *app* knows and the converting side does not:
  *
  * - a wikilink is written as the words it renders as — the title the author gave it, or the title of
@@ -28,7 +28,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-export-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/preprocess.ts',
+  input: 'src/ui/export/pipeline/preprocess.ts',
   logLevel: 'silent',
   platform: 'node'
 });

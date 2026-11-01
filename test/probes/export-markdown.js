@@ -13,8 +13,8 @@
  * title sits above its first heading, and nothing here re-serializes the note at all.
  *
  * @covers src-tauri/src/export.rs (KINDS' name_suffix and needs_pandoc, export_own_text),
- *   src/ui/export/export_flow.ts (the card's target from the note's own path, the citations the app
- *   renders itself), src/ui/export/preprocess.ts (the citation rule and the reference list)
+ *   src/ui/export/workflow/index.ts (the card's target from the note's own path, the citations the app
+ *   renders itself), src/ui/export/pipeline/preprocess.ts (the citation rule and the reference list)
  */
 (async () => {
   const t = window.__t;

@@ -5,12 +5,12 @@
  * the failure is silent where it hurts most — measured, pandoc carries such a destination into a docx
  * as `word/media/rId10.txt` and says nothing, and a pdf gets pandoc's own complaint about a temporary
  * path (`Cannot load file`, `Jpeg Invalid marker used`). So the card names the destination itself
- * (`ui/export/picture_hint.ts` reads the parse for it), and this is that line through the running app:
+ * (`ui/export/assets/picture_hint.ts` reads the parse for it), and this is that line through the running app:
  * a card for a note whose destination is text has it, a card for a note whose destination is a picture
  * does not, and no export has to run for either.
  *
- * @covers src/ui/export/picture_hint.ts, src/ui/export/export_dialog.ts (the line),
- *   src/ui/export/export_flow.ts
+ * @covers src/ui/export/assets/picture_hint.ts, src/ui/export/dialog/index.ts (the line),
+ *   src/ui/export/workflow/index.ts
  */
 (async () => {
   const t = window.__t;

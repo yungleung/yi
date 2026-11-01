@@ -8,9 +8,9 @@
  * Upholds: form presentation owns no file, config, template or export operation.
  */
 
-import { t } from '../../services/i18n';
-import type { TemplateSummary } from '../../api/templates';
-import type { ExportAnswer, ExportQuestion } from './export_dialog';
+import { t } from '../../../services/i18n';
+import type { TemplateSummary } from '../../../api/templates';
+import type { ExportAnswer, ExportQuestion } from '../dialog';
 
 /** Workflow actions the form invokes when a reader presses its controls. */
 export interface ExportFormHandlers {

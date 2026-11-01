@@ -9,7 +9,7 @@
  * so), and the citations as a reference list in the page's style.
  *
  * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
- *   src/ui/export/export_dialog.ts
+ *   src/ui/export/dialog/index.ts
  * @needs-http-fixture
  */
 (async () => {

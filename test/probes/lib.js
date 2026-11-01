@@ -28,7 +28,7 @@ window.__t = (() => {
   /**
    * The hints on screen now, as a set to tell them from the one a command is about to show.
    *
-   * A hint is how the app says an export is over (`ui/export/export_flow.ts` shows it after the
+   * A hint is how the app says an export is over (`ui/export/workflow/index.ts` shows it after the
    * run returns), which is what a probe that reads the written file needs: pandoc writes a PDF
    * straight to its destination, so the file exists — growing — long before it is whole. A
    * probe that read on existence alone could find a page missing a script (measured: the

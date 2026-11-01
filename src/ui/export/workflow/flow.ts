@@ -9,11 +9,11 @@
  * `file:export` implementation.
  */
 
-import { registerCommand } from '../../commands/runtime';
-import { exportDialog } from './export_dialog';
-import type { ExportProgress } from './export_progress';
-import { prepareExportQuestion } from './export_question';
-import { runConfirmedExport } from './export_request';
+import { registerCommand } from '../../../commands/runtime';
+import { exportDialog } from '../dialog';
+import type { ExportProgress } from './progress';
+import { prepareExportQuestion } from './question';
+import { runConfirmedExport } from './request';
 
 /** What the export needs from the editor that owns the note on screen. */
 export interface ExportHost {

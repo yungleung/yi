@@ -3,7 +3,7 @@
  *
  * The package filter maps the callout to Rho's native note environment.
  *
- * @covers src/ui/export/callout_rewrites.ts,
+ * @covers src/ui/export/pipeline/callout_rewrites.ts,
  *   examples/templates/rho-class/callout.lua
  */
 (async () => {
@@ -11,7 +11,7 @@
   const files = await t.app('/src/api/files.ts');
   const exportApi = await t.app('/src/api/export.ts');
   const templates = await t.app('/src/api/templates.ts');
-  const { exportSource } = await t.app('/src/ui/export/preprocess.ts');
+  const { exportSource } = await t.app('/src/ui/export/pipeline/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

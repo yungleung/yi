@@ -12,7 +12,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-reference-header-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/reference_header.ts',
+  input: 'src/ui/export/reference/reference_header.ts',
   logLevel: 'silent',
   platform: 'node'
 });

@@ -21,9 +21,9 @@
  * machine. Upholds: one fact about a note has one home, which is what lets `check-picture-hint.mjs`
  * hold it in Node.
  */
-import { parseMarkdown } from '../markdown/syntax/parser';
-import type { AstImage } from '../markdown/ast';
-import { spansOfType, type Walkable } from './node_spans';
+import { parseMarkdown } from '../../markdown/syntax/parser';
+import type { AstImage } from '../../markdown/ast';
+import { spansOfType, type Walkable } from '../pipeline/node_spans';
 
 /**
  * Whether a destination is a `data:` URL naming something that is not an image. The media type is the

@@ -1,5 +1,5 @@
 /**
- * Checks the card's font hint (`ui/export/font_hint.ts`) in Node: which characters of a note no font
+ * Checks the card's font hint (`ui/export/workflow/font_hint.ts`) in Node: which characters of a note no font
  * its conversion settings name can draw.
  *
  * The rule is a *measured* table, in three parts. What the TeX suite's own font holds was written down
@@ -23,7 +23,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-export-font-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/font_hint.ts',
+  input: 'src/ui/export/workflow/font_hint.ts',
   logLevel: 'silent',
   platform: 'node'
 });

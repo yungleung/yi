@@ -8,12 +8,12 @@
  * Upholds: parsing decides what is an image, and one remote URL is fetched once.
  */
 
-import type { AstImage } from '../markdown/ast';
-import { destinationPaths } from '../../services/workspace';
-import { spansOfType, type Span, type Walkable } from './node_spans';
-import { isWebDestination } from './picture_hint';
+import type { AstImage } from '../../markdown/ast';
+import { destinationPaths } from '../../../services/workspace';
+import { spansOfType, type Span, type Walkable } from '../pipeline/node_spans';
+import { isWebDestination } from '../assets/picture_hint';
 import { encodedPath } from './markdown_escaping';
-import type { ExportAnswers, Rewrite } from './preprocess';
+import type { ExportAnswers, Rewrite } from '../pipeline/preprocess';
 
 /**
  * Every image whose destination names a file that is there, as that file's own

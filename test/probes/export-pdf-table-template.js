@@ -5,7 +5,7 @@
  * table. The export can only show `Table R-1` if the filter preserves the
  * caption and label and `\yiTableRef` reads the package counter.
  *
- * @covers src/ui/export/reference_header.ts, src/ui/export/preprocess.ts,
+ * @covers src/ui/export/reference/reference_header.ts, src/ui/export/pipeline/preprocess.ts,
  *   examples/templates/rho-class/table.lua
  */
 (async () => {
@@ -13,7 +13,7 @@
   const files = await t.app('/src/api/files.ts');
   const exportApi = await t.app('/src/api/export.ts');
   const templates = await t.app('/src/api/templates.ts');
-  const { referenceHeader } = await t.app('/src/ui/export/reference_header.ts');
+  const { referenceHeader } = await t.app('/src/ui/export/reference/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

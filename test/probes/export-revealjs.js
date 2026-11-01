@@ -4,8 +4,8 @@
  *
  * @covers src-tauri/src/export/revealjs.rs,
  *   src-tauri/src/export/run/mod.rs,
- *   src/ui/export/export_flow.ts,
- *   src/ui/export/export_dialog.ts
+ *   src/ui/export/workflow/index.ts,
+ *   src/ui/export/dialog/index.ts
  * @needs-http-fixture
  */
 (async () => {

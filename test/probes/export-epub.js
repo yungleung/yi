@@ -13,7 +13,7 @@
  * carried in `EPUB/media/`; and the citations resolved into a `References` section of the chapter.
  *
  * @covers src-tauri/src/export/kinds.rs (KINDS), src-tauri/src/export/run.rs (pandoc_arguments),
- *   src/ui/export/export_dialog.ts, src-tauri/assets/export/export.epub.yaml
+ *   src/ui/export/dialog/index.ts, src-tauri/assets/export/export.epub.yaml
  * @needs-http-fixture
  */
 (async () => {

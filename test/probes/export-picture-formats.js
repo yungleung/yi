@@ -7,14 +7,14 @@
  * while a Word file, an OpenDocument file, a page XeTeX lays out and its `.tex` cannot. Measured with
  * pandoc 3.12: a docx gets a converted PNG *beside* the raw `.svg` where the machine has a rasteriser
  * and the raw vector alone where it has none, and it carries a webp as a file no reader is promised; so
- * the app draws the PNG itself (`ui/export/raster_picture.ts`) and hands that over.
+ * the app draws the PNG itself (`ui/export/assets/raster_picture.ts`) and hands that over.
  *
  * This is that, through the app: one note naming a local `figure.svg` and a local `shot.webp`, exported
  * twice. The docx's media folder has PNGs the app drew and neither format; the book's has both. A vector
  * is drawn at twice its own size, a webp at its own — and what a run draws lives in a folder of the
  * app's own and is gone when the run is over.
  *
- * @covers src/ui/export/raster_picture.ts, src/ui/export/export_flow.ts,
+ * @covers src/ui/export/assets/raster_picture.ts, src/ui/export/workflow/index.ts,
  *   src-tauri/src/export.rs (carries_pictures)
  */
 (async () => {
@@ -23,7 +23,7 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { forgetRasters, rasterFolder, rasterPictures } = await t.app(
-    '/src/ui/export/raster_picture.ts'
+    '/src/ui/export/assets/index.ts'
   );
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

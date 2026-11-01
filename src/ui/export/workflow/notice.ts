@@ -8,12 +8,12 @@
  * warnings are reported only after the conversion has returned.
  */
 
-import type { ExportOutcome } from '../../api/export';
-import { showHint } from '../../services/hints';
-import { t } from '../../services/i18n';
-import { notify } from '../../services/messages';
-import { fileName } from '../../services/workspace';
-import type { NativeBibliographyPlan } from './export_bibliography';
+import type { ExportOutcome } from '../../../api/export';
+import { showHint } from '../../../services/hints';
+import { t } from '../../../services/i18n';
+import { notify } from '../../../services/messages';
+import { fileName } from '../../../services/workspace';
+import type { NativeBibliographyPlan } from './bibliography';
 
 /**
  * Reports one completed export, preserving the current hint-then-warning order.

@@ -10,8 +10,8 @@
  * too: the note's image in the odt's own media folder (`Pictures/`), and the reference list the
  * library was handed for.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts (a card
- *   about the kind its menu item names, and the target that kind's own), src/ui/export/export_flow.ts
+ * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/dialog/index.ts (a card
+ *   about the kind its menu item names, and the target that kind's own), src/ui/export/workflow/index.ts
  */
 (async () => {
   const t = window.__t;

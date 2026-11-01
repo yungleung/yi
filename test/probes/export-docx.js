@@ -12,7 +12,7 @@
  * (`export-pandoc-arguments.js`), which uses a pandoc that only records.
  *
  * @covers src-tauri/src/export.rs (find_pandoc, export_kinds, run_export, open_export_config),
- *   src/api/export.ts, src/ui/export/export_flow.ts, src/ui/export/export_dialog.ts
+ *   src/api/export.ts, src/ui/export/workflow/index.ts, src/ui/export/dialog/index.ts
  */
 (async () => {
   const t = window.__t;

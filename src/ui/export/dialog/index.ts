@@ -10,22 +10,22 @@
 
 import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { join } from '@tauri-apps/api/path';
-import { restoreExportConfig, type ExportKindInfo } from '../../api/export';
+import { restoreExportConfig, type ExportKindInfo } from '../../../api/export';
 import {
   createDefaultTemplate,
   exportTemplates,
   type TemplateSummary
-} from '../../api/templates';
-import { configManager } from '../../services/config_manager';
-import { t } from '../../services/i18n';
-import { notify } from '../../services/messages';
-import { prompt } from '../prompt';
-import { QuestionCard } from '../floating/question_card';
-import { ExportForm } from './export_form';
-import { createDefaultDialog } from './templates/create_default_dialog';
-import { templateEditorPanel } from './templates/editor';
-import { kindLabel } from './templates/kind_label';
-import { templateLibraryDialog } from './templates/library';
+} from '../../../api/templates';
+import { configManager } from '../../../services/config_manager';
+import { t } from '../../../services/i18n';
+import { notify } from '../../../services/messages';
+import { prompt } from '../../prompt';
+import { QuestionCard } from '../../floating/question_card';
+import { ExportForm } from './form';
+import { createDefaultDialog } from '../templates/create_default_dialog';
+import { templateEditorPanel } from '../templates/editor';
+import { kindLabel } from '../templates/kind_label';
+import { templateLibraryDialog } from '../templates/library';
 
 /** What the card is asked with: the kind the menu named and the note's target stem. */
 export interface ExportQuestion {
@@ -270,3 +270,6 @@ export class ExportDialog extends QuestionCard<ExportAnswer | null> {
 
 /** The one export dialog the window has. */
 export const exportDialog = new ExportDialog();
+
+export { ExportForm } from './form';
+export type { ExportFormHandlers } from './form';

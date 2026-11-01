@@ -11,7 +11,7 @@
  */
 
 import type { AlignType, RootContent } from 'mdast';
-import type { TableCaptionNode } from '../markdown/syntax/table_captions';
+import type { TableCaptionNode } from '../../markdown/syntax/table_captions';
 import { escapeHtml, htmlAttributeName } from './html';
 import { inlineHtml } from './inline_html';
 

@@ -9,7 +9,7 @@
  * of the page's stash), which is what that recovery is for.
  *
  * @covers src-tauri/src/export.rs (run_export, export_with_pandoc, the pdf asset),
- *   src/ui/export/export_dialog.ts (a card that is about one kind)
+ *   src/ui/export/dialog/index.ts (a card that is about one kind)
  */
 (async () => {
   const t = window.__t;

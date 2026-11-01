@@ -11,9 +11,9 @@
  * literal inserted into TeX is escaped as text.
  */
 
-import { referenceIndex } from '../markdown/document/reference_index';
-import { parseMarkdown } from '../markdown/syntax/parser';
-import { referenceVocabularyFromTree } from '../markdown/syntax/reference_vocabulary';
+import { referenceIndex } from '../../markdown/document/reference_index';
+import { parseMarkdown } from '../../markdown/syntax/parser';
+import { referenceVocabularyFromTree } from '../../markdown/syntax/reference_vocabulary';
 
 /** The generated LaTeX header for the document's caption words and number prefixes. */
 export function referenceHeader(markdown: string): string {

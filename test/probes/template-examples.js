@@ -105,7 +105,7 @@
             source.includes(': Representative observing bands') &&
             !entry.includes('Elena M. Hart')
         );
-        const native = await t.app('/src/ui/export/native_bibliography.ts');
+        const native = await t.app('/src/ui/export/reference/index.ts');
         const selectedLibrary = await readText(
           `${checkout}examples/templates/latex/references.bib`
         );

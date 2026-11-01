@@ -5,15 +5,15 @@
  * the automatic reference and the displayed equation through that package
  * counter rather than a precomputed Yi number.
  *
- * @covers src/ui/export/reference_header.ts, src/ui/export/equation_rewrites.ts
+ * @covers src/ui/export/reference/reference_header.ts, src/ui/export/pipeline/equation_rewrites.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const exportApi = await t.app('/src/api/export.ts');
   const templates = await t.app('/src/api/templates.ts');
-  const { referenceHeader } = await t.app('/src/ui/export/reference_header.ts');
-  const { exportSource } = await t.app('/src/ui/export/preprocess.ts');
+  const { referenceHeader } = await t.app('/src/ui/export/reference/index.ts');
+  const { exportSource } = await t.app('/src/ui/export/pipeline/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

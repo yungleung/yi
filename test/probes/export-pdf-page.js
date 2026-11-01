@@ -18,7 +18,7 @@
  * result out of the page's stash (`export-pdf.js` says the same about one run, and there is nothing to
  * split it into: each overrun *is* one export).
  *
- * @covers src-tauri/src/export.rs (pandoc_arguments, PAPER_SIZES), src/ui/export/export_dialog.ts (the
+ * @covers src-tauri/src/export.rs (pandoc_arguments, PAPER_SIZES), src/ui/export/dialog/index.ts (the
  *   page row), test/probes/lib.js (pdfPageSize)
  */
 (async () => {

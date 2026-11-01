@@ -12,7 +12,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-latex-images-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/latex_images.ts',
+  input: 'src/ui/export/assets/latex_images.ts',
   logLevel: 'silent',
   platform: 'node'
 });

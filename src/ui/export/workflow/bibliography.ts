@@ -8,14 +8,14 @@
  * Upholds: native bibliography keys come from the note, never from the package's sample file.
  */
 
-import { readBibliography } from '../../api/bibliography';
-import { readTemplateFile, type TemplateSummary } from '../../api/templates';
-import { t } from '../../services/i18n';
+import { readBibliography } from '../../../api/bibliography';
+import { readTemplateFile, type TemplateSummary } from '../../../api/templates';
+import { t } from '../../../services/i18n';
 import {
   citedKeys,
   nativeBibliographyTarget,
   packageCitedBibliography
-} from './native_bibliography';
+} from '../reference/native_bibliography';
 
 /** The filtered BibTeX a package asks for, its relative destination, and any cited key it lacks. */
 export interface NativeBibliographyPlan {

@@ -22,7 +22,7 @@
  * going leaves the file's own line and everything under it exactly where it was.
  *
  * @covers src-tauri/src/export.rs (KindInfo::config_is_shipped, export_restore_config),
- *   src/ui/export/export_dialog.ts (replaceConfiguration)
+ *   src/ui/export/dialog/index.ts (replaceConfiguration)
  */
 (async () => {
   const t = window.__t;

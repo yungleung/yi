@@ -20,16 +20,16 @@
  * looking at the file the name is written in. The last pair here writes a name nothing answers to, and
  * then a name something does, into the reader's own copy for the length of the check.
  *
- * The last pair is the rule's other half (`ui/export/font_hint.ts`): what the default font was
+ * The last pair is the rule's other half (`ui/export/workflow/font_hint.ts`): what the default font was
  * measured to *miss* is reported even though it sits inside a block a range table would call covered
  * (`≤`, where `√ ∞ ± × ÷` beside it draw), and the same character inside `$…$` is not reported at all,
  * because pandoc sets a formula with the maths font.
  *
  * @covers src-tauri/src/export.rs (export_named_fonts, needs_a_font, export_font_for),
  *   src-tauri/src/system_fonts.rs (the names this machine has, and what it draws),
- *   src/ui/export/font_hint.ts (the characters, over the parse),
- *   src/ui/export/export_flow.ts (the characters the card is asked with),
- *   src/ui/export/export_dialog.ts (the hint)
+ *   src/ui/export/workflow/font_hint.ts (the characters, over the parse),
+ *   src/ui/export/workflow/index.ts (the characters the card is asked with),
+ *   src/ui/export/dialog/index.ts (the hint)
  */
 (async () => {
   const t = window.__t;

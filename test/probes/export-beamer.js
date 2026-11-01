@@ -3,8 +3,8 @@
  *
  * @covers src-tauri/src/export/kinds.rs,
  *   src/ui/export/kind_family.ts,
- *   src/ui/export/preprocess.ts,
- *   src/ui/export/export_flow.ts
+ *   src/ui/export/pipeline/preprocess.ts,
+ *   src/ui/export/workflow/index.ts
  */
 (async () => {
   const t = window.__t;

@@ -12,11 +12,11 @@
  * extension is required.
  */
 
-import { splitBlocks } from '../markdown/document/blocks';
+import { splitBlocks } from '../../markdown/document/blocks';
 import {
   readCallout,
   type CalloutSource
-} from '../markdown/syntax/callouts';
+} from '../../markdown/syntax/callouts';
 
 /** One source range and the semantic Div that replaces it. */
 export interface CalloutRewrite {

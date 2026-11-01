@@ -8,7 +8,7 @@
  * listing is written once per target family, with no editor state involved.
  */
 
-import type { ListingNode } from '../markdown/syntax/listings';
+import type { ListingNode } from '../../markdown/syntax/listings';
 import { escapeHtml, htmlAttributeName } from './html';
 import { attributeValue, escapeMarkdownText } from './markdown_escaping';
 

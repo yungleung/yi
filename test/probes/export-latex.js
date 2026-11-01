@@ -20,8 +20,8 @@
  * `\usepackage{xeCJK}` and the name for the length of one export where a reader has written one —
  * measured before this, and again by the second export below.
  *
- * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/export_dialog.ts,
- *   src/ui/export/preprocess.ts (the destination the writer is handed)
+ * @covers src-tauri/src/export.rs (KINDS, pandoc_arguments), src/ui/export/dialog/index.ts,
+ *   src/ui/export/pipeline/preprocess.ts (the destination the writer is handed)
  */
 (async () => {
   const t = window.__t;

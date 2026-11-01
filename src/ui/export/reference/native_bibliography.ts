@@ -13,11 +13,11 @@
 
 import { Cite } from '@citation-js/core';
 import { parse as parseYaml } from 'yaml';
-import { loadCitationLibrary } from '../../citations/library';
-import { parseCitation } from '../../citations/parse';
-import type { AstCitation } from '../markdown/ast';
-import { parseMarkdown } from '../markdown/syntax/parser';
-import { spansOfType, type Walkable } from './node_spans';
+import { loadCitationLibrary } from '../../../citations/library';
+import { parseCitation } from '../../../citations/parse';
+import type { AstCitation } from '../../markdown/ast';
+import { parseMarkdown } from '../../markdown/syntax/parser';
+import { spansOfType, type Walkable } from '../pipeline/node_spans';
 
 /** The relative `.bib` file a package's defaults ask the app to generate, or null for citeproc. */
 export function nativeBibliographyTarget(defaultsText: string): string | null {

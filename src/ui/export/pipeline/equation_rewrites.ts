@@ -15,8 +15,8 @@
 import {
   equationBlockNumber,
   type ReferenceEntry
-} from '../markdown/document/reference_index';
-import { splitBlocks } from '../markdown/document/blocks';
+} from '../../markdown/document/reference_index';
+import { splitBlocks } from '../../markdown/document/blocks';
 import {
   innerEquationBody,
   latexEquationBody,
@@ -24,13 +24,13 @@ import {
   readEquationBlock,
   type EquationBlockSource,
   unnumberedEquationBody
-} from '../markdown/syntax/equation_blocks';
+} from '../../markdown/syntax/equation_blocks';
 import {
   equationHtml,
   equationHtmlContainer,
   equationLayoutHtml
 } from './equation_html';
-import { isHtmlLikeKind, isLatexKind } from './kind_family';
+import { isHtmlLikeKind, isLatexKind } from '../kind_family';
 
 /** One source range and its replacement. */
 export interface EquationRewrite {

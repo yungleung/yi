@@ -13,8 +13,8 @@
  *
  * @needs-http-fixture
  * @covers src-tauri/src/export/pictures.rs (image_extension, download_image, export_fetch_image),
- *   src/ui/export/export_flow.ts (the web pictures fetched before the pre-process),
- *   src/ui/export/preprocess.ts (the remote rule), src/ui/export/raster_picture.ts
+ *   src/ui/export/workflow/index.ts (the web pictures fetched before the pre-process),
+ *   src/ui/export/pipeline/preprocess.ts (the remote rule), src/ui/export/assets/raster_picture.ts
  */
 (async () => {
   const t = window.__t;

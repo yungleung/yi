@@ -11,11 +11,11 @@
  */
 
 import type { List } from 'mdast';
-import { referenceLabel, type ReferenceEntry } from '../markdown/document/reference_index';
-import type { ListCaptionNode } from '../markdown/syntax/list_captions';
-import { spansOfType, type Walkable } from './node_spans';
+import { referenceLabel, type ReferenceEntry } from '../../markdown/document/reference_index';
+import type { ListCaptionNode } from '../../markdown/syntax/list_captions';
+import { spansOfType, type Walkable } from '../pipeline/node_spans';
 import { listHtml } from './list_html';
-import { isLatexKind } from './kind_family';
+import { isLatexKind } from '../kind_family';
 
 /** One source range and its replacement. */
 export interface ListRewrite {

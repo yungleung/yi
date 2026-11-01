@@ -9,9 +9,9 @@
  */
 
 import { exists } from '@tauri-apps/plugin-fs';
-import { configManager } from '../../services/config_manager';
-import { homeFolderPath, imageFolderPath } from '../../services/settings_paths';
-import { fileName, parentFolder } from '../../services/workspace';
+import { configManager } from '../../../services/config_manager';
+import { homeFolderPath, imageFolderPath } from '../../../services/settings_paths';
+import { fileName, parentFolder } from '../../../services/workspace';
 
 /**
  * Where an output goes when nothing else says: the note's folder, the workspace, the home folder.

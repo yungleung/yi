@@ -14,16 +14,16 @@ import {
   exportKinds,
   namedFonts,
   type ExportKindInfo
-} from '../../api/export';
-import { exportTemplates, type TemplateSummary } from '../../api/templates';
-import { configManager } from '../../services/config_manager';
-import { documentSession } from '../../services/session';
-import type { SessionDocument } from '../../services/session';
-import type { ExportQuestion } from './export_dialog';
-import { noteName, targetFolder } from './export_paths';
+} from '../../../api/export';
+import { exportTemplates, type TemplateSummary } from '../../../api/templates';
+import { configManager } from '../../../services/config_manager';
+import { documentSession } from '../../../services/session';
+import type { SessionDocument } from '../../../services/session';
+import type { ExportQuestion } from '../dialog';
+import { noteName, targetFolder } from './paths';
 import { uncoveredCharacters } from './font_hint';
-import { destinationsThatNameNoImage } from './picture_hint';
-import { offeredForKind } from './templates/offering';
+import { destinationsThatNameNoImage } from '../assets/picture_hint';
+import { offeredForKind } from '../templates/offering';
 
 /** The question and the settled state needed to execute its answer without asking again. */
 export interface PreparedExportQuestion {

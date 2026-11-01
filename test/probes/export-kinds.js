@@ -13,8 +13,8 @@
  * and a probe still running when the bridge gives up keeps driving the page while the *next* probe
  * tries to measure it (measured: the four probes after it failed).
  *
- * @covers src-tauri/src/menu.rs (the submenu), src/ui/export/export_flow.ts (the kind the payload
- *   names), src/ui/export/export_dialog.ts (a card that is about one kind), src-tauri/src/export.rs
+ * @covers src-tauri/src/menu.rs (the submenu), src/ui/export/workflow/index.ts (the kind the payload
+ *   names), src/ui/export/dialog/index.ts (a card that is about one kind), src-tauri/src/export.rs
  *   (KINDS' name_suffix)
  */
 (async () => {

@@ -6,7 +6,7 @@
  * enough to inspect the visible state without relying on this machine's speed; the success hint
  * then proves the same run finished and the indicator was hidden again.
  *
- * @covers src/ui/export/export_progress.ts, src/ui/export/export_flow.ts, src/ui/status_bar.ts,
+ * @covers src/ui/export/workflow/index.ts, src/ui/export/workflow/index.ts, src/ui/status_bar.ts,
  *   src/main.ts
  */
 (async () => {

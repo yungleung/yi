@@ -5,8 +5,8 @@
  * and the reader-visible state is busy exactly while at least one export owns the indicator.
  */
 
-import { t } from '../../services/i18n';
-import { BaseComponent } from '../component';
+import { t } from '../../../services/i18n';
+import { BaseComponent } from '../../component';
 
 /** The port an export uses to keep the reader informed without knowing where the status is drawn. */
 export interface ExportProgress {

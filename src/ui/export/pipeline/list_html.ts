@@ -11,7 +11,7 @@
  */
 
 import type { List, ListItem, RootContent } from 'mdast';
-import type { ListCaptionNode } from '../markdown/syntax/list_captions';
+import type { ListCaptionNode } from '../../markdown/syntax/list_captions';
 import { escapeHtml, htmlAttributeName } from './html';
 import { inlineHtml } from './inline_html';
 

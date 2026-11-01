@@ -13,7 +13,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-native-bibliography-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/native_bibliography.ts',
+  input: 'src/ui/export/reference/native_bibliography.ts',
   logLevel: 'silent',
   platform: 'node'
 });

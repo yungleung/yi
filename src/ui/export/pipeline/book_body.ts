@@ -20,7 +20,7 @@
  * May import: the note-text rules (`services/documents/identity.ts`). Upholds: the note itself is
  * never edited — this answers the text a book is handed, and the frontmatter stays where it was.
  */
-import { frontmatterEnd } from '../../services/documents';
+import { frontmatterEnd } from '../../../services/documents';
 
 /**
  * Whether the note's own text opens with a level-1 heading: the body's first line, blank lines and

@@ -14,7 +14,7 @@
  *   however the call ended, so a refused export leaves nothing of the reader's text behind.
  *
  * @covers src-tauri/src/export/pandoc.rs (find_pandoc), src-tauri/src/export/run.rs (run_export),
- *   src/ui/export/export_flow.ts (the failure), src/ui/export/export_dialog.ts (a kind that cannot
+ *   src/ui/export/workflow/index.ts (the failure), src/ui/export/dialog/index.ts (a kind that cannot
  *   run)
  * @needs-http-fixture
  */

@@ -36,18 +36,18 @@
  * answers a new text, it never edits the note.
  */
 
-import type { AstCitation, AstImage, AstWikilink } from '../markdown/ast';
-import type { ListingNode } from '../markdown/syntax/listings';
-import { parseMarkdown } from '../markdown/syntax/parser';
-import { wikilinkParts, wikilinkText } from '../markdown/syntax/wikilink_text';
-import { spansOfType, type Span, type Walkable } from './node_spans';
-import type { FigureNode } from '../markdown/syntax/figures';
+import type { AstCitation, AstImage, AstWikilink } from '../../markdown/ast';
+import type { ListingNode } from '../../markdown/syntax/listings';
+import { parseMarkdown } from '../../markdown/syntax/parser';
+import { wikilinkParts, wikilinkText } from '../../markdown/syntax/wikilink_text';
+import { spansOfType, type Span, type Walkable } from '../pipeline/node_spans';
+import type { FigureNode } from '../../markdown/syntax/figures';
 import { escapeHtml, htmlAttributeName } from './html';
 import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
 import { listRewrites } from './list_rewrites';
 import { calloutRewrites } from './callout_rewrites';
-import { isLatexKind } from './kind_family';
+import { isLatexKind } from '../kind_family';
 import {
   latexListing,
   listingHtml,
@@ -70,7 +70,7 @@ import {
   referenceIndex,
   referenceLabel,
   type ReferenceEntry
-} from '../markdown/document/reference_index';
+} from '../../markdown/document/reference_index';
 
 /** The title of the document a wikilink names, or null when nothing in the workspace answers. */
 export type TitleLookup = (target: string) => Promise<string | null>;

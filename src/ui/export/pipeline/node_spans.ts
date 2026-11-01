@@ -11,7 +11,7 @@
  */
 
 import type { Position } from 'unist';
-import type { AstNode } from '../markdown/ast';
+import type { AstNode } from '../../markdown/ast';
 
 /** A node of a parse, and where it stands. mdast sets a position on every node it builds from a
  * token, but the custom constructs the editor's plugins add declare only what a *component* reads

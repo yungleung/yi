@@ -1,5 +1,5 @@
 /**
- * The pictures an export cannot use (`ui/export/picture_hint.ts`): a `data:` URL that names something
+ * The pictures an export cannot use (`ui/export/assets/picture_hint.ts`): a `data:` URL that names something
  * which is not an image, and nothing else.
  *
  * The rule exists because the failure is silent: measured, a docx carries such a destination into
@@ -16,7 +16,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-picture-hint-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/picture_hint.ts',
+  input: 'src/ui/export/assets/picture_hint.ts',
   logLevel: 'silent',
   platform: 'node'
 });

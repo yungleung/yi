@@ -11,7 +11,7 @@
  * exported source tree.
  */
 
-import type { NoteAsset } from '../../api/export';
+import type { NoteAsset } from '../../../api/export';
 
 export interface LatexImagePlan {
   path: string;

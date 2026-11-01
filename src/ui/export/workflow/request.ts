@@ -14,29 +14,29 @@ import {
   runExport,
   type ExportKindInfo,
   type NoteAsset
-} from '../../api/export';
-import { exportTemplates, type TemplateSummary } from '../../api/templates';
-import { bibliographyManager } from '../../services/bibliography';
-import { documentTitle, readFrontmatterLang } from '../../services/documents';
-import { documentManager } from '../../services/documents';
-import { language, t } from '../../services/i18n';
-import { notify } from '../../services/messages';
-import type { SessionDocument } from '../../services/session';
-import { bibliographyPath } from '../../services/settings_paths';
-import { parentFolder } from '../../services/workspace';
-import { imageBases } from '../image/index';
-import { bodyWithItsName } from './book_body';
-import type { ExportAnswer } from './export_dialog';
-import { nativeBibliographyFor } from './export_bibliography';
-import { reportExport } from './export_notice';
-import { fileExists, resourcePaths } from './export_paths';
-import type { ExportProgress } from './export_progress';
-import { isLatexKind } from './kind_family';
-import { portableLatexImage } from './latex_images';
-import { imageDestinations, isWebDestination } from './picture_hint';
-import { exportSource } from './preprocess';
-import { forgetRasters, rasterPictures } from './raster_picture';
-import { referenceHeader } from './reference_header';
+} from '../../../api/export';
+import { exportTemplates, type TemplateSummary } from '../../../api/templates';
+import { bibliographyManager } from '../../../services/bibliography';
+import { documentTitle, readFrontmatterLang } from '../../../services/documents';
+import { documentManager } from '../../../services/documents';
+import { language, t } from '../../../services/i18n';
+import { notify } from '../../../services/messages';
+import type { SessionDocument } from '../../../services/session';
+import { bibliographyPath } from '../../../services/settings_paths';
+import { parentFolder } from '../../../services/workspace';
+import { imageBases } from '../../image/index';
+import { bodyWithItsName } from '../pipeline/book_body';
+import type { ExportAnswer } from '../dialog';
+import { nativeBibliographyFor } from './bibliography';
+import { reportExport } from './notice';
+import { fileExists, resourcePaths } from './paths';
+import type { ExportProgress } from './progress';
+import { isLatexKind } from '../kind_family';
+import { portableLatexImage } from '../assets/latex_images';
+import { imageDestinations, isWebDestination } from '../assets/picture_hint';
+import { exportSource } from '../pipeline/preprocess';
+import { forgetRasters, rasterPictures } from '../assets/raster_picture';
+import { referenceHeader } from '../reference/reference_header';
 
 /** The confirmed state needed to perform one export without reopening the question. */
 export interface ConfirmedExportRequest {

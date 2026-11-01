@@ -26,8 +26,8 @@
  */
 import { appDataDir } from '@tauri-apps/api/path';
 import { mkdir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs';
-import { destinationPaths } from '../../services/workspace';
-import type { ImageBases } from './preprocess';
+import { destinationPaths } from '../../../services/workspace';
+import type { ImageBases } from '../pipeline/preprocess';
 
 /** What drawing a note's pictures has to ask the app: the folders, and whether a file is there. */
 export interface PictureLookup {
