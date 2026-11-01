@@ -6,7 +6,7 @@
  * the menu and its check read the same model.
  */
 
-import { rowAt, type TableSource } from '../markdown/syntax/table_source';
+import { rowAt, type TableSource } from '../markdown/syntax/table';
 import type { TableCommand } from '../markdown/editing/table';
 
 /** One node of the table context menu. */

@@ -11,12 +11,8 @@
  */
 
 import type { MarkdownBlock } from '../document/blocks';
-import { TABLE_COMMANDS, type TableCommand } from '../syntax/table_commands';
+import { TABLE_COMMANDS, type TableCommand } from '../syntax/table';
 import { lineSpanAt } from '../syntax/lines';
-import {
-  readTableSource,
-  type TableSource
-} from '../syntax/table_source';
 import {
   alignColumn,
   clearCell,
@@ -30,9 +26,11 @@ import {
   insertRow,
   moveColumn,
   moveRow,
+  readTableSource,
   shiftOffset,
-  type TableEdit
-} from '../syntax/table_edits';
+  type TableEdit,
+  type TableSource
+} from '../syntax/table';
 import {
   prefixInsertedBreaks,
   projectQuoteSource,

@@ -21,7 +21,7 @@
  * spans, alignment, and which cell holds a given offset.
  */
 
-import { quoteLineAt } from './quote_edits';
+import { quoteLineAt } from '../quote_edits';
 
 export type ColumnAlign = 'left' | 'center' | 'right' | null;
 

@@ -2,7 +2,7 @@
  * Table captions render below their table and edit as their own source line.
  *
  * @covers src/ui/markdown/nodes/caption.ts,
- *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/table_captions.ts
+ *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/table/index.ts
  */
 (async () => {
   const t = window.__t;

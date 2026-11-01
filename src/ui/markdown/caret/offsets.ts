@@ -25,7 +25,7 @@
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
 import { projectQuoteSource } from '../syntax/quote_edits';
-import { readTableSource } from '../syntax/table_source';
+import { readTableSource } from '../syntax/table';
 import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { getCaretRange } from './caret';
 import { LINE_START, TABLE_ROW_START, TEXT_FROM, offsetOf } from './../offset_tags';

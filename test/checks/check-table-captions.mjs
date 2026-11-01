@@ -12,13 +12,13 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-table-captions-'));
 const bundle = await rolldown({
-  input: 'src/ui/markdown/syntax/table_captions.ts',
+  input: 'src/ui/markdown/syntax/table/captions.ts',
   logLevel: 'silent',
   platform: 'node'
 });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
-const file = join(directory, 'table_captions.mjs');
+const file = join(directory, 'captions.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { isTableCaptionLine, tableCaptionLine } = await import(file);
 

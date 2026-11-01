@@ -15,7 +15,7 @@
   const emit = (event, payload) =>
     window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event, payload });
   const registry = await t.app('/src/commands/runtime.ts');
-  const { readTableSource } = await t.app('/src/ui/markdown/syntax/table_source.ts');
+  const { readTableSource } = await t.app('/src/ui/markdown/syntax/table/index.ts');
   const { tableMenuModel } = await t.app('/src/ui/table/index.ts');
   const doc = ['| A | B |', '| :--- | --- |', '| 1 | 2 |', ''].join('\n');
   await t.load(doc);

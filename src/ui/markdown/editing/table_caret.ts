@@ -16,9 +16,9 @@ import {
   readTableSource,
   readTableSourceInQuote,
   rowAt,
+  insertRow,
   type TableSource
-} from '../syntax/table_source';
-import { insertRow } from '../syntax/table_edits';
+} from '../syntax/table';
 import { quoteLineAt } from '../syntax/quote_edits';
 import { applyEdit, restoreCaret, type EditorContext } from './context';
 

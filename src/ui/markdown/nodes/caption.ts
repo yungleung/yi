@@ -12,7 +12,7 @@
  */
 
 import type { ListCaptionNode } from '../syntax/list_captions';
-import type { TableCaptionNode } from '../syntax/table_captions';
+import type { TableCaptionNode } from '../syntax/table';
 import { appendChildren } from '../registry';
 import { renderContext } from '../render_context';
 import { renderingBlock } from '../source_mode';

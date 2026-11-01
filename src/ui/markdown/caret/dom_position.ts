@@ -16,7 +16,7 @@ import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { afterNewline } from './dom';
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
-import { locateCell, readTableSource } from '../syntax/table_source';
+import { locateCell, readTableSource } from '../syntax/table';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf } from './../offset_tags';
 
 /** The text position a character offset inside a revealed source lands on. */

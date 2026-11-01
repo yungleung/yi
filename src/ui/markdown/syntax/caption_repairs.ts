@@ -22,10 +22,10 @@ import {
 import { walk } from './node_walk';
 import { fragmentProcessor } from './remark_pipeline';
 import {
+  readTableSource,
   tableCaptionAfterTable,
   type TableCaptionNode
-} from './table_captions';
-import { readTableSource } from './table_source';
+} from './table';
 
 interface CaptionView {
   text: string;

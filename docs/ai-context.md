@@ -698,7 +698,7 @@ image, caption, and computed number. `auto-references.js`, `figure-rendering.js`
 
 **A captioned pipe table owns its optional separator and its following `: …` line.** The table
 source mapper is bounded by the pipe rows, so a caret after the table never resolves to its last
-cell. `syntax/table_captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
+cell. `syntax/table/captions.ts` accepts zero or one blank line, parses the final Pandoc attribute
 block, and preserves the exact table/caption source on the table node. `create_block.ts` groups the
 three lines but renders no node for the optional separator, so a direct and separated caption have
 the same appearance. The shared `nodes/caption.ts` numbers table and list captions and reveals the

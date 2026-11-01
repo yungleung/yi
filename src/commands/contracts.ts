@@ -11,7 +11,7 @@
 
 import { FORMATTING_STYLES, type FormattingStyle } from '../ui/markdown/format';
 import { LIST_KINDS } from '../ui/markdown/syntax/list_edits';
-import { TABLE_COMMANDS, type TableCommand } from '../ui/markdown/syntax/table_commands';
+import { TABLE_COMMANDS, type TableCommand } from '../ui/markdown/syntax/table';
 import type { TableTarget } from '../ui/markdown/editing/table';
 
 /** What a command may change when it runs. */

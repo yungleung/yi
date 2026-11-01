@@ -11,8 +11,8 @@
  */
 
 import type { RootContent } from 'mdast';
-import { readTableSource } from './table_source';
-import { captionLine, type CaptionLineData } from './caption_lines';
+import { readTableSource } from './source';
+import { captionLine, type CaptionLineData } from '../caption_lines';
 
 /** One caption line, with every range in its block's coordinates. */
 export interface TableCaptionData extends CaptionLineData {}

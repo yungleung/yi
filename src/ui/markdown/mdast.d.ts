@@ -12,7 +12,7 @@ import type { CitationNode } from './plugins/remark-citation';
 import type { AutoReferenceNode } from './plugins/remark-auto-references';
 import type { HeadingAttributeBlock } from './syntax/heading_attributes';
 import type { FigureNode } from './syntax/figures';
-import type { TableCaptionNode } from './syntax/table_captions';
+import type { TableCaptionNode } from './syntax/table';
 import type { ListCaptionNode } from './syntax/list_captions';
 import type { ListingNode } from './syntax/listings';
 import type { WikilinkNode } from './plugins/remark-wikilink';

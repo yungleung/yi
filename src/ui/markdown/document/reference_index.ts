@@ -19,7 +19,7 @@ import {
   type NumberedReferenceKind,
   type ReferenceStyle
 } from '../syntax/reference_vocabulary';
-import type { TableCaptionNode } from '../syntax/table_captions';
+import type { TableCaptionNode } from '../syntax/table';
 import { readEquationBlock } from '../syntax/equation';
 import { splitBlocks } from './blocks';
 

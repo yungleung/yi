@@ -12,7 +12,7 @@
 
 import type { Table } from 'mdast';
 import { referenceLabel, type ReferenceEntry } from '../../markdown/document/reference_index';
-import type { TableCaptionNode } from '../../markdown/syntax/table_captions';
+import type { TableCaptionNode } from '../../markdown/syntax/table';
 import { spansOfType, type Walkable } from '../pipeline/node_spans';
 import { tableHtml } from './table_html';
 import { isLatexKind } from '../kind_family';

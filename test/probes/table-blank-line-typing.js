@@ -1,7 +1,7 @@
 /**
  * A blank line after a table keeps its own caret and source.
  *
- * @covers src/ui/markdown/syntax/table_source.ts,
+ * @covers src/ui/markdown/syntax/table/index.ts,
  *   src/ui/markdown/caret/dom_position.ts
  */
 (async () => {

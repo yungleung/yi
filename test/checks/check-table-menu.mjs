@@ -18,7 +18,7 @@ async function bundleModule(input) {
   return import(file);
 }
 
-const { readTableSource } = await bundleModule('src/ui/markdown/syntax/table_source.ts');
+const { readTableSource } = await bundleModule('src/ui/markdown/syntax/table/source.ts');
 const { tableMenuModel } = await bundleModule('src/ui/table/model.ts');
 
 const failures = [];

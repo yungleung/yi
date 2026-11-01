@@ -33,7 +33,7 @@ export type {
   ThematicBreak as AstThematicBreak
 } from 'mdast';
 import type { FigureNode } from './syntax/figures';
-import type { TableCaptionNode } from './syntax/table_captions';
+import type { TableCaptionNode } from './syntax/table';
 import type { ListCaptionNode } from './syntax/list_captions';
 import type { ListingNode } from './syntax/listings';
 

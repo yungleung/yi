@@ -15,9 +15,9 @@ import {
   openingFence
 } from '../syntax/markers';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
-import { isTableCaptionLine } from '../syntax/table_captions';
+import { isTableCaptionLine } from '../syntax/table';
 import { listCaptionLine } from '../syntax/list_captions';
-import { readTableSource } from '../syntax/table_source';
+import { readTableSource } from '../syntax/table';
 import { isEquationOpening } from '../syntax/equation';
 import type { BlockKind } from './block_kinds';
 import { scanContainerBlock } from './block_scan_rules';
