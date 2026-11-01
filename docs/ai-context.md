@@ -717,7 +717,9 @@ environment row.** `syntax/equation_blocks.ts` owns `[$$…$$]{…#id}` parsing,
 the `[$$` autocomplete skeleton, and the environment matrix. An ID is optional
 for display; the structural reader keeps a block visible while its final
 attributes are unfinished. Plain or environment math is lowered before KaTeX so
-no native automatic tag can depend on virtualization. `create_block.ts` and
+no native automatic tag can depend on virtualization. `syntax/equation_masking.ts`
+prepares remark input by replacing only wrapper punctuation with spaces, preserving every source
+offset. `create_block.ts` and
 `nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
 `document/reference_index.ts` indexes only labeled blocks.
 `ui/export/pipeline/equation_rewrites.ts` gives every HTML/EPUB/DOCX/ODT display equation

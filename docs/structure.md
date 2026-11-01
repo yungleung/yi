@@ -7,14 +7,14 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-01 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 392 TypeScript modules, 46,889 lines, and no import cycles
+described at the end of this document: 393 TypeScript modules, 46,886 lines, and no import cycles
 anywhere in them.
 
 ## The tree
 
 | Path | Modules | Lines | What it holds |
 | --- | --- | --- | --- |
-| `src/ui/markdown/syntax/` | 20 | 3,051 | the pure rules: markers, lines, the edit arithmetic, the parser pipeline |
+| `src/ui/markdown/syntax/` | 21 | 3,048 | the pure rules: markers, lines, the edit arithmetic, equation masking and the parser pipeline |
 | `src/ui/markdown/plugins/` | 9 | 720 | the remark extensions: citation, wikilink, definition list |
 | `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
 | `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
@@ -44,7 +44,7 @@ anywhere in them.
 | `src-tauri/src/fonts/` | 7 | 1,131 | font-file parsing, the bundled face/header/coverage domain, and machine fonts |
 | `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
 
-`src/ui/markdown/` is 202 of the 392 modules and 26,566 of the 46,889 lines: the editor is the app,
+`src/ui/markdown/` is 203 of the 393 modules and 26,563 of the 46,886 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -123,7 +123,7 @@ exported through `src-tauri/src/lib.rs`. Their internals may move; their consume
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
 relative import in `src/`.
 
-- **No cycles**, across all 392 modules; and `document/*` imports only syntax and its own files.
+- **No cycles**, across all 393 modules; and `document/*` imports only syntax and its own files.
   The two hardest invariants in the tree, and both hold.
 - **`syntax/*` imports only syntax, the AST types, the parser libraries and `plugins/*`** — the 3
   edges into the plugins are the parser's own extensions. `layering.mjs` enforces this.
@@ -149,7 +149,7 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 392 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 393 modules) |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
@@ -179,6 +179,7 @@ different reasons**. Several did, and each is split now:
 | `export/dialog/form.ts`, 432 | form state, kind rules, diagnostics and answers (344) | reusable DOM controls and row composition in `dialog/controls.ts` (112) |
 | `export/pipeline/preprocess.ts`, 393 | export rewrite sequencing, wikilinks, automatic references and citation assembly (198) | shared contracts in `contracts.ts` (70), ordered splices in `rewrites.ts` (20), figures in `figure_rewrites.ts` (117) and listings in `listing_rewrites.ts` (45) |
 | `export/templates/editor.ts`, 383 | package/defaults state, file loading, dirty tracking, save, validation and close flow (318) | modal DOM, controls and Escape binding in `templates/editor_shell.ts` (138) |
+| `syntax/equation_blocks.ts`, 406 | equation wrapper parsing, body classification and LaTeX lowering (278) | offset-preserving remark input in `syntax/equation_masking.ts` (125) |
 
 ## What was improved, in the order it was taken
 
@@ -207,7 +208,7 @@ what keeps it that way.
    citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
-   their three lines, and the check reads `src/` (it says 392 modules).
+   their three lines, and the check reads `src/` (it says 393 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
    with its reason), and the other way round. Writing it found four names `format_dom_tags.ts` looked

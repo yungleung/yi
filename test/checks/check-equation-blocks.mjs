@@ -21,7 +21,6 @@ await bundle.close();
 const file = join(directory, 'equation_blocks.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
-  equationsForParsers,
   innerEquationBody,
   latexEquationBody,
   readDisplayMath,
@@ -30,6 +29,19 @@ const {
   readEquationBody,
   unnumberedEquationBody
 } = await import(file);
+const maskingBundle = await rolldown({
+  input: 'src/ui/markdown/syntax/equation_masking.ts',
+  logLevel: 'silent',
+  platform: 'node'
+});
+const { output: maskingOutput } = await maskingBundle.generate({ format: 'esm' });
+await maskingBundle.close();
+const maskingFile = join(directory, 'equation_masking.mjs');
+writeFileSync(
+  maskingFile,
+  maskingOutput.find((chunk) => chunk.type === 'chunk').code
+);
+const { equationsForParsers } = await import(maskingFile);
 
 const failures = [];
 const check = (name, actual, expected) => {

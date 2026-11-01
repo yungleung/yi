@@ -79,6 +79,7 @@ expectFile('src/ui/export/pipeline/contracts.ts');
 expectFile('src/ui/export/pipeline/rewrites.ts');
 expectFile('src/ui/export/pipeline/figure_rewrites.ts');
 expectFile('src/ui/export/pipeline/listing_rewrites.ts');
+expectFile('src/ui/markdown/syntax/equation_masking.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -148,6 +149,11 @@ expectNoDefinition(
   'src/ui/export/pipeline/callout_rewrites.ts',
   /\bfunction\s+applyRewrites\s*\(/,
   'duplicates the shared right-to-left rewrite rule'
+);
+expectNoDefinition(
+  'src/ui/markdown/syntax/equation_blocks.ts',
+  /\bfunction\s+(?:equationsForParsers|sourceLines|leadingSpace)\s*\(/,
+  'still owns remark input masking; move it to equation_masking.ts'
 );
 
 const legacy = [
