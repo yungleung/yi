@@ -334,7 +334,9 @@ written in**, because a page has no font fallback: a character outside the font 
 none of the words). **This build draws those scripts itself.** It ships eight faces under
 `src-tauri/assets/fonts/` (`bundle.resources` in `tauri.conf.json`, so `tauri-build` also puts them in
 the target folder a development run resolves as its resource directory) — one per script, OFL, with the
-licence beside them — and `src-tauri/src/fonts/bundled.rs` writes a header of its own,
+licence beside them — and `src-tauri/src/fonts/bundled.rs` is the stable facade over
+`bundled_faces.rs` (face/slot catalogue), `bundled_header.rs` (settings and LaTeX family generation)
+and `bundled_coverage.rs` (cmap-derived Unicode coverage). It writes a header of its own,
 `assets/export/pdf-fonts.tex`, into `<app data>/export/pdf-fonts.tex` before **every** PDF export (it
 names the faces by absolute path, so a moved app would otherwise leave a header pointing at a bundle
 that is gone) and hands it to pandoc as `--include-in-header`, which pandoc *adds* to whatever the
