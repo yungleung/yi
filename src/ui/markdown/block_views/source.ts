@@ -8,10 +8,9 @@
  * document's exact characters and never a normalized node rendering.
  */
 
-import type { BlockNode } from '../document/blocks';
+import type { BlockNode } from '../document/block';
 import { CalloutSourceView } from '../nodes/callout_source';
-import { FenceText } from '../nodes/fence_text';
-import { FencedDivSourceView } from '../nodes/fenced_div_source';
+import { FenceText, FencedDivSourceView } from '../nodes/fence';
 import { QuoteSourceView } from '../nodes/quote_source';
 import type { CalloutSource } from '../syntax/callout';
 import {

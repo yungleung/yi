@@ -60,7 +60,7 @@ anywhere in them.
 | `src-tauri/src/settings/` | 3 | 298 | configuration model, persistence and command façade |
 | `src-tauri/src/versioning/` | 5 | 1,076 | the git seam and writes, folder facts and version reads |
 
-`src/ui/markdown/` is 225 of the 421 modules and 26,736 of the 47,136 lines: the editor is the app,
+`src/ui/markdown/` is 234 of the 430 modules and 26,851 of the 47,201 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -90,12 +90,30 @@ imported by the nodes (its header says so). The rule: a node's rendering is a pu
 own source, and whether it shows source at all is *registered* (`showsSource`), not asked of the
 renderer.
 
-**The block model.** `document/blocks.ts: MarkdownBlock`/`BlockView` is the model — a slice of lines
-with a kind, a raw range and a content key — and `create_block.ts: BlockView` is the DOM component
-built from it. The public type is `MarkdownBlock`, so the duplicate class name is local to its file,
-but it is the one name in the tree that means two things (item 9 below). The source walk is
-`document/block_scanner.ts`; `document/block_scan_rules.ts` owns the ordered multi-line container
+**The block model.** `document/block/model.ts` owns `MarkdownBlock`: a slice of lines with a kind, a
+raw range and a content key. `create_block.ts: BlockView` is the DOM component built from it. The
+class implementing the model stays private, so the renderer's `BlockView` is the only public view
+name. The source walk is
+`document/block/scanner.ts`; `document/block/scan_rules.ts` owns the ordered multi-line container
 rules for fences, equations, indented code, terminated HTML, quotes and fenced Divs.
+
+**The Markdown capability domains.** A related operation family has one public `index.ts`;
+implementation files inside it stay focused on one role and are imported by name:
+
+| Domain | Public entrypoint | Internal responsibilities |
+| --- | --- | --- |
+| Document blocks | `document/block/index.ts` | model, kind vocabulary, scanner, container rules, position index, parse cache |
+| Text editing | `editing/text/index.ts` | typed/committed insertion, deletion, Enter, task toggling, visible-block resolution |
+| Input composition | `editing/composition/index.ts` | hidden native field, keyboard hand-back, caret placement, marked-text view |
+| Table editing | `editing/table/index.ts` | structural cell/row/column operations and table-aware caret movement |
+| Caret navigation | `caret/navigation/index.ts` | horizontal, vertical and node-to-node movement |
+| Inline formatting | `format/index.ts` | format rules, DOM patching and tagged-text traversal |
+| Heading nodes | `nodes/heading/index.ts` | heading source node, gutter marker and hover target |
+| Code nodes | `nodes/code/index.ts` | code node rendering and syntax highlighting |
+| Fence nodes | `nodes/fence/index.ts` | fence body/source view, label and exact Div source |
+| Find UI | `editing/find/index.ts` | find bar and replace controller |
+| Pandoc attributes | `syntax/pandoc/index.ts` | brace-delimited attributes and automatic heading identifiers |
+| Captions | `syntax/caption/index.ts` | shared colon-line grammar and parser repairs |
 
 ## Module organization guide
 
@@ -139,7 +157,7 @@ exported through `src-tauri/src/lib.rs`. Their internals may move; their consume
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
 relative import in `src/`.
 
-- **No cycles**, across all 405 modules; and `document/*` imports only syntax and its own files.
+- **No cycles**, across all 430 modules; and `document/*` imports only syntax and its own files.
   The two hardest invariants in the tree, and both hold.
 - **`syntax/*` imports only syntax, the AST types, the parser libraries and `plugins/*`** — the 3
   edges into the plugins are the parser's own extensions. `layering.mjs` enforces this.
@@ -165,7 +183,7 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 421 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 430 modules) |
 | Domains expose a façade, avoid cross-domain cycles and do not repeat parent prefixes | this document | `test/checks/module-layout.mjs` resolves TypeScript imports and Rust font/file boundaries |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
@@ -184,12 +202,12 @@ different reasons**. Several did, and each is split now:
 
 | Module, then | Still holds (lines) | And the module the other job moved to |
 | --- | --- | --- |
-| `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
+| `document/blocks.ts` and its flat scanner/index/cache companions, 1,277 | one capability domain behind `document/block/index.ts` (32): model 336, scanner 347, scan rules 184, lookup 210, kind vocabulary 88 and parse cache 112 | each responsibility has its own module without changing behavior |
 | `markdown_editor.ts`, 501 | the editor composition root — document, view and DOM lifecycle | command/menu installation in `editor/command_wiring.ts`, history replay in `editor/history.ts`, shortcut/arrow adapters in `editor/keyboard.ts`, key routing in `editing/keys.ts`, browser pointer/clipboard/preview wiring in `editing/editor_interactions.ts`, page/column state in `editor/page_layout.ts`, and picker caret arithmetic in `editing/block_opening_edit.ts` |
 | `editing/context.ts`, 515 | the stable edit funnel and editing facade (157) | caret/selection/scroll placement in `editing/caret_placement.ts`, source-node selection in `editing/source_range.ts`, quote-child inspection in `editing/quote_context.ts`, selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
-| `editing/text_commands.ts`, 16 | the stable text-path facade | insertion in `text_insertion.ts`, deletion in `text_deletion.ts`, Enter in `text_newline.ts`, and task toggling in `task_command.ts` |
+| `editing/text/`, 640 | one public text-command facade in `index.ts` (18) | insertion in `text/insertion.ts` (234), deletion in `text/deletion.ts` (87), Enter in `text/newline.ts` (224), task toggling in `text/task.ts` (45), and block-at-caret resolution in `text/context.ts` (32) |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
-| `caret/navigation.ts`, 75 | the public direction/dispatch facade | neighbor discovery in `navigation_nodes.ts`, horizontal traversal in `navigation_horizontal.ts`, vertical geometry in `navigation_vertical.ts`, and line hit-testing in `line_hits.ts` |
+| `caret/navigation/index.ts`, 75 | the public direction/dispatch facade | neighbor discovery in `navigation/nodes.ts` (79), horizontal traversal in `navigation/horizontal.ts` (229), vertical geometry in `navigation/vertical.ts` (76), and line hit-testing in `line_hits.ts` |
 | `workspace/tree/index.ts`, 395 | workspace lifecycle and the public tree facade (129) | the recursive row DOM, expansion, reveal and row-local interactions in `workspace/tree/node.ts` (282) |
 | `export/manager/index.ts`, 465 | modal state, package handling and the public manager facade (338) | backend/config I/O in `manager/source.ts` (58) and kind-sidebar rendering in `manager/navigation.ts` (153) |
 | `export/templates/browser.ts`, 447 | package rows, selection, controls and rendering (244) | package lifecycle actions and dialogs in `templates/operations.ts` (238) |
@@ -233,13 +251,13 @@ what keeps it that way.
    citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
-   their three lines, and the check reads `src/` (it says 405 modules).
+   their three lines, and the check reads `src/` (it says 430 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
-   with its reason), and the other way round. Writing it found four names `format_dom_tags.ts` looked
+   with its reason), and the other way round. Writing it found four names `format/dom_tags.ts` looked
    for that nothing sets — a widget's rest form is drawn by its own tag — and they are gone.
 6. **Split the five two-job modules**, moving no behaviour. Done, a commit each: the kind vocabulary
-   (`document/block_kinds.ts`), the key routing (`editing/keys.ts`), the selection reading
+   (`document/block/kinds.ts`), the key routing (`editing/keys.ts`), the selection reading
    (`editing/selection.ts`), the drawn span (`caret/span.ts`) and the line hit-testing
    (`caret/line_hits.ts`) are their own modules now, and the table above has the sizes. The probes
    are the net, and `npm run probe:all` was run over the whole pass.

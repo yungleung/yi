@@ -15,7 +15,7 @@
  * artefact is. Nothing touches the document — the app keeps the text it had — so this is the
  * layout and nothing else. A paragraph is the control.
  *
- * @covers src/ui/markdown/nodes/code_block.ts, src/ui/markdown/virtual_block_renderer.ts
+ * @covers src/ui/markdown/nodes/code/node.ts, src/ui/markdown/virtual_block_renderer.ts
  * @needs-large-document — a code block of the fixture note's size.
  */
 (async () => {

@@ -5,13 +5,13 @@
  * places the caret by character offset over that markup (`caret/offsets.ts`). So the markup may
  * not add, drop or reorder a character — and a click into a fenced block has to take the caret to
  * the character it landed on, both through the body such a block renders and through the source
- * view it becomes the moment the caret is inside it (`nodes/fence_text.ts`): the click maps
+ * view it becomes the moment the caret is inside it (`nodes/fence/text.ts`): the click maps
  * through the body's own characters, and the block is rebuilt around the caret at that offset.
  *
  * `source-theme.js` holds the colours; this holds the characters.
  *
- * @covers src/ui/markdown/nodes/fence_text.ts, src/ui/markdown/nodes/frontmatter_highlight.ts,
- *   src/ui/markdown/nodes/code_highlight.ts, src/ui/markdown/nodes/editable_node.ts
+ * @covers src/ui/markdown/nodes/fence/text.ts, src/ui/markdown/nodes/frontmatter_highlight.ts,
+ *   src/ui/markdown/nodes/code/highlight.ts, src/ui/markdown/nodes/editable_node.ts
  */
 (async () => {
   const t = window.__t;

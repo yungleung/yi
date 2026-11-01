@@ -2,7 +2,7 @@
  * Enter on an empty callout's opening line follows the paragraph rule for a
  * GitHub alert, while a fenced Div leaves the caret in one new body line.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/callout/index.ts
  */
 (async () => {

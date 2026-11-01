@@ -26,7 +26,7 @@ import { footnoteOffsets } from './syntax/footnote';
 import { renderFootnoteBody } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
 import type { AstFootnoteDefinition } from './ast';
-import type { MarkdownBlock } from './document/blocks';
+import type { MarkdownBlock } from './document/block';
 import type { EditorContext } from './editing/context';
 
 /** How long the pointer has to rest on a marker before the card appears. */

@@ -22,7 +22,7 @@
  * why every native mark the field draws — the ring, the underline over a word an input method is
  * holding, the selection over one — showed at the caret there and nowhere else.
  *
- * @covers src/ui/markdown/editing/composition_input.ts: measureFrame, followCaret
+ * @covers src/ui/markdown/editing/composition/input.ts: measureFrame, followCaret
  */
 (async () => {
   const t = window.__t;

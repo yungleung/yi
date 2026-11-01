@@ -22,7 +22,7 @@
  * animation frames, and every keystroke then reports `settled: false` instead of a time.
  * The rest of the report — what the edit rebuilt, what survived it — stands either way.
  *
- * @covers src/ui/markdown/document/state.ts, src/ui/markdown/document/blocks.ts
+ * @covers src/ui/markdown/document/state.ts, src/ui/markdown/document/block/model.ts
  * @needs-large-document — run against the 323 KB fixture note.
  *
  * Run with:

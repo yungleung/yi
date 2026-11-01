@@ -1,7 +1,7 @@
 /**
  * Choosing a fenced code block's language: the list its label opens.
  *
- * The label is a button (`nodes/fence_label.ts`), and what pressing it asks for is a card beside it
+ * The label is a button (`nodes/fence/label.ts`), and what pressing it asks for is a card beside it
  * holding every language highlight.js ships — plus `text`, which names none. A code fence in an
  * unrendered Pandoc Div has no label element, so the same picker also accepts the caret's measured
  * box. It is the whole list on purpose: auto-detection is the fallback for a fence that names no

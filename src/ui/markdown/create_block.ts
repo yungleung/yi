@@ -8,8 +8,7 @@
  * on it for everything that maps back.
  */
 
-import { type BlockNode } from './document/blocks';
-import { hasBodyView } from './document/block_kinds';;
+import { hasBodyView, type BlockNode } from './document/block';
 import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';

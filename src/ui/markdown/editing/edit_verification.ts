@@ -11,7 +11,7 @@
  */
 
 import type { EditorContext } from './context';
-import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownBlock } from '../document/block';
 import { nodeShape } from '../syntax/node_shape';
 
 /**

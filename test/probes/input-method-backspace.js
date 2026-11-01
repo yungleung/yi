@@ -9,7 +9,7 @@
  * a different word around it. A Backspace of the reader's own, away from any composition, must
  * still delete.
  *
- * @covers src/ui/markdown/editing/composition_input.ts: markedText, src/ui/markdown/markdown_editor.ts: handleKeydown
+ * @covers src/ui/markdown/editing/composition/input.ts: markedText, src/ui/markdown/markdown_editor.ts: handleKeydown
  */
 (async () => {
   const t = window.__t;

@@ -3,7 +3,7 @@
  * the list without moving or deleting any earlier document text.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/editing/text_commands.ts
+ *   src/ui/markdown/editing/text/index.ts
  * @fixture test/fixtures/workspace/default-document.md
  */
 (async () => {

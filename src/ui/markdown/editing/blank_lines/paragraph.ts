@@ -9,7 +9,7 @@
  */
 
 import type { EditKind } from '../../document/history';
-import type { MarkdownBlock } from '../../document/blocks';
+import type { MarkdownBlock } from '../../document/block';
 import { isEmptyParagraphLine } from '../../syntax/blank_lines';
 import { lineSpanAt } from '../../syntax/lines';
 import { applyEdit, restoreCaret, type EditorContext } from '../context';

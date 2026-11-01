@@ -9,7 +9,7 @@
  */
 
 import type { RootContent } from 'mdast';
-import type { BlockNode } from '../document/blocks';
+import type { BlockNode } from '../document/block';
 import { Equation, EquationSource } from '../nodes/equation';
 import { renderContext } from '../render_context';
 import { isSourceBlock } from '../source_mode';

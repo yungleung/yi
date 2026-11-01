@@ -8,9 +8,9 @@
  * the separator and following word after the committed one.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/editing/composition_input.ts,
+ *   src/ui/markdown/editing/composition/input.ts,
  *   src/ui/markdown/editing/context.ts,
- *   src/ui/markdown/editing/text_commands.ts
+ *   src/ui/markdown/editing/text/index.ts
  * @fixture test/fixtures/workspace/default-document.md
  */
 (async () => {

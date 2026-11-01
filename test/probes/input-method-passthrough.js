@@ -14,7 +14,7 @@
  * still the editor's.
  *
  * @covers src/ui/markdown/markdown_editor.ts: handleKeydown,
- *   src/ui/markdown/editing/keys.ts, src/ui/markdown/editing/composition_input.ts
+ *   src/ui/markdown/editing/keys.ts, src/ui/markdown/editing/composition/input.ts
  */
 (async () => {
   const t = window.__t;

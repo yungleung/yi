@@ -19,7 +19,7 @@
  * the markup is identical to a fresh render, how many characters of the visible text carry
  * the wrong styling when it is not, and what the repair costs when the burst ends.
  *
- * @covers src/ui/markdown/nodes/code_block.ts, src/ui/markdown/editing/typed_text.ts
+ * @covers src/ui/markdown/nodes/code/node.ts, src/ui/markdown/editing/typed_text.ts
  *
  * **Read `writeMs` with care.** It is the patch alone — a text node and one height read — and
  * the browser can answer that read from a layout it has not re-run. The app's own path (P27

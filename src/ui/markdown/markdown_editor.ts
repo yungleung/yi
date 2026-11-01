@@ -9,7 +9,7 @@
  *
  * May import: everything above it — the render layer, the caret, the commands'
  * registry and the editing rules it registers. Upholds: a keystroke reaches
- * behaviour by name (`runCommand`) or by the text path (`editing/text_commands`),
+ * behaviour by name (`runCommand`) or by the text path (`editing/text/`),
  * never by a second copy of the rule.
  */
 
@@ -38,8 +38,8 @@ import {
   type EditorContext
 } from './editing/context';
 import { documentOffsetAt } from './caret/offsets';
-import { insertCommitted } from './editing/text_commands';
-import { installCompositionInput, type CompositionInput } from './editing/composition_input';
+import { insertCommitted } from './editing/text';
+import { installCompositionInput, type CompositionInput } from './editing/composition';
 import { choiceCardIsOpen, handleChoiceCardText } from './choice_card';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
 import {
@@ -49,8 +49,7 @@ import {
 } from './editing/callout_kind_picker';
 import { fenceLanguageEdit } from './syntax/container';
 import { calloutKindEdit } from './syntax/callout';
-import { FindBar } from './editing/find_bar';
-import { FindController } from './editing/find_controller';
+import { FindBar, FindController } from './editing/find';
 import { Completions } from './editing/completions';
 import { installEditorInteractions } from './editing/editor_interactions';
 import { handleEditorKey, type KeyHost } from './editing/keys';
@@ -82,9 +81,9 @@ export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor';
  *
  * - `editing/context.ts` — the shared context plus selection/caret mapping,
  * - `editing/clipboard.ts` — copy, cut, paste, select all,
- * - `editing/text_commands.ts` — typing, deleting, line breaks, task markers,
+ * - `editing/text/` — typing, deleting, line breaks and task markers,
  * - `editing/formatting.ts` — bold/italic/strike/inline-code commands,
- * - `editing/find_bar.ts` / `editing/find_controller.ts` — find and replace.
+ * - `editing/find/` — find and replace.
  *
  * Undo/redo lives in the state (`MarkdownEditorState#undo/redo`);
  * `editor/history.ts` restores the mark, source shape, scroll and keyboard around it.
@@ -227,7 +226,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     });
     // The system's way in: an input method's word, dictation and the emoji panel get
     // something to compose and arrive in, and what they commit is one edit of its own
-    // (see `editing/composition_input.ts` and `editing/text_commands.ts: insertCommitted`).
+    // (see `editing/composition/` and `editing/text/index.ts: insertCommitted`).
     this.composition = installCompositionInput(
       this.contentView,
       (text) => {
@@ -250,7 +249,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     void eventManager.on(INPUT_SOURCE_CHANGED, () => {
       this.composition.resetInputContext();
     });
-    // A fenced code block's label asks for a language (`nodes/fence_label.ts`); the card that
+    // A fenced code block's label asks for a language (`nodes/fence/label.ts`); the card that
     // answers is the app's own chrome, and the edit it makes is the pure rule's
     // (`syntax/container/fence_edits.ts: fenceLanguageEdit`).
     setLanguagePicker(installLanguagePicker());

@@ -26,7 +26,7 @@
  * `color-mix`), which no canvas will normalize, so the probe converts them itself.
  *
  * @covers src/styles.css, src/ui/markdown/nodes/frontmatter_highlight.ts,
- *   src/ui/markdown/nodes/code_block.ts, src/ui/markdown/nodes/latex_highlight.ts
+ *   src/ui/markdown/nodes/code/node.ts, src/ui/markdown/nodes/latex_highlight.ts
  */
 (async () => {
   const t = window.__t;
@@ -204,7 +204,7 @@
   const EXPECTED = {
     // What a fenced block renders while the caret is elsewhere is its *body*: the delimiters are
     // not drawn. The formula is measured while its own text is shown, so there it is the whole
-    // block, delimiters and all (`nodes/fence_text.ts`).
+    // block, delimiters and all (`nodes/fence/text.ts`).
     frontmatter: 'id: 20240707122715\ntitle: "A note"\n',
     codeFence: 'const a = 1;\n',
     inlineMath: INLINE,

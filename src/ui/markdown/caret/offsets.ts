@@ -22,7 +22,7 @@
  * lines between blocks have no block and map to null.
  */
 
-import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
 import { projectQuoteSource } from '../syntax/container';
 import { readTableSource } from '../syntax/table';
@@ -236,7 +236,7 @@ function textOffsetInElement(
     let length = range.toString().length;
     // The word being composed is written into the line to be seen, and none of its
     // characters is in the document: it is stepped over here so that no offset in the block
-    // is shifted by it (see `editing/composition_view.ts`).
+    // is shifted by it (see `editing/composition/view.ts`).
     for (const composing of element.querySelectorAll('[data-composing], [data-chrome]')) {
       if (range.intersectsNode(composing)) {
         length -= composing.textContent?.length ?? 0;
@@ -261,8 +261,8 @@ function textOffsetInElement(
 
 /**
  * Whether this text is something the block *draws* that is not the document's own characters: the
- * word an input method is composing (`editing/composition_view.ts`), or a block's own chrome — the
- * label on a fenced block (`nodes/fence_label.ts`). Neither is the block's text, so neither is
+ * word an input method is composing (`editing/composition/view.ts`), or a block's own chrome — the
+ * label on a fenced block (`nodes/fence/label.ts`). Neither is the block's text, so neither is
  * counted: a caret anywhere in the block maps by the characters around them alone.
  */
 function isDrawn(node: Node): boolean {

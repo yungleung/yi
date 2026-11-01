@@ -8,7 +8,11 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-command-contracts-'));
-const build = await rolldown({ input: 'src/commands/contracts.ts', logLevel: 'silent' });
+const build = await rolldown({
+  input: 'src/commands/contracts.ts',
+  logLevel: 'silent',
+  platform: 'node'
+});
 const { output } = await build.generate({ format: 'esm' });
 await build.close();
 const file = join(directory, 'contracts.mjs');

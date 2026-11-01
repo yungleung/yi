@@ -50,7 +50,7 @@ function isPlainText(text: string): boolean {
 }
 
 /**
- * Characters a block marker can be made of (see `document/blocks.ts`): an indent, a
+ * Characters a block marker can be made of (see `document/block/model.ts`): an indent, a
  * bullet or a number, and the punctuation of a quote, a heading, a fence, a rule, a
  * setext underline, a table row or a description list.
  */

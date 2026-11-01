@@ -1,7 +1,7 @@
 /**
  * Leaving a fenced block by its own lines.
  *
- * While the caret is inside one, the closing fence is a line like any other (`nodes/fence_text.ts`),
+ * While the caret is inside one, the closing fence is a line like any other (`nodes/fence/text.ts`),
  * so `Enter` at its end makes a blank line under the block and the caret goes there — for all three
  * fenced kinds. A character typed at the body's own end still belongs to the body
  * (`syntax/container/fence_edits.ts`), whichever side of its last blank line the click landed on.
@@ -23,7 +23,7 @@
  * (`virtual_block_renderer.ts: refresh`), and `test/probes/rebuild-keeps-the-caret.js` is the probe
  * that fails without that fix.
  *
- * @covers src/ui/markdown/editing/text_commands.ts, src/ui/markdown/nodes/fence_text.ts,
+ * @covers src/ui/markdown/editing/text/index.ts, src/ui/markdown/nodes/fence/text.ts,
  *   src/ui/markdown/syntax/container/fence_edits.ts
  */
 (async () => {

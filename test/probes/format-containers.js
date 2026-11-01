@@ -3,7 +3,7 @@
  * it changes only the selected text's markers.
  *
  * @covers src/ui/markdown/editing/formatting.ts,
- *   src/ui/markdown/format_dom.ts,
+ *   src/ui/markdown/format/dom.ts,
  *   src/ui/markdown/caret/offsets.ts
  */
 (async () => {

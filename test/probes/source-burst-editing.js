@@ -11,7 +11,7 @@
  * @covers src/ui/markdown/editing/typed_text.ts,
  *   src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/markdown_editor.ts,
- *   src/ui/markdown/editing/composition_input.ts
+ *   src/ui/markdown/editing/composition/input.ts
  */
 (async () => {
   const t = window.__t;

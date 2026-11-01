@@ -1,7 +1,7 @@
 /**
  * Enter in a quoted list keeps list semantics and quote carriers.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/container/quote/
  */
 (async () => {

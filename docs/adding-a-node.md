@@ -198,7 +198,7 @@ test it in `test/checks/` instead — that is faster and it cannot rot.
 
 A construct the splitter cuts into a block of its own is a different job from a node
 type inside one: display maths, fenced and indented code, HTML and frontmatter are
-block kinds. They are the `BlockKind` union in `document/blocks.ts`, the splitter
+block kinds. They are the `BlockKind` union in `document/block/kinds.ts`, the splitter
 that assigns the kind, and two tables that say what the renderer may do with it:
 
 - `isRawRendered(kind)` — whether the block renders its raw source as it stands,
@@ -210,7 +210,7 @@ that assigns the kind, and two tables that say what the renderer may do with it:
   instead, and the caret has nothing to sit on. All three fenced kinds are here.
 
 The invariants above apply here too: a block kind whose text stands in for its view
-is tagged with the offset of the text it shows (`nodes/fence_text.ts` — a fenced
+is tagged with the offset of the text it shows (`nodes/fence/text.ts` — a fenced
 block's own text, delimiters and all, while the caret is inside it), which is what
 makes a keystroke inside it exact. And the renderer keys an element by its
 content *and* by the shape it was built in — for a block, the shape comes from

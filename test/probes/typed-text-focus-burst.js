@@ -1,8 +1,8 @@
 /**
  * A fast keyboard burst reaches editable text even while the input seam regains focus.
  *
- * @covers src/ui/markdown/editing/composition_input.ts,
- *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/editing/text_commands.ts
+ * @covers src/ui/markdown/editing/composition/input.ts,
+ *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

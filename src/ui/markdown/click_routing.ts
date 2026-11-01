@@ -27,7 +27,7 @@ import { jumpToReference } from './editing/references';
 import { placeCaretFromPointer } from './editing/pointer';
 import { isFilePath, isOpenableUrl, isSameDocumentFragment } from './syntax/link_edits';
 import { tableSnapshot, type TableTarget } from './editing/table';
-import { toggleTask } from './editing/text_commands';
+import { toggleTask } from './editing/text';
 import { openLinkDestination, openWikilinkTarget } from './link_opens';
 
 /** Toggles a task-list checkbox without moving the caret. */

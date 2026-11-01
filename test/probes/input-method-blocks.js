@@ -5,7 +5,7 @@
  * follows the same rules typing does. This probe holds that promise at the three places
  * where a paragraph is not a plain paragraph.
  *
- * @covers src/ui/markdown/editing/text_commands.ts
+ * @covers src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

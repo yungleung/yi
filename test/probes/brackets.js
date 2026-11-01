@@ -10,7 +10,7 @@
  * The citation and wikilink lists are `completion.js` and `completion-wikilink.js`.
  *
  * @covers src/ui/markdown/syntax/brackets.ts
- * @covers src/ui/markdown/editing/text_commands.ts
+ * @covers src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

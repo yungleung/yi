@@ -15,7 +15,7 @@
  * the shape that keeps the marker painted.
  *
  * @covers src/ui/markdown/caret/geometry.ts, src/ui/markdown/create_block.ts,
- *   src/ui/markdown/nodes/list.ts, src/ui/markdown/nodes/table.ts, src/ui/markdown/nodes/fence_text.ts
+ *   src/ui/markdown/nodes/list.ts, src/ui/markdown/nodes/table.ts, src/ui/markdown/nodes/fence/text.ts
  *   and src/styles.css: the empty item's line
  */
 (async () => {

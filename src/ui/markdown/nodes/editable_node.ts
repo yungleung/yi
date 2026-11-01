@@ -27,7 +27,7 @@ export interface EditableMarkdownNode {
 /**
  * Tags an element with its node's raw range, so the formatting step can
  * detect the whole formatted unit a selection covers (see
- * `format_dom.ts`). Positions come from the whole-document parse today,
+ * `format/dom.ts`). Positions come from the whole-document parse today,
  * so they are absolute; once blocks are parsed independently this becomes
  * block-relative and the mapping must add the block's `charStart`.
  */

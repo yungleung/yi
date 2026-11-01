@@ -9,7 +9,7 @@
  * following a list can become its caption, and its source range remains exact.
  */
 
-import { captionLine, type CaptionLineData } from '../caption_lines';
+import { captionLine, type CaptionLineData } from '../caption';
 import type { RootContent } from 'mdast';
 import {
   closesFrontmatter,

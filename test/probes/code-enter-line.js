@@ -8,7 +8,7 @@
  * unchanged, `x` +9px, while the document reads right). Frontmatter and display math are rendered
  * as the block's *own text*, which does have the line, and their caret moves down by one line.
  *
- * @covers src/ui/markdown/nodes/code_block.ts, src/ui/markdown/nodes/frontmatter.ts, src/ui/markdown/nodes/source_text.ts
+ * @covers src/ui/markdown/nodes/code/node.ts, src/ui/markdown/nodes/frontmatter.ts, src/ui/markdown/nodes/source_text.ts
  */
 (async () => {
   const t = window.__t;

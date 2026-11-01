@@ -12,7 +12,7 @@
  * extension is required.
  */
 
-import { splitBlocks } from '../../markdown/document/blocks';
+import { splitBlocks } from '../../markdown/document/block';
 import {
   readCallout,
   type CalloutSource

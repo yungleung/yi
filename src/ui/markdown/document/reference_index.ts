@@ -12,7 +12,7 @@
 
 import type { Heading, List, RootContent } from 'mdast';
 import { parseMarkdown } from '../syntax/parser';
-import { pandocHeadingId } from '../syntax/pandoc_identifiers';
+import { pandocHeadingId } from '../syntax/pandoc';
 import {
   referenceKindText,
   referenceVocabularyFromTree,
@@ -21,7 +21,7 @@ import {
 } from '../syntax/reference_vocabulary';
 import type { TableCaptionNode } from '../syntax/table';
 import { readEquationBlock } from '../syntax/equation';
-import { splitBlocks } from './blocks';
+import { splitBlocks } from './block';
 
 /** A target kind with a document-configured reference name. */
 export type ReferenceKind =

@@ -32,8 +32,7 @@ import { applyEdit, type EditorContext } from './context';
 import { proseRoot } from './selection';
 import { chooseLanguageAt } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
-import type { BlockKind } from '../document/block_kinds';
-import type { MarkdownBlock } from '../document/blocks';
+import type { BlockKind, MarkdownBlock } from '../document/block';
 import { readCallout } from '../syntax/callout';
 import {
   fencedDivAtOffset,

@@ -8,7 +8,7 @@
  * pulled to that body's own last line (`syntax/container/fence_edits.ts`); the edge a click used to put down
  * — before the closing `$$` — is not a position the rendering has any more.
  *
- * @covers src/ui/markdown/syntax/math_edits.ts, src/ui/markdown/editing/text_commands.ts
+ * @covers src/ui/markdown/syntax/math_edits.ts, src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

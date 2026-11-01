@@ -3,7 +3,7 @@
  *
  * A fenced block's body does not say whether it is frontmatter and of which format, a fenced code
  * block and in which language, or a formula — the delimiters are hidden while the caret is
- * elsewhere, and a formula's view is KaTeX (`nodes/fence_text.ts`). The label says it, in both
+ * elsewhere, and a formula's view is KaTeX (`nodes/fence/text.ts`). The label says it, in both
  * shapes of the block; a fenced code block's is a *button*, because the language is the one thing
  * about that block the reader may want to change, and what it opens is highlight.js's own list.
  *
@@ -11,7 +11,7 @@
  * and the offsets step over it (`data-chrome`) — which this probe watches from the reader's side by
  * typing in a block that has one.
  *
- * @covers src/ui/markdown/nodes/fence_label.ts, src/ui/markdown/editing/language_picker.ts
+ * @covers src/ui/markdown/nodes/fence/label.ts, src/ui/markdown/editing/language_picker.ts
  */
 (async () => {
   const t = window.__t;

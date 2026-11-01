@@ -2,7 +2,7 @@
  * Enter preserves quote depth and block context.
  *
  * @covers src/ui/markdown/syntax/container/quote/,
- *   src/ui/markdown/editing/text_commands.ts
+ *   src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

@@ -13,7 +13,7 @@
  * family of methods, whose marked text arrives as an `input` of `insertCompositionText` with
  * no composition events behind it, is covered at the end.
  *
- * @covers src/ui/markdown/editing/composition_view.ts, src/ui/markdown/caret/offsets.ts: isComposing
+ * @covers src/ui/markdown/editing/composition/view.ts, src/ui/markdown/caret/offsets.ts: isComposing
  */
 (async () => {
   const t = window.__t;

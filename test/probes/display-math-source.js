@@ -2,7 +2,7 @@
  * A display formula's source view, held to a fenced code block's behaviour.
  *
  * The source a fenced block shows while the caret is inside it is the block's own text, its
- * delimiters included (`nodes/fence_text.ts`): the `$$` are the author's characters, drawn as the
+ * delimiters included (`nodes/fence/text.ts`): the `$$` are the author's characters, drawn as the
  * markup they are, and the caret maps through them like any other character.
  */
 (async () => {
@@ -14,7 +14,7 @@
   const formula = () => t.prose().querySelector('[data-display="true"]');
   const source = () => t.prose().querySelector('.markdown-source-text');
   // Each block's own characters. A fenced block carries its label as chrome inside its container
-  // (`nodes/fence_label.ts`), and the label is not part of what the block shows.
+  // (`nodes/fence/label.ts`), and the label is not part of what the block shows.
   const blockTexts = () =>
     [...t.prose().querySelectorAll('.markdown-block')].map((block) => {
       const copy = block.cloneNode(true);
@@ -99,7 +99,7 @@
   check('with the document untouched', await raw(), doc);
 
   // 5. A formula that *interrupts* a paragraph — no blank line around it, which is how another
-  //    editor writes a note — is a block of its own too (`document/blocks.ts`), and the same click
+  //    editor writes a note — is a block of its own too (`document/block/model.ts`), and the same click
   //    shows its own text. Measured before the fix, on `notes/Game Theory/6 Bayesian Game.md`: the
   //    block *was* the paragraph, so the click entered the paragraph's text and no source appeared
   //    at all — four formulas in that note that could not be opened.

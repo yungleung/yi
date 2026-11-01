@@ -548,7 +548,7 @@ internal split.
 - viewport synchronisation and DOM reconciliation;
 - scroll anchors and block tagging.
 
-`src/ui/markdown/document/blocks.ts` (811 lines) becomes a facade over:
+`src/ui/markdown/document/block/` is the facade over:
 
 - the block model and content key;
 - the line scanner and block-kind decisions;

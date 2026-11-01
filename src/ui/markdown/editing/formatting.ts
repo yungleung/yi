@@ -8,7 +8,7 @@
  *
  * May import: the caret's selection and offsets (`caret/caret.ts`,
  * `caret/offsets.ts`, `caret/dom_position.ts`), the pure formatting rules
- * (`format.ts`), the DOM patch (`format_dom.ts`) and the editing context.
+ * (`format/rules.ts`), the DOM patch (`format/dom.ts`) and the editing context.
  * Upholds: the document text is the only source of truth — the patch mirrors the
  * edit that was made to the text, and a selection it cannot mirror is rendered
  * again instead.
@@ -22,7 +22,7 @@ import {
   type FormattingStyle,
   type FormatUnit
 } from '../format';
-import { patchFormatDom } from '../format_dom';
+import { patchFormatDom } from '../format';
 import { moveShownSourceForFormatting } from '../source_mode';
 import { restoreSelection, type EditorContext } from './context';
 import { proseRoot } from './selection';
@@ -75,7 +75,7 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
   const root = proseRoot(context);
   // The blocks the edit left behind, asked for by offset. A block object from *before*
   // the edit cannot be asked where it sits: a block's positions come from the document's
-  // index (`document/blocks.ts`, `document/block_index.ts`), the whole-document edit
+  // index (`document/block/model.ts`, `document/block/lookup.ts`), the whole-document edit
   // re-split the blocks, and the index answers for a block it no longer holds with an
   // error rather than with a position that belongs to another block. These are the same
   // two offsets the patch reads its own block from.

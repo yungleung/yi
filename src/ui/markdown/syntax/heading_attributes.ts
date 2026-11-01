@@ -12,7 +12,7 @@ import {
   attributeBlockAtEnd,
   trimSpacesBack,
   type PandocAttributeBlock
-} from './pandoc_attributes';
+} from './pandoc';
 
 /** A trailing Pandoc attribute block, in heading-source coordinates. */
 export type HeadingAttributeBlock = PandocAttributeBlock;

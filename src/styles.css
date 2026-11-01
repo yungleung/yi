@@ -288,7 +288,7 @@
 }
 
 /* The full-width column is the editor's whole surface, and it is *opaque* for the same reason the
-   sheet is: the system's text seam is painted behind the page (`composition_input.ts`), and what it
+   sheet is: the system's text seam is painted behind the page (`composition/input.ts`), and what it
    draws natively — the focus ring of a focused field, the underline over a word an input method is
    holding, the selection over one — is not hidden by transparent ink. The page layout has always
    covered it with paper; without one, every mark showed at the caret. The paper the column draws is
@@ -392,14 +392,14 @@ body {
 }
 
 /* The bar steps aside while a word is composed: the marked text is written into the line then
-   (`editing/composition_view.ts`), and a blinking bar inside it is noise. The caret has not
+   (`editing/composition/view.ts`), and a blinking bar inside it is noise. The caret has not
    *moved* — it has only stopped being drawn (`caret.ts: setCaretBarVisible`) — so the edit a
    commit lands still knows where the author was. */
 .markdown-caret.markdown-caret-away {
   visibility: hidden;
 }
 
-/* The seam the system's text input goes through (see `composition_input.ts`).
+/* The seam the system's text input goes through (see `composition/input.ts`).
 
    macOS will not open a composition in a field it cannot see, and the tests for "cannot
    see" are unforgiving: `opacity: 0` gets nothing, and so does a field a hair wide even
@@ -418,7 +418,7 @@ body {
    transparent and the caret that follows from it is too, but the *selection* over a marked
    word is not — and WebKit does not honour `::selection` for a textarea's own selection, so it
    cannot be made transparent that way. Instead the field is drawn inside a box the size of the
-   editor (`.markdown-composition-clip`, placed by `composition_input.ts`), and *that* is what
+   editor (`.markdown-composition-clip`, placed by `composition/input.ts`), and *that* is what
    is clipped. The field itself keeps its size and its place: moving it up until it fits only
    moves the problem, because the system then draws its caret on a line above the reader's.
 
@@ -459,7 +459,7 @@ body {
 /* The word being composed, written into the line where the reader is typing: the marked
    text an input method is holding — pinyin, romaji on its way to kana, a hangul syllable —
    in the page's own type, with the underline a system text field would give it. It is *in
-   the flow* (`editing/composition_view.ts`), so the words after the caret move along
+   the flow* (`editing/composition/view.ts`), so the words after the caret move along
    instead of being covered; it is marked `data-composing`, which is how the offsets
    mapping steps over text that is not the document's, and it is taken out again when the
    word commits. Nothing is positioned or coloured here: it is a span among the page's own
@@ -799,7 +799,7 @@ body {
 
 /* What a fenced block is called, in its own corner: `YAML Frontmatter`, `latex`, or a fenced code
    block's language — which is a button, because that is the one thing about such a block the reader
-   may want to change (see `nodes/fence_label.ts`). It is chrome rather than text: the offsets
+   may want to change (see `nodes/fence/label.ts`). It is chrome rather than text: the offsets
    mapping steps over it (`caret/offsets.ts`), so a caret in the block is placed by the block's own
    characters whether the label is there or not. */
 .markdown-fence-label {
@@ -898,7 +898,7 @@ body {
 /* A fenced block's body is one line tall even when it holds nothing: an empty body is a place —
    the caret sits on it, a click lands on it, the system's seam follows it — and a body with no
    line of its own would leave the block as its padding alone. The body's node is *empty* there, so
-   the line has to come from the box (`nodes/fence_text.ts`), not from a character. */
+   the line has to come from the box (`nodes/fence/text.ts`), not from a character. */
 .markdown-fenced-code code,
 .markdown-frontmatter code,
 .markdown-source-text code {
@@ -913,7 +913,7 @@ body {
 }
 
 /* A fenced block's own delimiter lines, which are drawn while the caret is inside the block
-   (`nodes/fence_text.ts`): they are the block's markup rather than its content, so they wear the
+   (`nodes/fence/text.ts`): they are the block's markup rather than its content, so they wear the
    comment colour — the plain ink let down toward the surface — and read as the lines around the
    body instead of as part of it. */
 .markdown-fence-delimiter {

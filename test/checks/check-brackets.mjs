@@ -68,7 +68,7 @@ check('but a letter is not', skipClosingFor('ab', 1, 'b', false), false);
 
 /**
  * Types `key` at `caret` the way the editor does: the two rules in the order the key path asks
- * them (`editing/text_commands.ts: insertText`), so the pair is judged on the text it leaves
+ * them (`editing/text/index.ts: insertText`), so the pair is judged on the text it leaves
  * behind and not only on the edit it returns.
  */
 const typed = (text, caret, key, literal = false) => {

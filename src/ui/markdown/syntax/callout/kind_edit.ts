@@ -12,7 +12,7 @@
 
 import type { TextEdit } from '../edit_range';
 import { fencedDivAtOffset } from '../container';
-import { attributeBlockAtEnd } from '../pandoc_attributes';
+import { attributeBlockAtEnd } from '../pandoc';
 import { CALLOUT_CLASS } from './model';
 
 export function calloutKindEdit(text: string, kind: string, offset = 0): TextEdit | null {

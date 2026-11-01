@@ -8,7 +8,7 @@
  * The probe presses `Enter`, types, and leaves the formula: what renders then is
  * the proof the character reached the content.
  *
- * @covers src/ui/markdown/syntax/math_edits.ts, src/ui/markdown/editing/text_commands.ts
+ * @covers src/ui/markdown/syntax/math_edits.ts, src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

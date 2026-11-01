@@ -12,7 +12,7 @@
 
 import type { RootContent } from 'mdast';
 import { readTableSource } from './source';
-import { captionLine, type CaptionLineData } from '../caption_lines';
+import { captionLine, type CaptionLineData } from '../caption';
 
 /** One caption line, with every range in its block's coordinates. */
 export interface TableCaptionData extends CaptionLineData {}

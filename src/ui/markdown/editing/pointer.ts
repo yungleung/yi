@@ -45,7 +45,7 @@ let pressed: { x: number; y: number } | null = null;
 /**
  * Remembers where the pointer goes down, so the click it leads to can be told from the
  * drag it may have ended. Capture, like every other pointer watcher on the editor
- * (`editing/composition_input.ts`), because a node may stop what it handles.
+ * (`editing/composition/input.ts`), because a node may stop what it handles.
  *
  * A press is kept for one reason, and it is kept for one gesture: the click that ends a drag
  * is an ordinary click in every other way, so the distance the pointer travelled is the only

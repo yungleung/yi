@@ -55,7 +55,7 @@ export interface EditorContext {
   /**
    * Puts the keyboard where the text is.
    *
-   * The editor's own seam holds it (`composition_input.ts`), so a command that wants the
+   * The editor's own seam holds it (`composition/input.ts`), so a command that wants the
    * keyboard asks for *this* rather than focusing the prose root: the seam would take the
    * focus from the root a moment later anyway, and that second change is what drops a
    * selection the command has just made (`clipboard.ts: selectAll`).

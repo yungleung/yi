@@ -2,7 +2,7 @@
  * The same keystroke in both kinds of block: a space at the end of a line.
  *
  * A fenced code block and a display formula being edited are both the block's own text, delimiters
- * and all (`nodes/fence_text.ts`), so the two behave alike: clicking in shows the block's own
+ * and all (`nodes/fence/text.ts`), so the two behave alike: clicking in shows the block's own
  * characters, the space reaches the document, and the caret is left after it.
  */
 (async () => {

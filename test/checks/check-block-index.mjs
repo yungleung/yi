@@ -15,7 +15,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/document/block_index.ts', logLevel: 'silent' });
+const bundle = await rolldown({
+  input: 'src/ui/markdown/document/block/lookup.ts',
+  logLevel: 'silent'
+});
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-block-index-'));

@@ -11,7 +11,7 @@
 import { ARROW_KEY_DIRECTIONS, moveCaret } from '../caret/navigation';
 import { commandForKey } from '../../../commands/triggers/keymap';
 import { runCommand } from '../../../commands/runtime';
-import type { CompositionInput } from '../editing/composition_input';
+import type { CompositionInput } from '../editing/composition';
 import type { EditorContext } from '../editing/context';
 import { proseRoot } from '../editing/selection';
 import { getCaretRange } from '../caret/caret';

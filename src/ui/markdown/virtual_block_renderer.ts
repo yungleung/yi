@@ -24,7 +24,7 @@
  * sync — the DOM is a view of that arithmetic, never a second record of it.
  */
 
-import type { MarkdownBlock } from './document/blocks';
+import type { MarkdownBlock } from './document/block';
 import { shownSourceWithinBlock } from './source_mode';
 import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, windowRange } from './viewport_window';
@@ -131,7 +131,7 @@ export class VirtualBlockRenderer {
     const root = this.dom.createRoot();
     // The renderer owns the root it drew, not the scroller's whole contents: the scroller is
     // the editor's, and holds things of its own — the system's input seam
-    // (`editing/composition_input.ts`) sits in it and must survive a document opening or a
+    // (`editing/composition/input.ts`) sits in it and must survive a document opening or a
     // layout change. A replaced root takes its own blocks with it.
     this.root?.remove();
     this.root = root;
@@ -203,7 +203,7 @@ export class VirtualBlockRenderer {
 
   /**
    * Records that a block's mounted element now holds what the block holds, after
-   * somebody patched it in place rather than rebuilding it (`format_dom.ts`, for a
+   * somebody patched it in place rather than rebuilding it (`format/dom.ts`, for a
    * formatting command).
    *
    * An element is remembered by the content it was *built* from (`builtFrom`), and the
