@@ -11,7 +11,7 @@
  * A probe cannot make a `.git` of its own: the app refuses dot-named entries, and the file plugin
  * refuses hidden paths — which is the same rule that makes a clone safe to open.
  *
- * @covers src-tauri/src/versioning.rs, src/api/versioning.ts, src/services/versioning.ts
+ * @covers src-tauri/src/versioning.rs, src/api/versioning.ts, src/services/versioning/rules.ts
  */
 (async () => {
   const t = window.__t;

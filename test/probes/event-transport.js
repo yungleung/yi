@@ -2,7 +2,7 @@
  * Local facts reach their listeners synchronously, while an event from the
  * native/Rust side still arrives through Tauri and keeps the same typed shape.
  *
- * @covers src/services/event_manager.ts, src/events/local_bus.ts
+ * @covers src/services/events/index.ts, src/events/local_bus.ts
  */
 (async () => {
   const t = window.__t;
@@ -12,7 +12,7 @@
     checks.push({ name, pass, actual });
     if (!pass) failed.push(name);
   };
-  const { eventManager } = await t.app('/src/services/event_manager.ts');
+  const { eventManager } = await t.app('/src/services/events/index.ts');
 
   let localSeen = null;
   await eventManager.on('editor_layout_changed', (event) => {

@@ -211,7 +211,7 @@ export function versionsVisible(stored: StoredConsent, workspace: string): boole
  * What the list is, from the three things that decide it: whether the document on screen has a file,
  * whether anything has made a repository to read, and the versions themselves (which may be none).
  * The fourth state — a read that failed — is not derived from anything; only a failed read can say
- * it, and `services/versions.ts` is where that happens.
+ * it, and `services/versioning/versions.ts` is where that happens.
  */
 export function versionsState(input: {
   path: string | null;

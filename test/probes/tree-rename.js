@@ -112,7 +112,7 @@
     // A click inside the editable name is the author placing the caret, not opening the
     // file — judged by the app's own event, because reading the document (`t.raw`) is a
     // Select All and would take the selection (and the edit) away from the tree.
-    const events = await t.app('/src/services/event_manager.ts');
+    const events = await t.app('/src/services/events/index.ts');
     let opened = 0;
     const countOpen = () => {
       opened += 1;

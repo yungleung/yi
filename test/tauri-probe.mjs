@@ -473,7 +473,7 @@ async function useFixtureWorkspace() {
          config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
        };
        await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
-       const { eventManager } = await import('/src/services/event_manager.ts');
+       const { eventManager } = await import('/src/services/events/index.ts');
        await eventManager.emit('workspace_changed', cfg.workspace);
        return 'workspace set';
      })()`,
@@ -555,7 +555,7 @@ async function restoreConfig(previous) {
     `(async () => {
        const cfg = ${previous};
        await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
-       const { eventManager } = await import('/src/services/event_manager.ts');
+       const { eventManager } = await import('/src/services/events/index.ts');
        await eventManager.emit('workspace_changed', cfg.workspace);
        return 'workspace restored';
      })()`,

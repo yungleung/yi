@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs';
 
-const file = 'src/services/event_manager.ts';
+const file = 'src/services/events/manager.ts';
 const source = readFileSync(file, 'utf8');
 const failures = [];
 const require = (name, condition) => {
@@ -13,7 +13,7 @@ const require = (name, condition) => {
   }
 };
 
-require('imports LocalEventBus', /from ['"]\.\.\/events\/local_bus['"]/.test(source));
+require('imports LocalEventBus', /from ['"]\.\.\/\.\.\/events\/local_bus['"]/.test(source));
 require('uses a local bus', /\bnew LocalEventBus\b/.test(source));
 require('uses the declared event boundary', /\bisInboundEvent\s*\(/.test(source));
 require('keeps Tauri listen', /\blisten\s*\(/.test(source));

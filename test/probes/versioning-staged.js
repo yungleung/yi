@@ -26,7 +26,7 @@
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
+  const { APP_IDENTITY } = await t.app('/src/services/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

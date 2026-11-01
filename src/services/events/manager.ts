@@ -11,12 +11,12 @@
  */
 
 import { listen } from '@tauri-apps/api/event';
-import { LocalEventBus, type EventEnvelope } from '../events/local_bus';
+import { LocalEventBus, type EventEnvelope } from '../../events/local_bus';
 import {
   isInboundEvent,
   type AppEvents,
   type AppEventName
-} from './app_events';
+} from './contracts';
 
 /** The typed event object every app listener receives. */
 export interface AppEvent<K extends AppEventName> {

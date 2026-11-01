@@ -16,7 +16,7 @@
  * does this citation stand for", so the card and the formatter cannot disagree.
  */
 
-import { parseCitation } from '../citations/parse';
+import { parseCitation } from '../../citations/parse';
 
 /** The works `value` cites that `holds` recognises, in the order the citation names them. */
 export function referenceIds(value: string, holds: (id: string) => boolean): string[] {

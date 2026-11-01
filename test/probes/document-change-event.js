@@ -2,12 +2,12 @@
  * Every committed edit/history change announces one typed local
  * `document_changed` fact with the same document key and a new revision.
  *
- * @covers src/ui/markdown/markdown_editor.ts, src/services/app_events.ts
+ * @covers src/ui/markdown/markdown_editor.ts, src/services/events/index.ts
  */
 (async () => {
   const t = window.__t;
   const runtime = await t.app('/src/commands/runtime.ts');
-  const { eventManager } = await t.app('/src/services/event_manager.ts');
+  const { eventManager } = await t.app('/src/services/events/index.ts');
   const checks = [];
   const failed = [];
   const check = (name, pass, actual = null) => {

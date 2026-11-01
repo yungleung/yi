@@ -16,12 +16,12 @@
  */
 import { BaseDirectory, watch } from '@tauri-apps/plugin-fs';
 import { plugins, type CiteInstance } from '@citation-js/core';
-import { readBibliography } from '../api/bibliography';
-import { parseCitation, type CitationItem } from '../citations/parse';
-import { loadCitationLibrary } from '../citations/library';
-import { referenceIds } from './citation_reference';
-import { CITATION_CONFIG_CHANGED, configManager } from './config_manager';
-import { eventManager } from './event_manager';
+import { readBibliography } from '../../api/bibliography';
+import { parseCitation, type CitationItem } from '../../citations/parse';
+import { loadCitationLibrary } from '../../citations/library';
+import { referenceIds } from './reference';
+import { CITATION_CONFIG_CHANGED, configManager } from '../config_manager';
+import { eventManager } from '../events';
 
 /** Emitted after the bibliography is (re)loaded, so consumers can re-render. */
 export const CITATION_UPDATED = 'citation_updated';
@@ -304,6 +304,8 @@ export class BibliographyManager {
 
 /** The app-wide bibliography manager singleton. */
 export const bibliographyManager = new BibliographyManager();
+
+export { referenceIds } from './reference';
 
 function joinNarrative(authorOnly: string, full: string): string {
   if (!full.startsWith('(') || !full.endsWith(')')) {

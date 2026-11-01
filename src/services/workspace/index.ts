@@ -11,7 +11,7 @@ import {
   getCurrentConfigVersion,
 } from '../../api/settings';
 import { configManager } from '../config_manager';
-import { eventManager } from '../event_manager';
+import { eventManager } from '../events';
 import { t } from '../i18n';
 import { MESSAGE_EVENT } from '../messages';
 

@@ -23,10 +23,10 @@
 
 import type { Prompter, Question } from '../../ui/prompt';
 import { configManager } from '../config_manager';
-import { eventManager } from '../event_manager';
+import { eventManager } from '../events';
 import { t } from '../i18n';
 import { MESSAGE_EVENT } from '../messages';
-import { documentManager } from '../document_manager';
+import { documentManager } from '../documents';
 import {
   adoptVersion,
   currentDocument,

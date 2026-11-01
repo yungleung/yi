@@ -16,7 +16,7 @@
  * hint's home is written down.
  */
 
-import { eventManager } from './event_manager';
+import { eventManager } from './events';
 
 /** Where a hint belongs: the row of a workspace file. */
 export interface HintPlace {

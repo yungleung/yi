@@ -8,7 +8,7 @@
  * through the named transitions here, and an unseen caret keeps the previously known selection.
  */
 
-import { documentTitle } from '../document_identity';
+import { documentTitle } from '../documents';
 import {
   openDocument,
   type DocumentView,

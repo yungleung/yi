@@ -6,7 +6,7 @@
  * ordinary write, so the pin is narrow enough to leave the rest of the frontmatter to its author.
  *
  * @covers src/ui/markdown/editing/id_lock.ts, src/ui/markdown/editing/context.ts (applyEdit),
- *   src/services/document_identity.ts (idLineRange)
+ *   src/services/documents/identity.ts (idLineRange)
  */
 (async () => {
   const t = window.__t;

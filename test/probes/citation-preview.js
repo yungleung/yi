@@ -14,7 +14,7 @@
  * the text itself.
  *
  * @covers src/ui/markdown/citation_preview.ts, src/services/bibliography.ts,
- *   src/services/citation_reference.ts
+ *   src/services/bibliography/reference.ts
  * @needs-workspace
  */
 (async () => {

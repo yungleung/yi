@@ -5,7 +5,7 @@
  * folder of the probe's own, and the modal is opened by pressing the button the reader presses —
  * so what is asserted is the list a reader would see, not a shape built for the test.
  *
- * @covers src/ui/versioning/version_history_modal.ts, src/services/versions.ts
+ * @covers src/ui/versioning/version_history_modal.ts, src/services/versioning/versions.ts
  */
 (async () => {
   const t = window.__t;
@@ -13,8 +13,8 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
-  const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
-  const { versionsOfDocument } = await t.app('/src/services/versions.ts');
+  const { APP_IDENTITY } = await t.app('/src/services/versioning/index.ts');
+  const { versionsOfDocument } = await t.app('/src/services/versioning/index.ts');
   const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

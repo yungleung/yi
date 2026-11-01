@@ -1,7 +1,7 @@
 /**
  * A folder *inside* a repository the reader already has: still theirs, and never nested into.
  *
- * The other shape of the same decision (`services/versioning.ts: versioningPlan` says
+ * The other shape of the same decision (`services/versioning/rules.ts: versioningPlan` says
  * `use: 'theirs'` for both) — a workspace that is itself a repository is `versioning-repository.js`,
  * and the two were split because held together they measured 5.0 s against the bridge's 5 s budget.
  *
@@ -19,7 +19,7 @@
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');
+  const { APP_IDENTITY } = await t.app('/src/services/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

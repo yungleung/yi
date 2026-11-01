@@ -4,7 +4,7 @@
  * The menu lives in Rust and reaches the webview as Tauri events named by strings, so its half of
  * the app's event vocabulary cannot be checked by the compiler the way the frontend's half is: a
  * menu item renamed in `menu.rs` would simply stop arriving, and nothing would say so.
- * `src/services/app_events.ts` declares every name and its payload (the map the bus is typed by),
+ * `src/services/events/contracts.ts` declares every name and its payload (the map the bus is typed by),
  * plus whether each event is local to one window or arrives from Rust. This check reads both sides
  * and fails when their vocabulary or transport boundary disagrees.
  *
@@ -14,7 +14,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const eventsFile = 'src/services/app_events.ts';
+const eventsFile = 'src/services/events/contracts.ts';
 const rustDirectory = 'src-tauri/src';
 
 const source = readFileSync(eventsFile, 'utf8');

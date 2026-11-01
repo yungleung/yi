@@ -1,7 +1,7 @@
 /**
  * The versions of the document on screen: read from the repository, kept, and announced.
  *
- * The rules are pure (`services/versioning.ts`); this is the half that reads the disk and holds the
+ * The rules are pure (`services/versioning/rules.ts`); this is the half that reads the disk and holds the
  * answer, the way `services/session/index.ts` is the living half of `session/rules.ts`. Two things
  * decide whether it reads at all: the reader's answer for *this* workspace — a workspace they said
  * no to is never read, so the button can be hidden from the config alone — and whether the document
@@ -14,12 +14,12 @@
  * was overtaken by a newer one is dropped.
  */
 
-import { versioningFacts, versioningHistory, versioningVersionText } from '../api/versioning';
-import { configManager } from './config_manager';
-import { eventManager } from './event_manager';
-import { DOCUMENT_SESSION_CHANGED, documentSession } from './session';
-import { WORKSPACE_CHANGED } from './workspace';
-import { versionsState, versionsVisible, type Version, type VersionsState } from './versioning';
+import { versioningFacts, versioningHistory, versioningVersionText } from '../../api/versioning';
+import { configManager } from '../config_manager';
+import { eventManager } from '../events';
+import { DOCUMENT_SESSION_CHANGED, documentSession } from '../session';
+import { WORKSPACE_CHANGED } from '../workspace';
+import { versionsState, versionsVisible, type Version, type VersionsState } from './rules';
 
 /** Emitted with the reading whenever it changes (a `VersionsReading`). */
 export const VERSIONS_CHANGED = 'versions_changed';

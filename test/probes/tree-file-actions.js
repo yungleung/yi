@@ -14,7 +14,7 @@
  * removes it again; the note it copies an id from is one of the fixtures, read but never
  * written.
  *
- * @covers src/ui/workspace/tree_ops.ts, src/services/document_manager.ts
+ * @covers src/ui/workspace/tree_ops.ts, src/services/documents/index.ts
  * @needs-workspace
  */
 (async () => {

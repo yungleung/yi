@@ -1,5 +1,5 @@
 /**
- * What the app should do about versions (`services/versioning.ts`) in Node: the reader's consent
+ * What the app should do about versions (`services/versioning/rules.ts`) in Node: the reader's consent
  * turned into a plan over the facts of the machine and the folder — nothing without consent, their
  * repository as it is, never nested inside another, a separate git directory where a cloud drive
  * could reach `.git`, and none of it without git.
@@ -13,7 +13,7 @@ import { rolldown } from 'rolldown';
 process.env.TZ = 'UTC';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-versioning-'));
-const bundle = await rolldown({ input: 'src/services/versioning.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/services/versioning/rules.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'versioning.mjs');

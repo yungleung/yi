@@ -20,9 +20,9 @@
  * they carry, so the two sides of one event cannot disagree about its shape.
  */
 
-import type { Hint } from './hints';
-import type { Message } from './messages';
-import type { SessionState } from './session';
+import type { Hint } from '../hints';
+import type { Message } from '../messages';
+import type { SessionState } from '../session';
 
 /** Why the document's committed text or revision changed. */
 export type DocumentChangeReason = 'load' | 'edit' | 'undo' | 'redo';

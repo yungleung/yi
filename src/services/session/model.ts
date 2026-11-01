@@ -8,7 +8,7 @@
  * the stack, with no second copy of a document's text.
  */
 
-import { documentId, documentTitle } from '../document_identity';
+import { documentId, documentTitle } from '../documents';
 
 /** This build's session format. A file from another one is discarded, not guessed at. */
 export const SESSION_VERSION = 1;

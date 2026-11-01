@@ -11,7 +11,7 @@
  * invents a second one, and no message is buried where the reader would have to go looking for it.
  */
 
-import { eventManager } from './event_manager';
+import { eventManager } from './events';
 
 /** What the app tells the reader. */
 export interface Message {

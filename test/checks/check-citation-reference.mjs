@@ -1,5 +1,5 @@
 /**
- * Which works a citation asks a reference for (`services/citation_reference.ts`) in Node: every key
+ * Which works a citation asks a reference for (`services/bibliography/reference.ts`) in Node: every key
  * it names that the library holds, each once; nothing for a key it does not hold, and nothing at
  * all for a value that is not a citation.
  *
@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-citation-reference-'));
-const bundle = await rolldown({ input: 'src/services/citation_reference.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/services/bibliography/reference.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'citation_reference.mjs');

@@ -24,7 +24,7 @@ async function bundleModule(input, name) {
 }
 
 const session = await bundleModule('src/services/session/rules.ts', 'session_rules');
-const identity = await bundleModule('src/services/document_identity.ts', 'document_identity');
+const identity = await bundleModule('src/services/documents/identity.ts', 'document_identity');
 const {
   SESSION_VERSION,
   adoptVersion,

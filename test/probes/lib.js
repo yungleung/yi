@@ -47,7 +47,7 @@ window.__t = (() => {
     // The emit's promise can hang when the app falls back to its slower IPC
     // path, so wait for it with a bound instead of awaiting it forever.
     const before = window.__opened ?? 0;
-    const { eventManager } = await app('/src/services/event_manager.ts');
+    const { eventManager } = await app('/src/services/events/index.ts');
     void eventManager.emit('document_opened', markdown).then(() => {
       window.__opened = (window.__opened ?? 0) + 1;
     });
@@ -86,7 +86,7 @@ window.__t = (() => {
     // the app at. Writing the file alone would leave them on the workspace the app started on.
     const { configManager } = await app('/src/services/config_manager.ts');
     await configManager.load();
-    const { eventManager } = await app('/src/services/event_manager.ts');
+    const { eventManager } = await app('/src/services/events/index.ts');
     await eventManager.emit('workspace_changed', path);
     await sleep(800);
     return previous;
@@ -105,7 +105,7 @@ window.__t = (() => {
     });
     const { configManager } = await app('/src/services/config_manager.ts');
     await configManager.load();
-    const { eventManager } = await app('/src/services/event_manager.ts');
+    const { eventManager } = await app('/src/services/events/index.ts');
     await eventManager.emit('workspace_changed', previous.workspace ?? '');
     await sleep(400);
   };

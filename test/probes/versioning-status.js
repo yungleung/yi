@@ -6,7 +6,7 @@
  * it, a workspace whose answer is *no* must leave its log empty — that is the reader's rule, not a
  * detail — while a workspace whose answer is *yes* reads for real.
  *
- * @covers src/ui/versioning/version_status.ts, src/services/versions.ts
+ * @covers src/ui/versioning/version_status.ts, src/services/versioning/versions.ts
  */
 (async () => {
   const t = window.__t;
@@ -16,8 +16,8 @@
   const { pointAtGit, initWorkspaceRepository, commitPaths, versioningHistory } = await t.app(
     '/src/api/versioning.ts'
   );
-  const { APP_IDENTITY, versionStamp } = await t.app('/src/services/versioning.ts');
-  const { versionsOfDocument } = await t.app('/src/services/versions.ts');
+  const { APP_IDENTITY, versionStamp } = await t.app('/src/services/versioning/index.ts');
+  const { versionsOfDocument } = await t.app('/src/services/versioning/index.ts');
   const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

@@ -17,16 +17,16 @@
  * an id-style target is actually requested.
  */
 import { readTextFile } from '@tauri-apps/plugin-fs';
-import { listFolderFiles, type FileInfo } from '../api/files';
-import { configManager } from './config_manager';
+import { listFolderFiles, type FileInfo } from '../../api/files';
+import { configManager } from '../config_manager';
 import {
   firstHeading,
   readFrontmatterFields,
   readFrontmatterId,
   readFrontmatterTitle
-} from './document_identity';
-import { eventManager } from './event_manager';
-import { WORKSPACE_CHANGED } from './workspace';
+} from './identity';
+import { eventManager } from '../events';
+import { WORKSPACE_CHANGED } from '../workspace';
 
 const MARKDOWN_EXTENSION = '.md';
 
