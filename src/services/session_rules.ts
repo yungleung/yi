@@ -395,6 +395,43 @@ export function setPath(state: SessionState, id: string, path: string): SessionS
   };
 }
 
+/**
+ * Adopts text already written over a file as the current document.
+ *
+ * Example: restoring revision 3 of `note.md` replaces that document's text, marks it saved, resets
+ * its view to the top and makes it current; a path with no open document opens a fresh entry.
+ */
+export function adoptVersion(
+  state: SessionState,
+  path: string,
+  content: string,
+  id: string
+): SessionState {
+  const documents = [...state.documents];
+  const held = documents.some((document) => document.id === id);
+  return held
+    ? {
+        ...state,
+        current: id,
+        documents: documents.map((document) =>
+          document.id === id
+            ? {
+                ...document,
+                content,
+                saved: content,
+                title: documentTitle(content, document.path),
+                view: { caret: 0, to: null, scroll: null }
+              }
+            : document
+        )
+      }
+    : {
+        ...state,
+        current: id,
+        documents: [...documents, openDocument({ path, content }, id)]
+      };
+}
+
 /** A session with nothing open. */
 export function emptySession(): SessionState {
   return { version: SESSION_VERSION, current: null, documents: [] };

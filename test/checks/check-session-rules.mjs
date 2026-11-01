@@ -27,6 +27,7 @@ const session = await bundleModule('src/services/session_rules.ts', 'session_rul
 const identity = await bundleModule('src/services/document_identity.ts', 'document_identity');
 const {
   SESSION_VERSION,
+  adoptVersion,
   capture,
   currentDocument,
   dropFromStack,
@@ -343,6 +344,21 @@ check(
   true
 );
 check('and it can be given the path it was written to', currentDocument(setPath(captured, noteId, '/notes/a.md'))?.path, '/notes/a.md');
+const restoredVersion = adoptVersion(
+  captured,
+  '/notes/a.md',
+  NOTE.replace('Body.\n', 'Restored.\n'),
+  noteId
+);
+check(
+  'an adopted version replaces the held document and marks the file as its saved copy',
+  {
+    content: currentDocument(restoredVersion)?.content.endsWith('Restored.\n'),
+    saved: isSaved(currentDocument(restoredVersion)),
+    view: currentDocument(restoredVersion)?.view
+  },
+  { content: true, saved: true, view: { caret: 0, to: null, scroll: null } }
+);
 
 // Dropping: the document on screen stays, one behind it goes.
 const three = openInto(

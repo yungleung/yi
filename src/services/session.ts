@@ -16,75 +16,60 @@
  * - the session file is written soon after any change rather than on the way out, since the
  *   webview is not promised a moment on the way out.
  *
- * May import: the session's rules (`session_rules.ts`), the app's config, events and file
- * commands (`api/files`, the file plugin's read), and the dialog plugin. Upholds: one copy of a
- * document — the one in the session — so nothing here keeps a second text of its own.
+ * May import: the session's pure rules and focused editor, persistence and file adapters, plus the
+ * app's config/events. Upholds: one copy of a document — the one in the session — so nothing here
+ * keeps a second text of its own.
  */
 
-import { save as saveDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile } from '@tauri-apps/plugin-fs';
-import { grantFolder, writeTextAtomically } from '../api/files';
-import { loadSessionText, saveSessionText } from '../api/session';
 import type { Prompter, Question } from '../ui/prompt';
 import { configManager } from './config_manager';
 import { eventManager } from './event_manager';
 import { t } from './i18n';
 import { MESSAGE_EVENT } from './messages';
-import { parentFolder } from './workspace_folders';
-import { documentTitle } from './document_identity';
 import { documentManager } from './document_manager';
 import {
-  capture as captureInto,
+  adoptVersion,
   currentDocument,
   dropFromStack,
   emptySession,
   isSaved,
   keyFor,
   markSaved,
-  openDocument,
   openDecision,
   openInto,
-  parseSession,
   recordContent,
   replaceReference,
   restore as restoreDocument,
-  serializeSession,
   setPath,
   setStacked,
   stackNavigation,
   stackedDocuments,
-  type DocumentView,
   type IncomingDocument,
-  type SeenView,
   type SessionDocument,
   type SessionState
 } from './session_rules';
+import {
+  captureEditorDocument,
+  showDocumentInEditor,
+  type SessionEditor
+} from './session_editor';
+import {
+  loadPersistedSession,
+  persistSession
+} from './session_persistence';
+import {
+  chooseDocumentPath,
+  readDocumentFile,
+  writeDocumentFile
+} from './session_files';
+
+export type { SessionEditor } from './session_editor';
 
 /** Emitted whenever the documents, the stack or the current document change. */
 export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
 
 /** How long after the last edit the session is written. */
 const SAVE_DELAY_MS = 800;
-
-/**
- * What the session needs from the editor: its text, which document it is showing, and where the
- * reader is in it.
- */
-export interface SessionEditor {
-  /** Shows a reference document without accepting an edit. */
-  setReadOnly(readOnly: boolean): void;
-  getContent(): string;
-  setContent(content: string): void;
-  /**
-   * The folder of the document about to be shown. A relative image destination is read from it
-   * (`ui/image/image_urls.ts`), and it has to arrive *before* the content does, or the
-   * first paint would resolve against the note the reader was in before this one.
-   */
-  setDocumentFolder(folder: string | null): void;
-  /** Where the reader is, with null for what the editor cannot currently see (a dropped block). */
-  captureView(): SeenView;
-  restoreView(view: DocumentView): void;
-}
 
 class DocumentSession {
   private state: SessionState = emptySession();
@@ -125,20 +110,7 @@ class DocumentSession {
 
   /** Reads the session left by the last run and puts its current document back on screen. */
   async load(): Promise<void> {
-    try {
-      this.state = parseSession(await loadSessionText());
-    } catch (error) {
-      console.error('Failed to read the session:', error);
-      this.state = emptySession();
-    }
-    // The folders a session's documents live in are granted before anything reads or writes them: a
-    // note outside the workspace is one the webview could not open or save, and a restore is where the
-    // app first hears about it (`api/files.ts: grantFolder`).
-    for (const document of this.state.documents) {
-      if (document.path !== null) {
-        await grantFolder(document.path);
-      }
-    }
+    this.state = await loadPersistedSession();
     const current = this.current();
     if (current) {
       this.show(current);
@@ -168,6 +140,10 @@ class DocumentSession {
       this.restore(id);
       return;
     }
+    // Capture before any question: clicking an answer is a click outside the editor, and the
+    // editor's click rule clears its logical caret. The view belongs to the document being left,
+    // so it has to be recorded while that document is still on screen.
+    this.capture();
     // Whether the document on screen is kept — pushed into the stack — or let go. Only this
     // question decides it: a stacked one is kept whatever happens, and the actions that do not
     // ask are the ones with nothing to lose.
@@ -183,9 +159,6 @@ class DocumentSession {
     } else if (action === 'pushAndOpen') {
       keep = true;
     }
-    // The document being left is captured before it goes: a pushed one keeps its latest text
-    // and its view, whichever answer the reader gave.
-    this.capture();
     this.state = openInto(this.state, incoming, id, keep);
     const opened = this.current();
     if (opened) {
@@ -226,11 +199,7 @@ class DocumentSession {
    * which wikilink target), because only it knows what to call the thing that failed.
    */
   async openPath(path: string): Promise<void> {
-    // The folder is granted *before* the read: this is the one place a path becomes the document on
-    // screen, and a note that sits outside the workspace is one the webview could not read without it
-    // (`api/files.ts: grantFolder`).
-    await grantFolder(path);
-    const content = await readTextFile(path);
+    const content = await readDocumentFile(path);
     await this.openFile({ path, content });
   }
 
@@ -245,7 +214,7 @@ class DocumentSession {
   async openVersion(path: string, content: string): Promise<void> {
     const onScreen = this.current();
     try {
-      await writeTextAtomically(path, content);
+      await writeDocumentFile(path, content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       void eventManager.emit(MESSAGE_EVENT, {
@@ -258,29 +227,7 @@ class DocumentSession {
     const id = keyFor(path, content, () => `${this.run}-${++this.madeKeys}`);
     // A document with a file is keyed by its path (`document_identity.ts: documentId`), so a restore
     // is not "open another document": it is *this* document holding other text now.
-    const documents = [...this.state.documents];
-    const held = documents.some((document) => document.id === id);
-    this.state = held
-      ? {
-          ...this.state,
-          current: id,
-          documents: documents.map((document) =>
-            document.id === id
-              ? {
-                  ...document,
-                  content,
-                  saved: content,
-                  title: documentTitle(content, document.path),
-                  view: { caret: 0, to: null, scroll: null }
-                }
-              : document
-          )
-        }
-      : {
-          ...this.state,
-          current: id,
-          documents: [...documents, openDocument({ path, content }, id)]
-        };
+    this.state = adoptVersion(this.state, path, content, id);
     const opened = this.current();
     if (opened) {
       this.show(opened);
@@ -396,10 +343,7 @@ class DocumentSession {
     }
     this.capture();
     const latest = this.current() ?? document;
-    const path = await saveDialog({
-      defaultPath: `${latest.title}.md`,
-      filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
-    });
+    const path = await chooseDocumentPath(latest.title);
     if (!path) {
       return;
     }
@@ -450,7 +394,7 @@ class DocumentSession {
       return false;
     }
     try {
-      await writeTextAtomically(document.path, document.content);
+      await writeDocumentFile(document.path, document.content);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       void eventManager.emit(MESSAGE_EVENT, {
@@ -467,33 +411,16 @@ class DocumentSession {
 
   /** What the editor holds now, written into the document it is showing. */
   private capture(): void {
-    if (!this.editor) {
-      return;
-    }
-    this.state = captureInto(this.state, this.editor.getContent(), this.editor.captureView());
+    this.state = captureEditorDocument(this.state, this.editor);
   }
 
   /** Puts a document on screen, where it left off. */
   private show(document: SessionDocument): void {
-    if (!this.editor) {
-      return;
-    }
-    // Which folder the document lives in, before its text: a relative image destination is read
-    // from there, and a paint that arrived first would be resolved against the document before it.
-    this.editor.setDocumentFolder(
-      document.path === null ? null : parentFolder(document.path)
-    );
-    this.editor.setReadOnly(document.readOnly);
-    this.editor.setContent(document.content);
-    this.editor.restoreView(document.view);
+    showDocumentInEditor(this.editor, document);
   }
 
   private async persist(): Promise<void> {
-    try {
-      await saveSessionText(serializeSession(this.state));
-    } catch (error) {
-      console.error('Failed to write the session:', error);
-    }
+    await persistSession(this.state);
   }
 
   private announce(): void {
