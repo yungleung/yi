@@ -93,13 +93,19 @@ src/services/bibliography/
   reference.ts
 
 src/services/documents/
+  index.ts
   identity.ts
   manager.ts
 
 src/services/versioning/
   index.ts
+  rules.ts
   versions.ts
 ```
+
+`documents/index.ts` exposes the identity and catalogue-manager contracts. In `versioning/`,
+`rules.ts` remains pure, `versions.ts` is the living list and depends on `rules.ts`, and
+`index.ts` exposes both without creating a cycle back through the package facet.
 
 Cross-cutting single-purpose services such as config, i18n, hints, messages, settings paths and
 text diff remain flat until they have a real domain cluster. They are not forced into a generic
