@@ -471,8 +471,10 @@ scratch note (written under its data folder, because pandoc reads files) is dele
 succeeded or not — and pandoc's own warnings are **kept** (`ExportOutcome.warnings`) and shown to the
 reader as a message, so a document missing a piece says why instead of leaving a hole.
 The pre-process delegates image resolution to `ui/export/pipeline/image_rewrites.ts`, listing output to
-`ui/export/pipeline/listing_markdown.ts`, and shared Markdown escaping to
-`ui/export/pipeline/markdown_escaping.ts`.
+`ui/export/pipeline/listing_rewrites.ts` over `listing_markdown.ts`, figure rewriting to
+`figure_rewrites.ts`, ordered splice application to `rewrites.ts`, shared pipeline contracts to
+`contracts.ts`, and shared Markdown escaping to `markdown_escaping.ts`. Callout lowering uses the
+same `rewrites.ts` splice rule instead of keeping its own copy.
 
 The same pre-process lowers listings: HTML/EPUB/DOCX/ODT get one identified `.listing` Div with a
 visible `.listing-caption` paragraph, processed Markdown gets an HTML figure, and LaTeX/PDF keep

@@ -13,7 +13,7 @@ import { destinationPaths } from '../../../services/workspace';
 import { spansOfType, type Span, type Walkable } from '../pipeline/node_spans';
 import { isWebDestination } from '../assets/picture_hint';
 import { encodedPath } from './markdown_escaping';
-import type { ExportAnswers, Rewrite } from '../pipeline/preprocess';
+import type { ExportAnswers, Rewrite } from './contracts';
 
 /**
  * Every image whose destination names a file that is there, as that file's own

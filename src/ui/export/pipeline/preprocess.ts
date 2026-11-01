@@ -36,107 +36,35 @@
  * answers a new text, it never edits the note.
  */
 
-import type { AstCitation, AstImage, AstWikilink } from '../../markdown/ast';
-import type { ListingNode } from '../../markdown/syntax/listings';
+import type { AstCitation, AstWikilink } from '../../markdown/ast';
 import { parseMarkdown } from '../../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../../markdown/syntax/wikilink_text';
-import { spansOfType, type Span, type Walkable } from '../pipeline/node_spans';
-import type { FigureNode } from '../../markdown/syntax/figures';
-import { escapeHtml, htmlAttributeName } from './html';
+import { spansOfType, type Walkable } from '../pipeline/node_spans';
 import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
 import { listRewrites } from './list_rewrites';
 import { calloutRewrites } from './callout_rewrites';
 import { isLatexKind } from '../kind_family';
-import {
-  latexListing,
-  listingHtml,
-  pandocListing
-} from './listing_markdown';
-import {
-  imageDestination,
-  imageMarkdown,
-  imageMarkdownUnchanged,
-  imageRewrites
-} from './image_rewrites';
-import {
-  attributeValue,
-  encodeFragment,
-  encodedPath,
-  escapeLinkText
-} from './markdown_escaping';
+import { imageRewrites } from './image_rewrites';
+import { encodeFragment, escapeLinkText } from './markdown_escaping';
 import {
   firstReference,
   referenceIndex,
   referenceLabel,
   type ReferenceEntry
 } from '../../markdown/document/reference_index';
+import type { ExportAnswers, Rewrite, TitleLookup } from './contracts';
+import { applyRewrites } from './rewrites';
+import { figureRewrites } from './figure_rewrites';
+import { listingRewrites } from './listing_rewrites';
 
-/** The title of the document a wikilink names, or null when nothing in the workspace answers. */
-export type TitleLookup = (target: string) => Promise<string | null>;
-
-/** Whether a path names a file that is there, asked of whatever the caller knows. */
-export type FileExists = (path: string) => Promise<boolean>;
-
-/** The two folders a relative destination is read from — the renderer's own answers. */
-export interface ImageBases {
-  /** The folder of the document being exported, or null when it has no file yet. */
-  document: string | null;
-  /** The folder the settings name for images, or null when the reader named none. */
-  images: string | null;
-}
-
-/** What the pre-process has to ask the app: the rules' answers, and nothing else. */
-export interface ExportAnswers {
-  /** The export kind whose portability rules this run follows. */
-  kind: string;
-  titleOf: TitleLookup;
-  bases: ImageBases;
-  exists: FileExists;
-  /**
-   * The local file a picture **on the web** has been fetched to, or null when it could not be. The
-   * app fetches it rather than pandoc (`src-tauri/src/export.rs: export_fetch_image`), because a
-   * pandoc built without HTTP support cannot fetch anything at all — and a note's picture is
-   * something the page shows, which is what an export is owed.
-   */
-  fetchRemote: (url: string) => Promise<string | null>;
-  /**
-   * The PNG the app drew for a destination this kind cannot carry as it is — an SVG or a webp — or
-   * null. Asked *first*: a picture survives as itself only where the output holds it
-   * (`assets/raster_picture.ts`).
-   */
-  rasterised?: (destination: string) => string | null;
-  /**
-   * The portable destination for the file an image resolved to. LaTeX source exports use this so
-   * the `.tex` never contains a machine-specific absolute path; other kinds leave it undefined.
-   */
-  imageTarget?: (file: string, destination: string) => string;
-  /**
-   * How the citations are written, for kinds whose conversion is the app's *own* (`markdown`): every
-   * other kind leaves `[@key]` as written and lets pandoc's citeproc render it, and such a kind has
-   * no citeproc behind it. So the app renders what it already knows how to render — the words a
-   * citation reads as in the page (`bibliography.format`), and the works it names listed under them
-   * (`bibliography.referenceList`). Null means *leave them to pandoc*.
-   */
-  citations: CitationRendering | null;
-}
-
-/** The app rendering citations itself, and what the appended list is called. */
-export interface CitationRendering {
-  /** One citation's own source (`@key`, `[@key, p. 45]`) as the words it renders as. */
-  render(source: string): string;
-  /** The entries the works of these citations are listed under, or none. */
-  references(sources: string[]): string[];
-  /** The word the appended list is headed with, in the reader's language. */
-  title: string;
-}
-
-/** One span of the document, and the text it is rewritten to. */
-export interface Rewrite {
-  start: number;
-  end: number;
-  text: string;
-}
+export type {
+  CitationRendering,
+  FileExists,
+  ImageBases,
+  TitleLookup
+} from './contracts';
+export type { ExportAnswers, Rewrite };
 
 /**
  * The note as pandoc should read it: every wikilink written as the words it renders as, every
@@ -267,127 +195,4 @@ function autoReferenceRewrites(
 /** An identifier used as one LaTeX label argument. */
 function latexLabel(id: string): string {
   return id.replace(/\\/g, '\\textbackslash{}').replace(/}/g, '\\}');
-}
-
-/** Figures, as processed-Markdown HTML or native Pandoc Markdown. */
-async function figureRewrites(
-  figures: readonly Span[],
-  references: readonly ReferenceEntry[],
-  answers: ExportAnswers,
-  fetched: Map<string, string | null>
-): Promise<Rewrite[]> {
-  const rewrites: Rewrite[] = [];
-  for (const span of figures) {
-    const figure = span.node as unknown as FigureNode;
-    const image = figure.children[0];
-    const destination = await imageDestination(image, answers, fetched);
-    const target = destination === null ? image.url : answers.imageTarget?.(destination, image.url) ?? destination;
-    const entry = references.find(
-      (candidate) => candidate.kind === 'figure' && candidate.from === span.start
-    );
-    const label = entry === undefined ? null : referenceLabel(entry);
-    if (answers.kind === 'markdown') {
-      rewrites.push({
-        start: span.start,
-        end: span.end,
-        text: figureHtml(figure, image, target, label)
-      });
-      continue;
-    }
-    const caption = label === null || isLatexKind(answers.kind)
-      ? image.alt ?? ''
-      : `${label}. ${image.alt ?? ''}`;
-    const imageText = destination === null
-      ? imageMarkdownUnchanged({ ...image, alt: caption }, target)
-      : imageMarkdown({ ...image, alt: caption }, target);
-    const markdown =
-      imageText +
-      figureAttributes(figure, isLatexKind(answers.kind));
-    rewrites.push({
-      start: span.start,
-      end: span.end,
-      text: figure.id && !isLatexKind(answers.kind)
-        ? `::: {#${figure.id}}\n${markdown}\n:::`
-        : markdown
-    });
-  }
-  return rewrites;
-}
-
-/** Listings, as portable HTML or as Pandoc-native source with one target wrapper. */
-function listingRewrites(
-  listings: readonly Span[],
-  references: readonly ReferenceEntry[],
-  answers: ExportAnswers
-): Rewrite[] {
-  return listings.map((span) => {
-    const listing = span.node as unknown as ListingNode;
-    const entry = references.find(
-      (candidate) => candidate.kind === 'listing' && candidate.from === span.start
-    );
-    const label = entry === undefined ? null : referenceLabel(entry);
-    return {
-      start: span.start,
-      end: span.end,
-      text:
-        answers.kind === 'markdown'
-          ? listingHtml(listing, label)
-          : isLatexKind(answers.kind)
-            ? latexListing(listing)
-            : pandocListing(listing, label)
-    };
-  });
-}
-
-/** A processed-Markdown figure that common Markdown readers can display. */
-function figureHtml(
-  figure: FigureNode,
-  image: AstImage,
-  destination: string,
-  label: string | null
-): string {
-  const attributes = [
-    ...(figure.id === null ? [] : [`id="${escapeHtml(figure.id)}"`]),
-    ...(figure.classes.length === 0 ? [] : [`class="${escapeHtml(figure.classes.join(' '))}"`]),
-    ...Object.entries(figure.attributes).map(
-      ([key, value]) => `data-${htmlAttributeName(key)}="${escapeHtml(value)}"`
-    )
-  ];
-  const imageUrl = /^[a-z][a-z0-9+.-]*:/i.test(destination)
-    ? escapeHtml(destination)
-    : escapeHtml(encodedPath(destination));
-  const title = image.title == null ? '' : ` title="${escapeHtml(image.title)}"`;
-  const caption = label === null
-    ? String(image.alt ?? '')
-    : `${label}. ${String(image.alt ?? '')}`;
-  return [
-    `<figure${attributes.length === 0 ? '' : ` ${attributes.join(' ')}`}>`,
-    `  <img src="${imageUrl}" alt="${escapeHtml(image.alt ?? '')}"${title}>`,
-    `  <figcaption>${escapeHtml(caption)}</figcaption>`,
-    '</figure>'
-  ].join('\n');
-}
-
-/** Figure attributes written in Pandoc's native image spelling. */
-function figureAttributes(figure: FigureNode, includeId: boolean): string {
-  const tokens = [
-    ...(includeId && figure.id !== null ? [`#${figure.id}`] : []),
-    ...figure.classes.map((name) => `.${name}`),
-    ...Object.entries(figure.attributes).map(
-      ([key, value]) => `${key}="${attributeValue(value)}"`
-    )
-  ];
-  return tokens.length === 0
-    ? ''
-    : `${figure.attribute?.separator ?? ''}{${tokens.join(' ')}}`;
-}
-
-
-/** `text` with the rewrites made, from the end back, so none of them moves another's span. */
-function applyRewrites(text: string, rewrites: Rewrite[]): string {
-  let rewritten = text;
-  for (const rewrite of [...rewrites].sort((one, other) => other.start - one.start)) {
-    rewritten = rewritten.slice(0, rewrite.start) + rewrite.text + rewritten.slice(rewrite.end);
-  }
-  return rewritten;
 }

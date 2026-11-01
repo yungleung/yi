@@ -17,13 +17,11 @@ import {
   readCallout,
   type CalloutSource
 } from '../../markdown/syntax/callouts';
+import type { Rewrite } from './contracts';
+import { applyRewrites } from './rewrites';
 
 /** One source range and the semantic Div that replaces it. */
-export interface CalloutRewrite {
-  start: number;
-  end: number;
-  text: string;
-}
+export interface CalloutRewrite extends Rewrite {}
 
 /** Every callout in one export source, in document order. */
 export function calloutRewrites(
@@ -233,21 +231,6 @@ function prefixLines(prefix: string, text: string): string {
     .split('\n')
     .map((line) => prefixLine(prefix, line))
     .join('\n');
-}
-
-/** Apply non-overlapping callout rewrites from right to left. */
-function applyRewrites(
-  text: string,
-  rewrites: readonly CalloutRewrite[]
-): string {
-  let rewritten = text;
-  for (const rewrite of [...rewrites].sort((one, other) => other.start - one.start)) {
-    rewritten =
-      rewritten.slice(0, rewrite.start) +
-      rewrite.text +
-      rewritten.slice(rewrite.end);
-  }
-  return rewritten;
 }
 
 /** Escape the source title as Markdown text rather than inline markup. */

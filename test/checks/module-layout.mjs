@@ -74,6 +74,10 @@ expectFile('src/ui/export/manager/source.ts');
 expectFile('src/ui/export/manager/navigation.ts');
 expectFile('src/ui/export/templates/operations.ts');
 expectFile('src/ui/export/dialog/controls.ts');
+expectFile('src/ui/export/pipeline/contracts.ts');
+expectFile('src/ui/export/pipeline/rewrites.ts');
+expectFile('src/ui/export/pipeline/figure_rewrites.ts');
+expectFile('src/ui/export/pipeline/listing_rewrites.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -128,6 +132,16 @@ expectNoDefinition(
   'src/ui/export/dialog/form.ts',
   /\b(?:private\s+button\s*\(|function\s+(?:element|label|textBlock|select|checkbox|diagnostic|option|labelledRow|rowGroup|buttonRow|checkboxRow)\s*\()/,
   'still owns export-form DOM controls; move them to controls.ts'
+);
+expectNoDefinition(
+  'src/ui/export/pipeline/preprocess.ts',
+  /\b(?:export\s+(?:interface|type)\s+(?:TitleLookup|FileExists|ImageBases|ExportAnswers|CitationRendering|Rewrite)\b|function\s+(?:applyRewrites|figureRewrites|figureHtml|figureAttributes|listingRewrites)\s*\()/,
+  'still owns shared pipeline contracts or focused rewrite modules'
+);
+expectNoDefinition(
+  'src/ui/export/pipeline/callout_rewrites.ts',
+  /\bfunction\s+applyRewrites\s*\(/,
+  'duplicates the shared right-to-left rewrite rule'
 );
 
 const legacy = [

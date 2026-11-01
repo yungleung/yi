@@ -15,4 +15,4 @@ export type {
   ImageBases,
   Rewrite,
   TitleLookup
-} from './preprocess';
+} from './contracts';
