@@ -8,15 +8,15 @@
  * instead, which is what `fenceBody` names (`syntax/markers.ts`), and a body with no content line
  * takes the write as a line of its own between the delimiters.
  *
- * May import: the marker rules (`./markers`). Upholds: one fact about markdown syntax has one home
- * — where a fenced block's body begins and ends is decided there, and every rule here is a pure
- * function of the block's text.
+ * May import: marker rules, shared line spans and the quote-line model. Upholds: one fact about
+ * markdown syntax has one home — where a fenced block's body begins and ends is decided by the
+ * markers, and every rule here is a pure function of the block's text.
  */
 
-import { closingFence, fenceBody, openingFence } from './markers';
-import { lineSpanAt } from './lines';
-import { quoteLineAt } from './quote_edits';
-import type { TextEdit } from './edit_range';
+import { closingFence, fenceBody, openingFence } from '../markers';
+import { lineSpanAt } from '../lines';
+import { quoteLineAt } from './quote/lines';
+import type { TextEdit } from '../edit_range';
 
 /** What a write inside a fenced block does, in the block's own offsets. */
 export interface FenceWrite {

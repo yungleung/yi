@@ -14,7 +14,7 @@ import {
   attributeBlockAtEnd,
   type PandocAttributeBlock
 } from '../pandoc_attributes';
-import { readFencedDiv } from '../fenced_divs';
+import { readFencedDiv } from '../container';
 import {
   ALERT_MARKER,
   BUILTIN_TITLES,

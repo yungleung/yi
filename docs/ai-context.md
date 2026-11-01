@@ -746,7 +746,7 @@ namespaced `yilist` object counter and native labels/references, with
 and export probes hold the feature.
 
 **A callout is either a GitHub alert blockquote or an attributed Pandoc fenced
-Div.** `syntax/fenced_divs.ts` owns complete colon fences, nesting, quote carriers
+Div.** `syntax/container/divs.ts` owns complete colon fences, nesting, quote carriers
 and body ranges for all Pandoc Divs. `syntax/callout/` is the domain facade;
 `model.ts` owns the value, built-in titles and class grammar,
 `reader.ts` classifies alerts and complete Divs with exact source ranges,
@@ -757,7 +757,7 @@ positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
 draws the rendered panel, and `nodes/quote_source.ts` exposes exact block
 source while editing for both ordinary quotes and callouts, including escaped
 markers, physical blank lines and raw child delimiters that a rendering cannot
-give an exact caret. `syntax/quote_edits.ts` and `syntax/callout/body.ts`
+give an exact caret. `syntax/container/quote/` and `syntax/callout/body.ts`
 implement the shared quote rule: Enter adds two fully prefixed lines, a second
 Enter exits exactly one level, blank quote lines delete as physical lines,
 typing never invents a delimiter space, child blocks keep their own Enter
@@ -1017,7 +1017,7 @@ block). The caret observer holds that ask back too while a selection is live, fo
 that same block, and the rebuild it would ask for replaces the element the selected text is drawn on
 (`markdown_editor.ts: followCaret`, `test/probes/select-in-code-block.js`). A character typed at the
 body's own end still belongs to the body, all three alike
-(`syntax/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
+(`syntax/container/fence_edits.ts`), `Tab` indents a line of any of the three (`editing/code.ts`), and the two
 shapes and their labels are pinned by `test/probes/fence-source-mode.js`.
 A caret position that sits *right after a newline* — the body's first line, the body's end — is
 drawn on the line below it, never a space past the line the newline closed: a caret anchored at the

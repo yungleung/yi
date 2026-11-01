@@ -3,7 +3,7 @@
  *
  * @covers src/ui/markdown/editing/text_commands.ts,
  *   src/ui/markdown/editing/fence_open.ts,
- *   src/ui/markdown/syntax/fenced_divs.ts
+ *   src/ui/markdown/syntax/container/divs.ts
  */
 (async () => {
   const t = window.__t;

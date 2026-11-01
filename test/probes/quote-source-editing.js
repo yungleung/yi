@@ -5,7 +5,7 @@
  *
  * @covers src/ui/markdown/source_mode.ts,
  *   src/ui/markdown/editing/text_commands.ts,
- *   src/ui/markdown/syntax/quote_edits.ts
+ *   src/ui/markdown/syntax/container/quote/
  */
 (async () => {
   const t = window.__t;

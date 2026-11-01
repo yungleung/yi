@@ -4,7 +4,7 @@
  * While the caret is inside one, the closing fence is a line like any other (`nodes/fence_text.ts`),
  * so `Enter` at its end makes a blank line under the block and the caret goes there — for all three
  * fenced kinds. A character typed at the body's own end still belongs to the body
- * (`syntax/fence_edits.ts`), whichever side of its last blank line the click landed on.
+ * (`syntax/container/fence_edits.ts`), whichever side of its last blank line the click landed on.
  *
  * Each case waits for the block it is about to click to *be still* first. A case types into its
  * document (Enter and a letter) and the next one loads over it, so the click that opens a block's
@@ -24,7 +24,7 @@
  * that fails without that fix.
  *
  * @covers src/ui/markdown/editing/text_commands.ts, src/ui/markdown/nodes/fence_text.ts,
- *   src/ui/markdown/syntax/fence_edits.ts
+ *   src/ui/markdown/syntax/container/fence_edits.ts
  */
 (async () => {
   const t = window.__t;
@@ -97,7 +97,7 @@
   }
 
   // The body's own end keeps a character in the body, whichever side of the last blank line the
-  // click landed on (the rule `syntax/fence_edits.ts: fenceTypedWrite` states).
+  // click landed on (the rule `syntax/container/fence_edits.ts: fenceTypedWrite` states).
   await t.load('text\n\n```ts\nlet a = 1;\n\n```\n\ntail\n');
   const lastBlock = t.prose().querySelector('.markdown-fenced-code');
   await still(lastBlock);

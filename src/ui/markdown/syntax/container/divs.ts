@@ -6,12 +6,13 @@
  * module owns those source ranges so block slicing, source mode and container
  * editing agree about where a Div starts, ends and accepts a body character.
  *
- * May import: the shared code-fence markers. Upholds: only a complete,
+ * May import: the shared code-fence markers and quote-prefix reader. Upholds: only a complete,
  * balanced Div is returned, no colon line inside fenced code closes it, and
  * every range is an offset into the source it was read from.
  */
 
-import { closingFence, openingFence } from './markers';
+import { closingFence, openingFence } from '../markers';
+import { quotePrefix } from './quote/lines';
 
 interface SourceLine {
   start: number;
@@ -219,27 +220,15 @@ function sourceLines(source: string): SourceLine[] {
 }
 
 function quoteLine(line: SourceLine): QuoteLine | null {
-  let index = 0;
-  while (index < Math.min(3, line.text.length) && line.text[index] === ' ') {
-    index += 1;
-  }
-  if (line.text[index] !== '>') {
+  const prefix = quotePrefix(line.text);
+  if (prefix === null) {
     return null;
-  }
-
-  let depth = 0;
-  while (line.text[index] === '>') {
-    depth += 1;
-    index += 1;
-    if (line.text[index] === ' ') {
-      index += 1;
-    }
   }
   return {
     ...line,
-    depth,
-    prefix: line.text.slice(0, index),
-    prefixEnd: index,
-    content: line.text.slice(index)
+    depth: prefix.depth,
+    prefix: line.text.slice(0, prefix.prefixEnd),
+    prefixEnd: prefix.prefixEnd,
+    content: prefix.content
   };
 }

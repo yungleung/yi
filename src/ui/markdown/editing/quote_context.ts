@@ -14,7 +14,7 @@ import type { MarkdownEditorState } from '../document/state';
 import {
   quotePrefixAt,
   type QuoteChildContext
-} from '../syntax/quote_edits';
+} from '../syntax/container';
 
 /** The active quote depth and child construct at a document offset. */
 export function quoteContextAt(

@@ -16,7 +16,7 @@ import {
   openingFence
 } from '../syntax/markers';
 import { closesEquation, isEquationOpening } from '../syntax/equation';
-import { readFencedDiv } from '../syntax/fenced_divs';
+import { readFencedDiv } from '../syntax/container';
 import type { BlockKind } from './block_kinds';
 import type { SourceLine } from './block_scanner';
 

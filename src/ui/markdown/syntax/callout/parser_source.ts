@@ -17,7 +17,7 @@ import {
   frontmatterDelimiter,
   openingFence
 } from '../markers';
-import { readFencedDiv } from '../fenced_divs';
+import { readFencedDiv } from '../container';
 import {
   quoteLine,
   readCallout,

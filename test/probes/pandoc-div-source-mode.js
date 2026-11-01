@@ -1,7 +1,7 @@
 /**
  * Generic Pandoc Divs stay in exact source mode; callouts still render.
  *
- * @covers src/ui/markdown/syntax/fenced_divs.ts,
+ * @covers src/ui/markdown/syntax/container/divs.ts,
  *   src/ui/markdown/source_mode.ts,
  *   src/ui/markdown/create_block.ts
  */

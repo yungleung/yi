@@ -33,12 +33,12 @@ import {
 } from '../syntax/lines';
 import {
   enterInQuote,
+  fenceNewlineWrite,
   fencedDivNewline,
   projectQuoteSource,
   quoteLineAt
-} from '../syntax/quote_edits';
+} from '../syntax/container';
 import { emptyCalloutNewline } from '../syntax/callout';
-import { fenceNewlineWrite } from '../syntax/fence_edits';
 import { caretInTableCell } from './table';
 import { blockAtCaret } from './text_command_context';
 
@@ -172,7 +172,7 @@ export function insertNewline(context: EditorContext): boolean {
   // Code, math, frontmatter and the other raw-rendered blocks keep their own line structure.
   if (isRawRendered(block.kind)) {
     // `Enter` in a fenced block with no content yet makes the body's first line, so neither
-    // delimiter line takes the next character (see `syntax/fence_edits.ts`).
+    // delimiter line takes the next character (see `syntax/container/fence_edits.ts`).
     const write = isFenced(block.kind)
       ? fenceNewlineWrite(block.text, offsets.from - block.charStart)
       : null;

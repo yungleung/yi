@@ -61,7 +61,7 @@ export function hasSourceMode(kind: BlockKind): boolean {
  *
  * The delimiters are drawn while the caret is inside the block and hidden the rest of the time
  * (`nodes/fence_text.ts`), and a typed character or a newline at the body's own edge belongs in
- * the body rather than on a delimiter's line (`syntax/fence_edits.ts`). An *indented* code block
+ * the body rather than on a delimiter's line (`syntax/container/fence_edits.ts`). An *indented* code block
  * is not one: it has no delimiter to keep a line for.
  */
 export function isFenced(kind: BlockKind): boolean {

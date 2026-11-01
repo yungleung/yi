@@ -35,7 +35,7 @@ import {
   prefixInsertedBreaks,
   projectQuoteSource,
   quoteLineAt
-} from '../syntax/quote_edits';
+} from '../syntax/container';
 import { blockPadding } from './blank_lines';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 

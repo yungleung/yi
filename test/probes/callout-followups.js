@@ -2,7 +2,7 @@
  * Follow-up behavior for callout bodies and opening markers on ordinary blank lines.
  *
  * @covers src/ui/markdown/editing/text_commands.ts,
- *   src/ui/markdown/syntax/quote_edits.ts,
+ *   src/ui/markdown/syntax/container/quote/,
  *   src/ui/markdown/nodes/callout.ts
  */
 (async () => {

@@ -11,7 +11,7 @@
  */
 
 import type { TextEdit } from '../edit_range';
-import { fencedDivAtOffset } from '../fenced_divs';
+import { fencedDivAtOffset } from '../container';
 import { attributeBlockAtEnd } from '../pandoc_attributes';
 import { CALLOUT_CLASS } from './model';
 

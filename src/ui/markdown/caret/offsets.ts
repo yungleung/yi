@@ -24,7 +24,7 @@
 
 import type { MarkdownBlock } from '../document/blocks';
 import type { MarkdownEditorState } from '../document/state';
-import { projectQuoteSource } from '../syntax/quote_edits';
+import { projectQuoteSource } from '../syntax/container';
 import { readTableSource } from '../syntax/table';
 import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { getCaretRange } from './caret';

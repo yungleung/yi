@@ -35,12 +35,12 @@ import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
 import { readCallout } from '../syntax/callout';
-import { fencedDivAtOffset } from '../syntax/fenced_divs';
 import {
+  fencedDivAtOffset,
   prefixInsertedBreaks,
   projectQuoteSource,
   quoteLineAt
-} from '../syntax/quote_edits';
+} from '../syntax/container';
 
 /** The blocks a typed delimiter opens. */
 export type FenceOpenKind = Extract<

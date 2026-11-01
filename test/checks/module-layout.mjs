@@ -108,6 +108,13 @@ expectFile('src/ui/markdown/syntax/footnote/model.ts');
 expectFile('src/ui/markdown/syntax/footnote/labels.ts');
 expectFile('src/ui/markdown/syntax/footnote/parse_context.ts');
 expectFile('src/ui/markdown/syntax/footnote/edits.ts');
+expectFile('src/ui/markdown/syntax/container/index.ts');
+expectFile('src/ui/markdown/syntax/container/divs.ts');
+expectFile('src/ui/markdown/syntax/container/fence_edits.ts');
+expectFile('src/ui/markdown/syntax/container/quote/index.ts');
+expectFile('src/ui/markdown/syntax/container/quote/lines.ts');
+expectFile('src/ui/markdown/syntax/container/quote/edits.ts');
+expectFile('src/ui/markdown/syntax/container/quote/projection.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -136,6 +143,8 @@ const facades = [
   'src/ui/markdown/syntax/list/index.ts',
   'src/ui/markdown/syntax/code/index.ts',
   'src/ui/markdown/syntax/footnote/index.ts',
+  'src/ui/markdown/syntax/container/index.ts',
+  'src/ui/markdown/syntax/container/quote/index.ts',
   'src/ui/export/workflow/index.ts',
   'src/ui/export/pipeline/index.ts',
   'src/ui/export/assets/index.ts',
@@ -220,6 +229,9 @@ const legacy = [
   'src/ui/markdown/syntax/code_edits.ts',
   'src/ui/markdown/syntax/listings.ts',
   'src/ui/markdown/syntax/footnotes.ts',
+  'src/ui/markdown/syntax/quote_edits.ts',
+  'src/ui/markdown/syntax/fenced_divs.ts',
+  'src/ui/markdown/syntax/fence_edits.ts',
   'src/ui/export/export_flow.ts',
   'src/ui/export/preprocess.ts',
   'src/ui/export/raster_picture.ts',
@@ -253,6 +265,8 @@ expectNoRepeat('src/ui/markdown/syntax/table', ['table_']);
 expectNoRepeat('src/ui/markdown/syntax/list', ['list_']);
 expectNoRepeat('src/ui/markdown/syntax/code', ['code_']);
 expectNoRepeat('src/ui/markdown/syntax/footnote', ['footnote_']);
+expectNoRepeat('src/ui/markdown/syntax/container', ['container_']);
+expectNoRepeat('src/ui/markdown/syntax/container/quote', ['quote_']);
 expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 
 if (failures.length > 0) {

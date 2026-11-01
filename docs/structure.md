@@ -7,20 +7,22 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-01 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 401 TypeScript modules, 47,029 lines, and no import cycles
+described at the end of this document: 405 TypeScript modules, 47,108 lines, and no import cycles
 anywhere in them.
 
 ## The tree
 
 | Path | Modules | Lines | What it holds |
 | --- | --- | --- | --- |
-| `src/ui/markdown/syntax/` | 31 | 4,035 | the pure rules: markers, lines, edit arithmetic and the parser pipeline |
+| `src/ui/markdown/syntax/` | 28 | 3,281 | the pure rules: markers, lines, edit arithmetic and the parser pipeline |
 | `src/ui/markdown/syntax/equation/` | 3 | 430 | equation wrapper parsing, environment lowering and offset-preserving parser masking |
 | `src/ui/markdown/syntax/callout/` | 6 | 877 | callout model, readers, parser preparation, body materialisation and kind editing |
 | `src/ui/markdown/syntax/table/` | 5 | 861 | table source, captions, source edits and command vocabulary |
 | `src/ui/markdown/syntax/list/` | 3 | 576 | list caption attachment and list/indent edit rules |
-| `src/ui/markdown/syntax/code/` | 4 | 263 | fenced-code metadata, listing nodes and code indentation |
+| `src/ui/markdown/syntax/code/` | 4 | 264 | fenced-code metadata, listing nodes and code indentation |
 | `src/ui/markdown/syntax/footnote/` | 5 | 321 | footnote marker grammar, incremental labels, parser borrowing and insertion |
+| `src/ui/markdown/syntax/container/` | 3 | 423 | Pandoc Div boundaries and fence-body edits |
+| `src/ui/markdown/syntax/container/quote/` | 4 | 407 | quote-carrier parsing, quote edits and offset-preserving projection |
 | `src/ui/markdown/plugins/` | 9 | 720 | the remark extensions: citation, wikilink, definition list |
 | `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
 | `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
@@ -50,7 +52,7 @@ anywhere in them.
 | `src-tauri/src/fonts/` | 7 | 1,131 | font-file parsing, the bundled face/header/coverage domain, and machine fonts |
 | `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
 
-`src/ui/markdown/` is 211 of the 401 modules and 26,706 of the 47,029 lines: the editor is the app,
+`src/ui/markdown/` is 215 of the 405 modules and 26,785 of the 47,108 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -129,7 +131,7 @@ exported through `src-tauri/src/lib.rs`. Their internals may move; their consume
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
 relative import in `src/`.
 
-- **No cycles**, across all 401 modules; and `document/*` imports only syntax and its own files.
+- **No cycles**, across all 405 modules; and `document/*` imports only syntax and its own files.
   The two hardest invariants in the tree, and both hold.
 - **`syntax/*` imports only syntax, the AST types, the parser libraries and `plugins/*`** — the 3
   edges into the plugins are the parser's own extensions. `layering.mjs` enforces this.
@@ -155,7 +157,7 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 401 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 405 modules) |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
@@ -187,6 +189,7 @@ different reasons**. Several did, and each is split now:
 | `export/templates/editor.ts`, 383 | package/defaults state, file loading, dirty tracking, save, validation and close flow (318) | modal DOM, controls and Escape binding in `templates/editor_shell.ts` (138) |
 | `syntax/equation/blocks.ts`, 406 | equation wrapper parsing, body classification and LaTeX lowering (277) | offset-preserving remark input in `syntax/equation/masking.ts` (125), behind the explicit `syntax/equation/index.ts` facade |
 | `syntax/footnotes.ts`, 303 | the public footnote rules behind `syntax/footnote/index.ts` | marker grammar and positions in `model.ts`, incremental label tracking in `labels.ts`, borrowed parse definitions in `parse_context.ts`, and the insertion edit in `edits.ts` |
+| `syntax/quote_edits.ts`, 353 | quote edit operations behind `syntax/container/quote/index.ts` | carrier parsing in `lines.ts` and offset-preserving source projection in `projection.ts`; fenced Div boundaries and fence-body edits now share the `syntax/container/` facade |
 
 ## What was improved, in the order it was taken
 
@@ -215,7 +218,7 @@ what keeps it that way.
    citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
-   their three lines, and the check reads `src/` (it says 401 modules).
+   their three lines, and the check reads `src/` (it says 405 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
    with its reason), and the other way round. Writing it found four names `format_dom_tags.ts` looked

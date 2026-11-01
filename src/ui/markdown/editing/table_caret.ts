@@ -19,7 +19,7 @@ import {
   insertRow,
   type TableSource
 } from '../syntax/table';
-import { quoteLineAt } from '../syntax/quote_edits';
+import { quoteLineAt } from '../syntax/container';
 import { applyEdit, restoreCaret, type EditorContext } from './context';
 
 /** The table, block and cell the caret sits in, or null. */

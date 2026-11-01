@@ -39,7 +39,7 @@ import { type MarkdownBlock } from './document/blocks';
 import { hasSourceMode } from './document/block_kinds';;
 import { shiftOffset, shiftRangeEnd, type TextEdit } from './syntax/edit_range';
 import { fenceBody } from './syntax/markers';
-import { quoteNeedsSourceAt } from './syntax/quote_edits';
+import { quoteNeedsSourceAt } from './syntax/container';
 import { hasGenericFencedDiv } from './syntax/callout';
 
 /** The raw source being shown, as its range in the document, or null. */

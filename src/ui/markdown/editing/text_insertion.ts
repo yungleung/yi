@@ -32,9 +32,11 @@ import {
   materializeFencedDivBody,
   readCallout
 } from '../syntax/callout';
-import { fenceTypedWrite } from '../syntax/fence_edits';
-import { fencedDivAtOffset } from '../syntax/fenced_divs';
-import { emptyQuoteTyping } from '../syntax/quote_edits';
+import {
+  emptyQuoteTyping,
+  fenceTypedWrite,
+  fencedDivAtOffset
+} from '../syntax/container';
 import { rangeInSourceText } from '../source_text';
 import { insertFenceOpen } from './fence_open';
 import { blockAtCaret } from './text_command_context';
@@ -155,7 +157,7 @@ function insertAt(
   }
   // A character typed at the end of a fenced block's body belongs *in* the body: written where the
   // caret is, it would land on the closing delimiter's own line, which the parser reads as part of
-  // the delimiter (see `syntax/fence_edits.ts`).
+  // the delimiter (see `syntax/container/fence_edits.ts`).
   if (block && isFenced(block.kind) && offsets.from === offsets.to) {
     const write = fenceTypedWrite(block.text, offsets.from - block.charStart, text);
     if (write) {

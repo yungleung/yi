@@ -8,14 +8,15 @@
  * List, table, code and equation contexts are declined so their own editing
  * rules stay authoritative.
  *
- * May import: text-edit shapes and the callout source model. Upholds: every
- * result is one raw-text replacement, and prefixes are read from source rather
+ * May import: text-edit shapes, shared line rules, the quote-line model and fenced-Div ranges.
+ * Upholds: every result is one raw-text replacement, and prefixes are read from source rather
  * than invented by the UI.
  */
 
-import type { TextEdit } from './edit_range';
-import { fencedDivAtOffset } from './fenced_divs';
-import { isBlankItemLine, itemContinuation, lineSpanAt } from './lines';
+import type { TextEdit } from '../../edit_range';
+import { fencedDivAtOffset } from '../divs';
+import { isBlankItemLine, itemContinuation, lineSpanAt } from '../../lines';
+import { quoteCarrier, quoteLineAt, type QuoteLine } from './lines';
 
 /** One quote edit and the caret position after it. */
 export interface QuoteEdit {
@@ -31,15 +32,6 @@ export type QuoteChildContext =
   | 'table'
   | 'code'
   | 'equation';
-
-/** One source line and the quote carrier before its content. */
-export interface QuoteLine {
-  start: number;
-  end: number;
-  depth: number;
-  prefixEnd: number;
-  content: string;
-}
 
 /** The Enter edit for one quote context, or null when the child block owns it. */
 export function enterInQuote(
@@ -203,106 +195,6 @@ export function prefixInsertedBreaks(
   };
 }
 
-/** The canonical source prefix for a quote depth, without a trailing space. */
-export function quoteCarrier(depth: number): string {
-  return '> '.repeat(Math.max(0, Math.floor(depth))).trimEnd();
-}
-
-/** The quote depth and canonical prefix on the line at `offset`, or null outside a quote. */
-export function quotePrefixAt(
-  text: string,
-  offset: number
-): { depth: number; prefix: string } | null {
-  const line = quoteLineAt(text, offset);
-  return line === null ? null : { depth: line.depth, prefix: quoteCarrier(line.depth) };
-}
-
-/**
- * Whether the quote position at `offset` needs its exact block source.
- *
- * An ordinary quote is an editable container, just like a callout. Its
- * complete source is the shape that exposes every carrier, escape marker,
- * empty line and child delimiter to the same one-to-one caret mapping.
- */
-export function quoteNeedsSourceAt(text: string, offset: number): boolean {
-  return quoteLineAt(text, offset) !== null;
-}
-
-/** A quote document with its carrier prefixes removed, plus offset maps both ways. */
-export interface QuoteProjection {
-  text: string;
-  /** Source offset for every projected offset, including the end. */
-  sourceOffsets: number[];
-  /** Projected offset for every source offset, including the end. */
-  projectedOffsets: number[];
-}
-
-/** Remove every blockquote carrier while preserving a two-way offset map. */
-export function projectQuoteSource(source: string): QuoteProjection {
-  const sourceOffsets = new Array<number>(source.length + 1);
-  const projectedOffsets = new Array<number>(source.length + 1);
-  let projected = '';
-  let at = 0;
-  for (const sourceLine of source.split('\n')) {
-    const quoted = quoteLineAt(source, at);
-    const contentStart = quoted?.prefixEnd ?? at;
-    for (let index = at; index < contentStart; index += 1) {
-      projectedOffsets[index] = projected.length;
-    }
-    const content = source.slice(contentStart, at + sourceLine.length);
-    for (let index = 0; index < content.length; index += 1) {
-      sourceOffsets[projected.length] = contentStart + index;
-      projectedOffsets[contentStart + index] = projected.length;
-      projected += content[index];
-    }
-    sourceOffsets[projected.length] = at + sourceLine.length;
-    projectedOffsets[at + sourceLine.length] = projected.length;
-    if (at + sourceLine.length < source.length) {
-      projected += '\n';
-    }
-    at += sourceLine.length + 1;
-  }
-  sourceOffsets[projected.length] = source.length;
-  projectedOffsets[source.length] = projected.length;
-  return { text: projected, sourceOffsets, projectedOffsets };
-}
-
-/**
- * The line before the caret, its depth, and content after the quote carriers.
- * Offsets at a newline belong to the line they end.
- */
-export function quoteLineAt(text: string, offset: number): QuoteLine | null {
-  const at = Math.min(Math.max(0, offset), text.length);
-  const start = text.lastIndexOf('\n', Math.max(0, at - 1)) + 1;
-  const newline = text.indexOf('\n', at);
-  const end = newline < 0 ? text.length : newline;
-  const source = text.slice(start, end);
-
-  let index = 0;
-  while (index < Math.min(3, source.length) && source[index] === ' ') {
-    index += 1;
-  }
-  if (source[index] !== '>') {
-    return null;
-  }
-
-  let depth = 0;
-  while (source[index] === '>') {
-    depth += 1;
-    index += 1;
-    if (source[index] === ' ') {
-      index += 1;
-    }
-  }
-  return {
-    start,
-    end,
-    depth,
-    prefixEnd: start + index,
-    content: text.slice(start + index, end)
-  };
-}
-
 /**
  * The contiguous empty quote lines ending at the caret. The edit starts at the
  * previous content line's end so each empty carrier is replaced as one run.
@@ -316,7 +208,7 @@ function emptyQuoteRunBeforeCursor(
     return null;
   }
 
-  let first = current;
+  const first = current;
   let count = 1;
   let previousEnd = first.start;
   let contentEnd = Math.max(0, current.start - 1);
@@ -324,23 +216,13 @@ function emptyQuoteRunBeforeCursor(
     const previousBreak = text.lastIndexOf('\n', previousEnd - 2);
     const previousStart = previousBreak + 1;
     const previousStop = previousEnd - 1;
-    const previousSource = text.slice(previousStart, previousStop);
-    let index = 0;
-    while (index < Math.min(3, previousSource.length) && previousSource[index] === ' ') {
-      index += 1;
-    }
-    if (previousSource[index] !== '>') {
-      break;
-    }
-    let depth = 0;
-    while (previousSource[index] === '>') {
-      depth += 1;
-      index += 1;
-      if (previousSource[index] === ' ') {
-        index += 1;
-      }
-    }
-    if (depth !== first.depth || previousSource.slice(index).trim() !== '') {
+    const previous = quoteLineAt(text, previousStart);
+    if (
+      previous === null ||
+      previous.end !== previousStop ||
+      previous.depth !== first.depth ||
+      previous.content.trim() !== ''
+    ) {
       break;
     }
     count += 1;

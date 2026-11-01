@@ -1,7 +1,7 @@
 /**
  * Enter preserves quote depth and block context.
  *
- * @covers src/ui/markdown/syntax/quote_edits.ts,
+ * @covers src/ui/markdown/syntax/container/quote/,
  *   src/ui/markdown/editing/text_commands.ts
  */
 (async () => {

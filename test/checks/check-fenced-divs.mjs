@@ -19,13 +19,9 @@ async function bundle(input, name) {
   return import(file);
 }
 
-const { fencedDivAtOffset, readFencedDiv } = await bundle(
-  'src/ui/markdown/syntax/fenced_divs.ts',
-  'fenced_divs'
-);
-const { fencedDivNewline } = await bundle(
-  'src/ui/markdown/syntax/quote_edits.ts',
-  'quote_edits'
+const { fencedDivAtOffset, fencedDivNewline, readFencedDiv } = await bundle(
+  'src/ui/markdown/syntax/container/index.ts',
+  'container'
 );
 const {
   emptyCalloutNewline: emptyDivNewline,

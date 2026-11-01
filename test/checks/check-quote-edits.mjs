@@ -29,7 +29,9 @@ const {
   prefixInsertedLines,
   projectQuoteSource,
   quoteNeedsSourceAt
-} = await import(await bundle('quote_edits', 'src/ui/markdown/syntax/quote_edits.ts'));
+} = await import(
+  await bundle('quote', 'src/ui/markdown/syntax/container/quote/index.ts')
+);
 const { emptyCalloutNewline, materializeCalloutBody } = await import(
   await bundle('callout_body', 'src/ui/markdown/syntax/callout/body.ts')
 );

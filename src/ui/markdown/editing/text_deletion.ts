@@ -19,7 +19,7 @@ import { applyEdit, type EditorContext } from './context';
 import { editorSelection, rangeOffsets } from './selection';
 import { isQuoteLike } from '../document/block_kinds';
 import { pairAround } from '../syntax/brackets';
-import { deleteBlankQuoteLine } from '../syntax/quote_edits';
+import { deleteBlankQuoteLine } from '../syntax/container';
 import { tableDeleteIsNoop } from './table';
 import { blockAtCaret } from './text_command_context';
 

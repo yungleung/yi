@@ -2,7 +2,7 @@
  * Enter in a quoted list keeps list semantics and quote carriers.
  *
  * @covers src/ui/markdown/editing/text_commands.ts,
- *   src/ui/markdown/syntax/quote_edits.ts
+ *   src/ui/markdown/syntax/container/quote/
  */
 (async () => {
   const t = window.__t;

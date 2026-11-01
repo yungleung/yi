@@ -13,7 +13,7 @@
  * backticks for this purpose; a space closes filtering but remains source so
  * Pandoc attributes can follow. The choice itself is not made here — this module
  * is a surface, and the editor owns the edit (`markdown_editor.ts`, over the pure rule in
- * `syntax/fence_edits.ts: fenceLanguageEdit`).
+ * `syntax/container/fence_edits.ts: fenceLanguageEdit`).
  *
  * May import: highlight.js, the beside measurement and the shared choice card.
  * Upholds: the picker holds no document state — it is told which block's

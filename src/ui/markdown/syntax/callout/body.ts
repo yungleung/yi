@@ -13,9 +13,9 @@
 import type { CalloutSource } from './model';
 import {
   fencedDivAtOffset,
-  type FencedDivSource
-} from '../fenced_divs';
-import type { QuoteEdit } from '../quote_edits';
+  type FencedDivSource,
+  type QuoteEdit
+} from '../container';
 
 /**
  * Enter on an empty fenced-Div callout's opening line.

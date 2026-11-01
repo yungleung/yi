@@ -47,7 +47,7 @@ import {
   setCalloutKindChangeHandler,
   setCalloutKindPicker
 } from './editing/callout_kind_picker';
-import { fenceLanguageEdit } from './syntax/fence_edits';
+import { fenceLanguageEdit } from './syntax/container';
 import { calloutKindEdit } from './syntax/callout';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
@@ -252,7 +252,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     });
     // A fenced code block's label asks for a language (`nodes/fence_label.ts`); the card that
     // answers is the app's own chrome, and the edit it makes is the pure rule's
-    // (`syntax/fence_edits.ts: fenceLanguageEdit`).
+    // (`syntax/container/fence_edits.ts: fenceLanguageEdit`).
     setLanguagePicker(installLanguagePicker());
     setLanguageChangeHandler((lineStart, language) => this.changeFenceLanguage(lineStart, language));
     setCalloutKindPicker(installCalloutKindPicker());
@@ -467,7 +467,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
 
   /**
    * The language the reader chose for a fenced code block: the opening fence's own line, and
-   * nothing else, replaced in one edit (`syntax/fence_edits.ts: fenceLanguageEdit`). The body is
+   * nothing else, replaced in one edit (`syntax/container/fence_edits.ts: fenceLanguageEdit`). The body is
    * the author's text and is left exactly as it stands.
    *
    * A newly opened fence keeps the reader's caret at the end of the opening line so the language

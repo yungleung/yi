@@ -5,7 +5,7 @@
  * A `$$` line only delimits a formula while it is the fence and nothing else, so a character
  * written onto the *closing* fence's line becomes part of it (`$$\nQ$$` reads as the content
  * `Q$$`). The delimiters are not drawn, so the caret enters the formula's *body* and the write is
- * pulled to that body's own last line (`syntax/fence_edits.ts`); the edge a click used to put down
+ * pulled to that body's own last line (`syntax/container/fence_edits.ts`); the edge a click used to put down
  * — before the closing `$$` — is not a position the rendering has any more.
  *
  * @covers src/ui/markdown/syntax/math_edits.ts, src/ui/markdown/editing/text_commands.ts
