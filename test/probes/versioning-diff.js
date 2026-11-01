@@ -171,7 +171,7 @@
       closed &&
         session.documentSession.current()?.content === 'one\nTWO\nthree\n' &&
         // The editor's keyboard is its own seam — an invisible textarea inside the scroller
-        // (`editing/composition_input.ts`) — so "back in the text" is the keyboard being inside
+        // (`editing/composition/input.ts`) — so "back in the text" is the keyboard being inside
         // the editor again, not on the scroller's own box.
         document.activeElement !== null &&
         t.scroller().contains(document.activeElement),

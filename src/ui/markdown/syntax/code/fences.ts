@@ -9,7 +9,7 @@
  * non-final attributes remain ordinary fence text and never create a target.
  */
 
-import { attributeBlockAtEnd, type PandocAttributeBlock } from '../pandoc_attributes';
+import { attributeBlockAtEnd, type PandocAttributeBlock } from '../pandoc';
 import { fenceBody, openingFence } from '../markers';
 
 /** The attributes and body boundary a fenced code block exposes to its renderer. */

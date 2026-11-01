@@ -11,7 +11,7 @@
  */
 
 import type { AstNode } from '../ast';
-import type { BlockNode } from '../document/blocks';
+import type { BlockNode } from '../document/block';
 import { enterSourceOf } from '../source_mode';
 import type { EquationBlockSource } from '../syntax/equation';
 import { EditableNodeComponent } from './editable_node';

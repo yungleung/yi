@@ -20,7 +20,7 @@ const load = async (input, name) => {
   return await import(file);
 };
 const { pandocHeadingId } = await load(
-  'src/ui/markdown/syntax/pandoc_identifiers.ts',
+  'src/ui/markdown/syntax/pandoc/identifiers.ts',
   'pandoc_identifiers'
 );
 const { firstHeadingTarget, headingIndex } = await load(

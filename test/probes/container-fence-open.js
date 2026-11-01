@@ -2,7 +2,7 @@
  * Opening delimiters remain paired while editing a quote or callout, and every
  * generated source line carries the container's quote prefix.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/editing/fence_open.ts
  */
 (async () => {

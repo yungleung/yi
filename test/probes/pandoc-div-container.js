@@ -1,7 +1,7 @@
 /**
  * Generic Pandoc Divs use the editor's context-aware container behavior.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/editing/fence_open.ts,
  *   src/ui/markdown/syntax/container/divs.ts
  */

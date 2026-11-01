@@ -7,7 +7,7 @@
  * `+++` block is not frontmatter at all: it is ordinary text.
  *
  * @covers src/ui/markdown/syntax/markers.ts (frontmatterDelimiter, closesFrontmatter, fenceBody),
- *   src/ui/markdown/document/blocks.ts, src/ui/markdown/syntax/parser.ts
+ *   src/ui/markdown/document/block/model.ts, src/ui/markdown/syntax/parser.ts
  * @covers src/services/documents/identity.ts (readFrontmatterTitle, firstHeading)
  */
 (async () => {

@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 async function bundleModule(input) {
-  const bundle = await rolldown({ input, logLevel: 'silent' });
+  const bundle = await rolldown({ input, logLevel: 'silent', platform: 'node' });
   const { output } = await bundle.generate({ format: 'esm' });
   await bundle.close();
   const directory = mkdtempSync(join(tmpdir(), 'yi-table-menu-'));

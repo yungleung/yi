@@ -2,7 +2,7 @@
  * A caption keeps a fast burst typed into its attribute source.
  *
  * @covers src/ui/markdown/nodes/caption.ts,
- *   src/ui/markdown/editing/composition_input.ts,
+ *   src/ui/markdown/editing/composition/input.ts,
  *   src/ui/markdown/markdown_editor.ts
  */
 (async () => {

@@ -9,7 +9,7 @@
  */
 
 import { BLOCK_GAP, type BlockSizes } from '../block_sizes';
-import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownBlock } from '../document/block';
 import { spacerHeights } from '../viewport_window';
 
 /** A mounted block range. */

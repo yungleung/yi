@@ -10,7 +10,7 @@
  * cell, a deletion, a character, and otherwise an arrow.
  *
  * The editor hands in what it has (`KeyHost`); nothing here reaches into it. The rules that decide
- * what a key *does* are the commands' own (`editing/text_commands.ts` and friends).
+ * what a key *does* are the commands' own (`editing/text/` and friends).
  *
  * May import: the key's commands, the table and code helpers, the list and cell steps, the shape of
  * an editing context, and the completions the editor passes in. Upholds: one place that says which
@@ -19,12 +19,12 @@
 
 import { applyCodeIndent } from './code';
 import { continueTableDown, moveTableCell } from './table';
-import { deleteText, insertNewline, insertText } from './text_commands';
+import { deleteText, insertNewline, insertText } from './text';
 import { runCommand } from '../../../commands/runtime';
 import { handleChoiceCardKey } from '../choice_card';
 import type { EditorContext } from './context';
 import type { Completions } from './completions';
-import type { CompositionInput } from './composition_input';
+import type { CompositionInput } from './composition';
 
 /** What the key path needs of the editor it serves. */
 export interface KeyHost {

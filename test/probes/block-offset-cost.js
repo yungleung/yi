@@ -9,7 +9,7 @@
  * as a string is measured too, because P6 recorded it as the other half of the cost
  * and it turns out to be free (V8 hands back a sliced string).
  *
- * @covers src/ui/markdown/document/block_index.ts, src/ui/markdown/document/blocks.ts
+ * @covers src/ui/markdown/document/block/lookup.ts, src/ui/markdown/document/block/model.ts
  * @needs-large-document — run against the 323 KB fixture note.
  */
 (async () => {

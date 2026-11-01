@@ -27,7 +27,7 @@
 (async () => {
   const t = window.__t;
   const { MarkdownEditorState } = await t.app('/src/ui/markdown/document/state.ts');
-  const { splitBlocks } = await t.app('/src/ui/markdown/document/blocks.ts');
+  const { splitBlocks } = await t.app('/src/ui/markdown/document/block/model.ts');
   const { createBlockComponent } = await t.app('/src/ui/markdown/create_block.ts');
   const out = t.report({});
   const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];

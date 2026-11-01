@@ -13,7 +13,7 @@
 import {
   attributeBlockAtEnd,
   type PandocAttributeBlock
-} from '../pandoc_attributes';
+} from '../pandoc';
 import { readFencedDiv } from '../container';
 import {
   ALERT_MARKER,

@@ -7,7 +7,7 @@
  */
 
 import type { AstNode } from '../ast';
-import type { BlockNode } from '../document/blocks';
+import type { BlockNode } from '../document/block';
 import { TEXT_FROM, setOffset } from '../offset_tags';
 import { EditableNodeComponent } from './editable_node';
 

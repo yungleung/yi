@@ -56,7 +56,7 @@ export abstract class FloatingSurface extends BaseComponent {
    * long as the window: a surface that has never been shown has nothing to put away. A key that
    * arrives while an input method is composing is not this one's: it cancels the word the reader
    * is choosing, and the surface is not what they asked to put away
-   * (`markdown/editing/composition_input.ts`).
+   * (`markdown/editing/composition/input.ts`).
    */
   private watchEscape(): void {
     if (this.watchingEscape) {

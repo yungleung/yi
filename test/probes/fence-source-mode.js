@@ -1,11 +1,11 @@
 /**
  * A fenced block has two shapes, decided by the caret: the body it renders while the caret is
  * elsewhere — KaTeX, for a display formula — and its own text, delimiters and all, while the caret
- * is inside it. One component draws both (`nodes/fence_text.ts`), and the corner label is there in
+ * is inside it. One component draws both (`nodes/fence/text.ts`), and the corner label is there in
  * either shape.
  *
- * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/fence_text.ts,
- *   src/ui/markdown/document/blocks.ts
+ * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/fence/text.ts,
+ *   src/ui/markdown/document/block/model.ts
  */
 (async () => {
   const t = window.__t;

@@ -12,7 +12,7 @@
  * the caret is somewhere it applies.
  */
 
-import { isFenced } from '../document/block_kinds';;
+import { isFenced } from '../document/block';
 import { codeIndentEdit } from '../syntax/code';
 import { shiftOffset } from '../syntax/edit_range';
 import { applyEdit, caretOffset, type EditorContext } from './context';

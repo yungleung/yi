@@ -16,7 +16,7 @@ import {
   equationBlockNumber,
   type ReferenceEntry
 } from '../../markdown/document/reference_index';
-import { splitBlocks } from '../../markdown/document/blocks';
+import { splitBlocks } from '../../markdown/document/block';
 import {
   innerEquationBody,
   latexEquationBody,

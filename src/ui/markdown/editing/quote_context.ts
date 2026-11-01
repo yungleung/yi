@@ -9,7 +9,7 @@
  */
 
 import type { RootContent } from 'mdast';
-import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
 import {
   quotePrefixAt,

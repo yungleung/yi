@@ -9,7 +9,7 @@
  * @covers src/ui/markdown/source_text.ts,
  *   src/ui/markdown/editing/typed_text.ts,
  *   src/ui/markdown/editing/context.ts,
- *   src/ui/markdown/editing/text_commands.ts,
+ *   src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/plain_edit.ts
  */
 (async () => {

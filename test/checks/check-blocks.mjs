@@ -1,7 +1,7 @@
 /**
  * Checks the block-slicing rules in Node, where a probe inside the app cannot
  * reach (the MCP bridge gives up after a few seconds and several document
- * swaps do not fit). It bundles the real `blocks.ts` and asserts the shapes
+ * swaps do not fit). It bundles the real block model and asserts the shapes
  * the plan's Task 2 requires:
  *
  * - one blank line between two blocks is a separator: no block;
@@ -15,7 +15,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/markdown/document/blocks.ts', logLevel: 'silent' });
+const bundle = await rolldown({
+  input: 'src/ui/markdown/document/block/model.ts',
+  logLevel: 'silent',
+  platform: 'node'
+});
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-blocks-'));
@@ -47,7 +51,7 @@ const cases = [
     'paragraph@1 blank@3 paragraph@4'
   ],
   // A construct whose *own text* is the shape the app shows while the caret is inside it — a
-  // fence, a display formula (`block_kinds.ts: hasSourceMode`) — begins where markdown says it
+  // fence, a display formula (`kinds.ts: hasSourceMode`) — begins where markdown says it
   // begins, even when it interrupts a paragraph. markdown reads both as blocks
   // (`text\n```\ncode\n``` ` is a paragraph, a code block, a paragraph), and a formula folded into a
   // paragraph has no shape in which its source can be shown at all: measured, a click on one

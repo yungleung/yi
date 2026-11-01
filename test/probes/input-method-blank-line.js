@@ -9,7 +9,7 @@
  * cannot read an element-anchored caret, so the commit found no offsets and wrote nothing at all
  * (measured: the line stayed empty).
  *
- * @covers src/ui/markdown/editing/composition_view.ts: insertAt, detach
+ * @covers src/ui/markdown/editing/composition/view.ts: insertAt, detach
  */
 (async () => {
   const t = window.__t;

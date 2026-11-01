@@ -54,7 +54,7 @@ import { List, ListItem } from './nodes/list';
 import { DescriptionDetails, DescriptionList, DescriptionTerm } from './nodes/description';
 import { FootnoteDefinition, FootnoteReference } from './nodes/footnote';
 import { DisplayMath, InlineMath } from './nodes/math';
-import { CodeBlock } from './nodes/code_block';
+import { CodeBlock } from './nodes/code';
 import { ThematicBreak } from './nodes/thematic_break';
 import { Table } from './nodes/table';
 import { HtmlBlock } from './nodes/html';

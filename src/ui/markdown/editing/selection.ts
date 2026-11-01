@@ -45,7 +45,7 @@ export function editorSelection(context: EditorContext, allowCollapsed: boolean)
 /**
  * Whether a range is the reader's place *in the document*: a selection inside the rendered
  * prose. Anything else is not one, however it got there — the editor's own chrome, and the
- * system's input seam that lives beside the prose (`composition_input.ts`), which a focused
+ * system's input seam that lives beside the prose (`composition/input.ts`), which a focused
  * textarea makes the browser report a selection for. Reading that as the caret is what would
  * put the next keystroke at an offset nobody chose.
  */

@@ -6,7 +6,7 @@
  * is the author's own character; a display formula's content gets a line of its own
  * (`syntax/math_edits.ts`). A word the system commits lands under those rules too.
  *
- * @covers src/ui/markdown/editing/text_commands.ts, src/ui/markdown/syntax/math_edits.ts
+ * @covers src/ui/markdown/editing/text/index.ts, src/ui/markdown/syntax/math_edits.ts
  */
 (async () => {
   const t = window.__t;

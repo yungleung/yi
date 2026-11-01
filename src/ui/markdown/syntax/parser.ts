@@ -14,7 +14,7 @@ import type { Root } from 'mdast';
 import {
   restoreListCaptions,
   restoreTableCaptions
-} from './caption_repairs';
+} from './caption';
 import {
   fixDescriptionPositions,
   remarkDeflistCompat

@@ -9,7 +9,7 @@
  * an editable element has the focus, it sits where the caret is, and the keys the
  * editor handles never reach it.
  *
- * @covers src/ui/markdown/editing/composition_input.ts
+ * @covers src/ui/markdown/editing/composition/input.ts
  */
 (async () => {
   const t = window.__t;

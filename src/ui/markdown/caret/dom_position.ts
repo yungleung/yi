@@ -14,7 +14,7 @@ import type { RootContent } from 'mdast';
 import { drawnMarkerLength, nodeRawRange, renderedLength } from './offsets';
 import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { afterNewline } from './dom';
-import type { MarkdownBlock } from '../document/blocks';
+import type { MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
 import { locateCell, readTableSource } from '../syntax/table';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf } from './../offset_tags';

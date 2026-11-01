@@ -8,7 +8,7 @@
  * only renderer-owned nodes are removed, and DOM reuse follows the content cache.
  */
 
-import type { BlockNode, MarkdownBlock } from '../document/blocks';
+import type { BlockNode, MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
 import { createBlockComponent } from '../create_block';
 import { withRenderContext, type RenderContext } from '../render_context';

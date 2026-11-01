@@ -11,7 +11,7 @@
  */
 
 import type { Image, Paragraph, Root, RootContent } from 'mdast';
-import { attributeBlockAtEnd, type PandocAttributeBlock } from './pandoc_attributes';
+import { attributeBlockAtEnd, type PandocAttributeBlock } from './pandoc';
 
 /** A block-level implicit figure. */
 export interface FigureNode {

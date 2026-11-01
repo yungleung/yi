@@ -17,13 +17,13 @@
  * only what it touched.
  */
 
-import { splitBlocks, splitBlocksFrom, type MarkdownBlock } from './blocks';
+import { splitBlocks, splitBlocksFrom, type MarkdownBlock } from './block';
 import type { RootContent } from 'mdast';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
 import type { HeadingTarget } from './heading_index';
 import { referenceIndex, type ReferenceEntry } from './reference_index';
 import { TextStore } from './text_store';
-import { BlockParseCache } from './block_parse_cache';
+import { BlockParseCache } from './block';
 
 let nextDocumentNumber = 0;
 
@@ -166,7 +166,7 @@ export class MarkdownEditorState {
     // edit: still one undo step, and still exact, for the two commands that do this
     // (inline formatting, find and replace all). What it remembers of its author comes
     // in with the call: those two know different things about where they were (see
-    // `formatting.ts` and `find_controller.ts`).
+    // `formatting.ts` and `find/controller.ts`).
     this.history.record(edit);
   }
 

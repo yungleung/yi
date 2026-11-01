@@ -11,7 +11,7 @@ import { rolldown } from 'rolldown';
 const directory = mkdtempSync(join(tmpdir(), 'yi-command-dispatch-'));
 
 async function bundleModule(input, name) {
-  const build = await rolldown({ input, logLevel: 'silent' });
+  const build = await rolldown({ input, logLevel: 'silent', platform: 'node' });
   const { output } = await build.generate({ format: 'esm' });
   await build.close();
   const file = join(directory, `${name}.mjs`);

@@ -7,7 +7,7 @@
  * when the first left would come back into the page with the block it was left in, and the
  * reader would see the word twice.
  *
- * @covers src/ui/markdown/editing/composition_view.ts: show
+ * @covers src/ui/markdown/editing/composition/view.ts: show
  */
 (async () => {
   const t = window.__t;

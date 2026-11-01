@@ -4,7 +4,7 @@
  * splits at the visible character.
  *
  * @covers src/ui/markdown/source_mode/,
- *   src/ui/markdown/editing/text_commands.ts,
+ *   src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/container/quote/
  */
 (async () => {

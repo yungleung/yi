@@ -2,8 +2,8 @@
  * Heading level markers: every heading carries the supplied h1-h6 glyph in a fixed-size left
  * gutter, and its invisible hover target keeps that gutter part of the heading.
  *
- * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/heading.ts,
- *   src/ui/markdown/nodes/heading_hover.ts, src/ui/markdown/nodes/heading_marker.ts,
+ * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/heading/node.ts,
+ *   src/ui/markdown/nodes/heading/hover.ts, src/ui/markdown/nodes/heading/marker.ts,
  *   src/styles.css
  */
 (async () => {

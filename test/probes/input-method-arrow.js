@@ -8,7 +8,7 @@
  * went into the document, where the same keystroke after the hand-back arrives as `229` with
  * `composing` true and opens a composition. It is the third path of one fact — a click, an undo
  * and now the arrow keys each had to give the field back its keyboard — and the caret is where
- * they meet (`composition_input.ts: regainKeyboard`).
+ * they meet (`composition/input.ts: regainKeyboard`).
  *
  * That the method composes is not something a probe can fake, so this holds the half that is
  * observable: the seat blurs and takes the keyboard again once the key is over.

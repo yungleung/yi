@@ -9,7 +9,7 @@
  */
 
 import { BLOCK_GAP, type BlockSizes } from './block_sizes';
-import type { MarkdownBlock } from './document/blocks';
+import type { MarkdownBlock } from './document/block';
 
 /** Extra content kept mounted above and below the viewport. */
 export const VIEWPORT_MARGIN = 1200;

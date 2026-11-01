@@ -164,7 +164,7 @@ elements) unless it says otherwise.
   `Alpha beta.`, with `Error: this block is not in the index` thrown between the two. Two
   causes, one behind the other.
   `editing/formatting.ts` held the **blocks from before the edit**: a block's positions are
-  the document index's (`document/blocks.ts` over `block_index.ts`), the whole-document edit
+  the document index's (`document/block/model.ts` over `block/lookup.ts`), the whole-document edit
   re-splits the blocks, and the index answers for a block it no longer holds with an error —
   by design, rather than with a position that belongs to another block. The command now asks
   the state by offset after the edit, the same two offsets the patch reads its own block
@@ -1576,7 +1576,7 @@ changing it would take. They are written down here so the ledger above and the h
   item sits four columns in, exactly like an indented code block, and one line of text
   cannot say which it is: the rule keeps the code block's reading, and
   `test/checks/check-footnotes.mjs` holds both cases. Telling them apart means tracking
-  which containers a line is inside, which is the block model's job (`document/blocks.ts`),
+  which containers a line is inside, which is the block model's job (`document/block/`),
   not a line reader's.
 
 One claim that *was* in this section, and in P17's handoff, turned out to be wrong when it was

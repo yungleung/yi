@@ -25,7 +25,7 @@
     });
 
   const raw = await t.raw();
-  const { splitBlocks } = await t.app('/src/ui/markdown/document/blocks.ts');
+  const { splitBlocks } = await t.app('/src/ui/markdown/document/block/model.ts');
   const { referenceIndex } = await t.app(
     '/src/ui/markdown/document/reference_index.ts'
   );

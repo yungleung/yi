@@ -2,7 +2,7 @@
  * Opening brackets pair in every editable text context, through both ordinary
  * keys and native input-method commits.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/brackets.ts
  */
 (async () => {

@@ -14,7 +14,7 @@
  * nothing into a field), so this holds the half that is observable: after the whole
  * sequence, the keyboard is the seat's again and the caret is where the click put it.
  *
- * @covers src/ui/markdown/editing/composition_input.ts: regainKeyboard
+ * @covers src/ui/markdown/editing/composition/input.ts: regainKeyboard
  */
 (async () => {
   const t = window.__t;

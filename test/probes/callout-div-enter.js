@@ -2,7 +2,7 @@
  * A fenced-Div callout accepts one newline per Enter, including repeated blank
  * lines, and leaves the caret on the newest line.
  *
- * @covers src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/text/index.ts,
  *   src/ui/markdown/syntax/container/quote/
  */
 (async () => {

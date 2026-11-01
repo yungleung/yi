@@ -6,7 +6,7 @@
  * backticks so the language picker can filter and accept a language before the author
  * moves into the body.
  *
- * @covers src/ui/markdown/editing/fence_open.ts, src/ui/markdown/editing/text_commands.ts,
+ * @covers src/ui/markdown/editing/fence_open.ts, src/ui/markdown/editing/text/index.ts,
  *         src/ui/markdown/editing/language_picker.ts
  */
 (async () => {

@@ -18,7 +18,7 @@
  * folder comes from the session showing the note.
  *
  * @covers src/services/session/rules.ts, src/ui/markdown/markdown_editor.ts,
- *   src/ui/markdown/editing/text_commands.ts
+ *   src/ui/markdown/editing/text/index.ts
  */
 (async () => {
   const t = window.__t;

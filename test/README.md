@@ -19,7 +19,7 @@ methodology; this file is the index and the conventions.
 | Check | Covers |
 | --- | --- |
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
-| `check-blocks.mjs` | How the raw document splits into blocks (`document/blocks.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
+| `check-blocks.mjs` | How the raw document splits into blocks (`document/block/model.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
 | `check-callouts.mjs` | GitHub-alert and Pandoc fenced-Div callout grammar: nested quote depth, all five built-in labels, custom kinds/titles, kind-only class edits, exact IDs/classes/attributes, malformed and escaped markers, offset-preserving parser input, and unclosed or nested Div fences left literal |
 | `check-fenced-divs.mjs` | Generic Pandoc fenced-Div source ranges, nesting and quote carriers, plus the shared Div body and empty-body line rules |
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/workflow/body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
@@ -28,7 +28,7 @@ methodology; this file is the index and the conventions.
 | `check-document-event-source.mjs` | That the live editor is the one producer of `document_changed`, while session and word-count consumers read that event and the old split notifications are gone |
 | `check-brackets.mjs` | What typing a bracket writes (`syntax/brackets.ts`): the pair and the caret inside it, the second bracket that turns `[]` into `[[]]`, the literal region and the selection where nothing is written, the `]` the author steps over, and the empty pair Backspace takes away whole |
 | `check-hints.mjs` | Where a hint goes (`services/hints.ts`): the tree row a file's hint is found by, and the escaping a quote, a backslash or a newline in a file name needs |
-| `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block_index.ts`) |
+| `check-block-index.mjs` | Where the blocks are: the prefix sums over their lengths and line spans, across an edit inside one block and across one that changes how many there are (`document/block/lookup.ts`) |
 | `check-block-sizes.mjs` | What a block is worth in pixels, the sums the window and the spacers are built from, and which blocks a scroll mounts |
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-command-contracts.mjs` | The typed command catalogue: every command family is present, each parser accepts its real trigger shape, malformed external input is refused, and every contract declares effect, timing, exposure and description |

@@ -24,9 +24,9 @@ in the same change that moves a module.
 
 | Layer | Files | Job |
 | --- | --- | --- |
-| Syntax (pure, no DOM) | `src/ui/markdown/document/block_scanner.ts`, `block_scan_rules.ts`, `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | walk source lines, split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
-| Document | `document/state.ts` (text, revision, history and target-owner), `document/blocks.ts` (block model), `document/block_parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format*.ts`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
+| Syntax (pure, no DOM) | `src/ui/markdown/document/block/scanner.ts`, `block/scan_rules.ts`, `src/ui/markdown/document/block/model.ts` and `src/ui/markdown/syntax/**` | walk source lines, split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
+| Document | `document/state.ts` (text, revision, history and target-owner), `document/block/model.ts` (block model), `document/block/parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
+| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format/`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
 | Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path; pointer, preview and clipboard listeners remain one ordered browser boundary |
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
@@ -46,6 +46,14 @@ reload (`vite.config.ts` ignores it), while a row is barred from being a native 
 so the webview cannot be navigated to a dropped path either. A probe that works *in* the
 fixture workspace rather than in `/private/tmp` is how that stays true
 (`test/probes/tree-no-reload.js`).
+
+Markdown editing is grouped by capability under one public entrypoint per domain:
+`document/block/`, `editing/text/`, `editing/composition/`, `editing/table/`,
+`caret/navigation/`, `format/`, `nodes/heading/`, `nodes/code/`, `nodes/fence/`,
+`editing/find/`, `syntax/pandoc/` and `syntax/caption/`. Import the domain's `index.ts`
+from outside it; implementation files are internal. The source/text/event contracts stay
+unchanged by these moves, so keyboard, input-method, toolbar and future MCP/agent edits
+still converge on the same command path.
 
 **And the webview may work where the app is working.** The file plugin and the asset protocol that
 serves a rendered picture start scoped to `$HOME` (`capabilities/default.json`, `tauri.conf.json`), which
@@ -664,9 +672,9 @@ document's total height under the reader), and a document opens at the top of it
 over from the note before it. A probe that measures one layout should ask for it
 (`t.useLayout('page')`) rather than inherit whichever one the reader left behind.
 
-Every heading names its level in a decorative left margin (`nodes/heading_marker.ts`): the supplied
+Every heading names its level in a decorative left margin (`nodes/heading/marker.ts`): the supplied
 h1-h6 SVG is fixed at `calc(1rem * var(--md-page-scale))`, so it follows the page scale without
-growing with the heading's type. `nodes/heading_hover.ts` supplies an invisible target in that
+growing with the heading's type. `nodes/heading/hover.ts` supplies an invisible target in that
 gutter, while `create_block.ts` marks and `styles.css` expands the containing block into it with a
 cancelling negative margin and equal padding; this keeps WebKit's `content-visibility` hit area over
 the marker without moving any content. The browser's native heading `:hover` state then slides the
@@ -680,9 +688,9 @@ level; `markdown-heading-marker-empty` is the single state for that case.
 **A heading attribute block is source, not title text.** `syntax/heading_attributes.ts` reads the
 trailing Pandoc `{#id .class key=value}` block on ATX and setext headings;
 `plugins/remark-heading-attributes.ts` removes it from rendered children while keeping its exact
-range on the heading, and the heading serializer writes it back. `nodes/heading.ts` applies only the
+range on the heading, and the heading serializer writes it back. `nodes/heading/node.ts` applies only the
 ID and reveals the attributes while the caret is anywhere in that heading. `document/heading_index.ts`
-caches every heading target for the current text, using `syntax/pandoc_identifiers.ts` for automatic
+caches every heading target for the current text, using `syntax/pandoc/identifiers.ts` for automatic
 IDs and Pandoc's numeric suffix for duplicates. ⌘-click or Ctrl-click on `[text](#id)` reaches
 `editing/references.ts`, which reveals the target block and focuses it without changing
 `location.hash`. `heading-attributes.js`, `heading-crossrefs.js` and
@@ -736,7 +744,7 @@ matrix row with and without an ID;
 `export-pdf-equation-template.js` hold the feature.
 
 **A captioned list is a normal list followed by one shared colon caption line.**
-`syntax/caption_lines.ts` owns the grammar for both tables and lists;
+`syntax/caption/lines.ts` owns the grammar for both tables and lists;
 `syntax/list/captions.ts` attaches it only at the list's base indentation and
 masks the line for remark without changing offsets. This keeps a colon after a
 paragraph as definition-list syntax and leaves `:::` free for callouts.
@@ -770,7 +778,7 @@ empty list item exits to the quote/callout body as one block-relative edit, and
 ordinary quotes render with a two-sided inset and one oversized opening mark
 instead of the typography plugin's side rule and paired quote glyphs.
 Unknown Pandoc Divs such as columns, speaker notes, wrappers and incremental
-lists always render as exact source through `nodes/fenced_div_source.ts`; a
+lists always render as exact source through `nodes/fence/div_source.ts`; a
 quote or callout containing one also falls back to complete source.
 A run of three or more colons stays literal until its following space creates a
 closed bare Default Div with the same fence length on both lines and opens
@@ -829,7 +837,7 @@ invents is one nobody put anywhere, and it *decides what the page shows*, becaus
 is in renders its own markdown — which is how a note that opens on a picture used to open on that
 picture's markdown, with the picture hidden. So a document with no remembered view is drawn as it
 is written, the reader's first click or keystroke places a caret (the keystroke at the text's own
-start: `editing/text_commands.ts: textSelection`), and `test/probes/document-opens-without-a-caret.js`
+start: `editing/text/index.ts: textSelection`), and `test/probes/document-opens-without-a-caret.js`
 holds both halves.
 
 An **image** is written by the button beside the link button, one command `edit:insertImage`, and
@@ -1001,13 +1009,13 @@ spelling that resolves to the file **before** the one as written — a `%2520` U
 webview reports as a *load*, so the written spelling would end the search where it stands.
 
 **A fenced block has two shapes**, decided by the caret, and one component draws both
-(`nodes/fence_text.ts`): its *body* with the delimiters hidden — a display formula's KaTeX comes
+(`nodes/fence/text.ts`): its *body* with the delimiters hidden — a display formula's KaTeX comes
 from its parse instead (`nodes/math.ts`) — while the caret is elsewhere, and its *own text*,
 delimiters and all, while the caret is inside it. That is what lets the reader leave a block by its
 own lines: the closing ` ``` ` is a line like any other, `Down` and `End` reach it, and `Enter` at
 its end puts a blank line under the block with the caret on it — for all three kinds
-(`test/probes/fence-exit.js`). `document/blocks.ts: hasSourceMode` names the three;
-which is also why such a block may not be folded into a paragraph: `document/blocks.ts` ends a
+(`test/probes/fence-exit.js`). `document/block/kinds.ts: hasSourceMode` names the three;
+which is also why such a block may not be folded into a paragraph: `document/block/scanner.ts` ends a
 paragraph run before a fence or a `$$` line, because both may interrupt a paragraph and both *must*
 be blocks for their own text to have a shape to be shown in (a `$$` region with no blank line
 around it was exactly that — a formula whose click entered the paragraph's text and showed nothing;
@@ -1027,7 +1035,7 @@ drawn on the line below it, never a space past the line the newline closed: a ca
 end of a text node whose last character is a newline belongs to the text that follows it
 (`caret/dom.ts: afterNewline`, read by the caret's own drawing in `caret/caret.ts: onTheLineItNames`
 and by the position a raw offset resolves to in `caret/dom_position.ts`). Stepping *left* onto such
-a line lands one character in from the node's end (`caret/navigation_horizontal.ts: endOfPreviousText`), since
+a line lands one character in from the node's end (`caret/navigation/horizontal.ts: endOfPreviousText`), since
 the end itself is the line the caret is already on. `fence-source-caret.js` holds both through the
 editor.
 
@@ -1050,7 +1058,7 @@ the line (`caret/geometry.ts: caretFontHeight`, the font's own ascent and descen
 range over a character measures as), so a blank line's caret looks like a caret in text. A
 composition written at such a node goes *beside* it and must not join it away: `normalize()` drops
 an empty text node, and a caret anchored in one becomes an element position the offsets mapping
-cannot read (`editing/composition_view.ts`). `test/probes/placeholder-boxes.js` holds all four.
+cannot read (`editing/composition/view.ts`). `test/probes/placeholder-boxes.js` holds all four.
 An empty *item* takes its line from a *generated* mark inside its placeholder (`styles.css`,
 `.markdown-list-placeholder::before`), not from a character: WebKit paints a replaced block without
 the marker a list draws outside its item's content box unless the item has a line of its own, so the
@@ -1058,11 +1066,11 @@ bullet the reader has just made is otherwise missing from the screen until the n
 bridge screenshot re-renders the page and cannot show it; measure with `screencapture`).
 
 Typing is not only keystrokes: an input method, dictation and the emoji panel go through
-`editing/composition_input.ts` — a textarea that holds the keyboard wherever the caret is, so the
+`editing/composition/input.ts` — a textarea that holds the keyboard wherever the caret is, so the
 system has something to compose into and puts its candidate window at the caret.
-`composition_position.ts` owns caret/frame placement and `composition_keyboard.ts` owns the
+`composition/position.ts` owns caret/frame placement and `composition/keyboard.ts` owns the
 focus and selection hand-back rules; the seam owns composition state and commit detection. What it
-commits is inserted by `text_commands.ts: insertCommitted` as one step of its own. Nothing of a
+commits is inserted by `text/index.ts: insertCommitted` as one step of its own. Nothing of a
 composition is drawn in the seam: it is invisible because its *ink and background* are transparent,
 never with `opacity: 0` — macOS composes only into a field it can see, and `styles.css` records what
 the system's own keystrokes measured (transparent, a real box, no declared `caret-color`), along with
@@ -1073,14 +1081,14 @@ editor and *that* is what is clipped (`styles.css: .markdown-composition-clip`).
 was the field's own focus ring: a textarea keeps the browser's default outline, which the *page*
 layout hid behind the sheet's opaque paper and the full-width layout showed at the caret — the
 field writes `outline: none` now, and `input-method-seam-box.js` holds it. What the method has *marked* is drawn instead where the reader is
-writing it — `editing/composition_view.ts`, the pinyin, the kana, the syllable, in the page's own
+writing it — `editing/composition/view.ts`, the pinyin, the kana, the syllable, in the page's own
 type at the caret and underlined, *in* the line so the words after the caret move along. That span
 is not the document's text: it is marked `data-composing`, which is how the offsets mapping steps
 over it (`caret/offsets.ts`), the block it lands in is measured again because a longer word can wrap
 the line, and it is taken out — the text node joined again — before the word commits. A key that
 edits the marked word is the method's, not the editor's: Backspace is left to it while a word is
 marked and for the moment after one is let go, because the key that emptied the word arrives with
-the composition already over (`composition_input.ts: markedText`;
+the composition already over (`composition/input.ts: markedText`;
 `test/probes/input-method-backspace.js`). A structural edit hands the keyboard back to the seam,
 as do a click and an *undo* — the last is a change that never goes through `applyEdit` and so has
 its hand-back named where it happens (`editor/history.ts: applyEditorHistory`). Ordinary character

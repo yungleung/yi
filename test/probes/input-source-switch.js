@@ -5,7 +5,7 @@
  * changes source. The native notification must clear that context and focus the seam
  * again, or the first Chinese key is delivered as Latin text.
  *
- * @covers src-tauri/src/input_source.rs, src/ui/markdown/editing/composition_input.ts,
+ * @covers src-tauri/src/input_source.rs, src/ui/markdown/editing/composition/input.ts,
  *   src/ui/markdown/markdown_editor.ts
  */
 (async () => {

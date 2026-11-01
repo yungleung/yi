@@ -200,6 +200,42 @@ const expectNoRepeatedPrefix = () => {
   }
 };
 
+const expectNoUngroupedCapabilityPrefixes = () => {
+  const allowed = new Set([
+    'src/ui/markdown:create',
+    'src/ui/markdown/syntax:node'
+  ]);
+  const folders = new Map();
+  for (const path of sourceFiles('src/ui/markdown', ['.ts'])) {
+    const folder = path.split('/').slice(0, -1).join('/');
+    if (!folders.has(folder)) {
+      folders.set(folder, []);
+    }
+    folders.get(folder).push(path);
+  }
+  for (const [folder, files] of folders) {
+    const groups = new Map();
+    for (const path of files) {
+      const stem = path.split('/').pop().replace(/\.ts$/, '');
+      const [prefix, suffix] = stem.split('_', 2);
+      if (suffix === undefined) {
+        continue;
+      }
+      if (!groups.has(prefix)) {
+        groups.set(prefix, []);
+      }
+      groups.get(prefix).push(path);
+    }
+    for (const [prefix, grouped] of groups) {
+      if (grouped.length >= 2 && !allowed.has(`${folder}:${prefix}`)) {
+        failures.push(
+          `${folder} still has ${grouped.length} ${prefix}_* modules; group the capability`
+        );
+      }
+    }
+  }
+};
+
 expectFile('src/ui/workspace/tree/node.ts');
 expectFile('src/ui/export/manager/source.ts');
 expectFile('src/ui/export/manager/navigation.ts');
@@ -274,6 +310,54 @@ expectFile('src-tauri/src/settings/store.rs');
 expectFile('src-tauri/src/menu/mod.rs');
 expectFile('src-tauri/src/menu/build.rs');
 expectFile('src-tauri/src/menu/events.rs');
+expectFile('src/ui/markdown/document/block/index.ts');
+expectFile('src/ui/markdown/document/block/model.ts');
+expectFile('src/ui/markdown/document/block/kinds.ts');
+expectFile('src/ui/markdown/document/block/lookup.ts');
+expectFile('src/ui/markdown/document/block/parse_cache.ts');
+expectFile('src/ui/markdown/document/block/scan_rules.ts');
+expectFile('src/ui/markdown/document/block/scanner.ts');
+expectFile('src/ui/markdown/editing/text/index.ts');
+expectFile('src/ui/markdown/editing/text/context.ts');
+expectFile('src/ui/markdown/editing/text/deletion.ts');
+expectFile('src/ui/markdown/editing/text/insertion.ts');
+expectFile('src/ui/markdown/editing/text/newline.ts');
+expectFile('src/ui/markdown/editing/composition/index.ts');
+expectFile('src/ui/markdown/editing/composition/input.ts');
+expectFile('src/ui/markdown/editing/composition/keyboard.ts');
+expectFile('src/ui/markdown/editing/composition/position.ts');
+expectFile('src/ui/markdown/editing/composition/view.ts');
+expectFile('src/ui/markdown/editing/table/index.ts');
+expectFile('src/ui/markdown/editing/table/operations.ts');
+expectFile('src/ui/markdown/editing/table/caret.ts');
+expectFile('src/ui/markdown/caret/navigation/index.ts');
+expectFile('src/ui/markdown/caret/navigation/horizontal.ts');
+expectFile('src/ui/markdown/caret/navigation/nodes.ts');
+expectFile('src/ui/markdown/caret/navigation/vertical.ts');
+expectFile('src/ui/markdown/format/index.ts');
+expectFile('src/ui/markdown/format/rules.ts');
+expectFile('src/ui/markdown/format/dom.ts');
+expectFile('src/ui/markdown/format/dom_tags.ts');
+expectFile('src/ui/markdown/nodes/heading/index.ts');
+expectFile('src/ui/markdown/nodes/heading/node.ts');
+expectFile('src/ui/markdown/nodes/heading/hover.ts');
+expectFile('src/ui/markdown/nodes/heading/marker.ts');
+expectFile('src/ui/markdown/nodes/code/index.ts');
+expectFile('src/ui/markdown/nodes/code/node.ts');
+expectFile('src/ui/markdown/nodes/code/highlight.ts');
+expectFile('src/ui/markdown/nodes/fence/index.ts');
+expectFile('src/ui/markdown/nodes/fence/label.ts');
+expectFile('src/ui/markdown/nodes/fence/text.ts');
+expectFile('src/ui/markdown/nodes/fence/div_source.ts');
+expectFile('src/ui/markdown/editing/find/index.ts');
+expectFile('src/ui/markdown/editing/find/bar.ts');
+expectFile('src/ui/markdown/editing/find/controller.ts');
+expectFile('src/ui/markdown/syntax/pandoc/index.ts');
+expectFile('src/ui/markdown/syntax/pandoc/attributes.ts');
+expectFile('src/ui/markdown/syntax/pandoc/identifiers.ts');
+expectFile('src/ui/markdown/syntax/caption/index.ts');
+expectFile('src/ui/markdown/syntax/caption/lines.ts');
+expectFile('src/ui/markdown/syntax/caption/repairs.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -306,6 +390,18 @@ const facades = [
   'src/ui/markdown/syntax/container/quote/index.ts',
   'src/ui/markdown/source_mode/index.ts',
   'src/ui/markdown/editing/blank_lines/index.ts',
+  'src/ui/markdown/document/block/index.ts',
+  'src/ui/markdown/editing/text/index.ts',
+  'src/ui/markdown/editing/composition/index.ts',
+  'src/ui/markdown/editing/table/index.ts',
+  'src/ui/markdown/caret/navigation/index.ts',
+  'src/ui/markdown/format/index.ts',
+  'src/ui/markdown/nodes/heading/index.ts',
+  'src/ui/markdown/nodes/code/index.ts',
+  'src/ui/markdown/nodes/fence/index.ts',
+  'src/ui/markdown/editing/find/index.ts',
+  'src/ui/markdown/syntax/pandoc/index.ts',
+  'src/ui/markdown/syntax/caption/index.ts',
   'src/ui/export/workflow/index.ts',
   'src/ui/export/pipeline/index.ts',
   'src/ui/export/assets/index.ts',
@@ -406,6 +502,45 @@ const legacy = [
   'src/ui/markdown/source_mode.ts',
   'src/ui/markdown/editing/blank_lines.ts',
   'src/ui/markdown/block_views.ts',
+  'src/ui/markdown/document/blocks.ts',
+  'src/ui/markdown/document/block_index.ts',
+  'src/ui/markdown/document/block_kinds.ts',
+  'src/ui/markdown/document/block_parse_cache.ts',
+  'src/ui/markdown/document/block_scan_rules.ts',
+  'src/ui/markdown/document/block_scanner.ts',
+  'src/ui/markdown/editing/text_commands.ts',
+  'src/ui/markdown/editing/text_command_context.ts',
+  'src/ui/markdown/editing/text_deletion.ts',
+  'src/ui/markdown/editing/text_insertion.ts',
+  'src/ui/markdown/editing/text_newline.ts',
+  'src/ui/markdown/editing/composition_input.ts',
+  'src/ui/markdown/editing/composition_keyboard.ts',
+  'src/ui/markdown/editing/composition_position.ts',
+  'src/ui/markdown/editing/composition_view.ts',
+  'src/ui/markdown/editing/table.ts',
+  'src/ui/markdown/editing/table_caret.ts',
+  'src/ui/markdown/editing/table_commands.ts',
+  'src/ui/markdown/caret/navigation.ts',
+  'src/ui/markdown/caret/navigation_horizontal.ts',
+  'src/ui/markdown/caret/navigation_nodes.ts',
+  'src/ui/markdown/caret/navigation_vertical.ts',
+  'src/ui/markdown/format.ts',
+  'src/ui/markdown/format_dom.ts',
+  'src/ui/markdown/format_dom_tags.ts',
+  'src/ui/markdown/nodes/heading.ts',
+  'src/ui/markdown/nodes/heading_hover.ts',
+  'src/ui/markdown/nodes/heading_marker.ts',
+  'src/ui/markdown/nodes/code_block.ts',
+  'src/ui/markdown/nodes/code_highlight.ts',
+  'src/ui/markdown/nodes/fence_label.ts',
+  'src/ui/markdown/nodes/fence_text.ts',
+  'src/ui/markdown/nodes/fenced_div_source.ts',
+  'src/ui/markdown/editing/find_bar.ts',
+  'src/ui/markdown/editing/find_controller.ts',
+  'src/ui/markdown/syntax/pandoc_attributes.ts',
+  'src/ui/markdown/syntax/pandoc_identifiers.ts',
+  'src/ui/markdown/syntax/caption_lines.ts',
+  'src/ui/markdown/syntax/caption_repairs.ts',
   'src/ui/export/export_flow.ts',
   'src/ui/export/preprocess.ts',
   'src/ui/export/raster_picture.ts',
@@ -455,6 +590,7 @@ expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 expectNoFacadeBypass();
 expectNoExportCycles();
 expectNoRepeatedPrefix();
+expectNoUngroupedCapabilityPrefixes();
 
 for (const path of sourceFiles('src-tauri/src', ['.rs'])) {
   if (path.startsWith('src-tauri/src/fonts/')) {

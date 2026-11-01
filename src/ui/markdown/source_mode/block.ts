@@ -8,8 +8,7 @@
  * that can hold exact source are selected, and containers reveal source only for their own range.
  */
 
-import type { MarkdownBlock } from '../document/blocks';
-import { hasSourceMode } from '../document/block_kinds';
+import { hasSourceMode, type MarkdownBlock } from '../document/block';
 import { hasGenericFencedDiv } from '../syntax/callout';
 import { quoteNeedsSourceAt } from '../syntax/container';
 import { fenceBody } from '../syntax/markers';

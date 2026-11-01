@@ -255,7 +255,7 @@ export function ensureCaretRendered(): void {
  * Puts the blinking bar away without moving the caret: the logical range stays, and
  * `getCaretRange` still answers, so the edit a commit lands still knows where the
  * author was. What draws in its place is the word being composed
- * (`editing/composition_view.ts`) — underlined text a bar blinking underneath would
+ * (`editing/composition/view.ts`) — underlined text a bar blinking underneath would
  * spoil — and the bar is placed again only by an edit, which is what a commit is.
  */
 export function setCaretBarVisible(visible: boolean): void {

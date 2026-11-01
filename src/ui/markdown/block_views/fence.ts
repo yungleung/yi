@@ -8,12 +8,11 @@
  * have one home, and listing attributes remain export metadata except the target ID.
  */
 
-import type { BlockNode } from '../document/blocks';
+import type { BlockNode } from '../document/block';
 import { chooseLanguage } from '../editing/language_picker';
 import { codeFenceData, listingFenceData, type CodeFenceData } from '../syntax/code';
-import { fenceLabel } from '../nodes/fence_label';
-import { FenceText, type FenceTextStyle } from '../nodes/fence_text';
-import { highlightCode } from '../nodes/code_highlight';
+import { FenceText, fenceLabel, type FenceTextStyle } from '../nodes/fence';
+import { highlightCode } from '../nodes/code';
 import { highlightFrontmatter } from '../nodes/frontmatter_highlight';
 import { highlightLatex } from '../nodes/latex_highlight';
 import { renderContext } from '../render_context';
