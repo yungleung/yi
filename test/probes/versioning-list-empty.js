@@ -6,7 +6,7 @@
  * Each one is walked here — the last by pointing the app's git seam at a git that is not there,
  * which is the only way a probe can make a read fail.
  *
- * @covers src/ui/versioning/version_history_modal.ts, src/services/versioning/versions.ts
+ * @covers src/ui/versioning/index.ts, src/services/versioning/versions.ts
  */
 (async () => {
   const t = window.__t;

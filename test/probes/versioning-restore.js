@@ -7,8 +7,8 @@
  * what puts the old text in the stack. What the restore does to the repository is
  * `versioning-fake-git.js`'s business: it runs `show` and nothing else.
  *
- * @covers src/services/session/index.ts (openVersion), src/ui/versioning/version_history_modal.ts,
- *   src/ui/versioning/version_diff_view.ts
+ * @covers src/services/session/index.ts (openVersion), src/ui/versioning/index.ts,
+ *   src/ui/versioning/index.ts
  */
 (async () => {
   const t = window.__t;

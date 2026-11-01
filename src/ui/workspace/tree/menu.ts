@@ -2,19 +2,19 @@
  * The workspace tree's context menu, as a native menu.
  *
  * It is the same shape as the table's (`table/index.ts`): rebuilt for every
- * right-click from the model (`tree_menu_model.ts`), so its items are exactly right for
+ * right-click from the model (`menu_model.ts`), so its items are exactly right for
  * what was clicked, popped up at the pointer, and each item's action runs the command the
  * model names for the entry that was captured before the menu took focus.
  *
  * This is the only module in the tree that touches Tauri's menu API, and it does so inside
  * the function, so nothing else depends on it.
  *
- * May import: the model (`./tree_menu_model`). Upholds: what a menu offers is the model's
+ * May import: the model (`./menu_model`). Upholds: what a menu offers is the model's
  * answer, and the entry an item acts on is the one that was clicked.
  */
 
-import type { TreeMenuAction, TreeMenuEntry } from './tree_menu_model';
-import { treeMenuNodes } from './tree_menu_model';
+import type { TreeMenuAction, TreeMenuEntry } from './menu_model';
+import { treeMenuNodes } from './menu_model';
 
 /** Shows the menu for `entry` at a point on screen; `onAction` runs what was chosen. */
 export async function showTreeMenu(

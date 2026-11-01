@@ -7,11 +7,11 @@
  * way (`Yi`), it becomes the workspace, the app remembers it asked, and a second run adopts the
  * folder instead of making a `Yi 2`.
  *
- * @covers src/ui/workspace_setup/workspace_setup_flow.ts, src/services/workspace/setup.ts
+ * @covers src/ui/workspace_setup/index.ts, src/services/workspace/setup.ts
  */
 (async () => {
   const t = window.__t;
-  const flow = await t.app('/src/ui/workspace_setup/workspace_setup_flow.ts');
+  const flow = await t.app('/src/ui/workspace_setup/index.ts');
   const files = await t.app('/src/api/files.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const checks = [];

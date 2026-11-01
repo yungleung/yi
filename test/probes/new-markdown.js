@@ -20,7 +20,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const registry = await t.app('/src/commands/runtime.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const caret = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

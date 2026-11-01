@@ -27,7 +27,7 @@ import { LANGUAGES, t } from '../../services/i18n';
 import { languageFor } from '../../services/language';
 import { consentFrom, versionLocation, versioningPlan } from '../../services/versioning';
 import { BaseComponent } from '../component';
-import { versioningDialog } from '../versioning/versioning_dialog';
+import { versioningDialog } from '../versioning/index';
 
 export class GeneralSettings extends BaseComponent {
   private readonly languageSelect: HTMLSelectElement;

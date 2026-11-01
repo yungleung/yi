@@ -29,7 +29,7 @@ import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
 import { prompt } from '../../prompt';
 import { drivenByTools } from '../../under_test';
-import { packageActionAvailability } from '../manager/manager_rules';
+import { packageActionAvailability } from '../manager/rules';
 import { createDefaultDialog } from './create_default_dialog';
 import {
   showBrokenTemplateDetails,
@@ -41,7 +41,7 @@ import { offeredForKind, offeredPackages } from './offering';
 import {
   createDefaultPackageRow,
   createPackageRow
-} from './package_rows';
+} from './rows';
 
 export interface PackageBrowserState {
   info: ExportKindInfo;

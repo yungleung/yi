@@ -7,7 +7,7 @@
  * asserted: every unchanged line is there once, in order, with the changed one marked on both
  * sides.
  *
- * @covers src/ui/versioning/version_history_modal.ts, src/ui/versioning/version_diff_view.ts,
+ * @covers src/ui/versioning/index.ts, src/ui/versioning/index.ts,
  *   src/services/text_diff.ts
  */
 (async () => {

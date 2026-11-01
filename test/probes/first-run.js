@@ -1,7 +1,7 @@
 /**
  * The first start's question, and both of its answers.
  *
- * The card is the app's own (`ui/workspace_setup/workspace_setup_dialog.ts`), asked by the flow the
+ * The card is the app's own (`ui/workspace_setup/index.ts`), asked by the flow the
  * start-up path calls — so this probe drives that flow directly rather than reloading the page (a
  * probe that reloads kills itself). What it proves is what the reader gets: a card that says where
  * a new workspace would be made, a folder they already have becoming the workspace exactly as the
@@ -12,12 +12,12 @@
  * in a `finally` — including the workspace the app was showing, so the probes after it are
  * unaffected.
  *
- * @covers src/ui/workspace_setup/workspace_setup_flow.ts, src/ui/workspace_setup/workspace_setup_dialog.ts
+ * @covers src/ui/workspace_setup/index.ts, src/ui/workspace_setup/index.ts
  * @covers src/services/workspace/setup.ts
  */
 (async () => {
   const t = window.__t;
-  const flow = await t.app('/src/ui/workspace_setup/workspace_setup_flow.ts');
+  const flow = await t.app('/src/ui/workspace_setup/index.ts');
   const files = await t.app('/src/api/files.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const checks = [];

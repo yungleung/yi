@@ -17,7 +17,7 @@
  */
 (async () => {
   const t = window.__t;
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);

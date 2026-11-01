@@ -17,7 +17,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { NewDocumentSettings } = await t.app('/src/ui/settings/index.ts');
   const { DEFAULT_TEMPLATE } = await t.app('/src/services/new_document/index.ts');

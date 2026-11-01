@@ -9,15 +9,15 @@
  * is built from them: a press on a row that moves past a few pixels becomes a drag, the row
  * under the pointer is the target, and letting go moves the entry.
  *
- * What the rules refuse (`tree_rules.ts: dropDecision`) shows no target and takes no drop,
+ * What the rules refuse (`rules.ts: dropDecision`) shows no target and takes no drop,
  * so the pointer never promises a move the app would then refuse; the click that would
  * otherwise follow a drag is swallowed, so dragging a row never opens the file.
  *
- * May import: the drop rules (`./tree_rules`). Upholds: a drag is a request to move an
+ * May import: the drop rules (`./rules`). Upholds: a drag is a request to move an
  * entry, and the tree only accepts the moves it can really make.
  */
 
-import { dropDecision, type TreeEntry } from './tree_rules';
+import { dropDecision, type TreeEntry } from './rules';
 
 /** How far the pointer moves before a press is a drag rather than a click. */
 const DRAG_THRESHOLD = 4;

@@ -2,7 +2,7 @@
  * Checks the workspace tree's context menu model in Node: which items an entry offers, in
  * what order, and which are left out because they cannot mean anything for it.
  *
- * The menu a reader sees is a native one (`src/ui/workspace/tree_menu.ts`), built from
+ * The menu a reader sees is a native one (`src/ui/workspace/tree/menu.ts`), built from
  * this model; nothing but a person can choose an item of it, so this is where the menu's
  * contents are held to an answer (the table's menu has the same pair, `check-table-menu.mjs`
  * and `test/probes/table-menu-open.js`).
@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/workspace/tree_menu_model.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/workspace/tree/menu_model.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-tree-menu-'));

@@ -114,7 +114,7 @@
       }
     );
 
-    const { ExportManager } = await t.app('/src/ui/export/manager/export_manager.ts');
+    const { ExportManager } = await t.app('/src/ui/export/manager/index.ts');
     const noPandoc = new ExportManager({
       load: async () => ({
         pandoc: null,

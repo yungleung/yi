@@ -11,13 +11,13 @@
  * A reload kills the probe before it can report, so the failure this test is written
  * against is the harness's timeout, and the evidence is the run that produced it.
  *
- * @covers vite.config.ts (the dev server's watcher), src/ui/workspace/tree_ops.ts
+ * @covers vite.config.ts (the dev server's watcher), src/ui/workspace/tree/ops.ts
  * @needs-workspace
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const config = await window.__TAURI_INTERNALS__.invoke('get_config');
   const workspace = String(config?.workspace ?? '');
   const checks = [];

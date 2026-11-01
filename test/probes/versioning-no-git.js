@@ -9,7 +9,7 @@
  * The seam is a global in the app's process, so it is put back in `finally` — and the harness puts
  * it back before every probe, for a run the bridge cuts off.
  *
- * @covers src/ui/versioning/save_version.ts, src-tauri/src/versioning.rs (find_git)
+ * @covers src/ui/versioning/index.ts, src-tauri/src/versioning.rs (find_git)
  */
 (async () => {
   const t = window.__t;
@@ -17,7 +17,7 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
   const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

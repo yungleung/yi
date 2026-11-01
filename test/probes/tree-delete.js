@@ -11,13 +11,13 @@
  * The probe makes its own workspace under `/private/tmp` with the app's own commands and
  * removes it again.
  *
- * @covers src/ui/workspace/tree_ops.ts, src/api/files.ts, src/ui/workspace/tree.ts
+ * @covers src/ui/workspace/tree/ops.ts, src/api/files.ts, src/ui/workspace/index.ts
  * @needs-workspace
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const workspace = '/private/tmp/yi-tree-delete-probe';

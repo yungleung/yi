@@ -14,13 +14,13 @@
  * removes it again; the note it copies an id from is one of the fixtures, read but never
  * written.
  *
- * @covers src/ui/workspace/tree_ops.ts, src/services/documents/index.ts
+ * @covers src/ui/workspace/tree/ops.ts, src/services/documents/index.ts
  * @needs-workspace
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const workspace = '/private/tmp/yi-tree-actions-probe';

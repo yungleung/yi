@@ -14,14 +14,14 @@
  * The probe makes its own workspace under `/private/tmp` with the app's own commands and
  * removes it again: the repository's fixtures are not a test's to rename.
  *
- * @covers src/ui/workspace/tree_rename.ts, src/ui/workspace/tree_rules.ts,
- *   src/ui/workspace/tree.ts, src/ui/workspace/tree_ops.ts
+ * @covers src/ui/workspace/tree/rename.ts, src/ui/workspace/tree/rules.ts,
+ *   src/ui/workspace/index.ts, src/ui/workspace/tree/ops.ts
  * @needs-workspace
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const workspace = '/private/tmp/yi-tree-rename-probe';

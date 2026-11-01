@@ -26,8 +26,8 @@
     await t.app('/src/api/versioning.ts');
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
-  const { VersionDiffView } = await t.app('/src/ui/versioning/version_diff_view.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
+  const { VersionDiffView } = await t.app('/src/ui/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

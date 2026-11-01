@@ -6,7 +6,7 @@
  * it, a workspace whose answer is *no* must leave its log empty — that is the reader's rule, not a
  * detail — while a workspace whose answer is *yes* reads for real.
  *
- * @covers src/ui/versioning/version_status.ts, src/services/versioning/versions.ts
+ * @covers src/ui/versioning/index.ts, src/services/versioning/versions.ts
  */
 (async () => {
   const t = window.__t;

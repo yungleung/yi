@@ -38,8 +38,8 @@ import {
   versioningPlan
 } from '../../services/versioning';
 import { registerCommand } from '../../commands/runtime';
-import { versionCommentDialog, type VersionCommentDialog } from './version_comment_dialog';
-import { versioningDialog, type VersioningChooser } from './versioning_dialog';
+import { versionCommentDialog, type VersionCommentDialog } from './comment_dialog';
+import { versioningDialog, type VersioningChooser } from './dialog';
 
 /** Registers the command the File menu's *Save a Version* item names. */
 export function registerVersionCommand(chooser: VersioningChooser = versioningDialog): void {

@@ -12,12 +12,12 @@
  * through the file plugin, which is scoped to the home directory (see `new-markdown.js`), and
  * the home directory is not watched by the dev server. It is removed again either way.
  *
- * @covers src/ui/workspace/tree_ops.ts, src/api/files.ts, src/ui/new_document/new_document_flow.ts
+ * @covers src/ui/workspace/tree/ops.ts, src/api/files.ts, src/ui/new_document/new_document_flow.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const caret = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

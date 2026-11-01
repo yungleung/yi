@@ -17,7 +17,7 @@ import { t } from '../../services/i18n';
 import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versioning';
 import { versionStamp, versionTitle, type Version } from '../../services/versioning';
 import { BaseComponent } from '../component';
-import { VersionDiffView } from './version_diff_view';
+import { VersionDiffView } from './diff_view';
 
 export class VersionHistoryModal extends BaseComponent {
   private readonly panel: HTMLDivElement;

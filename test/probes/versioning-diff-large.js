@@ -5,7 +5,7 @@
  * One long version and a current note with a changed middle line make the changed-line jump run
  * against more lines than the panel can show.
  *
- * @covers src/ui/versioning/version_history_modal.ts, src/ui/versioning/version_diff_view.ts
+ * @covers src/ui/versioning/index.ts, src/ui/versioning/index.ts
  */
 (async () => {
   const t = window.__t;

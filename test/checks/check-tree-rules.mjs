@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
-const bundle = await rolldown({ input: 'src/ui/workspace/tree_rules.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/ui/workspace/tree/rules.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-tree-rules-'));

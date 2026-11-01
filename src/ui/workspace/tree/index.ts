@@ -2,9 +2,9 @@
  * The workspace tree: the folder of markdown files, as a tree the author can work in.
  *
  * A row is one file or folder. Clicking it opens the file or folds the folder; a
- * right-click opens the menu (`tree_menu.ts`, built from `tree_menu_model.ts`); a row
- * can be dragged into a folder (`tree_drag.ts`); and a name can be edited where it sits
- * (`tree_rename.ts`). The work each of those asks for lives in `tree_ops.ts`, which is
+ * right-click opens the menu (`menu.ts`, built from `menu_model.ts`); a row
+ * can be dragged into a folder (`drag.ts`); and a name can be edited where it sits
+ * (`rename.ts`). The work each of those asks for lives in `ops.ts`, which is
  * registered here as the tree on screen, so the menu, the drop and a probe all run the
  * same code.
  *
@@ -17,19 +17,19 @@
  * folders the reader had open.
  */
 
-import { listFolderFiles, type FileInfo } from '../../api/files';
-import { documentSession } from '../../services/session';
-import { eventManager } from '../../services/events';
-import { MESSAGE_EVENT } from '../../services/messages';
-import { WORKSPACE_CHANGED } from '../../services/workspace';
-import { t } from '../../services/i18n';
-import { SidebarSection } from '../sidebar_section';
-import { makeDragSource, makeDropTarget } from './tree_drag';
-import { showTreeMenu } from './tree_menu';
-import type { TreeMenuEntry } from './tree_menu_model';
-import { dropEntry, renameEntryTo, runTreeAction, setTreeHost, type TreeHost } from './tree_ops';
-import { beginRename } from './tree_rename';
-import type { TreeEntry } from './tree_rules';
+import { listFolderFiles, type FileInfo } from '../../../api/files';
+import { documentSession } from '../../../services/session';
+import { eventManager } from '../../../services/events';
+import { MESSAGE_EVENT } from '../../../services/messages';
+import { WORKSPACE_CHANGED } from '../../../services/workspace';
+import { t } from '../../../services/i18n';
+import { SidebarSection } from '../../sidebar_section';
+import { makeDragSource, makeDropTarget } from './drag';
+import { showTreeMenu } from './menu';
+import type { TreeMenuEntry } from './menu_model';
+import { dropEntry, renameEntryTo, runTreeAction, setTreeHost, type TreeHost } from './ops';
+import { beginRename } from './rename';
+import type { TreeEntry } from './rules';
 
 /** Emitted with the file content when the user opens a document from the tree. */
 export const DOCUMENT_OPENED = 'document_opened';
@@ -374,3 +374,22 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
     return path.split('/').filter(Boolean).pop() ?? path;
   }
 }
+
+export { refreshTreeFolders } from './ops';
+export type { TreeHost } from './ops';
+export {
+  dropDecision,
+  nameSelection,
+  nameWithoutExtension
+} from './rules';
+export type { DropDecision, TreeEntry } from './rules';
+export {
+  treeMenuActions,
+  treeMenuNodes
+} from './menu_model';
+export type {
+  TreeMenuAction,
+  TreeMenuEntry,
+  TreeMenuNode
+} from './menu_model';
+export type { RenameTarget } from './rename';

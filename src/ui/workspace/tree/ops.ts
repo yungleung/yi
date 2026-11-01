@@ -19,17 +19,17 @@
  */
 
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
-import { documentManager, readDocumentId } from '../../services/documents';
-import { eventManager } from '../../services/events';
-import { showHint, type HintPlace } from '../../services/hints';
-import { MESSAGE_EVENT, notify } from '../../services/messages';
-import { parentFolder } from '../../services/workspace';
-import { runCommand } from '../../commands/runtime';
-import { t } from '../../services/i18n';
-import { prompt } from '../prompt';
-import type { TreeMenuAction } from './tree_menu_model';
-import { nameWithoutExtension, type TreeEntry } from './tree_rules';
+import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../../api/files';
+import { documentManager, readDocumentId } from '../../../services/documents';
+import { eventManager } from '../../../services/events';
+import { showHint, type HintPlace } from '../../../services/hints';
+import { MESSAGE_EVENT, notify } from '../../../services/messages';
+import { parentFolder } from '../../../services/workspace';
+import { runCommand } from '../../../commands/runtime';
+import { t } from '../../../services/i18n';
+import { prompt } from '../../prompt';
+import type { TreeMenuAction } from './menu_model';
+import { nameWithoutExtension, type TreeEntry } from './rules';
 
 /** What an action needs from the tree that is on screen. */
 export interface TreeHost {

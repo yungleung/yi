@@ -6,7 +6,7 @@
  * nothing. The settings window's General tab is the reader's other way to the same consent
  * (`ui/settings/index.ts`), and turning it on there asks the same card.
  *
- * @covers src/ui/versioning/save_version.ts, src/ui/versioning/versioning_dialog.ts,
+ * @covers src/ui/versioning/index.ts, src/ui/versioning/index.ts,
  *   src/ui/settings/index.ts
  */
 (async () => {
@@ -16,7 +16,7 @@
   const { GeneralSettings } = await t.app('/src/ui/settings/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
   const { t: words } = await t.app('/src/services/i18n.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

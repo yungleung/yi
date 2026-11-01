@@ -9,8 +9,8 @@
  * The probe makes its own workspace under `/private/tmp` with the app's own commands and
  * removes it again.
  *
- * @covers src/ui/workspace/tree_drag.ts, src/ui/workspace/tree_rules.ts,
- *   src/ui/workspace/tree_ops.ts
+ * @covers src/ui/workspace/tree/drag.ts, src/ui/workspace/tree/rules.ts,
+ *   src/ui/workspace/tree/ops.ts
  * @needs-workspace
  */
 (async () => {

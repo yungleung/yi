@@ -14,7 +14,7 @@
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const api = await t.app('/src/api/templates.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });

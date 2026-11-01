@@ -34,7 +34,7 @@ import { lineBoxAround } from '../caret/geometry';
 
 /**
  * How far the pointer may travel and still be a click rather than a drag. The tree's
- * rule takes a press that moves this far as a drag (`workspace/tree_drag.ts`); here the
+ * rule takes a press that moves this far as a drag (`workspace/tree/drag.ts`); here the
  * distance is only half of it — see `endedADrag`.
  */
 const DRAG_THRESHOLD = 4;

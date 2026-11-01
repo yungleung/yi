@@ -12,13 +12,13 @@ import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
 import { prompt } from '../../prompt';
-import { defaultsActionAvailability, defaultsState } from './manager_rules';
+import { defaultsActionAvailability, defaultsState } from './rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
 import {
   removeTemplatePackage,
   TemplatePackageBrowser
-} from '../templates/package_browser';
+} from '../templates/browser';
 import { showBrokenTemplateDetails } from '../templates/details';
 
 export interface KindPageHandlers {

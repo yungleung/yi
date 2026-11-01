@@ -19,7 +19,7 @@ import {
   defaultsState,
   managerGroups,
   unassignedPackages
-} from './manager_rules';
+} from './rules';
 import { kindLabel } from '../templates/kind_label';
 import { templateEditorPanel } from '../templates/editor';
 
@@ -444,3 +444,22 @@ export class ExportManager extends FloatingSurface {
 }
 
 export const exportManager = new ExportManager();
+
+export { registerExportManagerCommand } from './flow';
+export type { ExportManagerHost } from './flow';
+export { KindPage } from './kind_page';
+export type { KindPageHandlers, KindPageState } from './kind_page';
+export {
+  defaultsActionAvailability,
+  defaultsState,
+  managerGroups,
+  packageActionAvailability,
+  unassignedPackages
+} from './rules';
+export type {
+  DefaultsActionAvailability,
+  DefaultsState,
+  ManagerGroup,
+  ManagerKindRow,
+  PackageActionAvailability
+} from './rules';

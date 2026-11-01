@@ -39,7 +39,7 @@ import {
 } from '../../services/new_document';
 import { parentFolder, workspaceFolders } from '../../services/workspace';
 import { registerCommand } from '../../commands/runtime';
-import { refreshTreeFolders } from '../workspace/tree_ops';
+import { refreshTreeFolders } from '../workspace';
 import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
 import { newDocumentTemplatePicker } from './template_picker';
 

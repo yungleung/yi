@@ -22,7 +22,7 @@ async function bundleModule(input, name) {
 }
 
 const rules = await bundleModule(
-  'src/ui/export/manager/manager_rules.ts',
+  'src/ui/export/manager/rules.ts',
   'manager_rules'
 );
 

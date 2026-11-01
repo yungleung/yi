@@ -15,7 +15,7 @@
  * both halves fit the bridge's five seconds on their own, which one probe no longer did (measured:
  * 4.9 s, and the cut-off is the one thing a probe must never gamble on).
  *
- * @covers src/ui/versioning/save_version.ts, src/api/versioning.ts, src-tauri/src/versioning.rs
+ * @covers src/ui/versioning/index.ts, src/api/versioning.ts, src-tauri/src/versioning.rs
  */
 (async () => {
   const t = window.__t;
@@ -23,7 +23,7 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
   const { APP_IDENTITY, versionStamp } = await t.app('/src/services/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

@@ -6,7 +6,7 @@
  */
 
 import { registerCommand } from '../../../commands/runtime';
-import { exportManager } from './export_manager';
+import { exportManager } from './index';
 
 export interface ExportManagerHost {
   focusEditor(): void;

@@ -26,8 +26,8 @@ import {
 import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { prompt } from '../../prompt';
-import { createTemplateCodeEditor } from './template_code_editor';
-import { renderTemplateFiles } from './template_file_list';
+import { createTemplateCodeEditor } from './code_editor';
+import { renderTemplateFiles } from './file_list';
 
 /** One code panel for the whole window; it is the only thing on screen while it is open. */
 export class TemplateEditorPanel {

@@ -17,7 +17,7 @@
  * at the end with the reader's own name on it: that commit succeeding is the file still being
  * there, and a version that had swept it up would leave nothing to commit.
  *
- * @covers src/ui/versioning/save_version.ts, src-tauri/src/versioning.rs (commit_paths)
+ * @covers src/ui/versioning/index.ts, src-tauri/src/versioning.rs (commit_paths)
  */
 (async () => {
   const t = window.__t;
@@ -25,7 +25,7 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

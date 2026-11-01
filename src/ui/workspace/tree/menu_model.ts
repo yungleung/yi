@@ -2,7 +2,7 @@
  * What the workspace tree's context menu offers for an entry: the groups, in order, and
  * what each item is called.
  *
- * The menu itself is native (`tree_menu.ts`), the way the table's is — and a native menu
+ * The menu itself is native (`menu.ts`), the way the table's is — and a native menu
  * can be neither read nor driven by a test (`docs/testing.md`: nothing can choose an item
  * of it but a person). So the model is what is written down and checked
  * (`test/checks/check-tree-menu.mjs`, beside `check-table-menu.mjs`), and every item's

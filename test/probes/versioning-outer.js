@@ -10,7 +10,7 @@
  * note going into the repository that was already there — and the commit carries *their* identity,
  * which a repository the app made does not have, so the check says which of the two it saw.
  *
- * @covers src/ui/versioning/save_version.ts, src-tauri/src/versioning.rs (init, commit)
+ * @covers src/ui/versioning/index.ts, src-tauri/src/versioning.rs (init, commit)
  */
 (async () => {
   const t = window.__t;
@@ -18,7 +18,7 @@
   const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
-  const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');
+  const { saveVersion } = await t.app('/src/ui/versioning/index.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

@@ -9,16 +9,16 @@
  * and during the edit.
  *
  * The edit opens with the name selected and the markdown extension left out of the
- * selection (`tree_rules.ts: nameSelection`), so the author types the new name without
+ * selection (`rules.ts: nameSelection`), so the author types the new name without
  * deleting the old one character by character and without touching the `.md`. Enter or
  * clicking away commits; Escape puts the old name back.
  *
- * May import: the selection rule (`./tree_rules`). Upholds: what the tree shows is what
+ * May import: the selection rule (`./rules`). Upholds: what the tree shows is what
  * the disk holds — an edit is one whole name, committed or dropped, never a half-written
  * state left on the row.
  */
 
-import { nameSelection } from './tree_rules';
+import { nameSelection } from './rules';
 
 export interface RenameTarget {
   /** The label inside the row that becomes editable. */

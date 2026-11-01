@@ -7,14 +7,14 @@
  * paths and asks the manager after each one.
  *
  * @covers src/services/documents/index.ts (invalidate, documents, resolve),
- *   src/ui/new_document/new_document_flow.ts, src/ui/workspace/tree_ops.ts,
+ *   src/ui/new_document/new_document_flow.ts, src/ui/workspace/tree/ops.ts,
  *   src/services/session/index.ts (writeDocument)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const flow = await t.app('/src/ui/new_document/new_document_flow.ts');
-  const ops = await t.app('/src/ui/workspace/tree_ops.ts');
+  const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const session = (await t.app('/src/services/session/index.ts')).documentSession;
   const { documentManager } = await t.app('/src/services/documents/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);

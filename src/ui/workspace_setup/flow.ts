@@ -21,7 +21,7 @@ import { DEFAULT_WORKSPACE_NAME } from '../../services/workspace';
 import { notify } from '../../services/messages';
 import { t } from '../../services/i18n';
 import { workspaceManager } from '../../services/workspace';
-import { workspaceSetupDialog, type WorkspaceChooser } from './workspace_setup_dialog';
+import { workspaceSetupDialog, type WorkspaceChooser } from './dialog';
 
 /**
  * Asks the reader where their workspace is and opens it. Nothing is written when they decline —

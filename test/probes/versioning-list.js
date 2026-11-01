@@ -5,7 +5,7 @@
  * folder of the probe's own, and the modal is opened by pressing the button the reader presses —
  * so what is asserted is the list a reader would see, not a shape built for the test.
  *
- * @covers src/ui/versioning/version_history_modal.ts, src/services/versioning/versions.ts
+ * @covers src/ui/versioning/index.ts, src/services/versioning/versions.ts
  */
 (async () => {
   const t = window.__t;
