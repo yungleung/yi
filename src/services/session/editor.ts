@@ -8,7 +8,7 @@
  * Upholds: a document's folder is installed before its text, so relative images resolve correctly.
  */
 
-import { parentFolder } from '../workspace_folders';
+import { parentFolder } from '../workspace';
 import { capture } from './edit';
 import type {
   DocumentView,

@@ -319,7 +319,7 @@ check('recording event text updates the document without reading or replacing it
 check('a capture that cannot see the caret keeps the one there was', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: null, to: null, scroll: view.scroll }))?.view.caret, 12);
 check('and one that cannot see the view keeps that too', currentDocument(capture(captured, `${NOTE}More.\n`, { caret: 4, to: null, scroll: null }))?.view.scroll, view.scroll);
 // A selection is a range, and the session keeps both of its ends so a note can reopen with its
-// title already selected (`services/new_document.ts: titleRange`).
+// title already selected (`services/new_document/index.ts: titleRange`).
 const range = { caret: 20, to: 28, scroll: view.scroll };
 const selected = capture(state, `${NOTE}More.\n`, range);
 check('a selection is kept as its two ends', currentDocument(selected)?.view, range);

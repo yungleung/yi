@@ -9,11 +9,11 @@
 
 import {
   getCurrentConfigVersion,
-} from '../api/settings';
-import { configManager } from './config_manager';
-import { eventManager } from './event_manager';
-import { t } from './i18n';
-import { MESSAGE_EVENT } from './messages';
+} from '../../api/settings';
+import { configManager } from '../config_manager';
+import { eventManager } from '../event_manager';
+import { t } from '../i18n';
+import { MESSAGE_EVENT } from '../messages';
 
 const VERSION_MISMATCH_PATTERN = /config\s+version\s+mismatch/i;
 
@@ -76,3 +76,19 @@ export class WorkspaceManager {
 
 /** The app-wide workspace manager singleton. */
 export const workspaceManager = new WorkspaceManager();
+
+export {
+  FOLDER_LIMIT,
+  destinationForFile,
+  destinationPaths,
+  expandHome,
+  fileName,
+  joinPath,
+  parentFolder,
+  placementOfPath,
+  relativePathFrom,
+  workspaceFolders
+} from './folders';
+export type { FolderLister, FolderOption } from './folders';
+export { DEFAULT_WORKSPACE_NAME, needsWorkspaceQuestion } from './setup';
+export type { SetupFacts } from './setup';

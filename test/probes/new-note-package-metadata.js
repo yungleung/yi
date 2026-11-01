@@ -6,7 +6,7 @@
  * then asked its smaller template-only question and explicitly chooses no template, proving the
  * choice is local to each note rather than stored in config.
  *
- * @covers src/services/new_document.ts, src/services/new_document_templates.ts
+ * @covers src/services/new_document/index.ts, src/services/new_document/templates.ts
  * @covers src/ui/new_document/new_document_dialog.ts, src/ui/new_document/new_document_flow.ts
  * @covers src/ui/new_document/template_picker.ts
  */

@@ -7,7 +7,7 @@
  * way (`Yi`), it becomes the workspace, the app remembers it asked, and a second run adopts the
  * folder instead of making a `Yi 2`.
  *
- * @covers src/ui/workspace_setup/workspace_setup_flow.ts, src/services/workspace_setup.ts
+ * @covers src/ui/workspace_setup/workspace_setup_flow.ts, src/services/workspace/setup.ts
  */
 (async () => {
   const t = window.__t;

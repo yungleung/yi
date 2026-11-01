@@ -9,9 +9,9 @@
  * or reference-only package never becomes a new-note choice.
  */
 
-import { exportTemplates, readTemplateFile } from '../api/templates';
-import { t } from './i18n';
-import { BUILT_IN_NOTE_METADATA, BUILTIN_NOTE_TEMPLATES } from './new_document_builtins';
+import { exportTemplates, readTemplateFile } from '../../api/templates';
+import { t } from '../i18n';
+import { BUILT_IN_NOTE_METADATA, BUILTIN_NOTE_TEMPLATES } from './builtins';
 
 export interface NewNoteTemplate {
   id: string;

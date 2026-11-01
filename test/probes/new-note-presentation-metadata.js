@@ -1,8 +1,8 @@
 /**
  * New Markdown offers the built-in Reveal.js and Beamer metadata starters.
  *
- * @covers src/services/new_document_builtins.ts,
- *   src/services/new_document_templates.ts,
+ * @covers src/services/new_document/builtins.ts,
+ *   src/services/new_document/templates.ts,
  *   src/ui/new_document/new_document_dialog.ts
  */
 (async () => {

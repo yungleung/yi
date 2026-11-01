@@ -9,7 +9,7 @@
  * two folders a relative path is resolved against (the note's own first, the settings' next, and
  * a first candidate that is not there falls through to the second), the asset protocol and the
  * pixels on screen. The same path *copied* out of something else may spell the space the way a
- * browser spells it, `%20`, and that is still the file it names (`services/workspace_folders.ts`),
+ * browser spells it, `%20`, and that is still the file it names (`services/workspace/folders.ts`),
  * which is the last case here.
  *
  * The probe makes its own folder under the home directory — what the file plugin and the asset
@@ -18,7 +18,7 @@
  * note, so the probe is safe to run in a sweep.
  *
  * @covers src/ui/markdown/syntax/spaced_destinations.ts, src/ui/image/image_urls.ts,
- *   src/services/workspace_folders.ts, src/ui/markdown/nodes/image.ts
+ *   src/services/workspace/folders.ts, src/ui/markdown/nodes/image.ts
  */
 (async () => {
   const t = window.__t;

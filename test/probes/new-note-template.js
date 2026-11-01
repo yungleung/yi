@@ -2,7 +2,7 @@
  * The reader's own default frontmatter, end to end: the config the settings window writes, the
  * note the app then makes, and the tab that would have written it.
  *
- * `new_file_frontmatter` is the template a new note is built from (`services/new_document.ts`):
+ * `new_file_frontmatter` is the template a new note is built from (`services/new_document/index.ts`):
  * the reader's lines are kept where they are, `id` and `date` are stamped over whatever the
  * template says there, and a required key the template leaves out is added. This probe writes a
  * template through the app's config manager — the same call `ui/settings/new_document_settings.ts`
@@ -11,7 +11,7 @@
  * The workspace is the probe's own, at `~/yi-probe-new-note-template`, for the reason
  * `new-markdown.js` gives: the file plugin is scoped to the home directory.
  *
- * @covers src/services/new_document.ts, src/ui/new_document/new_document_flow.ts
+ * @covers src/services/new_document/index.ts, src/ui/new_document/new_document_flow.ts
  * @covers src/ui/settings/new_document_settings.ts
  */
 (async () => {
@@ -20,7 +20,7 @@
   const ops = await t.app('/src/ui/workspace/tree_ops.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { NewDocumentSettings } = await t.app('/src/ui/settings/new_document_settings.ts');
-  const { DEFAULT_TEMPLATE } = await t.app('/src/services/new_document.ts');
+  const { DEFAULT_TEMPLATE } = await t.app('/src/services/new_document/index.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);

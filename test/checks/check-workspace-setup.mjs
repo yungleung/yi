@@ -1,5 +1,5 @@
 /**
- * Whether the app asks the reader for a workspace (`services/workspace_setup.ts`) in Node: a fresh
+ * Whether the app asks the reader for a workspace (`services/workspace/setup.ts`) in Node: a fresh
  * install is asked, a reader who has a workspace or has already answered is not, and the workspace
  * the app makes for them has a name.
  */
@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-workspace-setup-'));
-const bundle = await rolldown({ input: 'src/services/workspace_setup.ts', logLevel: 'silent' });
+const bundle = await rolldown({ input: 'src/services/workspace/setup.ts', logLevel: 'silent' });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'workspace_setup.mjs');

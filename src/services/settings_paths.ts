@@ -12,7 +12,7 @@
  */
 
 import { homeDir } from '@tauri-apps/api/path';
-import { expandHome } from './workspace_folders';
+import { expandHome } from './workspace';
 import { configManager } from './config_manager';
 
 /** The reader's home folder, or null when the platform will not say. */

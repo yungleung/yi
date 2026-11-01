@@ -1,5 +1,5 @@
 /**
- * Checks the walk that says where a new note may go (`services/workspace_folders.ts`): the order
+ * Checks the walk that says where a new note may go (`services/workspace/folders.ts`): the order
  * and depth of what it offers, a folder it cannot read, the folder it refuses to walk past, and
  * the two path rules the card and the tree share.
  *
@@ -34,7 +34,7 @@ const {
   placementOfPath,
   relativePathFrom,
   workspaceFolders
-} = await bundleModule('src/services/workspace_folders.ts', 'workspace_folders');
+} = await bundleModule('src/services/workspace/folders.ts', 'workspace_folders');
 
 const failures = [];
 const check = (name, actual, expected) => {

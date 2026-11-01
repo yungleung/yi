@@ -13,7 +13,7 @@
  * unaffected.
  *
  * @covers src/ui/workspace_setup/workspace_setup_flow.ts, src/ui/workspace_setup/workspace_setup_dialog.ts
- * @covers src/services/workspace_setup.ts
+ * @covers src/services/workspace/setup.ts
  */
 (async () => {
   const t = window.__t;

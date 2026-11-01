@@ -14,7 +14,7 @@
  * the path.
  */
 
-import { listFolderFiles, type FileInfo } from '../api/files';
+import { listFolderFiles, type FileInfo } from '../../api/files';
 
 /**
  * How many folders are offered before the walk stops.

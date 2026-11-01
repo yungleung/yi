@@ -14,7 +14,7 @@
  * the dev server. It is removed again either way.
  *
  * @covers src/ui/new_document/new_document_flow.ts, src/ui/new_document/new_document_dialog.ts
- * @covers src/services/new_document.ts, src/services/workspace_folders.ts
+ * @covers src/services/new_document/index.ts, src/services/workspace/folders.ts
  */
 (async () => {
   const t = window.__t;

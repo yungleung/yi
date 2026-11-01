@@ -3,7 +3,7 @@
  * frontmatter built from the reader's template with the four required keys guaranteed, and
  * where the title's value sits in the text.
  *
- * The whole rule is pure (`src/services/new_document.ts`), so it is asserted here rather
+ * The whole rule is pure (`src/services/new_document/index.ts`), so it is asserted here rather
  * than through the app; the dialog and the tree that call it are driven by
  * `test/probes/new-markdown.js`.
  */
@@ -34,12 +34,12 @@ const {
   newDocumentId,
   newDocumentText,
   titleRange
-} = await bundleModule('src/services/new_document.ts', 'new_document');
+} = await bundleModule('src/services/new_document/index.ts', 'new_document');
 const {
   BUILT_IN_NOTE_METADATA,
   BUILTIN_NOTE_TEMPLATES
 } = await bundleModule(
-  'src/services/new_document_builtins.ts',
+  'src/services/new_document/builtins.ts',
   'new_document_builtins'
 );
 

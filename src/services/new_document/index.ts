@@ -209,6 +209,14 @@ export function titleRange(text: string): { start: number; end: number } | null 
   return { start, end };
 }
 
+export {
+  BUILT_IN_NOTE_METADATA,
+  BUILTIN_NOTE_TEMPLATES
+} from './builtins';
+export type { BuiltInNewNoteTemplate } from './builtins';
+export { newNoteMetadata, newNoteTemplates } from './templates';
+export type { NewNoteTemplate } from './templates';
+
 /** The template's own lines, without the fences an author may have pasted with them. */
 function frontmatterLines(template: string): string[] {
   const lines = template
