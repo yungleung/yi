@@ -9,6 +9,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
+use super::html_attributes::attribute_values;
 use super::pictures::fetch_resource;
 
 pub(crate) const REVEALJS_CDN: &str = "https://unpkg.com/reveal.js@6.0.1";
@@ -41,36 +42,8 @@ pub(crate) fn use_revealjs_cdn(base: Option<String>) -> Result<(), String> {
 
 /// The bundle folder and its generated page.
 pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf, bool), String> {
-    let requested = Path::new(requested);
-    let extension = requested
-        .extension()
-        .and_then(|extension| extension.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    let bundle = if matches!(extension.as_str(), "html" | "htm") {
-        requested.with_extension("")
-    } else {
-        requested.to_path_buf()
-    };
-    if bundle.as_os_str().is_empty() {
-        return Err(crate::i18n::now("export.noTarget", &[]));
-    }
-    if bundle.exists() && !bundle.is_dir() {
-        return Err(crate::i18n::now(
-            "template.outputConflict",
-            &[("file", &bundle.display().to_string())],
-        ));
-    }
-    let created = !bundle.exists();
-    fs::create_dir_all(&bundle)
-        .map_err(|error| crate::i18n::path_error("export.cannotMake", bundle.display(), error))?;
-    let name = bundle
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .filter(|name| !name.is_empty())
-        .unwrap_or_else(|| "presentation".to_string());
-    let page = bundle.join(format!("{name}.html"));
-    Ok((bundle, page, created))
+    let output = super::bundle_output::prepare(requested, "presentation")?;
+    Ok((output.bundle, output.page, output.created))
 }
 
 /// Validate one relative Reveal.js distribution path.
@@ -155,36 +128,4 @@ pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> 
 /// Copy every local picture into `images/` and rewrite its URL.
 pub(crate) fn package_revealjs_media(page: &Path) -> Result<(), String> {
     super::html_media::package_local_media(page, "images")
-}
-
-fn attribute_values(html: &str, attribute: &str) -> Vec<String> {
-    let mut values = Vec::new();
-    let needle = format!("{attribute}=");
-    for (at, _) in html.match_indices(&needle) {
-        if at > 0
-            && html[..at]
-                .chars()
-                .next_back()
-                .is_some_and(|character| character.is_alphanumeric() || character == '-')
-        {
-            continue;
-        }
-        let after = html[at + needle.len()..].trim_start();
-        let Some(first) = after.chars().next() else {
-            continue;
-        };
-        let value = if first == '"' || first == '\'' {
-            after[1..]
-                .find(first)
-                .map(|end| after[1..1 + end].to_string())
-        } else {
-            after
-                .find(|character: char| character.is_whitespace() || character == '>')
-                .map(|end| after[..end].to_string())
-        };
-        if let Some(value) = value.filter(|value| !value.is_empty()) {
-            values.push(value);
-        }
-    }
-    values
 }

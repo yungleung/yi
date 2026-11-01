@@ -446,7 +446,7 @@ for HTML: the author's address must not become a temporary file that disappears 
 the other pandoc kinds it is fetched by the app with an in-process `reqwest` request, because a
 pandoc built without HTTP support cannot fetch it at all; those files land in
 `<data>/export/tmp/remote/` and go at the end of the run. When an HTML page is not self-contained,
-`export/html_media.rs` copies the note's local pictures to `<output>.assets/` and rewrites their
+`export/html_media/` copies the note's local pictures to `<output>.assets/` and rewrites their
 `src`; web URLs and data URIs are untouched — and a third rule, for the kind
 pandoc is not the one converting for: each citation written as the words it reads as, with the works
 it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind

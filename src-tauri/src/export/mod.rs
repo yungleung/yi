@@ -8,8 +8,10 @@
 //! May import: the child modules and their public surface. Upholds: the command paths in `lib.rs`
 //! stay `export::…`, so a split by responsibility does not change the window's IPC.
 
+mod bundle_output;
 mod config;
 mod font_hints;
+mod html_attributes;
 mod html_media;
 mod info;
 mod kinds;
