@@ -4,18 +4,18 @@
  * Example: the export card and manager both use `TemplatePackageBrowser`; the editor opens
  * `templateEditorPanel` for package details and source files.
  *
- * May import: the package browser, rows, dialogs, file list, code editor and package editor
- * siblings. Upholds: one public surface for package selection and editing.
+ * May import: the package browser, lifecycle operations, rows, dialogs, file list, code editor and
+ * package editor siblings. Upholds: one public surface for package selection and editing.
  */
 
 export {
-  TemplatePackageBrowser,
-  removeTemplatePackage
+  TemplatePackageBrowser
 } from './browser';
 export type {
   PackageBrowserHandlers,
   PackageBrowserState
 } from './browser';
+export { removeTemplatePackage } from './operations';
 export { createDefaultDialog, CreateDefaultDialog } from './create_default_dialog';
 export type { DefaultTemplateAnswer } from './create_default_dialog';
 export {

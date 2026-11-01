@@ -1,43 +1,23 @@
 /**
  * The package list and operations shared by the export-card chooser and the Export Manager.
  *
- * The browser owns rows, selection, package operations and their dialogs. Its host owns the
- * meaning of the primary action: the chooser returns a choice, while the manager persists the
- * active package. This module never writes `export_templates`.
+ * The browser owns rows, selection and control state; package lifecycle operations live in
+ * `operations.ts`. Its host owns the meaning of the primary action: the chooser returns a choice,
+ * while the manager persists the active package. This module never writes `export_templates`.
  *
- * May import: the template seam, export-kind facts, package action rules, dialogs and the code
- * editor. Upholds: one implementation of package rows and operations, with package selection
- * separate from whichever host decides what activation means.
+ * May import: export-kind facts, package action rules, package operations and row builders.
+ * Upholds: one implementation of package rows, with package selection separate from whichever host
+ * decides what activation means.
  */
 
-import { open } from '@tauri-apps/plugin-dialog';
 import type { ExportKindInfo } from '../../../api/export';
-import {
-  createDefaultTemplate,
-  duplicateTemplate,
-  exportTemplates,
-  importTemplate,
-  inspectTemplate,
-  removeTemplate,
-  testTemplatePdf,
-  updateTemplate,
-  validateTemplate,
-  type TemplateSummary
-} from '../../../api/templates';
+import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
-import { prompt } from '../../prompt';
 import { drivenByTools } from '../../under_test';
 import { packageActionAvailability } from '../manager/rules';
-import { createDefaultDialog } from './create_default_dialog';
-import {
-  showBrokenTemplateDetails,
-  templateDetailsDialog
-} from './details';
-import { templateEditorPanel } from './editor';
-import { importProposalDialog } from './import_dialog';
-import { offeredForKind, offeredPackages } from './offering';
+import { TemplatePackageOperations } from './operations';
+import { offeredPackages } from './offering';
 import {
   createDefaultPackageRow,
   createPackageRow
@@ -67,25 +47,6 @@ function button(name: string, label: string, className: string): HTMLButtonEleme
   return element;
 }
 
-/** The one removal question shared by the package browser and unassigned-package page. */
-export async function removeTemplatePackage(
-  summary: TemplateSummary
-): Promise<boolean> {
-  const agreed = await prompt.ask({
-    title: t('template.remove'),
-    message: t('template.removeQuestion', {
-      name: summary.manifest?.name ?? summary.id
-    }),
-    yes: t('template.remove'),
-    no: t('template.cancel')
-  });
-  if (!agreed) {
-    return false;
-  }
-  await removeTemplate(summary.id);
-  return true;
-}
-
 export class TemplatePackageBrowser extends BaseComponent {
   private readonly list: HTMLDivElement;
   private readonly status: HTMLParagraphElement;
@@ -101,11 +62,28 @@ export class TemplatePackageBrowser extends BaseComponent {
   private readonly testPdf: HTMLButtonElement;
   private readonly remove: HTMLButtonElement;
   private readonly primary: HTMLButtonElement;
+  private readonly operations: TemplatePackageOperations;
   private state: PackageBrowserState | null = null;
 
   constructor(private readonly handlers: PackageBrowserHandlers) {
     super('div', ['flex', 'flex-col', 'gap-3']);
     this.element.setAttribute('data-template-package-browser', 'true');
+    this.operations = new TemplatePackageOperations({
+      kind: () => this.state?.info.kind ?? null,
+      pandoc: () => this.state?.pandoc ?? null,
+      selected: () => this.selected(),
+      setStatus: (status) => {
+        this.status.textContent = status;
+      },
+      changed: (packages, keepId) => this.handlers.changed(packages, keepId),
+      setBusy: (action, busy) => {
+        const control = action === 'validate' ? this.validate : this.testPdf;
+        control.disabled = busy;
+        if (!busy) {
+          this.render();
+        }
+      }
+    });
 
     this.list = document.createElement('div');
     this.list.className = 'flex flex-col gap-1';
@@ -119,7 +97,9 @@ export class TemplatePackageBrowser extends BaseComponent {
     this.path.className = 'input input-bordered input-sm flex-1';
     this.path.setAttribute('data-template-import-path', 'true');
     const inspect = button('inspect-path', t('template.inspect'), 'btn btn-ghost btn-sm');
-    inspect.addEventListener('click', () => void this.inspectPath(this.path.value.trim()));
+    inspect.addEventListener('click', () =>
+      void this.operations.inspectPath(this.path.value.trim())
+    );
     const pathLine = document.createElement('div');
     pathLine.className = 'flex items-center gap-2';
     pathLine.append(this.path, inspect);
@@ -136,9 +116,9 @@ export class TemplatePackageBrowser extends BaseComponent {
       t('template.createFromPandoc'),
       'btn btn-ghost btn-sm'
     );
-    this.importFile.addEventListener('click', () => void this.pick(false));
-    this.importFolder.addEventListener('click', () => void this.pick(true));
-    this.createPackage.addEventListener('click', () => void this.create());
+    this.importFile.addEventListener('click', () => void this.operations.pick(false));
+    this.importFolder.addEventListener('click', () => void this.operations.pick(true));
+    this.createPackage.addEventListener('click', () => void this.operations.create());
 
     this.details = button('details-button', t('template.details'), 'btn btn-ghost btn-sm');
     this.duplicate = button('duplicate', t('template.duplicate'), 'btn btn-ghost btn-sm');
@@ -149,12 +129,12 @@ export class TemplatePackageBrowser extends BaseComponent {
     this.primary = button('primary', '', 'btn btn-primary btn-sm');
     this.primary.setAttribute('data-template-use', 'true');
 
-    this.details.addEventListener('click', () => void this.editDetails());
-    this.duplicate.addEventListener('click', () => void this.duplicatePackage());
-    this.edit.addEventListener('click', () => void this.editPackage());
-    this.validate.addEventListener('click', () => void this.validatePackage());
-    this.testPdf.addEventListener('click', () => void this.testPdfPackage());
-    this.remove.addEventListener('click', () => void this.removePackage());
+    this.details.addEventListener('click', () => void this.operations.editDetails());
+    this.duplicate.addEventListener('click', () => void this.operations.duplicate());
+    this.edit.addEventListener('click', () => void this.operations.edit());
+    this.validate.addEventListener('click', () => void this.operations.validate());
+    this.testPdf.addEventListener('click', () => void this.operations.testPdf());
+    this.remove.addEventListener('click', () => void this.operations.remove());
     this.primary.addEventListener('click', () => this.handlers.primary(this.inspectedId()));
 
     this.status = document.createElement('p');
@@ -261,187 +241,4 @@ export class TemplatePackageBrowser extends BaseComponent {
     this.createPackage.disabled = !actions.createPackage;
   }
 
-  private async pick(folder: boolean): Promise<void> {
-    try {
-      const chosen = await open({
-        directory: folder,
-        multiple: false,
-        ...(folder
-          ? {}
-          : {
-              filters: [
-                {
-                  name: t('template.packageFilter'),
-                  extensions: ['zip', 'tex', 'html', 'docx', 'odt']
-                }
-              ]
-            })
-      });
-      if (typeof chosen === 'string') {
-        await this.inspectPath(chosen);
-      }
-    } catch (error) {
-      notify('Templates', error);
-    }
-  }
-
-  private async inspectPath(path: string): Promise<void> {
-    if (path === '') {
-      this.status.textContent = t('template.importPathEmpty');
-      return;
-    }
-    try {
-      const proposal = await inspectTemplate(path);
-      const request = await importProposalDialog.ask(path, proposal);
-      if (request === null) {
-        return;
-      }
-      const created = await importTemplate(request);
-      await this.afterCreated(created);
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-      notify('Templates', error);
-    }
-  }
-
-  private async create(): Promise<void> {
-    if (this.state === null) {
-      return;
-    }
-    if (this.state.pandoc === null) {
-      this.status.textContent = t('export.noPandoc');
-      return;
-    }
-    const answer = await createDefaultDialog.ask(this.state.info.kind);
-    if (answer === null) {
-      return;
-    }
-    try {
-      const created = await createDefaultTemplate(
-        this.state.info.kind,
-        answer.name,
-        answer.source,
-        answer.license
-      );
-      await this.afterCreated(created);
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-      notify('Templates', error);
-    }
-  }
-
-  private async afterCreated(created: TemplateSummary): Promise<void> {
-    if (this.state === null) {
-      return;
-    }
-    const packages = await exportTemplates();
-    const keepId = offeredForKind(created, this.state.info.kind) ? created.id : null;
-    this.handlers.changed(packages, keepId);
-    await templateEditorPanel.openPackage(created, () => void this.refresh(keepId));
-  }
-
-  private async refresh(keepId: string | null): Promise<void> {
-    if (this.state === null) {
-      return;
-    }
-    const packages = await exportTemplates();
-    const stillThere =
-      keepId !== null &&
-      this.offered({ ...this.state, packages }).some((summary) => summary.id === keepId);
-    this.handlers.changed(packages, stillThere ? keepId : null);
-  }
-
-  private async editDetails(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    if (summary.manifest === null) {
-      showBrokenTemplateDetails(summary);
-      return;
-    }
-    const patch = await templateDetailsDialog.ask(summary);
-    if (patch === null) {
-      return;
-    }
-    try {
-      const updated = await updateTemplate(summary.id, patch);
-      await this.refresh(updated.id);
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-      notify('Templates', error);
-    }
-  }
-
-  private async duplicatePackage(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    try {
-      const copied = await duplicateTemplate(summary.id);
-      await this.refresh(copied.id);
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-      notify('Templates', error);
-    }
-  }
-
-  private async editPackage(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    await templateEditorPanel.openPackage(summary, () => void this.refresh(summary.id));
-  }
-
-  private async validatePackage(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    this.validate.disabled = true;
-    this.status.textContent = t('template.validating');
-    try {
-      const result = await validateTemplate(summary.id);
-      this.status.textContent = [result.message, ...result.warnings].join('\n');
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-    } finally {
-      this.render();
-    }
-  }
-
-  private async testPdfPackage(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    this.testPdf.disabled = true;
-    this.status.textContent = t('template.testingPdf');
-    try {
-      const result = await testTemplatePdf(summary.id);
-      this.status.textContent = [result.message, ...result.warnings].join('\n');
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-    } finally {
-      this.render();
-    }
-  }
-
-  private async removePackage(): Promise<void> {
-    const summary = this.selected();
-    if (summary === null) {
-      return;
-    }
-    try {
-      if (!(await removeTemplatePackage(summary))) {
-        return;
-      }
-      await this.refresh(null);
-    } catch (error) {
-      this.status.textContent = error instanceof Error ? error.message : String(error);
-      notify('Templates', error);
-    }
-  }
 }

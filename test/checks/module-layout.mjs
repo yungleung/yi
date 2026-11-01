@@ -72,6 +72,7 @@ const expectNoDeepImport = (folder, importPrefix, domain) => {
 expectFile('src/ui/workspace/tree/node.ts');
 expectFile('src/ui/export/manager/source.ts');
 expectFile('src/ui/export/manager/navigation.ts');
+expectFile('src/ui/export/templates/operations.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -117,6 +118,11 @@ expectNoDefinition(
   'still owns the export-manager source adapter; move it to source.ts'
 );
 expectNoDeepImport('src/ui/export/manager', '../templates/', 'the template domain');
+expectNoDefinition(
+  'src/ui/export/templates/browser.ts',
+  /\b(?:createDefaultTemplate|duplicateTemplate|exportTemplates|importTemplate|inspectTemplate|removeTemplate|testTemplatePdf|updateTemplate|validateTemplate)\s*\(/,
+  'still owns template lifecycle calls; move them to operations.ts'
+);
 
 const legacy = [
   'src/services/session.ts',
