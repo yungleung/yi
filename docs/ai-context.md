@@ -275,8 +275,11 @@ one item per kind (`src-tauri/src/menu.rs`, built from
 `src-tauri/src/export/kinds/kind_catalogue.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
-(`src/ui/export/export_flow.ts`), and what it opens is a card whose workflow lives in
-`src/ui/export/export_dialog.ts` and whose form lives in `src/ui/export/export_form.ts`
+(`src/ui/export/export_flow.ts`). The workflow is split by contract: `export_question.ts` builds the
+card's read-only question, `export_request.ts` performs the confirmed answer, `export_bibliography.ts`
+filters a package's native BibTeX, `export_paths.ts` owns output-name and search-folder rules, and
+`export_notice.ts` reports the finished result. What the command opens is a card whose workflow lives
+in `src/ui/export/export_dialog.ts` and whose form lives in `src/ui/export/export_form.ts`
 **about that one kind**: the target the file is written to, and the
 **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
