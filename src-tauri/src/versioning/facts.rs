@@ -52,7 +52,11 @@ pub fn repository_shape(path: &Path) -> RepositoryShape {
         }
         current = folder.parent();
     }
-    RepositoryShape { here, above, toplevel }
+    RepositoryShape {
+        here,
+        above,
+        toplevel,
+    }
 }
 
 /// Whether a cloud drive could reach this folder, and the evidence for the answer. `home` is passed
@@ -176,14 +180,20 @@ fn content_is_offloaded(_path: &Path) -> bool {
     false
 }
 /// Everything the versioning decision needs about this folder.
-pub fn versioning_facts(app: tauri::AppHandle, workspace: String) -> Result<VersioningFacts, String> {
+pub fn versioning_facts(
+    app: tauri::AppHandle,
+    workspace: String,
+) -> Result<VersioningFacts, String> {
     let folder = PathBuf::from(&workspace);
     let (git, git_source) = find_git();
     let home = dirs_home();
     let environment: Vec<(String, String)> = std::env::vars().collect();
     let (cloud, cloud_evidence) = match &home {
         Some(home) => cloud_kind(&folder, home, &environment),
-        None => ("unknown".to_string(), "no home folder to compare against".to_string()),
+        None => (
+            "unknown".to_string(),
+            "no home folder to compare against".to_string(),
+        ),
     };
     // A workspace with no name of its own cannot have a repository of ours; the words then simply
     // have no path to show, and the plan never asks for one.

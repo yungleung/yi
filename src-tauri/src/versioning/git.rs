@@ -22,7 +22,12 @@ pub struct Identity {
     pub email: Option<String>,
 }
 /// The git the app may run, and where it was found. `from_env` is `YI_GIT`, the test seam.
-pub(super) fn find_git_from(from_env: Option<String>, clt_ok: bool, known: &[PathBuf], path: Option<String>) -> (Option<PathBuf>, String) {
+pub(super) fn find_git_from(
+    from_env: Option<String>,
+    clt_ok: bool,
+    known: &[PathBuf],
+    path: Option<String>,
+) -> (Option<PathBuf>, String) {
     if let Some(value) = from_env.filter(|value| !value.trim().is_empty()) {
         let named = PathBuf::from(value);
         // A name that is not there is an answer, not a fallback: a git named and quietly not run
@@ -118,7 +123,11 @@ pub fn versioning_use_git(git: Option<String>) -> Result<(), String> {
 /// This is the only place the app runs git: everything it may ask git to do is written here and in
 /// the two functions below, so "what does the app run" is one list to read — and one list to hold
 /// it to (`test/probes/versioning-fake-git.js` watches every argument the app passes).
-pub(super) fn run_git<S: AsRef<std::ffi::OsStr>>(git: &Path, workspace: &Path, arguments: &[S]) -> Result<String, String> {
+pub(super) fn run_git<S: AsRef<std::ffi::OsStr>>(
+    git: &Path,
+    workspace: &Path,
+    arguments: &[S],
+) -> Result<String, String> {
     let output = Command::new(git)
         .arg("-C")
         .arg(workspace)
@@ -127,7 +136,10 @@ pub(super) fn run_git<S: AsRef<std::ffi::OsStr>>(git: &Path, workspace: &Path, a
         .map_err(|error| {
             crate::i18n::now(
                 "app.cannotRun",
-                &[("program", &git.display().to_string()), ("reason", &error.to_string())],
+                &[
+                    ("program", &git.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
             )
         })?;
     if !output.status.success() {
@@ -176,11 +188,19 @@ pub(super) fn identity_of(git: Option<&Path>, workspace: &Path) -> Identity {
 /// Where a repository's own directory lives when it is kept **outside** the workspace: the app's
 /// data folder, under the workspace's name. That is the whole point of the arrangement — a cloud
 /// client watching the workspace never sees `.git` at all.
-pub(super) fn separate_git_dir(app: &tauri::AppHandle, workspace: &Path) -> Result<PathBuf, String> {
+pub(super) fn separate_git_dir(
+    app: &tauri::AppHandle,
+    workspace: &Path,
+) -> Result<PathBuf, String> {
     let name = workspace
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .ok_or_else(|| format!("{} has no name to keep a repository under.", workspace.display()))?;
+        .ok_or_else(|| {
+            format!(
+                "{} has no name to keep a repository under.",
+                workspace.display()
+            )
+        })?;
     let data = app
         .path()
         .app_data_dir()
@@ -207,7 +227,11 @@ pub fn init_workspace_repository(
 }
 
 /// `git init`, with the git directory named when it is one that lives elsewhere.
-pub(super) fn init_repository_at(git: &Path, workspace: &Path, separate_git_dir: Option<&Path>) -> Result<(), String> {
+pub(super) fn init_repository_at(
+    git: &Path,
+    workspace: &Path,
+    separate_git_dir: Option<&Path>,
+) -> Result<(), String> {
     let mut arguments = vec!["init".to_string()];
     if let Some(directory) = separate_git_dir {
         arguments.push(format!("--separate-git-dir={}", directory.display()));

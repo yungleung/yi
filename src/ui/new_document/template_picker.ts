@@ -11,8 +11,8 @@
 
 import { t } from '../../services/i18n';
 import type { NewNoteTemplate } from '../../services/new_document';
-import { QuestionCard } from '../floating/question_card';
-import { kindLabel } from '../export/templates';
+import { QuestionCard } from '../floating';
+import { kindLabel } from '../export/kind_label';
 
 export class NewDocumentTemplatePicker extends QuestionCard<string | null | undefined> {
   constructor() {

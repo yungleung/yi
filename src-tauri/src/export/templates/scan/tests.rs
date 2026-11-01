@@ -130,11 +130,9 @@ fn a_tex_and_a_reference_document_together_are_named_as_ambiguous_with_both_entr
     fs::write(folder.join("journal.docx"), b"PK").unwrap();
     let scanned = inspect(&folder).unwrap();
     assert_eq!(scanned.kind, TemplateKind::Ambiguous);
-    assert!(
-        scanned
-            .entry_candidates
-            .contains(&"journal.docx".to_string())
-    );
+    assert!(scanned
+        .entry_candidates
+        .contains(&"journal.docx".to_string()));
     let _ = fs::remove_dir_all(folder);
 }
 

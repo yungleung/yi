@@ -1,5 +1,5 @@
 /**
- * The text a *book* is handed: the note's own level-1 heading, with the note's name standing in it
+ * The body a *book* is handed: the note's own level-1 heading, with the note's name standing in it
  * when the note writes none.
  *
  * A note may keep its level-1 heading in the frontmatter's `title:` rather than write one into the

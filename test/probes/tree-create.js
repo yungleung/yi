@@ -12,7 +12,7 @@
  * through the file plugin, which is scoped to the home directory (see `new-markdown.js`), and
  * the home directory is not watched by the dev server. It is removed again either way.
  *
- * @covers src/ui/workspace/tree/ops.ts, src/api/files.ts, src/ui/new_document/new_document_flow.ts
+ * @covers src/ui/workspace/tree/ops.ts, src/api/files.ts, src/ui/new_document/flow.ts
  */
 (async () => {
   const t = window.__t;

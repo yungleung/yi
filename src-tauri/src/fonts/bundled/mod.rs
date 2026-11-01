@@ -22,9 +22,9 @@ mod coverage;
 mod faces;
 mod header;
 
-pub use coverage::coverage;
+pub(crate) use coverage::coverage;
 use faces::FACES;
-pub use header::{named, named_values, reader_scripts, write_header};
+pub(crate) use header::{named, named_values, reader_scripts, write_header};
 
 /// Where the faces are on this machine.
 ///
@@ -33,7 +33,7 @@ pub use header::{named, named_values, reader_scripts, write_header};
 /// resource folder holds none of them is a run of this crate rather than of a bundle — `cargo test`,
 /// or an editor — and then the crate's own `assets/fonts` is what it has, which is the folder the
 /// bundler copies from.
-pub fn fonts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn fonts_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let installed = app
         .path()
         .resolve("assets/fonts", tauri::path::BaseDirectory::Resource)

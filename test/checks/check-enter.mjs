@@ -46,7 +46,7 @@ const {
   paragraphStart,
   emptyLineInsertion,
   characterRemoval
-} = await bundleModule('src/ui/markdown/editing/blank_lines.ts', 'blank_lines');
+} = await bundleModule('src/ui/markdown/editing/blank_lines/index.ts', 'blank_lines');
 // The line grammar lives in syntax/lines.ts; the editing rule consumes it.
 const { itemContinuation, itemSubtreeEnd, hasChildBlock } = await bundleModule(
   'src/ui/markdown/syntax/lines.ts',

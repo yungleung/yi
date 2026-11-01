@@ -10,7 +10,7 @@
  * state and every choice is expressed by its stable Div-kind name.
  */
 
-import type { Box } from '../../floating/placement';
+import type { Box } from '../../floating';
 import { ChoiceCard } from '../choice_card';
 
 /** What an installed editor does when a kind is chosen. */

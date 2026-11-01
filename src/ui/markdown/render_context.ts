@@ -8,7 +8,7 @@
  * context before the renderer builds a window of blocks, so the node components stay a pure
  * function of their node and the input they were given, and the render layer imports no service.
  *
- * The context is module-wide for the same reason `source_mode.ts`'s frame is: a node component is
+ * The context is module-wide for the same reason `source_mode/state.ts`'s frame is: a node component is
  * built synchronously, deep inside the renderer, and it is the *renderer's pass* — not the node —
  * that knows what the app has to say. The default answers nothing (`null`, no URL), which is what a
  * node built outside a pass gets: a probe of a single component, or a check.

@@ -89,7 +89,11 @@ pub(super) fn kind_info(dir: &Path, kind: &ExportKind) -> ExportKindInfo {
     // shipped bytes are what an export would use.
     let config_is_shipped = config
         .as_deref()
-        .map(|path| fs::read(path).map(|bytes| bytes == kind.defaults.as_bytes()).unwrap_or(true))
+        .map(|path| {
+            fs::read(path)
+                .map(|bytes| bytes == kind.defaults.as_bytes())
+                .unwrap_or(true)
+        })
         .unwrap_or(false);
     ExportKindInfo {
         group: kind.group,

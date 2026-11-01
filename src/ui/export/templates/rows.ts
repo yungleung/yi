@@ -11,7 +11,7 @@
 
 import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { kindLabel } from './kind_label';
+import { kindLabel } from '../kind_label';
 
 export interface PackageRowState {
   kind: string;

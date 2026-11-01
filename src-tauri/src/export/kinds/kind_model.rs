@@ -72,7 +72,7 @@ pub struct ExportKind {
     /// and whatever opens it picks a font of its own.
     pub needs_a_font: bool,
     /// Whether this kind's page is drawn **by a font this build ships**, wired into the export by a
-    /// header of its own (`fonts::bundled`): the PDF, and only the PDF.
+    /// header of its own (`fonts/`): the PDF, and only the PDF.
     ///
     /// A note in a script no font on the machine draws comes out with the space its words took and
     /// none of the words (measured), and naming a font is the reader's line to write — which is still

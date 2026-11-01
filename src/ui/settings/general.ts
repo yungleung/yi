@@ -5,7 +5,7 @@
  *
  * Empty is the default and it means *beside the note*, so a reader who never chose a folder
  * follows the app rather than a folder frozen into their config the first time anything else was
- * saved (`settings.rs`). The field takes a path the way a reader writes one — `~/Pictures/Yi` is
+ * saved (`settings/`). The field takes a path the way a reader writes one — `~/Pictures/Yi` is
  * fine — and `services/settings_paths.ts` is what spells the home folder out when it is used.
  *
  * All but the last are saved the moment they are changed — a choice and a switch are complete

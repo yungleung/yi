@@ -4,7 +4,7 @@
  * readers share.
  *
  * The *menu* cannot be read from here — it is a native tree built in Rust before this page exists
- * (`src-tauri/src/menu.rs`), and `src-tauri/src/i18n.rs` has its own tests for the strings it
+ * (`src-tauri/src/menu/build.rs`), and `src-tauri/src/i18n.rs` has its own tests for the strings it
  * reads. What this holds is the other half: that a component built under a language really shows
  * that language, so a translated catalogue is not a file nobody reads.
  *

@@ -29,7 +29,7 @@ import { documentSession } from '../services/session';
 import { documentManager } from '../services/documents';
 import { MESSAGE_EVENT } from '../services/messages';
 import { t } from '../services/i18n';
-import { DOCUMENT_OPENED } from './workspace/tree';
+import { DOCUMENT_OPENED } from './workspace';
 import { setOpenRequestHandler, type OpenRequest } from './markdown/link_opens';
 import { configManager } from '../services/config_manager';
 import { destinationPaths } from '../services/workspace';

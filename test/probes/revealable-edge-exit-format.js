@@ -5,7 +5,7 @@
  * remains ordinary editable text. A caret at the closing marker keeps the markdown visible;
  * one character after it belongs to the surrounding prose and closes that source.
  *
- * @covers src/ui/markdown/source_mode.ts,
+ * @covers src/ui/markdown/source_mode/,
  *   src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/editing/typed_text.ts
  */

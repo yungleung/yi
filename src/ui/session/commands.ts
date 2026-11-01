@@ -1,5 +1,5 @@
 /**
- * The commands the session owns, registered by name.
+ * The commands the session owns, registered by their command names.
  *
  * The session is not the editor, so its commands are registered here rather than in
  * `markdown/commands/editor_commands.ts` — but they are the same kind of thing to everything

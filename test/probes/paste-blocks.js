@@ -8,7 +8,7 @@
  * (`virtual_block_renderer.ts: renderChanged`), which is what "incremental
  * rendering" means here. It is checked by element identity, not by a stopwatch.
  *
- * @covers src/ui/markdown/editing/clipboard.ts, src/ui/markdown/editing/blank_lines.ts
+ * @covers src/ui/markdown/editing/clipboard.ts, src/ui/markdown/editing/blank_lines/
  */
 (async () => {
   const t = window.__t;

@@ -2,7 +2,7 @@
  * The contract for a node whose markdown can stand in for its rendering: the
  * source view that is built instead, and the click that enters it.
  *
- * May import: the node contract (`editable_node.ts`), `source_mode.ts` and the
+ * May import: the node contract (`editable_node.ts`), `source_mode/` and the
  * parser's serializer (for the node's own markdown). Upholds: source mode is
  * decided from the document — the shape is settled before `super()`, so a node
  * never swaps its element behind the caret, and the block is rendered again when
@@ -74,7 +74,7 @@ export const SOURCE_VIEW_CLASS = 'markdown-source-view';
  * This runs *before* `super()`: what a node is built as is settled while it is
  * built, so no node ever swaps its element in the document, and the block it
  * lives in is simply rendered again when the source has to appear or go (see
- * `source_mode.ts`).
+ * `source_mode/`).
  *
  * The span is tagged with the block-relative offset its text starts at, so a
  * caret inside it maps back to the document exactly, and with the content

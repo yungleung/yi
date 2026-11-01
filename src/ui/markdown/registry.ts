@@ -9,7 +9,7 @@
  *
  * May import: the AST types and the node base classes. Upholds: the registry is
  * the one place that says which node types exist and which of them show their
- * source, so every consumer of that fact — `create_node.ts`, `source_mode.ts` —
+ * source, so every consumer of that fact — `create_node.ts`, `source_mode/` —
  * reads it here.
  */
 
@@ -31,7 +31,7 @@ const factories = new Map<string, Registration>();
  *
  * `showsSource` marks the types whose markdown source can be shown in place of
  * their rendering while the caret is inside them — a link, a citation, a
- * formula, an image (see `source_mode.ts`). Everything that finds "the source
+ * formula, an image (see `source_mode/`). Everything that finds "the source
  * the caret is in" goes through this flag, so the registration is the single
  * place that says which nodes have a source to show.
  */

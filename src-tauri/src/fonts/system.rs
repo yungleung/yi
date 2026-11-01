@@ -61,9 +61,11 @@ pub fn covering(points: &[u32]) -> Option<String> {
     coverages()
         .iter()
         .find(|(_, ranges)| {
-            points
-                .iter()
-                .all(|point| ranges.iter().any(|(first, last)| first <= point && point <= last))
+            points.iter().all(|point| {
+                ranges
+                    .iter()
+                    .any(|(first, last)| first <= point && point <= last)
+            })
         })
         .map(|(family, _)| family.clone())
 }
@@ -85,7 +87,10 @@ fn coverages() -> &'static [(String, Vec<(u32, u32)>)] {
                     continue;
                 }
                 for family in font_file::family_names(&image, at) {
-                    if !out.iter().any(|(seen, _)| seen.eq_ignore_ascii_case(&family)) {
+                    if !out
+                        .iter()
+                        .any(|(seen, _)| seen.eq_ignore_ascii_case(&family))
+                    {
                         out.push((family, ranges.clone()));
                     }
                 }
@@ -190,7 +195,10 @@ mod tests {
             paths().len(),
             took
         );
-        assert!(names.len() > 20, "a working machine has more than twenty families");
+        assert!(
+            names.len() > 20,
+            "a working machine has more than twenty families"
+        );
         assert!(names.iter().all(|name| name == &name.to_lowercase()));
 
         assert!(!has_family("Yi No Such Font 12345"));
@@ -214,8 +222,14 @@ mod tests {
             coverages().len(),
             started.elapsed()
         );
-        assert!(greek.is_some(), "some font on a working machine draws Greek");
-        assert!(has_family(&greek.unwrap()), "and it is one this machine has");
+        assert!(
+            greek.is_some(),
+            "some font on a working machine draws Greek"
+        );
+        assert!(
+            has_family(&greek.unwrap()),
+            "and it is one this machine has"
+        );
 
         // And a code point nothing draws — in the private use area, which no font claims — is answered
         // with nothing rather than with a guess.
@@ -232,7 +246,9 @@ mod tests {
             .map(|(_, ranges)| ranges)
             .unwrap();
         for point in [0x03A9, 0x0416] {
-            assert!(both.iter().any(|(first, last)| first <= &point && &point <= last));
+            assert!(both
+                .iter()
+                .any(|(first, last)| first <= &point && &point <= last));
         }
     }
 }

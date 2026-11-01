@@ -3,7 +3,7 @@
  *
  * A caret the app invents is a caret the reader never put anywhere, and it decides what the page
  * shows: a node the caret is in renders its own markdown instead of its view
- * (`source_mode.ts`), so a note that *starts* with a picture — a reading library is full of them —
+ * (`source_mode/`), so a note that *starts* with a picture — a reading library is full of them —
  * opened showing that picture's markdown, with the picture hidden, until the caret moved. The
  * caret a document is opened with is the session's to say: a remembered one is placed exactly
  * where it was (`document-session-restart.js` holds that), and one the session does not have

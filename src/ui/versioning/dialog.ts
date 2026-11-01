@@ -18,7 +18,7 @@
 
 import { ask as askNative } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
-import { QuestionCard } from '../floating/question_card';
+import { QuestionCard } from '../floating';
 import { drivenByTools } from '../under_test';
 
 /** Which of the plan's two questions is being asked, and what its words have to name. */

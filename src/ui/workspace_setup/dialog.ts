@@ -15,7 +15,7 @@
 
 import { open } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
-import { QuestionCard } from '../floating/question_card';
+import { QuestionCard } from '../floating';
 import { drivenByTools } from '../under_test';
 
 /** What the card needs to ask: where a new workspace would be made. */

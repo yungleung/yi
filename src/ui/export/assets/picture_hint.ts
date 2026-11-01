@@ -23,7 +23,7 @@
  */
 import { parseMarkdown } from '../../markdown/syntax/parser';
 import type { AstImage } from '../../markdown/ast';
-import { spansOfType, type Walkable } from '../pipeline/node_spans';
+import { spansOfType, type Walkable } from '../node_spans';
 
 /**
  * Whether a destination is a `data:` URL naming something that is not an image. The media type is the

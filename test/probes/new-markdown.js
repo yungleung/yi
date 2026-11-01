@@ -13,7 +13,7 @@
  * `/private/tmp` the way the tree's own probes do), and the home directory is not watched by
  * the dev server. It is removed again either way.
  *
- * @covers src/ui/new_document/new_document_flow.ts, src/ui/new_document/new_document_dialog.ts
+ * @covers src/ui/new_document/flow.ts, src/ui/new_document/dialog.ts
  * @covers src/services/new_document/index.ts, src/services/workspace/folders.ts
  */
 (async () => {

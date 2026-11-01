@@ -26,7 +26,7 @@ in the same change that moves a module.
 | --- | --- | --- |
 | Syntax (pure, no DOM) | `src/ui/markdown/document/block_scanner.ts`, `block_scan_rules.ts`, `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | walk source lines, split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
 | Document | `document/state.ts` (text, revision, history and target-owner), `document/blocks.ts` (block model), `document/block_parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
+| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format*.ts`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
 | Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path; pointer, preview and clipboard listeners remain one ordered browser boundary |
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
@@ -54,7 +54,7 @@ rearranged by the app's own commands — they carry no scope — while a note in
 page and a picture inserted into it could not be written (measured: *"forbidden path: … maybe it is not
 allowed on the scope for `allow-read-text-file`"*). So `src-tauri/src/access.rs` grants the folders the
 app is *working in* at run time: the config's own — the workspace, the pictures folder, the library's —
-where the config is read (`settings.rs`), and a document's own before the session reads it
+where the config is read (`settings/`), and a document's own before the session reads it
 (`api/files.ts: grantFolder`, called from `session/files.ts: readDocumentFile` and
 `session/persistence.ts: loadPersistedSession`), which is what a workspace, or a note, outside
 `$HOME` needs. Nothing else is granted, and `workspace-outside-home.js`
@@ -78,7 +78,7 @@ markdown documents under `src/ui/tutorial/` (one per catalogue language, chosen 
 The editor refuses writing commands, typing, paste and replacement; navigation, copy, find and export
 stay. `session/rules.ts: openDecision` treats a read-only current document as replaceable whatever
 its text says, so opening a file never asks to push it and never shows *Push and Open*. The same
-document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command is `help:tutorial`).
+document is **Help → Open Tutorial** (`menu/build.rs` emits `tutorial`; the command is `help:tutorial`).
 `check-tutorial.mjs` holds the language and first-start rules, and `tutorial.js` /
 `tutorial-first-start.js` hold the app behavior.
 
@@ -99,7 +99,7 @@ the workspace tree's delete asks the exported `prompt` directly.
 
 Everything that floats over the page is one shallow family in `src/ui/floating/`: `FloatingSurface`
 (hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*
-it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/placement.ts` beside
+it sits — `BesideCard` (fixed on the body, placed by the pure rule in `floating/` beside
 a box the caller measures, or in the window's corner when it names nothing), `AnchoredPanel` (in its
 `relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
 card, and one answer
@@ -174,7 +174,7 @@ The choice belongs to that note only and is never written into `export_templates
 template-only card for the tree's *New file*, where the folder is already known.
 `services/workspace/folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
-read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/new_document_flow.ts`
+read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/flow.ts`
 does the four observable things in order — create the file, write the note into it, tell the tree
 that folder changed, open it in the session — and reaches its question through a chooser it takes
 as a port.
@@ -281,7 +281,7 @@ what is replaced, because a copy that differs may be an edit or an older build's
 be told apart from here. Escape leaves the file exactly as it was.
 
 **A note goes out through pandoc**, one kind at a time. The File menu's *Export* is a **submenu**,
-one item per kind (`src-tauri/src/menu.rs`, built from
+one item per kind (`src-tauri/src/menu/build.rs`, built from
 `src-tauri/src/export/kinds/kind_catalogue.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
@@ -291,6 +291,9 @@ filters a package's native BibTeX, `workflow/paths.ts` owns output-name and sear
 `workflow/notice.ts` reports the finished result. What the command opens is a card whose workflow lives
 in `src/ui/export/dialog/index.ts`, whose form state lives in `src/ui/export/dialog/form.ts`,
 and whose small DOM controls live in `src/ui/export/dialog/controls.ts`
+Export subdomains depend one way: shared AST span lookup lives at `src/ui/export/node_spans.ts`,
+asset context at `assets/contracts.ts`, template availability with the template domain, and the
+article-naming label at `src/ui/export/kind_label.ts`.
 **about that one kind**: the target the file is written to, and the
 **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
@@ -307,7 +310,7 @@ levels belong to the note and the app's body rules, not to a defaults file. A re
 is still never rewritten, so an older copy may keep another value. A row also says what the *window*
 owes a kind's **body**: a book's
 keeps the note's own level-1 heading, the note's name standing in it when the note keeps that heading in
-its frontmatter `title:` (`src/ui/export/pipeline/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
+its frontmatter `title:` (`src/ui/export/workflow/body.ts`, the kind's `names_its_body`) — the EPUB writer
 would otherwise make a heading of its own, level 1, out of the book's name *outside* the document pandoc
 makes identifiers unique in, and a section of the note that repeats the name is then the same id twice,
 which epubcheck reports and `test/checks/check-epub-valid.mjs` fails on — while every other kind is
@@ -478,7 +481,7 @@ same `rewrites.ts` splice rule instead of keeping its own copy.
 
 The same pre-process lowers listings: HTML/EPUB/DOCX/ODT get one identified `.listing` Div with a
 visible `.listing-caption` paragraph, processed Markdown gets an HTML figure, and LaTeX/PDF keep
-native fenced shapes. `ui/export/reference/reference_header.ts` writes the document's configured caption
+native fenced shapes. `ui/export/reference/header.ts` writes the document's configured caption
 names and literal counter prefixes into a temporary header, which Rust writes beside the run note
 and passes as a second `--include-in-header`; empty prefixes leave native counters alone, while list
 labels stay Yi-generated.
@@ -706,7 +709,7 @@ complete line from any point on its row. At the caption source's start, `Enter` 
 and `Backspace` removes it.
 `document/reference_index.ts` counts every captioned table but targets only one with an ID. The
 non-LaTeX lowering lives in `ui/export/pipeline/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
-`\yiTableRef`, written by `ui/export/reference/reference_header.ts` and the run-local Rust header file.
+`\yiTableRef`, written by `ui/export/reference/header.ts` and the run-local Rust header file.
 Shipped LaTeX/PDF templates expand `$header-includes$`, and their table filters preserve the caption
 and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editing probes, and
 `table-crossrefs-default-document.js` hold the editor behavior; the export probes hold each kind,

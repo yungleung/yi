@@ -28,7 +28,7 @@ export {
   ImportProposalDialog,
   importProposalDialog
 } from './import_dialog';
-export { TEMPLATE_KINDS, kindLabel } from './kind_label';
+export { TEMPLATE_KINDS } from './kinds';
 export {
   TemplateLibraryDialog,
   templateLibraryDialog

@@ -15,7 +15,7 @@ import {
   citedKeys,
   nativeBibliographyTarget,
   packageCitedBibliography
-} from '../reference/native_bibliography';
+} from '../reference';
 
 /** The filtered BibTeX a package asks for, its relative destination, and any cited key it lacks. */
 export interface NativeBibliographyPlan {

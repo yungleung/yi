@@ -10,7 +10,7 @@
 import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { runCommand } from '../../commands/runtime';
-import { StackPopover } from '../session/stack_popover';
+import { StackPopover } from '../session';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from './base';
 
@@ -47,7 +47,7 @@ const STACK_OPEN =
  * is, and the button that opens the stack to bring one back.
  *
  * Both do what the layout button does: they name a command and let the owner decide — the
- * session, through `session_commands.ts` — and they hear the session's news to draw the state
+ * session, through `session/commands.ts` — and they hear the session's news to draw the state
  * in hand rather than keeping one of their own.
  */
 export class SessionToolbar extends Toolbar {

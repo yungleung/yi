@@ -21,7 +21,11 @@ pub fn faces(data: &[u8]) -> Vec<usize> {
             data.get(0..4),
             Some(b"\x00\x01\x00\x00") | Some(b"OTTO") | Some(b"true") | Some(b"typ1")
         );
-        return if known && data.len() >= 12 { vec![0] } else { Vec::new() };
+        return if known && data.len() >= 12 {
+            vec![0]
+        } else {
+            Vec::new()
+        };
     }
     let Some(count) = be32(data, 8) else {
         return Vec::new();
@@ -174,7 +178,8 @@ fn format_four(cmap: &[u8], at: usize) -> Vec<u32> {
             let glyph = if offset == 0 {
                 point.wrapping_add(delta)
             } else {
-                let address = offsets + segment * 2 + offset as usize + (point - start) as usize * 2;
+                let address =
+                    offsets + segment * 2 + offset as usize + (point - start) as usize * 2;
                 match be16(cmap, address) {
                     None | Some(0) => continue,
                     Some(glyph) => glyph,
@@ -232,15 +237,16 @@ pub fn read_tables(path: &Path, tags: &[&[u8; 4]]) -> Option<Vec<u8>> {
     let mut image = head.clone();
 
     // Reads a range of the file, or of the head it has already read.
-    let range = |file: &mut std::fs::File, head: &[u8], at: usize, length: usize| -> Option<Vec<u8>> {
-        if at + length <= head.len() {
-            return Some(head[at..at + length].to_vec());
-        }
-        let mut bytes = vec![0u8; length];
-        file.seek(SeekFrom::Start(at as u64)).ok()?;
-        file.read_exact(&mut bytes).ok()?;
-        Some(bytes)
-    };
+    let range =
+        |file: &mut std::fs::File, head: &[u8], at: usize, length: usize| -> Option<Vec<u8>> {
+            if at + length <= head.len() {
+                return Some(head[at..at + length].to_vec());
+            }
+            let mut bytes = vec![0u8; length];
+            file.seek(SeekFrom::Start(at as u64)).ok()?;
+            file.read_exact(&mut bytes).ok()?;
+            Some(bytes)
+        };
 
     let mut copied: Vec<(usize, usize, usize)> = Vec::new(); // file offset, length, where it went
     for directory in faces(&head) {
@@ -261,7 +267,9 @@ pub fn read_tables(path: &Path, tags: &[&[u8; 4]]) -> Option<Vec<u8>> {
             }
             let offset = be32(&entry, 8)? as usize;
             let length = be32(&entry, 12)? as usize;
-            let at_in_image = match copied.iter().find(|(was, size, _)| *was == offset && *size == length)
+            let at_in_image = match copied
+                .iter()
+                .find(|(was, size, _)| *was == offset && *size == length)
             {
                 Some((_, _, went)) => *went,
                 None => {
@@ -288,7 +296,8 @@ mod tests {
     /// and a collection (what a machine's Chinese faces are, and the reason `faces` exists).
     #[test]
     fn it_reads_a_single_font_and_a_collection() {
-        let ours = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts/NotoSerifHebrew-Regular.ttf");
+        let ours =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts/NotoSerifHebrew-Regular.ttf");
         let data = std::fs::read(ours).unwrap();
         assert_eq!(faces(&data).len(), 1, "a plain font has one face");
         let names = family_names(&data, 0);
@@ -300,8 +309,14 @@ mod tests {
         if let Ok(data) = std::fs::read(collection) {
             let offsets = faces(&data);
             assert!(offsets.len() > 1, "a collection has several faces");
-            let names: Vec<String> = offsets.iter().flat_map(|at| family_names(&data, *at)).collect();
-            assert!(names.iter().any(|name| name.contains("Songti")), "{names:?}");
+            let names: Vec<String> = offsets
+                .iter()
+                .flat_map(|at| family_names(&data, *at))
+                .collect();
+            assert!(
+                names.iter().any(|name| name.contains("Songti")),
+                "{names:?}"
+            );
             // And each face is read on its own: the first one has an `cmap` at least.
             assert!(!cmap_ranges(&data, offsets[0]).is_empty());
         }

@@ -32,7 +32,7 @@
       doc: 'intro\n\n$$\n\\frac{a}{b}\n$$\n',
       enter: () => t.prose().querySelector('[data-display="true"]'),
       // A click on KaTeX cannot name a character: it enters at the end of the formula's content
-      // (`source_mode.ts: sourceEntryOffset`), so the two spaces go there.
+      // (`source_mode/block.ts: sourceEntryOffset`), so the two spaces go there.
       out: 'intro\n\n$$\n\\frac{a}{b}  \n$$\n'
     }
   ];

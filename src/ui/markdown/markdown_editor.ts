@@ -162,7 +162,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
     // Source mode follows the caret: the block the caret is in shows its own
-    // text (see `source_mode.ts`). A click on a block's rendering asks the
+    // text (see `source_mode/`). A click on a block's rendering asks the
     // editor to enter it, because only the editor knows the block's text.
     onCaretRangeChanged((range) => {
       this.view.noteCaret(range !== null);
@@ -180,7 +180,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // sync finds its window without the block (the element has just been released, and the shape
       // it now needs has no remembered height), so the block is left out of the page — blank, with
       // its space in a spacer, until the window's range changes. Holding the decision is what the
-      // plain write's caret placement already does for the same reason (`source_mode.ts`).
+      // plain write's caret placement already does for the same reason (`source_mode/`).
       restore: (snapshot) => withHeldShownSource(() => this.view.reanchor(snapshot))
     });
 
@@ -411,7 +411,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /**
    * Keeps the block that shows its own text in step with the caret: the block
    * holding the caret shows it, and none does when the caret is gone (see
-   * `source_mode.ts`). A caret the editor cannot map yet — the block holding
+   * `source_mode/`). A caret the editor cannot map yet — the block holding
    * it is being rebuilt — says nothing about where the author is, so it leaves
    * the mode as it stands; the next caret position decides.
    *

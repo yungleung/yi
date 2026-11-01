@@ -113,15 +113,15 @@ fn pandoc_output(
         command.current_dir(dir);
     }
     command.envs(environment.iter().map(|(name, value)| (*name, value)));
-    command
-        .args(arguments)
-        .output()
-        .map_err(|error| {
-            crate::i18n::now(
-                "app.cannotRun",
-                &[("program", &pandoc.display().to_string()), ("reason", &error.to_string())],
-            )
-        })
+    command.args(arguments).output().map_err(|error| {
+        crate::i18n::now(
+            "app.cannotRun",
+            &[
+                ("program", &pandoc.display().to_string()),
+                ("reason", &error.to_string()),
+            ],
+        )
+    })
 }
 
 /// The lines pandoc wrote that are not blank: its warnings, one sentence each.

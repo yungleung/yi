@@ -6,7 +6,7 @@
  * - **the app's own**, emitted by the frontend — the workspace changed, a version was read, the
  *   editor was typed in — whose names are constants in the module that emits them, so a listener
  *   imports the name rather than repeating it;
- * - **the native menu's**, emitted from Rust (`src-tauri/src/menu.rs`, `settings.rs`) as plain
+ * - **the native menu's**, emitted from Rust (`src-tauri/src/menu/`, `settings/`) as plain
  *   strings, because a menu exists before any page does.
  *
  * Both are declared here, because that is what makes the bus typed: `eventManager.emit(name,
@@ -62,7 +62,7 @@ export interface AppEvents {
   /** The bibliography was reloaded, so anything showing a citation must render again. */
   citation_updated: null;
 
-  // The native menu's events (`src-tauri/src/menu.rs`, `settings.rs`).
+  // The native menu's events (`src-tauri/src/menu/`, `settings/`).
   setting: null;
   config_changed: null;
   citation_config_changed: null;

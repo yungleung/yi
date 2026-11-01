@@ -6,7 +6,7 @@
  * title and the sections it teaches — that typing and the formatting command do not change it,
  * and that opening a file while it is on screen asks nothing and leaves no "push" behind.
  *
- * @covers src-tauri/src/menu.rs (the Help item and its event), src/ui/tutorial/index.ts,
+ * @covers src-tauri/src/menu/build.rs (the Help item and its event), src/ui/tutorial/index.ts,
  *   src/ui/tutorial/index.ts, src/commands/triggers/native_menu.ts,
  *   src/services/session/rules.ts (a read-only document is replaceable)
  */

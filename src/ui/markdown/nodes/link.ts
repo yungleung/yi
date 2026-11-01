@@ -3,7 +3,7 @@
  * autolinks keep normal caret behavior.
  *
  * May import: the revealable contract (`revealable_node.ts`), the registry's
- * child helper, `source_mode.ts` for entering the source, and the AST types.
+ * child helper, `source_mode/` for entering the source, and the AST types.
  * Upholds: the source view is built from the node's own markdown, so the link
  * shows its source while the caret is inside it and renders itself otherwise.
  */

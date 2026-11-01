@@ -58,10 +58,10 @@ pub fn save_session(app: tauri::AppHandle, session: String) -> Result<(), String
 /// leaving it to whoever types the command.
 #[tauri::command]
 pub fn focus_window(app: tauri::AppHandle) -> Result<(), String> {
-  let window = app
-    .get_webview_window("main")
-    .ok_or_else(|| "the app has no main window".to_string())?;
-  window.set_focus().map_err(|error| error.to_string())
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "the app has no main window".to_string())?;
+    window.set_focus().map_err(|error| error.to_string())
 }
 
 #[cfg(test)]

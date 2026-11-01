@@ -2,9 +2,9 @@
  * The markdown a revealed inline run shows is the author's own characters: a
  * run written with underscores shows its underscores, and a run nested inside
  * another shows the container whole — the outermost run is the one revealed
- * (see `source_mode.ts: sourceRangeIn`).
+ * (see `editing/source_range.ts: sourceRangeIn`).
  *
- * @covers src/ui/markdown/nodes/strong.ts, src/ui/markdown/nodes/emphasis.ts, src/ui/markdown/source_mode.ts
+ * @covers src/ui/markdown/nodes/strong.ts, src/ui/markdown/nodes/emphasis.ts, src/ui/markdown/source_mode/
  */
 (async () => {
   const t = window.__t;

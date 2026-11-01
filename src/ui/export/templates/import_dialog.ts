@@ -15,8 +15,8 @@ import {
   type ImportRequest
 } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { QuestionCard } from '../../floating/question_card';
-import { kindLabel } from './kind_label';
+import { QuestionCard } from '../../floating';
+import { kindLabel } from '../kind_label';
 
 function baseName(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);

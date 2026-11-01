@@ -29,14 +29,16 @@ pub use font_hints::NamedFonts;
 #[allow(unused_imports)]
 pub use info::{ExportKindInfo, ExportKinds};
 #[allow(unused_imports)]
-pub use kinds::{ExportGroup, ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES};
-#[allow(unused_imports)]
-pub(super) use revealjs::{
-    download_revealjs_assets, package_revealjs_media, reveal_asset_path,
-    revealjs_asset_references, revealjs_output, use_revealjs_cdn,
+pub use kinds::{
+    ExportGroup, ExportKind, KindTemplate, PaperSize, TemplateMode, KINDS, PAPER_SIZES,
 };
 #[allow(unused_imports)]
 pub use pandoc::find_pandoc;
+#[allow(unused_imports)]
+pub(super) use revealjs::{
+    download_revealjs_assets, package_revealjs_media, reveal_asset_path, revealjs_asset_references,
+    revealjs_output, use_revealjs_cdn,
+};
 pub use run::{ExportOutcome, ExportRequest};
 
 /// The commands stay at `export::…` even though their work lives in a child module: Tauri's

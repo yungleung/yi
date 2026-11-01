@@ -39,7 +39,7 @@
 
 import { parseMarkdown } from '../../markdown/syntax/parser';
 import type { NamedFonts } from '../../../api/export';
-import { spansOfType, type Walkable } from '../pipeline/node_spans';
+import { spansOfType, type Walkable } from '../node_spans';
 
 /** The ranges Latin Modern was measured to hold **whole**, in one page each with the default settings. */
 const DRAWN_RANGES: readonly (readonly [number, number])[] = [

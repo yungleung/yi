@@ -31,7 +31,7 @@ export interface ExportKindInfo {
   needs_a_language: boolean;
   /**
    * Whether the kind's body keeps the note's own level-1 heading, its name standing in it when the
-   * note writes none: the EPUB, which the window hands a body of its own (`ui/export/pipeline/book_body.ts`).
+   * note writes none: the EPUB, which the window hands a body of its own (`ui/export/workflow/body.ts`).
    */
   names_its_body: boolean;
   /** Whether the kind's output can hold a picture as it is — an SVG or a webp; for the kinds that

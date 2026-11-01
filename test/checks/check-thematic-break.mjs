@@ -69,7 +69,7 @@ check(
   '---\n\n'
 );
 // Nothing above the first line needs separating from: the same rule `Enter`
-// follows at the start of a file (`paragraphStart` in `editing/blank_lines.ts`),
+// follows at the start of a file (`paragraphStart` in `editing/blank_lines/paragraph.ts`),
 // so a rule inserted there does not push two blank lines into the document.
 check(
   'at the top of the document the rule needs no blank line above it',

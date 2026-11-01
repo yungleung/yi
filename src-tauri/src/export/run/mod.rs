@@ -220,8 +220,8 @@ async fn export_with_pandoc(
         .ships_fonts
         .then(|| {
             let settings = settings_text(app, kind)?;
-            let faces = crate::fonts::bundled::fonts_dir(app)?;
-            crate::fonts::bundled::write_header(&dir, &faces, &settings)
+            let faces = crate::fonts::fonts_dir(app)?;
+            crate::fonts::write_header(&dir, &faces, &settings)
         })
         .transpose()?;
     let reference_header =

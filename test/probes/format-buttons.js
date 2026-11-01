@@ -2,7 +2,7 @@
  * The formatting buttons: each one wraps the selection in the markers of the
  * style it names. The caret is left inside the run the button just wrote, so
  * the block shows the run's own markdown until the caret leaves it (see
- * `source_mode.ts`) — and then the style itself.
+ * `source_mode/`) — and then the style itself.
  *
  * The buttons are the only trigger for inline formatting — there is no chord
  * for bold — so this is what proves `format:<style>` is a command the editor

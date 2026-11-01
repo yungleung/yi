@@ -12,7 +12,7 @@
  */
 
 import { t } from '../../services/i18n';
-import { QuestionCard } from '../floating/question_card';
+import { QuestionCard } from '../floating';
 
 export class VersionCommentDialog extends QuestionCard<string | null> {
   private readonly heading: HTMLParagraphElement;

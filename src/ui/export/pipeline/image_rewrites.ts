@@ -10,8 +10,8 @@
 
 import type { AstImage } from '../../markdown/ast';
 import { destinationPaths } from '../../../services/workspace';
-import { spansOfType, type Span, type Walkable } from '../pipeline/node_spans';
-import { isWebDestination } from '../assets/picture_hint';
+import { spansOfType, type Span, type Walkable } from '../node_spans';
+import { isWebDestination } from '../assets';
 import { encodedPath } from './markdown_escaping';
 import type { ExportAnswers, Rewrite } from './contracts';
 

@@ -1,5 +1,5 @@
 /**
- * The text a book is handed (`ui/export/pipeline/book_body.ts`): the note's own level-1 heading, with the
+ * The text a book is handed (`ui/export/workflow/body.ts`): the note's own level-1 heading, with the
  * note's name standing in it when the note writes none.
  *
  * The rule is short and every case of it is a shape a note really has: the note's heading where it
@@ -16,7 +16,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-book-body-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/pipeline/book_body.ts',
+  input: 'src/ui/export/workflow/body.ts',
   logLevel: 'silent',
   platform: 'node'
 });

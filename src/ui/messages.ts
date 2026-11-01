@@ -14,7 +14,7 @@
 import { eventManager } from '../services/events';
 import { t } from '../services/i18n';
 import { MESSAGE_EVENT, type Message } from '../services/messages';
-import { BesideCard, boxOf } from './floating/beside';
+import { BesideCard, boxOf } from './floating';
 
 /** The messages on screen: their cards, and the place each of them is showing for. */
 class MessageCards {

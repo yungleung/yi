@@ -13,7 +13,7 @@ import { TitleBar } from './ui/title_bar';
 import { StatusBar } from './ui/status_bar';
 import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
-import { WorkspaceTree } from './ui/workspace/tree';
+import { WorkspaceTree } from './ui/workspace';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
 import { WordsCountStatus } from './ui/words_count';
@@ -26,8 +26,8 @@ import { TableToolbar } from './ui/toolbar/index';
 import { LayoutToolbar } from './ui/toolbar/index';
 import { SessionToolbar } from './ui/toolbar/index';
 import { SavedStatus, StackStatus } from './ui/document_status';
-import { registerSessionCommands } from './ui/session/session_commands';
-import { registerNewDocumentCommand } from './ui/new_document/new_document_flow';
+import { registerSessionCommands } from './ui/session';
+import { registerNewDocumentCommand } from './ui/new_document';
 import { registerVersionCommand } from './ui/versioning/index';
 import { registerExportCommand } from './ui/export/workflow';
 import { registerExportManagerCommand } from './ui/export/manager/index';
@@ -164,7 +164,7 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
     }
 
     // The layout the reader left is the one they get, and the button that switches it is
-    // remembered through the same config file as the bibliography (see `settings.rs`).
+    // remembered through the same config file as the bibliography (see `settings/`).
     // Applying it happens before the listener, so opening the app is not a change to save.
     editor.setLayout(cfg.editor_layout === 'auto' ? 'auto' : 'page');
     void eventManager.on(EDITOR_LAYOUT_CHANGED, (event: any) => {
@@ -176,7 +176,7 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
 
     // The folder an image is saved in is also the folder a relative image destination may be read
     // from, so the renderer is told it here — and told again whenever a setting is saved, which is
-    // the only way it can change while the app is open (`settings.rs` announces every change).
+    // the only way it can change while the app is open (`settings/` announces every change).
     setImageFolder(await imageFolderPath());
     void eventManager.on('config_changed', () => {
       void (async () => {

@@ -5,7 +5,7 @@
  * table. The export can only show `Table R-1` if the filter preserves the
  * caption and label and `\yiTableRef` reads the package counter.
  *
- * @covers src/ui/export/reference/reference_header.ts, src/ui/export/pipeline/preprocess.ts,
+ * @covers src/ui/export/reference/header.ts, src/ui/export/pipeline/preprocess.ts,
  *   examples/templates/rho-class/table.lua
  */
 (async () => {

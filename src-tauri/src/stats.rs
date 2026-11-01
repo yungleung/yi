@@ -28,11 +28,14 @@ mod tests {
     fn test_get_word_count() {
         let markdown = "Rust是由 Mozilla 主導開發的通用、編譯型程式語言。".into();
         let count = get_word_count(markdown);
-        assert_eq!(count, WordsCount {
-            words: 20,
-            characters: 31,
-            whitespaces: 2,
-            cjk: 18,
-        });
+        assert_eq!(
+            count,
+            WordsCount {
+                words: 20,
+                characters: 31,
+                whitespaces: 2,
+                cjk: 18,
+            }
+        );
     }
 }

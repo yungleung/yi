@@ -15,7 +15,7 @@ import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
 import { BaseComponent } from '../../component';
 import { drivenByTools } from '../../under_test';
-import { packageActionAvailability } from '../manager/rules';
+import { packageActionAvailability } from './availability';
 import { TemplatePackageOperations } from './operations';
 import { offeredPackages } from './offering';
 import {

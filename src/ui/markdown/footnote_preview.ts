@@ -14,13 +14,13 @@
  * everything that moves: leaving the marker, scrolling, a click, `Escape`.
  *
  * May import: the editing context (the state and the scroll container), the footnotes
- * rule, the block factory, the node contract and `source_mode.ts` (the frame a node
+ * rule, the block factory, the node contract and `source_mode/` (the frame a node
  * needs to know which block it is being built in). Upholds: showing a note changes
  * nothing — no edit, no caret, no state.
  */
 
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { BesideCard, boxOf } from '../floating/beside';
+import { BesideCard, boxOf } from '../floating';
 import { isOpenableUrl } from './syntax/link_edits';
 import { footnoteOffsets } from './syntax/footnote';
 import { renderFootnoteBody } from './nodes/footnote';

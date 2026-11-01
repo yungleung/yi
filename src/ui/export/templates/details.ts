@@ -11,8 +11,9 @@
 
 import { type DetailsPatch, type TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { QuestionCard } from '../../floating/question_card';
-import { kindLabel, TEMPLATE_KINDS } from './kind_label';
+import { QuestionCard } from '../../floating';
+import { kindLabel } from '../kind_label';
+import { TEMPLATE_KINDS } from './kinds';
 
 function isReference(name: string): boolean {
   return /\.(docx|odt)$/i.test(name);

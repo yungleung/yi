@@ -16,7 +16,7 @@ export {
   rasterFolder,
   rasterPictures
 } from './raster_picture';
-export type { PictureLookup } from './raster_picture';
+export type { ImageBases, PictureLookup } from './contracts';
 export {
   destinationsThatNameNoImage,
   imageDestinations,

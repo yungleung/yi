@@ -4,7 +4,7 @@
  * The copied book template resets `yilist` at each chapter. Both the visible
  * caption and the automatic reference must follow that template counter.
  *
- * @covers src/ui/export/reference/reference_header.ts, src/ui/export/pipeline/list_rewrites.ts
+ * @covers src/ui/export/reference/header.ts, src/ui/export/pipeline/list_rewrites.ts
  */
 (async () => {
   const t = window.__t;

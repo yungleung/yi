@@ -16,7 +16,7 @@
  *
  * The last of those is what one kind's *body* is: a book is handed the note's name written where its
  * level-1 heading belongs, when the note keeps that heading in its frontmatter title
- * (`ui/export/pipeline/book_body.ts` — the heading the writer makes from the title is not part of the document
+ * (`ui/export/workflow/body.ts` — the heading the writer makes from the title is not part of the document
  * pandoc makes identifiers unique in), and every other kind is handed the note's own text.
  *
  * @covers src-tauri/src/export.rs (run_pandoc, write_note, export_through_pandoc),
@@ -275,7 +275,7 @@
     // body, and pandoc's EPUB writer then makes a heading of its own out of the book's name *outside* the
     // document pandoc makes identifiers unique in (measured: a note whose `## Going out` repeats the
     // name came out of epubcheck with `Duplicate ID "going-out"` twice). So a book is handed a body
-    // with the name written where that heading belongs (`ui/export/pipeline/book_body.ts`), and no other
+    // with the name written where that heading belongs (`ui/export/workflow/body.ts`), and no other
     // kind is: a docx of the same note is the note's own text, because its body must not say the
     // name a second time.
     const bookPath = `${folder}/book.md`;

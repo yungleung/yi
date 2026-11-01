@@ -7,7 +7,7 @@
 
 import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { FloatingSurface } from '../../floating/surface';
+import { FloatingSurface } from '../../floating';
 import { KindPage } from './kind_page';
 import { renderManagerNavigation } from './navigation';
 import {
@@ -326,13 +326,11 @@ export {
   defaultsActionAvailability,
   defaultsState,
   managerGroups,
-  packageActionAvailability,
   unassignedPackages
 } from './rules';
 export type {
   DefaultsActionAvailability,
   DefaultsState,
   ManagerGroup,
-  ManagerKindRow,
-  PackageActionAvailability
+  ManagerKindRow
 } from './rules';

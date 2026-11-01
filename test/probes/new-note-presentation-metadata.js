@@ -3,7 +3,7 @@
  *
  * @covers src/services/new_document/builtins.ts,
  *   src/services/new_document/templates.ts,
- *   src/ui/new_document/new_document_dialog.ts
+ *   src/ui/new_document/dialog.ts
  */
 (async () => {
   const t = window.__t;

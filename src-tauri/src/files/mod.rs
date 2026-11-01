@@ -6,8 +6,8 @@
 //! May import: the focused file submodules and std filesystem. Upholds: the
 //! frontend sees one stable command facade while each file rule has one home.
 
-pub(crate) mod atomic;
-pub(crate) mod listing;
+mod atomic;
+mod listing;
 mod names;
 
 pub use atomic::{write_atomically, write_bytes_atomically};
@@ -15,6 +15,16 @@ pub use atomic::{write_atomically, write_bytes_atomically};
 use names::entry_name;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+#[tauri::command]
+pub fn write_text_atomically(path: String, contents: String) -> Result<(), String> {
+    atomic::write_text_atomically(path, contents)
+}
+
+#[tauri::command]
+pub fn list_folder_files(folder_path: String) -> Result<Vec<listing::FileInfo>, String> {
+    listing::list_folder_files(folder_path)
+}
 
 /// Whether two paths name the same entry on disk (so a rename may pick either spelling).
 fn is_same_entry(left: &Path, right: &Path) -> bool {

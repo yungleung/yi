@@ -4,7 +4,7 @@
  *
  * Both ends of a footnote draw the same marker — `[1]` for `[^1]`, exactly as a link
  * renders its title — so both hide the characters the author typed, and both are shown as
- * their own source while the caret is inside them (see `source_mode.ts`). A definition's
+ * their own source while the caret is inside them (see `source_mode/`). A definition's
  * label is the only source that is part of a node rather than a node, so it asks with its
  * own range; a click on either end enters the label at the end of its content, and
  * Ctrl-click jumps between the two. What the marker *says* is the author's label, not the
@@ -14,7 +14,7 @@
  *
  * May import: the node contract (`editable_node.ts`, `revealable_node.ts`), the
  * registry (`createComponent`), the marker's shape (`syntax/footnote/model.ts:
- * markerShape`), `source_mode.ts` and the AST types. Upholds: a block's rendering is
+ * markerShape`), `source_mode/` and the AST types. Upholds: a block's rendering is
  * a pure function of its own source — the anchor is named from the node's own label.
  */
 
@@ -48,7 +48,7 @@ export class FootnoteDefinition extends EditableNodeComponent {
  *
  * The label is not a node of the parse: it is the head of the definition's own text, which
  * is why it asks whether the source being shown is its own range rather than its node's
- * (`source_mode.ts: isShownSourceRange`), and why the caret model has to know that a
+ * (`source_mode/node.ts: isShownSourceRange`), and why the caret model has to know that a
  * definition draws a marker's worth of characters before its note (`caret/offsets.ts`).
  * `id` is the name the marker links to and `footnoteDef` the one the jump is asked for;
  * both ride both shapes, so the jump's target exists whether or not the caret is in the
@@ -198,7 +198,7 @@ export class FootnoteReference extends RevealableNodeComponent {
  * way; drawing the normalised one made a marker read `[ab]` where the note says `[^Ab]`, so the two
  * ends agreed with each other and disagreed with the source until the caret was inside it. The source
  * is where the author's characters are, and the renderer names the block it is building
- * (`source_mode.ts: renderingBlock`) so a node can read them without being handed the document.
+ * (`source_mode/state.ts: renderingBlock`) so a node can read them without being handed the document.
  */
 function authoredLabel(node: { position?: { start?: { offset?: number } } }): string | null {
   const block = renderingBlock();

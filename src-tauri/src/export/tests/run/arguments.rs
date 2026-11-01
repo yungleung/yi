@@ -47,7 +47,10 @@ fn only_the_kind_whose_page_the_shipped_faces_draw_ships_fonts() {
         .position(|argument| argument == "--include-in-header")
         .map(|offset| offset + at + 2)
         .expect("the counter-prefix header is not in the arguments");
-    assert_eq!(arguments[counter_at + 1], reference_header.to_string_lossy());
+    assert_eq!(
+        arguments[counter_at + 1],
+        reference_header.to_string_lossy()
+    );
     // And nothing stands in for the settings file: it is still named, as it always was.
     assert!(arguments.contains(&dir.join("export.pdf.yaml").to_string_lossy().into_owned()));
     let _ = fs::remove_dir_all(&dir);
@@ -334,11 +337,9 @@ fn a_reference_package_is_handed_as_the_binary_pandoc_reads() {
     .iter()
     .map(|argument| argument.to_string_lossy().into_owned())
     .collect::<Vec<String>>();
-    assert!(
-        arguments
-            .iter()
-            .any(|argument| argument == "--reference-doc")
-    );
+    assert!(arguments
+        .iter()
+        .any(|argument| argument == "--reference-doc"));
     assert!(!arguments.iter().any(|argument| argument == "--template"));
     let _ = fs::remove_dir_all(&dir);
 }
@@ -507,11 +508,9 @@ fn a_page_a_reader_asks_for_is_a_geometry_option() {
         landscape: Some(true),
         ..request
     };
-    assert!(
-        !named_arguments(&dir, &docx)
-            .iter()
-            .any(|argument| argument.starts_with("geometry="))
-    );
+    assert!(!named_arguments(&dir, &docx)
+        .iter()
+        .any(|argument| argument.starts_with("geometry=")));
 
     // And a size this build does not know is refused rather than handed to LaTeX.
     let request = ExportRequest {
@@ -555,32 +554,26 @@ fn a_list_the_reader_does_not_want_is_suppressed_in_metadata() {
         .position(|argument| argument == "suppress-bibliography=true")
         .expect("the list the reader asked away was not suppressed");
     assert_eq!(asked[at - 1], "--metadata");
-    assert!(
-        !asked
-            .iter()
-            .any(|argument| argument.starts_with("suppress-bibliography=")
-                && argument != "suppress-bibliography=true")
-    );
+    assert!(!asked
+        .iter()
+        .any(|argument| argument.starts_with("suppress-bibliography=")
+            && argument != "suppress-bibliography=true"));
 
     // Not asked: nothing said.
-    assert!(
-        !named_arguments(&dir, &request_in(&dir))
-            .iter()
-            .any(|argument| argument.starts_with("suppress-bibliography="))
-    );
-    // Asked, but with no library: nothing to suppress.
-    assert!(
-        !named_arguments(
-            &dir,
-            &ExportRequest {
-                suppress_references: true,
-                bibliography: None,
-                ..request_in(&dir)
-            }
-        )
+    assert!(!named_arguments(&dir, &request_in(&dir))
         .iter()
-        .any(|argument| argument.starts_with("suppress-bibliography="))
-    );
+        .any(|argument| argument.starts_with("suppress-bibliography=")));
+    // Asked, but with no library: nothing to suppress.
+    assert!(!named_arguments(
+        &dir,
+        &ExportRequest {
+            suppress_references: true,
+            bibliography: None,
+            ..request_in(&dir)
+        }
+    )
+    .iter()
+    .any(|argument| argument.starts_with("suppress-bibliography=")));
     let _ = fs::remove_dir_all(&dir);
 }
 

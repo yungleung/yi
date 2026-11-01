@@ -1,5 +1,5 @@
 /**
- * Asking where a new note goes and what it is to be called — one question, two hands.
+ * Asking where a new note goes and what it is called — one question, two hands.
  *
  * The question is two answers at once: a folder, and a name. It has the same two hands as the
  * app's prompt (`ui/prompt.ts`), chosen the same way (`under_test.ts`):
@@ -27,8 +27,8 @@
 import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
 import type { NewNoteTemplate } from '../../services/new_document';
-import { QuestionCard } from '../floating/question_card';
-import { kindLabel } from '../export/templates';
+import { QuestionCard } from '../floating';
+import { kindLabel } from '../export/kind_label';
 import { drivenByTools } from '../under_test';
 import { placementOfPath, type FolderOption } from '../../services/workspace';
 import { newDocumentTemplatePicker } from './template_picker';

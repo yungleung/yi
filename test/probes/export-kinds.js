@@ -2,7 +2,7 @@
  * One item per kind, and every item opens the card it names.
  *
  * The File menu's *Export* is a **submenu** — one item per kind the app ships, each naming its own
- * (`src-tauri/src/menu.rs`, over `KINDS`) — and the half of it a probe can see is the event those
+ * (`src-tauri/src/menu/build.rs`, over `KINDS`) — and the half of it a probe can see is the event those
  * items emit: `export` carrying the kind. So this walks the kinds the app reports, asks for each the
  * way its menu item does, and checks that the card that opens is *about* that kind: its own name in
  * the heading, its own target under the note's own name (`a note.processed.md` for the markdown kind,
@@ -13,7 +13,7 @@
  * and a probe still running when the bridge gives up keeps driving the page while the *next* probe
  * tries to measure it (measured: the four probes after it failed).
  *
- * @covers src-tauri/src/menu.rs (the submenu), src/ui/export/workflow/index.ts (the kind the payload
+ * @covers src-tauri/src/menu/build.rs (the submenu), src/ui/export/workflow/index.ts (the kind the payload
  *   names), src/ui/export/dialog/index.ts (a card that is about one kind), src-tauri/src/export.rs
  *   (KINDS' name_suffix)
  */

@@ -11,7 +11,7 @@
  * The workspace is the probe's own, at `~/yi-probe-new-note-template`, for the reason
  * `new-markdown.js` gives: the file plugin is scoped to the home directory.
  *
- * @covers src/services/new_document/index.ts, src/ui/new_document/new_document_flow.ts
+ * @covers src/services/new_document/index.ts, src/ui/new_document/flow.ts
  * @covers src/ui/settings/index.ts
  */
 (async () => {

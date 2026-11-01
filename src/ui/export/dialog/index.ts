@@ -20,12 +20,14 @@ import { configManager } from '../../../services/config_manager';
 import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { prompt } from '../../prompt';
-import { QuestionCard } from '../../floating/question_card';
+import { QuestionCard } from '../../floating';
 import { ExportForm } from './form';
-import { createDefaultDialog } from '../templates/create_default_dialog';
-import { templateEditorPanel } from '../templates/editor';
-import { kindLabel } from '../templates/kind_label';
-import { templateLibraryDialog } from '../templates/library';
+import {
+  createDefaultDialog,
+  templateEditorPanel,
+  templateLibraryDialog
+} from '../templates';
+import { kindLabel } from '../kind_label';
 
 /** What the card is asked with: the kind the menu named and the note's target stem. */
 export interface ExportQuestion {

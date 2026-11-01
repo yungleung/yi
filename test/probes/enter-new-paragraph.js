@@ -9,7 +9,7 @@
  * file (there the text needs its own blank line *above* it), and a new note's blank
  * body line, which is the same last-line case under a frontmatter.
  *
- * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/editing/blank_lines.ts,
+ * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/editing/blank_lines/,
  *   src/ui/markdown/document/state.ts
  */
 (async () => {

@@ -72,9 +72,11 @@ pub(crate) fn relative_url(from_file: &str, target: &str) -> Option<String> {
     let from_folder: Vec<&str> = from_file.split('/').collect();
     let from_folder = &from_folder[..from_folder.len().saturating_sub(1)];
     let target_parts: Vec<&str> = target.split('/').collect();
-    if from_folder.iter().chain(target_parts.iter()).any(|part| {
-        part.is_empty() || *part == "." || *part == ".." || part.contains('\\')
-    }) {
+    if from_folder
+        .iter()
+        .chain(target_parts.iter())
+        .any(|part| part.is_empty() || *part == "." || *part == ".." || part.contains('\\'))
+    {
         return None;
     }
     let common = from_folder
@@ -102,7 +104,10 @@ mod tests {
         assert_eq!(reference_to(page, "logo.png"), Some("logo.png".to_string()));
         assert_eq!(reference_to(r#"<img src="/logo.png">"#, "logo.png"), None);
         assert_eq!(reference_to(r#"<img src="../logo.png">"#, "logo.png"), None);
-        assert_eq!(reference_to(r#"<img src="https://x/logo.png">"#, "logo.png"), None);
+        assert_eq!(
+            reference_to(r#"<img src="https://x/logo.png">"#, "logo.png"),
+            None
+        );
     }
 
     #[test]

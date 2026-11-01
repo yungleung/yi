@@ -12,9 +12,9 @@
 import type { ExportKindInfo } from '../../../api/export';
 import { exportTemplates, type TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { QuestionCard } from '../../floating/question_card';
+import { QuestionCard } from '../../floating';
 import { TemplatePackageBrowser } from './browser';
-import { kindLabel } from './kind_label';
+import { kindLabel } from '../kind_label';
 
 /** What the chooser answers: an id, null for Pandoc's default, or nothing for cancel. */
 export interface TemplateChoice {

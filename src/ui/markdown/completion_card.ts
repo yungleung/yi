@@ -1,7 +1,7 @@
 /**
  * The list of choices, drawn beside the caret.
  *
- * The card is the app's own beside-card (`ui/floating/beside.ts`), which places it beside the caret
+ * The card is the app's own beside-card (`ui/floating/`), which places it beside the caret
  * and clamps it to the window; what is here is the list itself: one row per choice — the value in
  * monospace, the title dimmed beside it — and the selected row highlighted. A row has no margin of
  * its own: it is as wide as the card's own interior and flush with its border, so the highlight is
@@ -14,8 +14,7 @@
  */
 
 import { t } from '../../services/i18n';
-import { BesideCard } from '../floating/beside';
-import type { Box } from '../floating/placement';
+import { BesideCard, type Box } from '../floating';
 import type { CompletionChoice } from './syntax/completions';
 
 export class CompletionCard extends BesideCard {

@@ -6,7 +6,7 @@
  * this is the case where a source view built from the serializer puts the caret
  * two characters early — in the middle of the author's marker.
  *
- * @covers src/ui/markdown/nodes/revealable_node.ts, src/ui/markdown/source_mode.ts
+ * @covers src/ui/markdown/nodes/revealable_node.ts, src/ui/markdown/source_mode/
  */
 (async () => {
   const t = window.__t;

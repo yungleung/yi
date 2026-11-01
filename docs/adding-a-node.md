@@ -55,7 +55,7 @@ registerComponent('yourNode', (node) => new YourNode(node as AstYourNode), true)
 The third argument, `showsSource`, says your node's markdown source *can stand in
 for its rendering* — set it when the rendering hides the characters the author typed
 (a link's title, a formula's KaTeX, a citation's formatted reference). That is the
-list `source_mode.ts` consults, and it is what makes the caret able to live in the
+list `source_mode/` consults, and it is what makes the caret able to live in the
 node.
 
 ## 4. If it shows source, decide how a click enters it
@@ -102,7 +102,7 @@ do, and `test/probes/format-reveal.js` is their proof.
 If what you show is only *part* of the node — a footnote definition's node covers the
 whole note, and only the `[^label]` at its head is the label — then `sourceViewFor`
 cannot ask the question for you, because `isShownSource` compares the node's whole range.
-Ask `source_mode.ts: isShownSourceRange` with your own block-relative range, name that
+Ask `source_mode/node.ts: isShownSourceRange` with your own block-relative range, name that
 range for the caret in `editing/context.ts: sourceRangeIn`, and keep the shape of the
 part in one place under `syntax/` (`syntax/footnote/model.ts: markerShape` is the worked
 example, and `test/probes/footnote-jump-back.js` is its proof).
@@ -214,6 +214,6 @@ is tagged with the offset of the text it shows (`nodes/fence_text.ts` — a fenc
 block's own text, delimiters and all, while the caret is inside it), which is what
 makes a keystroke inside it exact. And the renderer keys an element by its
 content *and* by the shape it was built in — for a block, the shape comes from
-`source_mode.ts: shownSourceWithinBlock` (`virtual_block_renderer.ts: renderKey`) —
+`source_mode/block.ts: shownSourceWithinBlock` (`virtual_block_renderer.ts: renderKey`) —
 so a kind that can render two ways has to go through that, or the text and the view
 are handed each other's element.

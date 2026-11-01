@@ -4,7 +4,7 @@
  * A rule is a *block*, not a character: markdown reads `---` glued under a line
  * of text as a setext heading, so the line needs a blank line on each side of
  * it. That is a rule about markdown, so the padding comes from
- * `blank_lines.ts` and the marker from `syntax/markers.ts` — this module only
+ * `blank_lines/` and the marker from `syntax/markers.ts` — this module only
  * decides where they go and applies the one edit.
  *
  * May import: the marker's home (`syntax/markers.ts`), the blank-line rule

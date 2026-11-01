@@ -188,7 +188,7 @@ export function insertNewline(context: EditorContext): boolean {
     }
     // `Enter` at the block's own end makes a line *after* it: the same newline, but the caret
     // belongs on the empty paragraph it made rather than on the separator line in front of it
-    // (`blank_lines.ts: startEmptyParagraph` is the one rule for that).
+    // (`blank_lines/paragraph.ts: startEmptyParagraph` is the one rule for that).
     if (offsets.from >= block.charEnd) {
       return startEmptyParagraph(context, block, offsets);
     }

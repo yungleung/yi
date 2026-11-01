@@ -18,7 +18,7 @@
  */
 
 import { bibliographyManager } from '../../services/bibliography';
-import { BesideCard, boxOf } from '../floating/beside';
+import { BesideCard, boxOf } from '../floating';
 import type { EditorContext } from './editing/context';
 
 /** How long the pointer has to rest on a citation before the card appears. */

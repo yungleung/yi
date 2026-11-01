@@ -14,7 +14,7 @@
  * block; a star inside an ordinary word changes no shape. A space and a comma are
  * prose and take the same in-place path.
  *
- * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/source_mode.ts
+ * @covers src/ui/markdown/editing/context.ts, src/ui/markdown/source_mode/
  */
 (async () => {
   const t = window.__t;

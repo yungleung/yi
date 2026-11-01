@@ -14,13 +14,7 @@ export type TitleLookup = (target: string) => Promise<string | null>;
 /** Whether a path names a file that is there, asked of whatever the caller knows. */
 export type FileExists = (path: string) => Promise<boolean>;
 
-/** The two folders a relative destination is read from — the renderer's own answers. */
-export interface ImageBases {
-  /** The folder of the document being exported, or null when it has no file yet. */
-  document: string | null;
-  /** The folder the settings name for images, or null when the reader named none. */
-  images: string | null;
-}
+import type { ImageBases } from '../assets';
 
 /** What the pre-process has to ask the app: the rules' answers, and nothing else. */
 export interface ExportAnswers {

@@ -1,7 +1,7 @@
 /**
  * A fenced block's text: the characters the caret edits, delimiters or not.
  *
- * A fenced block shows one of two things (see `source_mode.ts`): its **body**, with the delimiters
+ * A fenced block shows one of two things (see `source_mode/`): its **body**, with the delimiters
  * hidden, which is what it renders while the caret is elsewhere; or its own **text**, delimiters and
  * all, which is what it shows — and what the caret maps through — while the caret is inside it. Both
  * are the document's own characters, one for one, and the element is tagged with the block-relative

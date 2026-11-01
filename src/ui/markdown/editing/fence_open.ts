@@ -6,7 +6,7 @@
  * What they would get otherwise is the one line they typed, which markdown reads as a fence running
  * to the end of the note: a ` ``` ` above a paragraph turns that paragraph into code, and a `$$`
  * turns it into the formula's content. So the line becomes both delimiters at once, with the blank
- * lines markdown needs around the block, which come from `blank_lines.ts` so nothing above or below
+ * lines markdown needs around the block, which come from `blank_lines/` so nothing above or below
  * it is swallowed either. A formula or frontmatter caret lands in the body. Code and Div carets
  * stay after their opening markers: typed code-fence text filters the language choice, a following
  * space can begin Pandoc attributes, and a Div kind picker opens beside the colon fence. A Div waits
@@ -26,7 +26,7 @@ import { soleDelimiter } from '../syntax/markers';
 import { lineSpanAt } from '../syntax/lines';
 import { getCaretRange } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
-import { boxOf } from '../../floating/beside';
+import { boxOf } from '../../floating';
 import { blockPadding } from './blank_lines';
 import { applyEdit, type EditorContext } from './context';
 import { proseRoot } from './selection';

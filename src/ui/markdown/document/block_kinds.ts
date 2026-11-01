@@ -50,7 +50,7 @@ export function isRawRendered(kind: BlockKind): boolean {
  * Every fenced block does: a display formula renders KaTeX and the other two render their body
  * with the delimiters hidden, so none of the three has a character to aim a caret at where its
  * own markdown is — the source view is the block's own text, delimiters and all
- * (`nodes/fence_text.ts`), and the caret maps through it one to one (see `source_mode.ts`).
+ * (`nodes/fence_text.ts`), and the caret maps through it one to one (see `source_mode/`).
  */
 export function hasSourceMode(kind: BlockKind): boolean {
   return isFenced(kind);

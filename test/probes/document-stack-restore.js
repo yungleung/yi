@@ -11,7 +11,7 @@
  *
  * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/virtual_block_renderer.ts,
- *   src/ui/session/stack_popover.ts
+ *   src/ui/session/stack.ts
  * @needs-workspace — the files it opens are the fixtures' (`--with-workspace`)
  */
 (async () => {

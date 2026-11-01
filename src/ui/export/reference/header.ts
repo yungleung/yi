@@ -1,5 +1,5 @@
 /**
- * The LaTeX header that aligns native caption counters with Yi's reference vocabulary.
+ * The LaTeX header aligning native caption counters with Yi's reference vocabulary.
  *
  * Figures, tables and listings use Pandoc's native counters. Equations use the
  * native equation counter, while lists use Yi's namespaced object counter.

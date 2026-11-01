@@ -6,7 +6,7 @@
  * Each row is one stacked document — its title on the left, a small × at the rightmost edge so
  * the rows stay justified — and the row of the document on screen is marked.
  *
- * The rows name commands (`session_commands.ts`) rather than reaching for the session
+ * The rows name commands (`commands.ts`) rather than reaching for the session
  * themselves, which is how a probe drives a row the way a reader does, and the panel registers
  * `session:openStack` itself: the module that owns the behaviour is the one that answers the
  * command its button names.
@@ -19,7 +19,7 @@
 import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
-import { AnchoredPanel } from '../floating/panel';
+import { AnchoredPanel } from '../floating';
 import { registerCommand, runCommand } from '../../commands/runtime';
 
 export class StackPopover extends AnchoredPanel {

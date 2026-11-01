@@ -9,7 +9,7 @@
  * what becomes of the document on screen — is the shell's business and not the editor's. The
  * session *owns* the editor (`main.ts: documentSession.attach(editor)`), so an editor module that
  * imported it would be asking its own owner; this is the port the shell sets instead, the same
- * shape and the same reason as `source_mode.ts: setSourceEntryHandler`.
+ * shape and the same reason as `source_mode/block.ts: setSourceEntryHandler`.
  *
  * May import: nothing. Upholds: the editor asks and the shell answers — no module under this one
  * reaches the app, and a window whose shell has set no handler opens nothing at all.

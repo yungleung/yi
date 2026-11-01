@@ -3,7 +3,7 @@
  * own source while the caret is inside it.
  *
  * May import: the node contracts (`editable_node.ts`, `revealable_node.ts`),
- * KaTeX, the LaTeX highlighter (`latex_highlight.ts`), `source_mode.ts`, the
+ * KaTeX, the LaTeX highlighter (`latex_highlight.ts`), `source_mode/`, the
  * viewport observer (`lazy.ts`) and the AST types. Upholds: a rendering is a pure
  * function of its own source — the KaTeX cache is keyed by that source, so a
  * rebuild cannot change what a formula looks like.
@@ -127,7 +127,7 @@ function formulaRange(source: string): { start: number; end: number } {
  * Renders a display `math` node with KaTeX, and nothing else.
  *
  * A display formula is a block, and KaTeX has no characters to aim a caret at,
- * so the *block* shows its own text — delimiters and all (see `source_mode.ts`
+ * so the *block* shows its own text — delimiters and all (see `source_mode/`
  * and `create_block.ts`) — while the caret is inside it, and this rendering
  * holds no caret of its own: it is what the block shows the rest of the time.
  * The formula renders lazily near the viewport, like inline math.

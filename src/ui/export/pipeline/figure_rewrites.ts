@@ -12,7 +12,7 @@ import type { AstImage } from '../../markdown/ast';
 import type { FigureNode } from '../../markdown/syntax/figures';
 import type { ReferenceEntry } from '../../markdown/document/reference_index';
 import { referenceLabel } from '../../markdown/document/reference_index';
-import type { Span } from './node_spans';
+import type { Span } from '../node_spans';
 import type { ExportAnswers, Rewrite } from './contracts';
 import { isLatexKind } from '../kind_family';
 import { escapeHtml, htmlAttributeName } from './html';

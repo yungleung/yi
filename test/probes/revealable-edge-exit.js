@@ -6,7 +6,7 @@
  * node and the node must render again. This holds for every inline revealable family whose
  * source replaces a rendering rather than an editable text run.
  *
- * @covers src/ui/markdown/source_mode.ts,
+ * @covers src/ui/markdown/source_mode/,
  *   src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/editing/typed_text.ts
  * @needs-workspace — citations and wikilinks resolve through the fixture workspace

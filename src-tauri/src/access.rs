@@ -84,7 +84,10 @@ pub fn folders_in(config: &AppConfig) -> Vec<PathBuf> {
 /// this app cannot make is a note the reader cannot save.
 pub fn grant<R: Runtime>(app: &tauri::AppHandle<R>, folder: &Path) -> bool {
     let files = app.fs_scope().allow_directory(folder, true).is_ok();
-    let pictures = app.asset_protocol_scope().allow_directory(folder, true).is_ok();
+    let pictures = app
+        .asset_protocol_scope()
+        .allow_directory(folder, true)
+        .is_ok();
     files && pictures
 }
 
@@ -141,7 +144,10 @@ mod tests {
             bibliography_file: String::new(),
             ..AppConfig::default()
         };
-        assert_eq!(folders_in(&config), vec![workspace.clone(), pictures.clone()]);
+        assert_eq!(
+            folders_in(&config),
+            vec![workspace.clone(), pictures.clone()]
+        );
 
         // The library is read (and watched) from the page too, so its folder is one the app works in —
         // and a library inside the workspace is the same grant, not a second one.
@@ -149,7 +155,10 @@ mod tests {
             bibliography_file: workspace.join("library.bib").to_string_lossy().into_owned(),
             ..config.clone()
         };
-        assert_eq!(folders_in(&library), vec![workspace.clone(), pictures.clone()]);
+        assert_eq!(
+            folders_in(&library),
+            vec![workspace.clone(), pictures.clone()]
+        );
 
         // The same folder twice is one grant, and a folder that is not there is none at all.
         let same = AppConfig {

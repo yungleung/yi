@@ -2,7 +2,7 @@
  * Block component factory — the block-level counterpart of `create_node.ts`.
  * The virtual renderer composes these individual block elements.
  *
- * May import: the document's blocks, the node registry, the caret, `source_mode.ts`, the fenced
+ * May import: the document's blocks, the node registry, the caret, `source_mode/`, the focused
  * block's text and the three highlighters. Upholds: a block's rendering is a pure function of its
  * own source — the component is built from the block's slice, and the block's line range is tagged
  * on it for everything that maps back.
@@ -14,25 +14,12 @@ import type { RootContent } from 'mdast';
 import { appendChildren } from './registry';
 import { isSourceBlock, withRenderFrame } from './source_mode';
 import { showCaret } from './caret/caret';
-import { FenceText, type FenceTextStyle } from './nodes/fence_text';
-import { Equation, EquationSource } from './nodes/equation';
-import { QuoteSourceView } from './nodes/quote_source';
-import { CalloutSourceView } from './nodes/callout_source';
-import { FencedDivSourceView } from './nodes/fenced_div_source';
 import { Caption } from './nodes/caption';
-import { fenceLabel } from './nodes/fence_label';
-import { chooseLanguage } from './editing/language_picker';
-import { highlightCode } from './nodes/code_highlight';
-import { highlightFrontmatter } from './nodes/frontmatter_highlight';
-import { highlightLatex } from './nodes/latex_highlight';
-import {
-  innerEquationBody,
-  readEquationBlockSource
-} from './syntax/equation';
-import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code';
 import { readCallout } from './syntax/callout';
-import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
+import { renderEquationBlock } from './block_views/equation';
+import { renderFenceBody } from './block_views/fence';
+import { renderSourceBlock } from './block_views/source';
 // Importing the registration bootstrap registers every node component.
 import './create_node';
 
@@ -62,81 +49,20 @@ class BlockView implements BlockComponent {
     const callout = readCallout(node.text);
     // The block is built with itself named as the one being built, so a node
     // inside it can tell whether its own source is the one being shown (see
-    // `source_mode.ts`).
+    // `source_mode/`).
     this.element = withRenderFrame(node, () =>
       node.kind === 'blank'
         ? this.renderBlank(node)
         : node.kind === 'equation'
-          ? this.renderEquation(node)
+          ? renderEquationBlock(node, (block) => this.container(block), (block, children, callout) =>
+              this.renderParsed(block, children, callout)
+            )
         : isSourceBlock(node)
-          ? this.renderSource(node, callout)
+          ? renderSourceBlock(node, callout, (block) => this.container(block))
           : hasBodyView(node.kind)
-            ? this.renderFenceBody(node)
+            ? renderFenceBody(node, (block) => this.container(block))
             : this.renderParsed(node, children, callout)
     );
-  }
-
-  /** A labeled equation: KaTeX, one Yi number, or the complete wrapper as source. */
-  private renderEquation(node: BlockNode): HTMLElement {
-    const source = readEquationBlockSource(node.text);
-    const element = this.container(node);
-    if (source === null) {
-      return this.renderParsed(node, [], null);
-    }
-    element.classList.add('markdown-equation-block');
-    if (source.id !== null) {
-      element.id = source.id;
-    }
-    if (isSourceBlock(node)) {
-      element.appendChild(new EquationSource(node).element);
-      return element;
-    }
-    element.appendChild(
-      new Equation(node, source, innerEquationBody(source.body)).element
-    );
-    const numberText = renderContext().equationNumberAt(node.charStart + source.from);
-    if (numberText !== null) {
-      const number = document.createElement('span');
-      number.className = 'markdown-equation-number';
-      number.setAttribute('data-chrome', 'true');
-      number.textContent = numberText;
-      element.appendChild(number);
-    }
-    return element;
-  }
-
-  /**
-   * The block's own text, delimiters and all, shown while the caret is inside it: the shape
-   * `source_mode.ts` names for a fenced block, and the one its rendering cannot hold a caret in —
-   * a formula's KaTeX has no characters to aim at, and the other two hide the lines a character
-   * typed at the body's edge would land on (see `nodes/fence_text.ts`).
-   */
-  private renderSource(node: BlockNode, callout: ReturnType<typeof readCallout>): HTMLElement {
-    const kind = fenceKind(node);
-    const element = this.container(node);
-    if (callout !== null) {
-      element.classList.add('markdown-callout-block');
-      element.appendChild(new CalloutSourceView(node).element);
-      return element;
-    }
-    if (node.kind === 'fencedDiv') {
-      element.appendChild(new FencedDivSourceView(node).element);
-      return element;
-    }
-    if (node.kind === 'quote') {
-      element.appendChild(new QuoteSourceView(node).element);
-      return element;
-    }
-    this.markListing(element, node);
-    element.appendChild(
-      new FenceText(
-        node,
-        { ...kind, className: `${SOURCE_CLASS} ${kind.className}` },
-        true
-      ).element
-    );
-    element.appendChild(this.label(kind, node));
-    return element;
   }
 
   /** A blank line the author added: an empty paragraph holding the caret. */
@@ -212,92 +138,6 @@ class BlockView implements BlockComponent {
     return element;
   }
 
-  /**
-   * A fenced block's body, its delimiters hidden: what a fenced code block and a frontmatter block
-   * render while the caret is elsewhere. A display formula has no body to render — its view is the
-   * KaTeX parse (`nodes/math.ts`), which is what `renderParsed` draws.
-   *
-   * The body is the block's own characters — a node like any other, so a click lands on the
-   * character clicked and a keystroke writes there — highlighted in the language the fence named,
-   * or the block's own format (see `nodes/fence_text.ts`).
-   */
-  private renderFenceBody(node: BlockNode): HTMLElement {
-    const kind = fenceKind(node);
-    const element = this.container(node);
-    const listing = node.kind === 'fencedCode' ? listingFenceData(node.text) : null;
-    const body = new FenceText(
-      node,
-      { ...kind, className: `${kind.className} ${OVERFLOW_CLASS}` }
-    ).element;
-    if (listing === null) {
-      element.appendChild(body);
-    } else {
-      this.markListing(element, node);
-      const figure = document.createElement('figure');
-      figure.className = 'markdown-listing';
-      figure.appendChild(body);
-      const caption = this.listingCaption(node, listing);
-      if (caption !== null) {
-        figure.appendChild(caption);
-      }
-      element.appendChild(figure);
-    }
-    element.appendChild(this.label(kind, node));
-    return element;
-  }
-
-  /** Apply only a listing's target ID; its other attributes remain export metadata. */
-  private markListing(element: HTMLElement, node: BlockNode): void {
-    if (node.kind !== 'fencedCode') {
-      return;
-    }
-    const listing = listingFenceData(node.text);
-    if (listing === null) {
-      return;
-    }
-    element.classList.add('markdown-listing-block');
-    if (listing.id !== null) {
-      element.id = listing.id;
-    }
-  }
-
-  /** The generated number and the caption text read from the opening fence. */
-  private listingCaption(node: BlockNode, listing: CodeFenceData): HTMLElement | null {
-    const number = renderContext().listingLabelAt(node.charStart);
-    if (number === null && listing.caption === null) {
-      return null;
-    }
-    const caption = document.createElement('figcaption');
-    caption.className = 'markdown-listing-caption';
-    if (number !== null) {
-      const label = document.createElement('span');
-      label.className = 'markdown-listing-label';
-      label.textContent = `${number}.`;
-      caption.appendChild(label);
-      if (listing.caption !== null) {
-        caption.appendChild(document.createTextNode(' '));
-      }
-    }
-    if (listing.caption !== null) {
-      caption.appendChild(document.createTextNode(listing.caption));
-    }
-    return caption;
-  }
-
-  /**
-   * What the block's corner says (`nodes/fence_label.ts`): a fenced code block's language is the
-   * one thing about it the reader may change, so there the label is a button that asks for it
-   * (`editing/language_picker.ts`); the other two are badges.
-   */
-  private label(kind: FenceKind, node: BlockNode): HTMLElement {
-    return kind.choosesLanguage
-      ? fenceLabel({
-          text: kind.label,
-          onChoose: (label) => chooseLanguage(label, kind.language, node.lineStart)
-        })
-      : fenceLabel({ text: kind.label });
-  }
-
   private container(node: BlockNode): HTMLElement {
     const element = document.createElement('div');
     element.className = 'markdown-block';
@@ -308,52 +148,4 @@ class BlockView implements BlockComponent {
     setOffset(element, CHAR_START, node.charStart);
     return element;
   }
-}
-
-/** The class that marks a block as showing its own source rather than its view. */
-const SOURCE_CLASS = 'markdown-source-text';
-
-/** The class every source box and body box carries: a long line scrolls rather than wraps. */
-const OVERFLOW_CLASS = 'overflow-x-auto';
-
-/** What a fenced block is: how its own characters are drawn, and what its corner says. */
-interface FenceKind extends FenceTextStyle {
-  /** What the block's label says (`nodes/fence_label.ts`). */
-  readonly label: string;
-  /** Whether that label is a button that asks for the block's language. */
-  readonly choosesLanguage: boolean;
-}
-
-/**
- * The three fenced kinds, read off the block: one home for how each draws its own characters —
- * the class of its box, the language its body is highlighted as, and what its corner says.
- */
-function fenceKind(node: BlockNode): FenceKind {
-  if (node.kind === 'frontmatter') {
-    return {
-      className: 'markdown-frontmatter',
-      language: 'yaml',
-      highlight: (source) => highlightFrontmatter(source),
-      label: 'YAML Frontmatter',
-      choosesLanguage: false
-    };
-  }
-  if (node.kind === 'fencedCode') {
-    const language = codeFenceData(node.text).language ?? '';
-    return {
-      className: 'markdown-fenced-code',
-      language,
-      highlight: (source) => highlightCode(source, language),
-      label: language === '' ? 'text' : language,
-      choosesLanguage: true
-    };
-  }
-  // Display math: its view is KaTeX, so only its own text is drawn here, and that text is LaTeX.
-  return {
-    className: 'markdown-display-math',
-    language: 'latex',
-    highlight: highlightLatex,
-    label: 'latex',
-    choosesLanguage: false
-  };
 }

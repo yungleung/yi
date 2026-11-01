@@ -13,11 +13,11 @@
  * citation. Those two characters sets are the plugin's, imported rather than re-spelled: the popup
  * and the syntax cannot disagree about where a citation is.
  *
- * May import: the citation plugin's own key characters. Upholds: one home for "what is being typed
- * here", so a list opens exactly where the construct it completes can live.
+ * May import: the shared citation-key grammar. Upholds: one home for "what is being typed here",
+ * so a list opens exactly where the construct it completes can live.
  */
 
-import { citationKeyCharacter, citationPrecedesAt } from '../plugins/remark-citation/syntax';
+import { citationKeyCharacter, citationPrecedesAt } from './citation_keys';
 
 /** The query the caret is inside, and where it started. */
 export interface CompletionQuery {

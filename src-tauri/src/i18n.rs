@@ -23,71 +23,75 @@ pub const LANGUAGES: [&str; 8] = ["en", "ja", "zh-Hans", "zh-Hant", "de", "fr", 
 const DEFAULT_LANGUAGE: &str = "en";
 
 const CATALOGUE_FILES: [(&str, &str); 8] = [
-  ("en", include_str!("../../locales/en.json")),
-  ("ja", include_str!("../../locales/ja.json")),
-  ("zh-Hans", include_str!("../../locales/zh-Hans.json")),
-  ("zh-Hant", include_str!("../../locales/zh-Hant.json")),
-  ("de", include_str!("../../locales/de.json")),
-  ("fr", include_str!("../../locales/fr.json")),
-  ("es", include_str!("../../locales/es.json")),
-  ("pt", include_str!("../../locales/pt.json")),
+    ("en", include_str!("../../locales/en.json")),
+    ("ja", include_str!("../../locales/ja.json")),
+    ("zh-Hans", include_str!("../../locales/zh-Hans.json")),
+    ("zh-Hant", include_str!("../../locales/zh-Hant.json")),
+    ("de", include_str!("../../locales/de.json")),
+    ("fr", include_str!("../../locales/fr.json")),
+    ("es", include_str!("../../locales/es.json")),
+    ("pt", include_str!("../../locales/pt.json")),
 ];
 
 /// Every catalogue, parsed once. A file that will not parse leaves that language empty, which
 /// reads as *the keys themselves* rather than as a crash.
 fn catalogues() -> &'static HashMap<&'static str, HashMap<String, String>> {
-  static PARSED: OnceLock<HashMap<&'static str, HashMap<String, String>>> = OnceLock::new();
-  PARSED.get_or_init(|| {
-    CATALOGUE_FILES
-      .iter()
-      .map(|(language, text)| {
-        let catalogue = serde_json::from_str::<HashMap<String, String>>(text).unwrap_or_default();
-        (*language, catalogue)
-      })
-      .collect()
-  })
+    static PARSED: OnceLock<HashMap<&'static str, HashMap<String, String>>> = OnceLock::new();
+    PARSED.get_or_init(|| {
+        CATALOGUE_FILES
+            .iter()
+            .map(|(language, text)| {
+                let catalogue =
+                    serde_json::from_str::<HashMap<String, String>>(text).unwrap_or_default();
+                (*language, catalogue)
+            })
+            .collect()
+    })
 }
 
 /// The string for `key`, with its parameters put in.
 pub fn t(language: &str, key: &str, params: &[(&str, &str)]) -> String {
-  let all = catalogues();
-  let text = all
-    .get(language)
-    .and_then(|catalogue| catalogue.get(key))
-    .or_else(|| all.get(DEFAULT_LANGUAGE).and_then(|catalogue| catalogue.get(key)))
-    .map(String::as_str)
-    .unwrap_or(key);
-  let mut out = String::with_capacity(text.len());
-  let mut rest = text;
-  while let Some(open) = rest.find('{') {
-    out.push_str(&rest[..open]);
-    let after = &rest[open + 1..];
-    match after.find('}') {
-      Some(close) => {
-        let name = &after[..close];
-        match params.iter().find(|(known, _)| *known == name) {
-          Some((_, value)) => out.push_str(value),
-          None => {
-            out.push('{');
-            out.push_str(name);
-            out.push('}');
-          }
+    let all = catalogues();
+    let text = all
+        .get(language)
+        .and_then(|catalogue| catalogue.get(key))
+        .or_else(|| {
+            all.get(DEFAULT_LANGUAGE)
+                .and_then(|catalogue| catalogue.get(key))
+        })
+        .map(String::as_str)
+        .unwrap_or(key);
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(open) = rest.find('{') {
+        out.push_str(&rest[..open]);
+        let after = &rest[open + 1..];
+        match after.find('}') {
+            Some(close) => {
+                let name = &after[..close];
+                match params.iter().find(|(known, _)| *known == name) {
+                    Some((_, value)) => out.push_str(value),
+                    None => {
+                        out.push('{');
+                        out.push_str(name);
+                        out.push('}');
+                    }
+                }
+                rest = &after[close + 1..];
+            }
+            None => {
+                out.push('{');
+                rest = after;
+            }
         }
-        rest = &after[close + 1..];
-      }
-      None => {
-        out.push('{');
-        rest = after;
-      }
     }
-  }
-  out.push_str(rest);
-  out
+    out.push_str(rest);
+    out
 }
 
 /// Whether a string is one of the languages this app has a catalogue for.
 pub fn is_language(code: &str) -> bool {
-  LANGUAGES.contains(&code)
+    LANGUAGES.contains(&code)
 }
 
 /// The language the app is speaking, for the sentences the backend writes where no configuration is at
@@ -97,26 +101,26 @@ pub fn is_language(code: &str) -> bool {
 static LANGUAGE: OnceLock<RwLock<String>> = OnceLock::new();
 
 fn spoken() -> &'static RwLock<String> {
-  LANGUAGE.get_or_init(|| RwLock::new(DEFAULT_LANGUAGE.to_string()))
+    LANGUAGE.get_or_init(|| RwLock::new(DEFAULT_LANGUAGE.to_string()))
 }
 
 /// Remembers the language a config asks for, so that `now` can speak it.
 pub fn remember(language: &str) {
-  let language = if is_language(language) {
-    language
-  } else {
-    DEFAULT_LANGUAGE
-  };
-  if let Ok(mut spoken) = spoken().write() {
-    *spoken = language.to_string();
-  }
+    let language = if is_language(language) {
+        language
+    } else {
+        DEFAULT_LANGUAGE
+    };
+    if let Ok(mut spoken) = spoken().write() {
+        *spoken = language.to_string();
+    }
 }
 
 /// The string for `key` in the language the app is speaking — `t`, for a caller with no config: the
 /// sentence a reader sees when a write fails is written where the write fails.
 pub fn now(key: &str, params: &[(&str, &str)]) -> String {
-  let language = spoken().read().map(|held| held.clone()).unwrap_or_default();
-  t(&language, key, params)
+    let language = spoken().read().map(|held| held.clone()).unwrap_or_default();
+    t(&language, key, params)
 }
 
 /// The sentence for a file operation, with the path and the system's reason.
@@ -124,9 +128,9 @@ pub fn now(key: &str, params: &[(&str, &str)]) -> String {
 /// Example: `path_error("files.writeFailed", "/tmp/note.md", "permission denied")` fills
 /// `Failed to write {path}: {reason}` once, so callers need not repeat those two parameter names.
 pub fn path_error(key: &str, path: impl Display, reason: impl Display) -> String {
-  let path = path.to_string();
-  let reason = reason.to_string();
-  now(key, &[("path", &path), ("reason", &reason)])
+    let path = path.to_string();
+    let reason = reason.to_string();
+    now(key, &[("path", &path), ("reason", &reason)])
 }
 
 /// The language a system locale asks for: `zh-Hant-TW` and `zh-TW` are Traditional Chinese, `zh`
@@ -134,153 +138,177 @@ pub fn path_error(key: &str, path: impl Display, reason: impl Display) -> String
 /// the one place a locale has to be read rather than matched by its first two letters — the script
 /// is the language.
 pub fn match_locale(locale: &str) -> &'static str {
-  let tag = locale.replace('_', "-").to_lowercase();
-  if tag.starts_with("zh") {
-    let traditional = tag
-      .split('-')
-      .any(|part| matches!(part, "hant" | "tw" | "hk" | "mo"));
-    return if traditional { "zh-Hant" } else { "zh-Hans" };
-  }
-  let two = &tag[..tag.len().min(2)];
-  LANGUAGES
-    .iter()
-    .find(|language| **language == two)
-    .copied()
-    .unwrap_or(DEFAULT_LANGUAGE)
+    let tag = locale.replace('_', "-").to_lowercase();
+    if tag.starts_with("zh") {
+        let traditional = tag
+            .split('-')
+            .any(|part| matches!(part, "hant" | "tw" | "hk" | "mo"));
+        return if traditional { "zh-Hant" } else { "zh-Hans" };
+    }
+    let two = &tag[..tag.len().min(2)];
+    LANGUAGES
+        .iter()
+        .find(|language| **language == two)
+        .copied()
+        .unwrap_or(DEFAULT_LANGUAGE)
 }
 
 /// The language the app is speaking: what the config says, or — when it says nothing, which is
 /// what a config written before this field existed says — the reader's own system locale, and
 /// English when even that is not one this app has.
 pub fn language_for(cfg: &AppConfig) -> String {
-  let chosen = cfg.language.trim();
-  if is_language(chosen) {
-    return chosen.to_string();
-  }
-  tauri_plugin_os::locale()
-    .map(|locale| match_locale(&locale).to_string())
-    .unwrap_or_else(|| DEFAULT_LANGUAGE.to_string())
+    let chosen = cfg.language.trim();
+    if is_language(chosen) {
+        return chosen.to_string();
+    }
+    tauri_plugin_os::locale()
+        .map(|locale| match_locale(&locale).to_string())
+        .unwrap_or_else(|| DEFAULT_LANGUAGE.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  /// The backend's own sentences, in the language the config asks for — the half of this module the
-  /// menu did not already use: a failed write or a name the file system refuses is written deep in a
-  /// command, and `now` is what speaks it there.
-  ///
-  /// This is the one test that sets the process-wide language, and it is safe because no other test
-  /// *reads* it: they all ask `t(language, …)` with the language spelled out.
-  #[test]
-  fn a_sentence_is_written_in_the_language_the_config_asked_for() {
-    remember("zh-Hans");
-    // Against `t` for the same language rather than against a copied string: what this holds is that
-    // `now` speaks what `t` speaks for the remembered language, and a copy of the text here is a second
-    // home for it — this test failed once for exactly that, when the key it names was deduplicated and
-    // its own copy stayed behind.
-    for key in [
-      "export.noPandoc",
-      "files.nameEmpty",
-      "versioning.gitUnusable",
-      "versioning.notAVersion",
-    ] {
-      assert_eq!(now(key, &[]), t("zh-Hans", key, &[]), "{key}");
+    /// The backend's own sentences, in the language the config asks for — the half of this module the
+    /// menu did not already use: a failed write or a name the file system refuses is written deep in a
+    /// command, and `now` is what speaks it there.
+    ///
+    /// This is the one test that sets the process-wide language, and it is safe because no other test
+    /// *reads* it: they all ask `t(language, …)` with the language spelled out.
+    #[test]
+    fn a_sentence_is_written_in_the_language_the_config_asked_for() {
+        remember("zh-Hans");
+        // Against `t` for the same language rather than against a copied string: what this holds is that
+        // `now` speaks what `t` speaks for the remembered language, and a copy of the text here is a second
+        // home for it — this test failed once for exactly that, when the key it names was deduplicated and
+        // its own copy stayed behind.
+        for key in [
+            "export.noPandoc",
+            "files.nameEmpty",
+            "versioning.gitUnusable",
+            "versioning.notAVersion",
+        ] {
+            assert_eq!(now(key, &[]), t("zh-Hans", key, &[]), "{key}");
+        }
+        assert_eq!(
+            now(
+                "export.cannotWrite",
+                &[("path", "/tmp/x"), ("reason", "no such file")]
+            ),
+            t(
+                "zh-Hans",
+                "export.cannotWrite",
+                &[("path", "/tmp/x"), ("reason", "no such file")]
+            )
+        );
+        assert_eq!(
+            path_error("export.cannotWrite", "/tmp/x", "no such file"),
+            now(
+                "export.cannotWrite",
+                &[("path", "/tmp/x"), ("reason", "no such file")]
+            )
+        );
+        assert_ne!(now("export.noPandoc", &[]), t("en", "export.noPandoc", &[]));
+        // A language the app does not speak falls back to English rather than to a blank.
+        remember("kl-Greenlandic");
+        assert_eq!(
+            now("export.noPandoc", &[]),
+            t(DEFAULT_LANGUAGE, "export.noPandoc", &[])
+        );
+        // And every catalogue really does answer for these keys, one by one: a key that only English has
+        // would leave a reader in the other seven languages looking at the key itself.
+        for language in LANGUAGES {
+            for key in [
+                "export.noPandoc",
+                "export.cannotWrite",
+                "export.noSuchKind",
+                "export.noShippedFonts",
+                "app.cannotRun",
+                "versioning.noGit",
+                "files.markdownOnly",
+                "versioning.notAVersionFile",
+                "menu.help.tutorial",
+            ] {
+                let text = t(language, key, &[]);
+                assert!(
+                    !text.is_empty() && text != *key,
+                    "{language} has nothing for {key}"
+                );
+            }
+        }
     }
-    assert_eq!(
-      now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")]),
-      t("zh-Hans", "export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
-    );
-    assert_eq!(
-      path_error("export.cannotWrite", "/tmp/x", "no such file"),
-      now("export.cannotWrite", &[("path", "/tmp/x"), ("reason", "no such file")])
-    );
-    assert_ne!(now("export.noPandoc", &[]), t("en", "export.noPandoc", &[]));
-    // A language the app does not speak falls back to English rather than to a blank.
-    remember("kl-Greenlandic");
-    assert_eq!(now("export.noPandoc", &[]), t(DEFAULT_LANGUAGE, "export.noPandoc", &[]));
-    // And every catalogue really does answer for these keys, one by one: a key that only English has
-    // would leave a reader in the other seven languages looking at the key itself.
-    for language in LANGUAGES {
-      for key in [
-        "export.noPandoc",
-        "export.cannotWrite",
-        "export.noSuchKind",
-        "export.noShippedFonts",
-        "app.cannotRun",
-        "versioning.noGit",
-        "files.markdownOnly",
-        "versioning.notAVersionFile",
-        "menu.help.tutorial",
-      ] {
-        let text = t(language, key, &[]);
-        assert!(!text.is_empty() && text != *key, "{language} has nothing for {key}");
-      }
+
+    #[test]
+    fn every_language_has_a_catalogue() {
+        let all = catalogues();
+        for language in LANGUAGES {
+            assert!(
+                all.get(language)
+                    .is_some_and(|catalogue| !catalogue.is_empty()),
+                "{language} has no catalogue"
+            );
+        }
     }
-  }
 
-  #[test]
-  fn every_language_has_a_catalogue() {
-    let all = catalogues();
-    for language in LANGUAGES {
-      assert!(
-        all.get(language).is_some_and(|catalogue| !catalogue.is_empty()),
-        "{language} has no catalogue"
-      );
+    #[test]
+    fn every_catalogue_has_the_same_keys() {
+        let all = catalogues();
+        let english = all.get("en").expect("the default catalogue");
+        for language in LANGUAGES {
+            let catalogue = all.get(language).expect("a catalogue");
+            let mut missing: Vec<&String> = english
+                .keys()
+                .filter(|key| !catalogue.contains_key(*key))
+                .collect();
+            missing.sort();
+            assert!(missing.is_empty(), "{language} is missing {missing:?}");
+            let mut extra: Vec<&String> = catalogue
+                .keys()
+                .filter(|key| !english.contains_key(*key))
+                .collect();
+            extra.sort();
+            assert!(
+                extra.is_empty(),
+                "{language} has keys English does not: {extra:?}"
+            );
+        }
     }
-  }
 
-  #[test]
-  fn every_catalogue_has_the_same_keys() {
-    let all = catalogues();
-    let english = all.get("en").expect("the default catalogue");
-    for language in LANGUAGES {
-      let catalogue = all.get(language).expect("a catalogue");
-      let mut missing: Vec<&String> = english
-        .keys()
-        .filter(|key| !catalogue.contains_key(*key))
-        .collect();
-      missing.sort();
-      assert!(missing.is_empty(), "{language} is missing {missing:?}");
-      let mut extra: Vec<&String> = catalogue
-        .keys()
-        .filter(|key| !english.contains_key(*key))
-        .collect();
-      extra.sort();
-      assert!(extra.is_empty(), "{language} has keys English does not: {extra:?}");
+    #[test]
+    fn a_string_is_answered_in_the_language_asked_for() {
+        assert_eq!(t("de", "menu.file.save", &[]), "Sichern");
+        assert_eq!(t("ja", "menu.file.save", &[]), "保存");
     }
-  }
 
-  #[test]
-  fn a_string_is_answered_in_the_language_asked_for() {
-    assert_eq!(t("de", "menu.file.save", &[]), "Sichern");
-    assert_eq!(t("ja", "menu.file.save", &[]), "保存");
-  }
+    #[test]
+    fn a_missing_key_is_the_key_itself() {
+        assert_eq!(t("en", "no.such.key", &[]), "no.such.key");
+    }
 
-  #[test]
-  fn a_missing_key_is_the_key_itself() {
-    assert_eq!(t("en", "no.such.key", &[]), "no.such.key");
-  }
+    #[test]
+    fn parameters_are_put_in_where_their_braces_are() {
+        assert_eq!(
+            t(
+                "en",
+                "toolbar.tableSize",
+                &[("columns", "3"), ("rows", "2")]
+            ),
+            "3 columns by 2 rows"
+        );
+        assert_eq!(t("en", "status.words", &[]), "Words: {count}");
+    }
 
-  #[test]
-  fn parameters_are_put_in_where_their_braces_are() {
-    assert_eq!(
-      t("en", "toolbar.tableSize", &[("columns", "3"), ("rows", "2")]),
-      "3 columns by 2 rows"
-    );
-    assert_eq!(t("en", "status.words", &[]), "Words: {count}");
-  }
-
-  #[test]
-  fn a_system_locale_picks_a_language() {
-    assert_eq!(match_locale("de-DE"), "de");
-    assert_eq!(match_locale("fr_FR"), "fr");
-    assert_eq!(match_locale("pt-BR"), "pt");
-    assert_eq!(match_locale("ja-JP"), "ja");
-    assert_eq!(match_locale("zh-Hans-CN"), "zh-Hans");
-    assert_eq!(match_locale("zh-CN"), "zh-Hans");
-    assert_eq!(match_locale("zh-TW"), "zh-Hant");
-    assert_eq!(match_locale("zh-Hant-HK"), "zh-Hant");
-    assert_eq!(match_locale("ko-KR"), "en");
-  }
+    #[test]
+    fn a_system_locale_picks_a_language() {
+        assert_eq!(match_locale("de-DE"), "de");
+        assert_eq!(match_locale("fr_FR"), "fr");
+        assert_eq!(match_locale("pt-BR"), "pt");
+        assert_eq!(match_locale("ja-JP"), "ja");
+        assert_eq!(match_locale("zh-Hans-CN"), "zh-Hans");
+        assert_eq!(match_locale("zh-CN"), "zh-Hans");
+        assert_eq!(match_locale("zh-TW"), "zh-Hant");
+        assert_eq!(match_locale("zh-Hant-HK"), "zh-Hant");
+        assert_eq!(match_locale("ko-KR"), "en");
+    }
 }

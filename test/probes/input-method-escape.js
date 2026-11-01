@@ -1,11 +1,11 @@
 /**
  * Escape while an input method is composing cancels the composition, and nothing else.
  *
- * Every floating surface puts itself away on Escape (`floating/surface.ts`), and the
+ * Every floating surface puts itself away on Escape (`floating/`), and the
  * key a composition is cancelled with reaches them too. The reader who asked for the
  * composition to go away did not ask for the message they are reading to go with it.
  *
- * @covers src/ui/floating/surface.ts
+ * @covers src/ui/floating/
  */
 (async () => {
   const t = window.__t;

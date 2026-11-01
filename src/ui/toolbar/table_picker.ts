@@ -6,7 +6,7 @@
  */
 
 import { t } from '../../services/i18n';
-import { AnchoredPanel } from '../floating/panel';
+import { AnchoredPanel } from '../floating';
 
 /** The size the author picked, in rows (header included) and columns. */
 export interface TableSize {

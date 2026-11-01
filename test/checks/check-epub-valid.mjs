@@ -4,7 +4,7 @@
  * An EPUB is a container with rules no converter has to know, and one of them is that an id is used
  * once in the document it stands in. The book built here is the one the app builds for a note whose
  * level-1 heading is its frontmatter `title:` and whose first section repeats that name: the window
- * writes the name where the note's level-1 heading belongs (`ui/export/pipeline/book_body.ts`, the kind's own
+ * writes the name where the note's level-1 heading belongs (`ui/export/workflow/body.ts`, the kind's own
  * `names_its_body`), and the note goes to pandoc with the shipped defaults file and that name as the
  * book's title. Measured with pandoc 3.12 and epubcheck 5.4.0, both halves of that book have to be
  * right, and each of them alone is not enough — the EPUB writer makes a heading of its own out of the
@@ -72,7 +72,7 @@ const name = 'Going out';
 // The text a book is handed, from the app's own rule — so what pandoc is asked about is the app's
 // answer and not this check's idea of it.
 const bundle = await rolldown({
-  input: join(root, 'src/ui/export/pipeline/book_body.ts'),
+  input: join(root, 'src/ui/export/workflow/body.ts'),
   logLevel: 'silent',
   platform: 'node'
 });

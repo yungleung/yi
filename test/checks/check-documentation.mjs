@@ -14,8 +14,8 @@ const check = (name, pass) => {
 };
 
 check('the Documentation guide exists', existsSync(file));
-if (existsSync('src-tauri/src/menu.rs')) {
-  const menu = readFileSync('src-tauri/src/menu.rs', 'utf8');
+if (existsSync('src-tauri/src/menu/build.rs')) {
+  const menu = readFileSync('src-tauri/src/menu/build.rs', 'utf8');
   check(
     'the native Documentation item owns the F1 accelerator',
     /\.accelerator\("F1"\)[\s\S]{0,120}\.id\("documentation"\)/.test(menu)

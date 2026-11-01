@@ -35,7 +35,7 @@
   const { createBlockComponent } = await t.app('/src/ui/markdown/create_block.ts');
   const { plainRun } = await t.app('/src/ui/markdown/editing/typed_text.ts');
   const { domPositionAtOffset } = await t.app('/src/ui/markdown/caret/dom_position.ts');
-  const { sourceRangeAt } = await t.app('/src/ui/markdown/source_mode.ts');
+  const { sourceRangeAt } = await t.app('/src/ui/markdown/editing/source_range.ts');
   const codeLines = Array.from(
     { length: 80 },
     (_, index) => `const fairlyPlain${index} = someFairlyLongFunction(argument${index});`

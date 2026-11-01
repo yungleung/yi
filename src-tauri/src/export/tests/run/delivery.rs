@@ -217,11 +217,9 @@ fn native_bibliography_leaves_citeproc_and_the_reader_library_off_the_command_li
     let arguments = named_arguments_for(&dir, &request, kind_of("latex").unwrap());
     assert!(!arguments.contains(&"--bibliography".to_string()));
     assert!(!arguments.contains(&"--csl".to_string()));
-    assert!(
-        !arguments
-            .iter()
-            .any(|argument| argument.starts_with("reference-section-title="))
-    );
+    assert!(!arguments
+        .iter()
+        .any(|argument| argument.starts_with("reference-section-title=")));
 }
 
 #[test]

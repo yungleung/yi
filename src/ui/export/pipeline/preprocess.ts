@@ -39,7 +39,7 @@
 import type { AstCitation, AstWikilink } from '../../markdown/ast';
 import { parseMarkdown } from '../../markdown/syntax/parser';
 import { wikilinkParts, wikilinkText } from '../../markdown/syntax/wikilink_text';
-import { spansOfType, type Walkable } from '../pipeline/node_spans';
+import { spansOfType, type Walkable } from '../node_spans';
 import { tableRewrites } from './table_rewrites';
 import { equationRewrites } from './equation_rewrites';
 import { listRewrites } from './list_rewrites';
@@ -61,9 +61,9 @@ import { listingRewrites } from './listing_rewrites';
 export type {
   CitationRendering,
   FileExists,
-  ImageBases,
   TitleLookup
 } from './contracts';
+export type { ImageBases } from '../assets';
 export type { ExportAnswers, Rewrite };
 
 /**

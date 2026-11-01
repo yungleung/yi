@@ -7,8 +7,8 @@
  */
 
 import { t } from '../../../services/i18n';
-import { QuestionCard } from '../../floating/question_card';
-import { kindLabel } from './kind_label';
+import { QuestionCard } from '../../floating';
+import { kindLabel } from '../kind_label';
 
 export interface DefaultTemplateAnswer {
   name: string;

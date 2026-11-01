@@ -1,13 +1,13 @@
-mod i18n;
-mod menu;
-mod files;
-mod input_source;
 mod access;
 mod export;
+mod files;
 mod fonts;
+mod i18n;
+mod input_source;
+mod menu;
 mod session;
-mod stats;
 mod settings;
+mod stats;
 mod versioning;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,9 +37,9 @@ pub fn run() {
             files::delete_entry,
             files::move_entry,
             files::rename_entry,
-            files::atomic::write_text_atomically,
-            stats::get_word_count, 
-            files::listing::list_folder_files,
+            files::write_text_atomically,
+            stats::get_word_count,
+            files::list_folder_files,
             access::grant_folder,
             session::load_session,
             session::save_session,
@@ -77,7 +77,8 @@ pub fn run() {
             versioning::versioning_history,
             versioning::versioning_version_text,
             versioning::init_workspace_repository,
-            versioning::commit_paths,])
+            versioning::commit_paths,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

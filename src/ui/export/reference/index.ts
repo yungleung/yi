@@ -8,7 +8,7 @@
  * have one public surface.
  */
 
-export { referenceHeader } from './reference_header';
+export { referenceHeader } from './header';
 export {
   citedKeys,
   nativeBibliographyTarget,

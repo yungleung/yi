@@ -13,8 +13,7 @@
 
 import { eventManager } from '../services/events';
 import { HINT_EVENT, hintPlaceSelector, type Hint, type HintPlace } from '../services/hints';
-import { BesideCard, boxOf } from './floating/beside';
-import type { Box } from './floating/placement';
+import { BesideCard, boxOf, type Box } from './floating';
 
 /**
  * The box of the row a hint is about, or null when this window cannot show it — which is also the

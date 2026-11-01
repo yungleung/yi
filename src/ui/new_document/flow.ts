@@ -3,7 +3,7 @@
  *
  * Two triggers ask for the same thing and are given the same answer. The native menu's *New
  * Markdown* asks where — it knows nothing about the workspace — so the card
- * (`new_document_dialog.ts`) puts the folders in front of the reader with the one they are
+ * (`dialog.ts`) puts the folders in front of the reader with the one they are
  * working in already chosen, and the generated id in the name field to type over. The tree's
  * own *New file* runs the same command with the row's folder in the payload: the place is
  * already known, and there is nothing to ask.
@@ -40,7 +40,7 @@ import {
 import { parentFolder, workspaceFolders } from '../../services/workspace';
 import { registerCommand } from '../../commands/runtime';
 import { refreshTreeFolders } from '../workspace';
-import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
+import { newDocumentDialog, type NewDocumentChooser } from './dialog';
 import { newDocumentTemplatePicker } from './template_picker';
 
 /** The one question a tree-created note still has: which package metadata to begin from. */

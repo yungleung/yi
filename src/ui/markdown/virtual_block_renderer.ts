@@ -110,7 +110,7 @@ export class VirtualBlockRenderer {
   /**
    * A block's rendering identity: its own source plus the shape it is being
    * built in. A block that shows a source while the caret is inside it — its
-   * own text, or a node inside it built as its source (see `source_mode.ts`) —
+   * own text, or a node inside it built as its source (see `source_mode/`) —
    * is a different element from its view, with its own height, so the two
    * never share a remembered element or size.
    */

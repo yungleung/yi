@@ -11,7 +11,7 @@
 import type { ListingNode } from '../../markdown/syntax/code';
 import type { ReferenceEntry } from '../../markdown/document/reference_index';
 import { referenceLabel } from '../../markdown/document/reference_index';
-import type { Span } from './node_spans';
+import type { Span } from '../node_spans';
 import type { ExportAnswers, Rewrite } from './contracts';
 import { isLatexKind } from '../kind_family';
 import {

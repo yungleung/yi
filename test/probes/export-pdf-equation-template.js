@@ -5,7 +5,7 @@
  * the automatic reference and the displayed equation through that package
  * counter rather than a precomputed Yi number.
  *
- * @covers src/ui/export/reference/reference_header.ts, src/ui/export/pipeline/equation_rewrites.ts
+ * @covers src/ui/export/reference/header.ts, src/ui/export/pipeline/equation_rewrites.ts
  */
 (async () => {
   const t = window.__t;

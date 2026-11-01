@@ -107,8 +107,8 @@ for (const [key, file] of used) {
   }
 }
 
-// The menu reads its keys through its own file, so those count as used too.
-const menu = readFileSync('src-tauri/src/menu.rs', 'utf8');
+// The menu builder reads keys through its own file, so those count as used too.
+const menu = readFileSync('src-tauri/src/menu/build.rs', 'utf8');
 const menuKeys = [...menu.matchAll(/t\(language,\s*"([a-z][\w.]*)"/g)].map((match) => match[1]);
 const unused = englishKeys.filter((key) => !used.has(key) && !menuKeys.includes(key));
 if (unused.length > 0) {

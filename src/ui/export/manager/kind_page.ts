@@ -14,12 +14,12 @@ import { BaseComponent } from '../../component';
 import { prompt } from '../../prompt';
 import { defaultsActionAvailability, defaultsState } from './rules';
 import {
-  kindLabel,
   removeTemplatePackage,
   showBrokenTemplateDetails,
   TemplatePackageBrowser,
   templateEditorPanel
 } from '../templates';
+import { kindLabel } from '../kind_label';
 
 export interface KindPageHandlers {
   restoreDefaults(kind: string): Promise<string>;

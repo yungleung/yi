@@ -18,8 +18,7 @@ pub struct FileInfo {
     pub is_file: bool,
 }
 
-#[tauri::command]
-pub fn list_folder_files(folder_path: String) -> Result<Vec<FileInfo>, String> {
+pub(super) fn list_folder_files(folder_path: String) -> Result<Vec<FileInfo>, String> {
     let folder = PathBuf::from(folder_path);
 
     if !folder.exists() {

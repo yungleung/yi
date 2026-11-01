@@ -12,7 +12,7 @@
  *
  * @covers src/services/messages.ts, src/ui/messages.ts
  * @covers src/services/hints.ts, src/ui/hints.ts
- * @covers src/ui/floating/beside.ts, src/ui/floating/placement.ts
+ * @covers src/ui/floating/
  * @needs-workspace
  */
 (async () => {

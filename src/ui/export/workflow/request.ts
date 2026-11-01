@@ -25,18 +25,22 @@ import type { SessionDocument } from '../../../services/session';
 import { bibliographyPath } from '../../../services/settings_paths';
 import { parentFolder } from '../../../services/workspace';
 import { imageBases } from '../../image/index';
-import { bodyWithItsName } from '../pipeline/book_body';
+import { bodyWithItsName } from './body';
 import type { ExportAnswer } from '../dialog';
 import { nativeBibliographyFor } from './bibliography';
 import { reportExport } from './notice';
 import { fileExists, resourcePaths } from './paths';
 import type { ExportProgress } from './progress';
 import { isLatexKind } from '../kind_family';
-import { portableLatexImage } from '../assets/latex_images';
-import { imageDestinations, isWebDestination } from '../assets/picture_hint';
-import { exportSource } from '../pipeline/preprocess';
-import { forgetRasters, rasterPictures } from '../assets/raster_picture';
-import { referenceHeader } from '../reference/reference_header';
+import {
+  forgetRasters,
+  imageDestinations,
+  isWebDestination,
+  portableLatexImage,
+  rasterPictures
+} from '../assets';
+import { exportSource } from '../pipeline';
+import { referenceHeader } from '../reference';
 
 /** The confirmed state needed to perform one export without reopening the question. */
 export interface ConfirmedExportRequest {

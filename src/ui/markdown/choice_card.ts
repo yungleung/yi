@@ -14,8 +14,7 @@
  * card at a time, and its highlighted row is the row a key will choose.
  */
 
-import { BesideCard } from '../floating/beside';
-import type { Box } from '../floating/placement';
+import { BesideCard, type Box } from '../floating';
 
 export interface Choice {
   value: string;

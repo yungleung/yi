@@ -8,7 +8,7 @@
  * for it, and the probe went on measuring a document that never changed — and
  * passing, because the harness only reads the exit status.
  *
- * @covers src/ui/markdown/editing/table.ts, src/ui/markdown/editing/blank_lines.ts
+ * @covers src/ui/markdown/editing/table.ts, src/ui/markdown/editing/blank_lines/
  */
 (async () => {
   const t = window.__t;

@@ -12,7 +12,7 @@
 import type { ExportKindInfo } from '../../../api/export';
 import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
-import { kindLabel } from '../templates';
+import { kindLabel } from '../kind_label';
 import {
   defaultsState,
   managerGroups,

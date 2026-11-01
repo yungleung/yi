@@ -29,7 +29,7 @@ export interface Hint {
   /**
    * Beside what it happened on — or `null` when it happened on nothing in this window, in which
    * case the card takes the window's corner, which is where a card pointing at nothing has always
-   * gone (`ui/floating/placement.ts`). An export is the case: it worked, and the file it worked on
+   * gone (`ui/floating/`). An export is the case: it worked, and the file it worked on
    * is not a row of the tree.
    */
   at: HintPlace | null;

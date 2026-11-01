@@ -351,7 +351,7 @@ elements) unless it says otherwise.
     nothing means the app's own template. Before this, the app wrote its default into every
     config that saved anything else, so the shape of the default was frozen in the reader's file;
     a config that still holds the built-in the app shipped before this change reads as no
-    template, which is what it was (`settings.rs: as_read`, with its own test).
+    template, which is what it was (`settings/model.rs: as_read`, with its own test).
   - **The settings window's sidebar is a strip of tabs**: 144 px instead of 224, each tab the
     sidebar's own width, square and flush against the next, with the active one in the theme's
     active colour.
@@ -458,7 +458,7 @@ elements) unless it says otherwise.
   that stays their own choice, made with the stack button. `openDecision` answers `pushAndOpen` for
   the reader who asked for the push, `ask` for one who did not, and `open` for a document with
   nothing to lose; a config written before the field existed reads as off, which is what
-  `settings.rs` and its test say. `npm run check` is **34/34** and `cargo test` **21/21**; the flow
+  `settings/` and its test say. `npm run check` is **34/34** and `cargo test` **21/21**; the flow
   is `test/probes/settings-push-on-open.js`, and the rule has its cases in
   `test/checks/check-document-session.mjs`.
 - **One family for everything that floats, and messages instead of a toast**, as the user asked:
@@ -941,7 +941,7 @@ elements) unless it says otherwise.
   the machine has no pandoc, the card opens a PDF on the hand that does not need one.
   **The next reading of that ask kept the menu and lost the hand.** A menu *inside* the card is not a
   submenu: with one card holding every kind's own options it was overstaffed, and what was asked for
-  is the File menu's *Export* with **one item per kind** (`src-tauri/src/menu.rs`, built from `KINDS`,
+  is the File menu's *Export* with **one item per kind** (`src-tauri/src/menu/build.rs`, built from `KINDS`,
   so a kind added there appears in the menu without this file changing), the item's own kind
   travelling with the event it emits — so the kind is chosen *before* any card is drawn and the card
   is about that one kind, its heading naming it. That is the shape the menu still has. The card also
@@ -1162,7 +1162,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   with the same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
   `-M title="Going out"` and the shipped defaults with `shift-heading-level-by: 0`, is reported as
   `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
-  `ui/export/pipeline/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
+  `ui/export/workflow/body.ts` is the rule (the note's own `#` heading where it has one, the name under the
   frontmatter when it has not, one line of a name that came from a heading), the kind's own row says it
   (`export/kinds.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
   the name would say it twice), and the window hands the book that body (`workflow/flow.ts`). The note's
@@ -1256,7 +1256,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   own commands reached it.
   So `src-tauri/src/access.rs` grants the folders the app is *working in*, at run time and to **both**
   scopes (the file plugin's and the asset protocol's): the ones the config names — the workspace, the
-  pictures folder, the library's — where the config is read (`settings.rs`, so a new workspace is granted
+  pictures folder, the library's — where the config is read (`settings/`, so a new workspace is granted
   the moment it is saved), and a **document's** own folder through a command the window asks with
   (`grant_folder`, called before the session reads a note and for every document a session restores).
   What may be granted is one pure rule (`folders_in`) with a unit test: a folder named twice is one grant,
@@ -1539,7 +1539,7 @@ before deciding"; what is left is the "measure before deciding" column below.
   each other and disagreed with the source until the caret was in it. Markdown matches labels
   case-insensitively, so the parse keeps the normalised one and the author's characters are in the
   *source* alone: `nodes/footnote.ts: authoredLabel` reads them from the block the renderer names
-  (`source_mode.ts: renderingBlock`) at the node's own position. A marker now draws `[Ab]` at rest and
+  (`source_mode/state.ts: renderingBlock`) at the node's own position. A marker now draws `[Ab]` at rest and
   `[^Ab]` while the caret is in it, the anchor is still `fn-ab` (`id` stays the parse's normalised
   name — it is what the jump links to), and the whole footnote family passes unchanged: the label's
   edge, the container jump, a repeated label, a label in a table cell, the jump and the preview.

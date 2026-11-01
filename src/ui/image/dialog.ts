@@ -17,7 +17,7 @@
 
 import { t } from '../../services/i18n';
 import { imageFileName } from '../markdown/syntax/image_edits';
-import { QuestionCard } from '../floating/question_card';
+import { QuestionCard } from '../floating';
 
 /** What the card needs to ask: the picture, the name it starts from, and where it will go. */
 export interface ImageRequest {

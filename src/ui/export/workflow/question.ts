@@ -22,8 +22,8 @@ import type { SessionDocument } from '../../../services/session';
 import type { ExportQuestion } from '../dialog';
 import { noteName, targetFolder } from './paths';
 import { uncoveredCharacters } from './font_hint';
-import { destinationsThatNameNoImage } from '../assets/picture_hint';
-import { offeredForKind } from '../templates/offering';
+import { destinationsThatNameNoImage } from '../assets';
+import { offeredForKind } from '../templates';
 
 /** The question and the settled state needed to execute its answer without asking again. */
 export interface PreparedExportQuestion {

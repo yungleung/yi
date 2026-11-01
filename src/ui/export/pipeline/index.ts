@@ -12,7 +12,6 @@ export type {
   CitationRendering,
   ExportAnswers,
   FileExists,
-  ImageBases,
   Rewrite,
   TitleLookup
 } from './contracts';

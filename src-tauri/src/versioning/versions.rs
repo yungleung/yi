@@ -123,7 +123,10 @@ pub(super) fn read_version_text(
         .map_err(|error| {
             crate::i18n::now(
                 "app.cannotRun",
-                &[("program", &git.display().to_string()), ("reason", &error.to_string())],
+                &[
+                    ("program", &git.display().to_string()),
+                    ("reason", &error.to_string()),
+                ],
             )
         })?;
     if !output.status.success() {

@@ -13,7 +13,7 @@
  * in the default document).
  *
  * @covers src/ui/markdown/virtual_block_renderer.ts, src/ui/markdown/editing/context.ts,
- *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/source_mode.ts
+ *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/source_mode/
  * @needs-workspace
  */
 (async () => {

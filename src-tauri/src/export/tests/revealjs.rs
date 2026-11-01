@@ -1,5 +1,5 @@
-use super::*;
 use super::run::{named_arguments, request_in};
+use super::*;
 use crate::export::revealjs::{revealjs_download_url, REVEALJS_CDN};
 
 #[test]
@@ -68,8 +68,8 @@ fn revealjs_local_mode_names_a_relative_distribution_folder() {
     request.revealjs_remote_js = true;
     let remote = named_arguments(&dir, &request);
     assert!(!remote.iter().any(|argument| argument == "revealjs-url=js"));
-    assert!(remote.iter().any(|argument| {
-        argument == "revealjs-url=https://unpkg.com/reveal.js@6.0.1"
-    }));
+    assert!(remote
+        .iter()
+        .any(|argument| { argument == "revealjs-url=https://unpkg.com/reveal.js@6.0.1" }));
     let _ = fs::remove_dir_all(dir);
 }

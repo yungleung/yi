@@ -29,13 +29,13 @@ pub(super) fn manifest_file(package: &std::path::Path, name: &str) -> std::path:
     manifest::file_in(package, name).unwrap_or_else(|_| package.join(name))
 }
 
-pub(super) use package::resolve_package;
-#[allow(unused_imports)]
-pub(super) use package::{alias_names, stage_alias};
 #[allow(unused_imports)]
 pub(super) use assets::{media_type, reference_to, relative_url, safe_prefix};
 pub(super) use defaults::{append_defaults, ensure_pdf_defaults_safe, package_defaults};
 pub(super) use epub_pack::pack_epub;
+pub(super) use package::resolve_package;
+#[allow(unused_imports)]
+pub(super) use package::{alias_names, stage_alias};
 
 #[tauri::command]
 pub fn export_templates(app: tauri::AppHandle) -> Result<Vec<TemplateSummary>, String> {

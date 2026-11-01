@@ -9,6 +9,9 @@
 //! May import: nothing — the children import their own dependencies. Upholds: one parser for a
 //! font file, one home for the shipped faces, and one reader of the machine's fonts.
 
-pub mod bundled;
-pub mod file;
-pub mod system;
+mod bundled;
+mod file;
+mod system;
+
+pub(crate) use bundled::{coverage, fonts_dir, named, named_values, reader_scripts, write_header};
+pub(crate) use system::{covering, has_family};

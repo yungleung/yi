@@ -24,7 +24,7 @@
  */
 
 import { ask as askNative } from '@tauri-apps/plugin-dialog';
-import { QuestionCard } from './floating/question_card';
+import { QuestionCard } from './floating';
 import { drivenByTools } from './under_test';
 
 /** A question: its name, its words, and what each of its two answers says. */

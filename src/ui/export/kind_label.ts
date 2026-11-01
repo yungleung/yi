@@ -5,7 +5,7 @@
  * table gets the same label in the export card and in the package chooser.
  */
 
-import { t } from '../../../services/i18n';
+import { t } from '../../services/i18n';
 
 export function kindLabel(kind: string): string {
   switch (kind) {
@@ -31,6 +31,3 @@ export function kindLabel(kind: string): string {
       return kind;
   }
 }
-
-/** The kinds a package can be for, in the order the chooser offers them. */
-export const TEMPLATE_KINDS = ['latex', 'pdf', 'html', 'epub', 'docx', 'odt'] as const;

@@ -12,13 +12,13 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-reference-header-'));
 const bundle = await rolldown({
-  input: 'src/ui/export/reference/reference_header.ts',
+  input: 'src/ui/export/reference/header.ts',
   logLevel: 'silent',
   platform: 'node'
 });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
-const file = join(directory, 'reference_header.mjs');
+const file = join(directory, 'header.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { referenceHeader } = await import(file);
 

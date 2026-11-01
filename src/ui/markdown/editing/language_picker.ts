@@ -21,8 +21,7 @@
  */
 
 import hljs from 'highlight.js';
-import { boxOf } from '../../floating/beside';
-import type { Box } from '../../floating/placement';
+import { boxOf, type Box } from '../../floating';
 import { ChoiceCard } from '../choice_card';
 
 /** How the editor answers a label: open the list beside `anchor`, reporting what is pressed. */

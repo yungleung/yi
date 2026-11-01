@@ -25,6 +25,10 @@ const rules = await bundleModule(
   'src/ui/export/manager/rules.ts',
   'manager_rules'
 );
+const packageRules = await bundleModule(
+  'src/ui/export/templates/availability.ts',
+  'template_availability'
+);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -127,7 +131,7 @@ check(
 );
 check(
   'a readable package can be inspected, used, edited, validated and removed',
-  rules.packageActionAvailability(kinds[0], '/bin/pandoc', packages[0]),
+  packageRules.packageActionAvailability(kinds[0], '/bin/pandoc', packages[0]),
   {
     importPackage: true,
     createPackage: true,
@@ -142,7 +146,7 @@ check(
 );
 check(
   'a broken package remains inspectable and removable but not usable',
-  rules.packageActionAvailability(kinds[0], '/bin/pandoc', packages[2]),
+  packageRules.packageActionAvailability(kinds[0], '/bin/pandoc', packages[2]),
   {
     importPackage: true,
     createPackage: true,
@@ -157,7 +161,7 @@ check(
 );
 check(
   'without pandoc local package work remains and execution is disabled',
-  rules.packageActionAvailability(kinds[0], null, packages[0]),
+  packageRules.packageActionAvailability(kinds[0], null, packages[0]),
   {
     importPackage: true,
     createPackage: false,
@@ -172,7 +176,7 @@ check(
 );
 check(
   'a kind without template support has no package actions',
-  rules.packageActionAvailability(kinds[2], '/bin/pandoc', null),
+  packageRules.packageActionAvailability(kinds[2], '/bin/pandoc', null),
   {
     importPackage: false,
     createPackage: false,
@@ -187,7 +191,7 @@ check(
 );
 check(
   'a PDF-capable package enables Test PDF when pandoc is present',
-  rules.packageActionAvailability(
+  packageRules.packageActionAvailability(
     kind('pdf', 'documents'),
     '/bin/pandoc',
     summary('pdf-package', 'pdf')

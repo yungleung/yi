@@ -3,7 +3,7 @@
  * blank carriers delete whole, `>` never invents a space, and escaped prose
  * splits at the visible character.
  *
- * @covers src/ui/markdown/source_mode.ts,
+ * @covers src/ui/markdown/source_mode/,
  *   src/ui/markdown/editing/text_commands.ts,
  *   src/ui/markdown/syntax/container/quote/
  */

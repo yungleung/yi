@@ -7,7 +7,7 @@
  *
  * @covers src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/nodes/revealable_node.ts,
- *   src/ui/markdown/source_mode.ts
+ *   src/ui/markdown/source_mode/
  */
 (async () => {
   const t = window.__t;

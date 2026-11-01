@@ -7,14 +7,14 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-01 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 405 TypeScript modules, 47,108 lines, and no import cycles
+described at the end of this document: 421 TypeScript modules, 47,136 lines, and no import cycles
 anywhere in them.
 
 ## The tree
 
 | Path | Modules | Lines | What it holds |
 | --- | --- | --- | --- |
-| `src/ui/markdown/syntax/` | 28 | 3,281 | the pure rules: markers, lines, edit arithmetic and the parser pipeline |
+| `src/ui/markdown/syntax/` | 29 | 3,311 | the pure rules: markers, lines, citation keys, edit arithmetic and the parser pipeline |
 | `src/ui/markdown/syntax/equation/` | 3 | 430 | equation wrapper parsing, environment lowering and offset-preserving parser masking |
 | `src/ui/markdown/syntax/callout/` | 6 | 877 | callout model, readers, parser preparation, body materialisation and kind editing |
 | `src/ui/markdown/syntax/table/` | 5 | 861 | table source, captions, source edits and command vocabulary |
@@ -23,36 +23,44 @@ anywhere in them.
 | `src/ui/markdown/syntax/footnote/` | 5 | 321 | footnote marker grammar, incremental labels, parser borrowing and insertion |
 | `src/ui/markdown/syntax/container/` | 3 | 423 | Pandoc Div boundaries and fence-body edits |
 | `src/ui/markdown/syntax/container/quote/` | 4 | 407 | quote-carrier parsing, quote edits and offset-preserving projection |
-| `src/ui/markdown/plugins/` | 9 | 720 | the remark extensions: citation, wikilink, definition list |
-| `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
-| `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
-| `src/ui/markdown/caret/` | 9 | 2,292 | the caret, its drawn span, its geometry, the offsets in and out, movement, the layout watcher |
-| `src/ui/markdown/editing/` | 34 | 5,149 | the commands: typing, deleting, lists, tables, fences, find, links, formatting, the key routing, and their focused helpers |
-| `src/ui/markdown/commands/` | 1 | editor command registration: the typed behaviours the editor owns |
-| `src/commands/` | 7 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
+| `src/ui/markdown/plugins/` | 3 | 507 | the remark extensions implemented as focused plugin subdomains |
+| `src/ui/markdown/document/` | 11 | 2,491 | the text store, blocks, block index, parse cache, history and derived target indexes |
+| `src/ui/markdown/nodes/` | 39 | 2,440 | the node components and their shared editable/revealable contracts |
+| `src/ui/markdown/caret/` | 13 | 2,468 | the caret, drawn span, geometry, offsets, navigation and projection |
+| `src/ui/markdown/editing/` | 41 | 4,952 | the commands: typing, deleting, lists, tables, fences, find, links and focused helpers |
+| `src/ui/markdown/commands/` | 1 | 228 | editor command registration: the typed behaviours the editor owns |
+| `src/commands/` | 7 | 941 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
 | `src/events/` | 1 | typed synchronous delivery for facts that stay inside one window |
-| `src/ui/markdown/*` (top level) | 15 | the stable editor/renderer facades, blocks, and shared render support |
-| `src/ui/markdown/editor/` | 7 | command wiring, history, keyboard, layout, render-context and view-state adapters |
-| `src/ui/markdown/renderer/` | 5 | renderer DOM creation, measured-height policy, scroll/spacer geometry, and mounted-element caching |
-| `src/ui/export/workflow/` | 9 | command entry, question, confirmed request, paths, progress, native BibTeX, notices and font hints |
-| `src/ui/export/pipeline/` | 20 | pipeline contracts and orchestration plus the HTML, Markdown, figure, listing, table, list, equation, image and callout rewrite stages |
-| `src/ui/export/assets/` | 4 | LaTeX image portability, raster preparation and picture diagnostics |
-| `src/ui/export/reference/` | 3 | reference headers and native bibliography adaptation |
-| `src/ui/export/dialog/` | 3 | the export question card, presentation-only form and its DOM controls |
-| `src/ui/export/manager/` | 6 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
-| `src/ui/export/templates/` | 15 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
-| `src/ui/**` outside `markdown/` (the shell) | 67 | 6,177 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree rows and facade, the toolbars, the versions, the image URLs |
-| `src/services/` | 33 | 3,941 | domain folders for session, workspace, new notes, events, bibliography, documents and versioning, plus cross-cutting services |
-| `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
-| `src/citations/` | 2 | 149 | reading CSL: the types, and the parse |
+| `src/ui/markdown/*` (top level) | 23 | 3,592 | stable editor/renderer facades, block dispatch and shared render support |
+| `src/ui/markdown/block_views/` | 3 | 251 | equation, fence/listing and exact-source block rendering strategies |
+| `src/ui/markdown/source_mode/` | 4 | 296 | source-mode state, block rules and node-source questions |
+| `src/ui/markdown/editor/` | 7 | 509 | command wiring, history, keyboard, layout, render-context and view-state adapters |
+| `src/ui/markdown/renderer/` | 5 | 530 | renderer DOM creation, measured-height policy, scroll/spacer geometry, and mounted-element caching |
+| `src/ui/markdown/editing/blank_lines/` | 4 | 294 | paragraph, list and deletion rules for empty-line editing |
+| `src/ui/floating/` | 6 | 340 | the shared floating surfaces, question card and placement rule |
+| `src/ui/new_document/` | 4 | 605 | new-note registration, flow, placement dialog and template picker |
+| `src/ui/session/` | 3 | 210 | session commands and the stacked-document panel |
+| `src/ui/export/workflow/` | 10 | 898 | command entry, question, request, paths, progress, bibliography, notices and body preparation |
+| `src/ui/export/pipeline/` | 18 | 1,810 | pipeline contracts and orchestration plus focused source-rewrite stages |
+| `src/ui/export/assets/` | 5 | 390 | image contracts, LaTeX portability, raster preparation and picture diagnostics |
+| `src/ui/export/reference/` | 3 | 255 | reference headers and native bibliography adaptation |
+| `src/ui/export/dialog/` | 3 | 733 | the export question card, presentation-only form and its DOM controls |
+| `src/ui/export/manager/` | 6 | 927 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
+| `src/ui/export/templates/` | 16 | 2,220 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
+| `src/ui/**` outside `markdown/` (the shell) | 140 | 14,128 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions and image URLs |
+| `src/services/` | 7 | 464 | cross-cutting services beside the feature directories |
+| `src/api/` | 9 | 766 | one file per backend seam (`invoke`, or a granted plugin) |
+| `src/citations/` | 3 | 237 | reading CSL: types, library loading and parsing |
 | the two entry points (`src/main.ts`, `src/settings.ts`) | 2 | 200 | the app window and the settings window |
-| `src-tauri/src/*.rs` | 9 | 1,715 | the app's own commands and services: files, menu, i18n, session, settings, stats, the library root |
-| `src-tauri/src/files/` | 4 | file listing, displayable names, tree mutations, and sibling-temporary atomic writes |
-| `src-tauri/src/export/` | 57 | 8,307 | export kinds, run, templates, HTML media and the external-program seams |
-| `src-tauri/src/fonts/` | 7 | 1,131 | font-file parsing, the bundled face/header/coverage domain, and machine fonts |
-| `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
+| `src-tauri/src/*.rs` | 7 | 871 | the library root and focused app services |
+| `src-tauri/src/files/` | 4 | 466 | file listing, displayable names, tree mutations, and atomic writes behind one command façade |
+| `src-tauri/src/export/` | 57 | 8,332 | export commands over the kinds, run, templates, HTML and external-program boundaries |
+| `src-tauri/src/fonts/` | 7 | 1,165 | font parsing, bundled faces and machine-font queries behind one façade |
+| `src-tauri/src/menu/` | 3 | 330 | menu construction, event mapping and installation façade |
+| `src-tauri/src/settings/` | 3 | 298 | configuration model, persistence and command façade |
+| `src-tauri/src/versioning/` | 5 | 1,076 | the git seam and writes, folder facts and version reads |
 
-`src/ui/markdown/` is 215 of the 405 modules and 26,785 of the 47,108 lines: the editor is the app,
+`src/ui/markdown/` is 225 of the 421 modules and 26,736 of the 47,136 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -157,7 +165,8 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 405 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 421 modules) |
+| Domains expose a façade, avoid cross-domain cycles and do not repeat parent prefixes | this document | `test/checks/module-layout.mjs` resolves TypeScript imports and Rust font/file boundaries |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
@@ -190,6 +199,12 @@ different reasons**. Several did, and each is split now:
 | `syntax/equation/blocks.ts`, 406 | equation wrapper parsing, body classification and LaTeX lowering (277) | offset-preserving remark input in `syntax/equation/masking.ts` (125), behind the explicit `syntax/equation/index.ts` facade |
 | `syntax/footnotes.ts`, 303 | the public footnote rules behind `syntax/footnote/index.ts` | marker grammar and positions in `model.ts`, incremental label tracking in `labels.ts`, borrowed parse definitions in `parse_context.ts`, and the insertion edit in `edits.ts` |
 | `syntax/quote_edits.ts`, 353 | quote edit operations behind `syntax/container/quote/index.ts` | carrier parsing in `lines.ts` and offset-preserving source projection in `projection.ts`; fenced Div boundaries and fence-body edits now share the `syntax/container/` facade |
+| `create_block.ts`, 359 | the block component dispatcher and shared parsed/blank rendering (151) | equation, fenced/listing and exact-source views under `block_views/` |
+| `source_mode.ts`, 350 | source-mode state and a public facade | block rules, node questions and mutable shown-range/frame state under `source_mode/` |
+| `editing/blank_lines.ts`, 339 | one public blank-line editing facade | paragraph layout, list-item behavior and deletion under `editing/blank_lines/` |
+| `export/manager/rules.ts`, 145 | manager grouping, unassigned packages and defaults-state rules (84) | package-action availability in `templates/availability.ts` (53), where the selected package belongs |
+| `src-tauri/src/settings.rs`, 340 | settings commands and public configuration facade (67) | schema/defaults/migration in `settings/model.rs` (175) and file persistence/path expansion in `settings/store.rs` (56) |
+| `src-tauri/src/menu.rs`, 356 | installation facade over menu construction and event mapping (28) | menu tree construction in `menu/build.rs` (199) and event/ID mapping in `menu/events.rs` (103) |
 
 ## What was improved, in the order it was taken
 
