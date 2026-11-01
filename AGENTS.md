@@ -60,6 +60,19 @@ brief — read it first; this file is the short version and the non-negotiables.
   those four offset flavours are where the bugs live.
 - Prefer a small, well-named module over a large one; if a unit needs a paragraph to
   explain itself, it is doing too much.
+- Organize modules by owned domain and capability. A folder must represent shared state,
+  lifecycle, an operation family, or a provider/consumer boundary; do not create generic
+  `shared/`, `utils/`, `misc/` or `common/` folders.
+- A domain exposes one explicit public entrypoint (`index.ts` or Rust `mod.rs`) with named exports.
+  Do not add wildcard facade exports or compatibility barrels.
+- Do not repeat the parent domain in a child filename: `session/model.ts`, not
+  `session/session_model.ts`. Role names such as `model`, `rules`, `state`, `contracts`, `dialog`
+  and `flow` are encouraged when they explain ownership.
+- Cross-domain consumers import the public domain entrypoint. Deep imports belong to the owning
+  domain or a test that deliberately targets an internal rule.
+- Keep the approved stable facades (`src/api/*`, `src/commands/*`,
+  `src/ui/markdown/markdown_editor.ts`, the two entrypoints and Rust command paths) intentional;
+  move their internals without creating a second old-path API.
 
 The approved command/event architecture and its phased migration are described in
 `docs/superpowers/specs/2026-10-31-human-maintainable-command-event-architecture-design.md`.

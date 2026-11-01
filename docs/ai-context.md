@@ -16,6 +16,9 @@ mounted.
 `docs/README.md` maps the documents. Of them, this one is the brief, `docs/architecture.md`
 is the model (the layers, the invariants, the four offsets), and `docs/structure.md` is the
 shape (the tree, the class families, and which convention each check enforces).
+Its module-organization guide is binding: organize by domain and capability, expose one explicit
+domain entrypoint, remove repeated parent/domain prefixes from child filenames, and update imports
+in the same change that moves a module.
 
 ## Map
 

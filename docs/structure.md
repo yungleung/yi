@@ -75,6 +75,43 @@ but it is the one name in the tree that means two things (item 9 below). The sou
 `document/block_scanner.ts`; `document/block_scan_rules.ts` owns the ordered multi-line container
 rules for fences, equations, indented code, terminated HTML, quotes and fenced Divs.
 
+## Module organization guide
+
+These rules are binding for every module and file move:
+
+1. **Organize by owned domain and capability, not by shared filename prefix.** Table commands,
+   table view models and table browser UI may share a `table/` domain; unrelated files with a
+   common word do not.
+2. **Create a folder when it has a domain contract.** A folder must represent shared state,
+   lifecycle, an operation family, or a provider/consumer boundary. Do not create a folder merely
+   to reduce a directory listing.
+3. **A domain has one explicit public entrypoint.** Use `index.ts` (or Rust `mod.rs`) to export the
+   intended surface. Prefer explicit named exports; wildcard re-exports are not domain APIs.
+4. **Do not repeat the parent domain in a child filename.** Use `session/model.ts`, not
+   `session/session_model.ts`; use `workspace/tree/menu.ts`, not `workspace/tree/tree_menu.ts`.
+5. **Role suffixes are allowed only when they clarify ownership.** Names such as `model.ts`,
+   `rules.ts`, `state.ts`, `contracts.ts`, `dialog.ts`, `flow.ts`, `form.ts`, `manager.ts` and
+   `index.ts` are useful because they name a role, not a repeated domain.
+6. **Cross-domain consumers import the public domain entrypoint.** Deep imports are reserved for
+   the owning domain and tests that deliberately target an internal rule.
+7. **Do not build compatibility barrels.** When an internal path moves, update every import. Keep a
+   second path only for the stable facades listed below.
+8. **No generic buckets.** `shared/`, `utils/`, `misc/`, `common/` and `helpers/` are not domains.
+   Name the capability or leave a cohesive standalone module at its current layer.
+9. **Dependencies point inward.** Rust and TypeScript follow their existing layer rules; a domain
+   facade may depend on its own internals, but its internals must not reach back through consumer
+   UI or create cycles.
+10. **Commands, events and state ownership do not change because a file moves.** The approved
+    command/event architecture remains authoritative.
+11. **Every file move preserves tests and behavior.** A structural commit runs TypeScript/Rust
+    checks and the affected Tauri probes; the completed pass runs the full app probe suite.
+12. **Document the shape with the move.** Update module headers, `docs/structure.md`,
+    `docs/ai-context.md` and any direct path references in tests, probes or plans.
+
+The stable cross-app facades are `src/api/*`, `src/commands/*`,
+`src/ui/markdown/markdown_editor.ts`, `src/main.ts`, `src/settings.ts`, and Rust command paths
+exported through `src-tauri/src/lib.rs`. Their internals may move; their consumer paths do not.
+
 ## Which way the imports point
 
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
