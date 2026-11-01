@@ -94,7 +94,7 @@ relative import in `src/`.
 | Edge | Where | What it costs |
 | --- | --- | --- |
 | render → editor | `create_block.ts` → `editing/language_picker.ts` | the language badge's button opens a command-layer list from the render layer |
-| caret → shell | `caret/offsets.ts` → `services/bibliography.ts` | the offset model asks a service how many characters a citation draws |
+| caret → shell | `caret/node_projection.ts` → `services/bibliography.ts` | the node projection asks a service how many characters a citation draws |
 
   The editor layer's 18 edges into the shell (i18n, the bibliography, the table menu, the image flow,
   …) are by design: commands *are* the app's own layer, and `docs/architecture.md` allows it.
@@ -118,8 +118,8 @@ when this document was written (the class names and the offset tags) are checked
 ## Sizes, and when a module is too big
 
 Most modules are small. Big is not the same as bad — the caption and description-list
-repairs are long because Markdown's edge cases are, and `offsets.ts` because the mapping has
-four flavours to keep straight. A module is too big when it holds **two jobs that change for
+repairs are long because Markdown's edge cases are, while the offset path separates DOM reading
+in `offsets.ts` from node projection in `node_projection.ts`. A module is too big when it holds **two jobs that change for
 different reasons**. Several did, and each is split now:
 
 | Module, then | Still holds (lines) | And the module the other job moved to |
