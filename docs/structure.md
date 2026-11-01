@@ -126,7 +126,7 @@ different reasons**. Several did, and each is split now:
 | --- | --- | --- |
 | `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
 | `markdown_editor.ts`, 596 | the shell — document, view and command wiring | key routing in `editing/keys.ts`, browser pointer/clipboard/preview wiring in `editing/editor_interactions.ts`, page/column state in `editor_page_layout.ts`, and picker caret arithmetic in `editing/block_opening_edit.ts` |
-| `editing/context.ts`, 515 | the edit funnel, source decision and caret placement | selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
+| `editing/context.ts`, 515 | the stable edit funnel and editing facade (157) | caret/selection/scroll placement in `editing/caret_placement.ts`, source-node selection in `editing/source_range.ts`, quote-child inspection in `editing/quote_context.ts`, selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
 | `editing/text_commands.ts`, 16 | the stable text-path facade | insertion in `text_insertion.ts`, deletion in `text_deletion.ts`, Enter in `text_newline.ts`, and task toggling in `task_command.ts` |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
 | `caret/navigation.ts`, 75 | the public direction/dispatch facade | neighbor discovery in `navigation_nodes.ts`, horizontal traversal in `navigation_horizontal.ts`, vertical geometry in `navigation_vertical.ts`, and line hit-testing in `line_hits.ts` |

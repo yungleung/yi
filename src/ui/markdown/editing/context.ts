@@ -1,59 +1,45 @@
 /**
- * Shared plumbing for the editor's editing commands.
+ * The stable editing-context facade and the one sequence every command edit follows.
  *
- * Every command (clipboard, typing, find/replace, formatting) needs the same
- * three things: the document state, the block renderer and the scroll
- * container that hosts the prose root. Passing that context explicitly keeps
- * the commands free of editor internals and lets them live in their own
- * modules. The helpers here also centralise range→offset mapping, so any
- * command works the same whether its range is a text selection, a boundary
- * inside a block, or a Select-All range anchored to the prose root.
+ * `applyEdit` is the shared write path: document text changes first, then the edited block is
+ * measured or rebuilt, the caret is restored, and scroll is held. Source and caret rules live in
+ * focused children but remain exported from here so command modules keep one import boundary.
  *
- * May import: the caret, the offsets mapping (`caret/offsets.ts`,
- * `caret/dom_position.ts`), the renderer, the state, `source_mode.ts`, the
- * syntax rules it reads (`syntax/plain_edit.ts`, `syntax/node_shape.ts`, and
- * `syntax/footnotes.ts` for the shape of a definition's label), and the app's
- * hint surface and words for the pinned frontmatter id. Upholds: every
- * command funnels its change through `applyEdit`, so the change → re-render →
- * place-the-caret sequence is identical everywhere.
+ * Example: typing `x` on the fast path writes the text node and restores the caret without a parse;
+ * Enter may rebuild the block, but both return with the same document revision and scroll rule.
+ *
+ * May import: document state/history, the render layer, source-mode edits, plain-text rules, caret
+ * commands and edit verification. Upholds: every command funnels its change through `applyEdit`, so
+ * change → render → caret placement is identical everywhere.
  */
 
 import {
-  getCaretRange,
-  getSelectionRange,
-  scheduleCaret,
-  scheduleNativeSelection,
-  setSelectionRange
-} from '../caret/caret';
-import {
-  blockSourceAt,
   editStaysInsideShownSource,
   moveShownSource,
-  setShownRange,
-  shownSourceHeld,
   withHeldShownSource
 } from '../source_mode';
-import { documentOffsetAt } from '../caret/offsets';
-import { domPositionAtOffset } from '../caret/dom_position';
-import { showsSource } from '../registry';
-import { markerShape } from '../syntax/footnotes';
 import { isInPlaceTextEdit, isPlainEdit } from '../syntax/plain_edit';
-import {
-  quotePrefixAt,
-  type QuoteChildContext
-} from '../syntax/quote_edits';
 import { plainRun, writeRun } from './typed_text';
 import { editorSelection, proseRoot, rangeOffsets } from './selection';
 import type { EditKind, EditMark } from '../document/history';
-import type { RootContent } from 'mdast';
-import type { AstHeading } from '../ast';
-import type { MarkdownBlock } from '../document/blocks';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import { editsId } from './id_lock';
 import { showHint } from '../../../services/hints';
 import { t } from '../../../services/i18n';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 import { scheduleEditVerification } from './edit_verification';
+import { keepScroll, restoreCaret, showSourceAt } from './caret_placement';
+
+export { quoteContextAt } from './quote_context';
+export {
+  caretOffset,
+  keepScroll,
+  placeCaret,
+  restoreCaret,
+  restoreMark,
+  restoreSelection,
+  showSourceAt
+} from './caret_placement';
 
 /** What every editing command needs to read and change the document. */
 export interface EditorContext {
@@ -77,72 +63,12 @@ export interface EditorContext {
   readonly focusText: () => void;
 }
 
-/** The document offset of the active caret, or null when there is none. */
-export function caretOffset(context: EditorContext): number | null {
-  const range = editorSelection(context, true);
-  if (!range) {
-    return null;
-  }
-  const start = documentOffsetAt(context.state, range.startContainer, range.startOffset);
-  return start ? start.offset : null;
-}
-
-/** The active quote depth and child construct at a document offset. */
-export function quoteContextAt(
-  state: MarkdownEditorState,
-  block: MarkdownBlock,
-  offset: number
-): { depth: number; child: QuoteChildContext; prefix: string } | null {
-  const relative = Math.min(Math.max(0, offset - block.charStart), block.text.length);
-  const line = quotePrefixAt(block.text, relative);
-  if (line === null) {
-    return null;
-  }
-
-  let child: QuoteChildContext = 'paragraph';
-  let ownerEnd: number | null = null;
-  const visit = (nodes: readonly RootContent[]): void => {
-    for (const node of nodes) {
-      const position = (node as {
-        position?: { start?: { offset?: number }; end?: { offset?: number } };
-      }).position;
-      const start = position?.start?.offset;
-      const end = position?.end?.offset;
-      if (start === undefined || end === undefined || relative < start || relative > end) {
-        continue;
-      }
-      if (node.type === 'code') {
-        child = 'code';
-        ownerEnd = end;
-      } else if (node.type === 'math') {
-        child = 'equation';
-        ownerEnd = end;
-      } else if (node.type === 'table') {
-        child = 'table';
-        ownerEnd = end;
-      } else if (node.type === 'listItem') {
-        child = 'list';
-        ownerEnd = null;
-      }
-      const children = (node as { children?: RootContent[] }).children;
-      if (Array.isArray(children)) {
-        visit(children);
-      }
-    }
-  };
-  visit(state.getBlockContent(block));
-
-  if (ownerEnd !== null && relative === ownerEnd) {
-    child = 'completed-child';
-  }
-  return { ...line, child };
-}
-
 /**
- * Where the author is, as the mark an edit remembers: the range they have selected, or
- * the caret when the range is collapsed. It reads the same selection the commands edit,
- * through the same mapping (`rangeOffsets`), so what an edit remembers and what it
- * replaces cannot disagree.
+ * Where the author is, as the mark an edit remembers: the range they selected, or the caret.
+ *
+ * It reads the same selection and mapping the commands edit, so what an edit remembers and what
+ * it replaces cannot disagree. Example: a selection from offsets 4–9 is remembered as that range;
+ * a collapsed caret at 6 is remembered as `{ from: 6, to: 6 }`.
  */
 function authorMark(context: EditorContext): EditMark | null {
   const range = editorSelection(context, true);
@@ -150,134 +76,13 @@ function authorMark(context: EditorContext): EditMark | null {
 }
 
 /**
- * The block holding `offset` shows its own text, if it is a block whose
- * rendering cannot hold a caret; `null` shows no block's source at all (see
- * `source_mode.ts`). The blocks whose shape changed are re-rendered, which is
- * what puts the text — or the view — in the document.
- */
-export function showSourceAt(context: EditorContext, offset: number | null): void {
-  // The plain write's caret placement holds this: it knows the caret is in the node
-  // it was in, so the decision cannot have changed, and asking would parse the
-  // block (see `source_mode.ts: withHeldShownSource`).
-  if (shownSourceHeld()) {
-    return;
-  }
-  // A *selection* is the reader acting on text they can see, not a caret entering the markdown they
-  // are editing: a fenced block is built as its own text — delimiters and all — when the caret is
-  // inside, and that build would take the selected text with the element it replaces (a new note
-  // opens with its title selected, and the title is inside a frontmatter block). So the source a
-  // decision asked for while a selection is live names the *node* the caret is in and never the
-  // block, which leaves a block that is not showing its text in the shape it has; a block that *is*
-  // showing its own text is left in it by the caret observer, which holds that one ask back while a
-  // selection is live (`markdown_editor.ts: followCaret`).
-  const selecting = getSelectionRange() !== null;
-  const range = offset === null ? null : sourceRangeAt(context.state, offset, selecting);
-  if (!setShownRange(range)) {
-    return;
-  }
-  // The blocks that change shape are rebuilt, and a caret's DOM range is not
-  // dropped by that: the browser relocates it to the element that replaced its
-  // text, where it looks connected while sitting somewhere the author never
-  // put it. So the caret is placed again by offset — the truth, because the
-  // editor computed it — whenever the shape changed under it.
-  context.renderer.renderChanged();
-  if (offset !== null) {
-    placeCaret(context, offset);
-  }
-}
-
-/**
- * The source a caret at this document offset is inside, as its own range: a
- * fenced block's own text while the caret is in it and the reader is not
- * selecting (`selecting`), or the node the caret is in when that node has a
- * source to show. A caret in plain text is inside no such source.
- */
-function sourceRangeAt(
-  state: MarkdownEditorState,
-  offset: number,
-  selecting: boolean
-): { from: number; to: number } | null {
-  const block = state.getBlockAtOffset(offset);
-  if (!block) {
-    return null;
-  }
-  // A fenced block is the source the caret is in: its rendering is the body with the delimiters
-  // hidden (`nodes/fence_text.ts`), so the text that stands in for that rendering is the block's
-  // own — delimiters and all — and every offset in the block maps through it.
-  if (!selecting && blockSourceAt(block, offset)) {
-    return { from: block.charStart, to: block.charEnd };
-  }
-  const range = sourceRangeIn(state.getBlockContent(block), offset - block.charStart);
-  return range === null
-    ? null
-    : { from: block.charStart + range.start, to: block.charStart + range.end };
-}
-
-/**
- * The source at this block-relative offset whose markdown can stand in for its
- * rendering, as its range in the block's own text, or null. The tree is walked in
- * document order, so the outermost such node wins: a caret inside a link inside a
- * paragraph belongs to the link.
+ * Applies one raw-text edit, re-syncs the rendered window and moves the caret.
  *
- * A definition's label is the one source that is not a whole node: the node's range
- * covers the note as well as its marker, and the note's text is rendered and editable
- * where it sits, so only the `[^label]` at the definition's head is asked for by name
- * (see `syntax/footnotes.ts: markerShape`).
- */
-function sourceRangeIn(
-  nodes: RootContent[],
-  offset: number
-): { start: number; end: number } | null {
-  for (const node of nodes) {
-    const position = (node as { position?: { start?: { offset?: number } } }).position;
-    if (position?.start?.offset === undefined || offset < position.start.offset) {
-      continue;
-    }
-    const end = (node as { position?: { end?: { offset?: number } } }).position?.end?.offset;
-    if (end !== undefined && offset > end) {
-      continue;
-    }
-    if (showsSource(node.type)) {
-      return end === undefined ? null : { start: position.start.offset, end };
-    }
-    if (node.type === 'table' && node.tableCaption) {
-      const caption = node.tableCaption.captionData;
-      return offset >= caption.captionFrom && offset <= caption.captionTo
-        ? { start: caption.captionFrom, end: caption.captionTo }
-        : null;
-    }
-    if (node.type === 'list' && node.listCaption) {
-      const caption = node.listCaption.captionData;
-      if (offset >= caption.captionFrom && offset <= caption.captionTo) {
-        return { start: caption.captionFrom, end: caption.captionTo };
-      }
-      return sourceRangeIn((node as { children?: RootContent[] }).children ?? [], offset);
-    }
-    if (node.type === 'footnoteDefinition') {
-      const label = String((node as { label?: string }).label ?? '');
-      const marker = markerShape(label);
-      return offset < position.start.offset + marker.end
-        ? { start: position.start.offset, end: position.start.offset + marker.end }
-        : null;
-    }
-    if (node.type === 'heading') {
-      const attributes = (node as AstHeading).headingAttributes;
-      return attributes && end !== undefined && offset <= end
-        ? { start: attributes.from, end: attributes.to }
-        : null;
-    }
-    const children = (node as { children?: RootContent[] }).children;
-    return Array.isArray(children) ? sourceRangeIn(children, offset) : null;
-  }
-  return null;
-}
-
-/**
- * Applies a raw-text edit, re-syncs the rendered window and moves the caret.
- * Every command funnels through here so the change/render/caret sequence is
- * identical everywhere. `allowFastPath` is false for an edit such as turning a
- * blank-line placeholder into a paragraph: that edit must rebuild its block,
- * because the placeholder's text node cannot carry the new block's caret.
+ * Example: replacing `alpha` at `[0, 5)` with `beta` returns one revision whose caret defaults
+ * to offset 4; a frontmatter `id:` write is refused and changes nothing.
+ *
+ * `allowFastPath` is false when an edit must rebuild its block, such as turning a blank-line
+ * placeholder into a paragraph whose text node cannot carry the new block's caret.
  */
 export function applyEdit(
   context: EditorContext,
@@ -289,22 +94,11 @@ export function applyEdit(
   allowFastPath = true
 ): boolean {
   if (editsId(context.state.getText(), from, to)) {
-    // Refusing the write still consumes the keystroke: the editor's text is the truth, and a
-    // native insertion after this return would be the very edit the pin exists to stop.
     showHint(t('session.idLocked'), null);
     return false;
   }
   const anchor = context.contentView.scrollTop;
-  // Where the author was before the edit — a caret, or the selection this edit is about
-  // to replace. The history keeps it (`history.ts: EditMark`), so undo can put the
-  // author back there rather than wherever they are when the undo is asked for: a
-  // selection comes back selected, ready to be typed over.
   const before = authorMark(context) ?? { from, to: from };
-  // The fast path: a keystroke that cannot change how its block parses is written
-  // into the text node the caret is in, and nothing is rendered or parsed — which
-  // is what keeps the page's layout (and the 26 ms it costs to invalidate) out of a
-  // typed character's way. Everything the rule or the mapping is unsure about falls
-  // through to the ordinary path below, which is always correct.
   const editBlock = context.state.getBlockAtOffset(from);
   const literal =
     editBlock?.kind === 'fencedCode' ||
@@ -314,9 +108,6 @@ export function applyEdit(
   const rule = isPlainEdit(beforeText, from, to, replacement, literal);
   const root = proseRoot(context);
   const candidate = root ? plainRun(context.state, root, from, to) : null;
-  // A source view, ordinary keyboard typing and an input-method commit on one exact
-  // text node all write the document's own characters directly. Prose may temporarily
-  // show a marker literally; the deferred shape check renders it once input settles.
   const sourceEditStays =
     candidate === null ||
     !candidate.source ||
@@ -338,178 +129,29 @@ export function applyEdit(
           replacement !== '' &&
           isInPlaceTextEdit(beforeText, from, to, replacement)));
   const run = direct ? candidate : null;
-  // The shape is captured before the edit is applied: afterwards the parse it
-  // names is the one the edit replaced, and this block is being written into
-  // without being built again (see `edit_verification.ts`).
   const written = run ? context.state.getBlockAtOffset(from) : null;
   if (written) {
     scheduleEditVerification(context, written, run?.source === true);
   }
-  // The caret is resolved against the *edited* text (`state.ts: EditCaret`): asking a
-  // rule like `Enter`'s what it names before the edit names the block the key was
-  // pressed in, not the empty paragraph the edit made.
+
   const target = context.state.replaceRange(from, to, replacement, { before, caret, kind });
   if (run) {
     writeRun(run, replacement);
-    // The shown range names document offsets, so it has to move before the block is measured:
-    // measuring records the DOM's current rendering identity, and a shrinking edit whose old
-    // end still lies past the new block end would record the rendered shape while the source
-    // view is still mounted.
     moveShownSource({ from, to, replacement });
     const block = context.state.getBlockAtOffset(from + replacement.length);
     if (block) {
       context.renderer.measureEditedBlock(block.lineStart);
     }
-    // The caret is in the text node the write went into, and that node is the
-    // document's own text (`plainRun` proved it): an edit the rule accepts cannot
-    // move the caret into another node, so which source is shown cannot have
-    // changed — asking would parse the block (see `source_mode.ts`, and the property
-    // in `test/checks/check-plain-edit.mjs`). The range the edit did move is moved
-    // with it, and the decision stays held while the caret is placed: placing it
-    // notifies the caret observer (`markdown_editor.ts: followCaret`), which asks.
     withHeldShownSource(() => restoreCaret(context, target));
     keepScroll(context, anchor);
     context.onChanged?.(kind);
     return true;
   }
-  // The source the caret lands in is the source that is shown (see
-  // `source_mode.ts`). Deciding that before the rebuild is what has the blocks
-  // built in the shape the caret is about to need — and it is decided from the
-  // document, so an edit inside a link or a formula keeps that source open
-  // without an editing range to shift.
+
   showSourceAt(context, target);
   context.renderer.renderChanged();
   restoreCaret(context, target);
   keepScroll(context, anchor);
   context.onChanged?.(kind);
-  return true;
-}
-
-/**
- * Puts the scroll position back after an edit.
- *
- * Restoring the caret can make the browser scroll the focused element or the
- * synchronised selection into view — a scroll no seam in our code performs or
- * sees — and the reader ends up half a page away even though the document only
- * gained a line. The position is restored only when the caret is visible
- * there, so an edit that moves the caret out of the view still scrolls it in.
- */
-export function keepScroll(context: EditorContext, anchor: number): void {
-  const scroller = context.contentView;
-  // Two frames: the caret is placed on the first, and the second is where the
-  // browser has finished scrolling whatever it decided to scroll.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (Math.abs(scroller.scrollTop - anchor) < 1) {
-        return;
-      }
-      const caret = getCaretRange();
-      const box = scroller.getBoundingClientRect();
-      if (!caret || !caret.startContainer.isConnected) {
-        scroller.scrollTop = anchor;
-        return;
-      }
-      // Where the caret would sit if the scroll went back to the anchor.
-      const caretInContent = caret.getBoundingClientRect().top - box.top + scroller.scrollTop;
-      const viewportY = caretInContent - anchor + box.top;
-      if (viewportY >= box.top + 8 && viewportY <= box.bottom - 24) {
-        scroller.scrollTop = anchor;
-      }
-    });
-  });
-}
-
-/**
- * Places the caret at a document offset inside the rendered window. Returns
- * false when the offset lives in a block that is not mounted, so callers can
- * retry once that block comes back into the window. Offsets that fall between
- * blocks (the blank lines that separate them) snap to the nearest text, since
- * a separator has nothing to draw a caret on.
- */
-export function restoreCaret(context: EditorContext, offset: number, scroll = true): boolean {
-  const clamped = context.state.nearestTextOffset(offset);
-  // The caret is going here, so the source it lands in is the one that is
-  // shown — decided before the placement, so the caret lands on that text
-  // exactly instead of being mapped into a rendering that cannot hold it.
-  showSourceAt(context, clamped);
-  return placeCaret(context, clamped, scroll);
-}
-
-/**
- * Puts the author back where an edit's mark says: a caret, or — when the edit replaced
- * a selection — that selection again, so the text it covered can be typed over rather
- * than having to be selected a second time. A selection whose far end is not on screen
- * cannot be drawn, and then the caret at the end it can reach is the honest fallback.
- */
-export function restoreMark(context: EditorContext, mark: EditMark, scroll = true): boolean {
-  if (mark.from === mark.to) {
-    return restoreCaret(context, mark.from, scroll);
-  }
-  return restoreSelection(context, mark.from, mark.to, scroll) || restoreCaret(context, mark.to, scroll);
-}
-
-/**
- * Selects a document range in the rendered window, with the caret anchored at its end
- * so the next command has somewhere to start.
- *
- * The editor's own selection state is updated synchronously, so the command that
- * follows sees it immediately; only the visible highlight and the caret geometry are
- * deferred, because forcing a selection paint costs a frame on a large document (see
- * `caret.ts: scheduleNativeSelection`). This is what a formatting command does to the
- * text it just formatted, and what an undo does to the text it just put back.
- */
-export function restoreSelection(
-  context: EditorContext,
-  from: number,
-  to: number,
-  scroll = true
-): boolean {
-  const root = proseRoot(context);
-  if (!root) {
-    return false;
-  }
-  const start = domPositionAtOffset(context.state, root, from);
-  const end = domPositionAtOffset(context.state, root, to);
-  if (!start || !end) {
-    return false;
-  }
-  const range = document.createRange();
-  range.setStart(start.node, start.offset);
-  range.setEnd(end.node, end.offset);
-  const caret = document.createRange();
-  caret.setStart(end.node, end.offset);
-  caret.collapse(true);
-  setSelectionRange(range);
-  scheduleCaret(caret, scroll);
-  scheduleNativeSelection(range);
-  return true;
-}
-
-/**
- * Places the caret at a document offset inside the rendered window, without
- * deciding what source that offset belongs to. Returns false when the offset
- * lives in a block that is not mounted.
- */
-export function placeCaret(context: EditorContext, offset: number, scroll = true): boolean {
-  const root = proseRoot(context);
-  if (!root) {
-    setSelectionRange(null);
-    window.getSelection()?.removeAllRanges();
-    return false;
-  }
-  const clamped = context.state.nearestTextOffset(offset);
-  const position = domPositionAtOffset(context.state, root, clamped);
-  if (!position) {
-    setSelectionRange(null);
-    window.getSelection()?.removeAllRanges();
-    return false;
-  }
-  const caret = document.createRange();
-  caret.setStart(position.node, position.offset);
-  caret.collapse(true);
-  setSelectionRange(null);
-  window.getSelection()?.removeAllRanges();
-  context.focusText();
-  scheduleCaret(caret, scroll);
   return true;
 }

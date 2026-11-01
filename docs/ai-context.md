@@ -988,7 +988,7 @@ paragraph run before a fence or a `$$` line, because both may interrupt a paragr
 be blocks for their own text to have a shape to be shown in (a `$$` region with no blank line
 around it was exactly that — a formula whose click entered the paragraph's text and showed nothing;
 `display-math-source.js` holds the gesture both ways);
-`editing/context.ts` shows a fenced block's own range while the caret is in it *and no selection is
+`editing/caret_placement.ts` shows a fenced block's own range while the caret is in it *and no selection is
 live* — a selection is the reader acting on text they can see, and the shape change would take the
 text it covers (a new note opens with its title selected, and that title is inside a frontmatter
 block). The caret observer holds that ask back too while a selection is live, for the block that is
@@ -1063,7 +1063,7 @@ its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Ordin
 typing and an in-place committed word keep the focused seam; blurring and refocusing during a
 burst lost input (`source-burst-editing.js`, `empty-task-composition-burst.js`). Three facts follow
 from the seam: a *document* selection is one inside
-the prose root (`editing/context.ts: isDocumentRange`), because a focused textarea makes the browser
+the prose root (`editing/selection.ts: isDocumentRange`), because a focused textarea makes the browser
 report one of its own; where the keyboard goes is one hook (`EditorContext.focusText`), because a
 command that focuses the page and a command that selects it are then asking for the same thing; and
 a synthetic click cannot warm an input context, so a probe drives the seam with dispatched
@@ -1175,8 +1175,9 @@ command registry, event vocabulary, or editing API.
 `block.charStart`) → `rendered` (index into an element's text) → `DOM range` (a live
 `Range`, which the browser *relocates* rather than drops when its node is replaced).
 `caret/offsets.ts: documentOffsetAt` and `caret/dom_position.ts: domPositionAtOffset`
-are the two directions; `editing/context.ts: applyEdit` and `placeCaret` are where
-they are used. The table in `docs/architecture.md` says what each mapping is
+are the two directions; `editing/context.ts: applyEdit` and
+`editing/caret_placement.ts: placeCaret` are where they are used. The table in
+`docs/architecture.md` says what each mapping is
 re-derived from, and when. A sweep of the DOM captures the caret *before* it removes
 anything (`virtual_block_renderer.ts: syncWindow`'s snapshot, and `refresh`), because the
 range a removal relocates names no offset for a snapshot taken after it — a letter typed
