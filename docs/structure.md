@@ -125,7 +125,7 @@ different reasons**. Several did, and each is split now:
 | Module, then | Still holds (lines) | And the module the other job moved to |
 | --- | --- | --- |
 | `document/blocks.ts`, 732 | the splitter (673) | the kind vocabulary: `document/block_kinds.ts` (74) |
-| `markdown_editor.ts`, 671 | the shell — document, view and command wiring | key routing in `editing/keys.ts`, page/column state and scale in `editor_page_layout.ts`, and shared picker caret arithmetic in `editing/block_opening_edit.ts` |
+| `markdown_editor.ts`, 596 | the shell — document, view and command wiring | key routing in `editing/keys.ts`, browser pointer/clipboard/preview wiring in `editing/editor_interactions.ts`, page/column state in `editor_page_layout.ts`, and picker caret arithmetic in `editing/block_opening_edit.ts` |
 | `editing/context.ts`, 515 | the edit funnel, source decision and caret placement | selection reading in `editing/selection.ts`, and deferred shape verification in `editing/edit_verification.ts` |
 | `editing/text_commands.ts`, 16 | the stable text-path facade | insertion in `text_insertion.ts`, deletion in `text_deletion.ts`, Enter in `text_newline.ts`, and task toggling in `task_command.ts` |
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |

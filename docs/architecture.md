@@ -74,7 +74,7 @@ There is no second `editor_edited` or `markdown_content_changed` notification.
 | Document | `document/state.ts`, `document/text_store.ts`, `document/blocks.ts`, `document/block_parse_cache.ts`, `document/block_index.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format.ts`, `format_dom.ts`, `format_dom_tags.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `node_projection.ts` for rendered/raw arithmetic, `dom_position.ts` out) | document, syntax, the shared tag names (`offset_tags.ts`) — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
-| Commands | `src/commands/*`, `editing/*`, `markdown_editor.ts`, `click_routing.ts` | everything above; `src/commands/contracts.ts` owns the shared command vocabulary |
+| Commands | `src/commands/*`, `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | everything above; `src/commands/contracts.ts` owns the shared command vocabulary, and editor interactions own pointer/clipboard/preview listener order |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
 keeps the rules testable in Node, and it is the boundary most likely to be broken by

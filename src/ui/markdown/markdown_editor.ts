@@ -25,8 +25,7 @@ import { registerEditorCommands } from './commands/editor_commands';
 import {
   getCaretRange,
   getSelectionRange,
-  onCaretRangeChanged,
-  setSelectionRange
+  onCaretRangeChanged
 } from './caret/caret';
 import {
   isSourceBlock,
@@ -43,9 +42,8 @@ import {
   showSourceAt,
   type EditorContext
 } from './editing/context';
-import { isDocumentRange, proseRoot } from './editing/selection';
+import { proseRoot } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
-import { copySelection, pasteText } from './editing/clipboard';
 import { insertCommitted } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
 import { choiceCardIsOpen, handleChoiceCardText } from './choice_card';
@@ -60,19 +58,8 @@ import { calloutKindEdit } from './syntax/callouts';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';
-import { installFootnotePreview } from './footnote_preview';
-import { installCitationPreview } from './citation_preview';
-import { watchPointerPresses } from './editing/pointer';
+import { installEditorInteractions } from './editing/editor_interactions';
 import { handleEditorKey, type KeyHost } from './editing/keys';
-import {
-  routeContextMenu,
-  routeFootnoteMenu,
-  routeFootnoteClick,
-  routeLinkClick,
-  routePointerClick,
-  routeTaskClick,
-  routeWikilinkClick
-} from './click_routing';
 import { commandForKey } from '../../commands/triggers/keymap';
 import { MENU_COMMANDS } from '../../commands/triggers/native_menu';
 import {
@@ -238,59 +225,11 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       },
       true
     );
-    // The routed clicks, in the order they have to run: a checkbox and a footnote
-    // marker are handled before a node can place a caret where the click landed, a
-    // link opened with ⌘ (Ctrl) leaves for the system's browser instead of opening
-    // its source, a wikilink opened with ⌘ (Ctrl) asks the app for the document it
-    // names, and a click that missed every node still places a caret.
-    this.contentView.addEventListener(
-      'click',
-      (event) => {
-        if (!this.readOnly) {
-          routeTaskClick(this.context, event);
-        }
-      },
-      true
-    );
-    this.contentView.addEventListener(
-      'click',
-      (event) => routeFootnoteClick(this.context, event),
-      true
-    );
-    this.contentView.addEventListener('click', (event) => routeLinkClick(this.context, event), true);
-    this.contentView.addEventListener('click', (event) => routeWikilinkClick(event), true);
-    // Where the pointer goes down, for the click that may end a drag: a drag-selection
-    // crosses blocks, and the click it ends with lands on the page, not on a node (see
-    // `editing/pointer.ts`).
-    watchPointerPresses(this.contentView);
-    this.contentView.addEventListener('click', (event) => routePointerClick(this.context, event));
-    // A click is not typing. A list belongs to the query the author is typing, so any click in the
-    // document puts it away — the card's own rule (`completion_card.ts`), and the one gesture that
-    // ends a list without a keystroke. It is captured because a click that lands on a node is
-    // answered by that node and stops there, before it bubbles (see `click_routing.ts: pointer.ts`).
-    this.contentView.addEventListener('click', () => this.completions.close(), true);
-    // Resting the pointer on a footnote marker shows the note it names, in a card the
-    // pointer cannot interact with (see `footnote_preview.ts`).
-    installFootnotePreview(this.context);
-    // Resting the pointer on a citation shows the works it stands for — their reference
-    // entries, in the style and bibliography the settings name (see `citation_preview.ts`).
-    installCitationPreview(this.context);
-    // The context menu is routed to the table menu first, and to a footnote marker's
-    // jump for the one gesture that arrives as a context menu rather than a click —
-    // a Ctrl-click on macOS (see `click_routing.ts`).
-    this.contentView.addEventListener('contextmenu', (event) => {
-      routeFootnoteMenu(this.context, event);
-      if (!this.readOnly) {
-        routeContextMenu(this.context, event);
-      }
-    });
-    this.contentView.addEventListener('copy', (event) => copySelection(this.context, event));
-    this.contentView.addEventListener('paste', (event) => {
-      if (this.readOnly) {
-        event.preventDefault();
-        return;
-      }
-      pasteText(this.context, event);
+    installEditorInteractions({
+      contentView: this.contentView,
+      context: this.context,
+      readOnly: () => this.readOnly,
+      closeCompletions: () => this.completions.close()
     });
     // The system's way in: an input method's word, dictation and the emoji panel get
     // something to compose and arrive in, and what they commit is one edit of its own
@@ -326,20 +265,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     setCalloutKindChangeHandler((lineStart, kind) =>
       this.changeCalloutKind(lineStart, kind)
     );
-
-    // Keep the editor's selection state in sync with the native DOM selection
-    // (the rendered text is selectable by dragging).
-    document.addEventListener('selectionchange', () => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        setSelectionRange(null);
-        return;
-      }
-      const range = selection.getRangeAt(0);
-      setSelectionRange(
-        !range.collapsed && isDocumentRange(this.context, range) ? range : null
-      );
-    });
 
     this.registerCommandEvents();
     this.completions = new Completions(this.context);
