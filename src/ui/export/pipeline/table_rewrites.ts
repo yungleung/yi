@@ -28,7 +28,12 @@ interface CaptionedTable extends Table {
   tableCaption?: TableCaptionNode;
 }
 
-/** Every rewrite captioned tables need for one export kind. */
+/**
+ * Every rewrite captioned tables need for one export kind.
+ *
+ * Example: with `kind: 'markdown'`, a table followed by `: Results {#tbl:r}`
+ * returns one rewrite replacing the table and caption with semantic HTML.
+ */
 export function tableRewrites(
   tree: Walkable,
   references: readonly ReferenceEntry[],

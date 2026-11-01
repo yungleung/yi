@@ -71,6 +71,9 @@ impl TemplateManifest {
 
     /// Checks everything the app assumes before using a package: the schema, the kind and mode, the
     /// one entry, and that no path can leave the package folder.
+    ///
+    /// Example: a text package with `template: "main.tex"` and asset `"class/journal.cls"`
+    /// passes; the same manifest with `template: "../main.tex"` fails before use.
     pub(super) fn validate(&self) -> Result<(), String> {
         if self.schema > MANIFEST_SCHEMA {
             return Err(crate::i18n::now(
@@ -155,6 +158,9 @@ pub(super) fn write_manifest(package: &Path, manifest: &TemplateManifest) -> Res
 /// A path that is a package-relative path: one or more normal components, no absolute root, no
 /// parent and no empty name. A manifest is app-written, but a package is a folder a reader can
 /// also edit, and every use of one of these names has to stay inside the package.
+///
+/// Example: `relative_path("assets/site.css")` returns that relative path;
+/// `relative_path("../site.css")` and `relative_path("/site.css")` are refused.
 pub(super) fn relative_path(name: &str) -> Result<PathBuf, String> {
     if name.is_empty() || name.starts_with('/') || name.contains('\\') {
         return Err(crate::i18n::now("template.badPath", &[("file", name)]));

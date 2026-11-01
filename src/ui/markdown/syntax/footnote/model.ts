@@ -22,17 +22,30 @@ const DEFINITION_LINE = new RegExp(`^${CONTAINERS}\\[\\^[^\\]\\n]+\\]:`, 'm');
 const REFERENCE = /\[\^([^\]\n]+)\](?!:)/g;
 const REFERENCE_SHAPE = /\[\^[^\]\n]+\](?!:)/;
 
-/** The labels defined by the definition lines in a piece of text. */
+/**
+ * The labels defined by the definition lines in a piece of text.
+ *
+ * Example: `'[^1]: A\n[^note]: B'` returns `['1', 'note']`.
+ */
 export function footnoteDefinitionLabels(text: string): string[] {
   return [...text.matchAll(DEFINITION)].map((match) => match[1]);
 }
 
-/** The labels referenced by non-definition markers in a piece of text. */
+/**
+ * The labels referenced by non-definition markers in a piece of text.
+ *
+ * Example: `'Body[^1] and[^note]'` returns `['1', 'note']`; a definition line
+ * alone contributes no reference.
+ */
 export function footnoteReferenceLabels(text: string): string[] {
   return [...text.matchAll(REFERENCE)].map((match) => match[1]);
 }
 
-/** The labels of the definitions the document holds. */
+/**
+ * The labels of the definitions the document holds.
+ *
+ * Example: `'[^1]: A\n[^1]: B'` returns a set containing `'1'` once.
+ */
 export function footnoteLabels(text: string): Set<string> {
   return new Set(footnoteDefinitionLabels(text));
 }

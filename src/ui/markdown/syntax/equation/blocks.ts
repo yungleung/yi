@@ -63,7 +63,12 @@ export interface DisplayMathSource {
   mathTo: number;
 }
 
-/** Read one complete equation block whose final attributes are well formed. */
+/**
+ * Read one complete equation block whose final attributes are well formed.
+ *
+ * Example: `readEquationBlock('[$$\\nx = 1\\n$$]{#eq:x}')` returns id `eq:x` and
+ * a body whose math is `x = 1`; an unfinished attribute returns null.
+ */
 export function readEquationBlock(source: string, from = 0): EquationBlockSource | null {
   const read = readEquationWrapper(source, from);
   return read?.attributesValid ? read.block : null;
@@ -73,6 +78,9 @@ export function readEquationBlock(source: string, from = 0): EquationBlockSource
  * Read the editor's structural equation wrapper even while an attribute token
  * is unfinished. A malformed tail has no target or classes, but its formula and
  * exact source remain visible until the author finishes the attribute.
+ *
+ * Example: `readEquationBlockSource('[$$\\nx=1\\n$$]{#eq:')` still returns the block;
+ * its id is null so the malformed token is not exposed as a target.
  */
 export function readEquationBlockSource(
   source: string,
@@ -171,7 +179,12 @@ export function closesEquation(line: string): boolean {
   return /^\$\$\](?:\{.*)?$/.test(trimmed);
 }
 
-/** Read an ordinary `$$…$$` block, including the same-line form. */
+/**
+ * Read an ordinary `$$…$$` block, including the same-line form.
+ *
+ * Example: `readDisplayMath('$$x = 1$$')` returns math `'x = 1'`; text without
+ * a matching pair returns null.
+ */
 export function readDisplayMath(source: string, from = 0): DisplayMathSource | null {
   const leading = source.length - source.trimStart().length;
   const open = source.indexOf('$$', leading);
@@ -211,7 +224,12 @@ export function readEquationBody(source: string): EquationBody {
   };
 }
 
-/** Suppress top-level environment numbering while preserving every row. */
+/**
+ * Suppress top-level environment numbering while preserving every row.
+ *
+ * Example: an `align` body containing `a &= 1` becomes the same `align*` body;
+ * an already starred environment is returned unchanged.
+ */
 export function unnumberedEquationBody(body: EquationBody): string {
   if (body.environment === null || body.starred || innerEnvironment(body.environment)) {
     return body.source;
@@ -241,7 +259,12 @@ export function innerEquationBody(body: EquationBody): string {
   return body.source;
 }
 
-/** One numbered outer equation for a labeled LaTeX/PDF target. */
+/**
+ * One numbered outer equation for a labeled LaTeX/PDF target.
+ *
+ * Example: body `x=1` and id `eq:x` become an `equation` environment containing
+ * `x=1` and `\\label{eq:x}`.
+ */
 export function latexEquationBody(body: EquationBody, id: string): string {
   const content =
     body.environment === null || body.environment === 'equation'

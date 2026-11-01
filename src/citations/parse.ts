@@ -49,6 +49,12 @@ const LABEL_MAP: ReadonlyArray<readonly [string[], string]> = [
 /** Pandoc citation key characters (letters, digits, `_`, `:.#$%&-+?<>~/`). */
 const KEY_CHARS = '[A-Za-z0-9_:#$%&+?<>~./-]+';
 
+/**
+ * Parses one Pandoc citation source into narrative or parenthetical items.
+ *
+ * Example: `parseCitation('[see @smith2020, p. 45; @jones2019]')` returns a
+ * parenthetical citation whose first item has prefix `see`, id `smith2020`, and locator `45`.
+ */
 export function parseCitation(value: string): ParsedCitation {
   if (value.startsWith('[') && value.endsWith(']')) {
     return {
@@ -67,7 +73,12 @@ export function parseCitation(value: string): ParsedCitation {
   };
 }
 
-/** `[prefix] [-@key, locator, suffix]` → item fields. */
+/**
+ * Reads one parenthetical citation item.
+ *
+ * Example: `'see -@smith2020, p. 45, chapter 2'` returns id `smith2020`,
+ * prefix `see`, locator `45`, label `page`, suffix `chapter 2`, and suppresses the author.
+ */
 function parseCitationItem(source: string): CitationItem | null {
   const match = source.match(new RegExp(`^(.*?)(-?)@(${KEY_CHARS})(.*)$`));
   if (!match) {
@@ -85,7 +96,11 @@ function parseCitationItem(source: string): CitationItem | null {
   };
 }
 
-/** `@key [locator]` or `-@key [locator]` → item fields. */
+/**
+ * Reads one narrative citation item.
+ *
+ * Example: `'@smith2020 [p. 33]'` returns id `smith2020`, locator `33`, and label `page`.
+ */
 function parseNarrative(source: string): CitationItem | null {
   const match = source.match(new RegExp(`^(-?)@(${KEY_CHARS})(?:\\s*\\[([^\\]]*)\\])?$`));
   if (!match) {
@@ -105,6 +120,9 @@ function parseNarrative(source: string): CitationItem | null {
  * Splits text like `p. 45 and the following` into a locator (`45`, label
  * `page`) and a suffix (`and the following`). Without a locator label the
  * whole text is treated as a suffix.
+ *
+ * Example: `splitLocator('ch. 2 after revision')` returns
+ * `{ locator: '2', label: 'chapter', suffix: 'after revision' }`.
  */
 function splitLocator(text: string): {
   locator?: string;

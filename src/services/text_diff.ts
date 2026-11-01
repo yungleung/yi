@@ -80,6 +80,9 @@ function middleDiff(before: string[], after: string[]): DiffLine[] {
 /**
  * The whole document as one stream, `cap` being how many differing lines the rule will look at
  * before it names the change instead of diffing it.
+ *
+ * Example: `textDiff('one\ntwo\nthree', 'one\nTWO\nthree', 10)` keeps `one` and `three` as
+ * `same`, and marks `two` removed before `TWO` added.
  */
 export function textDiff(before: string, after: string, cap: number): DiffLine[] {
   const oldLines = linesOf(before);

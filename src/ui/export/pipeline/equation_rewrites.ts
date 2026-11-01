@@ -39,7 +39,12 @@ export interface EquationRewrite {
   text: string;
 }
 
-/** Every equation rewrite one export kind needs. */
+/**
+ * Every equation rewrite one export kind needs.
+ *
+ * Example: an unlabeled `align` formula is rewritten to an unnumbered layout for
+ * HTML; a labeled `[$$…$$]{#eq:x}` gets one target and one visible number.
+ */
 export function equationRewrites(
   text: string,
   references: readonly ReferenceEntry[],

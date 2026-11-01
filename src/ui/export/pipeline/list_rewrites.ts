@@ -29,7 +29,13 @@ interface CaptionedList extends List {
   listCaption?: ListCaptionNode;
 }
 
-/** Every rewrite captioned lists need for one export kind. */
+/**
+ * Every rewrite captioned lists need for one export kind.
+ *
+ * Example: `kind: 'html'` wraps a list and `: Steps {#list:steps}` in one
+ * target Div with a visible numbered caption; `kind: 'latex'` returns the native
+ * `yilist` lowering instead.
+ */
 export function listRewrites(
   tree: Walkable,
   references: readonly ReferenceEntry[],

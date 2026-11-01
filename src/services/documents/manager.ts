@@ -69,6 +69,9 @@ export class DocumentManager {
    *
    * Reading a vault is many files, so this answers once and keeps the answer: the completion list
    * can be asked on every keystroke, and only a workspace change makes the files be read again.
+   *
+   * Example: a workspace containing `a.md` with `id: 42` and `b.md` yields
+   * `[{ target: '42', title: 'A' }, { target: 'b', title: 'B' }]`.
    */
   async documents(): Promise<{ target: string; title: string }[]> {
     if (this.catalogue) {
@@ -104,7 +107,12 @@ export class DocumentManager {
     return documents;
   }
 
-  /** Resolves a wikilink target (markdown basename or frontmatter id) to a file path. */
+  /**
+   * Resolves a wikilink target (markdown basename or frontmatter id) to a file path.
+   *
+   * Example: `resolve('meeting')` returns `/vault/meeting.md`; `resolve('20240707122715')`
+   * returns the path of the note whose frontmatter carries that id.
+   */
   async resolve(target: string): Promise<string | null> {
     const name = target.trim();
     if (!name) {
@@ -121,6 +129,9 @@ export class DocumentManager {
   /**
    * Returns the display title of the target document: the frontmatter `title`
    * key, falling back to its heading 1. Null when neither exists.
+   *
+   * Example: `getTitle('meeting')` returns `'Weekly meeting'` when that note's
+   * frontmatter says `title: Weekly meeting`, even if its filename is `meeting.md`.
    */
   async getTitle(target: string): Promise<string | null> {
     const path = await this.resolve(target);

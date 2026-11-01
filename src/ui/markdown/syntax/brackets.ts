@@ -55,6 +55,9 @@ export interface BracketEdit {
  * What typing `key` at `caret` writes, or null when it writes itself — which is the answer for
  * every key that is not a bracket, for a bracket typed inside a literal region, and for one typed
  * over a selection.
+ *
+ * Example: `pairingFor('a', 1, '[', false)` returns
+ * `{ from: 1, to: 1, insert: '[]', caret: 2 }`.
  */
 export function pairingFor(
   text: string,
@@ -88,6 +91,9 @@ export function pairingFor(
  * Whether typing `closing` at `caret` should step over the character already there, which is the
  * other half of a pair the app wrote: the author typing the bracket they can see moves past it
  * rather than writing a second one.
+ *
+ * Example: `skipClosingFor('[]', 1, ']', false)` returns true; the same call with a
+ * caret at offset 0 returns false.
  */
 export function skipClosingFor(text: string, caret: number, key: string, literal: boolean): boolean {
   return !literal && (key === ']' || key === ')' || key === '}') && text[caret] === key;
@@ -96,6 +102,9 @@ export function skipClosingFor(text: string, caret: number, key: string, literal
 /**
  * The pair an empty bracket is, when the author deletes its opening: the offsets of the two
  * characters to take away, or null when the caret is not between a pair that holds nothing.
+ *
+ * Example: `pairAround('a[]b', 2)` returns `{ from: 1, to: 3 }`;
+ * `pairAround('a[x]b', 2)` returns null because the pair is not empty.
  */
 export function pairAround(
   text: string,

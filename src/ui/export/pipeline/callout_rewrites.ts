@@ -23,7 +23,12 @@ import { applyRewrites } from './rewrites';
 /** One source range and the semantic Div that replaces it. */
 export interface CalloutRewrite extends Rewrite {}
 
-/** Every callout in one export source, in document order. */
+/**
+ * Every callout in one export source, in document order.
+ *
+ * Example: `> [!NOTE]\n> Body` rewrites to a fenced Div carrying
+ * `.callout`, `.callout-note`, and a `.callout-title` child.
+ */
 export function calloutRewrites(
   text: string,
   preserveAlertQuote = false
@@ -52,7 +57,12 @@ export function calloutRewrites(
   return rewrites;
 }
 
-/** One callout as a fenced Div whose classes and title are stable for filters. */
+/**
+ * One callout as a fenced Div whose classes and title are stable for filters.
+ *
+ * Example: a note titled `Notice` becomes `::: {.callout .callout-note}`
+ * followed by `::: {.callout-title}` and `Notice`.
+ */
 export function calloutDiv(
   source: CalloutSource,
   preserveAlertQuote = false

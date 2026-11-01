@@ -47,7 +47,12 @@ export interface DivOpening {
   title: string;
 }
 
-/** Read one complete callout from the start of `source`. */
+/**
+ * Read one complete callout from the start of `source`.
+ *
+ * Example: `'> [!NOTE]\n> Body'` returns a note callout with title `Note` and
+ * body `Body`; an ordinary `'> Quote'` returns null.
+ */
 export function readCallout(source: string, from = 0): CalloutSource | null {
   const lines = sourceLines(source);
   if (lines.length === 0) {
@@ -56,7 +61,12 @@ export function readCallout(source: string, from = 0): CalloutSource | null {
   return readAlertCallout(source, lines, from) ?? readDivCallout(source, lines, from);
 }
 
-/** The callout whose source range contains the block-relative offset. */
+/**
+ * The callout whose source range contains the block-relative offset.
+ *
+ * Example: an offset inside a nested tip returns the inner tip, not the outer
+ * callout containing it; an offset outside every callout returns null.
+ */
 export function calloutAtOffset(source: string, offset: number): CalloutSource | null {
   const lines = sourceLines(source);
   let innermost: CalloutSource | null = null;
@@ -98,6 +108,9 @@ export function calloutBodyInsertion(callout: CalloutSource | null): number {
  * A GitHub alert may end with an empty quoted carrier whose body offsets
  * collapse to its end. That line still exists, so typing on it must not
  * materialise a second one.
+ *
+ * Example: `'> [!NOTE]\n>'` already has a body line and returns true;
+ * `'> [!NOTE]'` with no carrier below it returns false.
  */
 export function calloutHasBody(callout: CalloutSource): boolean {
   if (callout.form === 'div') {

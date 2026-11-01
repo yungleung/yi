@@ -34,6 +34,9 @@ export interface PandocAttributeBlock extends PandocAttributes {
 /**
  * The attribute block ending a content span, or null when the span ends in any
  * other text. `requireWhitespace` distinguishes headings from image attributes.
+ *
+ * Example: for `'Heading {#intro .wide owner=demo}'`, the result has id `intro`,
+ * classes `['wide']`, attribute `{ owner: 'demo' }`, and exact source `'{#intro .wide owner=demo}'`.
  */
 export function attributeBlockAtEnd(
   source: string,
@@ -66,7 +69,11 @@ export function attributeBlockAtEnd(
   };
 }
 
-/** Move back over ASCII spaces and tabs. */
+/**
+ * Move back over ASCII spaces and tabs.
+ *
+ * Example: `trimSpacesBack('title  ', 7)` returns `5`.
+ */
 export function trimSpacesBack(source: string, at: number): number {
   let end = Math.max(0, Math.min(at, source.length));
   while (end > 0 && (source[end - 1] === ' ' || source[end - 1] === '\t')) {

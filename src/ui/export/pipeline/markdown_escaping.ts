@@ -8,22 +8,38 @@
  * rewrite family that emits Markdown.
  */
 
-/** Escape document text placed in a generated Markdown caption paragraph. */
+/**
+ * Escape document text placed in a generated Markdown caption paragraph.
+ *
+ * Example: `'A *bold* [note]'` becomes `'A \\*bold\\* \\[note\\]'`.
+ */
 export function escapeMarkdownText(text: string): string {
   return text.replace(/([\\`*_[\]{}<>#+\-!|])/g, '\\$1');
 }
 
-/** Escape text used as an ordinary Markdown link label. */
+/**
+ * Escape text used as an ordinary Markdown link label.
+ *
+ * Example: `'A [note]'` becomes `'A \\[note\\]'`.
+ */
 export function escapeLinkText(text: string): string {
   return text.replace(/[\\[\]]/g, (character) => `\\${character}`);
 }
 
-/** Escape one fragment identifier for a Markdown destination. */
+/**
+ * Escape one fragment identifier for a Markdown destination.
+ *
+ * Example: `'section one'` becomes `'section%20one'`.
+ */
 export function encodeFragment(id: string): string {
   return encodeURI(id);
 }
 
-/** A quoted Pandoc attribute value. */
+/**
+ * A quoted Pandoc attribute value.
+ *
+ * Example: `'a "quoted" path'` becomes `'a \\"quoted\\" path'`.
+ */
 export function attributeValue(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }

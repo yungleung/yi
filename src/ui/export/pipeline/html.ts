@@ -8,7 +8,12 @@
  * quoted attribute is escaped once, by the same rule.
  */
 
-/** Escape text placed in an HTML element body or a quoted attribute value. */
+/**
+ * Escape text placed in an HTML element body or a quoted attribute value.
+ *
+ * Example: `'<b>"A & B"</b>'` becomes
+ * `'&lt;b&gt;&quot;A &amp; B&quot;&lt;/b&gt;'`.
+ */
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -17,7 +22,11 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Map a Pandoc key into a safe HTML data-attribute name. */
+/**
+ * Map a Pandoc key into a safe HTML data-attribute name.
+ *
+ * Example: `'owner email'` becomes `'owner-email'`; an empty key becomes `'value'`.
+ */
 export function htmlAttributeName(key: string): string {
   const safe = key.replace(/[^A-Za-z0-9_.:-]/g, '-');
   return safe === '' ? 'value' : safe;

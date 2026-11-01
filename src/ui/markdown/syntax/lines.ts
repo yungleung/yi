@@ -20,6 +20,8 @@ import { listItemMarker } from './markers';
  *
  * The marker's delimiter space is what makes the item: `- ` and `- [ ] ` are empty items, and a
  * bare `-` is the character itself (`syntax/bare_markers.ts`).
+ *
+ * Example: `isBlankItemLine('- ')` returns true; `isBlankItemLine('-')` returns false.
  */
 export function isBlankItemLine(line: string): boolean {
   return listItemMarker.test(line);
@@ -32,6 +34,9 @@ const ITEM_LINE = /^(\s*(?:[-+*]|\d+[.)])\s+)(?:(\[[ xX]\])\s+)?/;
  * What Enter inserts to continue a list item, or null when the line is not one.
  * The new item keeps the marker and indentation of the item above it; a task
  * item continues unchecked.
+ *
+ * Example: `itemContinuation('- first')` returns `'\\n- '`;
+ * `itemContinuation('- [x] first')` returns `'\\n- [ ] '`.
  */
 export function itemContinuation(lineText: string): string | null {
   const match = ITEM_LINE.exec(lineText);
@@ -69,6 +74,9 @@ export function blankItemLineAt(
  * A selection that stops where a line starts does not touch that line: the
  * newline it ends on belongs to the line above. Both the list commands and the
  * code-block indent read a selection the same way.
+ *
+ * Example: `touchedLines('one\\ntwo\\nthree', 2, 4)` covers only `'one'`, because
+ * offset 4 is the start of `'two'`.
  */
 export function touchedLines(
   text: string,

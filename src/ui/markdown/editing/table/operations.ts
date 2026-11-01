@@ -49,7 +49,12 @@ export interface TableTarget {
 
 export { TABLE_COMMANDS, type TableCommand };
 
-/** The table a target points at: its block, its raw text and its model. */
+/**
+ * The table a target points at: its block, its raw text and its model.
+ *
+ * Example: target `{ lineStart: 12, row: 1, column: 0 }` returns the table
+ * block beginning on line 12 and its first body cell.
+ */
 export function tableSnapshot(
   context: EditorContext,
   target: TableTarget
@@ -76,6 +81,9 @@ function tableMarkdown(columns: number, rows: number): string {
  * The picked size counts the header row. An empty paragraph *becomes* the
  * table; anywhere else the paragraph is split and the table is inserted as a
  * block of its own, with the blank lines markdown needs to keep it apart.
+ *
+ * Example: `insertTable(context, { rows: 3, columns: 2 })` inserts one header,
+ * one delimiter and two body rows, then puts the caret in the first header cell.
  */
 export function insertTable(
   context: EditorContext,
@@ -200,6 +208,9 @@ function editFor(
  *
  * The caret keeps its place through the edit: moved text carries it along, and
  * an edit above the caret shifts it by the same byte delta.
+ *
+ * Example: `runTableCommand(context, target, 'deleteRow')` removes the clicked
+ * body row and keeps the caret in the same logical table position when possible.
  */
 export function runTableCommand(
   context: EditorContext,

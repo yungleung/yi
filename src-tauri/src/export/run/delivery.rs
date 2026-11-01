@@ -92,6 +92,9 @@ pub(crate) fn deliver_latex_assets(
 
 /// A native bibliography is a relative `.bib` inside the output folder, never an absolute path or a
 /// climb out of the source tree the reader will compile.
+///
+/// Example: `references.bib` is accepted; `/tmp/references.bib` and `../references.bib`
+/// are refused before anything is written outside the output folder.
 fn safe_bibliography_path(path: &str) -> Result<PathBuf, String> {
     let candidate = Path::new(path);
     let safe = !path.is_empty()
@@ -127,6 +130,9 @@ pub(crate) fn deliver_note_assets(request: &ExportRequest) -> Result<(), String>
     Ok(())
 }
 
+/// A note asset path that stays below the generated output folder and names a supported image.
+///
+/// Example: `images/plot.png` is accepted; `../plot.png` and `notes.txt` are refused.
 fn safe_note_asset_path(path: &str) -> Result<PathBuf, String> {
     let candidate = Path::new(path);
     let safe = !path.contains('\\')

@@ -29,7 +29,12 @@ export interface CaptionLineData {
   textTo: number;
 }
 
-/** The caption data on one line, or null when the line is not a caption. */
+/**
+ * The caption data on one line, or null when the line is not a caption.
+ *
+ * Example: `': Results {#tbl:data}'` returns caption `'Results'` and id
+ * `'tbl:data'`; `'Results'` without the colon returns null.
+ */
 export function captionLine(line: string, from: number): CaptionLineData | null {
   const opening = /^:(\s+)/.exec(line);
   if (opening === null) {

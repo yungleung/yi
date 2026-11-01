@@ -123,6 +123,9 @@ pub fn versioning_use_git(git: Option<String>) -> Result<(), String> {
 /// This is the only place the app runs git: everything it may ask git to do is written here and in
 /// the two functions below, so "what does the app run" is one list to read — and one list to hold
 /// it to (`test/probes/versioning-fake-git.js` watches every argument the app passes).
+///
+/// Example: `run_git(git, "/notes", &["config", "--get", "user.name"])` returns the configured
+/// name without surrounding whitespace; a failed command returns git's own stderr sentence.
 pub(super) fn run_git<S: AsRef<std::ffi::OsStr>>(
     git: &Path,
     workspace: &Path,
@@ -188,6 +191,9 @@ pub(super) fn identity_of(git: Option<&Path>, workspace: &Path) -> Identity {
 /// Where a repository's own directory lives when it is kept **outside** the workspace: the app's
 /// data folder, under the workspace's name. That is the whole point of the arrangement — a cloud
 /// client watching the workspace never sees `.git` at all.
+///
+/// Example: workspace `/notes/thesis` becomes `<app-data>/repos/thesis`, while a path with no
+/// final folder name is refused rather than producing a repository at the data root.
 pub(super) fn separate_git_dir(
     app: &tauri::AppHandle,
     workspace: &Path,

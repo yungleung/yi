@@ -54,6 +54,9 @@ pub fn export_use_pandoc(pandoc: Option<String>) -> Result<(), String> {
 /// What it says on the way *without* failing is kept too — a picture it could not fetch, a citation
 /// it could not resolve: those are the reasons a document is not quite what the reader asked for,
 /// and the window says them rather than leaving the reader to notice the hole.
+///
+/// Example: a successful run with stderr `"[WARNING] Missing image"` returns
+/// `["Missing image"]`; a nonzero exit returns pandoc's stderr as the error.
 pub(super) fn run_pandoc(
     pandoc: &Path,
     arguments: &[OsString],
@@ -125,6 +128,8 @@ fn pandoc_output(
 }
 
 /// The lines pandoc wrote that are not blank: its warnings, one sentence each.
+///
+/// Example: `warnings_in("[WARNING] Lost image\n\n")` returns `["Lost image"]`.
 pub(super) fn warnings_in(stderr: &str) -> Vec<String> {
     stderr
         .lines()

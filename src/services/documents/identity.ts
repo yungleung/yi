@@ -21,7 +21,11 @@ import { parseDocument } from 'yaml';
  */
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/;
 
-/** The frontmatter block's own text, or null when the document has none. */
+/**
+ * The frontmatter block's own text, or null when the document has none.
+ *
+ * Example: `'---\ntitle: A\n---\n\nBody'` returns `'title: A'`.
+ */
 export function readFrontmatterBlock(content: string): string | null {
   const match = content.match(FRONTMATTER);
   return match ? match[1] : null;
@@ -30,6 +34,9 @@ export function readFrontmatterBlock(content: string): string | null {
 /**
  * Where the frontmatter stops — the offset just past its closing marker, or 0 when the document has
  * none. What a caller writes *under* it needs the cut, where reading a key out of it wants the text.
+ *
+ * Example: for `'---\ntitle: A\n---\n\nBody'` the result is `16`, the index of the
+ * newline immediately after the closing marker.
  */
 export function frontmatterEnd(content: string): number {
   const match = content.match(FRONTMATTER);
@@ -39,6 +46,8 @@ export function frontmatterEnd(content: string): number {
 /**
  * The top-level `id:` line inside the frontmatter, as absolute offsets, or null when there is
  * none. The app writes this line and keeps it: the editor pins it against the reader's edits.
+ *
+ * Example: `'---\nid: 42\ntitle: A\n---\n'` returns `{ start: 4, end: 10 }`.
  */
 export function idLineRange(content: string): { start: number; end: number } | null {
   const end = frontmatterEnd(content);
@@ -136,6 +145,9 @@ function lineField(frontmatter: string, key: string): string | null {
  * The first fourteen digits at the *top* of the document — an id written without a key of its
  * own. Whole runs only (a longer number is not an id), and only before the first blank line.
  *
+ * Example: `'20240102030405\nBody'` returns `'20240102030405'`, while
+ * `'Body\n\nSee [[20240102030405]]'` returns null because the stamp is not the note's own id.
+ *
  * The limit is not decoration: a note that links to another by its id — `[[20221031105857]]`,
  * which is how this app's wikilinks name a note — mentions a stamp deep in its text that is not
  * its own name. Measured on the fixture workspace, whose two documents both mention
@@ -149,7 +161,12 @@ export function firstIdDigits(content: string): string | null {
   return match ? match[1] : null;
 }
 
-/** The id a document answers to, or null when nothing in it or its path names one. */
+/**
+ * The id a document answers to, or null when nothing in it or its path names one.
+ *
+ * Example: `documentId('body', '/notes/a.md')` returns `'/notes/a.md'`; a frontmatter
+ * `id: 42` would take precedence over the path.
+ */
 export function documentId(content: string, path: string | null): string | null {
   return readFrontmatterId(content) ?? firstIdDigits(content) ?? path;
 }
@@ -171,7 +188,12 @@ export function fileStem(path: string | null): string | null {
   return stem.length > 0 ? stem : null;
 }
 
-/** The title a document is shown under: what it calls itself, else the file it came from. */
+/**
+ * The title a document is shown under: what it calls itself, else the file it came from.
+ *
+ * Example: content with `title: Roadmap` returns `'Roadmap'`; content with only `# Plans`
+ * returns `'Plans'`; otherwise `/notes/ideas.md` yields `'ideas'`.
+ */
 export function documentTitle(content: string, path: string | null): string {
   return readFrontmatterTitle(content) ?? firstHeading(content) ?? fileStem(path) ?? 'Untitled';
 }
