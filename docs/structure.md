@@ -28,7 +28,7 @@ anywhere in them (the pass added eight modules and took one away).
 | `src/ui/export/preprocess*.ts`, `image_rewrites.ts`, `listing_markdown.ts`, `markdown_escaping.ts` | 4 | cross-kind rewrite orchestration, image resolution, listing output, and shared Markdown escaping |
 | `src/ui/export/export_{flow,question,request,paths,bibliography,notice}.ts`, `export_dialog.ts`, `export_form.ts` | 8 | command entry, pre-dialog planning, confirmed execution, target paths, native BibTeX adaptation, result reporting, and the presentation-only card |
 | `src/ui/**` outside `markdown/` (the shell) | 57 | 5,905 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree, the toolbars, the versions, the image URLs |
-| `src/services/` | 26 | 3,784 | the living state: session and its editor/persistence/file adapters, workspace, bibliography, i18n, hints, versioning, and the event map |
+| `src/services/` | 30 | 3,785 | the living state: session plus its pure model/opening/edit/serialization rules and editor/persistence/file adapters, workspace, bibliography, i18n, hints, versioning, and the event map |
 | `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 2 | 149 | reading CSL: the types, and the parse |
 | the two entry points (`src/main.ts`, `src/settings.ts`) | 2 | 200 | the app window and the settings window |

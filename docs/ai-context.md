@@ -112,11 +112,13 @@ they happened on, with no ✕, gone at the next press (or Escape). A hint's plac
 — a workspace path, which is the row it is found by (`hintPlaceSelector`, escaped) — never as an
 element, because the event bus is Tauri's and its payload is JSON.
 
-Documents are a *session*: `services/session_rules.ts` holds the rules (pure, checked in
-Node), `services/session.ts` the living one, and `session.rs` behind `src/api/session.ts` the
-file it is written to. `session_editor.ts` adapts the editor view, `session_persistence.ts` owns
-restore/write and folder grants, and `session_files.ts` owns document reads, atomic writes and the
-Save As sheet. It keeps the document on screen, the stack behind it, and where the reader
+Documents are a *session*: `services/session_rules.ts` is the stable facade over pure modules for
+the data model (`session_model.ts`), opening/stack transitions (`session_open.ts`), text/view edits
+(`session_edit.ts`) and file validation (`session_serialization.ts`). They are checked in Node;
+`services/session.ts` is the living state owner, and `session.rs` behind `src/api/session.ts` is
+the file it is written to. `session_editor.ts` adapts the editor view, `session_persistence.ts`
+owns restore/write and folder grants, and `session_files.ts` owns document reads, atomic writes and
+the Save As sheet. It keeps the document on screen, the stack behind it, and where the reader
 was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,
 `scrollAnchor`/`scrollToAnchor` on the renderer), and the workspace tree hands a clicked file to
 the session rather than to the editor, because whether the document on screen has to be asked
