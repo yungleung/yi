@@ -7,7 +7,7 @@
 //! shared font-file parser. Upholds: coverage is read from font data once per
 //! run, sorted and coalesced, never maintained as a second hand-written list.
 
-use super::bundled_faces::{FACES, HAN_FACE};
+use super::faces::{FACES, HAN_FACE};
 use std::path::Path;
 use std::sync::OnceLock;
 

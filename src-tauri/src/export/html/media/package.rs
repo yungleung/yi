@@ -12,8 +12,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-use super::media_paths::{encode_url, local_image};
-use crate::export::html_attributes::attribute_values;
+use super::super::attributes::attribute_values;
+use super::paths::{encode_url, local_image};
 
 /// Packages the local pictures referenced by one HTML page.
 ///

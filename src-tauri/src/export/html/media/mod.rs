@@ -15,13 +15,13 @@
 
 use std::path::PathBuf;
 
-mod media_paths;
 mod package;
+mod paths;
 
-pub(super) use package::{package_html_media, package_local_media};
+pub(crate) use package::{package_html_media, package_local_media};
 
 /// The bundle folder and its generated HTML page.
-pub(super) fn html_output(requested: &str) -> Result<(PathBuf, PathBuf), String> {
-    let output = super::bundle_output::prepare(requested, "page")?;
+pub(crate) fn html_output(requested: &str) -> Result<(PathBuf, PathBuf), String> {
+    let output = super::super::bundle_output::prepare(requested, "page")?;
     Ok((output.bundle, output.page))
 }

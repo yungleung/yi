@@ -10,7 +10,7 @@
 ///
 /// Example: `attribute_values(r#"<a href="one.css"><a href=two.css>"#,
 /// "href")` returns `["one.css", "two.css"]`.
-pub(super) fn attribute_values(html: &str, attribute: &str) -> Vec<String> {
+pub(crate) fn attribute_values(html: &str, attribute: &str) -> Vec<String> {
     let mut values = Vec::new();
     let needle = format!("{attribute}=");
     for (at, _) in html.match_indices(&needle) {

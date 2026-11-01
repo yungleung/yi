@@ -9,7 +9,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
-use super::html_attributes::attribute_values;
+use super::html::attribute_values;
 use super::pictures::fetch_resource;
 
 pub(crate) const REVEALJS_CDN: &str = "https://unpkg.com/reveal.js@6.0.1";
@@ -127,5 +127,5 @@ pub(crate) async fn download_revealjs_assets(page: &Path) -> Result<(), String> 
 
 /// Copy every local picture into `images/` and rewrite its URL.
 pub(crate) fn package_revealjs_media(page: &Path) -> Result<(), String> {
-    super::html_media::package_local_media(page, "images")
+    super::html::package_local_media(page, "images")
 }

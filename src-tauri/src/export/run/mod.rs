@@ -138,7 +138,7 @@ pub async fn run_export(
     let kind = kind_of(&request.kind)?;
     let mut new_reveal_bundle = None;
     if kind.kind == "html" {
-        let (_, page) = super::html_media::html_output(&request.output_path)?;
+        let (_, page) = super::html::html_output(&request.output_path)?;
         request.output_path = page.to_string_lossy().into_owned();
     } else if kind.kind == "revealjs" {
         let (bundle, page, created) = super::revealjs::revealjs_output(&request.output_path)?;
@@ -272,7 +272,7 @@ async fn export_with_pandoc(
         }
         if kind.kind == "html" {
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());
-            super::html_media::package_html_media(&output)?;
+            super::html::package_html_media(&output)?;
         }
         if kind.kind == "revealjs" {
             let output = absolute_output(&request.output_path, request.source_dir.as_deref());

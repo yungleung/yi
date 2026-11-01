@@ -18,9 +18,13 @@
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
-pub use super::bundled_coverage::coverage;
-use super::bundled_faces::FACES;
-pub use super::bundled_header::{named, named_values, reader_scripts, write_header};
+mod coverage;
+mod faces;
+mod header;
+
+pub use coverage::coverage;
+use faces::FACES;
+pub use header::{named, named_values, reader_scripts, write_header};
 
 /// Where the faces are on this machine.
 ///
@@ -59,9 +63,9 @@ fn holds_faces(dir: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::faces::SLOTS;
+    use super::header::style_options;
     use super::*;
-    use crate::fonts::bundled_faces::SLOTS;
-    use crate::fonts::bundled_header::style_options;
 
     fn fonts() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/fonts")

@@ -11,8 +11,7 @@
 mod bundle_output;
 mod config;
 mod font_hints;
-mod html_attributes;
-mod html_media;
+mod html;
 mod info;
 mod kinds;
 mod odt_toc;

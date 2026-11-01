@@ -10,8 +10,5 @@
 //! font file, one home for the shipped faces, and one reader of the machine's fonts.
 
 pub mod bundled;
-mod bundled_coverage;
-mod bundled_faces;
-mod bundled_header;
 pub mod file;
 pub mod system;

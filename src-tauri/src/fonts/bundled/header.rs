@@ -7,13 +7,13 @@
 //! Upholds: every script gets exactly one fontspec family, and a named reader
 //! face is never combined with this build's fake-bold option.
 
-use super::bundled_faces::{Slot, SLOTS};
+use super::faces::{Slot, SLOTS};
 use std::path::{Path, PathBuf};
 
 /// The file the header is written as in the export folder.
 pub const HEADER_FILE: &str = "pdf-fonts.tex";
 
-const HEADER_ASSET: &str = include_str!("../../assets/export/pdf-fonts.tex");
+const HEADER_ASSET: &str = include_str!("../../../assets/export/pdf-fonts.tex");
 const FAKE_BOLD: &str = "1.5";
 
 /// Writes the header into `dir`, one face per script, and answers its path.
