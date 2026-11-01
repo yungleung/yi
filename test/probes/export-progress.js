@@ -12,7 +12,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const api = await t.app('/src/api/export.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

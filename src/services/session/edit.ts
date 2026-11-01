@@ -8,13 +8,13 @@
  * through the named transitions here, and an unseen caret keeps the previously known selection.
  */
 
-import { documentTitle } from './document_identity';
+import { documentTitle } from '../document_identity';
 import {
   openDocument,
   type DocumentView,
   type SeenView,
   type SessionState
-} from './session_model';
+} from './model';
 
 /** Records the current document's authoritative text while preserving its last view. */
 export function recordContent(state: SessionState, content: string): SessionState {

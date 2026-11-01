@@ -2,7 +2,7 @@
  * The living session: the documents the reader has open, kept in step with the editor and with
  * the file they are written to.
  *
- * The rules live in `session_rules.ts` and are pure; this is the part that holds the editor
+ * The rules live in `rules.ts` and are pure; this is the part that holds the editor
  * and the dialog and the disk. It is the only place that knows all three, so it is the only
  * place that decides what a click in the tree means:
  *
@@ -12,7 +12,7 @@
  * - a file being opened while an *unstacked* document is on screen **asks** first, because saying
  *   no would lose it — unless the document on screen is one the file already holds, which has
  *   nothing to lose, or the reader has asked for it to be pushed instead of being asked
- *   (`push_unstacked_on_open`, `session_rules.ts: openDecision`);
+ *   (`push_unstacked_on_open`, `rules.ts: openDecision`);
  * - the session file is written soon after any change rather than on the way out, since the
  *   webview is not promised a moment on the way out.
  *
@@ -21,12 +21,12 @@
  * keeps a second text of its own.
  */
 
-import type { Prompter, Question } from '../ui/prompt';
-import { configManager } from './config_manager';
-import { eventManager } from './event_manager';
-import { t } from './i18n';
-import { MESSAGE_EVENT } from './messages';
-import { documentManager } from './document_manager';
+import type { Prompter, Question } from '../../ui/prompt';
+import { configManager } from '../config_manager';
+import { eventManager } from '../event_manager';
+import { t } from '../i18n';
+import { MESSAGE_EVENT } from '../messages';
+import { documentManager } from '../document_manager';
 import {
   adoptVersion,
   currentDocument,
@@ -47,23 +47,30 @@ import {
   type IncomingDocument,
   type SessionDocument,
   type SessionState
-} from './session_rules';
+} from './rules';
 import {
   captureEditorDocument,
   showDocumentInEditor,
   type SessionEditor
-} from './session_editor';
+} from './editor';
 import {
   loadPersistedSession,
   persistSession
-} from './session_persistence';
+} from './persistence';
 import {
   chooseDocumentPath,
   readDocumentFile,
   writeDocumentFile
-} from './session_files';
+} from './files';
 
-export type { SessionEditor } from './session_editor';
+export type {
+  DocumentView,
+  IncomingDocument,
+  SeenView,
+  SessionDocument,
+  SessionState
+} from './model';
+export type { SessionEditor } from './editor';
 
 /** Emitted whenever the documents, the stack or the current document change. */
 export const DOCUMENT_SESSION_CHANGED = 'document_session_changed';
@@ -124,7 +131,7 @@ class DocumentSession {
 
   /**
    * A file was clicked in the tree. What that means depends on what is on screen
-   * (`session_rules.ts: openDecision`), and only the unstacked case has to ask.
+   * (`rules.ts: openDecision`), and only the unstacked case has to ask.
    */
   async openFile(incoming: IncomingDocument): Promise<void> {
     const id = keyFor(incoming.path, incoming.content, () => `${this.run}-${++this.madeKeys}`);

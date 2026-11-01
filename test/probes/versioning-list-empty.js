@@ -11,7 +11,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { pointAtGit, initWorkspaceRepository, commitPaths } = await t.app('/src/api/versioning.ts');
   const { APP_IDENTITY } = await t.app('/src/services/versioning.ts');

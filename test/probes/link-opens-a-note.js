@@ -23,7 +23,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const home = await window.__TAURI_INTERNALS__.invoke('plugin:path|resolve_directory', {
@@ -32,7 +32,7 @@
   const workspace = `${home}/yi-probe-link-open`;
   const notes = `${workspace}/notes`;
   // A name of its own for every run: a document the session already holds comes back as itself
-  // (`services/session.ts: restore`), and a *current* one that matches is a no-op that leaves the
+  // (`services/session/index.ts: restore`), and a *current* one that matches is a no-op that leaves the
   // editor showing whatever was there before (`openFile`), which is not a document this probe wrote.
   const reading = `${notes}/note-${Date.now()}.md`;
   const letters = [

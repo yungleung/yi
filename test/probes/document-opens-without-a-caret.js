@@ -17,13 +17,13 @@
  * protocol are scoped to — and removes it again. It points the app at no workspace: a note's own
  * folder comes from the session showing the note.
  *
- * @covers src/services/session_rules.ts, src/ui/markdown/markdown_editor.ts,
+ * @covers src/services/session/rules.ts, src/ui/markdown/markdown_editor.ts,
  *   src/ui/markdown/editing/text_commands.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const caret = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -39,7 +39,7 @@
   );
   const note = '![shot](shot.png)\nProse under the picture.\n';
   // A name of its own for every run: a document the session has seen before comes back *with* its
-  // remembered caret (`services/session.ts: restore`), and this probe is about a document the
+  // remembered caret (`services/session/index.ts: restore`), and this probe is about a document the
   // session remembers nothing about. The folder is the probe's own and goes at the end either way.
   const notePath = `${workspace}/note-${Date.now()}.md`;
   const picture = () => {

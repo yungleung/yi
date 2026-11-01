@@ -8,14 +8,14 @@
  *
  * @covers src/services/document_manager.ts (invalidate, documents, resolve),
  *   src/ui/new_document/new_document_flow.ts, src/ui/workspace/tree_ops.ts,
- *   src/services/session.ts (writeDocument)
+ *   src/services/session/index.ts (writeDocument)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const flow = await t.app('/src/ui/new_document/new_document_flow.ts');
   const ops = await t.app('/src/ui/workspace/tree_ops.ts');
-  const session = (await t.app('/src/services/session.ts')).documentSession;
+  const session = (await t.app('/src/services/session/index.ts')).documentSession;
   const { documentManager } = await t.app('/src/services/document_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });

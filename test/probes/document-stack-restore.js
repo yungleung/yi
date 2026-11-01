@@ -9,14 +9,14 @@
  *
  * `document-stack.js` holds the push and the listing; this holds the coming back.
  *
- * @covers src/services/session_rules.ts, src/services/session.ts,
+ * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/ui/markdown/markdown_editor.ts, src/ui/markdown/virtual_block_renderer.ts,
  *   src/ui/session/stack_popover.ts
  * @needs-workspace — the files it opens are the fixtures' (`--with-workspace`)
  */
 (async () => {
   const t = window.__t;
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 

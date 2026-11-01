@@ -13,15 +13,15 @@
  * holds a copy of — which is what makes the document on screen in each case below the one the
  * probe put there.
  *
- * @covers src/ui/settings/general_settings.ts, src/services/session.ts
- * @covers src/services/session_rules.ts
+ * @covers src/ui/settings/general_settings.ts, src/services/session/index.ts
+ * @covers src/services/session/rules.ts
  * @needs-workspace — the note its stack question is asked about is the fixtures' own
  *   `default-document.md`, read out of whatever folder the app has open (`--with-workspace`)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { GeneralSettings } = await t.app('/src/ui/settings/general_settings.ts');
   const checks = [];

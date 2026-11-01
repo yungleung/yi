@@ -16,7 +16,7 @@ import {
   stackedDocuments,
   type IncomingDocument,
   type SessionState
-} from './session_model';
+} from './model';
 
 /**
  * What opening an id means while `state` is on screen.

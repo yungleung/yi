@@ -20,7 +20,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const { forgetRasters, rasterFolder, rasterPictures } = await t.app(
     '/src/ui/export/raster_picture.ts'

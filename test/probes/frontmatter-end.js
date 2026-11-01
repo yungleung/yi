@@ -60,7 +60,7 @@
 
   // The app's own readers get their values from YAML: a comment is not part of the title, a colon
   // inside a quoted title survives, and an id keeps its leading zeros.
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   await session.documentSession.openFile({
     path: null,
     content:

@@ -8,14 +8,14 @@
  * Upholds: a document's folder is installed before its text, so relative images resolve correctly.
  */
 
-import { parentFolder } from './workspace_folders';
-import {
-  capture,
-  type DocumentView,
-  type SeenView,
-  type SessionDocument,
-  type SessionState
-} from './session_rules';
+import { parentFolder } from '../workspace_folders';
+import { capture } from './edit';
+import type {
+  DocumentView,
+  SeenView,
+  SessionDocument,
+  SessionState
+} from './model';
 
 /**
  * What the session needs from the editor: its text, which document it is showing, and where the

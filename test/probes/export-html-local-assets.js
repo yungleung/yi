@@ -12,7 +12,7 @@
   const api = await t.app('/src/api/templates.ts');
   const exportApi = await t.app('/src/api/export.ts');
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checks = [];

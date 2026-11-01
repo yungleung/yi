@@ -7,14 +7,14 @@
  * bar reads the same session facts: green when a document is stacked or saved, amber while it is
  * edited, and muted when it is outside the stack or read-only.
  *
- * @covers src/services/session_rules.ts, src/services/session.ts,
+ * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/commands/triggers/keymap.ts, src/ui/session/session_commands.ts,
  *   src/ui/document_status.ts
  * @needs-workspace — navigation starts from the fixture workspace's default Markdown.
  */
 (async () => {
   const t = window.__t;
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 

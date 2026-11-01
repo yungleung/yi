@@ -10,7 +10,7 @@
 
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { readTextFile } from '@tauri-apps/plugin-fs';
-import { grantFolder, writeTextAtomically } from '../api/files';
+import { grantFolder, writeTextAtomically } from '../../api/files';
 
 /** Reads a document after granting the webview access to its folder. */
 export async function readDocumentFile(path: string): Promise<string> {

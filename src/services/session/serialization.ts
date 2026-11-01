@@ -14,7 +14,7 @@ import {
   SESSION_VERSION,
   type SessionDocument,
   type SessionState
-} from './session_model';
+} from './model';
 
 /** The session as JSON. */
 export function serializeSession(state: SessionState): string {

@@ -610,7 +610,7 @@ async function writeSessionText(text) {
  * the reader had open.
  *
  * The app writes its session on a debounce (800 ms after the last edit or scroll,
- * `src/services/session.ts`), so a write the probe scheduled can land *after* this restore: that
+ * `src/services/session/index.ts`), so a write the probe scheduled can land *after* this restore: that
  * window is waited out first, and the file is read back once and written again if the app had a
  * write of its own still in flight. A run that began with no session leaves the app's own empty
  * one, which is the state a reader who has never opened a document starts on.
@@ -645,7 +645,7 @@ async function reloadSession() {
   await call(
     `(async () => {
        try {
-         const { documentSession } = await window.__t.app('/src/services/session.ts');
+         const { documentSession } = await window.__t.app('/src/services/session/index.ts');
          await documentSession.load();
        } catch (error) {
          // A page whose helpers are gone has no session to read; the file is what matters.

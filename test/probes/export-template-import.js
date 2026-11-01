@@ -10,7 +10,7 @@
   const t = window.__t;
   const api = await t.app('/src/api/templates.ts');
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const writeBytes = async (path, bytes) =>
     await window.__TAURI_INTERNALS__.invoke('plugin:fs|write_file', bytes, {

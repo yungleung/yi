@@ -15,13 +15,13 @@
  * what the fix changes is visible in one run. The last check is the half that must not change: a
  * folder nobody asked about stays refused however many others were granted.
  *
- * @covers src-tauri/src/access.rs, src/api/files.ts (grantFolder), src/services/session.ts (load,
+ * @covers src-tauri/src/access.rs, src/api/files.ts (grantFolder), src/services/session/index.ts (load,
  *   openPath)
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const invoke = (command, args, options) =>
     window.__TAURI_INTERNALS__.invoke(command, args, options);

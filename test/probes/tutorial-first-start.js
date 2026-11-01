@@ -7,14 +7,14 @@
  * page empty.
  *
  * @covers src/ui/tutorial/tutorial_flow.ts (openTutorialForFirstStart),
- *   src/ui/tutorial/tutorial_rules.ts, src/services/session.ts
+ *   src/ui/tutorial/tutorial_rules.ts, src/services/session/index.ts
  */
 (async () => {
   const t = window.__t;
   const api = await t.app('/src/api/session.ts');
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const flow = await t.app('/src/ui/tutorial/tutorial_flow.ts');
-  const { emptySession } = await t.app('/src/services/session_rules.ts');
+  const { emptySession } = await t.app('/src/services/session/rules.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 

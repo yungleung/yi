@@ -22,7 +22,7 @@
 
 import type { Hint } from './hints';
 import type { Message } from './messages';
-import type { SessionState } from './session_rules';
+import type { SessionState } from './session';
 
 /** Why the document's committed text or revision changed. */
 export type DocumentChangeReason = 'load' | 'edit' | 'undo' | 'redo';

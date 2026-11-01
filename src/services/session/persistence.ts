@@ -8,14 +8,13 @@
  * failure never invents documents, and a write failure never changes in-memory session state.
  */
 
-import { grantFolder } from '../api/files';
-import { loadSessionText, saveSessionText } from '../api/session';
+import { grantFolder } from '../../api/files';
+import { loadSessionText, saveSessionText } from '../../api/session';
 import {
   emptySession,
-  parseSession,
-  serializeSession,
   type SessionState
-} from './session_rules';
+} from './model';
+import { parseSession, serializeSession } from './serialization';
 
 /** Reads the last session and grants every restored document's folder to the webview. */
 export async function loadPersistedSession(): Promise<SessionState> {

@@ -13,7 +13,7 @@
  * Neighbours: `document-stack-restore.js` (coming back to a document, where it was),
  * `document-stack-ask.js` (the rules about losing one) and `document-session-restart.js`.
  *
- * @covers src/services/session_rules.ts, src/services/session.ts,
+ * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/ui/toolbar/session_toolbar.ts, src/ui/session/stack_popover.ts,
  *   src/ui/document_status.ts
  * @needs-workspace — it clicks rows of the fixture tree and reads the notes behind them, so the app
@@ -21,7 +21,7 @@
  */
 (async () => {
   const t = window.__t;
-  const session = await t.app('/src/services/session.ts');
+  const session = await t.app('/src/services/session/index.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const steps = [];
