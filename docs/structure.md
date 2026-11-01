@@ -7,7 +7,7 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-01 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 383 TypeScript modules, 46,633 lines, and no import cycles
+described at the end of this document: 385 TypeScript modules, 46,717 lines, and no import cycles
 anywhere in them.
 
 ## The tree
@@ -31,9 +31,9 @@ anywhere in them.
 | `src/ui/export/assets/` | 4 | LaTeX image portability, raster preparation and picture diagnostics |
 | `src/ui/export/reference/` | 3 | reference headers and native bibliography adaptation |
 | `src/ui/export/dialog/` | 2 | the export question card and presentation-only form |
-| `src/ui/export/manager/` | 4 | the Export Manager surface, flow, kind page and pure rules |
+| `src/ui/export/manager/` | 6 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
 | `src/ui/export/templates/` | 13 | template package browser, rows, editor, file list, dialogs and rules |
-| `src/ui/**` outside `markdown/` (the shell) | 58 | 5,921 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree rows and facade, the toolbars, the versions, the image URLs |
+| `src/ui/**` outside `markdown/` (the shell) | 60 | 6,005 | title bar, status bar, sidebar, panels, prompts, settings, the workspace tree rows and facade, the toolbars, the versions, the image URLs |
 | `src/services/` | 33 | 3,941 | domain folders for session, workspace, new notes, events, bibliography, documents and versioning, plus cross-cutting services |
 | `src/api/` | 7 | 317 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 2 | 149 | reading CSL: the types, and the parse |
@@ -44,7 +44,7 @@ anywhere in them.
 | `src-tauri/src/fonts/` | 7 | 1,131 | font-file parsing, the bundled face/header/coverage domain, and machine fonts |
 | `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
 
-`src/ui/markdown/` is 202 of the 383 modules and 26,566 of the 46,633 lines: the editor is the app,
+`src/ui/markdown/` is 202 of the 385 modules and 26,566 of the 46,717 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -123,7 +123,7 @@ exported through `src-tauri/src/lib.rs`. Their internals may move; their consume
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
 relative import in `src/`.
 
-- **No cycles**, across all 383 modules; and `document/*` imports only syntax and its own files.
+- **No cycles**, across all 385 modules; and `document/*` imports only syntax and its own files.
   The two hardest invariants in the tree, and both hold.
 - **`syntax/*` imports only syntax, the AST types, the parser libraries and `plugins/*`** — the 3
   edges into the plugins are the parser's own extensions. `layering.mjs` enforces this.
@@ -149,7 +149,7 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 383 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 385 modules) |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
@@ -174,6 +174,7 @@ different reasons**. Several did, and each is split now:
 | `caret/caret.ts`, 520 | the logical range, the API (320) | the drawn span: `caret/span.ts` (251) |
 | `caret/navigation.ts`, 75 | the public direction/dispatch facade | neighbor discovery in `navigation_nodes.ts`, horizontal traversal in `navigation_horizontal.ts`, vertical geometry in `navigation_vertical.ts`, and line hit-testing in `line_hits.ts` |
 | `workspace/tree/index.ts`, 395 | workspace lifecycle and the public tree facade (129) | the recursive row DOM, expansion, reveal and row-local interactions in `workspace/tree/node.ts` (282) |
+| `export/manager/index.ts`, 465 | modal state, package handling and the public manager facade (338) | backend/config I/O in `manager/source.ts` (58) and kind-sidebar rendering in `manager/navigation.ts` (153) |
 
 ## What was improved, in the order it was taken
 
@@ -202,7 +203,7 @@ what keeps it that way.
    citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
-   their three lines, and the check reads `src/` (it says 383 modules).
+   their three lines, and the check reads `src/` (it says 385 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
    with its reason), and the other way round. Writing it found four names `format_dom_tags.ts` looked

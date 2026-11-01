@@ -5,63 +5,20 @@
  * the manager renders session-independent export facts and returns focus when it closes.
  */
 
-import {
-  exportKinds,
-  restoreExportConfig,
-  type ExportKindInfo
-} from '../../../api/export';
-import { exportTemplates, type TemplateSummary } from '../../../api/templates';
-import { configManager } from '../../../services/config_manager';
+import type { TemplateSummary } from '../../../api/templates';
 import { t } from '../../../services/i18n';
 import { FloatingSurface } from '../../floating/surface';
 import { KindPage } from './kind_page';
+import { renderManagerNavigation } from './navigation';
 import {
-  defaultsState,
-  managerGroups,
   unassignedPackages
 } from './rules';
-import { kindLabel } from '../templates/kind_label';
-import { templateEditorPanel } from '../templates/editor';
-
-export interface ExportManagerSnapshot {
-  pandoc: string | null;
-  kinds: ExportKindInfo[];
-  packages: TemplateSummary[];
-  exportTemplates: Record<string, string>;
-}
-
-export interface ExportManagerSource {
-  load(): Promise<ExportManagerSnapshot>;
-  updateTemplates(exportTemplates: Record<string, string>): Promise<void>;
-  restoreDefaults(kind: string): Promise<string>;
-}
-
-export const liveExportManagerSource: ExportManagerSource = {
-  load: async () => {
-    const [{ pandoc, kinds }, packages] = await Promise.all([
-      exportKinds(),
-      exportTemplates()
-    ]);
-    return {
-      pandoc,
-      kinds,
-      packages,
-      exportTemplates: configManager.get()?.export_templates ?? {}
-    };
-  },
-  updateTemplates: async (exportTemplates) => {
-    try {
-      await configManager.update({ export_templates: exportTemplates });
-    } catch (error) {
-      throw new Error(
-        t('exportManager.selectionFailed', {
-          message: error instanceof Error ? error.message : String(error)
-        })
-      );
-    }
-  },
-  restoreDefaults: async (kind) => await restoreExportConfig(kind)
-};
+import { templateEditorPanel } from '../templates';
+import {
+  liveExportManagerSource,
+  type ExportManagerSnapshot,
+  type ExportManagerSource
+} from './source';
 
 function button(className: string, label: string, data: string): HTMLButtonElement {
   const element = document.createElement('button');
@@ -70,19 +27,6 @@ function button(className: string, label: string, data: string): HTMLButtonEleme
   element.textContent = label;
   element.setAttribute(data, 'true');
   return element;
-}
-
-function groupLabel(group: 'documents' | 'presentations' | 'other' | 'unassigned'): string {
-  switch (group) {
-    case 'documents':
-      return t('exportManager.group.documents');
-    case 'presentations':
-      return t('exportManager.group.presentations');
-    case 'other':
-      return t('exportManager.group.other');
-    case 'unassigned':
-      return t('exportManager.group.unassigned');
-  }
 }
 
 /** One main-window manager for every export kind's persistent setup. */
@@ -237,89 +181,16 @@ export class ExportManager extends FloatingSurface {
     if (snapshot === null) {
       return;
     }
-    this.sidebar.replaceChildren();
-    for (const group of managerGroups(snapshot.kinds, snapshot.packages)) {
-      const label = document.createElement('p');
-      label.className = 'px-2 pb-1 pt-3 text-[0.65rem] font-semibold uppercase tracking-wide opacity-60';
-      label.textContent = groupLabel(group.group);
-      this.sidebar.append(label);
-      for (const row of group.rows) {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className =
-          row.info.kind === this.selectedKind
-            ? 'mb-1 block w-full rounded bg-primary/10 px-2 py-2 text-left ring-1 ring-primary/30'
-            : 'mb-1 block w-full rounded px-2 py-2 text-left hover:bg-base-300';
-        item.dataset.exportManagerKind = row.info.kind;
-        item.setAttribute(
-          'aria-current',
-          String(row.info.kind === this.selectedKind)
-        );
-        const name = document.createElement('span');
-        name.className = 'block truncate text-sm font-medium';
-        name.textContent = kindLabel(row.info.kind);
-        const activeId = snapshot.exportTemplates[row.info.kind] ?? null;
-        const active = snapshot.packages.find((summary) => summary.id === activeId);
-        const details = document.createElement('span');
-        details.className = 'block truncate text-[0.7rem] opacity-60';
-        const state = defaultsState(row.info);
-        details.textContent = [
-          activeId === null
-            ? t('template.pandocDefault')
-            : active?.manifest?.name ??
-              t('exportManager.missingPackage', { id: activeId }),
-          state === 'none'
-            ? null
-            : state === 'not-created'
-              ? t('exportManager.notCreated')
-              : state === 'customized'
-                ? t('exportManager.customized')
-                : t('exportManager.shipped'),
-          row.broken > 0
-            ? t('exportManager.brokenCount', { count: row.broken })
-            : null
-        ]
-          .filter((part): part is string => part !== null)
-          .join(' · ');
-        item.append(name, details);
-        item.addEventListener('click', () => {
-          this.selectedKind = row.info.kind;
-          this.inspectedId = snapshot.exportTemplates[row.info.kind] ?? null;
-          this.render();
-        });
-        this.sidebar.append(item);
-      }
-    }
-
-    const unassigned = unassignedPackages(snapshot.kinds, snapshot.packages);
-    if (unassigned.length > 0) {
-      const label = document.createElement('p');
-      label.className =
-        'px-2 pb-1 pt-3 text-[0.65rem] font-semibold uppercase tracking-wide opacity-60';
-      label.textContent = groupLabel('unassigned');
-      this.sidebar.append(label);
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className =
-        this.selectedKind === 'unassigned'
-          ? 'mb-1 block w-full rounded bg-primary/10 px-2 py-2 text-left ring-1 ring-primary/30'
-          : 'mb-1 block w-full rounded px-2 py-2 text-left hover:bg-base-300';
-      item.dataset.exportManagerKind = 'unassigned';
-      item.setAttribute('aria-current', String(this.selectedKind === 'unassigned'));
-      const name = document.createElement('span');
-      name.className = 'block truncate text-sm font-medium';
-      name.textContent = t('exportManager.group.unassigned');
-      const count = document.createElement('span');
-      count.className = 'block text-[0.7rem] opacity-60';
-      count.textContent = String(unassigned.length);
-      item.append(name, count);
-      item.addEventListener('click', () => {
-        this.selectedKind = 'unassigned';
-        this.inspectedId = null;
+    const { groups, unassigned } = renderManagerNavigation({
+      sidebar: this.sidebar,
+      snapshot,
+      selectedKind: this.selectedKind,
+      select: ({ kind, inspectedId }) => {
+        this.selectedKind = kind;
+        this.inspectedId = inspectedId;
         this.render();
-      });
-      this.sidebar.append(item);
-    }
+      }
+    });
 
     if (this.selectedKind === 'unassigned') {
       this.page.updateUnassigned(unassigned);
@@ -332,7 +203,7 @@ export class ExportManager extends FloatingSurface {
       return;
     }
     const activeId = snapshot.exportTemplates[info.kind] ?? null;
-    const row = managerGroups(snapshot.kinds, snapshot.packages)
+    const row = groups
       .flatMap((group) => group.rows)
       .find((candidate) => candidate.info.kind === info.kind);
     this.page.update({
@@ -445,6 +316,8 @@ export class ExportManager extends FloatingSurface {
 
 export const exportManager = new ExportManager();
 
+export { liveExportManagerSource } from './source';
+export type { ExportManagerSnapshot, ExportManagerSource } from './source';
 export { registerExportManagerCommand } from './flow';
 export type { ExportManagerHost } from './flow';
 export { KindPage } from './kind_page';

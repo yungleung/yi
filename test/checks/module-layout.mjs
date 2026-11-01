@@ -45,18 +45,33 @@ const expectExplicitFacade = (path) => {
   }
 };
 
-const expectNoClass = (path, name) => {
+const expectNoDefinition = (path, pattern, message) => {
   expectFile(path);
   if (!exists(path)) {
     return;
   }
   const source = readFileSync(join(root, path), 'utf8');
-  if (new RegExp(`\\bclass\\s+${name}\\b`).test(source)) {
-    failures.push(`${path} still owns ${name}; move it to its focused module`);
+  if (pattern.test(source)) {
+    failures.push(`${path} ${message}`);
+  }
+};
+
+const expectNoDeepImport = (folder, importPrefix, domain) => {
+  for (const name of readdirSync(join(root, folder))) {
+    if (!name.endsWith('.ts')) {
+      continue;
+    }
+    const path = `${folder}/${name}`;
+    const source = readFileSync(join(root, path), 'utf8');
+    if (new RegExp(`from\\s+['"]${importPrefix}[^'"]+['"]`).test(source)) {
+      failures.push(`${path} imports inside ${domain}; use its public entrypoint`);
+    }
   }
 };
 
 expectFile('src/ui/workspace/tree/node.ts');
+expectFile('src/ui/export/manager/source.ts');
+expectFile('src/ui/export/manager/navigation.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -91,7 +106,17 @@ const facades = [
 ];
 facades.forEach(expectExplicitFacade);
 
-expectNoClass('src/ui/workspace/tree/index.ts', 'TreeNode');
+expectNoDefinition(
+  'src/ui/workspace/tree/index.ts',
+  /\bclass\s+TreeNode\b/,
+  'still owns TreeNode; move it to its focused module'
+);
+expectNoDefinition(
+  'src/ui/export/manager/index.ts',
+  /\bexport\s+(?:interface|const)\s+(?:ExportManagerSource|liveExportManagerSource)\b/,
+  'still owns the export-manager source adapter; move it to source.ts'
+);
+expectNoDeepImport('src/ui/export/manager', '../templates/', 'the template domain');
 
 const legacy = [
   'src/services/session.ts',

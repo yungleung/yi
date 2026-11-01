@@ -13,13 +13,13 @@ import { notify } from '../../../services/messages';
 import { BaseComponent } from '../../component';
 import { prompt } from '../../prompt';
 import { defaultsActionAvailability, defaultsState } from './rules';
-import { kindLabel } from '../templates/kind_label';
-import { templateEditorPanel } from '../templates/editor';
 import {
+  kindLabel,
   removeTemplatePackage,
-  TemplatePackageBrowser
-} from '../templates/browser';
-import { showBrokenTemplateDetails } from '../templates/details';
+  showBrokenTemplateDetails,
+  TemplatePackageBrowser,
+  templateEditorPanel
+} from '../templates';
 
 export interface KindPageHandlers {
   restoreDefaults(kind: string): Promise<string>;

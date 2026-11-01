@@ -558,10 +558,11 @@ removal; when its kind cannot be read either, the Export Manager lists it once u
 **File → Manage Export Templates…** opens one kind-first manager from the typed
 `manage_export_templates` menu event and `export:manageTemplates` command. The manager and the export
 card share `src/ui/export/templates/browser.ts` for package operations and
-`rows.ts` for row presentation; the manager owns the selected kind,
-inspected package, defaults state and active-package writes, while the card owns transient per-export
-choices. The manager changes only the existing `AppConfig.export_templates` map and existing
-`export.{kind}.yaml` files, never a session document or a second package registry.
+`rows.ts` for row presentation. The manager's backend/config port lives in `manager/source.ts`, its
+kind sidebar in `manager/navigation.ts`, and `manager/index.ts` owns the selected kind, inspected
+package, defaults state, active-package writes and modal lifecycle; the card owns transient
+per-export choices. The manager changes only the existing `AppConfig.export_templates` map and
+existing `export.{kind}.yaml` files, never a session document or a second package registry.
 `ExportRequest.template_id` carries only the id: `run/arguments.rs`
 resolves it under the app's export folder, refuses one for another kind, and hands pandoc
 `--template` or `--reference-doc`, the package's `--csl` after the reader's own, and the package
