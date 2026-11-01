@@ -48,7 +48,7 @@ import {
   setCalloutKindPicker
 } from './editing/callout_kind_picker';
 import { fenceLanguageEdit } from './syntax/fence_edits';
-import { calloutKindEdit } from './syntax/callouts';
+import { calloutKindEdit } from './syntax/callout';
 import { FindBar } from './editing/find_bar';
 import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';

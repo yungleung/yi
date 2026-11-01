@@ -10,10 +10,10 @@
  * null, and Default removes only callout metadata.
  */
 
-import type { TextEdit } from './edit_range';
-import { fencedDivAtOffset } from './fenced_divs';
-import { attributeBlockAtEnd } from './pandoc_attributes';
-import { CALLOUT_CLASS } from './callout_model';
+import type { TextEdit } from '../edit_range';
+import { fencedDivAtOffset } from '../fenced_divs';
+import { attributeBlockAtEnd } from '../pandoc_attributes';
+import { CALLOUT_CLASS } from './model';
 
 export function calloutKindEdit(text: string, kind: string, offset = 0): TextEdit | null {
   if (kind !== 'default' && !/^[a-z0-9][a-z0-9_-]*$/.test(kind)) {

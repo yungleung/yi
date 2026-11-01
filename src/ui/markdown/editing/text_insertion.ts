@@ -28,12 +28,10 @@ import {
 import {
   calloutBodyInsertion,
   calloutHasBody,
-  readCallout
-} from '../syntax/callouts';
-import {
   materializeCalloutBody,
-  materializeFencedDivBody
-} from '../syntax/callout_body';
+  materializeFencedDivBody,
+  readCallout
+} from '../syntax/callout';
 import { fenceTypedWrite } from '../syntax/fence_edits';
 import { fencedDivAtOffset } from '../syntax/fenced_divs';
 import { emptyQuoteTyping } from '../syntax/quote_edits';

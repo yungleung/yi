@@ -20,7 +20,7 @@ import {
   remarkDeflistCompat
 } from './description_repairs';
 import { restoreBareMarkers } from './bare_markers';
-import { calloutsForParsers } from './callouts';
+import { calloutsForParsers } from './callout';
 import { restoreEmptyItems } from './empty_items';
 import { equationsForParsers } from './equation';
 import { restoreFigures } from './figures';

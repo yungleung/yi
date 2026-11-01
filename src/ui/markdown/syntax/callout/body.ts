@@ -10,12 +10,12 @@
  * body in either authoring form. A generic Pandoc Div uses the same Div path.
  */
 
-import type { CalloutSource } from './callouts';
+import type { CalloutSource } from './model';
 import {
   fencedDivAtOffset,
   type FencedDivSource
-} from './fenced_divs';
-import type { QuoteEdit } from './quote_edits';
+} from '../fenced_divs';
+import type { QuoteEdit } from '../quote_edits';
 
 /**
  * Enter on an empty fenced-Div callout's opening line.

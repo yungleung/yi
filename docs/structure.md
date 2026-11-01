@@ -7,15 +7,16 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-01 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 394 TypeScript modules, 46,913 lines, and no import cycles
+described at the end of this document: 394 TypeScript modules, 46,916 lines, and no import cycles
 anywhere in them.
 
 ## The tree
 
 | Path | Modules | Lines | What it holds |
 | --- | --- | --- | --- |
-| `src/ui/markdown/syntax/` | 47 | 6,813 | the pure rules: markers, lines, edit arithmetic and the parser pipeline |
+| `src/ui/markdown/syntax/` | 41 | 5,941 | the pure rules: markers, lines, edit arithmetic and the parser pipeline |
 | `src/ui/markdown/syntax/equation/` | 3 | 430 | equation wrapper parsing, environment lowering and offset-preserving parser masking |
+| `src/ui/markdown/syntax/callout/` | 6 | 877 | callout model, readers, parser preparation, body materialisation and kind editing |
 | `src/ui/markdown/plugins/` | 9 | 720 | the remark extensions: citation, wikilink, definition list |
 | `src/ui/markdown/document/` | 6 | 1,787 | the text (a piece table), its blocks, the block kinds, the block index, the edit log |
 | `src/ui/markdown/nodes/` | 29 | 1,848 | one class per mdast node: the DOM it draws |
@@ -45,7 +46,7 @@ anywhere in them.
 | `src-tauri/src/fonts/` | 7 | 1,131 | font-file parsing, the bundled face/header/coverage domain, and machine fonts |
 | `src-tauri/src/versioning/` | 5 | 998 | the git seam and writes, the folder facts a versioning decision needs, and version reads |
 
-`src/ui/markdown/` is 205 of the 394 modules and 26,590 of the 46,913 lines: the editor is the app,
+`src/ui/markdown/` is 205 of the 394 modules and 26,593 of the 46,916 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).

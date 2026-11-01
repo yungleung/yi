@@ -12,7 +12,7 @@
  */
 
 import type { Root, RootContent } from 'mdast';
-import type { CalloutSource } from './callouts';
+import type { CalloutSource } from './callout';
 import type { CaptionLineData } from './caption_lines';
 import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
 import {

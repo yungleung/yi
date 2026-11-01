@@ -13,7 +13,7 @@
 import type { AstCallout } from '../ast';
 import { appendChildren } from '../registry';
 import { enterSourceOf } from '../source_mode';
-import { calloutBodyInsertion } from '../syntax/callouts';
+import { calloutBodyInsertion } from '../syntax/callout';
 import { CALLOUT_BODY_ANCHOR, TEXT_FROM, setOffset } from '../offset_tags';
 import { EditableNodeComponent } from './editable_node';
 

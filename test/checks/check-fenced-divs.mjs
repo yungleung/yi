@@ -31,11 +31,11 @@ const {
   emptyCalloutNewline: emptyDivNewline,
   materializeFencedDivBody
 } = await bundle(
-  'src/ui/markdown/syntax/callout_body.ts',
+  'src/ui/markdown/syntax/callout/body.ts',
   'callout_body'
 );
 const { hasGenericFencedDiv } = await bundle(
-  'src/ui/markdown/syntax/callouts.ts',
+  'src/ui/markdown/syntax/callout/index.ts',
   'callouts'
 );
 

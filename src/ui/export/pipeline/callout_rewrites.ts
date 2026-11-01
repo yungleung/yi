@@ -16,7 +16,7 @@ import { splitBlocks } from '../../markdown/document/blocks';
 import {
   readCallout,
   type CalloutSource
-} from '../../markdown/syntax/callouts';
+} from '../../markdown/syntax/callout';
 import type { Rewrite } from './contracts';
 import { applyRewrites } from './rewrites';
 

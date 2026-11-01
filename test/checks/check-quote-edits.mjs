@@ -31,10 +31,10 @@ const {
   quoteNeedsSourceAt
 } = await import(await bundle('quote_edits', 'src/ui/markdown/syntax/quote_edits.ts'));
 const { emptyCalloutNewline, materializeCalloutBody } = await import(
-  await bundle('callout_body', 'src/ui/markdown/syntax/callout_body.ts')
+  await bundle('callout_body', 'src/ui/markdown/syntax/callout/body.ts')
 );
 const { calloutBodyInsertion, readCallout } = await import(
-  await bundle('callouts', 'src/ui/markdown/syntax/callouts.ts')
+  await bundle('callouts', 'src/ui/markdown/syntax/callout/index.ts')
 );
 
 const failures = [];

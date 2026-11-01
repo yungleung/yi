@@ -30,7 +30,7 @@ import {
   readEquationBlockSource
 } from './syntax/equation';
 import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code_fences';
-import { readCallout } from './syntax/callouts';
+import { readCallout } from './syntax/callout';
 import { renderContext } from './render_context';
 import { CHAR_START, LINE_END, LINE_START, TEXT_FROM, setOffset } from './offset_tags';
 // Importing the registration bootstrap registers every node component.

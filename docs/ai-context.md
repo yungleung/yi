@@ -747,17 +747,17 @@ and export probes hold the feature.
 
 **A callout is either a GitHub alert blockquote or an attributed Pandoc fenced
 Div.** `syntax/fenced_divs.ts` owns complete colon fences, nesting, quote carriers
-and body ranges for all Pandoc Divs. `syntax/callouts.ts` is the stable facade;
-`callout_model.ts` owns the value, built-in titles and class grammar,
-`callout_reader.ts` classifies alerts and complete Divs with exact source ranges,
-`callout_parser_source.ts` performs offset-preserving parser normalisation, and
-`callout_kind_edit.ts` builds the minimal kind/Default edit.
+and body ranges for all Pandoc Divs. `syntax/callout/` is the domain facade;
+`model.ts` owns the value, built-in titles and class grammar,
+`reader.ts` classifies alerts and complete Divs with exact source ranges,
+`parser_source.ts` performs offset-preserving parser normalisation,
+`kind_edit.ts` builds the minimal kind/Default edit, and `body.ts` materialises empty bodies.
 `plugins/remark-callouts.ts` converts both forms to one
 positioned callout node; nested outer quotes stay quotes. `nodes/callout.ts`
 draws the rendered panel, and `nodes/quote_source.ts` exposes exact block
 source while editing for both ordinary quotes and callouts, including escaped
 markers, physical blank lines and raw child delimiters that a rendering cannot
-give an exact caret. `syntax/quote_edits.ts` and `syntax/callout_body.ts`
+give an exact caret. `syntax/quote_edits.ts` and `syntax/callout/body.ts`
 implement the shared quote rule: Enter adds two fully prefixed lines, a second
 Enter exits exactly one level, blank quote lines delete as physical lines,
 typing never invents a delimiter space, child blocks keep their own Enter

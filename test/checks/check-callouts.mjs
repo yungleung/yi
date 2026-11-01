@@ -12,7 +12,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-callouts-'));
 const bundle = await rolldown({
-  input: 'src/ui/markdown/syntax/callouts.ts',
+  input: 'src/ui/markdown/syntax/callout/index.ts',
   logLevel: 'silent',
   platform: 'node'
 });

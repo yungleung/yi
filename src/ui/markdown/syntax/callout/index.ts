@@ -13,15 +13,20 @@
 export type {
   BuiltinCalloutKind,
   CalloutSource
-} from './callout_model';
+} from './model';
 export {
   calloutAtOffset,
   calloutBodyInsertion,
   calloutHasBody,
   readCallout
-} from './callout_reader';
+} from './reader';
 export {
   calloutsForParsers,
   hasGenericFencedDiv
-} from './callout_parser_source';
-export { calloutKindEdit } from './callout_kind_edit';
+} from './parser_source';
+export { calloutKindEdit } from './kind_edit';
+export {
+  emptyCalloutNewline,
+  materializeCalloutBody,
+  materializeFencedDivBody
+} from './body';

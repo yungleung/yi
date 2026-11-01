@@ -37,7 +37,7 @@ import {
   projectQuoteSource,
   quoteLineAt
 } from '../syntax/quote_edits';
-import { emptyCalloutNewline } from '../syntax/callout_body';
+import { emptyCalloutNewline } from '../syntax/callout';
 import { fenceNewlineWrite } from '../syntax/fence_edits';
 import { caretInTableCell } from './table';
 import { blockAtCaret } from './text_command_context';

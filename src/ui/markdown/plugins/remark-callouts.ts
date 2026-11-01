@@ -13,7 +13,7 @@
 import type { Paragraph, Parent, Root, RootContent, Text } from 'mdast';
 import type { Point, Position } from 'unist';
 import type { VFile } from 'vfile';
-import { readCallout, type CalloutSource } from '../syntax/callouts';
+import { readCallout, type CalloutSource } from '../syntax/callout';
 
 /** A block-level callout normalized from GitHub or Pandoc source. */
 export interface CalloutNode extends Parent {

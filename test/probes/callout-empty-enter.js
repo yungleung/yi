@@ -3,7 +3,7 @@
  * GitHub alert, while a fenced Div leaves the caret in one new body line.
  *
  * @covers src/ui/markdown/editing/text_commands.ts,
- *   src/ui/markdown/syntax/callout_body.ts
+ *   src/ui/markdown/syntax/callout/index.ts
  */
 (async () => {
   const t = window.__t;

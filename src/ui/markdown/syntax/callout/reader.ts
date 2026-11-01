@@ -13,8 +13,8 @@
 import {
   attributeBlockAtEnd,
   type PandocAttributeBlock
-} from './pandoc_attributes';
-import { readFencedDiv } from './fenced_divs';
+} from '../pandoc_attributes';
+import { readFencedDiv } from '../fenced_divs';
 import {
   ALERT_MARKER,
   BUILTIN_TITLES,
@@ -23,7 +23,7 @@ import {
   humanizeKind,
   type BuiltinCalloutKind,
   type CalloutSource
-} from './callout_model';
+} from './model';
 
 export interface SourceLine {
   start: number;

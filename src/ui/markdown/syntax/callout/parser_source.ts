@@ -16,15 +16,15 @@ import {
   closingFence,
   frontmatterDelimiter,
   openingFence
-} from './markers';
-import { readFencedDiv } from './fenced_divs';
+} from '../markers';
+import { readFencedDiv } from '../fenced_divs';
 import {
   quoteLine,
   readCallout,
   readDivOpening,
   sourceLines,
   type DivOpening
-} from './callout_reader';
+} from './reader';
 
 interface DivFrame {
   line: number;

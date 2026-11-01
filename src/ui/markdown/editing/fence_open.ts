@@ -34,7 +34,7 @@ import { chooseLanguageAt } from './language_picker';
 import { chooseCalloutKind } from './callout_kind_picker';
 import type { BlockKind } from '../document/block_kinds';
 import type { MarkdownBlock } from '../document/blocks';
-import { readCallout } from '../syntax/callouts';
+import { readCallout } from '../syntax/callout';
 import { fencedDivAtOffset } from '../syntax/fenced_divs';
 import {
   prefixInsertedBreaks,

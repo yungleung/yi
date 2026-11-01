@@ -85,6 +85,12 @@ expectFile('src/ui/export/pipeline/listing_rewrites.ts');
 expectFile('src/ui/markdown/syntax/equation/index.ts');
 expectFile('src/ui/markdown/syntax/equation/blocks.ts');
 expectFile('src/ui/markdown/syntax/equation/masking.ts');
+expectFile('src/ui/markdown/syntax/callout/index.ts');
+expectFile('src/ui/markdown/syntax/callout/model.ts');
+expectFile('src/ui/markdown/syntax/callout/reader.ts');
+expectFile('src/ui/markdown/syntax/callout/body.ts');
+expectFile('src/ui/markdown/syntax/callout/parser_source.ts');
+expectFile('src/ui/markdown/syntax/callout/kind_edit.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -108,6 +114,7 @@ const facades = [
   'src/ui/markdown/editor/index.ts',
   'src/ui/markdown/renderer/index.ts',
   'src/ui/markdown/syntax/equation/index.ts',
+  'src/ui/markdown/syntax/callout/index.ts',
   'src/ui/export/workflow/index.ts',
   'src/ui/export/pipeline/index.ts',
   'src/ui/export/assets/index.ts',
@@ -176,6 +183,12 @@ const legacy = [
   'src/ui/markdown/renderer_geometry.ts',
   'src/ui/markdown/syntax/equation_blocks.ts',
   'src/ui/markdown/syntax/equation_masking.ts',
+  'src/ui/markdown/syntax/callout_model.ts',
+  'src/ui/markdown/syntax/callout_reader.ts',
+  'src/ui/markdown/syntax/callout_body.ts',
+  'src/ui/markdown/syntax/callout_parser_source.ts',
+  'src/ui/markdown/syntax/callout_kind_edit.ts',
+  'src/ui/markdown/syntax/callouts.ts',
   'src/ui/export/export_flow.ts',
   'src/ui/export/preprocess.ts',
   'src/ui/export/raster_picture.ts',
@@ -204,6 +217,7 @@ expectNoRepeat('src/ui/export/templates', ['package_', 'template_']);
 expectNoRepeat('src/ui/markdown/editor', ['editor_']);
 expectNoRepeat('src/ui/markdown/renderer', ['renderer_']);
 expectNoRepeat('src/ui/markdown/syntax/equation', ['equation_']);
+expectNoRepeat('src/ui/markdown/syntax/callout', ['callout_']);
 expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 
 if (failures.length > 0) {
