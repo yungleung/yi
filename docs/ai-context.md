@@ -271,7 +271,8 @@ what is replaced, because a copy that differs may be an edit or an older build's
 be told apart from here. Escape leaves the file exactly as it was.
 
 **A note goes out through pandoc**, one kind at a time. The File menu's *Export* is a **submenu**,
-one item per kind (`src-tauri/src/menu.rs`, built from `src-tauri/src/export/kinds.rs: KINDS`), and the
+one item per kind (`src-tauri/src/menu.rs`, built from
+`src-tauri/src/export/kinds/kind_catalogue.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
 (`src/ui/export/export_flow.ts`), and what it opens is a card whose workflow lives in
@@ -313,7 +314,7 @@ which is not an image (`src/ui/export/picture_hint.ts` — the note says the kin
 asked). The export is written either way; measured, pandoc carries such a destination into a docx as a
 `.txt` without a word, which is why the reader hears it from the app instead.
 And whether a picture survives **as it is** is the *kind's* answer
-(`export/kinds.rs: carries_pictures`): an
+(`export/kinds/kind_model.rs: carries_pictures`): an
 HTML page and a book keep an SVG and a webp, the app's own hand leaves the note's destinations as written,
 and a Word file, an OpenDocument file, a TeX page or its `.tex` get a PNG the app draws itself
 (`src/ui/export/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
@@ -573,7 +574,7 @@ chapter links to an `assets/` folder, copies the package's web resources there a
 unrestricted shell escape or `tlmgr`, and it does not download journal kits.
 
 **Reveal.js and Beamer are first-class, template-free export kinds.** Their rows in
-`src-tauri/src/export/kinds.rs` use `KindTemplate::None`, so the card exposes no package choice.
+`src-tauri/src/export/kinds/kind_catalogue.rs` use `KindTemplate::None`, so the card exposes no package choice.
 Beamer uses Pandoc's Beamer writer and the shared LaTeX source-rewriting family; its frontmatter
 controls sections, frames, theme and geometry, and it writes one PDF without the PDF card's page-size
 controls. Reveal.js uses Pandoc's Reveal.js writer and the HTML-like rewrite family, but always writes
