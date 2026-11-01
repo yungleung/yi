@@ -17,7 +17,7 @@
  * Where an edit's author stood, and where the edit left them: a caret is a mark whose
  * two ends meet, a selection is the range the author had. Undo puts the mark its edit
  * started from back, so an edit that replaced a selection gets the selection returned
- * rather than a caret at the start of it (see `markdown_editor.ts: applyHistory`).
+ * rather than a caret at the start of it (see `editor_history.ts: applyEditorHistory`).
  */
 export interface EditMark {
   from: number;

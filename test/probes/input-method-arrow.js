@@ -13,7 +13,7 @@
  * That the method composes is not something a probe can fake, so this holds the half that is
  * observable: the seat blurs and takes the keyboard again once the key is over.
  *
- * @covers src/ui/markdown/markdown_editor.ts: handleArrowKey
+ * @covers src/ui/markdown/editor_keyboard.ts: handleArrowKey
  */
 (async () => {
   const t = window.__t;

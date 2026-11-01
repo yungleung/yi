@@ -1059,7 +1059,7 @@ marked and for the moment after one is let go, because the key that emptied the 
 the composition already over (`composition_input.ts: markedText`;
 `test/probes/input-method-backspace.js`). A structural edit hands the keyboard back to the seam,
 as do a click and an *undo* — the last is a change that never goes through `applyEdit` and so has
-its hand-back named where it happens (`markdown_editor.ts: applyHistory`). Ordinary character
+its hand-back named where it happens (`editor_history.ts: applyEditorHistory`). Ordinary character
 typing and an in-place committed word keep the focused seam; blurring and refocusing during a
 burst lost input (`source-burst-editing.js`, `empty-task-composition-burst.js`). Three facts follow
 from the seam: a *document* selection is one inside

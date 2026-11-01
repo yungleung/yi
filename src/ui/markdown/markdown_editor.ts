@@ -2,10 +2,10 @@
  * The editor: the document, the rendered window, and the wiring between them.
  *
  * This is the module the shell mounts. It owns the state, the virtual block
- * renderer and the DOM events, and it registers the commands it owns under the
- * registry's names; every editing feature itself lives in its own module under
- * `editing/` (see the class comment below), and the clicks that are not plain
- * caret placement live in `click_routing.ts`.
+ * renderer and the DOM events; command registration, history replay and the
+ * shortcut/arrow adapters live in focused sibling modules. Every editing feature
+ * itself lives under `editing/` (see the class comment below), and the clicks that
+ * are not plain caret placement live in `click_routing.ts`.
  *
  * May import: everything above it — the render layer, the caret, the commands'
  * registry and the editing rules it registers. Upholds: a keystroke reaches
@@ -17,11 +17,9 @@ import { BaseComponent } from '../component';
 import { eventManager } from '../../services/event_manager';
 import {
   DOCUMENT_CHANGED,
-  type AppEventName,
   type DocumentChangeReason
 } from '../../services/app_events';
 import { CITATION_UPDATED } from '../../services/bibliography';
-import { registerEditorCommands } from './commands/editor_commands';
 import {
   getCaretRange,
   getSelectionRange,
@@ -33,16 +31,12 @@ import {
   sourceEntryOffset,
   withHeldShownSource
 } from './source_mode';
-import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
 import {
-  caretOffset,
   keepScroll,
   restoreCaret,
-  restoreMark,
   showSourceAt,
   type EditorContext
 } from './editing/context';
-import { proseRoot } from './editing/selection';
 import { documentOffsetAt } from './caret/offsets';
 import { insertCommitted } from './editing/text_commands';
 import { installCompositionInput, type CompositionInput } from './editing/composition_input';
@@ -60,13 +54,6 @@ import { FindController } from './editing/find_controller';
 import { Completions } from './editing/completions';
 import { installEditorInteractions } from './editing/editor_interactions';
 import { handleEditorKey, type KeyHost } from './editing/keys';
-import { commandForKey } from '../../commands/triggers/keymap';
-import { MENU_COMMANDS } from '../../commands/triggers/native_menu';
-import {
-  dispatchRawCommand,
-  runCommand,
-  type CommandId
-} from '../../commands/runtime';
 import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
@@ -75,6 +62,12 @@ import { createEditorRenderContext } from './editor_render_context';
 import { EditorViewState } from './editor_view_state';
 import { EditorPageLayout, type EditorLayout } from './editor_page_layout';
 import { applyBlockOpeningEdit } from './editing/block_opening_edit';
+import { installEditorCommandWiring } from './editor_command_wiring';
+import { applyEditorHistory } from './editor_history';
+import {
+  handleArrowKey,
+  handleEditorShortcut
+} from './editor_keyboard';
 
 export const INPUT_SOURCE_CHANGED = 'input_source_changed';
 export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor_page_layout';
@@ -92,8 +85,8 @@ export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor_page_layout';
  * - `editing/formatting.ts` — bold/italic/strike/inline-code commands,
  * - `editing/find_bar.ts` / `editing/find_controller.ts` — find and replace.
  *
- * Undo/redo lives in the state (`MarkdownEditorState#undo/redo`); the editor
- * only restores the caret around it.
+ * Undo/redo lives in the state (`MarkdownEditorState#undo/redo`);
+ * `editor_history.ts` restores the mark, source shape, scroll and keyboard around it.
  */
 export class WysiwygMarkdownEditor extends BaseComponent {
   /**
@@ -266,15 +259,31 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       this.changeCalloutKind(lineStart, kind)
     );
 
-    this.registerCommandEvents();
+    installEditorCommandWiring({
+      context: this.context,
+      openFind: (replace) => this.find.open(replace),
+      closeFind: () => this.find.close(),
+      applyHistory: (direction) =>
+        applyEditorHistory(
+          {
+            context: this.context,
+            regainKeyboard: () => this.composition.regainKeyboard(),
+            announceDocumentChange: (reason, previousRevision) =>
+              this.announceDocumentChange(reason, previousRevision)
+          },
+          direction
+        ),
+      layout: () => this.pageLayout.get(),
+      setLayout: (layout) => this.setLayout(layout)
+    });
     this.completions = new Completions(this.context);
     this.keyHost = {
       context: this.context,
       composition: this.composition,
       completions: this.completions,
       readOnly: () => this.readOnly,
-      shortcut: (event) => this.handleShortcut(event),
-      arrow: (event) => this.handleArrowKey(event)
+      shortcut: handleEditorShortcut,
+      arrow: (event) => handleArrowKey(this.context, this.composition, event)
     };
     this.renderer.render();
     // The bibliography manager announces when its data is ready or refreshed;
@@ -398,69 +407,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.renderer.refresh();
   }
 
-  /** Wires the application-level commands (menu, toolbar, keyboard). */
-  private registerCommandEvents(): void {
-    // The commands this editor owns are registered in one place, and it is not
-    // here: what is left is the wiring they need back from the editor.
-    registerEditorCommands({
-      context: this.context,
-      openFind: (replace) => this.find.open(replace),
-      closeFind: () => this.find.close(),
-      applyHistory: (direction) => this.applyHistory(direction),
-      toggleLayout: () => this.setLayout(this.pageLayout.get() === 'page' ? 'auto' : 'page')
-    });
-    // The native menu names these commands by string; the bridge is the one place
-    // that knows which string means which command.
-    for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<[AppEventName, CommandId]>) {
-      // The payload travels: the Export submenu's items are one event whose payload is the kind.
-      void eventManager.on(event, (event) => {
-        const settled = dispatchRawCommand(
-          command,
-          event.payload,
-          { kind: 'native-menu' }
-        );
-        void Promise.resolve(settled).then((result) => {
-          if (!result.ok) {
-            console.error(`command ${result.commandId}: ${result.message}`);
-          }
-        });
-      });
-    }
-  }
-
-  /** Command/control shortcuts, returning true when one was handled. */
-  private handleShortcut(event: KeyboardEvent): boolean {
-    const command = commandForKey(event);
-    if (!command) {
-      return false;
-    }
-    event.preventDefault();
-    runCommand(command, null, 'keyboard');
-    return true;
-  }
-
-  /** Arrow keys steer the caret (the renderer's own caret, not a native one). */
-  private handleArrowKey(event: KeyboardEvent): void {
-    const direction = ARROW_KEY_DIRECTIONS[event.key];
-    if (!direction || !getCaretRange()) {
-      return;
-    }
-    event.preventDefault();
-    if (!event.shiftKey) {
-      window.getSelection()?.removeAllRanges();
-    }
-    const root = proseRoot(this.context);
-    if (root) {
-      moveCaret(root, direction);
-      // The caret just moved, and the keyboard has to move with it in the input method's eyes:
-      // after arrow keys the next keystroke arrived as a Latin letter (`keyCode` 78, measured with
-      // the real Chinese method) instead of opening a composition, exactly as it did after a click
-      // and after an undo. The caret is where all three meet, so the hand-back belongs here as
-      // much as there (`composition_input.ts: regainKeyboard`).
-      this.composition.regainKeyboard();
-    }
-  }
-
   /**
    * Keeps the block that shows its own text in step with the caret: the block
    * holding the caret shows it, and none does when the caret is gone (see
@@ -550,47 +496,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       (text, relative) => calloutKindEdit(text, kind, relative),
       false
     );
-  }
-
-  /** Undo/redo keeps the caret at the same document offset when it can. */
-  private applyHistory(direction: 'undo' | 'redo'): void {
-    const current = caretOffset(this.context) ?? this.state.getText().length;
-    const previousRevision = this.state.getRevision();
-    const anchor = this.contentView.scrollTop;
-    const edit = direction === 'undo' ? this.state.undo() : this.state.redo();
-    if (!edit) {
-      return;
-    }
-    // The edit that was applied carries the mark it leaves behind — for an undo that is
-    // where the change started, a caret or the selection it replaced, and for a redo
-    // where it left off (see `history.ts: invert`). An edit recorded without marks — the
-    // whole-document command formatting and find-and-replace use — keeps the caret where
-    // it is, because those commands place their own selection afterwards.
-    const length = this.state.getText().length;
-    const mark = edit.after ?? { from: current, to: current };
-    const target = { from: Math.min(mark.from, length), to: Math.min(mark.to, length) };
-    // Undo and redo move the caret to a document offset like an edit does, so
-    // the block that shows its own text is the block that offset lands in —
-    // decided before the rebuild, so the block is built in the right shape.
-    showSourceAt(this.context, target.to);
-    this.renderer.renderChanged();
-    restoreMark(this.context, target);
-    // Undo and redo restore a caret the same way an edit does, and the browser
-    // scrolls a focused element or a synchronised selection into view just the
-    // same: keep the reader where they were.
-    keepScroll(this.context, anchor);
-    // An undo that leaves a *caret* hands the keyboard back the way an edit does — this path
-    // never went through `onChanged`, so nothing did it before, and a field that keeps a stale
-    // input context is not in the input method: measured by the reader, the first letter typed
-    // after ⌘Z arrived as a Latin keystroke (`keyCode` 78, not `229`) and went into the
-    // document. A *selection* is not a caret and is kept: a focus change would drop it, which
-    // is `regainKeyboard`'s own rule — asked here rather than there because the highlight it
-    // would drop is painted a frame later (`context.ts: restoreSelection`).
-    if (target.from === target.to) {
-      this.composition.regainKeyboard();
-    }
-    // An undo is a change like any other: whatever keeps a copy of the document has to hear it.
-    this.announceDocumentChange(direction, previousRevision);
   }
 
 }
