@@ -8,13 +8,13 @@
  * composition seam. Upholds: a chord runs a registered command, never a private editing function.
  */
 
-import { ARROW_KEY_DIRECTIONS, moveCaret } from './caret/navigation';
-import { commandForKey } from '../../commands/triggers/keymap';
-import { runCommand } from '../../commands/runtime';
-import type { CompositionInput } from './editing/composition_input';
-import type { EditorContext } from './editing/context';
-import { proseRoot } from './editing/selection';
-import { getCaretRange } from './caret/caret';
+import { ARROW_KEY_DIRECTIONS, moveCaret } from '../caret/navigation';
+import { commandForKey } from '../../../commands/triggers/keymap';
+import { runCommand } from '../../../commands/runtime';
+import type { CompositionInput } from '../editing/composition_input';
+import type { EditorContext } from '../editing/context';
+import { proseRoot } from '../editing/selection';
+import { getCaretRange } from '../caret/caret';
 
 /** Runs the command bound to a keyboard chord, returning true when the chord was handled. */
 export function handleEditorShortcut(event: KeyboardEvent): boolean {

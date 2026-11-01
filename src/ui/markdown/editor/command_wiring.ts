@@ -8,19 +8,19 @@
  * context. Upholds: a menu event dispatches by command id and never calls editing behaviour directly.
  */
 
-import type { AppEventName } from '../../services/events';
-import { eventManager } from '../../services/events';
+import type { AppEventName } from '../../../services/events';
+import { eventManager } from '../../../services/events';
 import {
   dispatchRawCommand,
   type CommandId
-} from '../../commands/runtime';
-import { MENU_COMMANDS } from '../../commands/triggers/native_menu';
+} from '../../../commands/runtime';
+import { MENU_COMMANDS } from '../../../commands/triggers/native_menu';
 import {
   registerEditorCommands,
   type CommandHost
-} from './commands/editor_commands';
-import type { EditorContext } from './editing/context';
-import type { EditorLayout } from './editor_page_layout';
+} from '../commands/editor_commands';
+import type { EditorContext } from '../editing/context';
+import type { EditorLayout } from './page_layout';
 
 /** What the command layer needs from the editor that owns it. */
 export interface EditorCommandWiringHost {

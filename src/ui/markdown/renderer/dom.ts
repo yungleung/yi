@@ -8,12 +8,12 @@
  * only renderer-owned nodes are removed, and DOM reuse follows the content cache.
  */
 
-import type { BlockNode, MarkdownBlock } from './document/blocks';
-import type { MarkdownEditorState } from './document/state';
-import { createBlockComponent } from './create_block';
-import { withRenderContext, type RenderContext } from './render_context';
-import type { RendererBlockCache } from './renderer_block_cache';
-import type { RendererMeasurements } from './renderer_measurements';
+import type { BlockNode, MarkdownBlock } from '../document/blocks';
+import type { MarkdownEditorState } from '../document/state';
+import { createBlockComponent } from '../create_block';
+import { withRenderContext, type RenderContext } from '../render_context';
+import type { RendererBlockCache } from './block_cache';
+import type { RendererMeasurements } from './measurements';
 
 /** What DOM construction needs from the virtual renderer. */
 export interface RendererDomDependencies {

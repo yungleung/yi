@@ -30,10 +30,13 @@ import type { MarkdownEditorState } from './document/state';
 import { MIN_SPARE_ELEMENTS, windowRange } from './viewport_window';
 import { CHAR_START, LINE_END, LINE_START, setOffset } from './offset_tags';
 import type { RenderContext } from './render_context';
-import { RendererBlockCache } from './renderer_block_cache';
-import { RendererMeasurements } from './renderer_measurements';
-import { RendererGeometry, type ScrollAnchor } from './renderer_geometry';
-import { RendererDom } from './renderer_dom';
+import {
+  RendererBlockCache,
+  RendererDom,
+  RendererGeometry,
+  RendererMeasurements,
+  type ScrollAnchor
+} from './renderer';
 
 /**
  * Editor-facing hooks that keep the caret anchored while the window changes:

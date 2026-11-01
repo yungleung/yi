@@ -10,8 +10,8 @@
  * scale change together, and a new scale is emitted only when it differs.
  */
 
-import { eventManager } from '../../services/events';
-import type { VirtualBlockRenderer } from './virtual_block_renderer';
+import { eventManager } from '../../../services/events';
+import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
 const A4_WIDTH_PX = (210 * 96) / 25.4;

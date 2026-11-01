@@ -12,7 +12,7 @@
  * into a field — so this holds the half that is observable: the seat blurs and takes the
  * keyboard again once the undo's turn is over, which is the hand-back an edit already gets.
  *
- * @covers src/ui/markdown/editor_history.ts: applyEditorHistory
+ * @covers src/ui/markdown/editor/history.ts: applyEditorHistory
  */
 (async () => {
   const t = window.__t;

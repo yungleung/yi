@@ -8,9 +8,9 @@
  * is a document offset, and spacer sizes derive only from the shared BlockSizes.
  */
 
-import { BLOCK_GAP, type BlockSizes } from './block_sizes';
-import type { MarkdownBlock } from './document/blocks';
-import { spacerHeights } from './viewport_window';
+import { BLOCK_GAP, type BlockSizes } from '../block_sizes';
+import type { MarkdownBlock } from '../document/blocks';
+import { spacerHeights } from '../viewport_window';
 
 /** A mounted block range. */
 export interface MountedRange {

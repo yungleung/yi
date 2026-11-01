@@ -10,16 +10,16 @@
  * render-only.
  */
 
-import { bibliographyManager } from '../../services/bibliography';
-import { documentManager } from '../../services/documents';
-import { imageSourceCandidates } from '../image/index';
-import type { MarkdownEditorState } from './document/state';
+import { bibliographyManager } from '../../../services/bibliography';
+import { documentManager } from '../../../services/documents';
+import { imageSourceCandidates } from '../../image/index';
+import type { MarkdownEditorState } from '../document/state';
 import {
   equationBlockNumber,
   firstReference,
   referenceLabel
-} from './document/reference_index';
-import type { RenderContext } from './render_context';
+} from '../document/reference_index';
+import type { RenderContext } from '../render_context';
 
 /** Creates the one render context for a live editor state. */
 export function createEditorRenderContext(

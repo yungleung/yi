@@ -12,21 +12,21 @@ import {
   ensureCaretRendered,
   getCaretRange,
   hideCaret
-} from './caret/caret';
-import { documentOffsetAt } from './caret/offsets';
+} from '../caret/caret';
+import { documentOffsetAt } from '../caret/offsets';
 import {
   caretOffset,
   restoreCaret,
   restoreSelection,
   type EditorContext
-} from './editing/context';
+} from '../editing/context';
 import {
   editorSelection,
   proseRoot,
   rangeOffsets
-} from './editing/selection';
-import type { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../services/session';
+} from '../editing/selection';
+import type { VirtualBlockRenderer } from '../virtual_block_renderer';
+import type { DocumentView, SeenView } from '../../../services/session';
 
 /** What the view state needs from the editor it belongs to. */
 export interface EditorViewDependencies {

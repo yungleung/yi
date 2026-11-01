@@ -58,19 +58,20 @@ import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import type { DocumentView, SeenView } from '../../services/session';
-import { createEditorRenderContext } from './editor_render_context';
-import { EditorViewState } from './editor_view_state';
-import { EditorPageLayout, type EditorLayout } from './editor_page_layout';
-import { applyBlockOpeningEdit } from './editing/block_opening_edit';
-import { installEditorCommandWiring } from './editor_command_wiring';
-import { applyEditorHistory } from './editor_history';
 import {
+  applyEditorHistory,
+  createEditorRenderContext,
+  EditorPageLayout,
+  EditorViewState,
   handleArrowKey,
-  handleEditorShortcut
-} from './editor_keyboard';
+  handleEditorShortcut,
+  installEditorCommandWiring,
+  type EditorLayout
+} from './editor';
+import { applyBlockOpeningEdit } from './editing/block_opening_edit';
 
 export const INPUT_SOURCE_CHANGED = 'input_source_changed';
-export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor_page_layout';
+export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor';
 
 /**
  * The WYSIWYG markdown editor.
@@ -86,7 +87,7 @@ export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor_page_layout';
  * - `editing/find_bar.ts` / `editing/find_controller.ts` — find and replace.
  *
  * Undo/redo lives in the state (`MarkdownEditorState#undo/redo`);
- * `editor_history.ts` restores the mark, source shape, scroll and keyboard around it.
+ * `editor/history.ts` restores the mark, source shape, scroll and keyboard around it.
  */
 export class WysiwygMarkdownEditor extends BaseComponent {
   /**

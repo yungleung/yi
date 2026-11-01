@@ -8,14 +8,14 @@
  * vocabulary. Upholds: undo and redo use the same render → caret → scroll sequence as an edit.
  */
 
-import type { DocumentChangeReason } from '../../services/events';
+import type { DocumentChangeReason } from '../../../services/events';
 import {
   caretOffset,
   keepScroll,
   restoreMark,
   showSourceAt,
   type EditorContext
-} from './editing/context';
+} from '../editing/context';
 
 /** What history replay needs from the editor that owns the document. */
 export interface EditorHistoryHost {

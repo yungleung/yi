@@ -8,8 +8,8 @@
  * laid-out block measurement replaces remembered height; shape swaps may seed.
  */
 
-import { BlockSizes } from './block_sizes';
-import type { MarkdownBlock } from './document/blocks';
+import { BlockSizes } from '../block_sizes';
+import type { MarkdownBlock } from '../document/blocks';
 
 /** What measurement needs from the renderer it belongs to. */
 export interface RendererMeasurementDependencies {
