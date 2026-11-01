@@ -17,8 +17,8 @@
  * is the home of the list markers a line is written with.
  */
 
-import { lineSpanAt, itemSubtreeEnd, touchedLines } from './lines';
-import type { TextEdit } from './edit_range';
+import { lineSpanAt, itemSubtreeEnd, touchedLines } from '../lines';
+import type { TextEdit } from '../edit_range';
 
 /** The kinds of list a command can make a line into. */
 export const LIST_KINDS = ['ordered', 'bullet', 'task'] as const;

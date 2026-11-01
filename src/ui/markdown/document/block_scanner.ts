@@ -16,7 +16,7 @@ import {
 } from '../syntax/markers';
 import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lines';
 import { isTableCaptionLine } from '../syntax/table';
-import { listCaptionLine } from '../syntax/list_captions';
+import { listCaptionLine } from '../syntax/list';
 import { readTableSource } from '../syntax/table';
 import { isEquationOpening } from '../syntax/equation';
 import type { BlockKind } from './block_kinds';

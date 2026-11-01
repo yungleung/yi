@@ -34,7 +34,7 @@ export type {
 } from 'mdast';
 import type { FigureNode } from './syntax/figures';
 import type { TableCaptionNode } from './syntax/table';
-import type { ListCaptionNode } from './syntax/list_captions';
+import type { ListCaptionNode } from './syntax/list';
 import type { ListingNode } from './syntax/listings';
 
 /**

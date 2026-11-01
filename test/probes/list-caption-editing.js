@@ -2,7 +2,7 @@
  * List captions render below their list and edit as their own source line.
  *
  * @covers src/ui/markdown/nodes/caption.ts,
- *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/list_captions.ts
+ *   src/ui/markdown/create_block.ts, src/ui/markdown/syntax/list/index.ts
  */
 (async () => {
   const t = window.__t;

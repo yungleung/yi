@@ -4,9 +4,9 @@
  *
  * Each command is one `applyEdit`, so a list change is one undo step and only
  * the block it changed is re-rendered. The rules themselves are pure and live
- * in `list_edits.ts`; this module is the part that knows about the editor.
+ * in `syntax/list`; this module is the part that knows about the editor.
  *
- * May import: the block model, the pure list rules (`syntax/list_edits.ts`,
+ * May import: the block model, the pure list rules (`syntax/list`,
  * `syntax/edit_range.ts`) and the editing context. Upholds: the document text is
  * the only source of truth — every command is one `applyEdit`, so a list change
  * is one undo step.
@@ -14,7 +14,7 @@
 
 import { isRawRendered } from '../document/block_kinds';;
 import { shiftOffset, type TextEdit } from '../syntax/edit_range';
-import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list_edits';
+import { LIST_KINDS, indentEdit, listEdit } from '../syntax/list';
 import { applyEdit, caretOffset, type EditorContext } from './context';
 import { editorSelection, rangeOffsets } from './selection';
 

@@ -18,7 +18,7 @@ import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes'
 import {
   listCaptionAfterList,
   type ListCaptionNode
-} from './list_captions';
+} from './list';
 import { walk } from './node_walk';
 import { fragmentProcessor } from './remark_pipeline';
 import {

@@ -734,7 +734,7 @@ matrix row with and without an ID;
 
 **A captioned list is a normal list followed by one shared colon caption line.**
 `syntax/caption_lines.ts` owns the grammar for both tables and lists;
-`syntax/list_captions.ts` attaches it only at the list's base indentation and
+`syntax/list/captions.ts` attaches it only at the list's base indentation and
 masks the line for remark without changing offsets. This keeps a colon after a
 paragraph as definition-list syntax and leaves `:::` free for callouts.
 The same shared `nodes/caption.ts` reveals the caption as its own source while

@@ -9,7 +9,7 @@
  * following a list can become its caption, and its source range remains exact.
  */
 
-import { captionLine, type CaptionLineData } from './caption_lines';
+import { captionLine, type CaptionLineData } from '../caption_lines';
 import type { RootContent } from 'mdast';
 import {
   closesFrontmatter,
@@ -18,7 +18,7 @@ import {
   htmlBlockTerminator,
   listMarker,
   openingFence
-} from './markers';
+} from '../markers';
 
 /** One caption line and the optional blank source line before it. */
 export interface ListCaptionAttachment {

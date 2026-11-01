@@ -12,7 +12,7 @@
 
 import type { List } from 'mdast';
 import { referenceLabel, type ReferenceEntry } from '../../markdown/document/reference_index';
-import type { ListCaptionNode } from '../../markdown/syntax/list_captions';
+import type { ListCaptionNode } from '../../markdown/syntax/list';
 import { spansOfType, type Walkable } from '../pipeline/node_spans';
 import { listHtml } from './list_html';
 import { isLatexKind } from '../kind_family';
