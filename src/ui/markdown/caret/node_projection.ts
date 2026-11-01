@@ -13,7 +13,7 @@
 import type { RootContent } from 'mdast';
 import { bibliographyManager } from '../../../services/bibliography';
 import type { MarkdownBlock } from '../document/blocks';
-import { markerShape } from '../syntax/footnotes';
+import { markerShape } from '../syntax/footnote';
 
 export function mapRenderedOffset(
   children: RootContent[],

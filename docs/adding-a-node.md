@@ -104,7 +104,7 @@ whole note, and only the `[^label]` at its head is the label — then `sourceVie
 cannot ask the question for you, because `isShownSource` compares the node's whole range.
 Ask `source_mode.ts: isShownSourceRange` with your own block-relative range, name that
 range for the caret in `editing/context.ts: sourceRangeIn`, and keep the shape of the
-part in one place under `syntax/` (`syntax/footnotes.ts: markerShape` is the worked
+part in one place under `syntax/` (`syntax/footnote/model.ts: markerShape` is the worked
 example, and `test/probes/footnote-jump-back.js` is its proof).
 
 And if what you draw is a *different length* from the source it stands for — a marker

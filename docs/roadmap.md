@@ -68,7 +68,7 @@ elements) unless it says otherwise.
   description term or detail rendered as its own text, because a term and a detail are
   re-parsed from their own lines and markdown reads a reference only when its definition
   is in the same parse. The fragment now borrows the document's definitions the way a
-  whole block does — through the same `footnotes.ts` rule, which moved out of `state.ts`
+  whole block does — through the same `syntax/footnote/parse_context.ts` rule, which moved out of `state.ts`
   so both callers read it from its one home — and the borrowed lines are dropped again.
 - **Marks for the whole-document commands** (P16's last leftover). Landed in P20, as
   `docs/superpowers/plans/2026-09-25-marks-for-commands.md`: `state.setText` takes marks,
@@ -1570,7 +1570,7 @@ changing it would take. They are written down here so the ledger above and the h
   for the lists the plugin merges. It is a description of that plugin, not of markdown, so it
   is the first thing to look at if the plugin's rule ever changes (P18, P19).
 - **A definition indented inside a wide item is not borrowed.** The definition-line rule
-  (`syntax/footnotes.ts`) reads the container markers markdown allows *on the line itself* —
+  (`syntax/footnote/model.ts`) reads the container markers markdown allows *on the line itself* —
   a `>` or a list marker, which covers `> [^1]: note`, `> - [^1]: note` and `- [^1]: note` —
   plus the up-to-three spaces of indentation that fit there. A definition inside a `10. `
   item sits four columns in, exactly like an indented code block, and one line of text

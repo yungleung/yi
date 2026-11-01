@@ -1,7 +1,7 @@
 /**
  * The card a footnote marker shows while the pointer rests on it.
  *
- * The text it shows is the *document's*: `syntax/footnotes.ts` says where a label's
+ * The text it shows is the *document's*: `syntax/footnote/` says where a label's
  * definition body starts, the block there is parsed the way any block is, and its
  * body is rendered with the components the notes run uses (`nodes/footnote.ts:
  * renderFootnoteBody`) — a second *place* to read a note, never a second renderer of
@@ -22,7 +22,7 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { BesideCard, boxOf } from '../floating/beside';
 import { isOpenableUrl } from './syntax/link_edits';
-import { footnoteOffsets } from './syntax/footnotes';
+import { footnoteOffsets } from './syntax/footnote';
 import { renderFootnoteBody } from './nodes/footnote';
 import { withRenderFrame } from './source_mode';
 import type { AstFootnoteDefinition } from './ast';

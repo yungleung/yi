@@ -14,7 +14,7 @@
 import type { Root, RootContent } from 'mdast';
 import type { CalloutSource } from './callout';
 import type { CaptionLineData } from './caption_lines';
-import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
+import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnote';
 import {
   listCaptionAfterList,
   type ListCaptionNode

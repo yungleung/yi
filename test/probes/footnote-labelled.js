@@ -9,7 +9,7 @@
  * same one, and the source to the characters the author typed.
  *
  * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/caret/offsets.ts,
- *   src/ui/markdown/syntax/footnotes.ts
+ *   src/ui/markdown/syntax/footnote/
  */
 (async () => {
   const t = window.__t;

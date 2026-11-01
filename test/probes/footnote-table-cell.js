@@ -10,7 +10,7 @@
  * text sitting in the cell exactly as it was written.
  *
  * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/nodes/table.ts,
- *   src/ui/markdown/syntax/footnotes.ts
+ *   src/ui/markdown/syntax/footnote/
  */
 (async () => {
   const t = window.__t;

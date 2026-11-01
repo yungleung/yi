@@ -12,7 +12,7 @@
  * ways.
  *
  * @covers src/ui/markdown/document/state.ts, src/ui/markdown/virtual_block_renderer.ts,
- *   src/ui/markdown/syntax/footnotes.ts
+ *   src/ui/markdown/syntax/footnote/
  */
 (async () => {
   const t = window.__t;

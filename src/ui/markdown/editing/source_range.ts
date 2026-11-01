@@ -14,7 +14,7 @@ import type { AstHeading } from '../ast';
 import type { MarkdownEditorState } from '../document/state';
 import { blockSourceAt } from '../source_mode';
 import { showsSource } from '../registry';
-import { markerShape } from '../syntax/footnotes';
+import { markerShape } from '../syntax/footnote';
 
 /**
  * The source a caret at this document offset is inside, as its own document range.

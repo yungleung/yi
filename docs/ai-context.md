@@ -805,6 +805,9 @@ including Markdown markers. The parse and rendered view wait until the caret lea
 node family to it. The existing deferred parse check also reconciles dependent blocks
 once per burst, so renaming a footnote definition updates markers in other blocks
 without rebuilding the source under the caret for every character.
+Footnote syntax lives in `syntax/footnote/`: `model.ts` owns marker grammar and
+positions, `labels.ts` folds edits into labels, `parse_context.ts` borrows definitions
+for one block, and `edits.ts` owns the button's marker/definition insertion.
 
 One rule keeps the page still while the window turns over: **a caret that did not move must not
 move the page.** The renderer drops the blocks outside the window and mounts them again as the

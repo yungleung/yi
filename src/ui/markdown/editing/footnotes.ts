@@ -3,15 +3,15 @@
  * definition line at the end of the document, and jump between a marker and
  * its definition.
  *
- * The text rules live in `footnotes.ts`; this module knows the caret, the
+ * The text rules live in `syntax/footnote/`; this module knows the caret, the
  * renderer and the scroll position.
  *
- * May import: the pure footnote rules (`syntax/footnotes.ts`) and the editing
+ * May import: the pure footnote rules (`syntax/footnote`) and the editing
  * context. Upholds: the document text is the only source of truth — the marker
  * and its definition are one edit, so one undo takes the whole footnote away.
  */
 
-import { footnoteInsertEdit, footnoteOffsets, nextFootnoteNumber } from '../syntax/footnotes';
+import { footnoteInsertEdit, footnoteOffsets, nextFootnoteNumber } from '../syntax/footnote';
 import { applyEdit, caretOffset, restoreCaret, type EditorContext } from './context';
 
 /** Which end of a footnote pair a click came from. */

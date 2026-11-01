@@ -9,7 +9,7 @@
  * the marker (`[^1]`) instead of in the note. A ⌘-click on the label goes back to
  * the marker.
  *
- * @covers src/ui/markdown/editing/footnotes.ts, src/ui/markdown/syntax/footnotes.ts,
+ * @covers src/ui/markdown/editing/footnotes.ts, src/ui/markdown/syntax/footnote/,
  *   src/ui/markdown/click_routing.ts
  */
 (async () => {

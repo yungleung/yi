@@ -26,7 +26,7 @@ import {
   labelsAfterEdit,
   sameLabels,
   withFootnoteDefinitions
-} from '../syntax/footnotes';
+} from '../syntax/footnote';
 import { parseMarkdown } from '../syntax/parser';
 import { listingFenceData } from '../syntax/code';
 

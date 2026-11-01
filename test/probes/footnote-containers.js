@@ -6,14 +6,14 @@
  * label the notes run draws and the source a click opens have to be the
  * definition's own characters — the block a detail's definition shares with its
  * list is not where those characters start, and a blockquote's definition sits
- * behind a `>` the line rule has to read past (`syntax/footnotes.ts`) or a marker
+ * behind a `>` the line rule has to read past (`syntax/footnote/`) or a marker
  * elsewhere in the document never becomes a marker at all
  * (`footnote-container-jump.js` jumps to the note from each of them).
  *
  * A table cell is the shape markdown has no definition for and is measured in
  * `footnote-table-cell.js` instead.
  *
- * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/syntax/footnotes.ts,
+ * @covers src/ui/markdown/nodes/footnote.ts, src/ui/markdown/syntax/footnote/,
  *   src/ui/markdown/caret/offsets.ts
  */
 (async () => {

@@ -103,6 +103,11 @@ expectFile('src/ui/markdown/syntax/code/index.ts');
 expectFile('src/ui/markdown/syntax/code/fences.ts');
 expectFile('src/ui/markdown/syntax/code/edits.ts');
 expectFile('src/ui/markdown/syntax/code/listings.ts');
+expectFile('src/ui/markdown/syntax/footnote/index.ts');
+expectFile('src/ui/markdown/syntax/footnote/model.ts');
+expectFile('src/ui/markdown/syntax/footnote/labels.ts');
+expectFile('src/ui/markdown/syntax/footnote/parse_context.ts');
+expectFile('src/ui/markdown/syntax/footnote/edits.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -130,6 +135,7 @@ const facades = [
   'src/ui/markdown/syntax/table/index.ts',
   'src/ui/markdown/syntax/list/index.ts',
   'src/ui/markdown/syntax/code/index.ts',
+  'src/ui/markdown/syntax/footnote/index.ts',
   'src/ui/export/workflow/index.ts',
   'src/ui/export/pipeline/index.ts',
   'src/ui/export/assets/index.ts',
@@ -213,6 +219,7 @@ const legacy = [
   'src/ui/markdown/syntax/code_fences.ts',
   'src/ui/markdown/syntax/code_edits.ts',
   'src/ui/markdown/syntax/listings.ts',
+  'src/ui/markdown/syntax/footnotes.ts',
   'src/ui/export/export_flow.ts',
   'src/ui/export/preprocess.ts',
   'src/ui/export/raster_picture.ts',
@@ -245,6 +252,7 @@ expectNoRepeat('src/ui/markdown/syntax/callout', ['callout_']);
 expectNoRepeat('src/ui/markdown/syntax/table', ['table_']);
 expectNoRepeat('src/ui/markdown/syntax/list', ['list_']);
 expectNoRepeat('src/ui/markdown/syntax/code', ['code_']);
+expectNoRepeat('src/ui/markdown/syntax/footnote', ['footnote_']);
 expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 
 if (failures.length > 0) {

@@ -17,7 +17,7 @@ import {
   flattenUnwritableNodes,
   stringifyMarkdownNode
 } from './serializer';
-import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnotes';
+import { footnoteLabels, isOwnNode, withFootnoteDefinitions } from './footnote';
 import { walk } from './node_walk';
 import { fragmentProcessor } from './remark_pipeline';
 
@@ -59,7 +59,7 @@ export function remarkDeflistCompat() {
 export function fixDescriptionPositions(tree: Root, markdown: string): void {
   // A term or a detail is re-parsed from its own line, which is a fragment: the
   // definitions its references need are borrowed here, exactly as a whole block borrows
-  // them (`footnotes.ts`), so the borrow is read once for the whole document.
+  // them (`footnote/`), so the borrow is read once for the whole document.
   const definitions = footnoteLabels(markdown);
   /** Visits every child list of `children`, which are one parent's. */
   const visit = (children: RootContent[]): void => {
@@ -219,7 +219,7 @@ function readDescriptionLines(
  *
  * A fragment is a parse with no document around it, and markdown reads `[^1]` as a
  * footnote reference only when its definition is in the same parse — so the fragment
- * borrows the definitions the document holds, the way a block does (`footnotes.ts`), and
+ * borrows the definitions the document holds, the way a block does (`footnote/`), and
  * the nodes that come from the borrowed lines are dropped again: they belong to the
  * document, not to the term or the detail.
  */

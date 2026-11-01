@@ -4,7 +4,7 @@
  * markdown reads `[^x]` as a footnote reference only when the definition is part of
  * the same parse, and this editor parses one block at a time — so a block holding a
  * marker is parsed with the document's definitions *borrowed*
- * (`syntax/footnotes.ts: withFootnoteDefinitions`). That makes the document's labels
+ * (`syntax/footnote/parse_context.ts: withFootnoteDefinitions`). That makes the document's labels
  * a second input to the parse, and so to the rendering built from it: renaming or
  * removing a definition has to re-parse every block that borrowed it, which is what
  * `document/state.ts: parseKey` says. Measured on the app before the key existed:

@@ -13,14 +13,14 @@
  * the note says `[^Ab]`, which is why {@link authoredLabel} reads the source instead.
  *
  * May import: the node contract (`editable_node.ts`, `revealable_node.ts`), the
- * registry (`createComponent`), the marker's shape (`syntax/footnotes.ts:
+ * registry (`createComponent`), the marker's shape (`syntax/footnote/model.ts:
  * markerShape`), `source_mode.ts` and the AST types. Upholds: a block's rendering is
  * a pure function of its own source — the anchor is named from the node's own label.
  */
 
 import { createComponent } from '../registry';
 import { isShownSourceRange, renderingBlock, shownSourceText } from '../source_mode';
-import { markerShape } from '../syntax/footnotes';
+import { markerShape } from '../syntax/footnote';
 import { EditableNodeComponent } from './editable_node';
 import { RevealableNodeComponent, sourceViewFor } from './revealable_node';
 import type { AstFootnoteDefinition, AstFootnoteReference } from '../ast';
