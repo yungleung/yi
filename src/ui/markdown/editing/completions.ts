@@ -15,7 +15,7 @@
  */
 
 import { bibliographyManager } from '../../../services/bibliography';
-import { documentManager } from '../../../services/document_manager';
+import { documentManager } from '../../../services/documents';
 import { getCaretRange } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
 import { CompletionCard } from '../completion_card';

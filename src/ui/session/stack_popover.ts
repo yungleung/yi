@@ -16,7 +16,7 @@
  * session changes while it is showing.
  */
 
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
 import { AnchoredPanel } from '../floating/panel';

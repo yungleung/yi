@@ -3,7 +3,7 @@
  *
  * It is there exactly when the reader has agreed to versions in this workspace — `versionsVisible`,
  * read from the config, so a workspace they said no to never runs git — and hidden otherwise; what
- * it *says* comes from `services/versions.ts` and nothing else. A press opens the history modal
+ * it *says* comes from `services/versioning/versions.ts` and nothing else. A press opens the history modal
  * (`version_history_modal.ts`) only when there is at least one version to show.
  *
  * May import: the versions service, the config, the events, the catalogue, the toolbar base and the
@@ -11,13 +11,13 @@
  */
 
 import { configManager } from '../../services/config_manager';
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { t } from '../../services/i18n';
-import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versions';
+import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versioning';
 import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { versionedNow, versionStamp, versionsVisible } from '../../services/versioning';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
-import { STATUS_BUTTON, Toolbar } from '../toolbar/toolbar';
+import { STATUS_BUTTON, Toolbar } from '../toolbar';
 import { VersionHistoryModal } from './version_history_modal';
 
 /** The reader's own glyph: a note's version. */

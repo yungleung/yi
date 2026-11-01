@@ -9,7 +9,7 @@
 import type { ListCommand } from '../markdown/editing/lists';
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './toolbar';
+import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './base';
 
 interface ListButtonSpec extends ToolbarButtonSpec {
   command: ListCommand;
@@ -19,7 +19,7 @@ const ICON_PREFIX = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height=
 
 /**
  * The buttons, built when a toolbar is built rather than when this module loads — see
- * `formatting_toolbar.ts` for why a constant here costs the toolbar its language.
+ * `formatting.ts` for why a constant here costs the toolbar its language.
  */
 const listButtons = (): ListButtonSpec[] => [
   {

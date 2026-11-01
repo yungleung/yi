@@ -11,7 +11,7 @@
  * of the event it came from, and it never becomes something the reader has to get rid of.
  */
 
-import { eventManager } from '../services/event_manager';
+import { eventManager } from '../services/events';
 import { HINT_EVENT, hintPlaceSelector, type Hint, type HintPlace } from '../services/hints';
 import { BesideCard, boxOf } from './floating/beside';
 import type { Box } from './floating/placement';

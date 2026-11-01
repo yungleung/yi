@@ -6,10 +6,10 @@
  */
 
 import { getWordsCount } from '../api/stats';
-import { eventManager } from '../services/event_manager';
+import { eventManager } from '../services/events';
 import { t } from '../services/i18n';
 import { BaseComponent } from './component';
-import { DOCUMENT_CHANGED } from '../services/app_events';
+import { DOCUMENT_CHANGED } from '../services/events';
 
 export class WordsCountStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;

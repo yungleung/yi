@@ -13,7 +13,7 @@
  * over the webview's `fetch`), so the probe needs no real clipboard. Its own folder lives under
  * the home directory, because that is what the file plugin and the asset protocol are scoped to.
  *
- * @covers src/ui/image/image_flow.ts, src/ui/image/image_dialog.ts, src/ui/image/image_urls.ts
+ * @covers src/ui/image/index.ts, src/ui/image/index.ts, src/ui/image/index.ts
  */
 (async () => {
   const t = window.__t;

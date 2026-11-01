@@ -21,20 +21,20 @@
  */
 
 import { BaseComponent } from './component';
-import { eventManager } from '../services/event_manager';
+import { eventManager } from '../services/events';
 import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
 import type { EditorLayout } from './markdown/markdown_editor';
-import type { DocumentView, SeenView } from '../services/session_rules';
+import type { DocumentView, SeenView } from '../services/session';
 import { documentSession } from '../services/session';
-import { documentManager } from '../services/document_manager';
+import { documentManager } from '../services/documents';
 import { MESSAGE_EVENT } from '../services/messages';
 import { t } from '../services/i18n';
 import { DOCUMENT_OPENED } from './workspace/tree';
 import { setOpenRequestHandler, type OpenRequest } from './markdown/link_opens';
 import { configManager } from '../services/config_manager';
-import { destinationPaths } from '../services/workspace_folders';
-import * as imageSources from './image/image_urls';
-import { DOCUMENT_CHANGED } from '../services/app_events';
+import { destinationPaths } from '../services/workspace';
+import * as imageSources from './image/index';
+import { DOCUMENT_CHANGED } from '../services/events';
 
 export class MarkdownEditor extends BaseComponent {
   private readonly innerEditor: WysiwygMarkdownEditor;
@@ -107,7 +107,7 @@ export class MarkdownEditor extends BaseComponent {
    * Opens the document a wikilink target names.
    *
    * A target is resolved by the workspace's own index — the file's name or its frontmatter id
-   * (`services/document_manager.ts`) — and a target nothing answers to is *said so*: a reader who
+   * (`services/documents/index.ts`) — and a target nothing answers to is *said so*: a reader who
    * asked to follow a link is looking at a link that goes nowhere, and the message names it. A file
    * that resolves but cannot be read says that instead, with the reason the read gave.
    */
@@ -133,7 +133,7 @@ export class MarkdownEditor extends BaseComponent {
    * Opens the note an ordinary link's path names.
    *
    * A link is written by hand as often as it is pasted, so its path is read the way an image's is
-   * (`services/workspace_folders.ts`): the note's own folder first and then the root of the
+   * (`services/workspace/folders.ts`): the note's own folder first and then the root of the
    * workspace, each of them also read with the escapes a copied path may carry. The first
    * candidate that *reads* is the one that opens, and a destination none of them answers to is
    * *said so*, with the reason the last read gave — a reader who asked to follow a link is looking
@@ -161,7 +161,7 @@ export class MarkdownEditor extends BaseComponent {
 
   /**
    * Which folder the document on screen lives in — what a relative image destination is read
-   * from before the image folder the settings name (`image/image_urls.ts`).
+   * from before the image folder the settings name (`image/index.ts`).
    */
   setDocumentFolder(folder: string | null): void {
     imageSources.setDocumentFolder(folder);

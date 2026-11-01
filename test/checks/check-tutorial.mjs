@@ -13,7 +13,7 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-tutorial-'));
 const bundle = await rolldown({
-  input: 'src/ui/tutorial/tutorial_rules.ts',
+  input: 'src/ui/tutorial/rules.ts',
   logLevel: 'silent',
   platform: 'node'
 });
@@ -52,7 +52,7 @@ const titles = {
   'zh-Hant': '歡迎使用 Yi'
 };
 for (const [language, title] of Object.entries(titles)) {
-  const source = readFileSync(`src/ui/tutorial/tutorial.${language}.md`, 'utf8');
+  const source = readFileSync(`src/ui/tutorial/${language}.md`, 'utf8');
   check(
     `${language}: the frontmatter carries the tutorial id and its own title`,
     source.startsWith('---\n') && source.includes('id: yi-tutorial') && source.includes(`title: ${title}`),

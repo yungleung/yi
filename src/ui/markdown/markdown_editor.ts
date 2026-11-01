@@ -14,11 +14,11 @@
  */
 
 import { BaseComponent } from '../component';
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import {
   DOCUMENT_CHANGED,
   type DocumentChangeReason
-} from '../../services/app_events';
+} from '../../services/events';
 import { CITATION_UPDATED } from '../../services/bibliography';
 import {
   getCaretRange,
@@ -57,7 +57,7 @@ import { handleEditorKey, type KeyHost } from './editing/keys';
 import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../services/session_rules';
+import type { DocumentView, SeenView } from '../../services/session';
 import { createEditorRenderContext } from './editor_render_context';
 import { EditorViewState } from './editor_view_state';
 import { EditorPageLayout, type EditorLayout } from './editor_page_layout';
@@ -383,7 +383,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * Where the reader is: the selection's two ends, and the top of the view of the document.
    *
    * The session keeps this beside a document's text, so that leaving one and coming back puts
-   * the reader where they were (`services/session_rules.ts`). The selection is exact; the
+   * the reader where they were (`services/session/rules.ts`). The selection is exact; the
    * view is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
    */
   captureView(): SeenView {

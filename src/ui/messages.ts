@@ -11,7 +11,7 @@
  * message is drawn from the event and nothing else, and the reader may always read it.
  */
 
-import { eventManager } from '../services/event_manager';
+import { eventManager } from '../services/events';
 import { t } from '../services/i18n';
 import { MESSAGE_EVENT, type Message } from '../services/messages';
 import { BesideCard, boxOf } from './floating/beside';

@@ -3,12 +3,12 @@
  * command a chosen item names.
  *
  * May import: the command registry, the menu model and the menu API. Upholds: the menu is built from
- * the pure model (`table_menu_model.ts`), so what it offers and what it does cannot drift.
+ * the pure model (`model.ts`), so what it offers and what it does cannot drift.
  */
 
 import { runCommand } from '../../commands/runtime';
 import type { TableCommand, TableTarget } from '../markdown/editing/table';
-import type { TableMenuNode } from './table_menu_model';
+import type { TableMenuNode } from './model';
 import type { MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 
 /**

@@ -1,7 +1,7 @@
 /**
  * The new-note tab of the settings window: the frontmatter a new note is made with.
  *
- * What a reader writes here is what `services/new_document.ts` fills in — the same module the
+ * What a reader writes here is what `services/new_document/index.ts` fills in — the same module the
  * menu and the tree make their notes through — so the four required keys are the app's and
  * everything else is theirs. The field is the template *without* its `---` fences (they are
  * the app's), and a reader who pastes them in anyway is not punished for it: the rule strips

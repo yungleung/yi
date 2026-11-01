@@ -29,15 +29,15 @@ import {
   titleRange
 } from '../../services/new_document';
 import { documentSession } from '../../services/session';
-import { documentManager } from '../../services/document_manager';
+import { documentManager } from '../../services/documents';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import {
   newNoteMetadata,
   newNoteTemplates,
   type NewNoteTemplate
-} from '../../services/new_document_templates';
-import { parentFolder, workspaceFolders } from '../../services/workspace_folders';
+} from '../../services/new_document';
+import { parentFolder, workspaceFolders } from '../../services/workspace';
 import { registerCommand } from '../../commands/runtime';
 import { refreshTreeFolders } from '../workspace/tree_ops';
 import { newDocumentDialog, type NewDocumentChooser } from './new_document_dialog';
@@ -164,7 +164,7 @@ async function create(
   const content = newDocumentText({
     id: made.id,
     date: newDocumentDate(),
-    // No template of the reader's means the app's own (`services/new_document.ts`).
+    // No template of the reader's means the app's own (`services/new_document/index.ts`).
     template: configured,
     metadata
   });

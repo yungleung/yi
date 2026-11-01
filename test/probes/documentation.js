@@ -5,8 +5,8 @@
  * must arrive pathless and read-only, carry the template-authoring guide, refuse typing, and be
  * replaceable by an ordinary file without a session question.
  *
- * @covers src-tauri/src/menu.rs (Documentation and F1), src/ui/documentation/documentation_flow.ts,
- *   src/ui/documentation/documentation_text.ts, src/commands/triggers/native_menu.ts,
+ * @covers src-tauri/src/menu.rs (Documentation and F1), src/ui/documentation/index.ts,
+ *   src/ui/documentation/index.ts, src/commands/triggers/native_menu.ts,
  *   src/services/session/rules.ts (a read-only document is replaceable)
  */
 (async () => {

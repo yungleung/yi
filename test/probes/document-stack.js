@@ -14,7 +14,7 @@
  * `document-stack-ask.js` (the rules about losing one) and `document-session-restart.js`.
  *
  * @covers src/services/session/rules.ts, src/services/session/index.ts,
- *   src/ui/toolbar/session_toolbar.ts, src/ui/session/stack_popover.ts,
+ *   src/ui/toolbar/index.ts, src/ui/session/stack_popover.ts,
  *   src/ui/document_status.ts
  * @needs-workspace — it clicks rows of the fixture tree and reads the notes behind them, so the app
  *   has to be on the fixtures (`--with-workspace`) rather than on the reader's own folder

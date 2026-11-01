@@ -19,7 +19,7 @@
 
 import { listFolderFiles, type FileInfo } from '../../api/files';
 import { documentSession } from '../../services/session';
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { MESSAGE_EVENT } from '../../services/messages';
 import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { t } from '../../services/i18n';

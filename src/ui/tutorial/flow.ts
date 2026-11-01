@@ -4,7 +4,7 @@
  * The tutorial is not a file in the workspace and is not the reader's note. It is opened pathless
  * with a stable frontmatter id, so the session knows it by the same name each time, and with
  * `readOnly: true`, so the editor refuses to write it and a later file replaces it without a
- * question. `services/session_rules.ts: openDecision` is where that last rule lives.
+ * question. `services/session/rules.ts: openDecision` is where that last rule lives.
  *
  * The Help menu's item reaches this through the command registry (`menu.ts` names the command);
  * `main.ts` also calls `openTutorial` once on a first start with nothing restored.
@@ -16,8 +16,8 @@
 import { documentSession } from '../../services/session';
 import { registerCommand } from '../../commands/runtime';
 import { openReferenceDocument } from '../reference_document';
-import { tutorialText } from './tutorial_text';
-import { shouldOpenTutorial } from './tutorial_rules';
+import { tutorialText } from './text';
+import { shouldOpenTutorial } from './rules';
 
 /** Puts the tutorial on screen. It is already open? Bringing it forward is the session's answer. */
 export async function openTutorial(): Promise<void> {

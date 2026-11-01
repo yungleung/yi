@@ -5,7 +5,7 @@
  * `file://` URL, a path to an image on this disk — is written into the text where the caret is, the
  * way the link button writes one, and a path is made relative first so the note does not carry the
  * machine's own layout. An *image* on the clipboard is a different question: the app asks on its
- * card (`image_dialog.ts`) what to call it, draws it for the reader to look at, and then *saves* it
+ * card (`dialog.ts`) what to call it, draws it for the reader to look at, and then *saves* it
  * — into the folder the settings name for images, or beside the note when they name none. A
  * clipboard holding neither leaves an empty `![]()` at the caret, which is the courtesy the link
  * button pays a clipboard it cannot use.
@@ -14,7 +14,7 @@
  * write; the pixels come off the clipboard as RGBA and are drawn on a canvas, which is what turns
  * them into a PNG (or a JPEG or a WebP, when the name asks for one). The text that goes into the
  * note is a path *relative* to where the image is read from — the note's own folder or the image
- * folder — which is what `image_urls.ts` resolves again when the image is painted.
+ * folder — which is what `urls.ts` resolves again when the image is painted.
  *
  * May import: the clipboard's reads, the app's paths and settings, the image rules, the card, and
  * the editing context. Upholds: the document text is the only source of truth — one `applyEdit`
@@ -28,7 +28,7 @@ import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
 import { imageFolderPath } from '../../services/settings_paths';
-import { destinationForFile, joinPath, parentFolder } from '../../services/workspace_folders';
+import { destinationForFile, joinPath, parentFolder } from '../../services/workspace';
 import {
   applyEdit,
   type EditorContext
@@ -40,7 +40,7 @@ import {
   imageKindFor
 } from '../markdown/syntax/image_edits';
 import { selectionTitle } from '../markdown/syntax/link_edits';
-import { imageDialog, type ImageChooser } from './image_dialog';
+import { imageDialog, type ImageChooser } from './dialog';
 
 /**
  * Writes an image at the caret — or around the selection, whose words become its alt text — or

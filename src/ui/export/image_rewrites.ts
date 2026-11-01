@@ -9,7 +9,7 @@
  */
 
 import type { AstImage } from '../markdown/ast';
-import { destinationPaths } from '../../services/workspace_folders';
+import { destinationPaths } from '../../services/workspace';
 import { spansOfType, type Span, type Walkable } from './node_spans';
 import { isWebDestination } from './picture_hint';
 import { encodedPath } from './markdown_escaping';

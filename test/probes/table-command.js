@@ -8,7 +8,7 @@
  * command nobody registered, or an id the menu and the registry disagree about,
  * shows up here.
  *
- * @covers src/ui/table/table_menu.ts, src/commands/runtime.ts
+ * @covers src/ui/table/index.ts, src/commands/runtime.ts
  */
 (async () => {
   const t = window.__t;
@@ -16,7 +16,7 @@
     window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event, payload });
   const registry = await t.app('/src/commands/runtime.ts');
   const { readTableSource } = await t.app('/src/ui/markdown/syntax/table_source.ts');
-  const { tableMenuModel } = await t.app('/src/ui/table/table_menu_model.ts');
+  const { tableMenuModel } = await t.app('/src/ui/table/index.ts');
   const doc = ['| A | B |', '| :--- | --- |', '| 1 | 2 |', ''].join('\n');
   await t.load(doc);
   const cell = t.prose().querySelector('[data-table-cell="1:0"]');

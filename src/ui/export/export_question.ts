@@ -18,7 +18,7 @@ import {
 import { exportTemplates, type TemplateSummary } from '../../api/templates';
 import { configManager } from '../../services/config_manager';
 import { documentSession } from '../../services/session';
-import type { SessionDocument } from '../../services/session_rules';
+import type { SessionDocument } from '../../services/session';
 import type { ExportQuestion } from './export_dialog';
 import { noteName, targetFolder } from './export_paths';
 import { uncoveredCharacters } from './font_hint';

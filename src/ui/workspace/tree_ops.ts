@@ -13,18 +13,18 @@
  * the reader is looking at is what the disk holds.
  *
  * May import: the backend's file calls (`api/files`), the identifier reader
- * (`services/document_manager`), the message service (`services/messages`) and the opener.
+ * (`services/documents`), the message service (`services/messages`) and the opener.
  * Upholds: the tree is a view of the folder — every change goes through the app's own
  * commands, and the view is reloaded from them rather than patched by hand.
  */
 
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { createEntry, deleteEntry, moveEntry, renameEntry } from '../../api/files';
-import { documentManager, readDocumentId } from '../../services/document_manager';
-import { eventManager } from '../../services/event_manager';
+import { documentManager, readDocumentId } from '../../services/documents';
+import { eventManager } from '../../services/events';
 import { showHint, type HintPlace } from '../../services/hints';
 import { MESSAGE_EVENT, notify } from '../../services/messages';
-import { parentFolder } from '../../services/workspace_folders';
+import { parentFolder } from '../../services/workspace';
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { prompt } from '../prompt';

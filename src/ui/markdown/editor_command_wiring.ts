@@ -8,8 +8,8 @@
  * context. Upholds: a menu event dispatches by command id and never calls editing behaviour directly.
  */
 
-import type { AppEventName } from '../../services/app_events';
-import { eventManager } from '../../services/event_manager';
+import type { AppEventName } from '../../services/events';
+import { eventManager } from '../../services/events';
 import {
   dispatchRawCommand,
   type CommandId

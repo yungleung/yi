@@ -18,8 +18,8 @@
  * rendered tree, and hold no state that could disagree with them.
  */
 
-import { showTableMenu } from '../table/table_menu';
-import { tableMenuModel } from '../table/table_menu_model';
+import { showTableMenu } from '../table/index';
+import { tableMenuModel } from '../table/index';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';

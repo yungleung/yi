@@ -1,7 +1,7 @@
 /**
  * The workspace tree's context menu, as a native menu.
  *
- * It is the same shape as the table's (`table/table_menu.ts`): rebuilt for every
+ * It is the same shape as the table's (`table/index.ts`): rebuilt for every
  * right-click from the model (`tree_menu_model.ts`), so its items are exactly right for
  * what was clicked, popped up at the pointer, and each item's action runs the command the
  * model names for the entry that was captured before the menu took focus.

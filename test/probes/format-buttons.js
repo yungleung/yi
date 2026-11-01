@@ -8,7 +8,7 @@
  * for bold — so this is what proves `format:<style>` is a command the editor
  * answers to.
  *
- * @covers src/ui/toolbar/formatting_toolbar.ts, src/ui/markdown/editing/formatting.ts
+ * @covers src/ui/toolbar/index.ts, src/ui/markdown/editing/formatting.ts
  */
 (async () => {
   const t = window.__t;

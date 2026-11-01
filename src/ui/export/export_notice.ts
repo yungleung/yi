@@ -12,7 +12,7 @@ import type { ExportOutcome } from '../../api/export';
 import { showHint } from '../../services/hints';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
-import { fileName } from '../../services/workspace_folders';
+import { fileName } from '../../services/workspace';
 import type { NativeBibliographyPlan } from './export_bibliography';
 
 /**

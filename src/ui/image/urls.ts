@@ -9,7 +9,7 @@
  * (`tauri.conf.json` enables it, scoped the way the file plugin is).
  *
  * Which folders a relative destination is read from is the path rule's business
- * (`services/workspace_folders.ts: destinationPaths`); this module holds the two folders it is
+ * (`services/workspace/folders.ts: destinationPaths`); this module holds the two folders it is
  * read with, which the app shell sets — the document's own when the session shows one, and the
  * image folder whenever the config is read or changes — and turns the rule's answer into URLs.
  *
@@ -18,7 +18,7 @@
  */
 
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { destinationPaths } from '../../services/workspace_folders';
+import { destinationPaths } from '../../services/workspace';
 
 /** The folder of the document on screen — what a relative destination is read from first. */
 let documentFolder: string | null = null;

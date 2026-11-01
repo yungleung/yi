@@ -7,12 +7,12 @@
  * session does not have.
  */
 
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { runCommand } from '../../commands/runtime';
 import { StackPopover } from '../session/stack_popover';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
+import { TOOL_ICON_SIZE, Toolbar } from './base';
 
 /** The glyph the user sent for taking a document out of the stack. */
 const STACK_POP =

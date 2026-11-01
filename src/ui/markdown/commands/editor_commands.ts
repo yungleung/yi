@@ -28,7 +28,7 @@ import { applyFormatting } from '../editing/formatting';
 import { insertFootnote } from '../editing/footnotes';
 import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
-import { insertImage } from '../../image/image_flow';
+import { insertImage } from '../../image/index';
 import { registerCommand } from '../../../commands/runtime';
 import { CommandExecutionError } from '../../../commands/dispatch';
 

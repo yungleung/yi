@@ -7,7 +7,7 @@
 
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar } from './toolbar';
+import { TOOL_ICON_SIZE, Toolbar } from './base';
 
 const IMAGE_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">' +
@@ -21,7 +21,7 @@ const IMAGE_ICON =
 /**
  * The image button at the titlebar's centre, beside the link button it is the sibling of: pressing
  * it runs `edit:insertImage`, which reads the clipboard and either writes a destination it is
- * offered or asks about an image it is holding (`ui/image/image_flow.ts`).
+ * offered or asks about an image it is holding (`ui/image/index.ts`).
  *
  * Like every tool button it must not start a window drag and must not take focus — the caret the
  * command writes at lives in the document, and a focused button would take it away.

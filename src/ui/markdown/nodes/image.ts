@@ -2,7 +2,7 @@
  * Renders an `image` node; clicking it enters the markdown that made it.
  *
  * The destination the author wrote is turned into something the webview can load (the render
- * context's `imageSources`, whose shell half is `ui/image/image_urls.ts`): a web URL is itself, and
+ * context's `imageSources`, whose shell half is `ui/image/index.ts`): a web URL is itself, and
  * a path is a file the app has to hand over through
  * the asset protocol. A relative path may mean a file beside the note or one in the folder the
  * settings name for images, so the candidates are tried in that order and the next is taken when

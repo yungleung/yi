@@ -4,7 +4,7 @@
  * It asks once about each thing and never decides either: *may Yi keep versions of this workspace
  * at all*, which is consent for one folder, and *the git directory will live outside a folder a
  * cloud drive could reach — go ahead*, which is the risk a synced folder earns. Both are the
- * plan's own questions (`services/versioning.ts: versioningPlan`): this module draws the one it was
+ * plan's own questions (`services/versioning/rules.ts: versioningPlan`): this module draws the one it was
  * asked for, and knows nothing about git.
  *
  * The two hands are the app's own (`under_test.ts`) and say the same words: a reader gets the

@@ -26,7 +26,7 @@ import {
   rangeOffsets
 } from './editing/selection';
 import type { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../services/session_rules';
+import type { DocumentView, SeenView } from '../../services/session';
 
 /** What the view state needs from the editor it belongs to. */
 export interface EditorViewDependencies {

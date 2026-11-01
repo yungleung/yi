@@ -17,7 +17,7 @@
 import { documentDir, join } from '@tauri-apps/api/path';
 import { createEntry } from '../../api/files';
 import { configManager } from '../../services/config_manager';
-import { DEFAULT_WORKSPACE_NAME } from '../../services/workspace_setup';
+import { DEFAULT_WORKSPACE_NAME } from '../../services/workspace';
 import { notify } from '../../services/messages';
 import { t } from '../../services/i18n';
 import { workspaceManager } from '../../services/workspace';

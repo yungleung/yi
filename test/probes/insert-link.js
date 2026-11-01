@@ -8,7 +8,7 @@
  * `footnote-preview.js` stands in for the app's opener: it answers the plugin's
  * `plugin:clipboard-manager|read_text` command itself.
  *
- * @covers src/ui/toolbar/link_toolbar.ts, src/ui/markdown/editing/links.ts,
+ * @covers src/ui/toolbar/index.ts, src/ui/markdown/editing/links.ts,
  *   src/ui/markdown/syntax/link_edits.ts
  */
 (async () => {

@@ -75,7 +75,7 @@ export class GeneralSettings extends BaseComponent {
     languageGroup.append(languageLabel, languageHint, this.languageSelect);
 
     // Whether the stack takes the document on screen when a file is opened over it. The switch
-    // carries its own meaning: `session_rules.ts: openDecision` is where the rule the words
+    // carries its own meaning: `session/rules.ts: openDecision` is where the rule the words
     // describe lives, and this only answers it.
     const stackGroup = document.createElement('div');
     stackGroup.className = 'form-control gap-1';
@@ -96,7 +96,7 @@ export class GeneralSettings extends BaseComponent {
     this.pushToggle.addEventListener('change', () => void this.choosePush());
 
     // Whether this workspace keeps versions with git. The switch carries the reader's standing
-    // answer for *this* folder (`services/versioning.ts: consentFrom`); the version itself is only
+    // answer for *this* folder (`services/versioning/rules.ts: consentFrom`); the version itself is only
     // ever made when they ask for one, which the hint says, and the line below says where it would
     // live — the one path worth knowing before the reader says yes.
     const versionGroup = document.createElement('div');

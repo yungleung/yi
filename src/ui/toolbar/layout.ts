@@ -6,11 +6,11 @@
  * with the page it is describing.
  */
 
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { runCommand } from '../../commands/runtime';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from '../markdown/markdown_editor';
 import { t } from '../../services/i18n';
-import { STATUS_BUTTON, Toolbar } from './toolbar';
+import { STATUS_BUTTON, Toolbar } from './base';
 
 /** The button's icon while the editor is a page of A4: a sheet with its lines. */
 const PAGE_ICON =

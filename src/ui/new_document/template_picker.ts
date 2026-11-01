@@ -10,7 +10,7 @@
  */
 
 import { t } from '../../services/i18n';
-import type { NewNoteTemplate } from '../../services/new_document_templates';
+import type { NewNoteTemplate } from '../../services/new_document';
 import { QuestionCard } from '../floating/question_card';
 import { kindLabel } from '../export/templates/kind_label';
 

@@ -8,9 +8,9 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
-import { CitationSettings } from './citation_settings';
-import { GeneralSettings } from './general_settings';
-import { NewDocumentSettings } from './new_document_settings';
+import { CitationSettings } from './citation';
+import { GeneralSettings } from './general';
+import { NewDocumentSettings } from './new_document';
 
 /**
  * Opens the settings window, focusing it when it is already open.
@@ -124,3 +124,7 @@ export class SettingsWindow extends BaseComponent {
     this.contentArea.replaceChildren(this.tabs[index].content.element);
   }
 }
+
+export { CitationSettings } from './citation';
+export { GeneralSettings } from './general';
+export { NewDocumentSettings } from './new_document';

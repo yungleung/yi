@@ -8,7 +8,7 @@
  *
  * 1. what is true of the machine and the folder (`api/versioning.ts`), and the reader's answer for
  *    *this* workspace out of the config — an answer given for another folder is no answer;
- * 2. the plan the two make (`services/versioning.ts`), including the questions it says to ask
+ * 2. the plan the two make (`services/versioning/rules.ts`), including the questions it says to ask
  *    first — consent, and the risk a folder a cloud drive could reach earns — remembered with the
  *    path they were asked about;
  * 3. a note with no file is refused in one sentence rather than met with a save sheet in the middle
@@ -29,7 +29,7 @@ import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
-import { versionsOfDocument } from '../../services/versions';
+import { versionsOfDocument } from '../../services/versioning';
 import {
   APP_IDENTITY,
   consentFrom,
@@ -114,7 +114,7 @@ export async function saveVersion(
     return;
   }
   if (!(await documentSession.writeCurrent())) {
-    // The write itself says what went wrong (`services/session.ts`).
+    // The write itself says what went wrong (`services/session/index.ts`).
     return;
   }
   const saved = documentSession.current();

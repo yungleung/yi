@@ -9,14 +9,14 @@
  */
 
 import { DEFAULT_LANGUAGE, type Language } from '../../services/i18n';
-import de from './documentation.de.md?raw';
-import en from './documentation.en.md?raw';
-import es from './documentation.es.md?raw';
-import fr from './documentation.fr.md?raw';
-import ja from './documentation.ja.md?raw';
-import pt from './documentation.pt.md?raw';
-import zhHans from './documentation.zh-Hans.md?raw';
-import zhHant from './documentation.zh-Hant.md?raw';
+import de from './de.md?raw';
+import en from './en.md?raw';
+import es from './es.md?raw';
+import fr from './fr.md?raw';
+import ja from './ja.md?raw';
+import pt from './pt.md?raw';
+import zhHans from './zh-Hans.md?raw';
+import zhHant from './zh-Hant.md?raw';
 
 const DOCUMENTATION: Record<Language, string> = {
   en,

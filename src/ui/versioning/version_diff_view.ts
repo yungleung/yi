@@ -18,7 +18,7 @@ import { versioningVersionText } from '../../api/versioning';
 import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { documentSession } from '../../services/session';
-import { versionsOfDocument } from '../../services/versions';
+import { versionsOfDocument } from '../../services/versioning';
 import { textDiff, type DiffLine } from '../../services/text_diff';
 import { versionedNow } from '../../services/versioning';
 import { prompt } from '../prompt';

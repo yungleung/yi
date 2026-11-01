@@ -12,7 +12,7 @@
 import { registerCommand } from '../../commands/runtime';
 import { openReferenceDocument } from '../reference_document';
 import { language } from '../../services/i18n';
-import { documentationText } from './documentation_text';
+import { documentationText } from './text';
 
 export async function openDocumentation(): Promise<void> {
   await openReferenceDocument(documentationText(language()));

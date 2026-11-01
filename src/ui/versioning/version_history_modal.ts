@@ -12,9 +12,9 @@
  * no empty or unreadable history opens a modal.
  */
 
-import { eventManager } from '../../services/event_manager';
+import { eventManager } from '../../services/events';
 import { t } from '../../services/i18n';
-import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versions';
+import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versioning';
 import { versionStamp, versionTitle, type Version } from '../../services/versioning';
 import { BaseComponent } from '../component';
 import { VersionDiffView } from './version_diff_view';

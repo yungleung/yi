@@ -26,17 +26,17 @@
 
 import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
-import type { NewNoteTemplate } from '../../services/new_document_templates';
+import type { NewNoteTemplate } from '../../services/new_document';
 import { QuestionCard } from '../floating/question_card';
 import { kindLabel } from '../export/templates/kind_label';
 import { drivenByTools } from '../under_test';
-import { placementOfPath, type FolderOption } from '../../services/workspace_folders';
+import { placementOfPath, type FolderOption } from '../../services/workspace';
 import { newDocumentTemplatePicker } from './template_picker';
 
 /** What the card needs to ask: the places, the one to start on, and the name to start with. */
 export interface NewDocumentRequest {
   /**
-   * The workspace's folders, as `services/workspace_folders.ts` lists them. A function, because
+   * The workspace's folders, as `services/workspace/folders.ts` lists them. A function, because
    * the system's sheet brings its own way of choosing a folder: only the card needs this walk,
    * and a reader should not wait for it before their sheet opens.
    */

@@ -7,7 +7,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
-const file = 'src/ui/documentation/documentation.en.md';
+const file = 'src/ui/documentation/en.md';
 const failures = [];
 const check = (name, pass) => {
   if (!pass) failures.push(name);
@@ -177,7 +177,7 @@ if (existsSync(file)) {
 }
 
 const localeDocuments = readdirSync('src/ui/documentation')
-  .filter((name) => /^documentation\..+\.md$/.test(name))
+  .filter((name) => name.endsWith('.md'))
   .sort();
 check('all shipped Documentation languages exist', localeDocuments.length === 8);
 for (const name of localeDocuments) {
@@ -201,7 +201,7 @@ const localized = [
   ['pt', 'Portuguese', 'Documentação do Yi']
 ];
 for (const [code, name, title] of localized) {
-  const localizedFile = `src/ui/documentation/documentation.${code}.md`;
+  const localizedFile = `src/ui/documentation/${code}.md`;
   check(`the ${name} Documentation guide exists`, existsSync(localizedFile));
   if (!existsSync(localizedFile)) continue;
   const text = readFileSync(localizedFile, 'utf8');

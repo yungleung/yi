@@ -8,7 +8,7 @@
  * vocabulary. Upholds: undo and redo use the same render → caret → scroll sequence as an edit.
  */
 
-import type { DocumentChangeReason } from '../../services/app_events';
+import type { DocumentChangeReason } from '../../services/events';
 import {
   caretOffset,
   keepScroll,

@@ -9,7 +9,7 @@
 import { runCommand } from '../../commands/runtime';
 import { TablePicker, type TableSize } from './table_picker';
 import { t } from '../../services/i18n';
-import { Toolbar } from './toolbar';
+import { Toolbar } from './base';
 
 /** The grid icon, sized like the formatting icons it sits beside. */
 const TABLE_ICON =

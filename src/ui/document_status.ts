@@ -2,7 +2,7 @@
  * What the status bar says about the document on screen: whether the file holds what is on
  * screen, and whether the document is in the stack.
  *
- * Both are one fact of the session (`services/session_rules.ts`), so both are read from it
+ * Both are one fact of the session (`services/session/rules.ts`), so both are read from it
  * on every change rather than kept: the session is the only record of which document is current,
  * whether its text differs from its file, and what the stack holds.
  *
@@ -12,7 +12,7 @@
  */
 
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../services/session';
-import { eventManager } from '../services/event_manager';
+import { eventManager } from '../services/events';
 import { t } from '../services/i18n';
 import { BaseComponent } from './component';
 

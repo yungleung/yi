@@ -11,8 +11,8 @@
  */
 
 import { bibliographyManager } from '../../services/bibliography';
-import { documentManager } from '../../services/document_manager';
-import { imageSourceCandidates } from '../image/image_urls';
+import { documentManager } from '../../services/documents';
+import { imageSourceCandidates } from '../image/index';
 import type { MarkdownEditorState } from './document/state';
 import {
   equationBlockNumber,

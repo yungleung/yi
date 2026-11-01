@@ -4,16 +4,16 @@
  * Declining is an answer: it is remembered with the workspace it was given for, nothing is written
  * or made, and asking for a version afterwards says where that answer lives instead of doing
  * nothing. The settings window's General tab is the reader's other way to the same consent
- * (`ui/settings/general_settings.ts`), and turning it on there asks the same card.
+ * (`ui/settings/index.ts`), and turning it on there asks the same card.
  *
  * @covers src/ui/versioning/save_version.ts, src/ui/versioning/versioning_dialog.ts,
- *   src/ui/settings/general_settings.ts
+ *   src/ui/settings/index.ts
  */
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
   const session = await t.app('/src/services/session/index.ts');
-  const { GeneralSettings } = await t.app('/src/ui/settings/general_settings.ts');
+  const { GeneralSettings } = await t.app('/src/ui/settings/index.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const versioning = await t.app('/src/api/versioning.ts');
   const { saveVersion } = await t.app('/src/ui/versioning/save_version.ts');

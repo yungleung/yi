@@ -17,7 +17,7 @@
  * app at no workspace and drives no tree: a note's own folder comes from the session showing the
  * note, so the probe is safe to run in a sweep.
  *
- * @covers src/ui/markdown/syntax/spaced_destinations.ts, src/ui/image/image_urls.ts,
+ * @covers src/ui/markdown/syntax/spaced_destinations.ts, src/ui/image/index.ts,
  *   src/services/workspace/folders.ts, src/ui/markdown/nodes/image.ts
  */
 (async () => {
@@ -104,7 +104,7 @@
     // `main.ts`), so wait for the folder the images are read with to *be* the one named here: a
     // run that is cut off leaves its own announcement in flight, and a probe that measured
     // through that would be reading a folder this run has already removed.
-    const urls = await t.app('/src/ui/image/image_urls.ts');
+    const urls = await t.app('/src/ui/image/index.ts');
     for (let attempt = 0; attempt < 25 && urls.imageBases().images !== images; attempt += 1) {
       await t.sleep(100);
     }

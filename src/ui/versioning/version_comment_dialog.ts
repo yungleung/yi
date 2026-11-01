@@ -2,7 +2,7 @@
  * Asking what to call the version about to be saved.
  *
  * The question has **one hand**, unlike the app's other questions: no system surface answers with a
- * line of text (`ui/image/image_dialog.ts` has no native twin for the same reason). So this is a
+ * line of text (`ui/image/index.ts` has no native twin for the same reason). So this is a
  * card for a reader and for a probe both, with a field that carries the caret when it opens, Enter
  * or the button saving with what is typed, and Escape answering the cautious way — *no version at
  * all*, since a reader who cancels here has asked for nothing else.

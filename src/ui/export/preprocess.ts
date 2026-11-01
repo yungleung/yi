@@ -9,7 +9,7 @@
  *   the document the target names, or the target itself when no note answers to it;
  * - **an image's destination is written as the file it names**, as an absolute path, because the
  *   page may show a picture pandoc would fail to find: the two folders a relative destination is
- *   read from (`services/workspace_folders.ts: destinationPaths`) and the spellings a copied path
+ *   read from (`services/workspace/folders.ts: destinationPaths`) and the spellings a copied path
  *   may use are the renderer's rules, and a hand-written `../` or a name with a space in it is
  *   exactly what an export has to get right. It is one path per image, so what the docx embeds is
  *   what the reader saw;

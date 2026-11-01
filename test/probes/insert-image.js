@@ -11,7 +11,7 @@
  * `fetch` — the way `insert-link-clipboard.js` does, so the probe needs no real clipboard and the
  * app's own read is the only thing being answered.
  *
- * @covers src/ui/image/image_flow.ts, src/ui/markdown/syntax/image_edits.ts
+ * @covers src/ui/image/index.ts, src/ui/markdown/syntax/image_edits.ts
  */
 (async () => {
   const t = window.__t;

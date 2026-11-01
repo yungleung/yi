@@ -10,7 +10,7 @@
  * `id:` line byte for byte as it was are allowed through.
  */
 
-import { idLineRange } from '../../../services/document_identity';
+import { idLineRange } from '../../../services/documents';
 
 /** Whether replacing `[from, to)` with anything would change the frontmatter's id line. */
 export function editsId(content: string, from: number, to: number): boolean {

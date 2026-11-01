@@ -10,7 +10,7 @@
  * as a `word/media/rId10.webp` that is not one of the five types the app promises a Word file (an EPUB
  * of the same picture is `EPUB/media/file0.webp` and validates clean — SVG and webp are both core media
  * types of EPUB 3.4). So the picture is the app's to draw — the webview has a canvas, and
- * `ui/image/image_flow.ts` already turns pixels into a file with it.
+ * `ui/image/index.ts` already turns pixels into a file with it.
  *
  * A vector is drawn at twice its own size — a diagram's hairlines and text are drawn for a vector, and a
  * PNG at the vector's own size is the one that loses them — and a webp at its own, since it is already
@@ -19,14 +19,14 @@
  * destination whose file is not there, or whose drawing fails, is answered as nothing: pandoc's own
  * warning about a picture it cannot find is the reader's, and a half-drawn one would be worse.
  *
- * May import: the destination rules (`services/workspace_folders.ts`), the app's data folder and the
+ * May import: the destination rules (`services/workspace/folders.ts`), the app's data folder and the
  * file plugin (the same seam an inserted picture is written with). Upholds: the note is never edited —
  * a destination this export must draw is answered as the PNG it was drawn to, under a folder of the
  * app's own that the run removes, and the note's own text still says which picture it is.
  */
 import { appDataDir } from '@tauri-apps/api/path';
 import { mkdir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs';
-import { destinationPaths } from '../../services/workspace_folders';
+import { destinationPaths } from '../../services/workspace';
 import type { ImageBases } from './preprocess';
 
 /** What drawing a note's pictures has to ask the app: the folders, and whether a file is there. */

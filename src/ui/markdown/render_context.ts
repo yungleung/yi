@@ -3,7 +3,7 @@
  *
  * A citation draws a formatted reference, a wikilink draws the title of the document it names, an
  * image draws a URL the page may load — none of which is in the node's own markdown. Those three
- * answers come from the app (`services/bibliography.ts`, `services/document_manager.ts`, the
+ * answers come from the app (`services/bibliography.ts`, `services/documents/index.ts`, the
  * folders the settings name), and this is the port they are handed in through: the editor sets a
  * context before the renderer builds a window of blocks, so the node components stay a pure
  * function of their node and the input they were given, and the render layer imports no service.

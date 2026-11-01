@@ -6,14 +6,14 @@
  * reloading the whole window. The second half proves a later start with nothing restored leaves the
  * page empty.
  *
- * @covers src/ui/tutorial/tutorial_flow.ts (openTutorialForFirstStart),
- *   src/ui/tutorial/tutorial_rules.ts, src/services/session/index.ts
+ * @covers src/ui/tutorial/index.ts (openTutorialForFirstStart),
+ *   src/ui/tutorial/index.ts, src/services/session/index.ts
  */
 (async () => {
   const t = window.__t;
   const api = await t.app('/src/api/session.ts');
   const session = await t.app('/src/services/session/index.ts');
-  const flow = await t.app('/src/ui/tutorial/tutorial_flow.ts');
+  const flow = await t.app('/src/ui/tutorial/index.ts');
   const { emptySession } = await t.app('/src/services/session/rules.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
