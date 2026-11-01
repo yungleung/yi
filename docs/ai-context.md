@@ -626,7 +626,8 @@ falling back. `export-template-native-bibliography.js` drives both a `.bib` and 
 through the running app and proves uncited works do not reach the source tree.
 
 The editor is `src/ui/export/templates/editor.ts`, a panel that never becomes the markdown editor or
-a session document. `templates/code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
+a session document; its modal DOM and controls are `templates/editor_shell.ts`.
+`templates/code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), while `templates/file_list.ts` draws
 editable and binary rows. The panel owns loading, dirty state, discard confirmation, atomic save and
 **Validate** / **Test PDF**; binaries remain read-only with *Open in system*. The same panel edits a

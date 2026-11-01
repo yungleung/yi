@@ -73,6 +73,7 @@ expectFile('src/ui/workspace/tree/node.ts');
 expectFile('src/ui/export/manager/source.ts');
 expectFile('src/ui/export/manager/navigation.ts');
 expectFile('src/ui/export/templates/operations.ts');
+expectFile('src/ui/export/templates/editor_shell.ts');
 expectFile('src/ui/export/dialog/controls.ts');
 expectFile('src/ui/export/pipeline/contracts.ts');
 expectFile('src/ui/export/pipeline/rewrites.ts');
@@ -127,6 +128,11 @@ expectNoDefinition(
   'src/ui/export/templates/browser.ts',
   /\b(?:createDefaultTemplate|duplicateTemplate|exportTemplates|importTemplate|inspectTemplate|removeTemplate|testTemplatePdf|updateTemplate|validateTemplate)\s*\(/,
   'still owns template lifecycle calls; move them to operations.ts'
+);
+expectNoDefinition(
+  'src/ui/export/templates/editor.ts',
+  /\b(?:private\s+button\s*\(|data-template-editor-panel\b)/,
+  'still owns template-editor shell construction; move it to editor_shell.ts'
 );
 expectNoDefinition(
   'src/ui/export/dialog/form.ts',

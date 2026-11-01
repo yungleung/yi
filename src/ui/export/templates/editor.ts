@@ -27,12 +27,12 @@ import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { prompt } from '../../prompt';
 import { createTemplateCodeEditor } from './code_editor';
+import { createTemplateEditorShell } from './editor_shell';
 import { renderTemplateFiles } from './file_list';
 
 /** One code panel for the whole window; it is the only thing on screen while it is open. */
 export class TemplateEditorPanel {
   private readonly element: HTMLDivElement;
-  private readonly panel: HTMLDivElement;
   private readonly title: HTMLSpanElement;
   private readonly dirtyMark: HTMLSpanElement;
   private readonly files: HTMLDivElement;
@@ -51,73 +51,22 @@ export class TemplateEditorPanel {
   private closing = false;
 
   constructor() {
-    this.element = document.createElement('div');
-    this.element.className =
-      'fixed inset-0 z-[70] hidden items-center justify-center bg-black/30';
-    this.element.setAttribute('data-template-editor', 'true');
-
-    this.panel = document.createElement('div');
-    this.panel.className =
-      'flex h-[min(48rem,90vh)] w-[min(72rem,95vw)] flex-col overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-xl';
-    this.panel.setAttribute('data-template-editor-panel', 'true');
-
-    const header = document.createElement('div');
-    header.className = 'flex items-center gap-2 border-b border-base-300 px-3 py-2';
-    this.title = document.createElement('span');
-    this.title.className = 'text-sm font-semibold';
-    this.title.setAttribute('data-template-editor-title', 'true');
-    this.dirtyMark = document.createElement('span');
-    this.dirtyMark.className = 'text-xs text-warning';
-    this.dirtyMark.setAttribute('data-template-editor-dirty', 'true');
-    this.dirtyMark.textContent = '';
-    const spacer = document.createElement('span');
-    spacer.className = 'flex-1';
-    this.saveButton = this.button('save', t('template.save'), 'btn btn-primary btn-xs', () =>
-      void this.save()
-    );
-    this.validateButton = this.button('validate', t('template.validate'), 'btn btn-ghost btn-xs', () =>
-      void this.validate()
-    );
-    this.testPdfButton = this.button('test-pdf', t('template.testPdf'), 'btn btn-ghost btn-xs', () =>
-      void this.testPdf()
-    );
-    const close = this.button('close', '✕', 'btn btn-ghost btn-xs', () =>
-      void this.requestClose()
-    );
-    close.setAttribute('aria-label', t('template.close'));
-    header.append(this.title, this.dirtyMark, spacer, this.saveButton, this.validateButton, this.testPdfButton, close);
-
-    const body = document.createElement('div');
-    body.className = 'flex min-h-0 flex-1';
-    this.files = document.createElement('div');
-    this.files.className = 'w-56 shrink-0 overflow-auto border-r border-base-300 bg-base-200/50 p-2';
-    this.files.setAttribute('data-template-editor-files', 'true');
-    const right = document.createElement('div');
-    right.className = 'flex min-w-0 flex-1 flex-col';
-    this.editorHost = document.createElement('div');
-    this.editorHost.className = 'min-h-0 flex-1 overflow-hidden';
-    this.editorHost.setAttribute('data-template-editor-code', 'true');
-    this.status = document.createElement('p');
-    this.status.className =
-      'max-h-32 overflow-auto whitespace-pre-wrap border-t border-base-300 px-3 py-2 text-xs opacity-80';
-    this.status.setAttribute('data-template-editor-status', 'true');
-    right.append(this.editorHost, this.status);
-    body.append(this.files, right);
-    this.panel.append(header, body);
-    this.element.append(this.panel);
-    // A press in the panel belongs to the panel, not to the window drag behind it.
-    this.panel.addEventListener('mousedown', (event) => event.stopPropagation());
-    document.addEventListener('keydown', (event) => {
-      if (
-        event.key !== 'Escape' ||
-        event.isComposing ||
-        event.defaultPrevented ||
-        !this.handleEscape()
-      ) {
-        return;
-      }
-      event.preventDefault();
+    const shell = createTemplateEditorShell({
+      save: () => void this.save(),
+      validate: () => void this.validate(),
+      testPdf: () => void this.testPdf(),
+      requestClose: () => void this.requestClose(),
+      handleEscape: () => this.handleEscape()
     });
+    this.element = shell.element;
+    this.title = shell.title;
+    this.dirtyMark = shell.dirtyMark;
+    this.files = shell.files;
+    this.editorHost = shell.editorHost;
+    this.status = shell.status;
+    this.saveButton = shell.saveButton;
+    this.validateButton = shell.validateButton;
+    this.testPdfButton = shell.testPdfButton;
   }
 
   isOpen(): boolean {
@@ -363,20 +312,6 @@ export class TemplateEditorPanel {
     }
   }
 
-  private button(
-    name: string,
-    label: string,
-    className: string,
-    onPress: () => void
-  ): HTMLButtonElement {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = className;
-    button.textContent = label;
-    button.setAttribute(`data-template-editor-${name}`, 'true');
-    button.addEventListener('click', onPress);
-    return button;
-  }
 }
 
 /** The one code panel the window has. */
