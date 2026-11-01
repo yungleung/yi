@@ -34,7 +34,9 @@ in the same change that moves a module.
 
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
 through the app's own file commands (`src-tauri/src/files/`, wrapped in `src/api/files.ts`)
-and it re-reads the disk after a change instead of patching its own rows. What a row may be
+and it re-reads the disk after a change instead of patching its own rows. The recursive row and
+its expansion, reveal and row-local interactions live in `src/ui/workspace/tree/node.ts`, while
+`tree/index.ts` owns the workspace lifecycle and the public facade. What a row may be
 offered is a pure model (`src/ui/workspace/tree/menu_model.ts`), what a rename selects and
 which drops are allowed are pure rules (`src/ui/workspace/tree/rules.ts`), and a row's name
 is edited where it sits, without moving the tree (`src/ui/workspace/tree/rename.ts`).

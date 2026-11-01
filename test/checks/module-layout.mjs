@@ -45,6 +45,19 @@ const expectExplicitFacade = (path) => {
   }
 };
 
+const expectNoClass = (path, name) => {
+  expectFile(path);
+  if (!exists(path)) {
+    return;
+  }
+  const source = readFileSync(join(root, path), 'utf8');
+  if (new RegExp(`\\bclass\\s+${name}\\b`).test(source)) {
+    failures.push(`${path} still owns ${name}; move it to its focused module`);
+  }
+};
+
+expectFile('src/ui/workspace/tree/node.ts');
+
 const facades = [
   'src/services/session/index.ts',
   'src/services/session/rules.ts',
@@ -77,6 +90,8 @@ const facades = [
   'src-tauri/src/export/html/mod.rs'
 ];
 facades.forEach(expectExplicitFacade);
+
+expectNoClass('src/ui/workspace/tree/index.ts', 'TreeNode');
 
 const legacy = [
   'src/services/session.ts',
