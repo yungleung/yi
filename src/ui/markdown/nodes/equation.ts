@@ -13,7 +13,7 @@
 import type { AstNode } from '../ast';
 import type { BlockNode } from '../document/blocks';
 import { enterSourceOf } from '../source_mode';
-import type { EquationBlockSource } from '../syntax/equation_blocks';
+import type { EquationBlockSource } from '../syntax/equation';
 import { EditableNodeComponent } from './editable_node';
 import { highlightLatex } from './latex_highlight';
 import { renderKatexHtml } from './math';

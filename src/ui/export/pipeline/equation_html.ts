@@ -11,7 +11,7 @@
  */
 
 import katex from 'katex';
-import type { EquationBlockSource } from '../../markdown/syntax/equation_blocks';
+import type { EquationBlockSource } from '../../markdown/syntax/equation';
 import { escapeHtml, htmlAttributeName } from './html';
 
 /** One display equation as an HTML block. */

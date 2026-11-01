@@ -12,13 +12,13 @@ import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-equation-blocks-'));
 const bundle = await rolldown({
-  input: 'src/ui/markdown/syntax/equation_blocks.ts',
+  input: 'src/ui/markdown/syntax/equation/blocks.ts',
   logLevel: 'silent',
   platform: 'node'
 });
 const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
-const file = join(directory, 'equation_blocks.mjs');
+const file = join(directory, 'blocks.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   innerEquationBody,
@@ -30,13 +30,13 @@ const {
   unnumberedEquationBody
 } = await import(file);
 const maskingBundle = await rolldown({
-  input: 'src/ui/markdown/syntax/equation_masking.ts',
+  input: 'src/ui/markdown/syntax/equation/masking.ts',
   logLevel: 'silent',
   platform: 'node'
 });
 const { output: maskingOutput } = await maskingBundle.generate({ format: 'esm' });
 await maskingBundle.close();
-const maskingFile = join(directory, 'equation_masking.mjs');
+const maskingFile = join(directory, 'masking.mjs');
 writeFileSync(
   maskingFile,
   maskingOutput.find((chunk) => chunk.type === 'chunk').code

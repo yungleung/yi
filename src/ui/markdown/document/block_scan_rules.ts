@@ -15,7 +15,7 @@ import {
   htmlBlockTerminator,
   openingFence
 } from '../syntax/markers';
-import { closesEquation, isEquationOpening } from '../syntax/equation_blocks';
+import { closesEquation, isEquationOpening } from '../syntax/equation';
 import { readFencedDiv } from '../syntax/fenced_divs';
 import type { BlockKind } from './block_kinds';
 import type { SourceLine } from './block_scanner';

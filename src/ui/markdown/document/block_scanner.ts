@@ -18,7 +18,7 @@ import { emptyParagraphIndexes, isEmptyParagraphLine } from '../syntax/blank_lin
 import { isTableCaptionLine } from '../syntax/table_captions';
 import { listCaptionLine } from '../syntax/list_captions';
 import { readTableSource } from '../syntax/table_source';
-import { isEquationOpening } from '../syntax/equation_blocks';
+import { isEquationOpening } from '../syntax/equation';
 import type { BlockKind } from './block_kinds';
 import { scanContainerBlock } from './block_scan_rules';
 

@@ -20,7 +20,7 @@ import {
   type ReferenceStyle
 } from '../syntax/reference_vocabulary';
 import type { TableCaptionNode } from '../syntax/table_captions';
-import { readEquationBlock } from '../syntax/equation_blocks';
+import { readEquationBlock } from '../syntax/equation';
 import { splitBlocks } from './blocks';
 
 /** A target kind with a document-configured reference name. */

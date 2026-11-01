@@ -14,7 +14,7 @@
 import {
   attributeBlockAtEnd,
   type PandocAttributeBlock
-} from './pandoc_attributes';
+} from '../pandoc_attributes';
 
 /** A top-level environment whose rows can otherwise accumulate equation numbers. */
 export type EquationEnvironmentName =

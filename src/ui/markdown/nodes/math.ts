@@ -19,7 +19,7 @@ import { highlightLatex } from './latex_highlight';
 import {
   readEquationBody,
   unnumberedEquationBody
-} from '../syntax/equation_blocks';
+} from '../syntax/equation';
 
 /**
  * KaTeX output is a pure function of the source, so render once per unique

@@ -24,6 +24,9 @@ const forbidFile = (path) => {
 };
 
 const expectNoRepeat = (folder, prefixes = [], suffixes = []) => {
+  if (!exists(folder)) {
+    return;
+  }
   for (const name of readdirSync(join(root, folder))) {
     if (
       prefixes.some((prefix) => name.startsWith(prefix)) ||
@@ -79,7 +82,9 @@ expectFile('src/ui/export/pipeline/contracts.ts');
 expectFile('src/ui/export/pipeline/rewrites.ts');
 expectFile('src/ui/export/pipeline/figure_rewrites.ts');
 expectFile('src/ui/export/pipeline/listing_rewrites.ts');
-expectFile('src/ui/markdown/syntax/equation_masking.ts');
+expectFile('src/ui/markdown/syntax/equation/index.ts');
+expectFile('src/ui/markdown/syntax/equation/blocks.ts');
+expectFile('src/ui/markdown/syntax/equation/masking.ts');
 
 const facades = [
   'src/services/session/index.ts',
@@ -102,6 +107,7 @@ const facades = [
   'src/ui/workspace_setup/index.ts',
   'src/ui/markdown/editor/index.ts',
   'src/ui/markdown/renderer/index.ts',
+  'src/ui/markdown/syntax/equation/index.ts',
   'src/ui/export/workflow/index.ts',
   'src/ui/export/pipeline/index.ts',
   'src/ui/export/assets/index.ts',
@@ -150,12 +156,6 @@ expectNoDefinition(
   /\bfunction\s+applyRewrites\s*\(/,
   'duplicates the shared right-to-left rewrite rule'
 );
-expectNoDefinition(
-  'src/ui/markdown/syntax/equation_blocks.ts',
-  /\bfunction\s+(?:equationsForParsers|sourceLines|leadingSpace)\s*\(/,
-  'still owns remark input masking; move it to equation_masking.ts'
-);
-
 const legacy = [
   'src/services/session.ts',
   'src/services/session_rules.ts',
@@ -174,6 +174,8 @@ const legacy = [
   'src/ui/workspace_setup/workspace_setup_flow.ts',
   'src/ui/markdown/editor_history.ts',
   'src/ui/markdown/renderer_geometry.ts',
+  'src/ui/markdown/syntax/equation_blocks.ts',
+  'src/ui/markdown/syntax/equation_masking.ts',
   'src/ui/export/export_flow.ts',
   'src/ui/export/preprocess.ts',
   'src/ui/export/raster_picture.ts',
@@ -201,6 +203,7 @@ expectNoRepeat('src/ui/export/manager', ['export_manager']);
 expectNoRepeat('src/ui/export/templates', ['package_', 'template_']);
 expectNoRepeat('src/ui/markdown/editor', ['editor_']);
 expectNoRepeat('src/ui/markdown/renderer', ['renderer_']);
+expectNoRepeat('src/ui/markdown/syntax/equation', ['equation_']);
 expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 
 if (failures.length > 0) {

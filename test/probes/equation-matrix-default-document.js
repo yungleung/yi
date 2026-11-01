@@ -2,7 +2,7 @@
  * The default fixture demonstrates every equation environment with and without an ID.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/syntax/equation_blocks.ts,
+ *   src/ui/markdown/syntax/equation/index.ts,
  *   src/ui/markdown/document/reference_index.ts
  * @fixture test/fixtures/workspace/default-document.md
  */

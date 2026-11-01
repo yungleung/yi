@@ -2,7 +2,7 @@
  * An unlabeled equation stays visible while its attributes are being edited,
  * and a click in its revealed source lands on the line and character clicked.
  *
- * @covers src/ui/markdown/syntax/equation_blocks.ts,
+ * @covers src/ui/markdown/syntax/equation/index.ts,
  *   src/ui/markdown/nodes/equation.ts, src/ui/markdown/create_block.ts
  */
 (async () => {

@@ -15,8 +15,8 @@ import {
   frontmatterDelimiter,
   htmlBlockTerminator,
   openingFence
-} from './markers';
-import { closesEquation, isEquationOpening } from './equation_blocks';
+} from '../markers';
+import { closesEquation, isEquationOpening } from './blocks';
 
 export function equationsForParsers(markdown: string): string {
   const lines = sourceLines(markdown);

@@ -713,11 +713,11 @@ and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editi
 and `export-pdf-table-template.js` proves the package counter contract.
 
 **A labeled equation is one bracketed display-math block, never one target per
-environment row.** `syntax/equation_blocks.ts` owns `[$$…$$]{…#id}` parsing,
+environment row.** `syntax/equation/blocks.ts` owns `[$$…$$]{…#id}` parsing,
 the `[$$` autocomplete skeleton, and the environment matrix. An ID is optional
 for display; the structural reader keeps a block visible while its final
 attributes are unfinished. Plain or environment math is lowered before KaTeX so
-no native automatic tag can depend on virtualization. `syntax/equation_masking.ts`
+no native automatic tag can depend on virtualization. `syntax/equation/masking.ts`
 prepares remark input by replacing only wrapper punctuation with spaces, preserving every source
 offset. `create_block.ts` and
 `nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;

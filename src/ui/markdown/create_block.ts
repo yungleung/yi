@@ -28,7 +28,7 @@ import { highlightLatex } from './nodes/latex_highlight';
 import {
   innerEquationBody,
   readEquationBlockSource
-} from './syntax/equation_blocks';
+} from './syntax/equation';
 import { codeFenceData, listingFenceData, type CodeFenceData } from './syntax/code_fences';
 import { readCallout } from './syntax/callouts';
 import { renderContext } from './render_context';

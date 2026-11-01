@@ -24,7 +24,7 @@ import {
   readEquationBlock,
   type EquationBlockSource,
   unnumberedEquationBody
-} from '../../markdown/syntax/equation_blocks';
+} from '../../markdown/syntax/equation';
 import {
   equationHtml,
   equationHtmlContainer,

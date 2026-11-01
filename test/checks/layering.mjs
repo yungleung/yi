@@ -19,9 +19,20 @@ const syntaxDirectory = 'src/ui/markdown/syntax';
 const markdownDirectory = 'src/ui/markdown';
 const parserLibraries = /^(?:unified|remark-[\w.-]+|mdast[\w./-]*|micromark[\w./-]*|yaml)$/;
 
-const files = readdirSync(syntaxDirectory)
-  .filter((name) => name.endsWith('.ts'))
-  .map((name) => join(syntaxDirectory, name));
+function typescriptFiles(directory) {
+  const found = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...typescriptFiles(path));
+    } else if (entry.name.endsWith('.ts')) {
+      found.push(path);
+    }
+  }
+  return found;
+}
+
+const files = typescriptFiles(syntaxDirectory);
 
 const failures = [];
 for (const file of files) {
@@ -48,17 +59,7 @@ for (const file of files) {
 }
 
 /** Every TypeScript module the app is made of. */
-const appFiles = [];
-(function walk(directory) {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      walk(path);
-    } else if (entry.name.endsWith('.ts')) {
-      appFiles.push(path);
-    }
-  }
-})('src');
+const appFiles = typescriptFiles('src');
 
 const testDirectory = resolve('test');
 for (const file of appFiles) {

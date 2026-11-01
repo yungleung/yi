@@ -2,7 +2,7 @@
  * Labeled equations render KaTeX with one Yi number and reveal their full source.
  *
  * @covers src/ui/markdown/create_block.ts, src/ui/markdown/nodes/equation.ts,
- *   src/ui/markdown/syntax/equation_blocks.ts
+ *   src/ui/markdown/syntax/equation/index.ts
  */
 (async () => {
   const t = window.__t;
