@@ -28,7 +28,7 @@ import { save as saveChosen } from '@tauri-apps/plugin-dialog';
 import { t } from '../../services/i18n';
 import type { NewNoteTemplate } from '../../services/new_document';
 import { QuestionCard } from '../floating/question_card';
-import { kindLabel } from '../export/templates/kind_label';
+import { kindLabel } from '../export/templates';
 import { drivenByTools } from '../under_test';
 import { placementOfPath, type FolderOption } from '../../services/workspace';
 import { newDocumentTemplatePicker } from './template_picker';

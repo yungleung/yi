@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-01
 
-**Status:** Approved design; implementation plan not yet written
+**Status:** Implemented
 
 ## Purpose
 

@@ -36,7 +36,7 @@ export interface SeenView {
 }
 
 export interface SessionDocument {
-  /** The id it answers to (`document_identity.ts`), which is what the stack is keyed by. */
+  /** The id it answers to (`documents/identity.ts`), which is what the stack is keyed by. */
   id: string;
   path: string | null;
   title: string;

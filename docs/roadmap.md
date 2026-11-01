@@ -184,15 +184,15 @@ elements) unless it says otherwise.
   its frontmatter id; and entries drag into folders to move. The filesystem's rules are the
   backend's (`src-tauri/src/files.rs` with Rust tests, wrapped in `src/api/files.ts`) and
   the tree holds none of them twice; what a row may be offered is a pure model
-  (`tree_menu_model.ts`) and so are the rename's selection and the drops' rules
-  (`tree_rules.ts`), each with a Node check — because a native menu and a native dialog can
+  (`tree/menu_model.ts`) and so are the rename's selection and the drops' rules
+  (`tree/rules.ts`), each with a Node check — because a native menu and a native dialog can
   be neither read nor driven by a probe (`docs/testing.md`). A rename is edited in the row's
   own label: the tree's geometry is asserted unchanged while it is open, and the edit starts
   with the name — not the extension — selected, so typing replaces the name and the `.md`
   stays (`test/probes/tree-rename.js`). The tree itself moved to `src/ui/workspace/`, one
   module per interaction (menu, rename, drag, ops).
   **On the user's review:** Copy name copies the name without its extension (one rule,
-  `tree_rules.ts: nameWithoutExtension`, shared with the rename's selection); the drag is
+  `tree/rules.ts: nameWithoutExtension`, shared with the rename's selection); the drag is
   built from the pointer's own events rather than the browser's drag and drop — measured on
   the app, the rows were `draggable` and WebKit agreed (`-webkit-user-drag: element`), and
   the webview still never delivered a `drop` to a row — which is also the part a probe can
@@ -294,7 +294,7 @@ elements) unless it says otherwise.
   scale now, and a new scale forgets heights measured in the old pixels.
   **And the two layouts switch.** Landed as
   `docs/superpowers/plans/2026-09-28-the-layout-button.md`, on the user's ask: a button at the
-  right of the status bar (`src/ui/toolbar/layout_toolbar.ts`, with the two icons they sent)
+  right of the status bar (`src/ui/toolbar/layout.ts`, with the two icons they sent)
   runs `view:togglePage`, and the editor's `data-layout` moves between the page of A4 and the
   full-width column it had before — `styles.css` scopes the sheet, the desk and the scale to
   `[data-layout='page']`, and `fitPage` holds the scale at 1 in `auto`. The button draws the
@@ -339,7 +339,7 @@ elements) unless it says otherwise.
     Both hands are chosen by one rule, `ui/under_test.ts`, which is also what `ui/prompt.ts` reads
     now (it used to keep its own copy of the test). The sheet's answer is one path, and the rule
     that reads a folder and a name out of it (`placementOfPath`) is a pure one in
-    `services/workspace_folders.ts` with `check-workspace-folders.mjs` beside it — because a
+    `services/workspace/folders.ts` with `check-workspace-folders.mjs` beside it — because a
     native sheet is the one surface a probe cannot drive, *and* cannot stand in for either:
     measured, the dialog plugin's `save` does not travel over the webview's `fetch`, so a
     stand-in never sees it and the real sheet blocks the harness for its whole budget.
@@ -616,7 +616,7 @@ elements) unless it says otherwise.
   still be read. The read is a fifth git call and its first that answers **bytes** — `run_git` would
   lossily decode a file a restore is about to write, so it goes through `Command` and refuses a
   version that is not text. A document with a file is keyed by its **path**
-  (`document_identity.ts: documentId`), so a restore is not "open another document": the first
+  (`documents/identity.ts: documentId`), so a restore is not "open another document": the first
   attempt wrote the file and left the old text on screen, because `openInto` saw the same id and
   brought the existing document forward — `openVersion` replaces *that* document's text instead, and
   and nothing is kept for the reader: they were asked, they answered restore, and the text that was on screen is gone — the first cut asked the session's question, which the reader corrected (it is about opening another document, and neither answer means "I did not mean that").
@@ -632,7 +632,7 @@ elements) unless it says otherwise.
   file, the document, the stack, *Saved*), beside the thirteen the versioning slices left.
 - **Version history is one modal, not a popover followed by a sheet.** The status button now reads
   the history before opening anything: an empty, missing, unreadable or repository-less history
-  leaves the page unchanged. A real history opens `version_history_modal.ts`, shaped like the
+  leaves the page unchanged. A real history opens `versioning/history_modal.ts`, shaped like the
   template editor with the list on the left and the diff on the right. The newest row is selected
   first, and pressing another row updates the right column without closing the modal. The modal
   owns Escape and the keyboard; closing returns the keyboard to the editor. `versioning-list`,
@@ -746,14 +746,14 @@ elements) unless it says otherwise.
   fixtures' notes are not in, and five fixture-dependent probes failed identically on `main` and on
   the branch under test, on a freshly started app.
 - **A note goes out through pandoc, first as a Word document.** Landed: the File menu's *Export*
-  opens a card (`ui/export/export_dialog.ts`) with one tab per kind the app ships, the target it is
+  opens a card (`ui/export/dialog/index.ts`) with one tab per kind the app ships, the target it is
   written to, and the conversion settings file — which the card's button opens in the reader's own
   text editor, because the parameters are theirs. None of the conversion is the app's: a kind *is* a
   pandoc **defaults file** (`<app data>/export/export.<kind>.yaml`), written from the copy the build
   ships the first time that kind is used and never overwritten again
   (`src-tauri/src/export/config.rs: ensure_defaults_in`), and the docx one is Zettlr's own defaults file
   kept word for word, header and all. Every kind shares one pre-process
-  (`ui/export/preprocess.ts`): a wikilink is written as the words it renders as — its own title, or
+  (`ui/export/pipeline/preprocess.ts`): a wikilink is written as the words it renders as — its own title, or
   the title of the note it names, or its target — and it is walked out of the *parse* rather than
   scanned for, so a `[[…]]` in a fence, in an inline code span or in frontmatter is not a wikilink
   and stays exactly as written. Measured: the pandoc on this machine (3.12.1) takes the Zettlr
@@ -772,7 +772,7 @@ elements) unless it says otherwise.
   now holds with a check that fails without the one-line fix in `ui/hints.ts`.
   **The three things a first read of it turned up** landed on the same branch. An image's
   destination is now rewritten to the file it names — absolute, percent-encoded — by the app's *own*
-  rule (`preprocess.ts: imageRewrites` over `services/workspace_folders.ts: destinationPaths`), so
+  rule (`pipeline/preprocess.ts: imageRewrites` over `services/workspace/folders.ts: destinationPaths`), so
   what the docx embeds is the picture the page showed, found through the same two folders the
   renderer reads it from and whatever spelling the destination arrived in (measured: a file names
   with a space, a `#`, a `(`, a `?` and a `%` in it each resolve; a bare, a `<…>`-wrapped and a
@@ -787,7 +787,7 @@ elements) unless it says otherwise.
   otherwise lose the whole export). And the settings button **reveals** the configuration file in
   its folder rather than opening it in whatever the system thinks edits text — which editor a file
   belongs to is the reader's own arrangement, and this is how the tree reveals a file too
-  (`tree_ops.ts: reveal`).
+  (`tree/ops.ts: reveal`).
   **A picture on the web** (the demo document's own `![A sample image](https://placehold.co/200x80/png)`)
   turned out to be two bugs at once. The first was ours, in the copied defaults file:
   `default-image-extension: .jpg` is what Zettlr ships, and pandoc applies it to any destination
@@ -961,7 +961,7 @@ elements) unless it says otherwise.
   false`), then pandoc for one round, then the app's own hand again — the reader's call each time, and
   the shape it has now is the one where the pre-process *is* the conversion, so there is no defaults
   file, no pandoc, and the citations are the app's own rendering (the third rule in
-  `ui/export/preprocess.ts` and `bibliography.referenceList`, which the crate's round had added for a
+  `ui/export/pipeline/preprocess.ts` and `bibliography.referenceList`, which the crate's round had added for a
   different reason and this round brought back for this one). Measured: `# Going out` stays an `h1`
   (nothing re-serializes the note at all, which is also what keeps the family's
   `shift-heading-level-by: 1` — for a *document* whose title sits above its first heading — from
@@ -1055,7 +1055,7 @@ elements) unless it says otherwise.
   *Math* (measured: the same `≤` and `∑` are missing from a paragraph and present in a formula), so the
   rule walks the **parse** and leaves the maths spans alone. That moved it: the app now answers *what
   the settings name* (`export_named_fonts`, over the file's bytes) and the window answers *which
-  characters*, over the parse (`ui/export/font_hint.ts`, held by `check-export-font.mjs`; the span walk
+  characters*, over the parse (`ui/export/workflow/font_hint.ts`, held by `check-export-font.mjs`; the span walk
   both it and the pre-process use is `ui/export/node_spans.ts`).
 
 - **The build draws the scripts itself now, and a reader may name a face for any one of them.** The
@@ -1096,7 +1096,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   without the header learning it. Measured: `export-pdf-font.js` writes two such lines into the
   reader's copy, and the page carries their CJK face and their Hebrew face while the shipped Hebrew face
   is **absent** from it, and a script nobody named still carries the build's own. The hint steps aside
-  for a named script (`NamedFonts.named_scripts`, the ranges in `font_hint.ts`) the way it does for a
+  for a named script (`NamedFonts.named_scripts`, the ranges in `workflow/font_hint.ts`) the way it does for a
   named `mainfont`, since a coverage cannot be read out of a name.
 
   **Bold was a fallback and is now faces, with one measured exception.** One weight of each face
@@ -1162,10 +1162,10 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   with the same id. Measured, that shape fails with the shift alone: a note saying `## Going out`, handed
   `-M title="Going out"` and the shipped defaults with `shift-heading-level-by: 0`, is reported as
   `Duplicate ID "going-out"` twice. So the app writes the name where the note's level-1 heading belongs:
-  `ui/export/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
+  `ui/export/pipeline/book_body.ts` is the rule (the note's own `#` heading where it has one, the name under the
   frontmatter when it has not, one line of a name that came from a heading), the kind's own row says it
   (`export/kinds.rs: names_its_body` — the epub, and nothing else, because a docx that opened with a heading of
-  the name would say it twice), and the window hands the book that body (`export_flow.ts`). The note's
+  the name would say it twice), and the window hands the book that body (`workflow/flow.ts`). The note's
   `## Going out` then takes the id pandoc gives the second of two headings saying the same thing, and
   the book's structure is the one a reader would draw: the name as the level-1 section, the note's own
   sections inside it, no repeated id. Measured, one book each, clean: the frontmatter title with a
@@ -1249,7 +1249,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   measured while fixing it: the session's *Save* is the app's own atomic write (`api/files.ts:
   writeTextAtomically` → `files.rs`), which carries no scope and could always write anywhere. What the
   plugin's `$HOME/**` scope actually refused is the *reads* (the session's `openPath`, and the three in
-  `document_manager.ts` that read a note's title), an **inserted picture** (`ui/image/image_flow.ts`
+  `documents/manager.ts` that read a note's title), an **inserted picture** (`ui/image/flow.ts`
   writes with the file plugin), the library `watch`, and the asset protocol that *serves* a rendered
   image. The refusal itself is what the item had: reading `/private/tmp/…/note.md` from the page answered
   *"forbidden path: … maybe it is not allowed on the scope for `allow-read-text-file`"*, while the app's
@@ -1308,7 +1308,7 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   (`export/kinds.rs: carries_pictures`): a page of HTML and a book keep the SVG as an SVG (SVG is one of the
   EPUB core media types) and the app's own hand leaves the note's destinations as written, while a Word
   file, an OpenDocument file, a page XeTeX lays out and its `.tex` get a PNG the app draws itself
-  (`ui/export/raster_picture.ts`: the webview's canvas, twice the vector's own size, into a folder of
+  (`ui/export/assets/raster_picture.ts`: the webview's canvas, twice the vector's own size, into a folder of
   the app's own that the run removes). `export-picture-formats.js` holds both halves through the app,
   from one note and one local `figure.svg`: the docx's media folder has a PNG and no vector, the
   book's has the vector and no PNG, and the PNG the app drew is 240 x 120 for a 120 x 60 vector — read
@@ -1325,14 +1325,14 @@ proves by writing the *shipped* file back, exporting, and reading the page back 
   Processed markdown is the exception: the app writes that file itself, so it keeps the URL rather than
   a path into the run's folder.
   **A URL behind a login is answered already**: the app's own fetch fails (`export_fetch_image`), the
-  reader is told the URL in the app's own words (`export_flow.ts: fetchedPicture`) and pandoc is left
+  reader is told the URL in the app's own words (`workflow/flow.ts: fetchedPicture`) and pandoc is left
   the address to warn about if it wants to.
   **A destination that is not a picture at all is the silent one, and the app says it now.** A
   `data:` URL of something that is not an image is carried into a docx as `word/media/rId10.txt` with
   *no warning at all*, and a pdf is left to pandoc's own complaint about the file it made of it
   (`Cannot load file`, `Jpeg Invalid marker used`, naming a temporary path the reader has never seen).
   The app reads the *note*, not the machine, for this one — a `data:` URL is the only destination whose
-  kind is written down in the text — so `ui/export/picture_hint.ts` is a rule about the note
+  kind is written down in the text — so `ui/export/assets/picture_hint.ts` is a rule about the note
   (`check-picture-hint.mjs` holds it, `export-picture-hint.js` holds the line on the card), and the card
   names the destination before the export runs. It does **not** refuse it and does not edit it: the
   file is written, and the reader is told which destination is no picture — the way the font hint names

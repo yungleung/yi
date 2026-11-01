@@ -8,7 +8,7 @@
  * become command ids in one place.
  */
 
-import type { AppEventName } from '../../services/app_events';
+import type { AppEventName } from '../../services/events';
 import type { CommandId } from '../contracts';
 
 /** The menu event names the app sends, and the command each one runs. */

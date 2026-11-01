@@ -101,7 +101,7 @@ export function readFrontmatterId(content: string): string | null {
 /**
  * The `lang` the frontmatter gives, or null — the language the *note* is written in, which is not
  * the language the app is speaking. An export hands pandoc the app's own language when the note is
- * silent (`ui/export/export_flow.ts`), so a note that says one has to be read here rather than
+ * silent (`ui/export/workflow/index.ts`), so a note that says one has to be read here rather than
  * overruled there.
  */
 export function readFrontmatterLang(content: string): string | null {

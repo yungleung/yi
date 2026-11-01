@@ -26,18 +26,18 @@ in the same change that moves a module.
 | --- | --- | --- |
 | Syntax (pure, no DOM) | `src/ui/markdown/document/block_scanner.ts`, `block_scan_rules.ts`, `src/ui/markdown/document/blocks.ts` and `src/ui/markdown/syntax/**` | walk source lines, split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
 | Document | `document/state.ts` (text, revision, history and target-owner), `document/blocks.ts` (block model), `document/block_parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (window orchestration), `renderer_dom.ts` (root/block DOM), `renderer_measurements.ts` (height policy), `renderer_geometry.ts` (scroll/spacers), `renderer_block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts`, with `editor_render_context.ts` adapting services, `editor_page_layout.ts` owning A4/column scale, and `editor_view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
+| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode.ts`, `format*.ts`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode.ts` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
 | Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path; pointer, preview and clipboard listeners remain one ordered browser boundary |
-| Events | `src/events/local_bus.ts` and `src/services/event_manager.ts` over the payload/boundary map in `src/services/app_events.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
+| Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
 through the app's own file commands (`src-tauri/src/files/`, wrapped in `src/api/files.ts`)
 and it re-reads the disk after a change instead of patching its own rows. What a row may be
-offered is a pure model (`src/ui/workspace/tree_menu_model.ts`), what a rename selects and
-which drops are allowed are pure rules (`src/ui/workspace/tree_rules.ts`), and a row's name
-is edited where it sits, without moving the tree (`src/ui/workspace/tree_rename.ts`).
+offered is a pure model (`src/ui/workspace/tree/menu_model.ts`), what a rename selects and
+which drops are allowed are pure rules (`src/ui/workspace/tree/rules.ts`), and a row's name
+is edited where it sits, without moving the tree (`src/ui/workspace/tree/rename.ts`).
 The dev server must not watch that folder: the app is opened on `test/fixtures/workspace`
 in development, and a tree write there is a file change Vite would answer with a full page
 reload (`vite.config.ts` ignores it), while a row is barred from being a native drag source
@@ -53,13 +53,13 @@ page and a picture inserted into it could not be written (measured: *"forbidden 
 allowed on the scope for `allow-read-text-file`"*). So `src-tauri/src/access.rs` grants the folders the
 app is *working in* at run time: the config's own — the workspace, the pictures folder, the library's —
 where the config is read (`settings.rs`), and a document's own before the session reads it
-(`api/files.ts: grantFolder`, called from `session_files.ts: readDocumentFile` and
-`session_persistence.ts: loadPersistedSession`), which is what a workspace, or a note, outside
+(`api/files.ts: grantFolder`, called from `session/files.ts: readDocumentFile` and
+`session/persistence.ts: loadPersistedSession`), which is what a workspace, or a note, outside
 `$HOME` needs. Nothing else is granted, and `workspace-outside-home.js`
 holds both halves.
 
 A **first start** has no workspace, and the app now says so rather than waiting to be asked: the
-rule is `services/workspace_setup.ts` (`needsWorkspaceQuestion` over the config's `workspace` and
+rule is `services/workspace/setup.ts` (`needsWorkspaceQuestion` over the config's `workspace` and
 its new `workspace_asked`), the card and the flow are `src/ui/workspace_setup/`, and
 `main.ts: initializeConfig` asks **before** the session restores a document — a restored document
 opens into a window that has to know its folder. The card says where a new workspace would be made
@@ -72,16 +72,16 @@ written.
 
 A first start that restores no document opens the **tutorial** after the workspace question: eight
 markdown documents under `src/ui/tutorial/` (one per catalogue language, chosen by
-`tutorial_rules.ts`), a pathless document with `readOnly: true` and the stable id `yi-tutorial`.
+`tutorial/rules.ts`), a pathless document with `readOnly: true` and the stable id `yi-tutorial`.
 The editor refuses writing commands, typing, paste and replacement; navigation, copy, find and export
-stay. `session_rules.ts: openDecision` treats a read-only current document as replaceable whatever
+stay. `session/rules.ts: openDecision` treats a read-only current document as replaceable whatever
 its text says, so opening a file never asks to push it and never shows *Push and Open*. The same
 document is **Help → Open Tutorial** (`menu.rs` emits `tutorial`; the command is `help:tutorial`).
 `check-tutorial.mjs` holds the language and first-start rules, and `tutorial.js` /
 `tutorial-first-start.js` hold the app behavior.
 
 **Help → Documentation** (`F1`) opens the bundled English template-authoring guide
-`src/ui/documentation/documentation.en.md` through the same pathless read-only reference rule
+`src/ui/documentation/en.md` through the same pathless read-only reference rule
 (`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
 file without a session question. The guide includes Pandoc and TeX installation requirements and
 points to the seven complete packages under `examples/templates/`, including the
@@ -115,12 +115,12 @@ they happened on, with no ✕, gone at the next press (or Escape). A hint's plac
 — a workspace path, which is the row it is found by (`hintPlaceSelector`, escaped) — never as an
 element, because the event bus is Tauri's and its payload is JSON.
 
-Documents are a *session*: `services/session_rules.ts` is the stable facade over pure modules for
-the data model (`session_model.ts`), opening/stack transitions (`session_open.ts`), text/view edits
-(`session_edit.ts`) and file validation (`session_serialization.ts`). They are checked in Node;
-`services/session.ts` is the living state owner, and `session.rs` behind `src/api/session.ts` is
-the file it is written to. `session_editor.ts` adapts the editor view, `session_persistence.ts`
-owns restore/write and folder grants, and `session_files.ts` owns document reads, atomic writes and
+Documents are a *session*: `services/session/rules.ts` is the stable facade over pure modules for
+the data model (`model.ts`), opening/stack transitions (`open.ts`), text/view edits
+(`edit.ts`) and file validation (`serialization.ts`). They are checked in Node;
+`services/session/index.ts` is the living state owner, and `session.rs` behind `src/api/session.ts` is
+the file it is written to. `editor.ts` adapts the editor view, `persistence.ts`
+owns restore/write and folder grants, and `files.ts` owns document reads, atomic writes and
 the Save As sheet. It keeps the document on screen, the stack behind it, and where the reader
 was in each; the editor is a view of it (`captureView`/`restoreView` on the panel,
 `scrollAnchor`/`scrollToAnchor` on the renderer), and the workspace tree hands a clicked file to
@@ -138,13 +138,13 @@ is added before either navigation move, while a read-only reference stays out. T
 membership and savedness directly, tinting stack/saved green, editing amber and the absent/read-only
 states muted.
 Three things bite: a document's id is read at the *top* of it
-(`document_identity.ts` — a note that links to another by id must not become it), a block's
+(`documents/identity.ts` — a note that links to another by id must not become it), a block's
 offset is not the scroller's (a page puts 118px of desk and margin above the prose;
 `virtual_block_renderer.ts: contentTop`), and placing a caret scrolls, so a view restore asserts
 the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
 screen is dropped (`reachable`) — nothing could bring it back.
 
-The frontmatter's `title`, `id` and `lang` are read by the YAML parser in `document_identity.ts`
+The frontmatter's `title`, `id` and `lang` are read by the YAML parser in `documents/identity.ts`
 with the *failsafe* schema, which keeps every scalar as text: a quoted colon, a comment, a folded
 block and an id with leading zeros are all the author's value. A header the parser refuses falls
 back to the old line reader, so a broken note keeps whatever title its `title:` line gives.
@@ -155,22 +155,22 @@ The document manager's catalogue and indexes are invalidated by every create, re
 delete the tree or the new-note flow makes, and by every save (`documentManager.invalidate()`);
 the rebuild itself stays lazy, on the next question about a document.
 
-A **new note** is one command, `file:newMarkdown`. `services/new_document.ts` is the rule: the
+A **new note** is one command, `file:newMarkdown`. `services/new_document/index.ts` is the rule: the
 id's fourteen digits (`YYYYMMDDHHMMSS`, local — an author's own stamp), the four keys every note
 carries (`title` → `Untitle`, `date`, `id`, `keywords` → a one-item list holding `untagged`), the
 template the reader may write (the app config's `new_file_frontmatter`, a string or null for the
 app's own, shown by settings → *New note*) and the range the title's value sits in, so the editor
 can select it. A required key whose value is written *under* it — the keyword list — is the
 reader's and is left alone; one with nothing under it gets the app's. A readable template package
-with a root `metadata.yaml` may also seed one new note. `services/new_document_templates.ts` lists
+with a root `metadata.yaml` may also seed one new note. `services/new_document/templates.ts` lists
 those choices and reads the chosen file; the package's keys win over the configured frontmatter,
 the configured template supplies keys the package omits, and `date`/`id` remain the app's stamps.
-`services/new_document_builtins.ts` adds two app-owned presentation starters,
+`services/new_document/builtins.ts` adds two app-owned presentation starters,
 `builtin:revealjs` and `builtin:beamer`; they carry metadata for an export kind and are not template
 packages in the library.
 The choice belongs to that note only and is never written into `export_templates`; there is a
 template-only card for the tree's *New file*, where the folder is already known.
-`services/workspace_folders.ts`
+`services/workspace/folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/new_document_flow.ts`
 does the four observable things in order — create the file, write the note into it, tell the tree
@@ -194,16 +194,16 @@ deleted but not read or written by the webview; and making a note from a documen
 the stack asks the session's question first, the same one opening a file asks.
 
 A **version** of a workspace is kept with git, and only ever because the reader asked for one:
-*File → Save a Version* is the command `version:save` (`src/ui/versioning/save_version.ts`), and it
+*File → Save a Version* is the command `version:save` (`src/ui/versioning/save.ts`), and it
 is the only action in the app that runs git — no timer, no quit hook, no on-save commit. The facts
 are Rust (`src-tauri/src/versioning/`: `git.rs` finds the one git and runs every command, `facts.rs`
 answers the repository and cloud-risk facts, and `versions.rs` reads a note's versions; which git
 may be run — never by trusting `PATH`, and
 `/usr/bin/git` only when `xcode-select -p` answers; whether the folder is in a repository of its
 own or one above it; whether a cloud drive could reach it; and where the app would keep a git
-directory outside the folder), the decision is pure (`services/versioning.ts: versioningPlan`, over
+directory outside the folder), the decision is pure (`services/versioning/rules.ts: versioningPlan`, over
 `consentFrom` and the config's `versioning`/`versioning_workspace` — an answer given for another
-folder is *no answer*), and the doing asks the plan's own question first (`versioning_dialog.ts`,
+folder is *no answer*), and the doing asks the plan's own question first (`versioning/dialog.ts`,
 the two hands `ui/prompt.ts` has), refuses a note with no file in one sentence, captures the
 editor's text and writes it atomically (`files/atomic.rs: write_atomically` — temp file plus rename, the
 shape the session's own write uses too, so a cloud or git client reading mid-save never sees half a
@@ -225,16 +225,16 @@ is the note's own name and the minute it was asked for, because that message —
 own comment under it — is what the app's own list of versions shows.
 
 **The versions of the note on screen** are shown, not just kept. The status bar's left group holds
-a button (`ui/versioning/version_status.ts`) that is there exactly when the reader agreed to
+a button (`ui/versioning/status.ts`) that is there exactly when the reader agreed to
 versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
 never runs git — and hidden otherwise, showing the newest version's stamp
-(`services/versioning.ts: versionStamp`). The button's own word is the *state*: the newest version's
+(`services/versioning/rules.ts: versionStamp`). The button's own word is the *state*: the newest version's
 stamp when what is on screen is that version, and `version.unversioned` ("Not in a version") when it
 is not (`versionedNow`: the newest version's text, read once with the history, against what the
 editor holds — so a keystroke changes it), or "No versions yet" when there is nothing to compare
 with at all.
 
-Pressing the button reads once and opens `ui/versioning/version_history_modal.ts` only when the
+Pressing the button reads once and opens `ui/versioning/history_modal.ts` only when the
 history is `ready` and holds at least one version. A note with no file, no repository, no versions,
 or an unreadable history opens nothing; the status button already says there is nothing to show.
 The modal is modelled on the template editor: a centred panel, a history sidebar on the left, and
@@ -242,7 +242,7 @@ the selected version's diff in the right column. Rows show the stamp once above 
 the title alone; the app-written ` · stamp` suffix remains in Git's subject but is hidden from this
 row. Rows also show the comment, newest first; the newest is selected on open. Choosing another row
 changes the selection and the right column without closing the modal. The living list is
-`services/versions.ts`: it reads through
+`services/versioning/versions.ts`: it reads through
 `src/api/versioning.ts` when the document's *path* changes (never on a keystroke), when the
 workspace or the answer changes, and when the modal opens or a version is saved. `saveVersion()`
 awaits the read after a successful commit, so the status stamp changes before the action returns.
@@ -250,11 +250,11 @@ The read is the
 git vocabulary's **fourth call and its first read** —
 `git log --follow --max-count=… --format=%H%x00%at%x00%s%x00%b%x1e -- <path>`, through the same
 `run_git` — and the never-list is unchanged. Saving a version asks what to call it first
-(`version_comment_dialog.ts`, a card with **no native twin**: no system surface answers with a line
+(`versioning/comment_dialog.ts`, a card with **no native twin**: no system surface answers with a line
 of text), and the subject stays exactly what it was while the comment becomes the commit's body.
 
 **A version can be seen and gone back to.** The right column is
-`ui/versioning/version_diff_view.ts`: the whole note as one row per line, drawn from
+`ui/versioning/diff_view.ts`: the whole note as one row per line, drawn from
 `services/text_diff.ts` (the equal ends trimmed only to compute the change; the middle walked for
 its longest common subsequence, removals before additions; past a cap the change is *named* — the
 rule answers a count and the catalogue says the sentence), opening at the first change. The modal
@@ -283,11 +283,11 @@ one item per kind (`src-tauri/src/menu.rs`, built from
 `src-tauri/src/export/kinds/kind_catalogue.rs: KINDS`), and the
 item's own kind travels with the event it emits: *which* kind is being exported is settled in the
 menu, before any card is drawn. That event runs the command `file:export`
-(`src/ui/export/export_flow.ts`). The workflow is split by contract: `export_question.ts` builds the
-card's read-only question, `export_request.ts` performs the confirmed answer, `export_bibliography.ts`
-filters a package's native BibTeX, `export_paths.ts` owns output-name and search-folder rules, and
-`export_notice.ts` reports the finished result. What the command opens is a card whose workflow lives
-in `src/ui/export/export_dialog.ts` and whose form lives in `src/ui/export/export_form.ts`
+(`src/ui/export/workflow/flow.ts`). The workflow is split by contract: `workflow/question.ts` builds the
+card's read-only question, `workflow/request.ts` performs the confirmed answer, `workflow/bibliography.ts`
+filters a package's native BibTeX, `workflow/paths.ts` owns output-name and search-folder rules, and
+`workflow/notice.ts` reports the finished result. What the command opens is a card whose workflow lives
+in `src/ui/export/dialog/index.ts` and whose form lives in `src/ui/export/dialog/form.ts`
 **about that one kind**: the target the file is written to, and the
 **conversion settings** file the reader may edit — a button reveals it in its folder
 (not "opened in your editor": which editor a file belongs to is the reader's own arrangement). The
@@ -304,7 +304,7 @@ levels belong to the note and the app's body rules, not to a defaults file. A re
 is still never rewritten, so an older copy may keep another value. A row also says what the *window*
 owes a kind's **body**: a book's
 keeps the note's own level-1 heading, the note's name standing in it when the note keeps that heading in
-its frontmatter `title:` (`src/ui/export/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
+its frontmatter `title:` (`src/ui/export/pipeline/book_body.ts`, the kind's `names_its_body`) — the EPUB writer
 would otherwise make a heading of its own, level 1, out of the book's name *outside* the document pandoc
 makes identifiers unique in, and a section of the note that repeats the name is then the same id twice,
 which epubcheck reports and `test/checks/check-epub-valid.mjs` fails on — while every other kind is
@@ -321,14 +321,14 @@ second — unticked every time, so it changes nothing for a reader who never tou
 writes are told in metadata (`--metadata suppress-bibliography=true`, passed only when there is a library;
 measured, the same word under `variables:` does nothing), and the app's own hand writes no list at all.
 The card also names a picture it cannot use: an image destination that is a `data:` URL of something
-which is not an image (`src/ui/export/picture_hint.ts` — the note says the kind, so no machine is
+which is not an image (`src/ui/export/assets/picture_hint.ts` — the note says the kind, so no machine is
 asked). The export is written either way; measured, pandoc carries such a destination into a docx as a
 `.txt` without a word, which is why the reader hears it from the app instead.
 And whether a picture survives **as it is** is the *kind's* answer
 (`export/kinds/kind_model.rs: carries_pictures`): an
 HTML page and a book keep an SVG and a webp, the app's own hand leaves the note's destinations as written,
 and a Word file, an OpenDocument file, a TeX page or its `.tex` get a PNG the app draws itself
-(`src/ui/export/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
+(`src/ui/export/assets/raster_picture.ts` — the webview's canvas, twice a vector's own size and a webp's own, in a
 folder of the app's own that the run removes). Pandoc draws a vector only where the machine happens to
 have a rasteriser, and carries a webp as a file none of a Word file's five types promises; the app draws
 both where the kind needs it. A picture **on the web** follows the same rule: an SVG or a webp is
@@ -346,9 +346,9 @@ written in**, because a page has no font fallback: a character outside the font 
 none of the words). **This build draws those scripts itself.** It ships eight faces under
 `src-tauri/assets/fonts/` (`bundle.resources` in `tauri.conf.json`, so `tauri-build` also puts them in
 the target folder a development run resolves as its resource directory) — one per script, OFL, with the
-licence beside them — and `src-tauri/src/fonts/bundled.rs` is the stable facade over
-`bundled_faces.rs` (face/slot catalogue), `bundled_header.rs` (settings and LaTeX family generation)
-and `bundled_coverage.rs` (cmap-derived Unicode coverage). It writes a header of its own,
+licence beside them — and `src-tauri/src/fonts/bundled/mod.rs` is the stable facade over
+`bundled/faces.rs` (face/slot catalogue), `bundled/header.rs` (settings and LaTeX family generation)
+and `bundled/coverage.rs` (cmap-derived Unicode coverage). It writes a header of its own,
 `assets/export/pdf-fonts.tex`, into `<app data>/export/pdf-fonts.tex` before **every** PDF export (it
 names the faces by absolute path, so a moved app would otherwise leave a header pointing at a bundle
 that is gone) and hands it to pandoc as `--include-in-header`, which pandoc *adds* to whatever the
@@ -436,7 +436,7 @@ The two halves come from the two places that
 hold them: **the file**, which the Rust side reads (`export_named_fonts`, `named_fonts` — the reader's
 copy, or the shipped bytes when they have not exported that kind yet, comments counting for nothing
 because a shipped header talks about fonts at length), and **the note**, which the window walks out of
-the *parse* (`ui/export/font_hint.ts`), because a formula is not a paragraph: `$\le$` draws with the
+the *parse* (`ui/export/workflow/font_hint.ts`), because a formula is not a paragraph: `$\le$` draws with the
 maths font where a bare `≤` does not. What the TeX suite's own font holds is written down character by
 character there, not by blocks, because the blocks are irregular — measured: `ə` draws and `ʃ ɐ ʰ` do
 not, `← ↑ → ↓` draw and `↔` does not, `√ ∞ ± × ÷` draw and `≤ ≥ ≠ ≈ ∑ ∏` do not, `♪` draws and
@@ -449,31 +449,31 @@ its kind **carries its own name** (a book's title page and its
 the note's own name and language whatever the kind is, and the row decides whether they are used —
 measured, a docx whose body already opens with the note's own heading says that name *twice* if it is
 given one, and a `lang` in a LaTeX run picks a hyphenation package by language. And every kind shares
-one **pre-process** (`src/ui/export/preprocess.ts`), which is the app's own reading
+one **pre-process** (`src/ui/export/pipeline/preprocess.ts`), which is the app's own reading
 of the note rather than pandoc's guesses: each wikilink written as the words it renders as, and each
 image's destination written as the file the app resolves it to (absolute and encoded, through
-`workspace_folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
+`workspace/folders.ts: destinationPaths` — the very rule the renderer finds the picture with, so
 what the docx embeds is what the page showed). A picture written as a web URL is kept as that URL
 for HTML: the author's address must not become a temporary file that disappears after the run. For
 the other pandoc kinds it is fetched by the app with an in-process `reqwest` request, because a
 pandoc built without HTTP support cannot fetch it at all; those files land in
 `<data>/export/tmp/remote/` and go at the end of the run. When an HTML page is not self-contained,
-`export/html_media/` copies the note's local pictures to `<output>.assets/` and rewrites their
+`export/html/media/` copies the note's local pictures to `<output>.assets/` and rewrites their
 `src`; web URLs and data URIs are untouched — and a third rule, for the kind
 pandoc is not the one converting for: each citation written as the words it reads as, with the works
-it names listed under them (`services/bibliography.ts: format`, `referenceList`), because that kind
+it names listed under them (`services/bibliography/index.ts: format`, `referenceList`), because that kind
 has no citeproc behind it. Those rules walk the *parse*,
 so a `[[…]]` in a fence or in code, and an image inside one, stay exactly as written. The app's
 scratch note (written under its data folder, because pandoc reads files) is deleted whether pandoc
 succeeded or not — and pandoc's own warnings are **kept** (`ExportOutcome.warnings`) and shown to the
 reader as a message, so a document missing a piece says why instead of leaving a hole.
-The pre-process delegates image resolution to `ui/export/image_rewrites.ts`, listing output to
-`ui/export/listing_markdown.ts`, and shared Markdown escaping to
-`ui/export/markdown_escaping.ts`.
+The pre-process delegates image resolution to `ui/export/pipeline/image_rewrites.ts`, listing output to
+`ui/export/pipeline/listing_markdown.ts`, and shared Markdown escaping to
+`ui/export/pipeline/markdown_escaping.ts`.
 
 The same pre-process lowers listings: HTML/EPUB/DOCX/ODT get one identified `.listing` Div with a
 visible `.listing-caption` paragraph, processed Markdown gets an HTML figure, and LaTeX/PDF keep
-native fenced shapes. `ui/export/reference_header.ts` writes the document's configured caption
+native fenced shapes. `ui/export/reference/reference_header.ts` writes the document's configured caption
 names and literal counter prefixes into a temporary header, which Rust writes beside the run note
 and passes as a second `--include-in-header`; empty prefixes leave native counters alone, while list
 labels stay Yi-generated.
@@ -508,7 +508,7 @@ read-only view in the package editor. A package belongs to one export kind. `ass
 file, and `deliver` names the TeX support subset (`.cls`, `.sty`, `.bst`, `.bbx`, `.cbx`). A LaTeX
 export copies the whole `assets` tree beside its `.tex`, not only that subset, so a figure or data
 file the template names travels too. Pictures the note itself names are made portable by
-`src/ui/export/latex_images.ts` and copied by `run/delivery.rs`: a local picture that replaces a package asset
+`src/ui/export/assets/latex_images.ts` and copied by `run/delivery.rs`: a local picture that replaces a package asset
 keeps the same relative path and its bytes win, while other local pictures go under
 `<output-stem>.assets/`; Pandoc never sees an absolute note path in the finished `.tex`.
 
@@ -555,8 +555,8 @@ opened for. A package whose manifest cannot be read remains available for read-o
 removal; when its kind cannot be read either, the Export Manager lists it once under **Unassigned**.
 **File → Manage Export Templates…** opens one kind-first manager from the typed
 `manage_export_templates` menu event and `export:manageTemplates` command. The manager and the export
-card share `src/ui/export/templates/package_browser.ts` for package operations and
-`package_rows.ts` for row presentation; the manager owns the selected kind,
+card share `src/ui/export/templates/browser.ts` for package operations and
+`rows.ts` for row presentation; the manager owns the selected kind,
 inspected package, defaults state and active-package writes, while the card owns transient per-export
 choices. The manager changes only the existing `AppConfig.export_templates` map and existing
 `export.{kind}.yaml` files, never a session document or a second package registry.
@@ -606,7 +606,7 @@ The Rho Class example preserves the original callout title as a bold lead-in ins
 native Note/Information environment and constrains its figure to 70% of the two-column text width.
 
 **A native-BibTeX LaTeX package receives a cited-only bibliography from Settings → Citation.**
-`src/ui/export/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`
+`src/ui/export/reference/native_bibliography.ts` recognizes package defaults with a `bibliography: …bib`
 target and a filter list that does not contain `citeproc` (the example also sets
 `cite-method: natbib`). It reads citation keys through the same Markdown parser the editor uses,
 filters the selected BibTeX or CSL-JSON library, and converts the result to BibTeX. The shared
@@ -619,8 +619,8 @@ falling back. `export-template-native-bibliography.js` drives both a `.bib` and 
 through the running app and proves uncited works do not reach the source tree.
 
 The editor is `src/ui/export/templates/editor.ts`, a panel that never becomes the markdown editor or
-a session document. `template_code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
-`StreamLanguage`, line numbers, search, undo, bracket matching), while `template_file_list.ts` draws
+a session document. `templates/code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
+`StreamLanguage`, line numbers, search, undo, bracket matching), while `templates/file_list.ts` draws
 editable and binary rows. The panel owns loading, dirty state, discard confirmation, atomic save and
 **Validate** / **Test PDF**; binaries remain read-only with *Open in system*. The same panel edits a
 kind's defaults YAML, which is why the export card's old
@@ -634,7 +634,7 @@ packaging, and `template-examples.js` validates and exports the seven authoring 
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is
-named in `virtual_block_renderer.ts`, and `editor_page_layout.ts` scales it to fit the pane —
+named in `virtual_block_renderer.ts`, and `editor/page_layout.ts` scales it to fit the pane —
 the sheet, its margin and its type take one `--page-scale`, capped at 1, so a
 narrow window gets a smaller page rather than a sideways scroll). It is one of *two*
 layouts: `data-layout="auto"` on the scroller is the column at the pane's width, the editor
@@ -697,8 +697,8 @@ the same appearance. The shared `nodes/caption.ts` numbers table and list captio
 complete line from any point on its row. At the caption source's start, `Enter` adds the separator
 and `Backspace` removes it.
 `document/reference_index.ts` counts every captioned table but targets only one with an ID. The
-non-LaTeX lowering lives in `ui/export/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
-`\yiTableRef`, written by `ui/export/reference_header.ts` and the run-local Rust header file.
+non-LaTeX lowering lives in `ui/export/pipeline/table_rewrites.ts` and `table_html.ts`; LaTeX/PDF get
+`\yiTableRef`, written by `ui/export/reference/reference_header.ts` and the run-local Rust header file.
 Shipped LaTeX/PDF templates expand `$header-includes$`, and their table filters preserve the caption
 and ID as `\caption` and `\label`. `table-caption-crossrefs.js`, the table editing probes, and
 `table-crossrefs-default-document.js` hold the editor behavior; the export probes hold each kind,
@@ -712,7 +712,7 @@ attributes are unfinished. Plain or environment math is lowered before KaTeX so
 no native automatic tag can depend on virtualization. `create_block.ts` and
 `nodes/equation.ts` render one Yi-owned number or the exact, clickable wrapper source;
 `document/reference_index.ts` indexes only labeled blocks.
-`ui/export/equation_rewrites.ts` gives every HTML/EPUB/DOCX/ODT display equation
+`ui/export/pipeline/equation_rewrites.ts` gives every HTML/EPUB/DOCX/ODT display equation
 one full-width row with the formula first and a minimum-width, left-aligned second cell;
 only a label fills that cell. `equation_html.ts` gives processed-Markdown MathML
 the same layout, and LaTeX/PDF get one outer `equation` with `\yiEquationRef`.
@@ -767,7 +767,7 @@ so its choice edits only that inner opening. A Div body inserts one newline per
 Enter after the child list/table/code/equation rules decline it, and a single
 backtick is literal there while three typed backticks open a nested code fence.
 accepts repeated blank lines with the caret left on the newest.
-`ui/export/callout_rewrites.ts` lowers both authoring forms to one semantic
+`ui/export/pipeline/callout_rewrites.ts` lowers both authoring forms to one semantic
 `.callout` / `.callout-<kind>` / `.callout-title` Div before all overlapping
 source rewrites, so template Lua filters receive one stable AST shape.
 `callout-rendering.js`, `callout-empty-navigation.js`, `quote-enter.js`, `quote-list-enter.js`, the
@@ -807,7 +807,7 @@ it). It is the same rule a click that opens a source already follows: a rebuild 
 is not a request to move the page.
 
 **A document opened with nothing remembered is opened without a caret.** The view the session
-hands over is the truth about where the reader was (`services/session_rules.ts`: `caret: null` when
+hands over is the truth about where the reader was (`services/session/rules.ts`: `caret: null` when
 nothing is remembered, and a remembered one comes back exactly where it was); a caret the app
 invents is one nobody put anywhere, and it *decides what the page shows*, because a node the caret
 is in renders its own markdown — which is how a note that opens on a picture used to open on that
@@ -817,15 +817,15 @@ start: `editing/text_commands.ts: textSelection`), and `test/probes/document-ope
 holds both halves.
 
 An **image** is written by the button beside the link button, one command `edit:insertImage`, and
-the clipboard decides what that means (`ui/image/image_flow.ts`): a destination it is offering — a
+the clipboard decides what that means (`ui/image/flow.ts`): a destination it is offering — a
 web URL, a `file://` URL, a path to an image — is written as `![alt](destination)` where the caret
 is, exactly as a link is; an image on the clipboard opens the app's card
-(`ui/image/image_dialog.ts`, which has **no native twin** because a system surface cannot draw the
+(`ui/image/dialog.ts`, which has **no native twin** because a system surface cannot draw the
 picture) with the pixels drawn in it and a name to type over; a clipboard with neither leaves an
 empty `![]()` for the author. A saved image is drawn on a canvas and written through the file
 plugin — into the folder the settings' **General** tab names, or beside the note when it names none
 — and the text carries a path *relative* to the folder it is read from
-(`services/workspace_folders.ts: destinationForFile`). Reading it back is
+(`services/workspace/folders.ts: destinationForFile`). Reading it back is
 `ui/markdown/image_sources.ts`: a relative destination is resolved against the note's folder first
 and the image folder after it, and a *file* becomes a URL the page may load through Tauri's asset
 protocol (`convertFileSrc`, enabled in `tauri.conf.json` with the `$HOME/**` scope the file plugin
@@ -918,7 +918,7 @@ one — a plain click still opens the link's own source, and a target no documen
 so rather than opened as source. The editor asks through a port with no service in it
 (`ui/markdown/wikilink_open.ts`; the session owns the editor, so the shell answers —
 `ui/editor_panel.ts`), and `test/probes/wikilink-cmd-click.js` holds both gestures.
-An ordinary link takes the same gesture for the *same reason* when its destination is a **path**: a path is not something the webview may be handed, so ⌘-click asks the app for the note it names — the note's own folder first and the workspace root next, with a `%20` spelling resolved (`syntax/link_edits.ts: isFilePath`, `services/workspace_folders.ts`) — and the plain click still opens the link's own source. A `#fragment` and an empty href name no file, so they keep the plain click; a URL keeps the browser's (`test/probes/link-opens-a-note.js`).
+An ordinary link takes the same gesture for the *same reason* when its destination is a **path**: a path is not something the webview may be handed, so ⌘-click asks the app for the note it names — the note's own folder first and the workspace root next, with a `%20` spelling resolved (`syntax/link_edits.ts: isFilePath`, `services/workspace/folders.ts`) — and the plain click still opens the link's own source. A `#fragment` and an empty href name no file, so they keep the plain click; a URL keeps the browser's (`test/probes/link-opens-a-note.js`).
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the
 node itself and stops there, so a listener that waits for it to bubble never sees it. And the card
 is placed from the caret's *range*, never from the span that draws the caret: `scheduleCaret` draws
@@ -933,8 +933,8 @@ it is drawn in.
 
 A **rendered citation is also a place to read**, not only a thing to click: resting the pointer on
 it shows the reference entries the works it names are listed under, in the CSL style and
-bibliography file the settings name — `services/bibliography.ts: reference` over the pure rule in
-`services/citation_reference.ts` (the keys the citation names, each once, only the ones the library
+bibliography file the settings name — `services/bibliography/index.ts: reference` over the pure rule in
+`services/bibliography/reference.ts` (the keys the citation names, each once, only the ones the library
 holds), drawn by `ui/markdown/citation_preview.ts` as one of the floating family's `BesideCard`s.
 It shows the *reference*, not the in-text form the sentence already carries, and a key the library
 does not hold shows no card at all; the citation's own source travels on the rendering
@@ -980,7 +980,7 @@ wherever it stands, since the `)` ends the path, and the words around it stay te
 `\![` and code are left alone, because those characters are meant literally. Its check is
 `check-spaced-destinations.mjs` and its probe is `image-path-with-spaces.js`, which holds the file beside
 the note and the one in the settings' image folder, through the asset protocol to the pixels. The
-same path *copied* may spell the space as `%20`, and `services/workspace_folders.ts` tries the
+same path *copied* may spell the space as `%20`, and `services/workspace/folders.ts` tries the
 spelling that resolves to the file **before** the one as written — a `%2520` URL's 404 is what the
 webview reports as a *load*, so the written spelling would end the search where it stands.
 
@@ -1067,7 +1067,7 @@ marked and for the moment after one is let go, because the key that emptied the 
 the composition already over (`composition_input.ts: markedText`;
 `test/probes/input-method-backspace.js`). A structural edit hands the keyboard back to the seam,
 as do a click and an *undo* — the last is a change that never goes through `applyEdit` and so has
-its hand-back named where it happens (`editor_history.ts: applyEditorHistory`). Ordinary character
+its hand-back named where it happens (`editor/history.ts: applyEditorHistory`). Ordinary character
 typing and an in-place committed word keep the focused seam; blurring and refocusing during a
 burst lost input (`source-burst-editing.js`, `empty-task-composition-burst.js`). Three facts follow
 from the seam: a *document* selection is one inside

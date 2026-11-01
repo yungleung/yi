@@ -31,11 +31,11 @@ export interface ExportKindInfo {
   needs_a_language: boolean;
   /**
    * Whether the kind's body keeps the note's own level-1 heading, its name standing in it when the
-   * note writes none: the EPUB, which the window hands a body of its own (`ui/export/book_body.ts`).
+   * note writes none: the EPUB, which the window hands a body of its own (`ui/export/pipeline/book_body.ts`).
    */
   names_its_body: boolean;
   /** Whether the kind's output can hold a picture as it is — an SVG or a webp; for the kinds that
-   * cannot, the window draws a PNG itself (`ui/export/raster_picture.ts`). */
+   * cannot, the window draws a PNG itself (`ui/export/assets/raster_picture.ts`). */
   carries_pictures: boolean;
   /** Whether the card offers a page size and an orientation for this kind. */
   takes_a_page_size: boolean;
@@ -167,7 +167,7 @@ export async function restoreExportConfig(kind: string): Promise<string> {
 /**
  * What a kind's conversion settings name: whether the kind's output is typeset with those fonts, and
  * whether a font is named for the document as a whole or for CJK — the facts the card's font hint is
- * built from (`ui/export/font_hint.ts`, which owns the characters).
+ * built from (`ui/export/workflow/font_hint.ts`, which owns the characters).
  */
 export interface NamedFonts {
   needs_a_font: boolean;

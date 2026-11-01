@@ -1,7 +1,7 @@
 /**
  * The app's events: every name something emits or listens for, and the payload it carries.
  *
- * Two kinds arrive on the same bus (`event_manager.ts`, over Tauri's own events):
+ * Two kinds arrive on the same bus (`events/manager.ts`, over Tauri's own events):
  *
  * - **the app's own**, emitted by the frontend — the workspace changed, a version was read, the
  *   editor was typed in — whose names are constants in the module that emits them, so a listener

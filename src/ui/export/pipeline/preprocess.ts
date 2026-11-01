@@ -103,7 +103,7 @@ export interface ExportAnswers {
   /**
    * The PNG the app drew for a destination this kind cannot carry as it is — an SVG or a webp — or
    * null. Asked *first*: a picture survives as itself only where the output holds it
-   * (`raster_picture.ts`).
+   * (`assets/raster_picture.ts`).
    */
   rasterised?: (destination: string) => string | null;
   /**

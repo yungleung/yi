@@ -12,7 +12,7 @@
  * answers, and the language is one the window has to answer by reloading itself — while the folder
  * waits for the tab's Save, because its value is text the reader is still typing. The versioning
  * switch is a switch like the stack's, with one thing asked before it may be turned on: the same
- * question the action asks (`versioning_dialog.ts`), because consent belongs to a folder and this
+ * question the action asks (`versioning/dialog.ts`), because consent belongs to a folder and this
  * window is the reader's other way to give it.
  *
  * May import: the config manager, the dialog plugin's folder picker, and the component base.

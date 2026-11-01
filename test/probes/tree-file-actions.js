@@ -4,7 +4,7 @@
  *
  * The menu is native and nothing but a person can choose an item of it
  * (`docs/testing.md`), so the *contents* are held by `check-tree-menu.mjs` and the actions
- * are driven here through `tree_ops.ts`, the module the menu's items run. The opener that
+ * are driven here through `workspace/tree/ops.ts`, the module the menu's items run. The opener that
  * reveals a file is stood in for through the page's `fetch`, the way `footnote-preview.js`
  * stands in for the opener, so a probe never opens a file manager. The delete's own question
  * needs no standing in for: the app's prompt (`ui/prompt.ts`) answers a probe on a card in the

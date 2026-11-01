@@ -13,7 +13,7 @@
  * about what they look like. Reading a reference must not touch the document, so the last check is
  * the text itself.
  *
- * @covers src/ui/markdown/citation_preview.ts, src/services/bibliography.ts,
+ * @covers src/ui/markdown/citation_preview.ts, src/services/bibliography/index.ts,
  *   src/services/bibliography/reference.ts
  * @needs-workspace
  */

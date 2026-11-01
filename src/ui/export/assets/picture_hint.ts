@@ -2,7 +2,7 @@
  * The pictures in a note that an export cannot use **as pictures**: an image whose destination is a
  * `data:` URL naming something that is not an image.
  *
- * The card's hint is this rule's only reader (`export_dialog.ts`), and what it answers with is the
+ * The card's hint is this rule's only reader (`dialog/index.ts`), and what it answers with is the
  * destinations themselves — what the export would carry as a file rather than draw — not what to do
  * about it, which is an edit only the reader can make.
  *

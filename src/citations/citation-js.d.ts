@@ -2,7 +2,7 @@
  * The types `@citation-js/core` does not ship: what a `Cite` instance the app builds can format.
  *
  * May import: nothing. Upholds: one declaration of the citation library's surface, so the formatter
- * (`services/bibliography.ts`) is typed against what it actually calls.
+ * (`services/bibliography/index.ts`) is typed against what it actually calls.
  */
 
 declare module '@citation-js/core' {
@@ -28,7 +28,7 @@ declare module '@citation-js/core' {
   /**
    * The library's plugin register, and the one thing the app asks it: the configuration a plugin
    * registered under its own name — `@csl` holds the CSL styles the formatter can use
-   * (`services/bibliography.ts: cslForExport`).
+   * (`services/bibliography/index.ts: cslForExport`).
    */
   export const plugins: {
     config: { get(name: string): unknown };

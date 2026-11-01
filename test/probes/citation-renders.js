@@ -1,12 +1,12 @@
 /**
  * A citation draws the reference its bibliography holds, not the source it was written as.
  *
- * The formatting is the app's (`services/bibliography.ts`), and the node does not import it: the
+ * The formatting is the app's (`services/bibliography/index.ts`), and the node does not import it: the
  * renderer hands it in through the render context (`ui/markdown/render_context.ts`). This holds that
  * seam — if the context were never set, the node would draw its own source instead.
  *
  * @covers src/ui/markdown/render_context.ts, src/ui/markdown/nodes/citation.ts,
- *   src/services/bibliography.ts
+ *   src/services/bibliography/index.ts
  * @needs-workspace
  */
 (async () => {

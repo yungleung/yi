@@ -3,7 +3,7 @@
  * the tree that has registered itself as the host.
  *
  * The host is a module-level registration rather than an argument so that the whole app
- * runs one of each (`tree.ts` registers on construction) and a probe can run the same
+ * runs one of each (`index.ts` registers on construction) and a probe can run the same
  * actions by importing this module — the probe helper `t.app` hands back the instance the
  * page is running, not a second copy.
  *
@@ -50,7 +50,7 @@ export interface TreeHost {
 
 let host: TreeHost | null = null;
 
-/** The tree on screen. Called by `tree.ts` when it is built. */
+/** The tree on screen. Called by `index.ts` when it is built. */
 export function setTreeHost(next: TreeHost): void {
   host = next;
 }
@@ -60,7 +60,7 @@ export function setTreeHost(next: TreeHost): void {
  *
  * A change made by another module — a new note, whose file the app wrote itself — leaves the
  * tree showing what the disk held a moment ago, and this is how it is told. The host owns the
- * rule of *which* rows are touched (`tree.ts: refreshFolders`), so the caller names only the
+ * rule of *which* rows are touched (`index.ts: refreshFolders`), so the caller names only the
  * folders it changed.
  */
 export async function refreshTreeFolders(paths: string[]): Promise<void> {

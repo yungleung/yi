@@ -3,7 +3,7 @@
  *
  * Two readers ask the parse this and nothing else: the export pre-process, which rewrites the text
  * under those offsets (`preprocess.ts`), and the card's font hint, which reports the characters they
- * hold (`font_hint.ts`). A node the parser gave no position is skipped — it cannot be pointed at in
+ * hold (`workflow/font_hint.ts`). A node the parser gave no position is skipped — it cannot be pointed at in
  * the text, so there is nowhere to write or report its answer.
  *
  * May import: the AST and the position type. Upholds: one answer to *where is that node*, so two

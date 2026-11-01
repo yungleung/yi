@@ -4,7 +4,7 @@
  *
  * A refusal is the pointer's business as much as the disk's: the row must not show itself
  * as a target, and nothing may move either. The drag is driven with the pointer's own
- * events, which is what the tree listens for (`tree_drag.ts`).
+ * events, which is what the tree listens for (`workspace/tree/drag.ts`).
  *
  * The probe makes its own workspace under `/private/tmp` with the app's own commands and
  * removes it again.

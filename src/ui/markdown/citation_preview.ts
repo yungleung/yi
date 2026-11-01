@@ -4,7 +4,7 @@
  *
  * It is the answer to "what is this key", so it shows the *reference* — title, venue, year — and
  * not the in-text form, which the sentence already holds. The text is the app's one bibliography
- * (`services/bibliography.ts: reference`), formatted in the CSL style and read from the file the
+ * (`services/bibliography/index.ts: reference`), formatted in the CSL style and read from the file the
  * settings name: nothing is formatted here. What the card is built from is the citation's own
  * source, which the rendering carries (`nodes/citation.ts` sets `data-citation`) because the
  * formatted span no longer holds the keys; a source view carries no such tag, so the citation

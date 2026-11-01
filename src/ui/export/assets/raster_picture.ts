@@ -15,7 +15,7 @@
  * A vector is drawn at twice its own size — a diagram's hairlines and text are drawn for a vector, and a
  * PNG at the vector's own size is the one that loses them — and a webp at its own, since it is already
  * pixels. What is drawn is the file the note's destination names: a local `.svg` or `.webp`, a `data:`
- * URL of one, or the copy of a web picture the app fetched for this run (`export_flow.ts`). A
+ * URL of one, or the copy of a web picture the app fetched for this run (`workflow/flow.ts`). A
  * destination whose file is not there, or whose drawing fails, is answered as nothing: pandoc's own
  * warning about a picture it cannot find is the reader's, and a half-drawn one would be worse.
  *
@@ -38,7 +38,7 @@ export interface PictureLookup {
 /**
  * Whether a destination names a picture this export may have to draw: an SVG or a webp. A destination
  * with another scheme is not the app's to open — a URL is the fetch's business, and by the time this
- * sees a web picture it is the local copy `export_flow.ts` fetched for the run.
+ * sees a web picture it is the local copy `workflow/flow.ts` fetched for the run.
  */
 export function needsDrawing(destination: string): boolean {
   const path = destination.trim();

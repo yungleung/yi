@@ -6,8 +6,8 @@
  * window of its own — it reads the config and the catalogue, and never the editor's state.
  */
 
-import { SettingsWindow } from './ui/settings/settings_window';
-import { eventManager } from './services/event_manager';
+import { SettingsWindow } from './ui/settings/index';
+import { eventManager } from './services/events';
 import { applyLanguage, languageFor } from './services/language';
 import { language } from './services/i18n';
 import { configManager } from './services/config_manager';

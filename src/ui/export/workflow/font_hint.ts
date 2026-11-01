@@ -1,7 +1,7 @@
 /**
  * Which characters of a note no font its conversion settings name can draw.
  *
- * The card's hint is this rule's only reader (`export_dialog.ts`), and what it answers with is a list
+ * The card's hint is this rule's only reader (`dialog/index.ts`), and what it answers with is a list
  * of the note's own characters — what the conversion would lose, not what to do about it, which is the
  * reader's line in the settings file the card names beside it.
  *

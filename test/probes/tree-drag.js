@@ -26,7 +26,7 @@
   const namesIn = async (folder) => (await files.listFolderFiles(folder)).map((item) => item.basename).sort();
   /**
    * Drags `sourcePath`'s row onto `targetPath`'s row, with the pointer's own events —
-   * which is what the tree listens for (`tree_drag.ts`), and what a probe can send.
+   * which is what the tree listens for (`workspace/tree/drag.ts`), and what a probe can send.
    */
   const drag = async (sourcePath, targetPath) => {
     const source = rowFor(sourcePath);

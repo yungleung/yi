@@ -217,7 +217,7 @@ export class BibliographyManager {
   /**
    * The same entries for *all* the works a list of citations names — one per work, in the style's own
    * order — which is the reference list an export appends when the app is the one doing the
-   * conversion (`ui/export/preprocess.ts`), rather than pandoc's citeproc.
+   * conversion (`ui/export/pipeline/preprocess.ts`), rather than pandoc's citeproc.
    *
    * The entries are text, not the card's markup: what they are written into is markdown. A work cited
    * by two different citations is one entry.

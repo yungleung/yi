@@ -5,7 +5,7 @@
  *
  * The menu is native and nothing but a person can choose an item of it (`docs/testing.md`), so
  * the *contents* are held by `check-tree-menu.mjs` and the action is driven here through
- * `tree_ops.ts`, the module the menu's items run — which is also the module that hands a new
+ * `workspace/tree/ops.ts`, the module the menu's items run — which is also the module that hands a new
  * note to the app's own command (`file:newMarkdown`).
  *
  * The workspace is the probe's own, at `~/yi-probe-tree-create`: the app writes a new note

@@ -202,7 +202,7 @@ class DocumentSession {
    * A file's own text read and opened: what a click on a row of the tree and a ⌘-click on a
    * wikilink both mean, and the one place the two agree about how a path becomes the document on
    * screen. Nothing is said about a file that cannot be read — a caller that can name it in its
-   * own message catches this (`ui/workspace/tree.ts` says which file, `ui/editor_panel.ts` says
+   * own message catches this (`ui/workspace/index.ts` says which file, `ui/editor_panel.ts` says
    * which wikilink target), because only it knows what to call the thing that failed.
    */
   async openPath(path: string): Promise<void> {
@@ -232,7 +232,7 @@ class DocumentSession {
     // The file now holds this text: the title and id indexes must read it, not their last answer.
     documentManager.invalidate();
     const id = keyFor(path, content, () => `${this.run}-${++this.madeKeys}`);
-    // A document with a file is keyed by its path (`document_identity.ts: documentId`), so a restore
+    // A document with a file is keyed by its path (`documents/identity.ts: documentId`), so a restore
     // is not "open another document": it is *this* document holding other text now.
     this.state = adoptVersion(this.state, path, content, id);
     const opened = this.current();

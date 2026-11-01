@@ -121,7 +121,7 @@ Triggers only dispatch command ids. They do not implement the work.
 | --- | --- | --- |
 | Key chord | `src/commands/triggers/keymap.ts` | map the chord to a `CommandId`; the editor passes origin `keyboard` |
 | Toolbar | `src/ui/toolbar/` | `runCommand('…', null, 'toolbar')` |
-| Table context menu | `src/ui/table/table_menu.ts` | dispatch the captured target with origin `context-menu` |
+| Table context menu | `src/ui/table/menu.ts` | dispatch the captured target with origin `context-menu` |
 | Native app menu | `src/commands/triggers/native_menu.ts` | map the Rust event to a `CommandId`; the editor passes raw payload with origin `native-menu` |
 
 Typed local callers use `runCommand` or `dispatchCommand`. A transport adapter

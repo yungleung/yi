@@ -2,7 +2,7 @@
  * The bibliography file's text, as the backend reads it.
  *
  * May import: the app's own command seam (`invoke`). Upholds: one call for the file's contents, so
- * what they mean stays with the loader above it (`services/bibliography.ts`).
+ * what they mean stays with the loader above it (`services/bibliography/index.ts`).
  */
 
 import { invoke } from "@tauri-apps/api/core";

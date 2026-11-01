@@ -35,7 +35,7 @@ class MessageCards {
     card.element.setAttribute('role', 'alert');
     const text = document.createElement('span');
     // `whitespace-pre-line`, because a message may be several lines: pandoc's warnings reach the
-    // reader one per line (`ui/export/export_flow.ts`), and a paragraph of them runs together.
+    // reader one per line (`ui/export/workflow/index.ts`), and a paragraph of them runs together.
     text.className = 'min-w-0 flex-1 whitespace-pre-line';
     text.setAttribute('data-message-text', 'true');
     text.textContent = message.text;

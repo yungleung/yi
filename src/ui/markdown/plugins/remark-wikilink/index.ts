@@ -26,7 +26,7 @@ export interface WikilinkNode {
    * Where it stands in the text it was parsed from, which mdast sets on every node built from a
    * token. The editor never needs it — a node is drawn where the renderer put it — but a reader
    * that rewrites the *text* does: an export writes the link's own words into the span this names
-   * (`ui/export/preprocess.ts`).
+   * (`ui/export/pipeline/preprocess.ts`).
    */
   position?: Position;
 }

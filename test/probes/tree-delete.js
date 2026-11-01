@@ -3,7 +3,7 @@
  * goes with everything in it.
  *
  * The menu is native and nothing but a person can choose an item of it
- * (`docs/testing.md`), so the action is driven here through `tree_ops.ts`, the module the
+ * (`docs/testing.md`), so the action is driven here through `workspace/tree/ops.ts`, the module the
  * menu's Delete runs. The *question* the delete asks first is a native dialog, and nothing
  * but a person can answer one — the same limit as the menu — so this probe drives
  * `deleteNow`, the half a yes leaves, and the question itself is a person's check.

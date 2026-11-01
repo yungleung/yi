@@ -146,7 +146,7 @@ Harness flags:
 - **A native menu and a native dialog cannot be driven by a probe** (nor read: nothing can
   choose an item of one but a person). Their *contents* belong in a pure model with a Node
   check (`check-table-menu.mjs`, `check-tree-menu.mjs`), the *actions* behind them are
-  functions a probe runs directly (`runCommand`, `tree_ops.ts`), and the popup or the
+  functions a probe runs directly (`runCommand`, `workspace/tree/ops.ts`), and the popup or the
   question itself is a person's check — say so where the model is checked.
 
 ## The fixture workspace
