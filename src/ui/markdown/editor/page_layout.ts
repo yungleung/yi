@@ -5,12 +5,12 @@
  * Example: a 700 px pane sets `--page-scale` below 1 for the A4 layout; the
  * same pane in `auto` uses scale 1 because the column is measured as written.
  *
- * May import: the event bus and the renderer whose measurements follow the
+ * May import: the host event port and the renderer whose measurements follow the
  * scale. Upholds: the scroller's `data-layout`, CSS custom property and renderer
- * scale change together, and a new scale is emitted only when it differs.
+ * scale change together, and a new scale is reported only when it differs.
  */
 
-import { eventManager } from '../../../services/events';
+import type { EditorEventPort } from '../host';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 
 /** An A4 sheet's width in the CSS pixels the page is laid out in (210 mm at 96 dpi). */
@@ -29,7 +29,8 @@ export class EditorPageLayout {
 
   constructor(
     private readonly contentView: HTMLElement,
-    private readonly renderer: VirtualBlockRenderer
+    private readonly renderer: VirtualBlockRenderer,
+    private readonly events: EditorEventPort
   ) {
     contentView.dataset.layout = this.layout;
     this.pageFitter = new ResizeObserver(() => this.fit());
@@ -50,7 +51,7 @@ export class EditorPageLayout {
     this.layout = layout;
     this.contentView.dataset.layout = layout;
     this.fit();
-    void eventManager.emit(EDITOR_LAYOUT_CHANGED, layout);
+    this.events.layoutChanged(layout);
   }
 
   /**

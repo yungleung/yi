@@ -19,7 +19,6 @@
  * nothing — no edit, no caret, no state.
  */
 
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { BesideCard, boxOf } from '../floating';
 import { isOpenableUrl } from './syntax/link_edits';
 import { footnoteOffsets } from './syntax/footnote';
@@ -28,6 +27,7 @@ import { withRenderFrame } from './source_mode';
 import type { AstFootnoteDefinition } from './ast';
 import type { MarkdownBlock } from './document/block';
 import type { EditorContext } from './editing/context';
+import { openExternalUrl } from './link_opens';
 
 /** How long the pointer has to rest on a marker before the card appears. */
 const DWELL_MS = 200;
@@ -138,7 +138,7 @@ export function installFootnotePreview(context: EditorContext): void {
         event.stopPropagation();
         const href = anchor.getAttribute('href') ?? '';
         if (isOpenableUrl(href)) {
-          void openUrl(href).catch(() => undefined);
+          openExternalUrl(href);
         }
       },
       true

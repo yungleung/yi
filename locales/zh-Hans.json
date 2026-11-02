@@ -235,7 +235,6 @@
   "tree.delete.yes": "删除",
   "tree.delete.no": "保留",
   "message.close": "关闭提示",
-  "completion.empty": "这里没有可选项。",
   "link.openFailed": "无法打开{name}：{message}",
   "wikilink.notFound": "没有名为“{target}”的笔记。",
   "reference.notFound": "没有 ID 为“{id}”的引用目标。",

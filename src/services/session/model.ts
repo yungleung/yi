@@ -9,31 +9,17 @@
  */
 
 import { documentId, documentTitle } from '../documents';
+import type {
+  EditorDocumentView,
+  EditorSeenView
+} from '../../contracts';
 
 /** This build's session format. A file from another one is discarded, not guessed at. */
 export const SESSION_VERSION = 1;
 
 /** Where the reader was in a document. */
-export interface DocumentView {
-  /**
-   * The caret's document offset, or null when the editor cannot say where it is — the block
-   * holding it has been unmounted since — in which case the last offset that *was* known stands.
-   */
-  caret: number | null;
-  /** The far end of a selection, or null for a plain caret. */
-  to: number | null;
-  /** The top of the viewport: the block there, and how far into it the view is scrolled. */
-  scroll: { offset: number; within: number } | null;
-}
-
-/** What the editor can see of where the reader is, for `capture`. */
-export interface SeenView {
-  /** Null when the caret is in a block the window has since dropped. */
-  caret: number | null;
-  /** The far end of the selection, or null when it is a plain caret or cannot be seen. */
-  to: number | null;
-  scroll: DocumentView['scroll'];
-}
+export type DocumentView = EditorDocumentView;
+export type SeenView = EditorSeenView;
 
 export interface SessionDocument {
   /** The id it answers to (`documents/identity.ts`), which is what the stack is keyed by. */

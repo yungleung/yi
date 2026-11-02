@@ -8,18 +8,16 @@
  * the row and not a box floating inside one. It never takes the focus: the author is typing, and a
  * focused card would take the caret out of the document the list is about.
  *
- * May import: the beside-card, the placement types and the app's words. Upholds: what is drawn is
- * the choices it was given, in the order it was given them, and nothing else — the ordering is the
- * rule's (`syntax/completions.ts`).
+ * May import: the beside-card and placement types. Upholds: what is drawn is the choices it was
+ * given, in the order it was given them, and nothing else — the ordering is the rule's
+ * (`syntax/completions.ts`). An empty choice set has no card to draw.
  */
 
-import { t } from '../../services/i18n';
 import { BesideCard, type Box } from '../floating';
 import type { CompletionChoice } from './syntax/completions';
 
 export class CompletionCard extends BesideCard {
   private readonly list: HTMLUListElement;
-  private readonly empty: HTMLParagraphElement;
   private choices: CompletionChoice[] = [];
   private selected = 0;
   private pick: ((choice: CompletionChoice) => void) | null = null;
@@ -40,10 +38,7 @@ export class CompletionCard extends BesideCard {
     // The card's own box clips the rows to its rounded border; the list scrolls when it is longer
     // than the card may be, so a long bibliography does not grow the popover off the window.
     this.list.className = 'menu w-full gap-0 overflow-y-auto p-0';
-    this.empty = document.createElement('p');
-    this.empty.className = 'px-2 py-1 text-xs opacity-70';
-    this.empty.setAttribute('data-completion-empty', 'true');
-    this.element.append(this.list, this.empty);
+    this.element.append(this.list);
   }
 
   /** The value of the row in hand, or null when nothing is offered. */
@@ -64,8 +59,6 @@ export class CompletionCard extends BesideCard {
     this.pick = onPick;
     this.list.replaceChildren();
     this.choices.forEach((choice, index) => this.list.appendChild(this.row(choice, index)));
-    this.empty.textContent = t('completion.empty');
-    this.empty.hidden = this.choices.length > 0;
     this.open();
   }
 

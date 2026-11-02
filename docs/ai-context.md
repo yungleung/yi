@@ -24,11 +24,13 @@ in the same change that moves a module.
 
 | Layer | Files | Job |
 | --- | --- | --- |
+| Shared contracts | `src/contracts/` | neutral editor facts and view shapes consumed by Markdown, events and session without one layer importing another's implementation |
 | Syntax (pure, no DOM) | `src/ui/markdown/document/block/scanner.ts`, `block/scan_rules.ts`, `src/ui/markdown/document/block/model.ts` and `src/ui/markdown/syntax/**` | walk source lines, split text, and the pure rules of editing, heading and code-fence attributes, Pandoc identifiers, captions, listings, and document-owned reference vocabulary |
 | Document | `document/state.ts` (text, revision, history and target-owner), `document/block/model.ts` (block model), `document/block/parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
-| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format/`, with `editor/render_context.ts` adapting services, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
+| Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format/`, with `editor/render_context.ts` adapting the host ports, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
-| Commands | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | keys, menu, toolbar and table-menu actions — one typed command, one name, one dispatch path; pointer, preview and clipboard listeners remain one ordered browser boundary |
+| Markdown editing | `markdown_editor.ts`, `command_api.ts`, `host.ts`, `editing/*`, `editing/editor_interactions.ts`, `click_routing.ts` | synchronous text and command operations, caret behavior and host ports; Markdown imports no application service, API module, command runtime or Tauri plugin |
+| Commands and shell adapters | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `src/ui/markdown_host/*`, `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts`, `ui/session/commands.ts` | register and dispatch the same command id for keys, menus, toolbar and future agent/MCP clients; choose host adapters and keep dialogs, translated status, native menus and external IO outside Markdown |
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
@@ -51,9 +53,13 @@ Markdown editing is grouped by capability under one public entrypoint per domain
 `document/block/`, `editing/text/`, `editing/composition/`, `editing/table/`,
 `caret/navigation/`, `format/`, `nodes/heading/`, `nodes/code/`, `nodes/fence/`,
 `editing/find/`, `syntax/pandoc/` and `syntax/caption/`. Import the domain's `index.ts`
-from outside it; implementation files are internal. The source/text/event contracts stay
-unchanged by these moves, so keyboard, input-method, toolbar and future MCP/agent edits
-still converge on the same command path.
+from outside it; implementation files are internal. `MarkdownHost` supplies citations, document
+lookup, image sources, clipboard reads, events and command triggers. `MarkdownCommandApi` is the
+shell's only editing surface for command registration. `src/ui/markdown_host/` registers those
+operations and installs native-menu dispatch against the app-wide command runtime, so keyboard,
+toolbar and future MCP/agent edits still converge on one command path while Markdown remains
+self-contained. Find presentation and image IO live in the shell; Markdown owns their document
+semantics and narrow APIs.
 
 **And the webview may work where the app is working.** The file plugin and the asset protocol that
 serves a rendered picture start scoped to `$HOME` (`capabilities/default.json`, `tauri.conf.json`), which
@@ -148,13 +154,14 @@ is added before either navigation move, while a read-only reference stays out. T
 membership and savedness directly, tinting stack/saved green, editing amber and the absent/read-only
 states muted.
 Three things bite: a document's id is read at the *top* of it
-(`documents/identity.ts` — a note that links to another by id must not become it), a block's
+(`ui/markdown/document/identity.ts` — a note that links to another by id must not become it), a block's
 offset is not the scroller's (a page puts 118px of desk and margin above the prose;
 `virtual_block_renderer.ts: contentTop`), and placing a caret scrolls, so a view restore asserts
 the scroll two frames later, as `keepScroll` does. A document that is neither stacked nor on
 screen is dropped (`reachable`) — nothing could bring it back.
 
-The frontmatter's `title`, `id` and `lang` are read by the YAML parser in `documents/identity.ts`
+The frontmatter's `title`, `id` and `lang` are read by the YAML parser in
+`ui/markdown/document/identity.ts`
 with the *failsafe* schema, which keeps every scalar as text: a quoted colon, a comment, a folded
 block and an id with leading zeros are all the author's value. A header the parser refuses falls
 back to the old line reader, so a broken note keeps whatever title its `title:` line gives.
@@ -840,17 +847,19 @@ is written, the reader's first click or keystroke places a caret (the keystroke 
 start: `editing/text/index.ts: textSelection`), and `test/probes/document-opens-without-a-caret.js`
 holds both halves.
 
-An **image** is written by the button beside the link button, one command `edit:insertImage`, and
-the clipboard decides what that means (`ui/image/flow.ts`): a destination it is offering — a
+An **image** is written by the button beside the link button, one command `edit:insertImage`. The
+shell flow (`ui/image/flow.ts`) reads the clipboard and decides what the command means: a destination it is offering — a
 web URL, a `file://` URL, a path to an image — is written as `![alt](destination)` where the caret
-is, exactly as a link is; an image on the clipboard opens the app's card
+is, exactly as a link is. Markdown captures that insertion range before the first asynchronous read
+and applies the final text through `MarkdownImageApi` (`ui/markdown/image.ts`). An image on the
+clipboard opens the app's card
 (`ui/image/dialog.ts`, which has **no native twin** because a system surface cannot draw the
 picture) with the pixels drawn in it and a name to type over; a clipboard with neither leaves an
 empty `![]()` for the author. A saved image is drawn on a canvas and written through the file
 plugin — into the folder the settings' **General** tab names, or beside the note when it names none
 — and the text carries a path *relative* to the folder it is read from
 (`services/workspace/folders.ts: destinationForFile`). Reading it back is
-`ui/markdown/image_sources.ts`: a relative destination is resolved against the note's folder first
+`ui/image/urls.ts` through `MarkdownHost.images`: a relative destination is resolved against the note's folder first
 and the image folder after it, and a *file* becomes a URL the page may load through Tauri's asset
 protocol (`convertFileSrc`, enabled in `tauri.conf.json` with the `$HOME/**` scope the file plugin
 already has — so a workspace outside the home directory paints no local images, the same limitation
@@ -888,7 +897,7 @@ test that sets the language and reads the sentence back, and by `check-locales.m
 `src-tauri/src` as well as the webview's tree so a message that uses a key counts as a use of it.
 **Every sentence the backend writes for the reader goes through them now** — the file tree's
 refusals, the export path's, the fonts', the versioning seam's, the settings guard's, the external
-programs' (`app.cannotRun`) and the bibliography's — 419 keys in each of the eight catalogues, and a
+programs' (`app.cannotRun`) and the bibliography's — 418 keys in each of the eight catalogues, and a
 new one is held by the catalogue check
 (used, and present everywhere) and by the unit test that sets a language and reads a sentence back. What
 stays English is what no reader meets: the **Tauri plugins' own** messages (not this app's to
@@ -913,9 +922,11 @@ the citation's key, a reference or link-fragment target's ID, and a document's *
 **file name** when it has none, *not* the title the row shows beside it — so what is written is
 what the resolver reads back (`documentManager.resolve` falls back by name first). Link-fragment
 completion is same-document only: it asks after `](#` and deliberately declines a path such as
-`note.md#section`. The entries come from `bibliographyManager.entries()`,
-`document/state.ts: referenceEntries`, and `documentManager.documents()` — a document's `target`
-is the id or the file name, which is exactly what `resolve` takes. Three things bite. The second
+`note.md#section`. The entries come from `MarkdownHost.citations`,
+`document/state.ts: referenceEntries`, and `MarkdownHost.documents`; the shell adapters behind
+those ports call `bibliographyManager.entries()` and `documentManager.documents()` — a document's
+`target` is the id or the file name, which is exactly what `resolve` takes. An empty result closes
+the completion card instead of drawing a translated empty state. Three things bite. The second
 `[` must write its own pair *in front of* the `]` the first one's pair left after the caret — that
 is what makes `[[` two pairs, `[[]]`, with the caret inside them — and writing only the `[` leaves
 the wikilink one bracket short, which is exactly what Enter then writes into (measured:
@@ -940,7 +951,7 @@ A rendered wikilink is followed by the *same* resolver: ⌘-click (Ctrl-click) a
 its target names and it opens through the session, exactly as a click on a row of the tree opens
 one — a plain click still opens the link's own source, and a target no document answers to is said
 so rather than opened as source. The editor asks through a port with no service in it
-(`ui/markdown/wikilink_open.ts`; the session owns the editor, so the shell answers —
+(`ui/markdown/link_opens.ts`; the session owns the editor, so the shell answers —
 `ui/editor_panel.ts`), and `test/probes/wikilink-cmd-click.js` holds both gestures.
 An ordinary link takes the same gesture for the *same reason* when its destination is a **path**: a path is not something the webview may be handed, so ⌘-click asks the app for the note it names — the note's own folder first and the workspace root next, with a `%20` spelling resolved (`syntax/link_edits.ts: isFilePath`, `services/workspace/folders.ts`) — and the plain click still opens the link's own source. A `#fragment` and an empty href name no file, so they keep the plain click; a URL keeps the browser's (`test/probes/link-opens-a-note.js`).
 And the closing click has to be *captured*: a click that lands on a markdown node is answered by the

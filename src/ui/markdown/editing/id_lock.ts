@@ -6,11 +6,11 @@
  * side are part of the pin because deleting one would join the id to a neighbouring line, which
  * changes it just as surely as typing over it.
  *
- * May import: the identity rule that says where the line is. Upholds: only edits that leave the
+ * May import: the document identity rule that says where the line is. Upholds: only edits that leave the
  * `id:` line byte for byte as it was are allowed through.
  */
 
-import { idLineRange } from '../../../services/documents';
+import { idLineRange } from '../document/identity';
 
 /** Whether replacing `[from, to)` with anything would change the frontmatter's id line. */
 export function editsId(content: string, from: number, to: number): boolean {

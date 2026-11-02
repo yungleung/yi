@@ -235,7 +235,6 @@
   "tree.delete.yes": "削除",
   "tree.delete.no": "残す",
   "message.close": "通知を閉じる",
-  "completion.empty": "ここに出せるものはありません。",
   "link.openFailed": "{name} を開けませんでした: {message}",
   "wikilink.notFound": "「{target}」というノートはありません。",
   "reference.notFound": "ID「{id}」の参照先がありません。",

@@ -32,7 +32,10 @@ function caretTable(
   column: number;
   quotePrefix: string | null;
 } | null {
-  const location = caretLocation(context.state);
+  const location = caretLocation(
+    context.state,
+    context.host.citations.renderedLength
+  );
   if (!location) {
     return null;
   }
@@ -146,7 +149,10 @@ function leaveTableBelow(
  */
 export function tableDeleteIsNoop(context: EditorContext, forward: boolean): boolean {
   const found = caretTable(context);
-  const location = caretLocation(context.state);
+  const location = caretLocation(
+    context.state,
+    context.host.citations.renderedLength
+  );
   if (!found || !location) {
     return false;
   }

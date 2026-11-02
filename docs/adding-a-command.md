@@ -80,35 +80,46 @@ run.
 
 ## 4. Implement and register the behaviour
 
-Implement the work in the module that owns it. Register against the app-wide
-runtime near that behaviour:
+Implement the work in the module that owns it. Editor-owned behavior goes behind
+`src/ui/markdown/command_api.ts`, which is the shell's narrow editing surface;
+Markdown does not import the command runtime. Register the command id against the
+app-wide runtime in the shell adapter that consumes that public API:
 
 ```ts
+// src/ui/markdown_host/commands.ts
 import { registerCommand } from '../../commands/runtime';
+import type { MarkdownCommandApi } from '../markdown/command_api';
 
-registerCommand({
-  id: 'edit:insertRule',
-  run: () => {
-    insertThematicBreak(context);
-    return null;
-  }
-});
+export function registerMarkdownCommands(api: MarkdownCommandApi): void {
+  registerCommand({
+    id: 'edit:insertRule',
+    run: () => {
+      api.insertRule();
+      return null;
+    }
+  });
+}
 ```
 
-A family of commands is registered by looping over the module that owns the
-family:
+A family of commands is registered by looping over the public Markdown
+vocabulary in that adapter:
 
 ```ts
 for (const style of FORMATTING_STYLES) {
   registerCommand({
     id: `format:${style}`,
     run: () => {
-      applyFormatting(context, style);
+      api.applyFormatting(style);
       return null;
     }
   });
 }
 ```
+
+Commands owned by session, export, settings or another shell domain may register
+beside that domain's state owner, as `ui/session/commands.ts` does. The common
+rule is unchanged: one command id has exactly one registration and one dispatch
+path.
 
 Registering one id twice throws during startup. Do not replace an existing
 command from another module.
@@ -119,10 +130,10 @@ Triggers only dispatch command ids. They do not implement the work.
 
 | Trigger | File | Shape |
 | --- | --- | --- |
-| Key chord | `src/commands/triggers/keymap.ts` | map the chord to a `CommandId`; the editor passes origin `keyboard` |
+| Key chord | `src/commands/triggers/keymap.ts` and `ui/markdown_host/commands.ts` | map the chord to a `CommandId`; the host adapter passes origin `keyboard` |
 | Toolbar | `src/ui/toolbar/` | `runCommand('…', null, 'toolbar')` |
 | Table context menu | `src/ui/table/menu.ts` | dispatch the captured target with origin `context-menu` |
-| Native app menu | `src/commands/triggers/native_menu.ts` | map the Rust event to a `CommandId`; the editor passes raw payload with origin `native-menu` |
+| Native app menu | `src/commands/triggers/native_menu.ts` | map the Rust event to a `CommandId`; `installNativeMenuCommandDispatch` passes the raw payload with origin `native-menu` |
 
 Typed local callers use `runCommand` or `dispatchCommand`. A transport adapter
 that has not parsed its payload uses `dispatchRawCommand`.

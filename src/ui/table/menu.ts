@@ -7,8 +7,11 @@
  */
 
 import { runCommand } from '../../commands/runtime';
-import type { TableCommand, TableTarget } from '../markdown/editing/table';
-import type { TableMenuNode } from './model';
+import type {
+  TableCommand,
+  TableMenuNode,
+  TableTarget
+} from '../markdown/editing/table';
 import type { MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 
 /**
@@ -24,7 +27,7 @@ import type { MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu
  * the function, so nothing else in the editor depends on it.
  */
 export async function showTableMenu(
-  nodes: TableMenuNode[],
+  nodes: readonly TableMenuNode[],
   target: TableTarget,
   at: { x: number; y: number }
 ): Promise<void> {

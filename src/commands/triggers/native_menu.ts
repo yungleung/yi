@@ -10,6 +10,7 @@
 
 import type { AppEventName } from '../../services/events';
 import type { CommandId } from '../contracts';
+import { dispatchRawCommand } from '../runtime';
 
 /** The menu event names the app sends, and the command each one runs. */
 export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> = {
@@ -35,4 +36,35 @@ export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> =
 /** The command a menu event runs, or null when the name is not a command. */
 export function commandForMenuEvent(event: string): CommandId | null {
   return MENU_COMMANDS[event as AppEventName] ?? null;
+}
+
+/** Subscribes one native-menu listener without exposing the app event bus. */
+export type NativeMenuSubscription = (
+  event: string,
+  listener: (payload: unknown) => void
+) => void;
+
+/**
+ * Routes every native-menu event through the app-wide command dispatcher.
+ *
+ * Example: Rust emits `undo`; this adapter dispatches `history:undo` and logs
+ * the typed failure when no writable editor is available.
+ */
+export function installNativeMenuCommandDispatch(
+  onNativeMenu: NativeMenuSubscription
+): void {
+  for (const [event, command] of Object.entries(MENU_COMMANDS) as Array<
+    [string, CommandId]
+  >) {
+    onNativeMenu(event, (payload) => {
+      const settled = dispatchRawCommand(command, payload, {
+        kind: 'native-menu'
+      });
+      void Promise.resolve(settled).then((result) => {
+        if (!result.ok) {
+          console.error(`command ${result.commandId}: ${result.message}`);
+        }
+      });
+    });
+  }
 }

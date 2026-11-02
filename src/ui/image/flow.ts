@@ -16,9 +16,9 @@
  * note is a path *relative* to where the image is read from — the note's own folder or the image
  * folder — which is what `urls.ts` resolves again when the image is painted.
  *
- * May import: the clipboard's reads, the app's paths and settings, the image rules, the card, and
- * the editing context. Upholds: the document text is the only source of truth — one `applyEdit`
- * writes the image, and the caret is placed by offset from the text that edit leaves behind.
+ * May import: the clipboard's reads, the app's paths and settings, the image card and the
+ * Markdown editor's public image API. Upholds: this shell flow owns picture IO and dialog choices;
+ * Markdown owns the text insertion and caret.
  */
 
 import { mkdir, writeFile } from '@tauri-apps/plugin-fs';
@@ -29,57 +29,46 @@ import { notify } from '../../services/messages';
 import { documentSession } from '../../services/session';
 import { imageFolderPath } from '../../services/settings_paths';
 import { destinationForFile, joinPath, parentFolder } from '../../services/workspace';
-import {
-  applyEdit,
-  type EditorContext
-} from '../markdown/editing/context';
-import { editorSelection, rangeOffsets } from '../markdown/editing/selection';
-import {
-  clipboardImageDestination,
-  imageInsertion,
-  imageKindFor
-} from '../markdown/syntax/image_edits';
-import { selectionTitle } from '../markdown/syntax/link_edits';
+import { clipboardImageDestination, imageKindFor } from '../markdown/syntax/image_edits';
+import type {
+  ImageInsertionTarget,
+  MarkdownImageApi
+} from '../markdown/image';
 import { imageDialog, type ImageChooser } from './dialog';
+import { registerCommand } from '../../commands/runtime';
 
 /**
  * Writes an image at the caret — or around the selection, whose words become its alt text — or
  * asks, saves and writes one. Returns false when there is no caret to write at.
  */
 export async function insertImage(
-  context: EditorContext,
+  editor: MarkdownImageApi,
   chooser: ImageChooser = imageDialog
 ): Promise<boolean> {
-  // The selection is read before anything is awaited: a slow answer from the clipboard or the
-  // reader cannot leave the insertion at an offset the document has moved out from under it, the
-  // same care `editing/links.ts` takes.
-  const range = editorSelection(context, true);
-  const offsets = range ? rangeOffsets(context, range) : null;
-  if (!offsets) {
+  const target = editor.captureImageInsertion();
+  if (target === null) {
     return false;
   }
-  const selected = selectionTitle(context.state.getText().slice(offsets.from, offsets.to));
 
   const clipboardText = await readClipboardText();
   const offered = clipboardText === null ? null : clipboardImageDestination(clipboardText);
   if (offered !== null) {
-    write(context, offsets, selected.text, await readableDestination(offered));
+    editor.insertImageMarkdown(target, await readableDestination(offered));
     return true;
   }
 
   const image = await readClipboardImage();
   if (image === null) {
-    write(context, offsets, selected.text, '');
+    editor.insertImageMarkdown(target, '');
     return true;
   }
-  return await saveAndWrite(context, offsets, selected.text, image, chooser);
+  return await saveAndWrite(editor, target, image, chooser);
 }
 
 /** Asks where the image is to be called, saves it, and writes the text that shows it. */
 async function saveAndWrite(
-  context: EditorContext,
-  offsets: { from: number; to: number },
-  alt: string,
+  editor: MarkdownImageApi,
+  target: ImageInsertionTarget,
   image: ClipboardImage,
   chooser: ImageChooser
 ): Promise<boolean> {
@@ -116,19 +105,22 @@ async function saveAndWrite(
     notify('Saving the image', error);
     return false;
   }
-  write(context, offsets, alt, destinationForFile(file, await imageFolderPath(), inTheNote));
+  editor.insertImageMarkdown(
+    target,
+    destinationForFile(file, await imageFolderPath(), inTheNote)
+  );
   return true;
 }
 
-/** The one edit: an image at the offsets the reader had, caret at the end of its alt text. */
-function write(
-  context: EditorContext,
-  offsets: { from: number; to: number },
-  alt: string,
-  destination: string
-): void {
-  const insertion = imageInsertion(alt, destination);
-  applyEdit(context, offsets.from, offsets.to, insertion.markdown, offsets.from + insertion.caret);
+/** Registers the shell-owned image flow against the shared image command id. */
+export function registerImageCommand(editor: MarkdownImageApi): void {
+  registerCommand({
+    id: 'edit:insertImage',
+    run: () => {
+      void insertImage(editor);
+      return null;
+    }
+  });
 }
 
 /**

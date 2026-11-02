@@ -6,17 +6,20 @@
  */
 
 import { registerCommand } from '../../../commands/runtime';
-import { exportManager } from './index';
+import type { ExportManager } from './index';
 
 export interface ExportManagerHost {
   focusEditor(): void;
 }
 
-export function registerExportManagerCommand(host: ExportManagerHost): void {
+export function registerExportManagerCommand(
+  host: ExportManagerHost,
+  manager: ExportManager
+): void {
   registerCommand({
     id: 'export:manageTemplates',
     run: async () => {
-      await exportManager.open(host.focusEditor);
+      await manager.open(host.focusEditor);
       return null;
     }
   });

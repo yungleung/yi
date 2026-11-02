@@ -7,7 +7,8 @@
  * match back under the selection, rather than leaving the caret wherever it happens to
  * be. The find path had no probe before this one.
  *
- * @covers src/ui/markdown/editing/find/controller.ts, src/ui/markdown/document/state.ts
+ * @covers src/ui/find/controller.ts, src/ui/markdown/editing/find/session.ts,
+ *   src/ui/markdown/document/state.ts
  */
 (async () => {
   const t = window.__t;

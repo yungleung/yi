@@ -19,7 +19,9 @@ async function bundleModule(input) {
 }
 
 const { readTableSource } = await bundleModule('src/ui/markdown/syntax/table/source.ts');
-const { tableMenuModel } = await bundleModule('src/ui/table/model.ts');
+const { tableMenuModel } = await bundleModule(
+  'src/ui/markdown/editing/table/menu_model.ts'
+);
 
 const failures = [];
 const check = (name, actual, expected) => {

@@ -24,6 +24,7 @@
 
 import type { MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
+import type { CitationService } from '../host';
 import { projectQuoteSource } from '../syntax/container';
 import { readTableSource } from '../syntax/table';
 import { SOURCE_TEXT_SELECTOR } from '../source_text';
@@ -43,12 +44,15 @@ export interface CaretLocation {
 }
 
 /** The caret's location in the document, or null when it cannot be mapped. */
-export function caretLocation(state: MarkdownEditorState): CaretLocation | null {
+export function caretLocation(
+  state: MarkdownEditorState,
+  citationLength?: CitationService['renderedLength']
+): CaretLocation | null {
   const range = getCaretRange();
   if (!range) {
     return null;
   }
-  return documentOffsetAt(state, range.startContainer, range.startOffset);
+  return documentOffsetAt(state, range.startContainer, range.startOffset, citationLength);
 }
 
 /**
@@ -58,7 +62,8 @@ export function caretLocation(state: MarkdownEditorState): CaretLocation | null 
 export function documentOffsetAt(
   state: MarkdownEditorState,
   container: Node,
-  positionOffset: number
+  positionOffset: number,
+  citationLength?: CitationService['renderedLength']
 ): CaretLocation | null {
   const containerNode = container;
 
@@ -184,7 +189,12 @@ export function documentOffsetAt(
   if (renderedOffset === null) {
     return null;
   }
-  const offset = mapRenderedOffset(state.getBlockContent(block), block, renderedOffset);
+  const offset = mapRenderedOffset(
+    state.getBlockContent(block),
+    block,
+    renderedOffset,
+    citationLength
+  );
   if (offset === null) {
     return null;
   }

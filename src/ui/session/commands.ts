@@ -1,10 +1,10 @@
 /**
  * The commands the session owns, registered by their command names.
  *
- * The session is not the editor, so its commands are registered here rather than in
- * `markdown/commands/editor_commands.ts` — but they are the same kind of thing to everything
- * that triggers one: the titlebar's stack buttons, the popover's rows, and the *Save* and
- * *Save As* items at the top of the native menu, which reach the webview as the events
+ * The session is not the editor, so its commands are registered here rather than in the
+ * Markdown command adapter — but they are the same kind of thing to everything that triggers
+ * one: the titlebar's stack buttons, the popover's rows, and the *Save* and *Save As* items
+ * at the top of the native menu, which reach the webview as the events
  * `src/commands/triggers/native_menu.ts` maps here.
  *
  * May import: the registry and the session. Upholds: one command has one name, one home and one

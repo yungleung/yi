@@ -24,7 +24,7 @@ import {
   readFrontmatterFields,
   readFrontmatterId,
   readFrontmatterTitle
-} from './identity';
+} from '../../ui/markdown/document/identity';
 import { eventManager } from '../events';
 import { WORKSPACE_CHANGED } from '../workspace';
 

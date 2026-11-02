@@ -22,26 +22,116 @@
 
 import { BaseComponent } from './component';
 import { eventManager } from '../services/events';
-import { WysiwygMarkdownEditor } from './markdown/markdown_editor';
+import {
+  EDITOR_LAYOUT_CHANGED,
+  INPUT_SOURCE_CHANGED,
+  WysiwygMarkdownEditor
+} from './markdown/markdown_editor';
 import type { EditorLayout } from './markdown/markdown_editor';
 import type { DocumentView, SeenView } from '../services/session';
 import { documentSession } from '../services/session';
 import { documentManager } from '../services/documents';
 import { MESSAGE_EVENT } from '../services/messages';
 import { t } from '../services/i18n';
+import { bibliographyManager, CITATION_UPDATED } from '../services/bibliography';
+import { readClipboardText } from '../api/clipboard';
+import { showMessage } from '../services/messages';
+import { showHint } from '../services/hints';
 import { DOCUMENT_OPENED } from './workspace';
 import { setOpenRequestHandler, type OpenRequest } from './markdown/link_opens';
 import { configManager } from '../services/config_manager';
 import { destinationPaths } from '../services/workspace';
 import * as imageSources from './image/index';
-import { DOCUMENT_CHANGED } from '../services/events';
+import {
+  DOCUMENT_CHANGED,
+  type AppEventName
+} from '../services/events';
+import type { MarkdownHost } from './markdown/host';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { setTableMenuHandler } from './markdown/table_menu';
+import { showTableMenu } from './table';
+import { registerImageCommand } from './image';
+import { FindBar, FindController } from './find';
+import {
+  createEditorCommandPort,
+  registerMarkdownCommands
+} from './markdown_host';
+import { installNativeMenuCommandDispatch } from '../commands/triggers/native_menu';
+import { setDocumentWritable } from '../commands/authority';
 
 export class MarkdownEditor extends BaseComponent {
   private readonly innerEditor: WysiwygMarkdownEditor;
+  private readonly findController: FindController;
 
   constructor() {
     super('div', ['flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
-    this.innerEditor = new WysiwygMarkdownEditor();
+    const host: MarkdownHost = {
+      citations: {
+        entries: () => bibliographyManager.entries(),
+        format: (source) => bibliographyManager.format(source),
+        formatCached: (source) => bibliographyManager.formatCached(source),
+        references: (source) => bibliographyManager.reference(source),
+        renderedLength: (source) =>
+          bibliographyManager.formatCached(source)?.length ?? source.length,
+        onChanged: (listener) => {
+          const callback = () => listener();
+          void eventManager.on(CITATION_UPDATED, callback);
+          return () => eventManager.off(CITATION_UPDATED, callback);
+        }
+      },
+      documents: {
+        candidates: () => documentManager.documents(),
+        resolve: (target) => documentManager.resolve(target),
+        title: (target) => documentManager.getTitle(target)
+      },
+      images: {
+        sources: (destination) => imageSources.imageSourceCandidates(destination)
+      },
+      clipboard: {
+        readText: () => readClipboardText()
+      },
+      events: {
+        documentChanged: (payload) => {
+          void eventManager.emit(DOCUMENT_CHANGED, payload);
+        },
+        layoutChanged: (layout) => {
+          void eventManager.emit(EDITOR_LAYOUT_CHANGED, layout);
+        },
+        onInputSourceChanged: (listener) => {
+          void eventManager.on(INPUT_SOURCE_CHANGED, () => listener());
+        }
+      },
+      commands: createEditorCommandPort(),
+      notify: (notice) => {
+        if (notice.code === 'document.idLocked') {
+          showHint(t('session.idLocked'), null);
+          return;
+        }
+        showMessage(t('reference.notFound', { id: notice.params.id }));
+      }
+    };
+    this.innerEditor = new WysiwygMarkdownEditor(host);
+    registerMarkdownCommands(this.innerEditor.commands());
+    installNativeMenuCommandDispatch((event, listener) => {
+      void eventManager.on(event as AppEventName, (menuEvent) => {
+        listener(menuEvent.payload);
+      });
+    });
+    registerImageCommand(this.innerEditor);
+    const findBar = new FindBar({
+      onQueryChanged: () => this.findController.updateMatches(true),
+      onNext: (reverse) => this.findController.next(reverse),
+      onReplace: () => this.findController.replaceCurrent(),
+      onReplaceAll: () => this.findController.replaceAll(),
+      onClose: () => this.findController.close()
+    });
+    this.findController = new FindController(this.innerEditor.findApi(), findBar);
+    this.innerEditor.setFindUi({
+      open: (showReplace) => this.findController.open(showReplace),
+      close: () => this.findController.close(),
+      setReadOnly: (readOnly) => this.findController.setReadOnly(readOnly)
+    });
+    this.innerEditor.element.appendChild(findBar.element);
     this.element.appendChild(this.innerEditor.element);
 
     // A link clicked with ⌘ (Ctrl) asks for the document it names — a wikilink's target, or an
@@ -50,6 +140,9 @@ export class MarkdownEditor extends BaseComponent {
     // path through the note's own folder and the workspace, and the session takes it from there —
     // the same way a click on the tree's own row arrives.
     setOpenRequestHandler((request) => void this.openRequested(request));
+    setTableMenuHandler(({ nodes, target, at }) => {
+      void showTableMenu(nodes, target, at);
+    });
 
     // Open documents clicked in the workspace tree without a global reference.
     void eventManager.on(DOCUMENT_OPENED, (event: any) => {
@@ -98,6 +191,10 @@ export class MarkdownEditor extends BaseComponent {
   private async openRequested(request: OpenRequest): Promise<void> {
     if (request.kind === 'wikilink') {
       await this.openWikilink(request.target);
+      return;
+    }
+    if (request.kind === 'external') {
+      await openUrl(request.url).catch(() => undefined);
       return;
     }
     await this.openLinkPath(request.destination);
@@ -174,6 +271,7 @@ export class MarkdownEditor extends BaseComponent {
 
   /** Shows a reference document without accepting an edit. */
   setReadOnly(readOnly: boolean): void {
+    setDocumentWritable(!readOnly);
     this.innerEditor.setReadOnly(readOnly);
   }
 

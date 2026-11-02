@@ -1,13 +1,11 @@
 /**
  * The table context-menu domain.
  *
- * Example: a right-click asks `tableMenuModel` what actions are available, then `showTableMenu`
- * renders and dispatches one against the captured cell.
+ * Example: the Markdown table domain computes menu availability, while
+ * `showTableMenu` renders and dispatches the chosen command for the shell.
  *
- * May import: the pure model and native-menu adapter. Upholds: menu presentation and availability
- * share one entrypoint.
+ * May import: the Markdown table types and native-menu adapter. Upholds: only
+ * native menu presentation lives here; command availability stays in Markdown.
  */
 
 export { showTableMenu } from './menu';
-export { tableMenuModel } from './model';
-export type { TableMenuNode } from './model';

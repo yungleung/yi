@@ -1,13 +1,15 @@
 /**
- * What the table's context menu offers, for the row that was right-clicked: the pure model the native
- * menu is built from.
+ * What the table's context menu offers for the row that was right-clicked.
  *
- * May import: the table's source reader. Upholds: one rule for which commands a row may be given, so
- * the menu and its check read the same model.
+ * Example: a body row offers Move Up; the header offers it disabled, proving the
+ * menu asks the table model rather than deciding availability in its UI.
+ *
+ * May import: the table source and command vocabulary. Upholds: one rule for
+ * which commands a row may be given, shared by the menu and its check.
  */
 
-import { rowAt, type TableSource } from '../markdown/syntax/table';
-import type { TableCommand } from '../markdown/editing/table';
+import { rowAt, type TableSource } from '../../syntax/table';
+import type { TableCommand } from './operations';
 
 /** One node of the table context menu. */
 export type TableMenuNode =
@@ -16,15 +18,17 @@ export type TableMenuNode =
   | { kind: 'separator' };
 
 /**
- * The context menu for one cell: what can be done to its row, its column, and
+ * The context menu for one cell: what can be done to its row, its column and
  * the cell itself.
  *
- * The enabled flags come from the same model the operations use, so an item is
- * never offered while its operation would refuse to run — and never withheld
- * while it would work. Items that cannot apply stay in the menu, disabled, so
- * the groups keep the same shape wherever the author right-clicks.
+ * Example: `tableMenuModel(table, 1, 0)` enables Delete Row, while row `0` keeps
+ * the same item present and disabled.
  */
-export function tableMenuModel(source: TableSource, row: number, column: number): TableMenuNode[] {
+export function tableMenuModel(
+  source: TableSource,
+  row: number,
+  column: number
+): TableMenuNode[] {
   const rows = source.rows;
   const lastRow = rows[rows.length - 1].row;
   const inBody = row > 0;

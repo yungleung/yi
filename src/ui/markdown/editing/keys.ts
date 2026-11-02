@@ -20,7 +20,6 @@
 import { applyCodeIndent } from './code';
 import { continueTableDown, moveTableCell } from './table';
 import { deleteText, insertNewline, insertText } from './text';
-import { runCommand } from '../../../commands/runtime';
 import { handleChoiceCardKey } from '../choice_card';
 import type { EditorContext } from './context';
 import type { Completions } from './completions';
@@ -35,6 +34,8 @@ export interface KeyHost {
   readonly readOnly: () => boolean;
   /** The command/control chords, returning true when one was handled. */
   shortcut(event: KeyboardEvent): boolean;
+  /** Runs `list:indent` or `list:outdent`, returning false when unavailable. */
+  listStep(direction: 'indent' | 'outdent'): boolean;
   /** The arrow keys, after everything else has declined the key. */
   arrow(event: KeyboardEvent): void;
 }
@@ -127,7 +128,7 @@ function handleTextKey(event: KeyboardEvent, host: KeyHost): void {
     // The list step goes through the registry like any other trigger: the
     // command is available where there is a list line to move, so a Tab that
     // cannot indent here falls through to the code block below.
-    if (runCommand(event.shiftKey ? 'list:outdent' : 'list:indent', null, 'keyboard')) {
+    if (host.listStep(event.shiftKey ? 'outdent' : 'indent')) {
     event.preventDefault();
     return;
   }

@@ -182,6 +182,67 @@ const expectNoExportCycles = () => {
   }
 };
 
+const expectNoImportCycles = () => {
+  const files = sourceFiles('src', ['.ts']).filter((path) => !path.endsWith('.d.ts'));
+  const edges = new Map();
+  for (const importer of files) {
+    const source = readFileSync(join(root, importer), 'utf8');
+    const targets = new Set();
+    const add = (specifier) => {
+      const target = resolveImport(importer, specifier);
+      if (target !== null && target !== importer && target.endsWith('.ts')) {
+        targets.add(target);
+      }
+    };
+    for (const match of source.matchAll(
+      /^[ \t]*(import|export)\s+([\s\S]*?)from\s+(['"])([^'"]+)\3\s*;?/gm
+    )) {
+      const statement = match[0];
+      if (/^[ \t]*(?:import|export)\s+type\b/.test(statement)) {
+        continue;
+      }
+      add(match[4]);
+    }
+    for (const match of source.matchAll(/^[ \t]*import\s+(['"])([^'"]+)\1\s*;?/gm)) {
+      add(match[2]);
+    }
+    for (const match of source.matchAll(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      add(match[1]);
+    }
+    edges.set(importer, targets);
+  }
+
+  const visiting = new Set();
+  const visited = new Set();
+  const visit = (file, stack) => {
+    if (visiting.has(file)) {
+      const cycleAt = stack.indexOf(file);
+      failures.push(
+        `import cycle: ${[...stack.slice(cycleAt), file].join(' -> ')}`
+      );
+      return true;
+    }
+    if (visited.has(file)) {
+      return false;
+    }
+    visiting.add(file);
+    for (const target of edges.get(file) ?? []) {
+      if (visit(target, [...stack, file])) {
+        return true;
+      }
+    }
+    visiting.delete(file);
+    visited.add(file);
+    return false;
+  };
+
+  for (const file of files) {
+    if (visit(file, [])) {
+      return;
+    }
+  }
+};
+
 const expectNoRepeatedPrefix = () => {
   const allowed = new Set([
     'src/ui/markdown/markdown_editor.ts'
@@ -231,6 +292,35 @@ const expectNoUngroupedCapabilityPrefixes = () => {
         failures.push(
           `${folder} still has ${grouped.length} ${prefix}_* modules; group the capability`
         );
+      }
+    }
+  }
+};
+
+const expectMarkdownHostBoundary = () => {
+  const forbidden = [
+    'src/api/',
+    'src/citations/',
+    'src/commands/',
+    'src/services/',
+    'src/ui/find/',
+    'src/ui/image/',
+    'src/ui/table/'
+  ];
+  for (const importer of sourceFiles('src/ui/markdown', ['.ts'])) {
+    const source = readFileSync(join(root, importer), 'utf8');
+    for (const match of source.matchAll(/(?:from\s+|import\s*\()['"]([^'"]+)['"]/g)) {
+      const specifier = match[1];
+      if (specifier.startsWith('@tauri-apps/')) {
+        failures.push(`${importer} imports host plugin ${specifier}; use a Markdown host port`);
+        continue;
+      }
+      const target = resolveImport(importer, specifier);
+      if (
+        target !== null &&
+        forbidden.some((prefix) => target.startsWith(prefix))
+      ) {
+        failures.push(`${importer} bypasses the Markdown host boundary with ${target}`);
       }
     }
   }
@@ -317,6 +407,7 @@ expectFile('src/ui/markdown/document/block/lookup.ts');
 expectFile('src/ui/markdown/document/block/parse_cache.ts');
 expectFile('src/ui/markdown/document/block/scan_rules.ts');
 expectFile('src/ui/markdown/document/block/scanner.ts');
+expectFile('src/ui/markdown/document/identity.ts');
 expectFile('src/ui/markdown/editing/text/index.ts');
 expectFile('src/ui/markdown/editing/text/context.ts');
 expectFile('src/ui/markdown/editing/text/deletion.ts');
@@ -330,6 +421,7 @@ expectFile('src/ui/markdown/editing/composition/view.ts');
 expectFile('src/ui/markdown/editing/table/index.ts');
 expectFile('src/ui/markdown/editing/table/operations.ts');
 expectFile('src/ui/markdown/editing/table/caret.ts');
+expectFile('src/ui/markdown/editing/table/menu_model.ts');
 expectFile('src/ui/markdown/caret/navigation/index.ts');
 expectFile('src/ui/markdown/caret/navigation/horizontal.ts');
 expectFile('src/ui/markdown/caret/navigation/nodes.ts');
@@ -350,8 +442,18 @@ expectFile('src/ui/markdown/nodes/fence/label.ts');
 expectFile('src/ui/markdown/nodes/fence/text.ts');
 expectFile('src/ui/markdown/nodes/fence/div_source.ts');
 expectFile('src/ui/markdown/editing/find/index.ts');
-expectFile('src/ui/markdown/editing/find/bar.ts');
-expectFile('src/ui/markdown/editing/find/controller.ts');
+expectFile('src/ui/markdown/editing/find/session.ts');
+expectFile('src/ui/markdown/host.ts');
+expectFile('src/ui/markdown/image.ts');
+expectFile('src/ui/markdown/table_menu.ts');
+expectFile('src/contracts/editor.ts');
+expectFile('src/contracts/index.ts');
+expectFile('src/ui/markdown/command_api.ts');
+expectFile('src/ui/markdown_host/commands.ts');
+expectFile('src/ui/markdown_host/index.ts');
+expectFile('src/ui/find/index.ts');
+expectFile('src/ui/find/bar.ts');
+expectFile('src/ui/find/controller.ts');
 expectFile('src/ui/markdown/syntax/pandoc/index.ts');
 expectFile('src/ui/markdown/syntax/pandoc/attributes.ts');
 expectFile('src/ui/markdown/syntax/pandoc/identifiers.ts');
@@ -360,6 +462,7 @@ expectFile('src/ui/markdown/syntax/caption/lines.ts');
 expectFile('src/ui/markdown/syntax/caption/repairs.ts');
 
 const facades = [
+  'src/contracts/index.ts',
   'src/services/session/index.ts',
   'src/services/session/rules.ts',
   'src/services/workspace/index.ts',
@@ -400,6 +503,8 @@ const facades = [
   'src/ui/markdown/nodes/code/index.ts',
   'src/ui/markdown/nodes/fence/index.ts',
   'src/ui/markdown/editing/find/index.ts',
+  'src/ui/markdown_host/index.ts',
+  'src/ui/find/index.ts',
   'src/ui/markdown/syntax/pandoc/index.ts',
   'src/ui/markdown/syntax/caption/index.ts',
   'src/ui/export/workflow/index.ts',
@@ -480,6 +585,8 @@ const legacy = [
   'src/ui/markdown/renderer_geometry.ts',
   'src/ui/markdown/syntax/equation_blocks.ts',
   'src/ui/markdown/syntax/equation_masking.ts',
+  'src/ui/markdown/editor/command_wiring.ts',
+  'src/ui/markdown/commands/editor_commands.ts',
   'src/ui/markdown/syntax/callout_model.ts',
   'src/ui/markdown/syntax/callout_reader.ts',
   'src/ui/markdown/syntax/callout_body.ts',
@@ -537,6 +644,10 @@ const legacy = [
   'src/ui/markdown/nodes/fenced_div_source.ts',
   'src/ui/markdown/editing/find_bar.ts',
   'src/ui/markdown/editing/find_controller.ts',
+  'src/ui/markdown/editing/find/bar.ts',
+  'src/ui/markdown/editing/find/controller.ts',
+  'src/services/documents/identity.ts',
+  'src/ui/table/model.ts',
   'src/ui/markdown/syntax/pandoc_attributes.ts',
   'src/ui/markdown/syntax/pandoc_identifiers.ts',
   'src/ui/markdown/syntax/caption_lines.ts',
@@ -589,8 +700,10 @@ expectNoRepeat('src/ui/markdown/syntax/container/quote', ['quote_']);
 expectNoRepeat('src-tauri/src/fonts/bundled', ['bundled_']);
 expectNoFacadeBypass();
 expectNoExportCycles();
+expectNoImportCycles();
 expectNoRepeatedPrefix();
 expectNoUngroupedCapabilityPrefixes();
+expectMarkdownHostBoundary();
 
 for (const path of sourceFiles('src-tauri/src', ['.rs'])) {
   if (path.startsWith('src-tauri/src/fonts/')) {

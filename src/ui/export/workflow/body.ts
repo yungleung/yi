@@ -17,7 +17,7 @@
  * The name is written as the note writes it — prose, and *markdown* when it is markdown, which is
  * how the metadata title is read — because a name taken from a heading's line is that line.
  *
- * May import: the note-text rules (`services/documents/identity.ts`). Upholds: the note itself is
+ * May import: the note-text rules (`ui/markdown/document/identity.ts`). Upholds: the note itself is
  * never edited — this answers the text a book is handed, and the frontmatter stays where it was.
  */
 import { frontmatterEnd } from '../../../services/documents';

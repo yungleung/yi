@@ -22,7 +22,7 @@
  * it comes and never requires it.
  *
  * @covers src/ui/markdown/click_routing.ts, src/ui/markdown/nodes/wikilink.ts,
- *   src/ui/markdown/wikilink_open.ts, src/ui/editor_panel.ts
+ *   src/ui/markdown/link_opens.ts, src/ui/editor_panel.ts
  * @needs-workspace
  */
 (async () => {

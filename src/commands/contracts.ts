@@ -13,6 +13,10 @@ import { FORMATTING_STYLES, type FormattingStyle } from '../ui/markdown/format';
 import { LIST_KINDS } from '../ui/markdown/syntax/list';
 import { TABLE_COMMANDS, type TableCommand } from '../ui/markdown/syntax/table';
 import type { TableTarget } from '../ui/markdown/editing/table';
+import type {
+  EditorDocumentPosition,
+  EditorReplaceRange
+} from '../contracts';
 
 /** What a command may change when it runs. */
 export type CommandEffect =
@@ -61,17 +65,10 @@ export interface TableSizeInput {
 }
 
 /** The identity and revision an agent plans a document edit against. */
-export interface DocumentPosition {
-  readonly documentKey: string;
-  readonly revision: number;
-}
+export type DocumentPosition = EditorDocumentPosition;
 
 /** One revision-checked raw-text replacement. */
-export interface ReplaceRangeInput extends DocumentPosition {
-  readonly from: number;
-  readonly to: number;
-  readonly replacement: string;
-}
+export type ReplaceRangeInput = EditorReplaceRange;
 
 type NoInputContract = CommandContract<null>;
 type FormattingContracts = {

@@ -5,15 +5,13 @@
  * a wikilink receives the resolved target title, without either node importing
  * those services.
  *
- * May import: the render context port, document state and shell services.
- * Upholds: services are adapted at the editor boundary; node modules stay
- * render-only.
+ * May import: the render context port, document state and the Markdown host
+ * contract. Upholds: host capabilities are adapted at the editor boundary;
+ * node modules stay render-only.
  */
 
-import { bibliographyManager } from '../../../services/bibliography';
-import { documentManager } from '../../../services/documents';
-import { imageSourceCandidates } from '../../image/index';
 import type { MarkdownEditorState } from '../document/state';
+import type { MarkdownHost } from '../host';
 import {
   equationBlockNumber,
   firstReference,
@@ -23,15 +21,16 @@ import type { RenderContext } from '../render_context';
 
 /** Creates the one render context for a live editor state. */
 export function createEditorRenderContext(
-  state: MarkdownEditorState
+  state: MarkdownEditorState,
+  host: MarkdownHost
 ): RenderContext {
   return {
     citation: (source, cached) =>
       cached
-        ? bibliographyManager.formatCached(source)
-        : bibliographyManager.format(source),
-    wikilinkTitle: (target) => documentManager.getTitle(target),
-    imageSources: (destination) => imageSourceCandidates(destination),
+        ? host.citations.formatCached(source)
+        : host.citations.format(source),
+    wikilinkTitle: (target) => host.documents.title(target),
+    imageSources: (destination) => [...host.images.sources(destination)],
     headingId: (from) =>
       state.headingTargets().find((target) => target.from === from)?.id ?? null,
     referenceText: (id) => {

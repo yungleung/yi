@@ -1,31 +1,19 @@
 /**
- * App-level shortcut and arrow-key handling for the editor.
+ * Arrow-key handling for the editor.
  *
- * Example: Cmd/Ctrl+B resolves to `format:bold`, while an unmodified arrow moves the logical caret
- * and leaves the composition seam focused so the next Chinese key can begin composition.
+ * Example: an unmodified ArrowRight moves the logical caret and leaves the
+ * composition seam focused so the next Chinese key can begin composition.
  *
- * May import: the keymap, command runtime, caret navigation, selection root, editing context and
- * composition seam. Upholds: a chord runs a registered command, never a private editing function.
+ * May import: caret navigation, the selection root, editing context and the
+ * composition seam. Upholds: arrow handling owns no command vocabulary; command
+ * chords enter through `MarkdownHost.commands`.
  */
 
 import { ARROW_KEY_DIRECTIONS, moveCaret } from '../caret/navigation';
-import { commandForKey } from '../../../commands/triggers/keymap';
-import { runCommand } from '../../../commands/runtime';
 import type { CompositionInput } from '../editing/composition';
 import type { EditorContext } from '../editing/context';
 import { proseRoot } from '../editing/selection';
 import { getCaretRange } from '../caret/caret';
-
-/** Runs the command bound to a keyboard chord, returning true when the chord was handled. */
-export function handleEditorShortcut(event: KeyboardEvent): boolean {
-  const command = commandForKey(event);
-  if (!command) {
-    return false;
-  }
-  event.preventDefault();
-  runCommand(command, null, 'keyboard');
-  return true;
-}
 
 /**
  * Moves the caret for an arrow key after the text path has declined it.

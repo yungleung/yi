@@ -16,6 +16,7 @@ import { SOURCE_TEXT_SELECTOR } from '../source_text';
 import { afterNewline } from './dom';
 import type { MarkdownBlock } from '../document/block';
 import type { MarkdownEditorState } from '../document/state';
+import type { CitationService } from '../host';
 import { locateCell, readTableSource } from '../syntax/table';
 import { FORMAT_FROM, FORMAT_TO, LINE_START, SOURCE_FROM, TEXT_FROM, offsetOf } from './../offset_tags';
 
@@ -40,7 +41,8 @@ export interface DomPosition {
 export function domPositionAtOffset(
   state: MarkdownEditorState,
   root: HTMLElement,
-  offset: number
+  offset: number,
+  citationLength?: CitationService['renderedLength']
 ): DomPosition | null {
   const block = state.getBlockAtOffset(offset);
   if (!block) {
@@ -156,7 +158,12 @@ export function domPositionAtOffset(
   }
   // Widgets and other untagged positions fall back to the rendered-offset
   // model, which approximates the widget lengths.
-  const rendered = renderedOffsetAtRaw(state.getBlockContent(block), block, clamped);
+  const rendered = renderedOffsetAtRaw(
+    state.getBlockContent(block),
+    block,
+    clamped,
+    citationLength
+  );
   if (rendered === null) {
     return null;
   }
@@ -172,21 +179,22 @@ function renderedOffsetAtRaw(
   children: RootContent[],
   block: MarkdownBlock,
   rawOffset: number,
+  citationLength?: CitationService['renderedLength'],
   acc = 0
 ): number | null {
   for (const child of children) {
     const range = nodeRawRange(child, block);
     if (!range) {
-      acc += renderedLength(child);
+      acc += renderedLength(child, citationLength);
       continue;
     }
     if (rawOffset < range.start) {
       return acc;
     }
     if (rawOffset <= range.end) {
-      return mapNodeRawToRendered(child, block, rawOffset, acc);
+      return mapNodeRawToRendered(child, block, rawOffset, acc, citationLength);
     }
-    acc += renderedLength(child);
+    acc += renderedLength(child, citationLength);
   }
   return acc;
 }
@@ -196,11 +204,12 @@ function mapNodeRawToRendered(
   node: RootContent,
   block: MarkdownBlock,
   rawOffset: number,
-  acc: number
+  acc: number,
+  citationLength?: CitationService['renderedLength']
 ): number {
   const range = nodeRawRange(node, block);
   if (!range) {
-    return acc + renderedLength(node);
+    return acc + renderedLength(node, citationLength);
   }
   if (node.type === 'text') {
     const delta = Math.min(Math.max(rawOffset - range.start, 0), node.value.length);
@@ -219,15 +228,25 @@ function mapNodeRawToRendered(
       node.children as RootContent[],
       block,
       rawOffset,
-      acc + drawn
+      acc + drawn,
+      citationLength
     );
   }
   if ('children' in node && Array.isArray(node.children) && node.children.length > 0) {
-    return mapChildrenRawToRendered(node.children as RootContent[], block, rawOffset, acc);
+    return mapChildrenRawToRendered(
+      node.children as RootContent[],
+      block,
+      rawOffset,
+      acc,
+      citationLength
+    );
   }
   // A leaf widget (citation, math, image, ...): clamp into its rendered
   // length, matching the forward mapping's approximation.
-  const delta = Math.min(Math.max(rawOffset - range.start, 0), renderedLength(node));
+  const delta = Math.min(
+    Math.max(rawOffset - range.start, 0),
+    renderedLength(node, citationLength)
+  );
   return acc + delta;
 }
 
@@ -236,7 +255,8 @@ function mapChildrenRawToRendered(
   children: RootContent[],
   block: MarkdownBlock,
   rawOffset: number,
-  acc: number
+  acc: number,
+  citationLength?: CitationService['renderedLength']
 ): number {
   let inner = acc;
   for (const child of children) {
@@ -245,9 +265,9 @@ function mapChildrenRawToRendered(
       return inner;
     }
     if (childRange && rawOffset <= childRange.end) {
-      return mapNodeRawToRendered(child, block, rawOffset, inner);
+      return mapNodeRawToRendered(child, block, rawOffset, inner, citationLength);
     }
-    inner += renderedLength(child);
+    inner += renderedLength(child, citationLength);
   }
   return inner;
 }
