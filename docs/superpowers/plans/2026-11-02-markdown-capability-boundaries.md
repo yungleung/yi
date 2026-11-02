@@ -1,6 +1,6 @@
 # Markdown Capability Boundaries Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Remove the blanket “closed Markdown domain” rule while keeping Markdown’s internal capabilities cohesive and its dependency direction explicit.
 
@@ -36,7 +36,7 @@
 - Consumes: `sourceFiles()`, `resolveImport()` and the existing module-layout failure collector.
 - Produces: `expectMarkdownDependencyDirection()`, which rejects application imports from `syntax/` and `document/` only.
 
-- [ ] **Step 1: Write the failing guard change**
+- [x] **Step 1: Write the failing guard change**
 
 Replace `expectMarkdownHostBoundary()` with:
 
@@ -81,13 +81,13 @@ forbidFile('src/ui/markdown_host/commands.ts');
 forbidFile('src/ui/markdown_host/index.ts');
 ```
 
-- [ ] **Step 2: Run the check to verify RED**
+- [x] **Step 2: Run the check to verify RED**
 
 Run: `node test/checks/module-layout.mjs`
 
 Expected: failure because `src/ui/markdown/commands/editor_commands.ts` and `index.ts` do not exist.
 
-- [ ] **Step 3: Update living design documents**
+- [x] **Step 3: Update living design documents**
 
 In `AGENTS.md`, replace the “Treat Markdown as a closed editing domain” bullet with:
 
@@ -104,7 +104,7 @@ Update `docs/architecture.md`, `docs/ai-context.md` and `docs/structure.md` to d
 direction and capability ownership rather than a closed Markdown domain. Remove claims that
 Markdown may import no commands or services.
 
-- [ ] **Step 4: Run documentation and module checks**
+- [x] **Step 4: Run documentation and module checks**
 
 Run: `node test/checks/headers.mjs`
 
@@ -135,7 +135,7 @@ Expected: still RED only for the missing command capability files.
 - Consumes: `EditorContext`, `applyEditorHistory`, `MarkdownFindSession`, `EditorPageLayout`, the command runtime and keymap.
 - Produces: `registerEditorCommands(host: CommandHost): void`, where `CommandHost` exposes the editor context, history callback, layout toggle, and find callbacks.
 
-- [ ] **Step 1: Write the failing command-capability expectation**
+- [x] **Step 1: Write the failing command-capability expectation**
 
 The module-layout RED from Task 1 is the failing test for this task:
 
@@ -144,7 +144,7 @@ missing required module: src/ui/markdown/commands/index.ts
 missing required module: src/ui/markdown/commands/editor_commands.ts
 ```
 
-- [ ] **Step 2: Create the command capability**
+- [x] **Step 2: Create the command capability**
 
 Create `src/ui/markdown/commands/editor_commands.ts` with `CommandHost` and
 `registerEditorCommands(host)`. Move the registration bodies from
@@ -190,7 +190,7 @@ export { registerEditorCommands } from './editor_commands';
 export type { CommandHost } from './editor_commands';
 ```
 
-- [ ] **Step 3: Wire keyboard and list triggers directly**
+- [x] **Step 3: Wire keyboard and list triggers directly**
 
 In `editor/keyboard.ts`, restore direct keymap/runtime use:
 
@@ -215,7 +215,7 @@ runCommand(
 )
 ```
 
-- [ ] **Step 4: Compose commands inside the editor**
+- [x] **Step 4: Compose commands inside the editor**
 
 In `WysiwygMarkdownEditor`:
 
@@ -234,7 +234,7 @@ registerEditorCommands({
 Remove `commands()`, `commandApi`, `EditorCommandPort`, `createEditorCommandPort()` and the
 `markdown_host` imports from `editor_panel.ts`. Keep native-menu dispatch installation in the shell.
 
-- [ ] **Step 5: Run static tests to verify GREEN**
+- [x] **Step 5: Run static tests to verify GREEN**
 
 Run: `npx tsc --noEmit`
 
@@ -248,7 +248,7 @@ Run: `npm run check`
 
 Expected: 85/85 checks passed, or the new total if another check was added.
 
-- [ ] **Step 6: Prove the command path in the app**
+- [x] **Step 6: Prove the command path in the app**
 
 Run `npm run tauri dev` in one terminal.
 
@@ -263,7 +263,7 @@ npm run probe -- test/probes/find-replace.js
 
 Expected: every probe exits successfully with `failed: []`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ui/markdown src/ui/markdown_host src/ui/editor_panel.ts test/checks test/probes docs AGENTS.md
@@ -282,7 +282,7 @@ git commit -m "refactor(markdown): restore capability-owned command wiring"
 - Consumes: the completed command capability and revised module guard.
 - Produces: final documentation and verification evidence.
 
-- [ ] **Step 1: Update command-authoring guidance**
+- [x] **Step 1: Update command-authoring guidance**
 
 Replace the `markdown_host/commands.ts` example with the real Markdown capability location:
 
@@ -302,7 +302,7 @@ registerCommand({
 Explain that Markdown may import the global command contract, while toolbar, menu and future MCP
 clients still converge on the same command id.
 
-- [ ] **Step 2: Run final static and Rust verification**
+- [x] **Step 2: Run final static and Rust verification**
 
 Run:
 
@@ -316,7 +316,7 @@ git diff --check
 
 Expected: all commands exit successfully.
 
-- [ ] **Step 3: Run the complete Tauri suite**
+- [x] **Step 3: Run the complete Tauri suite**
 
 With a fresh `npm run tauri dev` process:
 
@@ -324,7 +324,7 @@ Run: `npm run probe:all`
 
 Expected: `276/276 probes passed (36 skipped)`.
 
-- [ ] **Step 4: Commit documentation**
+- [x] **Step 4: Commit documentation**
 
 ```bash
 git add docs test/README.md
