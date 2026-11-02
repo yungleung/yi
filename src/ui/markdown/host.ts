@@ -1,9 +1,8 @@
 /**
- * The application capabilities a Markdown editor consumes.
+ * The application capabilities consumed by Markdown's render and editing paths.
  *
  * Example: the shell supplies bibliography formatting, workspace link lookup,
- * clipboard reads and notice delivery; Markdown supplies editing semantics and
- * never imports the services that implement those capabilities.
+ * image resolution and notice delivery while Markdown supplies editing semantics.
  *
  * May import: nothing. Upholds: each host capability has a narrow, typed contract,
  * and the editor composition root is the only place an adapter is chosen.
@@ -66,24 +65,6 @@ export interface EditorEventPort {
   onInputSourceChanged(listener: () => void): void;
 }
 
-/** The command triggers Markdown asks the shell to resolve and dispatch. */
-export interface EditorCommandPort {
-  /**
-   * Runs the app command bound to a keyboard chord.
-   *
-   * Example: Cmd/Ctrl+B returns true after `format:bold` is dispatched and false
-   * when the chord does not name a command.
-   */
-  runShortcut(event: KeyboardEvent): boolean;
-  /**
-   * Runs a list indentation command so Tab shares the toolbar's command path.
-   *
-   * Example: Tab on a list item asks for `indent`; when the command is unavailable,
-   * the editor falls through to the code block's own Tab behavior.
-   */
-  runListStep(direction: 'indent' | 'outdent'): boolean;
-}
-
 /** A notice the editor emits as a fact; only the shell decides how to word it. */
 export type EditorNotice =
   | { readonly kind: 'hint'; readonly code: 'document.idLocked' }
@@ -100,7 +81,6 @@ export interface MarkdownHost {
   readonly images: ImageSourceService;
   readonly clipboard: ClipboardReader;
   readonly events: EditorEventPort;
-  readonly commands: EditorCommandPort;
   /** Announces a fact that needs shell-owned presentation. */
   notify(notice: EditorNotice): void;
 }

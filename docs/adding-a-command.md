@@ -80,36 +80,35 @@ run.
 
 ## 4. Implement and register the behaviour
 
-Implement the work in the module that owns it. Editor-owned behavior goes behind
-`src/ui/markdown/command_api.ts`, which is the shell's narrow editing surface;
-Markdown does not import the command runtime. Register the command id against the
-app-wide runtime in the shell adapter that consumes that public API:
+Implement the work in the module that owns it. Editor-owned commands are registered
+by Markdown's focused command capability because command identity and editing
+behaviour belong to the editor:
 
 ```ts
-// src/ui/markdown_host/commands.ts
-import { registerCommand } from '../../commands/runtime';
-import type { MarkdownCommandApi } from '../markdown/command_api';
+// src/ui/markdown/commands/editor_commands.ts
+import { registerCommand } from '../../../commands/runtime';
 
-export function registerMarkdownCommands(api: MarkdownCommandApi): void {
+export function registerEditorCommands(host: CommandHost): void {
+  const { context } = host;
   registerCommand({
     id: 'edit:insertRule',
     run: () => {
-      api.insertRule();
+      insertThematicBreak(context);
       return null;
     }
   });
 }
 ```
 
-A family of commands is registered by looping over the public Markdown
-vocabulary in that adapter:
+A family of commands is registered by looping over the vocabulary owned by that
+capability:
 
 ```ts
 for (const style of FORMATTING_STYLES) {
   registerCommand({
     id: `format:${style}`,
     run: () => {
-      api.applyFormatting(style);
+      applyFormatting(context, style);
       return null;
     }
   });
@@ -130,7 +129,7 @@ Triggers only dispatch command ids. They do not implement the work.
 
 | Trigger | File | Shape |
 | --- | --- | --- |
-| Key chord | `src/commands/triggers/keymap.ts` and `ui/markdown_host/commands.ts` | map the chord to a `CommandId`; the host adapter passes origin `keyboard` |
+| Key chord | `src/commands/triggers/keymap.ts` and `ui/markdown/editor/keyboard.ts` | map the chord to a `CommandId`; the editor passes origin `keyboard` |
 | Toolbar | `src/ui/toolbar/` | `runCommand('…', null, 'toolbar')` |
 | Table context menu | `src/ui/table/menu.ts` | dispatch the captured target with origin `context-menu` |
 | Native app menu | `src/commands/triggers/native_menu.ts` | map the Rust event to a `CommandId`; `installNativeMenuCommandDispatch` passes the raw payload with origin `native-menu` |

@@ -55,15 +55,13 @@ import {
   EditorPageLayout,
   EditorViewState,
   handleArrowKey,
+  handleEditorShortcut,
   type EditorLayout
 } from './editor';
 import { applyBlockOpeningEdit } from './editing/block_opening_edit';
 import type { EditorChangeReason, EditorDocumentView, EditorSeenView } from '../../contracts';
 import type { MarkdownHost } from './host';
-import {
-  createMarkdownCommandApi,
-  type MarkdownCommandApi
-} from './command_api';
+import { registerEditorCommands } from './commands';
 import {
   captureImageInsertion,
   insertImageMarkdown,
@@ -112,7 +110,6 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
   private readonly context: EditorContext;
   private readonly view: EditorViewState;
   private readonly findSession: MarkdownFindSession;
-  private readonly commandApi: MarkdownCommandApi;
   private findUi: FindUiPort | null = null;
   /** The system's text input seam; it holds the keyboard while the caret is here. */
   private readonly composition: CompositionInput;
@@ -174,11 +171,10 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
       contentView: this.contentView
     });
     this.findSession = new MarkdownFindSession(this.context);
-    this.commandApi = createMarkdownCommandApi({
+    registerEditorCommands({
       context: this.context,
-      undo: () => this.replayHistory('undo'),
-      redo: () => this.replayHistory('redo'),
-      togglePageLayout: () => {
+      applyHistory: (direction) => this.replayHistory(direction),
+      toggleLayout: () => {
         this.setLayout(this.pageLayout.get() === 'page' ? 'auto' : 'page');
       },
       openFind: (replace) => this.findUi?.open(replace),
@@ -281,8 +277,7 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
       composition: this.composition,
       completions: this.completions,
       readOnly: () => this.readOnly,
-      shortcut: (event) => host.commands.runShortcut(event),
-      listStep: (direction) => host.commands.runListStep(direction),
+      shortcut: handleEditorShortcut,
       arrow: (event) => handleArrowKey(this.context, this.composition, event)
     };
     this.renderer.render();
@@ -330,11 +325,6 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
   /** Installs the shell-owned find presentation invoked by find commands. */
   setFindUi(findUi: FindUiPort): void {
     this.findUi = findUi;
-  }
-
-  /** The narrow operations the shell registers in the app-wide command catalogue. */
-  commands(): MarkdownCommandApi {
-    return this.commandApi;
   }
 
   setContent(content: string): void {

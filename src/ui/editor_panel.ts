@@ -52,10 +52,6 @@ import { setTableMenuHandler } from './markdown/table_menu';
 import { showTableMenu } from './table';
 import { registerImageCommand } from './image';
 import { FindBar, FindController } from './find';
-import {
-  createEditorCommandPort,
-  registerMarkdownCommands
-} from './markdown_host';
 import { installNativeMenuCommandDispatch } from '../commands/triggers/native_menu';
 import { setDocumentWritable } from '../commands/authority';
 
@@ -101,7 +97,6 @@ export class MarkdownEditor extends BaseComponent {
           void eventManager.on(INPUT_SOURCE_CHANGED, () => listener());
         }
       },
-      commands: createEditorCommandPort(),
       notify: (notice) => {
         if (notice.code === 'document.idLocked') {
           showHint(t('session.idLocked'), null);
@@ -111,7 +106,6 @@ export class MarkdownEditor extends BaseComponent {
       }
     };
     this.innerEditor = new WysiwygMarkdownEditor(host);
-    registerMarkdownCommands(this.innerEditor.commands());
     installNativeMenuCommandDispatch((event, listener) => {
       void eventManager.on(event as AppEventName, (menuEvent) => {
         listener(menuEvent.payload);

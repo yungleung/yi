@@ -297,30 +297,35 @@ const expectNoUngroupedCapabilityPrefixes = () => {
   }
 };
 
-const expectMarkdownHostBoundary = () => {
+const expectMarkdownDependencyDirection = () => {
+  const pureRoots = [
+    'src/ui/markdown/syntax/',
+    'src/ui/markdown/document/'
+  ];
   const forbidden = [
     'src/api/',
-    'src/citations/',
     'src/commands/',
-    'src/services/',
-    'src/ui/find/',
-    'src/ui/image/',
-    'src/ui/table/'
+    'src/services/'
   ];
   for (const importer of sourceFiles('src/ui/markdown', ['.ts'])) {
+    if (!pureRoots.some((prefix) => importer.startsWith(prefix))) {
+      continue;
+    }
     const source = readFileSync(join(root, importer), 'utf8');
     for (const match of source.matchAll(/(?:from\s+|import\s*\()['"]([^'"]+)['"]/g)) {
       const specifier = match[1];
       if (specifier.startsWith('@tauri-apps/')) {
-        failures.push(`${importer} imports host plugin ${specifier}; use a Markdown host port`);
+        failures.push(`${importer} imports host plugin ${specifier} from a pure layer`);
         continue;
       }
       const target = resolveImport(importer, specifier);
       if (
         target !== null &&
-        forbidden.some((prefix) => target.startsWith(prefix))
+        (forbidden.some((prefix) => target.startsWith(prefix)) ||
+          (target.startsWith('src/ui/') &&
+            !target.startsWith('src/ui/markdown/')))
       ) {
-        failures.push(`${importer} bypasses the Markdown host boundary with ${target}`);
+        failures.push(`${importer} reaches outward from the pure Markdown model with ${target}`);
       }
     }
   }
@@ -448,9 +453,8 @@ expectFile('src/ui/markdown/image.ts');
 expectFile('src/ui/markdown/table_menu.ts');
 expectFile('src/contracts/editor.ts');
 expectFile('src/contracts/index.ts');
-expectFile('src/ui/markdown/command_api.ts');
-expectFile('src/ui/markdown_host/commands.ts');
-expectFile('src/ui/markdown_host/index.ts');
+expectFile('src/ui/markdown/commands/index.ts');
+expectFile('src/ui/markdown/commands/editor_commands.ts');
 expectFile('src/ui/find/index.ts');
 expectFile('src/ui/find/bar.ts');
 expectFile('src/ui/find/controller.ts');
@@ -460,6 +464,9 @@ expectFile('src/ui/markdown/syntax/pandoc/identifiers.ts');
 expectFile('src/ui/markdown/syntax/caption/index.ts');
 expectFile('src/ui/markdown/syntax/caption/lines.ts');
 expectFile('src/ui/markdown/syntax/caption/repairs.ts');
+forbidFile('src/ui/markdown/command_api.ts');
+forbidFile('src/ui/markdown_host/commands.ts');
+forbidFile('src/ui/markdown_host/index.ts');
 
 const facades = [
   'src/contracts/index.ts',
@@ -503,7 +510,7 @@ const facades = [
   'src/ui/markdown/nodes/code/index.ts',
   'src/ui/markdown/nodes/fence/index.ts',
   'src/ui/markdown/editing/find/index.ts',
-  'src/ui/markdown_host/index.ts',
+  'src/ui/markdown/commands/index.ts',
   'src/ui/find/index.ts',
   'src/ui/markdown/syntax/pandoc/index.ts',
   'src/ui/markdown/syntax/caption/index.ts',
@@ -586,7 +593,6 @@ const legacy = [
   'src/ui/markdown/syntax/equation_blocks.ts',
   'src/ui/markdown/syntax/equation_masking.ts',
   'src/ui/markdown/editor/command_wiring.ts',
-  'src/ui/markdown/commands/editor_commands.ts',
   'src/ui/markdown/syntax/callout_model.ts',
   'src/ui/markdown/syntax/callout_reader.ts',
   'src/ui/markdown/syntax/callout_body.ts',
@@ -703,7 +709,7 @@ expectNoExportCycles();
 expectNoImportCycles();
 expectNoRepeatedPrefix();
 expectNoUngroupedCapabilityPrefixes();
-expectMarkdownHostBoundary();
+expectMarkdownDependencyDirection();
 
 for (const path of sourceFiles('src-tauri/src', ['.rs'])) {
   if (path.startsWith('src-tauri/src/fonts/')) {

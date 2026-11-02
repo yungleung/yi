@@ -75,9 +75,10 @@ There is no second `editor_edited` or `markdown_content_changed` notification.
 | Document | `document/state.ts`, `document/text_store.ts`, `document/block/model.ts`, `document/block/parse_cache.ts`, `document/block/lookup.ts`, `document/history.ts` | syntax |
 | Render | `virtual_block_renderer.ts`, `block_sizes.ts`, `viewport_window.ts`, `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format/rules.ts`, `format/dom.ts`, `format/dom_tags.ts`, `lazy.ts` | document, syntax |
 | Caret and offsets | `caret/*` (`offsets.ts` in, `node_projection.ts` for rendered/raw arithmetic, `dom_position.ts` out) | document, syntax, the shared tag names (`offset_tags.ts`) — and nothing above them. The render layer reaches *in* to it instead: a click on a node places the caret (`nodes/editable_node.ts`, `create_block.ts`) |
-| Markdown editing | `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | the Markdown layers above, shared contracts, and its host ports; never `src/commands`, services, API modules or Tauri plugins |
-| Command and event application | `src/commands/*`, `src/services/events/*`, `src/services/session/*` | public Markdown vocabulary, shared contracts and application services; command registration is outside the Markdown domain |
-| Shell integration | `ui/markdown_host/*`, `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts` | `src/commands`, application services and Markdown's public entrypoints; this is where host capabilities and presentation adapters are chosen |
+| Markdown editing | `editing/*`, `editing/editor_interactions.ts`, `markdown_editor.ts`, `click_routing.ts` | the Markdown layers above, shared contracts and narrow integration ports |
+| Markdown commands | `commands/*` | editing rules, the app-wide command contracts/runtime and trigger mapping; this capability owns command registration but not shell or native-menu presentation |
+| Command and event application | `src/commands/*`, `src/services/events/*`, `src/services/session/*` | public Markdown vocabulary, shared contracts and application services |
+| Shell presentation | `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts` | `src/commands`, application services and Markdown's public entrypoints; this is where dialogs, translated status, native menus and window presentation are chosen |
 
 The rule that matters: **a syntax module never reaches into the DOM.** That is what
 keeps the rules testable in Node, and it is the boundary most likely to be broken by
@@ -89,16 +90,17 @@ fence nodes, find session behavior, Pandoc attributes and captions. A consumer i
 its implementation files; `test/checks/module-layout.mjs` enforces that boundary and rejects
 ungrouped capability prefixes.
 
-Markdown is otherwise a closed editing domain. `host.ts` declares the capabilities it consumes:
+Markdown is capability-oriented rather than import-sealed. `host.ts` remains a narrow integration
+surface where render and caret code need application facts without depending on their implementations:
 citation formatting, workspace link lookup, image source resolution, clipboard reads, document and
-layout events, and shell command dispatch. `ui/markdown_host/` supplies those adapters, registers
-`command_api.ts` operations in the app-wide command catalogue, and routes native-menu events through
-the one dispatcher. Shared facts such as `EditorDocumentChanged` live in `src/contracts/`, so the
-event service and session model do not import upward into Markdown. Find UI, image dialogs and file
-writes, table-menu presentation, and external URL opening stay in the shell; Markdown owns the
-search/replace session, insertion semantics, table availability model, and the ports that ask for
-those host actions. `test/checks/module-layout.mjs` rejects a Markdown import of commands, services,
-API modules, Tauri plugins or outer find/image/table UI.
+layout events, and notice delivery. `commands/` owns Markdown command registration and may import the
+app-wide command runtime directly because command identity is part of that capability. Find UI, image
+dialogs and file writes, table-menu presentation, and external URL opening stay in the shell.
+
+Shared facts such as `EditorDocumentChanged` live in `src/contracts/`, so the event service and
+session model do not import upward into Markdown. `test/checks/module-layout.mjs` enforces capability
+entrypoints, acyclic dependencies, and outward-import restrictions only on the pure `syntax/` and
+`document/` layers. It does not ban integration capabilities from importing stable external modules.
 
 What the tree does *today* — the edges that bend, the sizes, the conventions a check
 enforces and the ones nothing enforces yet, and the order the structural work is worth

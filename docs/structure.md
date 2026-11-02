@@ -7,7 +7,7 @@ structural work is worth taking. `docs/ai-context.md` is the brief to read first
 
 The numbers below were measured on 2026-11-02 — a walk over `src/` for files, lines and the import
 graph, and `rg` for the class counts and the attribute names. They are the tree *after* the pass
-described at the end of this document: 439 TypeScript modules, 48,339 lines, and no import cycles
+described at the end of this document: 438 TypeScript modules, 48,200 lines, and no import cycles
 anywhere in them.
 
 ## The tree
@@ -28,19 +28,19 @@ anywhere in them.
 | `src/ui/markdown/document/` | 13 | 2,727 | the text store, identity rules, blocks, block index, parse cache, history and derived target indexes |
 | `src/ui/markdown/nodes/` | 39 | 2,440 | the node components and their shared editable/revealable contracts |
 | `src/ui/markdown/caret/` | 13 | 2,518 | the caret, drawn span, geometry, offsets, navigation and projection |
-| `src/ui/markdown/editing/` | 48 | 5,316 | typing, deleting, lists, tables, fences, clipboard, find-session semantics, links and focused helpers |
+| `src/ui/markdown/editing/` | 48 | 5,321 | typing, deleting, lists, tables, fences, clipboard, find-session semantics, links and focused helpers |
 | `src/commands/` | 7 | 990 | the app-wide command contracts, registry, dispatcher, authority, runtime and trigger adapters |
 | `src/events/` | 1 | 122 | typed synchronous delivery for facts that stay inside one window |
-| `src/ui/markdown/*` (top level) | 24 | 3,317 | stable editor/renderer facades, the command API, host ports, block dispatch and shared render support |
+| `src/ui/markdown/*` (top level) | 23 | 3,159 | stable editor/renderer facades, host ports, block dispatch and shared render support |
 | `src/ui/markdown/block_views/` | 3 | 251 | equation, fence/listing and exact-source block rendering strategies |
 | `src/ui/markdown/source_mode/` | 4 | 296 | source-mode state, block rules and node-source questions |
-| `src/ui/markdown/editor/` | 6 | 431 | history, keyboard, layout, render-context and view-state adapters |
+| `src/ui/markdown/editor/` | 6 | 443 | history, keyboard, layout, render-context and view-state adapters |
 | `src/ui/markdown/renderer/` | 5 | 530 | renderer DOM creation, measured-height policy, scroll/spacer geometry, and mounted-element caching |
 | `src/ui/markdown/editing/blank_lines/` | 4 | 294 | paragraph, list and deletion rules for empty-line editing |
 | `src/ui/floating/` | 6 | 340 | the shared floating surfaces, question card and placement rule |
 | `src/ui/new_document/` | 4 | 605 | new-note registration, flow, placement dialog and template picker |
 | `src/ui/session/` | 3 | 210 | session commands and the stacked-document panel |
-| `src/ui/markdown_host/` | 2 | 207 | the shell's Markdown host adapters and command registration |
+| `src/ui/markdown/commands/` | 2 | 206 | Markdown's command registrations against the one app-wide runtime |
 | `src/ui/find/` | 3 | 246 | document-independent find UI and the controller over `MarkdownFindApi` |
 | `src/ui/image/` | 4 | 435 | image clipboard flow, dialog, URL resolution and command registration |
 | `src/ui/export/workflow/` | 10 | 898 | command entry, question, request, paths, progress, bibliography, notices and body preparation |
@@ -50,7 +50,7 @@ anywhere in them.
 | `src/ui/export/dialog/` | 3 | 733 | the export question card, presentation-only form and its DOM controls |
 | `src/ui/export/manager/` | 6 | 927 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
 | `src/ui/export/templates/` | 16 | 2,220 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
-| `src/ui/**` outside `markdown/` (the shell) | 144 | 14,654 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions, find presentation and Markdown host adapters |
+| `src/ui/**` outside `markdown/` (the shell) | 142 | 14,444 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions and find presentation |
 | `src/services/` | 32 | 3,810 | cross-cutting services beside the feature directories |
 | `src/api/` | 9 | 766 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 3 | 237 | reading CSL: types, library loading and parsing |
@@ -63,7 +63,7 @@ anywhere in them.
 | `src-tauri/src/settings/` | 3 | 298 | configuration model, persistence and command façade |
 | `src-tauri/src/versioning/` | 5 | 1,076 | the git seam and writes, folder facts and version reads |
 
-`src/ui/markdown/` is 238 of the 439 modules and 27,404 of the 48,339 lines: the editor is the app,
+`src/ui/markdown/` is 239 of the 438 modules and 27,469 of the 48,200 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -160,25 +160,26 @@ exported through `src-tauri/src/lib.rs`. Their internals may move; their consume
 `docs/architecture.md` states the rule; this is what the code does today, measured by walking every
 relative import in `src/`.
 
-- **No cycles**, across all 439 modules; and `document/*` imports only syntax and its own files.
+- **No cycles**, across all 438 modules; and `document/*` imports only syntax and its own files.
   The two hardest invariants in the tree, and both hold.
 - **`syntax/*` imports only syntax, the AST types, the parser libraries and `plugins/*`** — the 3
   edges into the plugins are the parser's own extensions. `layering.mjs` enforces this.
 - **The render layer imports the caret**, in 3 places (`nodes/editable_node.ts`, `create_block.ts`).
   That is the design — a click places the caret — and `docs/architecture.md`'s layer table said the
   opposite; the table has been corrected to say so.
-- **No Markdown module imports an application service, API module, command runtime or Tauri plugin.**
-  `host.ts` names the capabilities, `command_api.ts` exposes editing, and `ui/markdown_host/` supplies
-  the adapters. `module-layout.mjs` enforces all four forbidden directions.
+- **Markdown is capability-oriented, not import-sealed.** `syntax/` and `document/` may not import
+  application services, commands, APIs, outer UI or Tauri. Integration capabilities may import stable
+  external modules: `host.ts` narrows render/caret dependencies, while `commands/` owns command
+  registration and imports the app-wide runtime directly. `module-layout.mjs` enforces that direction.
 - **One edge bends upwards inside Markdown**, and it is the one worth knowing:
 
 | Edge | Where | What it costs |
 | --- | --- | --- |
 | render → editor | `create_block.ts` → `editing/language_picker.ts` | the language badge's button opens a command-layer list from the render layer |
 
-  The outer shell's former edges into i18n, bibliography, table menus, image IO and find UI now
-  terminate at host ports and shell-owned adapters. The command runtime imports public Markdown
-  vocabulary; Markdown does not import it back.
+  Shell-owned presentation (translation, dialogs, native menus, image IO and find UI) stays outside
+  Markdown. Markdown commands import the shared runtime because command identity belongs to that
+  capability; this is an allowed integration edge, not a hidden second dispatch path.
 
 ## Conventions, and what enforces them
 
@@ -187,11 +188,11 @@ when this document was written (the class names and the offset tags) are checked
 
 | Convention | Written in | Enforced by |
 | --- | --- | --- |
-| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 439 modules) |
+| A module header says what it is for, what it may import and what it upholds | `writing-comments.md` | `test/checks/headers.mjs` — over the whole of `src/` (it began on the editor subtree and now covers all 438 modules) |
 | Domains expose a façade, avoid cross-domain cycles and do not repeat parent prefixes | this document | `test/checks/module-layout.mjs` resolves TypeScript imports and Rust font/file boundaries |
 | One markdown-syntax fact, one home | `architecture.md` | `test/checks/syntax-home.mjs` (9 facts, each defined only in `syntax/markers.ts`) |
 | A command has one typed contract, one implementation, and one dispatch path | `adding-a-command.md` | `test/checks/commands.mjs`, `check-command-contracts.mjs`, and `check-command-dispatch.mjs` |
-| Markdown imports no app service, API, command runtime, Tauri plugin or outer find/image/table UI | `architecture.md` and `ai-context.md` | `test/checks/module-layout.mjs: expectMarkdownHostBoundary` |
+| Pure Markdown syntax/document layers import no app service, command, API, outer UI or Tauri plugin | `architecture.md` and `ai-context.md` | `test/checks/module-layout.mjs: expectMarkdownDependencyDirection` |
 | The syntax layer never imports the DOM | `architecture.md` | `test/checks/layering.mjs` |
 | A probe that opens a native menu says so | `testing.md` | `test/checks/probe-markers.mjs` |
 | The `data-*` tags that carry offsets | `offset_tags.ts`, with `caret/offsets.ts` documenting the mapping | `test/checks/check-tag-offsets.mjs`: every `setOffset` names a tag from that module, and the fast path's moved list is read through it |
@@ -256,7 +257,7 @@ what keeps it that way.
    citation draws Smith (2020), not the `[@smith2020]` it was written as.
 4. **Extend `headers.mjs` over the whole of `src/`.** Done: the 41 modules outside
    `src/ui/markdown` — the shell, `services/`, `api/`, `citations/`, the two entry points — have
-   their three lines, and the check reads `src/` (it says 439 modules).
+   their three lines, and the check reads `src/` (it says 438 modules).
 5. **Check the `markdown-*` class contract.** Done: `test/checks/class-names.mjs` holds every
    `markdown-…` name the app uses to a rule in `styles.css` or to a listed hook (5 of them, each
    with its reason), and the other way round. Writing it found four names `format/dom_tags.ts` looked

@@ -29,8 +29,9 @@ in the same change that moves a module.
 | Document | `document/state.ts` (text, revision, history and target-owner), `document/block/model.ts` (block model), `document/block/parse_cache.ts` (parsed blocks and dependency versions) and `document/history.ts` (edit log) | the text and everything derived from it |
 | Render | `virtual_block_renderer.ts` (window orchestration), `renderer/dom.ts` (root/block DOM), `renderer/measurements.ts` (height policy), `renderer/geometry.ts` (scroll/spacers), `renderer/block_cache.ts` (mounted/spare elements), `block_sizes.ts` (pixel arithmetic), `viewport_window.ts` (which blocks to mount), `create_block.ts`, `block_views/`, `registry.ts`, `create_node.ts`, `nodes/*`, `source_mode/`, `format/`, with `editor/render_context.ts` adapting the host ports, `editor/page_layout.ts` owning A4/column scale, and `editor/view_state.ts` owning remembered caret/view state | DOM for the window of blocks; `source_mode/` is how something whose markdown can stand in for its rendering — a link, a formula, an inline run (bold, italic, strikethrough, code), and every fenced block — is built as that source while the caret is inside it |
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
-| Markdown editing | `markdown_editor.ts`, `command_api.ts`, `host.ts`, `editing/*`, `editing/editor_interactions.ts`, `click_routing.ts` | synchronous text and command operations, caret behavior and host ports; Markdown imports no application service, API module, command runtime or Tauri plugin |
-| Commands and shell adapters | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `src/ui/markdown_host/*`, `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts`, `ui/session/commands.ts` | register and dispatch the same command id for keys, menus, toolbar and future agent/MCP clients; choose host adapters and keep dialogs, translated status, native menus and external IO outside Markdown |
+| Markdown editing | `markdown_editor.ts`, `host.ts`, `editing/*`, `editing/editor_interactions.ts`, `click_routing.ts` | synchronous text operations, caret behavior and narrow integration ports needed by render/caret code |
+| Markdown commands | `commands/*` | register the editor's owned operations against the app-wide command runtime; keyboard, toolbar, menus and future agent/MCP clients still use the same ids |
+| Commands and shell presentation | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts`, `ui/session/commands.ts` | parse, authorize and dispatch commands; keep dialogs, translated status, native menus, file IO and external URL presentation in the shell |
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
@@ -53,13 +54,12 @@ Markdown editing is grouped by capability under one public entrypoint per domain
 `document/block/`, `editing/text/`, `editing/composition/`, `editing/table/`,
 `caret/navigation/`, `format/`, `nodes/heading/`, `nodes/code/`, `nodes/fence/`,
 `editing/find/`, `syntax/pandoc/` and `syntax/caption/`. Import the domain's `index.ts`
-from outside it; implementation files are internal. `MarkdownHost` supplies citations, document
-lookup, image sources, clipboard reads, events and command triggers. `MarkdownCommandApi` is the
-shell's only editing surface for command registration. `src/ui/markdown_host/` registers those
-operations and installs native-menu dispatch against the app-wide command runtime, so keyboard,
-toolbar and future MCP/agent edits still converge on one command path while Markdown remains
-self-contained. Find presentation and image IO live in the shell; Markdown owns their document
-semantics and narrow APIs.
+from outside it; implementation files are internal. Markdown is not an import-sealed domain:
+integration capabilities may import stable external modules when that is their responsibility.
+`MarkdownHost` remains for render/caret facts that should be injected rather than read through hidden
+globals, while `commands/` imports the app-wide command runtime to register the editor's operations.
+Keyboard, toolbar, native menus and future MCP/agent edits still converge on one command path. Find
+presentation and image IO live in the shell; Markdown owns their document semantics and narrow APIs.
 
 **And the webview may work where the app is working.** The file plugin and the asset protocol that
 serves a rendered picture start scoped to `$HOME` (`capabilities/default.json`, `tauri.conf.json`), which

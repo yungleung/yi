@@ -2,8 +2,7 @@
  * A range edit tied to one document revision succeeds once; retrying from the
  * old revision is refused before it can overwrite newer text.
  *
- * @covers src/ui/markdown_host/commands.ts, src/ui/markdown/command_api.ts,
- *         src/commands/dispatch.ts
+ * @covers src/ui/markdown/commands/editor_commands.ts, src/commands/dispatch.ts
  */
 (async () => {
   const t = window.__t;
