@@ -15,8 +15,8 @@ brief — read it first; this file is the short version and the non-negotiables.
   a probe run against a stale app says nothing about the branch.
 - `npm run check` covers pure rules in Node and must stay green; the probes cover
   what a compiler cannot see (caret placement, typing, scrolling, rendering).
-- Measured, a long-running dev app does not degrade: over a whole suite (~15 minutes,
-  76 probes) a load of the 314 KB fixture note stayed at ~330 ms and a bridge call at
+- Measured, a long-running dev app does not degrade: over a whole probe suite a load of
+  the 314 KB fixture note stayed at ~330 ms and a bridge call at
   ~3 ms (`test/probes/load-cost.js` reports both, and the harness prints its own
   `bridge: …` line per run). What looks like decay is the bridge's **5 s** budget for
   one script: a longer probe is cut off and recovered from its stash, and the harness
@@ -45,6 +45,12 @@ brief — read it first; this file is the short version and the non-negotiables.
 - New UI, built-in-AI, and MCP actions must use the same command contract. Do not add a second
   editing API. Normal typing and IME input stay on the synchronous text path, and same-window facts
   do not make an unnecessary round trip through Tauri.
+- Organize Markdown by owned capabilities. Keep pure syntax and document rules independent of DOM,
+  services, commands and Tauri. Editing, rendering, command integration and application adapters are
+  separate capabilities with explicit entrypoints. Markdown modules may import stable external
+  contracts when that integration is their responsibility; do not require every dependency to pass
+  through one host object. Shell presentation, translation, dialogs and native menus still belong to
+  the shell.
 - Design a new feature by naming its state owner, command inputs and results, emitted facts,
   permissions, failure modes, and tests before implementing it. Avoid speculative generic layers.
 - Refactorings preserve behaviour unless the task explicitly asks for a behaviour change. Prove

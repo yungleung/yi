@@ -73,6 +73,9 @@ impl Default for AppConfig {
 }
 
 /// Normalize one historical built-in template to "no reader choice".
+///
+/// Example: the old `title: Untitle\ndate:\nid:\nkeywords: untagged` value becomes `None`;
+/// a template the reader edited is returned unchanged.
 pub(super) fn as_read(mut cfg: AppConfig) -> AppConfig {
     if cfg.new_file_frontmatter.as_deref() == Some(OLD_NEW_FILE_FRONTMATTER) {
         cfg.new_file_frontmatter = None;

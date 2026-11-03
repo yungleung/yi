@@ -14,8 +14,6 @@
  * the construct can exist, and it closes when the caret leaves that query.
  */
 
-import { bibliographyManager } from '../../../services/bibliography';
-import { documentManager } from '../../../services/documents';
 import { getCaretRange } from '../caret/caret';
 import { caretRect } from '../caret/geometry';
 import { CompletionCard } from '../completion_card';
@@ -29,6 +27,7 @@ import {
   type CompletionChoice
 } from '../syntax/completions';
 import { referenceLabel } from '../document/reference_index';
+import type { DocumentTarget } from '../host';
 import {
   applyEdit,
   caretOffset,
@@ -116,7 +115,9 @@ export class Completions {
         caret,
         citation.closing,
         matchingChoices(
-          bibliographyManager.entries().map((entry) => ({ value: entry.key, title: entry.title })),
+          this.context.host.citations
+            .entries()
+            .map((entry) => ({ value: entry.key, title: entry.title })),
           citation.query
         )
       );
@@ -150,7 +151,7 @@ export class Completions {
         wikilink.query
       )
     );
-    void documentManager.documents().then((documents) => {
+    void this.context.host.documents.candidates().then((documents) => {
       if (generation !== this.generation) {
         return;
       }
@@ -169,9 +170,9 @@ export class Completions {
   }
 
   /** What the last look found; the list is drawn again when the answer arrives. */
-  private documentsFound: { target: string; title: string }[] = [];
+  private documentsFound: readonly DocumentTarget[] = [];
 
-  private documents(): { target: string; title: string }[] {
+  private documents(): readonly DocumentTarget[] {
     return this.documentsFound;
   }
 

@@ -17,6 +17,9 @@ import { containsFootnoteDefinition } from './model';
  *
  * The first definition is separated by a blank line; later definitions join the open notes run.
  * Existing trailing newlines stay put, and the new definition always ends with one.
+ *
+ * Example: inserting label `1` at the end of `'Body.'` returns one replacement
+ * whose applied text is `'Body.[^1]\n\n[^1]: \n'`.
  */
 export function footnoteInsertEdit(text: string, caret: number, label: string): TextEdit {
   const tail = text.slice(caret);

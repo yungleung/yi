@@ -97,6 +97,9 @@ export interface VersioningPlan {
  * where a cloud drive could otherwise reach `.git` (or where we cannot tell whether it could, since
  * the separate directory costs nothing in the local case: the reader's own git still works through
  * the one-line `.git` pointer file).
+ *
+ * Example: consent `'unasked'` returns `{ use: 'none', ask: 'consent', ... }`; consent `'yes'` with
+ * an existing repository returns `{ use: 'theirs', ask: null, ... }` without nesting another one.
  */
 export function versioningPlan(facts: VersioningFacts, consent: Consent): VersioningPlan {
   if (consent === 'unasked') {
@@ -123,6 +126,9 @@ export function versioningPlan(facts: VersioningFacts, consent: Consent): Versio
  * The reader's answer as the config holds it. An answer given for another folder is no answer:
  * consent belongs to a workspace, and a reader who keeps versions of their notes has not agreed to
  * keep them of a folder they open next.
+ *
+ * Example: `{ versioning: true, versioning_workspace: '/a' }` with workspace `/a` returns
+ * `'yes'`; the same stored answer with workspace `/b` returns `'unasked'`.
  */
 export function consentFrom(stored: StoredConsent, workspace: string): Consent {
   if (stored.versioning_workspace !== workspace) {
@@ -140,6 +146,9 @@ export interface StoredConsent {
 /**
  * Where the versions live, for the words that name it: the repository they already have, or the
  * git directory we would keep outside a folder a cloud drive could reach.
+ *
+ * Example: a `theirs` plan returns the repository toplevel; an `init` plan with
+ * `separateGitDir: true` returns the configured separate git directory.
  */
 export function versionLocation(facts: VersioningFacts, plan: VersioningPlan): string | null {
   if (plan.use === 'theirs') {
@@ -162,7 +171,11 @@ export function versionStamp(at: number): string {
   return `${date} ${two(when.getHours())}:${two(when.getMinutes())}`;
 }
 
-/** The title a history row shows, without the stamp appended to the commit subject. */
+/**
+ * The title a history row shows, without the stamp appended to the commit subject.
+ *
+ * Example: `versionTitle('Roadmap · 2026-11-01 21:55')` returns `'Roadmap'`.
+ */
 export function versionTitle(subject: string): string {
   return subject.replace(/ · \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, '');
 }
@@ -171,6 +184,9 @@ export function versionTitle(subject: string): string {
  * The message a version carries: the note's own name and the minute it was asked for as the
  * subject — so `git log --oneline` reads like the reader's own list of notes, and the app's own
  * list reads the same — and the reader's comment as the body when they gave one.
+ *
+ * Example: `versionMessage('Roadmap', date, 'before review')` returns a subject
+ * `'Roadmap · YYYY-MM-DD HH:MM'` and body `'before review'`; blank input gives `body: null`.
  */
 export function versionMessage(
   name: string,
@@ -194,6 +210,9 @@ export type VersionsState =
  * Whether the text on screen is what the newest version holds — the one thing that says the reader's
  * work is in a version rather than only in the file. `null` is *no version at all*, which is not a
  * version either.
+ *
+ * Example: `versionedNow('one\ntwo\n', 'one\ntwo\n')` returns true;
+ * `versionedNow(null, 'one\n')` returns false because no version exists.
  */
 export function versionedNow(newestText: string | null, content: string): boolean {
   return newestText !== null && newestText === content;

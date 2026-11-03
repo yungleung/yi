@@ -21,6 +21,6 @@ export {
   readFrontmatterId,
   readFrontmatterLang,
   readFrontmatterTitle
-} from './identity';
-export type { FrontmatterFields } from './identity';
+} from '../../ui/markdown/document/identity';
+export type { FrontmatterFields } from '../../ui/markdown/document/identity';
 export { DocumentManager, documentManager, readDocumentId } from './manager';

@@ -24,11 +24,10 @@ import { editorSelection, proseRoot, rangeOffsets } from './selection';
 import type { EditKind, EditMark } from '../document/history';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import { editsId } from './id_lock';
-import { showHint } from '../../../services/hints';
-import { t } from '../../../services/i18n';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
 import { scheduleEditVerification } from './edit_verification';
 import { keepScroll, restoreCaret, showSourceAt } from './caret_placement';
+import type { MarkdownHost } from '../host';
 
 export { quoteContextAt } from './quote_context';
 export {
@@ -43,6 +42,8 @@ export {
 
 /** What every editing command needs to read and change the document. */
 export interface EditorContext {
+  /** Application capabilities supplied at the editor composition root. */
+  readonly host: MarkdownHost;
   readonly state: MarkdownEditorState;
   readonly renderer: VirtualBlockRenderer;
   readonly contentView: HTMLElement;
@@ -94,7 +95,7 @@ export function applyEdit(
   allowFastPath = true
 ): boolean {
   if (editsId(context.state.getText(), from, to)) {
-    showHint(t('session.idLocked'), null);
+    context.host.notify({ kind: 'hint', code: 'document.idLocked' });
     return false;
   }
   const anchor = context.contentView.scrollTop;
@@ -107,7 +108,9 @@ export function applyEdit(
   const beforeText = context.state.getText();
   const rule = isPlainEdit(beforeText, from, to, replacement, literal);
   const root = proseRoot(context);
-  const candidate = root ? plainRun(context.state, root, from, to) : null;
+  const candidate = root
+    ? plainRun(context.state, root, from, to, context.host.citations.renderedLength)
+    : null;
   const sourceEditStays =
     candidate === null ||
     !candidate.source ||

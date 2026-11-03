@@ -87,6 +87,9 @@ const MOMENT_MS = 50;
  * system's candidate window opens where the element is. `onCommit` writes a committed word
  * into the document, and `onLayoutChanged` measures the block the composing text was written
  * into again — a longer word can wrap the line (see `view.ts`).
+ *
+ * Example: composing `nihao` and choosing `你好` calls `onCommit('你好')` once;
+ * the intermediate Latin letters never enter the document.
  */
 export function installCompositionInput(
   host: HTMLElement,

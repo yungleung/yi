@@ -10,7 +10,7 @@
 
 export { ImageDialog, imageDialog } from './dialog';
 export type { ImageChooser, ImageRequest } from './dialog';
-export { insertImage } from './flow';
+export { insertImage, registerImageCommand } from './flow';
 export {
   imageBases,
   imageSourceCandidates,

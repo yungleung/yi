@@ -9,7 +9,7 @@
  * is what keeps the search testable without a window.
  */
 
-import { t } from '../../../../services/i18n';
+import { t } from '../../services/i18n';
 
 export interface FindBarHandlers {
   /** The query changed; the controller should recompute the matches. */

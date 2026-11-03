@@ -23,18 +23,16 @@
 import type { Hint } from '../hints';
 import type { Message } from '../messages';
 import type { SessionState } from '../session';
+import type {
+  EditorChangeReason,
+  EditorDocumentChanged
+} from '../../contracts';
 
 /** Why the document's committed text or revision changed. */
-export type DocumentChangeReason = 'load' | 'edit' | 'undo' | 'redo';
+export type DocumentChangeReason = EditorChangeReason;
 
 /** One committed document state, announced after the editor owns the change. */
-export interface DocumentChanged {
-  readonly documentKey: string;
-  readonly previousRevision: number | null;
-  readonly revision: number;
-  readonly reason: DocumentChangeReason;
-  readonly text: string;
-}
+export type DocumentChanged = EditorDocumentChanged;
 
 /** One event's payload. `null` is "the event *is* the news". */
 export interface AppEvents {

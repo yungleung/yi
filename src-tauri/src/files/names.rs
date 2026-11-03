@@ -12,6 +12,8 @@ const MARKDOWN_EXTENSIONS: [&str; 3] = ["md", "markdown", "mdx"];
 const NEW_FILE_EXTENSION: &str = "md";
 
 /// Whether a name is one the tree can show at all.
+///
+/// Example: `draft.MD` is true; `photo.png` and `README` are false.
 pub(super) fn is_markdown(name: &str) -> bool {
     Path::new(name)
         .extension()
@@ -20,6 +22,9 @@ pub(super) fn is_markdown(name: &str) -> bool {
 }
 
 /// The name to use for a new entry, or a reason it cannot be one.
+///
+/// Example: `entry_name("Draft", true)` returns `Draft.md`; `entry_name("../secret", true)`
+/// is refused because the name contains a path separator.
 pub(super) fn entry_name(name: &str, is_file: bool) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {

@@ -23,7 +23,12 @@ import { deleteBlankQuoteLine } from '../../syntax/container';
 import { tableDeleteIsNoop } from '../table';
 import { blockAtCaret } from './context';
 
-/** Deletes one character before (backspace) or after (delete) the caret. */
+/**
+ * Deletes one character before (backspace) or after (delete) the caret.
+ *
+ * Example: Backspace between an app-created `[]` removes both characters; Delete
+ * at the right edge of a table cell returns true without eating a pipe.
+ */
 export function deleteText(context: EditorContext, forward: boolean): boolean {
   const range = editorSelection(context, true);
   if (!range) {

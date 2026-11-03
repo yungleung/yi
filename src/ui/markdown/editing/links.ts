@@ -12,14 +12,12 @@
  * A clipboard the app cannot read is not an error: the link is written without a
  * destination and its author types one.
  *
- * May import: the link's own shape (`syntax/link_edits.ts`), the app's clipboard read
- * (`api/clipboard`), which the plugin answers on every platform the app runs on, and the
+ * May import: the link's own shape (`syntax/link_edits.ts`), the host clipboard port and the
  * editing context. Upholds: the document text is the only source of truth — one
  * `applyEdit` writes the link, and the caret is placed by offset from the text the edit
  * leaves behind.
  */
 
-import { readClipboardText } from '../../../api/clipboard';
 import { clipboardDestination, linkInsertion, selectionTitle } from '../syntax/link_edits';
 import { applyEdit, type EditorContext } from './context';
 import { editorSelection, rangeOffsets } from './selection';
@@ -32,7 +30,7 @@ export async function insertLink(context: EditorContext): Promise<boolean> {
   // The app's own read. `null` is an answer — a clipboard holding no text, or one the app
   // may not read — and it is final: there is no webview fallback to ask, whose paste
   // confirmation the reader never asked for.
-  const clipboard = await readClipboardText();
+  const clipboard = await context.host.clipboard.readText();
   const url = clipboard === null ? null : clipboardDestination(clipboard);
   const range = editorSelection(context, true);
   const offsets = range ? rangeOffsets(context, range) : null;

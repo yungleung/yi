@@ -23,6 +23,12 @@ export interface LoadedCitationLibrary {
   items: CitationLibraryItem[];
 }
 
+/**
+ * Parses BibTeX or CSL-JSON into the library consumers format citations from.
+ *
+ * Example: a JSON array containing `{ id: 'smith2020', title: '...' }` produces one
+ * item with key `'smith2020'`; an empty string or malformed source returns null.
+ */
 export function loadCitationLibrary(content: string): LoadedCitationLibrary | null {
   const trimmed = content.trim();
   if (trimmed === '') {

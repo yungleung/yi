@@ -13,6 +13,10 @@ import { FORMATTING_STYLES, type FormattingStyle } from '../ui/markdown/format';
 import { LIST_KINDS } from '../ui/markdown/syntax/list';
 import { TABLE_COMMANDS, type TableCommand } from '../ui/markdown/syntax/table';
 import type { TableTarget } from '../ui/markdown/editing/table';
+import type {
+  EditorDocumentPosition,
+  EditorReplaceRange
+} from '../contracts';
 
 /** What a command may change when it runs. */
 export type CommandEffect =
@@ -61,17 +65,10 @@ export interface TableSizeInput {
 }
 
 /** The identity and revision an agent plans a document edit against. */
-export interface DocumentPosition {
-  readonly documentKey: string;
-  readonly revision: number;
-}
+export type DocumentPosition = EditorDocumentPosition;
 
 /** One revision-checked raw-text replacement. */
-export interface ReplaceRangeInput extends DocumentPosition {
-  readonly from: number;
-  readonly to: number;
-  readonly replacement: string;
-}
+export type ReplaceRangeInput = EditorReplaceRange;
 
 type NoInputContract = CommandContract<null>;
 type FormattingContracts = {
@@ -138,7 +135,11 @@ function parseNoInput(value: unknown): null {
   throw new CommandInputError('this command takes no input');
 }
 
-/** Requires non-empty text. */
+/**
+ * Requires non-empty text.
+ *
+ * Example: `'notes'` is returned unchanged; `'   '` throws before feature code sees it.
+ */
 function parseRequiredString(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new CommandInputError(`${name} must be a non-empty string`);
@@ -146,7 +147,11 @@ function parseRequiredString(value: unknown, name: string): string {
   return value;
 }
 
-/** Accepts an absent kind, otherwise requires non-empty text. */
+/**
+ * Accepts an absent kind, otherwise requires non-empty text.
+ *
+ * Example: `undefined` returns `null`; `'en'` returns `'en'`.
+ */
 function parseOptionalString(value: unknown, name: string): string | null {
   if (value === undefined || value === null) {
     return null;
@@ -174,7 +179,11 @@ function parseNewDocumentInput(value: unknown): NewDocumentCommandInput | null {
   return { folder: parseRequiredString(folder, 'folder') };
 }
 
-/** Requires a finite number, which prevents NaN and Infinity from reaching feature code. */
+/**
+ * Requires a finite number, which prevents NaN and Infinity from reaching feature code.
+ *
+ * Example: `12` returns `12`; `Infinity` throws `CommandInputError`.
+ */
 function parseFiniteNumber(value: unknown, name: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new CommandInputError(`${name} must be a finite number`);
@@ -200,7 +209,11 @@ function parseTableTarget(value: unknown): TableTarget {
   };
 }
 
-/** Reads the positive dimensions the table picker hands over. */
+/**
+ * Reads the positive dimensions the table picker hands over.
+ *
+ * Example: `{ rows: 3, columns: 2 }` returns those numbers; `{ rows: 0, columns: 2 }` throws.
+ */
 function parseTableSize(value: unknown): TableSizeInput {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new CommandInputError('table size must be an object');
@@ -214,7 +227,11 @@ function parseTableSize(value: unknown): TableSizeInput {
   return { rows, columns };
 }
 
-/** Requires a non-negative integer. */
+/**
+ * Requires a non-negative integer.
+ *
+ * Example: revision `42` is accepted; `-1` and `1.5` are refused.
+ */
 function parseNonNegativeInteger(value: unknown, name: string): number {
   const number = parseFiniteNumber(value, name);
   if (!Number.isInteger(number) || number < 0) {

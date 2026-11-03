@@ -16,7 +16,7 @@
     window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event, payload });
   const registry = await t.app('/src/commands/runtime.ts');
   const { readTableSource } = await t.app('/src/ui/markdown/syntax/table/index.ts');
-  const { tableMenuModel } = await t.app('/src/ui/table/index.ts');
+  const { tableMenuModel } = await t.app('/src/ui/markdown/editing/table/index.ts');
   const doc = ['| A | B |', '| :--- | --- |', '| 1 | 2 |', ''].join('\n');
   await t.load(doc);
   const cell = t.prose().querySelector('[data-table-cell="1:0"]');

@@ -18,6 +18,9 @@ import type { ExportAnswers, Rewrite } from './contracts';
 /**
  * Every image whose destination names a file that is there, as that file's own
  * absolute path. A web URL or missing file stays as written.
+ *
+ * Example: `![shot](images/shot.png)` becomes
+ * `![shot](/absolute/project/images/shot.png)` when `answers.exists` accepts it.
  */
 export async function imageRewrites(
   tree: Walkable,
@@ -51,7 +54,12 @@ export async function imageRewrites(
   return rewrites;
 }
 
-/** The local file an image resolves to, or null when its destination stays as written. */
+/**
+ * The local file an image resolves to, or null when its destination stays as written.
+ *
+ * Example: `rasterised` wins for an SVG; otherwise the first existing candidate
+ * path wins; a web image is fetched once and cached in `fetched`.
+ */
 export async function imageDestination(
   image: AstImage,
   answers: ExportAnswers,
@@ -101,7 +109,12 @@ async function resolvedFile(
   return null;
 }
 
-/** The Markdown of an image whose destination is now a file path. */
+/**
+ * The Markdown of an image whose destination is now a file path.
+ *
+ * Example: `imageMarkdown({ alt: 'A shot', title: 'Figure' }, '/vault/a b.png')`
+ * returns `![A shot](/vault/a%20b.png "Figure")`.
+ */
 export function imageMarkdown(image: AstImage, file: string): string {
   const alt = (image.alt ?? '').replace(/[[\]]/g, '\\$&');
   const title =
@@ -109,7 +122,12 @@ export function imageMarkdown(image: AstImage, file: string): string {
   return `![${alt}](${encodedPath(file)}${title})`;
 }
 
-/** An image whose destination is already a readable Markdown destination. */
+/**
+ * An image whose destination is already a readable Markdown destination.
+ *
+ * Example: keeping `https://example.com/a.png` does not percent-encode its
+ * scheme or path; the alt text and optional title are still escaped.
+ */
 export function imageMarkdownUnchanged(
   image: AstImage,
   destination: string

@@ -11,6 +11,12 @@
 
 import { caretOffset, restoreCaret, type EditorContext } from '../context';
 
+/**
+ * Toggles the source checkbox belonging to one rendered task checkbox.
+ *
+ * Example: clicking the rendered task for `- [ ] Draft` rewrites it to
+ * `- [x] Draft`; a checkbox outside a task marker returns false.
+ */
 export function toggleTask(context: EditorContext, checkbox: HTMLInputElement): boolean {
   const item = checkbox.closest<HTMLElement>('[data-task-source-from]');
   const blockElement = item?.closest<HTMLElement>('.markdown-block');

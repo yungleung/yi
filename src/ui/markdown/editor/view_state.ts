@@ -4,8 +4,8 @@
  * Example: when a scrolled-away block is unmounted, the caret's document
  * offset is remembered and restored without scrolling the reader's page.
  *
- * May import: the edit context, caret mapping, selection rules and session view
- * shapes. Upholds: a live DOM range is never mistaken for a document position.
+ * May import: the edit context, caret mapping, selection rules and Markdown view
+ * contracts. Upholds: a live DOM range is never mistaken for a document position.
  */
 
 import {
@@ -26,7 +26,7 @@ import {
   rangeOffsets
 } from '../editing/selection';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../../services/session';
+import type { EditorDocumentView, EditorSeenView } from '../../../contracts';
 
 /** What the view state needs from the editor it belongs to. */
 export interface EditorViewDependencies {
@@ -55,7 +55,7 @@ export class EditorViewState {
   }
 
   /** Captures the selection and view for the session. */
-  capture(): SeenView {
+  capture(): EditorSeenView {
     return {
       caret: this.caretForSnapshot(),
       to: this.selectionEnd(),
@@ -77,7 +77,7 @@ export class EditorViewState {
   }
 
   /** Restores the caret/selection and scroll anchor remembered by the session. */
-  restore(view: DocumentView): void {
+  restore(view: EditorDocumentView): void {
     if (view.caret !== null) {
       const placed =
         view.to !== null && view.to !== view.caret
@@ -111,7 +111,8 @@ export class EditorViewState {
       documentOffsetAt(
         this.editor.context.state,
         caret.startContainer,
-        caret.startOffset
+        caret.startOffset,
+        this.editor.context.host.citations.renderedLength
       ) !== null;
     if (survived) {
       this.pendingCaretOffset = null;

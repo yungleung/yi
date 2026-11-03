@@ -347,6 +347,9 @@ export function rowAt(source: TableSource, row: number): TableRow | null {
  * pipe or between two cells in the same table — the cell nearest to it.
  * "Nearest" rather than "first" keeps boundary positions on the side of the
  * table they belong to. Offsets before or after the table have no cell.
+ *
+ * Example: an offset on the pipe between `A` and `B` returns the cell on the
+ * side that pipe already belongs to; an offset before the table returns null.
  */
 export function locateCell(source: TableSource, offset: number): TableCellSpan | null {
   if (offset < source.from || offset > source.to) {
@@ -373,13 +376,21 @@ export function locateCell(source: TableSource, offset: number): TableCellSpan |
 /**
  * The cell directly below this one, or null when there is nothing below it —
  * the last row, or a short row that does not reach this column.
+ *
+ * Example: `cellBelow(table, 0, 1)` returns the second body cell when the next row
+ * has two cells; on the final row it returns null.
  */
 export function cellBelow(source: TableSource, row: number, column: number): TableCellSpan | null {
   const next = source.rows.find((candidate) => candidate.row === row + 1);
   return next?.cells.find((cell) => cell.column === column) ?? null;
 }
 
-/** The cell's text, as the author wrote it (padding trimmed). */
+/**
+ * The cell's text, as the author wrote it (padding trimmed).
+ *
+ * Example: row `| Alice | 42 |`, cell column 1 returns `'42'`; a missing row or
+ * column returns `''`.
+ */
 export function cellValue(source: TableSource, text: string, row: number, column: number): string {
   const cell = rowAt(source, row)?.cells.find((candidate) => candidate.column === column);
   return cell ? text.slice(cell.innerStart, cell.innerEnd).trim() : '';

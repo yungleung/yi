@@ -10,7 +10,12 @@
 
 import { footnoteDefinitionLabels, footnoteReferenceLabels } from './model';
 
-/** The parse input for a block, with the definitions its references need. */
+/**
+ * The parse input for a block, with the definitions its references need.
+ *
+ * Example: block `'Body[^1]'` with defined labels `{1,2}` gets only
+ * `'\n\n[^1]: x'` appended; label `2` is omitted because this block does not reference it.
+ */
 export function withFootnoteDefinitions(
   blockText: string,
   defined: ReadonlySet<string>

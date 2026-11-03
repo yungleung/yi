@@ -5,15 +5,15 @@
  * the clipboard still round-trips correctly when most of the document is
  * virtualized away.
  *
- * May import: the editing context and the pure rules it needs (`./context`,
- * `./blank_lines`). Upholds: the document text is the only source of truth —
+ * May import: the editing context and the pure rules it needs (`../context`,
+ * `../blank_lines`). Upholds: the document text is the only source of truth —
  * copy and cut read raw offsets and paste is one range replacement, so what the
  * clipboard carries never depends on which blocks happen to be mounted.
  */
 
-import { applyEdit, type EditorContext } from './context';
-import { editorSelection, rangeOffsets, proseRoot } from './selection';
-import { materializeInsertion, pasteInsertion } from './blank_lines';
+import { applyEdit, type EditorContext } from '../context';
+import { editorSelection, rangeOffsets, proseRoot } from '../selection';
+import { materializeInsertion, pasteInsertion } from '../blank_lines';
 
 /** The selected raw range and its text, or null when nothing is selected. */
 function selectedRawRange(

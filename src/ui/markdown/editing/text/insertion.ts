@@ -41,7 +41,12 @@ import { rangeInSourceText } from '../../source_text';
 import { insertFenceOpen } from '../fence_open';
 import { blockAtCaret } from './context';
 
-/** Inserts typed text at the caret, replacing any selection. */
+/**
+ * Inserts typed text at the caret, replacing any selection.
+ *
+ * Example: typing `(` after `[title]` writes `()` and leaves the caret between
+ * them; invalid locations such as an unmounted caret return false and change nothing.
+ */
 export function insertText(context: EditorContext, text: string): boolean {
   return insertAt(context, text, 'typing');
 }
@@ -54,6 +59,9 @@ export function insertText(context: EditorContext, text: string): boolean {
  * bracket follows the same pairing rule as the key path; a committed word is still
  * inserted literally. Its edit is not `typing`, which is what makes one undo take the
  * whole word (`history.ts`: a multi-character insertion is a step of its own).
+ *
+ * Example: committing `你好` inserts both characters as one undo step; committing
+ * `(` still writes the pair `()`.
  */
 export function insertCommitted(context: EditorContext, text: string): boolean {
   return insertAt(context, text, 'commit');

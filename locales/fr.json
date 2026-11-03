@@ -235,7 +235,6 @@
   "tree.delete.yes": "Supprimer",
   "tree.delete.no": "Garder",
   "message.close": "Fermer la notification",
-  "completion.empty": "Rien à proposer ici.",
   "link.openFailed": "Impossible d’ouvrir {name} : {message}",
   "wikilink.notFound": "Aucune note nommée « {target} ».",
   "reference.notFound": "Aucune cible de référence n’a l’identifiant « {id} ».",

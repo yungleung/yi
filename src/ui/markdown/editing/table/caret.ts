@@ -32,7 +32,10 @@ function caretTable(
   column: number;
   quotePrefix: string | null;
 } | null {
-  const location = caretLocation(context.state);
+  const location = caretLocation(
+    context.state,
+    context.host.citations.renderedLength
+  );
   if (!location) {
     return null;
   }
@@ -66,7 +69,12 @@ function caretTable(
     : null;
 }
 
-/** Whether the caret sits inside a table cell. */
+/**
+ * Whether the caret sits inside a table cell.
+ *
+ * Example: a caret in `| A | B |` returns true; a caret on the blank line after
+ * that table returns false.
+ */
 export function caretInTableCell(context: EditorContext): boolean {
   return caretTable(context) !== null;
 }
@@ -74,6 +82,9 @@ export function caretInTableCell(context: EditorContext): boolean {
 /**
  * `Enter` inside a table cell: go down the column, and leave the table when
  * there is nothing below.
+ *
+ * Example: Enter in the header's second cell moves to the second body cell;
+ * Enter in the final row inserts a separator and places the caret below the table.
  */
 export function continueTableDown(context: EditorContext): boolean {
   const found = caretTable(context);
@@ -132,10 +143,16 @@ function leaveTableBelow(
 /**
  * Whether Backspace/Delete at the caret has nothing to delete *inside its
  * cell*: the cell is empty, or the caret is at the edge of its content.
+ *
+ * Example: Backspace at the start of `| A |` returns true, so it does not eat
+ * the pipe; Backspace after `A` returns false and deletes `A`.
  */
 export function tableDeleteIsNoop(context: EditorContext, forward: boolean): boolean {
   const found = caretTable(context);
-  const location = caretLocation(context.state);
+  const location = caretLocation(
+    context.state,
+    context.host.citations.renderedLength
+  );
   if (!found || !location) {
     return false;
   }
@@ -158,6 +175,9 @@ export function tableDeleteIsNoop(context: EditorContext, forward: boolean): boo
 /**
  * Moves the caret to the next (+1) or previous (-1) cell in reading order. Tab
  * in the last cell adds a body row and moves into it.
+ *
+ * Example: moving forward from the last header cell enters the first body cell;
+ * moving forward from the final body cell appends a row.
  */
 export function moveTableCell(context: EditorContext, direction: -1 | 1): boolean {
   const found = caretTable(context);

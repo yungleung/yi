@@ -42,7 +42,12 @@ import { emptyCalloutNewline } from '../../syntax/callout';
 import { caretInTableCell } from '../table';
 import { blockAtCaret } from './context';
 
-/** Splits the current line, following the rule for each kind of block. */
+/**
+ * Splits the current line, following the rule for each kind of block.
+ *
+ * Example: Enter after `- item` writes a new `- ` marker; Enter in a table cell
+ * moves down the column instead of splitting the row.
+ */
 export function insertNewline(context: EditorContext): boolean {
   const range = editorSelection(context, true);
   if (!range) {

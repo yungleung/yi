@@ -127,7 +127,13 @@ function handleTextKey(event: KeyboardEvent, host: KeyHost): void {
     // The list step goes through the registry like any other trigger: the
     // command is available where there is a list line to move, so a Tab that
     // cannot indent here falls through to the code block below.
-    if (runCommand(event.shiftKey ? 'list:outdent' : 'list:indent', null, 'keyboard')) {
+    if (
+      runCommand(
+        event.shiftKey ? 'list:outdent' : 'list:indent',
+        null,
+        'keyboard'
+      )
+    ) {
     event.preventDefault();
     return;
   }

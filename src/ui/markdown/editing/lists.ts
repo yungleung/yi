@@ -32,8 +32,8 @@ export type ListCommand = (typeof LIST_COMMANDS)[number];
  * The edit a list command would make here, or null when there is nothing to do
  * — inside code, math or another raw block, where a line is literal text and not
  * a list. Split from applying it so a trigger can ask whether the command
- * applies without running it (see `commands/editor_commands.ts`), which is what
- * lets Tab fall through to the code block's own Tab.
+ * applies without running it (`listCommandEdit` from the command registration), which
+ * is what lets Tab fall through to the code block's own Tab.
  */
 export function listCommandEdit(context: EditorContext, command: ListCommand): TextEdit | null {
   const range = editorSelection(context, true);

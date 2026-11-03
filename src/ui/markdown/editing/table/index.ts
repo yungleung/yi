@@ -22,3 +22,5 @@ export {
   moveTableCell,
   tableDeleteIsNoop
 } from './caret';
+export { tableMenuModel } from './menu_model';
+export type { TableMenuNode } from './menu_model';

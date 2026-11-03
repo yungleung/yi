@@ -34,7 +34,12 @@ export function caretOffset(context: EditorContext): number | null {
   if (!range) {
     return null;
   }
-  const start = documentOffsetAt(context.state, range.startContainer, range.startOffset);
+  const start = documentOffsetAt(
+    context.state,
+    range.startContainer,
+    range.startOffset,
+    context.host.citations.renderedLength
+  );
   return start ? start.offset : null;
 }
 
@@ -131,8 +136,9 @@ export function restoreSelection(
   if (!root) {
     return false;
   }
-  const start = domPositionAtOffset(context.state, root, from);
-  const end = domPositionAtOffset(context.state, root, to);
+  const citations = context.host.citations.renderedLength;
+  const start = domPositionAtOffset(context.state, root, from, citations);
+  const end = domPositionAtOffset(context.state, root, to, citations);
   if (!start || !end) {
     return false;
   }
@@ -162,7 +168,12 @@ export function placeCaret(context: EditorContext, offset: number, scroll = true
     return false;
   }
   const clamped = context.state.nearestTextOffset(offset);
-  const position = domPositionAtOffset(context.state, root, clamped);
+  const position = domPositionAtOffset(
+    context.state,
+    root,
+    clamped,
+    context.host.citations.renderedLength
+  );
   if (!position) {
     setSelectionRange(null);
     window.getSelection()?.removeAllRanges();

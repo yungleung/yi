@@ -4,11 +4,11 @@
  * Example: undoing a replaced word restores it and selects the word again; undoing after focus
  * moved away also hands the keyboard back to the composition seam when the result is a caret.
  *
- * May import: history/document state through the editing context, caret/source placement and event
- * vocabulary. Upholds: undo and redo use the same render → caret → scroll sequence as an edit.
+ * May import: history/document state through the editing context, caret/source placement and the
+ * host event contract. Upholds: undo and redo use the same render → caret → scroll sequence as an edit.
  */
 
-import type { DocumentChangeReason } from '../../../services/events';
+import type { EditorChangeReason } from '../../../contracts';
 import {
   caretOffset,
   keepScroll,
@@ -22,7 +22,7 @@ export interface EditorHistoryHost {
   readonly context: EditorContext;
   regainKeyboard(): void;
   announceDocumentChange(
-    reason: DocumentChangeReason,
+    reason: EditorChangeReason,
     previousRevision: number
   ): void;
 }

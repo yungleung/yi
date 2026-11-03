@@ -11,8 +11,6 @@
  */
 
 import { firstReference } from '../document/reference_index';
-import { showMessage } from '../../../services/messages';
-import { t } from '../../../services/i18n';
 import { restoreCaret, type EditorContext } from './context';
 
 /** Resolve and focus a reference fragment. Missing targets are handled and reported. */
@@ -25,7 +23,7 @@ export function jumpToReference(context: EditorContext, destination: string): bo
   }
   const target = firstReference(context.state.referenceEntries(), id);
   if (!target) {
-    showMessage(t('reference.notFound', { id }));
+    context.host.notify({ kind: 'message', code: 'reference.notFound', params: { id } });
     return true;
   }
   context.renderer.revealOffset(target.from);

@@ -18,7 +18,8 @@
 /** What the editor asks the app to open: a wikilink's target, or an ordinary link's destination. */
 export type OpenRequest =
   | { kind: 'wikilink'; target: string }
-  | { kind: 'link'; destination: string };
+  | { kind: 'link'; destination: string }
+  | { kind: 'external'; url: string };
 
 /** What the shell does with a request: open what it names, or say there is nothing there. */
 export type OpenRequestHandler = (request: OpenRequest) => void;
@@ -38,4 +39,9 @@ export function openWikilinkTarget(target: string): void {
 /** Asks for the file a link's destination names. */
 export function openLinkDestination(destination: string): void {
   handler?.({ kind: 'link', destination });
+}
+
+/** Asks the shell to open a web, mail or other external URL. */
+export function openExternalUrl(url: string): void {
+  handler?.({ kind: 'external', url });
 }

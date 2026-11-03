@@ -10,7 +10,12 @@
  * identifiers.
  */
 
-/** The automatic identifier of this plain heading text. */
+/**
+ * The automatic identifier of this plain heading text.
+ *
+ * Example: `pandocHeadingId('A Heading!')` returns `'a-heading'`; text with no
+ * letter returns the fallback `'section'`.
+ */
 export function pandocHeadingId(text: string): string {
   const firstLetter = text.search(/\p{L}/u);
   if (firstLetter < 0) {

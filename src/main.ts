@@ -30,7 +30,10 @@ import { registerSessionCommands } from './ui/session';
 import { registerNewDocumentCommand } from './ui/new_document';
 import { registerVersionCommand } from './ui/versioning/index';
 import { registerExportCommand } from './ui/export/workflow';
-import { registerExportManagerCommand } from './ui/export/manager/index';
+import {
+  exportManager,
+  registerExportManagerCommand
+} from './ui/export/manager/index';
 import { ExportProgressStatus } from './ui/export/workflow';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/index';
 import { registerDocumentationCommand } from './ui/documentation/index';
@@ -131,7 +134,10 @@ function createAppShell(): MarkdownEditor {
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is
   // the text on screen rather than the session's debounced copy of it.
   registerExportCommand({ text: () => editor.getContent(), progress: exportProgress });
-  registerExportManagerCommand({ focusEditor: () => editor.focusText() });
+  registerExportManagerCommand(
+    { focusEditor: () => editor.focusText() },
+    exportManager
+  );
 
   // Seed the empty editor before any document load can announce its own count.
   void wordsCount.update(editor.getContent());

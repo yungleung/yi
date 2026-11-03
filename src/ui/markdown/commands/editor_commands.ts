@@ -1,53 +1,48 @@
 /**
- * The commands this editor owns, registered by name.
+ * The commands owned by the Markdown editor, registered by their app-wide ids.
  *
- * The editor wires the events and keeps the caret; what each command *does* is
- * a function under `editing/`, and this is the table that says which name
- * reaches which of them — filled once, in the one place
- * `src/commands/runtime.ts` expects to be filled from, so a chord, a toolbar
- * button, a menu item and the keymap all land on the same code.
+ * Example: `format:bold` calls the same `applyFormatting` used by the keyboard chord,
+ * while `document:replaceRange` refuses a stale agent edit before it reaches `applyEdit`.
  *
- * May import: the registry, the editing rules the commands apply and the
- * variables those rules are enumerated from. Upholds: one command has one name,
- * one home and one way in — a second registration for an id throws in the
- * registry rather than quietly winning.
+ * May import: the command runtime, command failure contract, editing rules and editor
+ * context. Upholds: one command id has one implementation and one dispatch path.
  */
 
-import { FORMATTING_STYLES } from '../format';
+import { CommandExecutionError } from '../../../commands/dispatch';
+import { registerCommand } from '../../../commands/runtime';
+import { cutSelection, selectAll } from '../editing/clipboard';
+import { applyEdit, type EditorContext } from '../editing/context';
+import { applyFormatting } from '../editing/formatting';
+import { insertFootnote } from '../editing/footnotes';
+import { insertLink } from '../editing/links';
 import { LIST_COMMANDS, applyListCommand, listCommandEdit } from '../editing/lists';
 import {
   TABLE_COMMANDS,
   insertTable,
   runTableCommand,
-  type TableCommand,
   type TableTarget
 } from '../editing/table';
-import { applyEdit, type EditorContext } from '../editing/context';
-import { cutSelection, selectAll } from '../editing/clipboard';
-import { applyFormatting } from '../editing/formatting';
-import { insertFootnote } from '../editing/footnotes';
-import { insertLink } from '../editing/links';
 import { insertThematicBreak } from '../editing/thematic_break';
-import { insertImage } from '../../image/index';
-import { registerCommand } from '../../../commands/runtime';
-import { CommandExecutionError } from '../../../commands/dispatch';
+import { FORMATTING_STYLES } from '../format';
 
-/** What a command needs from the editor that registers it. */
+/** What command registration needs from the editor that owns the document. */
 export interface CommandHost {
-  /** The document, the renderer and the scroll container. */
   readonly context: EditorContext;
-  /** Opens the find bar, on the query field or on the replace field. */
   openFind(replace: boolean): void;
   closeFind(): void;
-  /** Undo or redo, keeping the caret at its document offset. */
   applyHistory(direction: 'undo' | 'redo'): void;
-  /** Switches the editor between its page of A4 and a column the width of the pane. */
   toggleLayout(): void;
 }
 
-/** Registers every command the editor owns against the registry. */
+/**
+ * Registers every command whose behaviour belongs to the Markdown editor.
+ *
+ * Example: a toolbar button and Cmd/Ctrl+B both dispatch `format:bold`, so neither
+ * can bypass the document's read-only authority or its one editing implementation.
+ */
 export function registerEditorCommands(host: CommandHost): void {
   const { context } = host;
+
   registerCommand({
     id: 'history:undo',
     run: () => {
@@ -91,13 +86,6 @@ export function registerEditorCommands(host: CommandHost): void {
     }
   });
   registerCommand({
-    id: 'edit:insertImage',
-    run: () => {
-      void insertImage(context);
-      return null;
-    }
-  });
-  registerCommand({
     id: 'edit:insertRule',
     run: () => {
       insertThematicBreak(context);
@@ -132,9 +120,7 @@ export function registerEditorCommands(host: CommandHost): void {
       return null;
     }
   });
-  // One command per inline style, per list command and per table operation,
-  // enumerated from the modules that own those lists: a button or a menu item
-  // can only name a command that is registered here.
+
   for (const style of FORMATTING_STYLES) {
     registerCommand({
       id: `format:${style}`,
@@ -145,9 +131,6 @@ export function registerEditorCommands(host: CommandHost): void {
     });
   }
   for (const command of LIST_COMMANDS) {
-    // A list command applies where there is a list line to move, and Tab has to
-    // know that *before* it runs: a Tab that cannot indent here is the code
-    // block's Tab, two spaces of text (`markdown_editor.ts`).
     registerCommand({
       id: `list:${command}`,
       available: () => listCommandEdit(context, command) !== null,
@@ -160,8 +143,8 @@ export function registerEditorCommands(host: CommandHost): void {
   for (const command of TABLE_COMMANDS) {
     registerCommand({
       id: `table:${command}`,
-      run: (target) => {
-        runTableOperation(context, command, target);
+      run: (target: TableTarget) => {
+        runTableCommand(context, target, command);
         return null;
       }
     });
@@ -173,7 +156,6 @@ export function registerEditorCommands(host: CommandHost): void {
       return null;
     }
   });
-
   registerCommand({
     id: 'document:getRevision',
     run: () => ({
@@ -181,14 +163,6 @@ export function registerEditorCommands(host: CommandHost): void {
       revision: context.state.getRevision()
     })
   });
-
-  /**
-   * Replaces one range only when an external caller read the current document.
-   *
-   * Example: an agent plans against `document-7@42`. A person types first, moving
-   * the document to revision 43; this command refuses the stale plan and leaves
-   * the new text untouched.
-   */
   registerCommand({
     id: 'document:replaceRange',
     run: (input) => {
@@ -217,12 +191,4 @@ export function registerEditorCommands(host: CommandHost): void {
       };
     }
   });
-}
-
-/**
- * Runs one table-menu operation on the cell the menu captured before it took
- * focus. The payload comes from a native menu, so it is checked, not trusted.
- */
-function runTableOperation(context: EditorContext, command: TableCommand, target: TableTarget): void {
-  runTableCommand(context, target, command);
 }

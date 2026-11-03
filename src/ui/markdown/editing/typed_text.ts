@@ -36,6 +36,7 @@ import { domPositionAtOffset } from '../caret/dom_position';
 import { sourceTextOffset } from '../caret/offsets';
 import { shiftOffset, shiftRangeEnd, type TextEdit } from '../syntax/edit_range';
 import type { MarkdownEditorState } from '../document/state';
+import type { CitationService } from '../host';
 import { sourceTextAt } from '../source_text';
 import { preserveSpaces } from '../text_spacing';
 import {
@@ -98,14 +99,15 @@ export function plainRun(
   state: MarkdownEditorState,
   root: HTMLElement,
   from: number,
-  to: number
+  to: number,
+  citationLength?: CitationService['renderedLength']
 ): TypedRun | null {
   const block = state.getBlockAtOffset(from);
   if (!block) {
     return null;
   }
-  const start = domPositionAtOffset(state, root, from);
-  const end = domPositionAtOffset(state, root, to);
+  const start = domPositionAtOffset(state, root, from, citationLength);
+  const end = domPositionAtOffset(state, root, to, citationLength);
   if (!start || !end || start.node !== end.node || start.node.nodeType !== Node.TEXT_NODE) {
     return null;
   }

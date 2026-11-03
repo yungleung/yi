@@ -18,17 +18,23 @@
  * rendered tree, and hold no state that could disagree with them.
  */
 
-import { showTableMenu } from '../table/index';
-import { tableMenuModel } from '../table/index';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import type { EditorContext } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
 import { jumpToReference } from './editing/references';
 import { placeCaretFromPointer } from './editing/pointer';
 import { isFilePath, isOpenableUrl, isSameDocumentFragment } from './syntax/link_edits';
-import { tableSnapshot, type TableTarget } from './editing/table';
+import {
+  tableMenuModel,
+  tableSnapshot,
+  type TableTarget
+} from './editing/table';
 import { toggleTask } from './editing/text';
-import { openLinkDestination, openWikilinkTarget } from './link_opens';
+import {
+  openExternalUrl,
+  openLinkDestination,
+  openWikilinkTarget
+} from './link_opens';
+import { requestTableMenu } from './table_menu';
 
 /** Toggles a task-list checkbox without moving the caret. */
 export function routeTaskClick(context: EditorContext, event: MouseEvent): void {
@@ -146,7 +152,7 @@ export function routeLinkClick(context: EditorContext, event: MouseEvent): void 
   }
   event.preventDefault();
   event.stopPropagation();
-  void openUrl(href).catch(() => undefined);
+  openExternalUrl(href);
 }
 
 /**
@@ -201,8 +207,9 @@ export function routeContextMenu(context: EditorContext, event: MouseEvent): voi
   if (!snapshot) {
     return;
   }
-  void showTableMenu(tableMenuModel(snapshot.source, row, column), target, {
-    x: event.clientX,
-    y: event.clientY
+  requestTableMenu({
+    nodes: tableMenuModel(snapshot.source, row, column),
+    target,
+    at: { x: event.clientX, y: event.clientY }
   });
 }

@@ -36,6 +36,9 @@ export interface CompositionView {
  * Makes the view. The span is made once and reused for a word: the system sends a
  * `compositionupdate` per letter, and rebuilding the element on each one would throw a DOM
  * node away and make a new one under the reader's eyes.
+ *
+ * Example: `show('にほ', range)` draws the marked text at the caret;
+ * `hide()` removes it and restores the caret bar without changing the document.
  */
 export function createCompositionView(layoutChanged: LayoutChanged): CompositionView {
   let span: HTMLSpanElement | null = null;

@@ -81,8 +81,9 @@ function boundaryOffset(
   offset: number,
   side: 'start' | 'end'
 ): number | null {
+  const citations = context.host.citations.renderedLength;
   if (container.nodeType === Node.TEXT_NODE) {
-    const location = documentOffsetAt(context.state, container, offset);
+    const location = documentOffsetAt(context.state, container, offset, citations);
     return location ? location.offset : null;
   }
   const root = proseRoot(context);
@@ -96,7 +97,7 @@ function boundaryOffset(
   // model like a caret in its text. Only a boundary on the block element
   // itself — a drag that anchored to it, Select All — means the block's edge.
   if (!element.matches('.markdown-block')) {
-    const location = documentOffsetAt(context.state, container, offset);
+    const location = documentOffsetAt(context.state, container, offset, citations);
     if (location) {
       return location.offset;
     }

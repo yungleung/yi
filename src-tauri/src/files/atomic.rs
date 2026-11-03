@@ -10,6 +10,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Writes a file's text through one sibling-temporary rename.
+///
+/// Example: writing `"next"` to `/notes/a.md` first writes `/notes/a.md.tmp`, syncs it,
+/// then renames it over `a.md`; a failed write leaves the old `a.md` intact.
 pub fn write_atomically(path: &Path, contents: &str) -> std::io::Result<()> {
     write_bytes_atomically(path, contents.as_bytes())
 }

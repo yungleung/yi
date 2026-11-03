@@ -16,8 +16,11 @@ const require = (name, condition) => {
 const editorSource = readFileSync(editor, 'utf8');
 const panelSource = readFileSync(panel, 'utf8');
 const wordsSource = readFileSync(words, 'utf8');
-require(`${editor} imports DOCUMENT_CHANGED`, /\bDOCUMENT_CHANGED\b/.test(editorSource));
-require(`${editor} emits document changes`, /emit\(\s*DOCUMENT_CHANGED/.test(editorSource));
+require(`${editor} delegates document changes to its host`, /documentChanged\(/.test(editorSource));
+require(
+  `${panel} adapts the host event to DOCUMENT_CHANGED`,
+  /emit\(\s*DOCUMENT_CHANGED,\s*payload\)/.test(panelSource)
+);
 require(`${panel} listens for document changes`, /on\(\s*DOCUMENT_CHANGED/.test(panelSource));
 require(`${words} listens for document changes`, /on\(\s*DOCUMENT_CHANGED/.test(wordsSource));
 require(`${words} reads the payload text`, /payload\.text/.test(wordsSource));

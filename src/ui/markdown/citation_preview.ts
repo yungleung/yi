@@ -17,7 +17,6 @@
  * showing a reference changes nothing — no edit, no caret, no state.
  */
 
-import { bibliographyManager } from '../../services/bibliography';
 import { BesideCard, boxOf } from '../floating';
 import type { EditorContext } from './editing/context';
 
@@ -72,7 +71,7 @@ export function installCitationPreview(context: EditorContext): void {
   };
 
   const show = (value: string) => {
-    const entries = bibliographyManager.reference(value);
+    const entries = context.host.citations.references(value);
     if (entries.length === 0 || !citation) {
       return;
     }
@@ -112,7 +111,7 @@ export function installCitationPreview(context: EditorContext): void {
     citation = found;
     // Decided before the dwell, so a citation the bibliography cannot answer — every key missing
     // from the library — never shows a card at all, not even an empty one.
-    if (bibliographyManager.reference(value).length === 0) {
+    if (context.host.citations.references(value).length === 0) {
       citation = null;
       return;
     }

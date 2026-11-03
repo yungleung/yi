@@ -34,8 +34,19 @@ export function applyFormatting(context: EditorContext, style: FormattingStyle):
   if (!range || range.collapsed) {
     return;
   }
-  const start = documentOffsetAt(context.state, range.startContainer, range.startOffset);
-  const end = documentOffsetAt(context.state, range.endContainer, range.endOffset);
+  const citations = context.host.citations.renderedLength;
+  const start = documentOffsetAt(
+    context.state,
+    range.startContainer,
+    range.startOffset,
+    citations
+  );
+  const end = documentOffsetAt(
+    context.state,
+    range.endContainer,
+    range.endOffset,
+    citations
+  );
   if (!start || !end || start.offset === end.offset) {
     return;
   }

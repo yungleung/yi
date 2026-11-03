@@ -38,7 +38,12 @@ export interface FolderOption {
 /** How one folder's entries are read — the backend, or a stand-in in a check. */
 export type FolderLister = (folder: string) => Promise<FileInfo[]>;
 
-/** Every folder under `root`, the root itself first. */
+/**
+ * Every folder under `root`, the root itself first.
+ *
+ * Example: a vault containing `notes/` and `notes/archive/` returns
+ * `[vault, notes, notes/archive]`, with depths `0`, `1`, and `2`.
+ */
 export async function workspaceFolders(
   root: string,
   list: FolderLister = listFolderFiles
@@ -67,7 +72,11 @@ export async function workspaceFolders(
   return folders;
 }
 
-/** The last piece of a path — a file's name or a folder's, with its extension — or the path. */
+/**
+ * The last piece of a path — a file's name or a folder's, with its extension — or the path.
+ *
+ * Example: `'/vault/notes/a.md'` returns `'a.md'`; `/` returns `/`.
+ */
 export function fileName(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
@@ -76,6 +85,9 @@ export function fileName(path: string): string {
  * The folder a path lives in, whichever separator the platform writes — `null` for a path with
  * no folder above it. The tree asks it of an entry whose folder it has to reload, and the
  * new-note card asks it of the document on screen, to start on the folder the reader is in.
+ *
+ * Example: `parentFolder('/vault/notes/a.md')` returns `'/vault/notes'`; `parentFolder('a.md')`
+ * returns null.
  */
 export function parentFolder(path: string): string | null {
   const cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
@@ -89,6 +101,9 @@ export function parentFolder(path: string): string | null {
  * answers with one path, and a new note needs a place and a name, which are the two halves of it.
  * A rule rather than a line in the dialog, so it is checked in Node with the rest of this module
  * — a native sheet is the one surface a probe cannot drive.
+ *
+ * Example: `placementOfPath('/vault/notes/a.md')` returns
+ * `{ folder: '/vault/notes', name: 'a.md' }`.
  */
 export function placementOfPath(path: string): { folder: string; name: string } | null {
   const folder = parentFolder(path);
@@ -103,6 +118,9 @@ export function placementOfPath(path: string): { folder: string; name: string } 
  *
  * It is what lets the text a note carries name an image the way the reader would: the app writes
  * the file somewhere and the document says where, without the machine's own layout in it.
+ *
+ * Example: `relativePathFrom('/vault/notes', '/vault/images/a.png')` returns
+ * `'../images/a.png'`.
  */
 export function relativePathFrom(folder: string, path: string): string | null {
   const from = segments(folder);
@@ -125,6 +143,8 @@ export function relativePathFrom(folder: string, path: string): string | null {
 /**
  * A relative path resolved against a folder, with `.` and `..` taken out — `/vault` + `../b/c.png`
  * is `/b/c.png` — or null when the folder is not absolute.
+ *
+ * Example: `joinPath('/vault/notes', '../images/a.png')` returns `'/vault/images/a.png'`.
  */
 export function joinPath(folder: string, path: string): string | null {
   const base = segments(folder);
@@ -154,6 +174,9 @@ export function joinPath(folder: string, path: string): string | null {
  * platform, so `../Volumes/other/a.png` is a true relative path — and a useless one, because the
  * same string read from the document's folder names a different file. A destination the app
  * writes has to mean the same thing wherever it is read from, and an absolute path does.
+ *
+ * Example: `destinationForFile('/vault/images/a.png', '/vault/images', '/vault/notes')`
+ * returns `'a.png'`.
  */
 export function destinationForFile(
   file: string,
@@ -190,6 +213,9 @@ function inside(folder: string | null, file: string): string | null {
  * holds the escape). Measured, that order is also the only one that works: the webview accepts the
  * 404 the asset protocol answers for a `%2520` URL as a *load*, so a chain that reached the
  * written spelling first would stop there and never try the file that is really there.
+ *
+ * Example: `destinationPaths('my%20shot.png', '/vault/images', '/vault/notes')` tries
+ * `/vault/images/my shot.png` and `/vault/notes/my shot.png` before the literal `%20` spellings.
  */
 export function destinationPaths(
   destination: string,

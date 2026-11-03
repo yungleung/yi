@@ -14,12 +14,6 @@
  */
 
 import { BaseComponent } from '../component';
-import { eventManager } from '../../services/events';
-import {
-  DOCUMENT_CHANGED,
-  type DocumentChangeReason
-} from '../../services/events';
-import { CITATION_UPDATED } from '../../services/bibliography';
 import {
   getCaretRange,
   getSelectionRange,
@@ -49,14 +43,12 @@ import {
 } from './editing/callout_kind_picker';
 import { fenceLanguageEdit } from './syntax/container';
 import { calloutKindEdit } from './syntax/callout';
-import { FindBar, FindController } from './editing/find';
+import { MarkdownFindSession, type MarkdownFindApi } from './editing/find';
 import { Completions } from './editing/completions';
 import { installEditorInteractions } from './editing/editor_interactions';
 import { handleEditorKey, type KeyHost } from './editing/keys';
-import { setDocumentWritable } from '../../commands/authority';
 import { MarkdownEditorState } from './document/state';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
-import type { DocumentView, SeenView } from '../../services/session';
 import {
   applyEditorHistory,
   createEditorRenderContext,
@@ -64,13 +56,28 @@ import {
   EditorViewState,
   handleArrowKey,
   handleEditorShortcut,
-  installEditorCommandWiring,
   type EditorLayout
 } from './editor';
 import { applyBlockOpeningEdit } from './editing/block_opening_edit';
+import type { EditorChangeReason, EditorDocumentView, EditorSeenView } from '../../contracts';
+import type { MarkdownHost } from './host';
+import { registerEditorCommands } from './commands';
+import {
+  captureImageInsertion,
+  insertImageMarkdown,
+  type ImageInsertionTarget,
+  type MarkdownImageApi
+} from './image';
 
 export const INPUT_SOURCE_CHANGED = 'input_source_changed';
 export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor';
+
+/** The shell find presentation the editor commands invoke. */
+export interface FindUiPort {
+  open(showReplace: boolean): void;
+  close(): void;
+  setReadOnly(readOnly: boolean): void;
+}
 
 /**
  * The WYSIWYG markdown editor.
@@ -80,15 +87,15 @@ export { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './editor';
  * feature lives in its own module under `editing/`:
  *
  * - `editing/context.ts` — the shared context plus selection/caret mapping,
- * - `editing/clipboard.ts` — copy, cut, paste, select all,
+ * - `editing/clipboard/` — copy, cut, paste and select all,
  * - `editing/text/` — typing, deleting, line breaks and task markers,
  * - `editing/formatting.ts` — bold/italic/strike/inline-code commands,
- * - `editing/find/` — find and replace.
+ * - `editing/find/` — document search and replacement; the shell owns its presentation.
  *
  * Undo/redo lives in the state (`MarkdownEditorState#undo/redo`);
  * `editor/history.ts` restores the mark, source shape, scroll and keyboard around it.
  */
-export class WysiwygMarkdownEditor extends BaseComponent {
+export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImageApi {
   /**
    * Owns the raw document and maintains its blocks. It starts **empty**: a window opens on a
    * document when something asks for one — the session restoring what the reader had, a file from
@@ -102,8 +109,8 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   private readonly pageLayout: EditorPageLayout;
   private readonly context: EditorContext;
   private readonly view: EditorViewState;
-  private readonly findBar: FindBar;
-  private readonly find: FindController;
+  private readonly findSession: MarkdownFindSession;
+  private findUi: FindUiPort | null = null;
   /** The system's text input seam; it holds the keyboard while the caret is here. */
   private readonly composition: CompositionInput;
   /** A reference document is shown, not written: typing and editing commands are refused. */
@@ -113,7 +120,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
   /** What the key path needs of this editor (see `editing/keys.ts`). */
   private keyHost!: KeyHost;
 
-  constructor() {
+  constructor(private readonly host: MarkdownHost) {
     super('div', ['relative', 'flex', 'flex-1', 'min-h-0', 'bg-base-100', 'overflow-hidden']);
 
     this.contentView = document.createElement('div');
@@ -126,9 +133,14 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.renderer = new VirtualBlockRenderer(this.contentView, this.state);
     // What a rendering may ask the app for is assembled at this boundary, so
     // node modules and the render layer import no shell service.
-    this.renderer.setRenderContext(createEditorRenderContext(this.state));
-    this.pageLayout = new EditorPageLayout(this.contentView, this.renderer);
+    this.renderer.setRenderContext(createEditorRenderContext(this.state, host));
+    this.pageLayout = new EditorPageLayout(
+      this.contentView,
+      this.renderer,
+      host.events
+    );
     this.context = {
+      host,
       state: this.state,
       renderer: this.renderer,
       contentView: this.contentView,
@@ -158,6 +170,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       renderer: this.renderer,
       contentView: this.contentView
     });
+    this.findSession = new MarkdownFindSession(this.context);
+    registerEditorCommands({
+      context: this.context,
+      applyHistory: (direction) => this.replayHistory(direction),
+      toggleLayout: () => {
+        this.setLayout(this.pageLayout.get() === 'page' ? 'auto' : 'page');
+      },
+      openFind: (replace) => this.findUi?.open(replace),
+      closeFind: () => this.findUi?.close()
+    });
     // Revealable nodes ask the editor where the caret is in the raw document;
     // they cannot work it out themselves (see `revealable_node.ts`).
     // Source mode follows the caret: the block the caret is in shows its own
@@ -182,16 +204,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // plain write's caret placement already does for the same reason (`source_mode/`).
       restore: (snapshot) => withHeldShownSource(() => this.view.reanchor(snapshot))
     });
-
-    this.findBar = new FindBar({
-      onQueryChanged: () => this.find.updateMatches(true),
-      onNext: (reverse) => this.find.next(reverse),
-      onReplace: () => this.find.replaceCurrent(),
-      onReplaceAll: () => this.find.replaceAll(),
-      onClose: () => this.find.close()
-    });
-    this.find = new FindController(this.context, this.findBar);
-    this.element.appendChild(this.findBar.element);
 
     const handleKey = (event: KeyboardEvent): void => {
       this.view.placeForTextPath();
@@ -246,7 +258,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       // under it: measured again, or the spacers below would be short by the line it gained.
       (block) => this.renderer.measureEditedBlock(Number(block.dataset.lineStart))
     );
-    void eventManager.on(INPUT_SOURCE_CHANGED, () => {
+    host.events.onInputSourceChanged(() => {
       this.composition.resetInputContext();
     });
     // A fenced code block's label asks for a language (`nodes/fence/label.ts`); the card that
@@ -259,23 +271,6 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       this.changeCalloutKind(lineStart, kind)
     );
 
-    installEditorCommandWiring({
-      context: this.context,
-      openFind: (replace) => this.find.open(replace),
-      closeFind: () => this.find.close(),
-      applyHistory: (direction) =>
-        applyEditorHistory(
-          {
-            context: this.context,
-            regainKeyboard: () => this.composition.regainKeyboard(),
-            announceDocumentChange: (reason, previousRevision) =>
-              this.announceDocumentChange(reason, previousRevision)
-          },
-          direction
-        ),
-      layout: () => this.pageLayout.get(),
-      setLayout: (layout) => this.setLayout(layout)
-    });
     this.completions = new Completions(this.context);
     this.keyHost = {
       context: this.context,
@@ -288,7 +283,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.renderer.render();
     // The bibliography manager announces when its data is ready or refreshed;
     // citations render from it, so the mounted blocks are rebuilt.
-    void eventManager.on(CITATION_UPDATED, () => this.refresh());
+    host.citations.onChanged(() => this.refresh());
   }
 
   /** Loads a document and renders its first window. */
@@ -313,13 +308,23 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.readOnly = readOnly;
     this.composition.element.readOnly = readOnly;
     this.contentView.dataset.readOnly = String(readOnly);
-    this.find.setReadOnly(readOnly);
-    setDocumentWritable(!readOnly);
+    this.findSession.setReadOnly(readOnly);
+    this.findUi?.setReadOnly(readOnly);
   }
 
   /** The layout the editor is drawn in. */
   getLayout(): EditorLayout {
     return this.pageLayout.get();
+  }
+
+  /** The document search API consumed by shell-owned find UI. */
+  findApi(): MarkdownFindApi {
+    return this.findSession;
+  }
+
+  /** Installs the shell-owned find presentation invoked by find commands. */
+  setFindUi(findUi: FindUiPort): void {
+    this.findUi = findUi;
   }
 
   setContent(content: string): void {
@@ -340,6 +345,16 @@ export class WysiwygMarkdownEditor extends BaseComponent {
     this.announceDocumentChange('load', null);
   }
 
+  /** Captures the text range an asynchronous image flow will eventually replace. */
+  captureImageInsertion(): ImageInsertionTarget | null {
+    return captureImageInsertion(this.context);
+  }
+
+  /** Writes an image reference into a previously captured text range. */
+  insertImageMarkdown(target: ImageInsertionTarget, destination: string): boolean {
+    return insertImageMarkdown(this.context, target, destination);
+  }
+
   /**
    * Announces the one committed document state after a load, edit, undo or redo.
    *
@@ -347,16 +362,29 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * `previousRevision: 4`, `revision: 5` and the new raw markdown.
    */
   private announceDocumentChange(
-    reason: DocumentChangeReason,
+    reason: EditorChangeReason,
     previousRevision: number | null
   ): void {
-    void eventManager.emit(DOCUMENT_CHANGED, {
+    this.host.events.documentChanged({
       documentKey: this.state.getDocumentKey(),
       previousRevision,
       revision: this.state.getRevision(),
       reason,
       text: this.state.getText()
     });
+  }
+
+  /** Applies one history step with the editor's keyboard, render and event hooks. */
+  private replayHistory(direction: 'undo' | 'redo'): void {
+    applyEditorHistory(
+      {
+        context: this.context,
+        regainKeyboard: () => this.composition.regainKeyboard(),
+        announceDocumentChange: (reason, previousRevision) =>
+          this.announceDocumentChange(reason, previousRevision)
+      },
+      direction
+    );
   }
 
   /** The raw markdown source. */
@@ -386,7 +414,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * the reader where they were (`services/session/rules.ts`). The selection is exact; the
    * view is a document offset (`virtual_block_renderer.ts: scrollAnchor`).
    */
-  captureView(): SeenView {
+  captureView(): EditorSeenView {
     return this.view.capture();
   }
 
@@ -398,7 +426,7 @@ export class WysiwygMarkdownEditor extends BaseComponent {
    * scroll arrives after this one. A view whose far end cannot be drawn falls back to the
    * caret at the end it can reach.
    */
-  restoreView(view: DocumentView): void {
+  restoreView(view: EditorDocumentView): void {
     this.view.restore(view);
   }
 
@@ -428,7 +456,12 @@ export class WysiwygMarkdownEditor extends BaseComponent {
       showSourceAt(this.context, null);
       return;
     }
-    const location = documentOffsetAt(this.state, range.startContainer, range.startOffset);
+    const location = documentOffsetAt(
+      this.state,
+      range.startContainer,
+      range.startOffset,
+      this.host.citations.renderedLength
+    );
     if (!location) {
       return;
     }

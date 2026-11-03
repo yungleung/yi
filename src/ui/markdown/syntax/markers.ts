@@ -29,6 +29,8 @@ export function closesFrontmatter(line: string): boolean {
  * `remark-frontmatter` closes a `---` block on `---` alone, so its parser is handed this spelling
  * of the same document. Both markers are three characters, which keeps every offset the parser
  * reports — and the carets and selections derived from them — pointing at the same characters.
+ *
+ * Example: `'---\ntitle: A\n...\nBody'` becomes `'---\ntitle: A\n---\nBody'`.
  */
 export function frontmatterForParsers(markdown: string): string {
   const opening = /^---(?:\r?\n)/.exec(markdown);
@@ -55,7 +57,11 @@ export function frontmatterForParsers(markdown: string): string {
   }
 }
 
-/** The fence marker (``` or ~~~) when the line opens a fenced code block. */
+/**
+ * The fence marker (``` or ~~~) when the line opens a fenced code block.
+ *
+ * Example: `'  ```js'` returns `'```'`; `'text'` returns null.
+ */
 export function openingFence(line: string): string | null {
   const match = /^(?: {0,3})(`{3,}|~{3,})/.exec(line);
   return match ? match[1] : null;
@@ -67,6 +73,9 @@ export function openingFence(line: string): string | null {
  * The marker's delimiter space is part of it: `- ` opens an item, and a bare `-` is the character
  * itself, which is why the space is required here (see `bareMarkerLine` and
  * `syntax/bare_markers.ts`).
+ *
+ * Example: `'- item'` returns `{ indent: 0, ordered: false }`; `'  1. item'` returns
+ * `{ indent: 2, ordered: true }`.
  */
 export function listMarker(line: string): { indent: number; ordered: boolean } | null {
   const match = /^( {0,3})([-*+]|\d+[.)])\s+/.exec(line);
@@ -109,7 +118,12 @@ export function htmlBlockTerminator(line: string): RegExp | null {
   return />/;
 }
 
-/** Whether a line closes a fence opened with `marker`. */
+/**
+ * Whether a line closes a fence opened with `marker`.
+ *
+ * Example: `closingFence('```', '```')` returns true; `closingFence('```js', '```')`
+ * returns false because a closing line carries no language.
+ */
 export function closingFence(line: string, marker: string): boolean {
   const trimmed = line.trim();
   if (!trimmed.startsWith(marker[0])) {
@@ -164,6 +178,9 @@ function blockLines(text: string): Array<{ start: number; text: string }> {
  * and ends. Its end carries the last content line's newline, which is what gives a caret there —
  * and the line Enter makes at it — somewhere to be. An unclosed fence's last line is content
  * rather than a delimiter, so there the body runs to the end of the block.
+ *
+ * Example: `'```js\nlet x = 1;\n```'` returns `{ start: 6, end: 15 }`, covering
+ * `'let x = 1;\n'`; the same-line formula `'$$x$$'` returns `{ start: 2, end: 3 }`.
  */
 export function fenceBody(text: string): { start: number; end: number } {
   const lines = blockLines(text);
@@ -192,7 +209,11 @@ export function fenceBody(text: string): { start: number; end: number } {
   return { start, end: Math.max(start, end) };
 }
 
-/** The language a fence names — `` ```js `` → `js` — or the empty string when it names none. */
+/**
+ * The language a fence names — `` ```js `` → `js` — or the empty string when it names none.
+ *
+ * Example: `'```python {#sample}'` returns `'python'`; `'```'` returns `''`.
+ */
 export function fenceLanguage(line: string): string {
   const fence = openingFence(line);
   if (fence === null) {
@@ -206,7 +227,11 @@ export function fenceLanguage(line: string): string {
 export const blockStartPattern =
   /^\s*(?:[-+*]|\d+[.)])\s|^\s*:\s|^\s*#{1,6}\s|^\s*(?:```|~~~|\$\$)/;
 
-/** Whether this line begins a new block, so it cannot continue the one above. */
+/**
+ * Whether this line begins a new block, so it cannot continue the one above.
+ *
+ * Example: `'- item'` and `'# Heading'` return true; `'ordinary continuation'` returns false.
+ */
 export function startsBlock(line: string): boolean {
   return blockStartPattern.test(line);
 }

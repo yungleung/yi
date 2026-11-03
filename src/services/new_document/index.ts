@@ -62,6 +62,9 @@ export interface NewDocumentFields {
 /**
  * The whole of a new note: the frontmatter, closed by its `---` lines and followed by the
  * blank line that keeps a parser from reading the first paragraph as more frontmatter.
+ *
+ * Example: with id `20261101123045`, date `2026-11-01`, and the default template,
+ * the result starts `---\ntitle: Untitle\ndate: 2026-11-01\nid: 20261101123045`.
  */
 export function newDocumentText(fields: NewDocumentFields): string {
   const { id, date, template = DEFAULT_TEMPLATE, metadata } = fields;
@@ -105,6 +108,9 @@ export function newDocumentText(fields: NewDocumentFields): string {
  * are the two exceptions: they keep the package's position when it names them, but
  * [`newDocumentText`] stamps the app's values over both. Keeping this a text merge preserves the
  * reader's comments and the package's order rather than round-tripping either through a YAML value.
+ *
+ * Example: default `title: Untitle\nkeywords:\n  - untagged` merged with package
+ * `title: Article\nauthor: Ada` produces `title: Article\nauthor: Ada\nkeywords:\n  - untagged`.
  */
 export function mergeFrontmatterTemplates(defaultTemplate: string, metadata: string): string {
   const base = frontmatterLines(defaultTemplate).join('\n');
@@ -170,6 +176,8 @@ function continues(line: string | undefined): boolean {
  * Local time, not UTC, because the id is the author's own stamp on their own note — the ids
  * already in the fixtures read as the local time they were written at — and because the file
  * name a reader sees should sort by when *they* made it.
+ *
+ * Example: `newDocumentId(new Date(2026, 0, 2, 3, 4, 5))` returns `'20260102030405'`.
  */
 export function newDocumentId(when: Date = new Date()): string {
   return newDocumentDate(when).replace(/-/g, '') + clock(when);

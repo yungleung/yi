@@ -28,6 +28,12 @@ export interface CompositionPosition {
   drawMarked(): void;
 }
 
+/**
+ * Keeps the native composition field and its clip at the logical caret.
+ *
+ * Example: moving the caret to a new block moves the field there before the next
+ * candidate window opens; scrolling repaints the marked text against the new frame.
+ */
 export function installCompositionPosition({
   host,
   element,

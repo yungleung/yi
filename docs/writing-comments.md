@@ -1,6 +1,6 @@
 # Writing comments
 
-Comments are part of the interface here, not an extra. The editor subtree is 114
+Comments are part of the interface here, not an extra. The frontend is 439
 modules, and the way anyone — a contributor, or an agent with no history — finds
 the right one is by reading headers before code. That is why one rule is checked
 and the rest is a voice worth learning.
@@ -140,8 +140,8 @@ the interesting ones:
 
 ```ts
  * May import: nothing — the text and the line span are passed in.   // editing/line_removal.ts
- * May import: the DOM and `BaseComponent`. Upholds: the bar knows nothing about
- * the document — …                                                   // editing/find_bar.ts
+ * May import: nothing but the DOM. Upholds: the label is not the block's text
+ * — it is marked so it cannot be mistaken for the document.          // nodes/fence/label.ts
 ```
 
 If a header would need an "and" to be honest, the module is doing two jobs: split
