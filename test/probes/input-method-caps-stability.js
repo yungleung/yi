@@ -110,6 +110,38 @@
   await t.sleep(150);
   check('a mixed routed burst stays lower-case', await t.raw(), 'helloabcdefghij\n');
 
+  // At speed, several keydowns can arrive before the browser hands their native
+  // inputs back one at a time. Committing the first letter must consume only its
+  // own marker, leaving the later letters' ownership waiting.
+  await start();
+  routed('A');
+  routed('B');
+  routed('C');
+  nativeInput('A');
+  nativeInput('B');
+  nativeInput('C');
+  await t.sleep(150);
+  check('native inputs may trail several routed keydowns', await t.raw(), 'helloabc\n');
+
+  // Repeat the backlog under a longer burst, so a marker cannot survive by falling
+  // inside only one hand-written interleaving.
+  await start();
+  for (let round = 0; round < 4; round += 1) {
+    const letters = [...'ABCDEFGHIJ'];
+    for (const letter of letters) {
+      routed(letter);
+    }
+    for (const letter of letters) {
+      nativeInput(letter);
+    }
+  }
+  await t.sleep(150);
+  check(
+    'a long ultra-fast routed burst stays lower-case',
+    await t.raw(),
+    `hello${'abcdefghij'.repeat(4)}\n`
+  );
+
   return {
     checks,
     failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)

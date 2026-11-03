@@ -300,9 +300,11 @@ height remembered against it.
    Caps Lock pass-through may deliver a run of native insertions through the seam. The field
    tracks the prefix already committed and clears after the current input event, because clearing
    synchronously makes WebKit reject the next insertion at the same caret. A 229-routed letter's
-   Caps Lock form is normalized to the method's lower-case English character. An editor-handled
-   key after that native burst resets the seam context immediately, before an ultra-fast next
-   native character arrives. A platform observer sends `input_source_changed`
+   Caps Lock form is normalized to the method's lower-case English character. Ultra-fast keydowns
+   may queue several routed letters before their native inputs arrive; each native input consumes
+   only the markers it carries, leaving later letters' ownership waiting. An editor-handled key
+   after that native burst resets the seam context immediately, before an ultra-fast next native
+   character arrives. A platform observer sends `input_source_changed`
    (`src-tauri/src/input_source.rs`): AppKit's input-context notification on macOS,
    `WM_INPUTLANGCHANGE` on the main window on Windows, and the IBus/Fcitx source-change signals
    on the session bus on Linux. A focused seam then clears its native value and reacquires focus,

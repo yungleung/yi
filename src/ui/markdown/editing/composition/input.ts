@@ -174,26 +174,32 @@ export function installCompositionInput(
     }, 0);
   };
 
-  /** Lower-cases only the native capitals represented by 229-routed keys. */
-  const normalizeMethodCase = (text: string): string => {
+  /**
+   * Lower-cases only the native capitals represented by 229-routed keys.
+   *
+   * Example: routed `A`, `B`, then native inputs `A`, `B` consume one marker each;
+   * a composition commit clears any markers its composition already consumed.
+   */
+  const normalizeMethodCase = (text: string, clearUnmatched: boolean): string => {
     const now = performance.now();
     const waiting = routedLetters.filter((letter) => now - letter.at <= METHOD_LETTER_TIMEOUT_MS);
-    routedLetters = [];
-    return text.replace(/\p{Lu}/gu, (letter) => {
+    const normalized = text.replace(/\p{L}/gu, (letter) => {
       const lower = letter.toLocaleLowerCase();
       const index = waiting.findIndex((entry) => entry.lower === lower);
       if (index < 0) {
         return letter;
       }
       waiting.splice(index, 1);
-      return lower;
+      return /\p{Lu}/u.test(letter) ? lower : letter;
     });
+    routedLetters = clearUnmatched ? [] : waiting;
+    return normalized;
   };
 
   /** Takes the new value the system left and hands it over; no new text commits nothing. */
   const commit = (fromInput = false) => {
     const pending = pendingText();
-    const text = normalizeMethodCase(pending);
+    const text = normalizeMethodCase(pending, !fromInput);
     committedValue = element.value;
     nativeBurstActive ||= fromInput;
     // Marked text stops being marked here, whether it committed a word or was cancelled.

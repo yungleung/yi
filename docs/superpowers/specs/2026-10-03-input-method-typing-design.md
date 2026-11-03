@@ -263,6 +263,13 @@ method's business, and it varies letter by letter; what is now true is that each
 `test/probes/input-method-passthrough.js` holds both halves — the letter carried by both paths lands
 once, and a 229 `Enter` still starts a line — and it fails without the change (`hellobb`).
 
+Ultra-fast typing exposed the next race: several 229 keydowns can queue before WebKit delivers
+their native `input` events one at a time (`A`, `B`, then input `A`, input `B`). Clearing every
+marker on the first input produced `aB`. The seam now consumes only the markers represented by
+the current input's letters and leaves later markers waiting; a composition commit clears what
+its composition consumed. `test/probes/input-method-caps-stability.js` holds the queued-keydown
+burst.
+
 ### A word that could not be written at all
 
 Found by the reader: click to place the caret, then type pinyin, and *the first letter* lands in the

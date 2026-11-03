@@ -1140,9 +1140,11 @@ tracks the prefix already committed and defers clearing its textarea until the c
 is over; clearing it synchronously makes WebKit reject every insertion after the first at that
 caret (`input-method-passthrough.js` holds three consecutive characters). A 229-routed Latin
 letter is also normalized to lower-case when Caps Lock supplied an upper-case form, because the
-method uses Caps Lock as its English-mode switch. When an editor-handled key such as a space ends
-that native burst, the seam resets its native input context immediately; a frame-delayed reset
-still loses the next ultra-fast Caps Lock key.
+method uses Caps Lock as its English-mode switch. At speed, several routed keydowns can queue
+before their native inputs arrive; each input consumes only the case markers for the letters it
+actually carries, so the first commit cannot discard the next letter's ownership. When an
+editor-handled key such as a space ends that native burst, the seam resets its native input
+context immediately; a frame-delayed reset still loses the next ultra-fast Caps Lock key.
 
 The system's keyboard-source notification is the other context boundary. `input_source.rs` sends
 one `input_source_changed` event through the native observer for each desktop: AppKit's
