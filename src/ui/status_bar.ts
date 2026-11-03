@@ -6,7 +6,7 @@
  * own status to the bar instead of placing it against the window's edge.
  */
 
-import { BaseComponent, type Renderable } from '../component';
+import { BaseComponent, type Renderable } from './component';
 
 export class StatusBar extends BaseComponent {
   private readonly leftGroup: HTMLDivElement;

@@ -2,17 +2,12 @@
  * The toolbar button-family domain.
  *
  * Example: the shell composes `FormattingToolbar`, `TableToolbar` and the other concrete rows from
- * this entrypoint; each row runs command names through the shared `Toolbar` base.
+ * this entrypoint; each row runs command names through `ui/toolbar.ts`.
  *
- * May import: the toolbar base and concrete toolbar siblings. Upholds: every toolbar exposes one
- * button contract and one public domain surface.
+ * May import: concrete toolbar siblings. Upholds: addable button families share one public
+ * surface without re-exporting their generic container.
  */
 
-export {
-  TOOL_ICON_SIZE,
-  Toolbar
-} from './base';
-export type { ToolbarButtonSpec } from './base';
 export { FootnoteToolbar } from './footnote';
 export { FormattingToolbar } from './formatting';
 export { ImageToolbar } from './image';

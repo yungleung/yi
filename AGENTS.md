@@ -70,8 +70,9 @@ brief — read it first; this file is the short version and the non-negotiables.
   lifecycle, an operation family, or a provider/consumer boundary; do not create generic
   `shared/`, `utils/`, `misc/` or `common/` folders.
 - Keep `TitleBar` and `StatusBar` as generic containers and let the composition root add their
-  items. Status-only controls belong under `ui/status_bar/`; title-bar command-button families
-  belong under `ui/toolbar/`.
+  items. Their container files (`ui/title_bar.ts`, `ui/status_bar.ts` and `ui/toolbar.ts`) stay
+  beside the composition root; addable status controls belong under `ui/status_bar/`, and
+  title-bar command-button families belong under `ui/toolbar/`.
 - Conditional chrome state is event-driven: a state owner announces a typed fact and the item
   updates itself. Do not wire one widget to mutate another widget directly.
 - A domain exposes one explicit public entrypoint (`index.ts` or Rust `mod.rs`) with named exports.

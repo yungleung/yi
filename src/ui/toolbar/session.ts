@@ -12,7 +12,7 @@ import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/sessio
 import { runCommand } from '../../commands/runtime';
 import { StackPopover } from '../session';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar } from './base';
+import { TOOL_ICON_SIZE, Toolbar } from '../toolbar';
 
 /** The glyph the user sent for taking a document out of the stack. */
 const STACK_POP =

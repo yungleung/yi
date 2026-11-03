@@ -9,7 +9,7 @@
 import type { ListCommand } from '../markdown/editing/lists';
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from './base';
+import { TOOL_ICON_SIZE, Toolbar, type ToolbarButtonSpec } from '../toolbar';
 
 interface ListButtonSpec extends ToolbarButtonSpec {
   command: ListCommand;

@@ -110,8 +110,9 @@ taking — is `docs/structure.md`.
 
 `TitleBar` and `StatusBar` are generic containers: the composition root builds the known items
 and adds them, so future plugin UI can use the same `addComponent` surface without teaching either
-container about built-in children. Title-bar command families live under `ui/toolbar/`; status-only
-items live under `ui/status_bar/`.
+container about built-in children. The containers are peer files beside `main.ts`
+(`ui/title_bar.ts`, `ui/status_bar.ts` and the generic `ui/toolbar.ts`); title-bar command families
+live under `ui/toolbar/`, while status-only items live under `ui/status_bar/`.
 
 Conditional chrome follows its authoritative state owner through typed events. A status item may
 read its owner for its initial value, but changes arrive as facts such as

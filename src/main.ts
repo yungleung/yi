@@ -9,16 +9,16 @@
 
 import { platform } from '@tauri-apps/plugin-os';
 import { eventManager } from './services/events';
+import { StatusBar } from './ui/status_bar';
 import { TitleBar } from './ui/title_bar';
 import {
   ExportProgressStatus,
   LayoutStatus,
   SavedStatus,
   StackStatus,
-  StatusBar,
   VersionStatus,
   WordsCountStatus
-} from './ui/status_bar';
+} from './ui/status_bar/index';
 import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
 import { WorkspaceTree } from './ui/workspace';

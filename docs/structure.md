@@ -50,10 +50,9 @@ anywhere in them.
 | `src/ui/export/dialog/` | 3 | 733 | the export question card, presentation-only form and its DOM controls |
 | `src/ui/export/manager/` | 6 | 927 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
 | `src/ui/export/templates/` | 16 | 2,220 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
-| `src/ui/status_bar/` | 9 | 443 | the generic status container, document/words/layout/version status items, export progress and shared tone/button rules |
-| `src/ui/title_bar/` | 2 | 88 | the generic window-drag title container and its public entrypoint |
-| `src/ui/toolbar/` | 10 | 598 | reusable command-button primitives and the title bar's feature-specific button families |
-| `src/ui/**` outside `markdown/` (the shell) | 146 | 14,469 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions and find presentation |
+| `src/ui/status_bar/` | 8 | 374 | document/words/layout/version status items, export progress and shared tone/button rules |
+| `src/ui/toolbar/` | 9 | 515 | the title bar's feature-specific command-button families |
+| `src/ui/**` outside `markdown/` (the shell) | 145 | 14,452 | peer title/status/toolbar containers, sidebar, panels, prompts, settings, workspace, status items, version and find presentation |
 | `src/services/` | 33 | 3,865 | cross-cutting services beside the feature directories |
 | `src/api/` | 9 | 766 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 3 | 237 | reading CSL: types, library loading and parsing |
@@ -66,7 +65,7 @@ anywhere in them.
 | `src-tauri/src/settings/` | 3 | 298 | configuration model, persistence and command façade |
 | `src-tauri/src/versioning/` | 5 | 1,076 | the git seam and writes, folder facts and version reads |
 
-`src/ui/markdown/` is 239 of the 443 modules and 27,469 of the 48,342 lines: the editor is the app,
+`src/ui/markdown/` is 239 of the 442 modules and 27,469 of the 48,325 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).
@@ -81,7 +80,7 @@ surfaces and the toolbars. `ui/floating/surface.ts: FloatingSurface` → `Beside
 body, placed by the pure rule in `floating/placement.ts`) and `AnchoredPanel` (inside the button's
 own `relative` host) → the footnote preview, the citation preview, the completion list, the session
 stack, the table picker, the messages; `ui/floating/question_card.ts: QuestionCard<T>` (6
-subclasses) is the one that asks. `ui/toolbar/base.ts: Toolbar` (12 subclasses) is a button row
+subclasses) is the one that asks. `ui/toolbar.ts: Toolbar` is a button row
 that knows its command's *name*, not its behaviour. The rule: a kind may *add* to Escape but never
 replace it, and a fact one kind has is a parameter it is built with, or a subclass — never a mode
 flag on the base.

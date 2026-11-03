@@ -7,7 +7,7 @@
 
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { TOOL_ICON_SIZE, Toolbar } from './base';
+import { TOOL_ICON_SIZE, Toolbar } from '../toolbar';
 
 const IMAGE_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">' +

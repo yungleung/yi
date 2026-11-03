@@ -484,7 +484,6 @@ const facades = [
   'src/ui/table/index.ts',
   'src/ui/toolbar/index.ts',
   'src/ui/status_bar/index.ts',
-  'src/ui/title_bar/index.ts',
   'src/ui/tutorial/index.ts',
   'src/ui/workspace/index.ts',
   'src/ui/workspace/tree/index.ts',

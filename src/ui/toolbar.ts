@@ -6,7 +6,7 @@
  * name), so a toolbar never reaches into the editor to do its work.
  */
 
-import { BaseComponent } from '../component';
+import { BaseComponent } from './component';
 
 /** One button of a toolbar: its name, its icon, and any classes it needs. */
 export interface ToolbarButtonSpec {

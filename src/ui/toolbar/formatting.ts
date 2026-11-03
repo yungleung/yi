@@ -10,7 +10,7 @@
 import type { FormattingStyle } from '../markdown/format';
 import { runCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { Toolbar, type ToolbarButtonSpec } from './base';
+import { Toolbar, type ToolbarButtonSpec } from '../toolbar';
 
 interface FormattingButtonSpec extends ToolbarButtonSpec {
   command: FormattingStyle;
