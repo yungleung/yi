@@ -15,7 +15,7 @@
  *
  * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/ui/toolbar/index.ts, src/ui/session/stack.ts,
- *   src/ui/document_status.ts
+ *   src/ui/status_bar/document.ts
  * @needs-workspace — it clicks rows of the fixture tree and reads the notes behind them, so the app
  *   has to be on the fixtures (`--with-workspace`) rather than on the reader's own folder
  */

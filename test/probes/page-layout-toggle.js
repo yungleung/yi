@@ -16,7 +16,7 @@
  * A document's layout is remembered in the app config, so this probe leaves the editor on a
  * page — the default — and the suite's other probes see what they always have.
  *
- * @covers src/ui/toolbar/index.ts, src/ui/markdown/markdown_editor.ts,
+ * @covers src/ui/status_bar/layout.ts, src/ui/markdown/markdown_editor.ts,
  *   src/styles.css
  */
 (async () => {

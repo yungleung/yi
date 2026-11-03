@@ -10,22 +10,27 @@
 import { platform } from '@tauri-apps/plugin-os';
 import { eventManager } from './services/events';
 import { TitleBar } from './ui/title_bar';
-import { StatusBar } from './ui/status_bar';
+import {
+  ExportProgressStatus,
+  LayoutStatus,
+  SavedStatus,
+  StackStatus,
+  StatusBar,
+  VersionStatus,
+  WordsCountStatus
+} from './ui/status_bar';
 import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
 import { WorkspaceTree } from './ui/workspace';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
-import { WordsCountStatus } from './ui/words_count';
 import { FormattingToolbar } from './ui/toolbar/index';
 import { LinkToolbar } from './ui/toolbar/index';
 import { ImageToolbar } from './ui/toolbar/index';
 import { ListToolbar } from './ui/toolbar/index';
 import { FootnoteToolbar } from './ui/toolbar/index';
 import { TableToolbar } from './ui/toolbar/index';
-import { LayoutToolbar } from './ui/toolbar/index';
 import { SessionToolbar } from './ui/toolbar/index';
-import { SavedStatus, StackStatus } from './ui/document_status';
 import { registerSessionCommands } from './ui/session';
 import { registerNewDocumentCommand } from './ui/new_document';
 import { registerVersionCommand } from './ui/versioning/index';
@@ -34,10 +39,9 @@ import {
   exportManager,
   registerExportManagerCommand
 } from './ui/export/manager/index';
-import { ExportProgressStatus } from './ui/export/workflow';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/index';
 import { registerDocumentationCommand } from './ui/documentation/index';
-import { VersionStatus } from './ui/versioning/index';
+import { exportActivity } from './services/export_activity';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
@@ -82,7 +86,7 @@ function createAppShell(): MarkdownEditor {
   const listToolbar = new ListToolbar();
   const footnoteToolbar = new FootnoteToolbar();
   const tableToolbar = new TableToolbar();
-  const layoutToolbar = new LayoutToolbar();
+  const layoutStatus = new LayoutStatus();
   const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
@@ -112,7 +116,7 @@ function createAppShell(): MarkdownEditor {
   sidebar.attachToTitleBar(titleBar.element);
 
   statusBar.addComponent(wordsCount, 'right');
-  statusBar.addComponent(layoutToolbar, 'right');
+  statusBar.addComponent(layoutStatus, 'right');
   statusBar.addComponent(stackStatus, 'right');
   statusBar.addComponent(savedStatus, 'right');
   // What is running belongs at the status bar's left, before the document's own facts.
@@ -133,14 +137,12 @@ function createAppShell(): MarkdownEditor {
   registerVersionCommand();
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is
   // the text on screen rather than the session's debounced copy of it.
-  registerExportCommand({ text: () => editor.getContent(), progress: exportProgress });
+  registerExportCommand({ text: () => editor.getContent(), progress: exportActivity });
   registerExportManagerCommand(
     { focusEditor: () => editor.focusText() },
     exportManager
   );
 
-  // Seed the empty editor before any document load can announce its own count.
-  void wordsCount.update(editor.getContent());
   // Saving is the session's: a document may have been read from a file, may have no file yet,
   // and may be one of several — only the session knows which.
   void eventManager.on('save', () => void documentSession.save());

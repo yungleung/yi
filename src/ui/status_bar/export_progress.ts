@@ -1,21 +1,20 @@
 /**
  * The status-bar message for an export that is still running.
  *
- * May import: the component base and the catalogue. Upholds: every start has an idempotent finish,
- * and the reader-visible state is busy exactly while at least one export owns the indicator.
+ * May import: export activity, the typed events, the component base and the catalogue. Upholds:
+ * the reader-visible state is busy exactly while the activity owner reports a running export.
  */
 
-import { t } from '../../../services/i18n';
-import { BaseComponent } from '../../component';
+import {
+  EXPORT_ACTIVITY_CHANGED,
+  exportActivity
+} from '../../services/export_activity';
+import { eventManager } from '../../services/events';
+import { t } from '../../services/i18n';
+import { BaseComponent } from '../component';
 
-/** The port an export uses to keep the reader informed without knowing where the status is drawn. */
-export interface ExportProgress {
-  begin(): () => void;
-}
-
-export class ExportProgressStatus extends BaseComponent implements ExportProgress {
+export class ExportProgressStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;
-  private readonly active = new Set<symbol>();
 
   constructor() {
     super('span', [
@@ -37,22 +36,14 @@ export class ExportProgressStatus extends BaseComponent implements ExportProgres
     spinner.setAttribute('aria-hidden', 'true');
     this.label = document.createElement('span');
     this.element.append(spinner, this.label);
+    this.render(exportActivity.current().active);
+    void eventManager.on(EXPORT_ACTIVITY_CHANGED, (event) => {
+      this.render(event.payload.active);
+    });
   }
 
-  /** Starts one export and answers with a finish that changes nothing when called twice. */
-  begin(): () => void {
-    const owner = Symbol('export');
-    this.active.add(owner);
-    this.render();
-    return () => {
-      if (this.active.delete(owner)) {
-        this.render();
-      }
-    };
-  }
-
-  private render(): void {
-    const busy = this.active.size > 0;
+  private render(active: number): void {
+    const busy = active > 0;
     this.element.classList.toggle('hidden', !busy);
     this.element.classList.toggle('flex', busy);
     this.element.setAttribute('aria-busy', String(busy));

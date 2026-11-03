@@ -10,16 +10,16 @@
  */
 
 import { registerCommand } from '../../../commands/runtime';
+import type { ExportProgress } from '../../../services/export_activity';
 import { exportDialog } from '../dialog';
-import type { ExportProgress } from './progress';
 import { prepareExportQuestion } from './question';
 import { runConfirmedExport } from './request';
 
-/** What the export needs from the editor that owns the note on screen. */
+/** What the export needs from the editor and activity owner. */
 export interface ExportHost {
   /** The text on screen: the editor's own, which is never older than the session's copy of it. */
   text(): string;
-  /** The status bar's progress port, held for exactly as long as this export runs. */
+  /** The activity port, held for exactly as long as this export runs. */
   progress: ExportProgress;
 }
 

@@ -20,6 +20,7 @@ import { bibliographyManager } from '../../../services/bibliography';
 import { documentTitle, readFrontmatterLang } from '../../../services/documents';
 import { documentManager } from '../../../services/documents';
 import { language, t } from '../../../services/i18n';
+import type { ExportProgress } from '../../../services/export_activity';
 import { notify } from '../../../services/messages';
 import type { SessionDocument } from '../../../services/session';
 import { bibliographyPath } from '../../../services/settings_paths';
@@ -30,7 +31,6 @@ import type { ExportAnswer } from '../dialog';
 import { nativeBibliographyFor } from './bibliography';
 import { reportExport } from './notice';
 import { fileExists, resourcePaths } from './paths';
-import type { ExportProgress } from './progress';
 import { isLatexKind } from '../kind_family';
 import {
   forgetRasters,
@@ -50,6 +50,7 @@ export interface ConfirmedExportRequest {
   readonly folder: string;
   readonly templates: TemplateSummary[];
   readonly answer: ExportAnswer;
+  /** The activity owner, or null when a caller runs without status presentation. */
   readonly progress: ExportProgress | null;
 }
 

@@ -9,7 +9,6 @@
  */
 
 export {
-  STATUS_BUTTON,
   TOOL_ICON_SIZE,
   Toolbar
 } from './base';
@@ -17,7 +16,6 @@ export type { ToolbarButtonSpec } from './base';
 export { FootnoteToolbar } from './footnote';
 export { FormattingToolbar } from './formatting';
 export { ImageToolbar } from './image';
-export { LayoutToolbar } from './layout';
 export { LinkToolbar } from './link';
 export { ListToolbar } from './list';
 export { SessionToolbar } from './session';

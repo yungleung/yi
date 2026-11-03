@@ -294,7 +294,7 @@ elements) unless it says otherwise.
   scale now, and a new scale forgets heights measured in the old pixels.
   **And the two layouts switch.** Landed as
   `docs/superpowers/plans/2026-09-28-the-layout-button.md`, on the user's ask: a button at the
-  right of the status bar (`src/ui/toolbar/layout.ts`, with the two icons they sent)
+  right of the status bar (`src/ui/status_bar/layout.ts`, with the two icons they sent)
   runs `view:togglePage`, and the editor's `data-layout` moves between the page of A4 and the
   full-width column it had before — `styles.css` scopes the sheet, the desk and the scale to
   `[data-layout='page']`, and `fitPage` holds the scale at 1 in `auto`. The button draws the

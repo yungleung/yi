@@ -10,7 +10,8 @@ import { eventManager } from '../../services/events';
 import { runCommand } from '../../commands/runtime';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from '../markdown/markdown_editor';
 import { t } from '../../services/i18n';
-import { STATUS_BUTTON, Toolbar } from './base';
+import { Toolbar } from '../toolbar';
+import { STATUS_BUTTON } from './button';
 
 /** The button's icon while the editor is a page of A4: a sheet with its lines. */
 const PAGE_ICON =
@@ -33,7 +34,7 @@ const AUTO_ICON =
  * stays the editor's business: it names the command and hears which way the layout went
  * (`EDITOR_LAYOUT_CHANGED`), the way the titlebar's tools reach the editor.
  */
-export class LayoutToolbar extends Toolbar {
+export class LayoutStatus extends Toolbar {
   private readonly button: HTMLButtonElement;
 
   constructor() {

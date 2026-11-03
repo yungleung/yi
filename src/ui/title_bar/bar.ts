@@ -7,7 +7,7 @@
  */
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { BaseComponent, type Renderable } from './component';
+import { BaseComponent, type Renderable } from '../component';
 
 export class TitleBar extends BaseComponent {
   private readonly leftGroup: HTMLDivElement;

@@ -43,15 +43,18 @@ anywhere in them.
 | `src/ui/markdown/commands/` | 2 | 206 | Markdown's command registrations against the one app-wide runtime |
 | `src/ui/find/` | 3 | 246 | document-independent find UI and the controller over `MarkdownFindApi` |
 | `src/ui/image/` | 4 | 435 | image clipboard flow, dialog, URL resolution and command registration |
-| `src/ui/export/workflow/` | 10 | 898 | command entry, question, request, paths, progress, bibliography, notices and body preparation |
+| `src/ui/export/workflow/` | 9 | 834 | command entry, question, request, paths, bibliography, notices and body preparation |
 | `src/ui/export/pipeline/` | 18 | 1,810 | pipeline contracts and orchestration plus focused source-rewrite stages |
 | `src/ui/export/assets/` | 5 | 390 | image contracts, LaTeX portability, raster preparation and picture diagnostics |
 | `src/ui/export/reference/` | 3 | 255 | reference headers and native bibliography adaptation |
 | `src/ui/export/dialog/` | 3 | 733 | the export question card, presentation-only form and its DOM controls |
 | `src/ui/export/manager/` | 6 | 927 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
 | `src/ui/export/templates/` | 16 | 2,220 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
-| `src/ui/**` outside `markdown/` (the shell) | 142 | 14,444 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions and find presentation |
-| `src/services/` | 32 | 3,810 | cross-cutting services beside the feature directories |
+| `src/ui/status_bar/` | 9 | 443 | the generic status container, document/words/layout/version status items, export progress and shared tone/button rules |
+| `src/ui/title_bar/` | 2 | 88 | the generic window-drag title container and its public entrypoint |
+| `src/ui/toolbar/` | 10 | 598 | reusable command-button primitives and the title bar's feature-specific button families |
+| `src/ui/**` outside `markdown/` (the shell) | 146 | 14,469 | title bar, status bar, sidebar, panels, prompts, settings, workspace, toolbars, versions and find presentation |
+| `src/services/` | 33 | 3,865 | cross-cutting services beside the feature directories |
 | `src/api/` | 9 | 766 | one file per backend seam (`invoke`, or a granted plugin) |
 | `src/citations/` | 3 | 237 | reading CSL: types, library loading and parsing |
 | the two entry points (`src/main.ts`, `src/settings.ts`) | 2 | 200 | the app window and the settings window |
@@ -63,7 +66,7 @@ anywhere in them.
 | `src-tauri/src/settings/` | 3 | 298 | configuration model, persistence and command façade |
 | `src-tauri/src/versioning/` | 5 | 1,076 | the git seam and writes, folder facts and version reads |
 
-`src/ui/markdown/` is 239 of the 438 modules and 27,469 of the 48,200 lines: the editor is the app,
+`src/ui/markdown/` is 239 of the 443 modules and 27,469 of the 48,342 lines: the editor is the app,
 and the rest of the tree is the window around it. Nothing under `src/` is dead weight except
 `src/api/greet.ts` with `src-tauri/src/greeting.rs` — the Tauri template's `greet`, which nothing in
 the app calls (measured by `rg`; it is item 8 below).

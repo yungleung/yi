@@ -17,8 +17,4 @@ export { prepareExportQuestion } from './question';
 export type { PreparedExportQuestion } from './question';
 export { runConfirmedExport } from './request';
 export type { ConfirmedExportRequest } from './request';
-export {
-  ExportProgressStatus
-} from './progress';
-export type { ExportProgress } from './progress';
 export { uncoveredCharacters } from './font_hint';

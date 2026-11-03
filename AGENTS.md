@@ -69,6 +69,11 @@ brief — read it first; this file is the short version and the non-negotiables.
 - Organize modules by owned domain and capability. A folder must represent shared state,
   lifecycle, an operation family, or a provider/consumer boundary; do not create generic
   `shared/`, `utils/`, `misc/` or `common/` folders.
+- Keep `TitleBar` and `StatusBar` as generic containers and let the composition root add their
+  items. Status-only controls belong under `ui/status_bar/`; title-bar command-button families
+  belong under `ui/toolbar/`.
+- Conditional chrome state is event-driven: a state owner announces a typed fact and the item
+  updates itself. Do not wire one widget to mutate another widget directly.
 - A domain exposes one explicit public entrypoint (`index.ts` or Rust `mod.rs`) with named exports.
   Do not add wildcard facade exports or compatibility barrels.
 - Do not repeat the parent domain in a child filename: `session/model.ts`, not

@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 const editor = 'src/ui/markdown/markdown_editor.ts';
 const panel = 'src/ui/editor_panel.ts';
-const words = 'src/ui/words_count.ts';
+const words = 'src/ui/status_bar/words.ts';
 const failures = [];
 const require = (name, condition) => {
   if (!condition) failures.push(name);

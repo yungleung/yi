@@ -6,8 +6,8 @@
  * enough to inspect the visible state without relying on this machine's speed; the success hint
  * then proves the same run finished and the indicator was hidden again.
  *
- * @covers src/ui/export/workflow/index.ts, src/ui/export/workflow/index.ts, src/ui/status_bar.ts,
- *   src/main.ts
+ * @covers src/ui/export/workflow/index.ts, src/services/export_activity.ts,
+ *   src/ui/status_bar/export_progress.ts, src/main.ts
  */
 (async () => {
   const t = window.__t;

@@ -9,7 +9,7 @@
  *
  * @covers src/services/session/rules.ts, src/services/session/index.ts,
  *   src/commands/triggers/keymap.ts, src/ui/session/commands.ts,
- *   src/ui/document_status.ts
+ *   src/ui/status_bar/document.ts
  * @needs-workspace — navigation starts from the fixture workspace's default Markdown.
  */
 (async () => {

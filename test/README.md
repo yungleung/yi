@@ -91,7 +91,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and fifteen probes (`probe:all` runs 279 and skips 36, each skip for the reason its
+three hundred and sixteen probes (`probe:all` runs 280 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -456,7 +456,8 @@ the document that comes out has `word/media/` in it and no fetched copy left beh
 exported as a docx (PNGs the app drew and neither format) and as an EPUB (both originals and no PNG),
 and as the app's own markdown (both URLs kept, because that file outlives the run), with the fixture
 answering both content types and the fetched copies gone at the end),
-the versions of the note on screen (`versioning-status` — the button at the left of the status bar:
+the versions of the note on screen (`status-bar-events` — exported activity and document-load
+facts update the bar without a widget-to-widget reference; `versioning-status` — the button at the left of the status bar:
 hidden where the reader said no, with the recorder's log left empty, and saying the newest version's
 stamp where they agreed; `versioning-list` — the history modal's two columns, the newest row
 selected with its title shown separately from the stamp, and the comment under its own row and no

@@ -23,6 +23,7 @@
 import type { Hint } from '../hints';
 import type { Message } from '../messages';
 import type { SessionState } from '../session';
+import type { ExportActivityState } from '../export_activity';
 import type {
   EditorChangeReason,
   EditorDocumentChanged
@@ -59,6 +60,8 @@ export interface AppEvents {
   input_source_changed: null;
   /** The bibliography was reloaded, so anything showing a citation must render again. */
   citation_updated: null;
+  /** Export activity changed; the count includes every export still running. */
+  export_activity_changed: ExportActivityState;
 
   // The native menu's events (`src-tauri/src/menu/`, `settings/`).
   setting: null;
@@ -116,6 +119,7 @@ export const EVENT_BOUNDARIES: Readonly<
   editor_layout_changed: 'local',
   input_source_changed: 'inbound',
   citation_updated: 'local',
+  export_activity_changed: 'local',
   setting: 'inbound',
   config_changed: 'inbound',
   citation_config_changed: 'inbound',

@@ -5,11 +5,10 @@
  * one reading of the count for the window, asked of the backend rather than counted twice.
  */
 
-import { getWordsCount } from '../api/stats';
-import { eventManager } from '../services/events';
-import { t } from '../services/i18n';
-import { BaseComponent } from './component';
-import { DOCUMENT_CHANGED } from '../services/events';
+import { getWordsCount } from '../../api/stats';
+import { DOCUMENT_CHANGED, eventManager } from '../../services/events';
+import { t } from '../../services/i18n';
+import { BaseComponent } from '../component';
 
 export class WordsCountStatus extends BaseComponent {
   private readonly label: HTMLSpanElement;
@@ -18,6 +17,7 @@ export class WordsCountStatus extends BaseComponent {
   constructor() {
     super('span', ['text-xs', 'opacity-70', 'whitespace-nowrap']);
     this.label = this.element;
+    this.element.dataset.statusWords = 'true';
     this.label.textContent = t('status.words', { count: 0 });
 
     // Keep the word count in sync with the document without being registered
@@ -29,12 +29,11 @@ export class WordsCountStatus extends BaseComponent {
     });
   }
 
-  async update(markdown: string): Promise<void> {
+  private async update(markdown: string): Promise<void> {
     const requestVersion = ++this.requestVersion;
 
     try {
       const { words } = await getWordsCount(markdown);
-      console.log(`Words count updated: ${words} (request version: ${requestVersion})`);
       if (requestVersion === this.requestVersion) {
         this.label.textContent = t('status.words', { count: words });
       }

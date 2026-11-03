@@ -242,7 +242,7 @@ is the note's own name and the minute it was asked for, because that message —
 own comment under it — is what the app's own list of versions shows.
 
 **The versions of the note on screen** are shown, not just kept. The status bar's left group holds
-a button (`ui/versioning/status.ts`) that is there exactly when the reader agreed to
+a button (`ui/status_bar/version.ts`) that is there exactly when the reader agreed to
 versions in this workspace — `versionsVisible`, from the config, so a workspace they said no to
 never runs git — and hidden otherwise, showing the newest version's stamp
 (`services/versioning/rules.ts: versionStamp`). The button's own word is the *state*: the newest version's

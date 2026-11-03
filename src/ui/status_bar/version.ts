@@ -17,8 +17,9 @@ import { VERSIONS_CHANGED, versionsOfDocument } from '../../services/versioning'
 import { WORKSPACE_CHANGED } from '../../services/workspace';
 import { versionedNow, versionStamp, versionsVisible } from '../../services/versioning';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
-import { STATUS_BUTTON, Toolbar } from '../toolbar';
-import { VersionHistoryModal } from './history_modal';
+import { Toolbar } from '../toolbar';
+import { VersionHistoryModal } from '../versioning';
+import { STATUS_BUTTON } from './button';
 
 /** The reader's own glyph: a note's version. */
 const VERSION_ICON =

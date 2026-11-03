@@ -19,5 +19,6 @@ export type {
   DocumentChangeReason,
   EventBoundary
 } from './contracts';
+export type { ExportActivityState } from '../export_activity';
 export { EventManager, eventManager } from './manager';
 export type { AppEvent } from './manager';

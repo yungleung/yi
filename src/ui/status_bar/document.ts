@@ -11,27 +11,11 @@
  * saved or stacked.
  */
 
-import { DOCUMENT_SESSION_CHANGED, documentSession } from '../services/session';
-import { eventManager } from '../services/events';
-import { t } from '../services/i18n';
-import { BaseComponent } from './component';
-
-type StatusTone = 'success' | 'warning' | 'muted';
-
-const STATUS_TONE_CLASSES: Readonly<Record<StatusTone, string>> = {
-  success: 'text-success',
-  warning: 'text-warning',
-  muted: 'text-base-content/60'
-};
-
-/** Sets the one state colour a status has, replacing the previous one rather than adding to it. */
-function tone(element: HTMLElement, next: StatusTone): void {
-  for (const className of Object.values(STATUS_TONE_CLASSES)) {
-    element.classList.remove(className);
-  }
-  element.classList.add(STATUS_TONE_CLASSES[next]);
-  element.dataset.tone = next;
-}
+import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
+import { eventManager } from '../../services/events';
+import { t } from '../../services/i18n';
+import { BaseComponent } from '../component';
+import { setStatusTone } from './tone';
 
 /** `Saved` while the file holds what is on screen, `Editing` while it does not. */
 export class SavedStatus extends BaseComponent {
@@ -51,14 +35,14 @@ export class SavedStatus extends BaseComponent {
       this.label.textContent = t('status.readOnly');
       this.element.dataset.saved = 'true';
       this.element.dataset.readOnly = 'true';
-      tone(this.element, 'muted');
+      setStatusTone(this.element, 'muted');
       return;
     }
     const saved = document === null || document.content === document.saved;
     this.label.textContent = saved ? t('status.saved') : t('status.editing');
     this.element.dataset.saved = String(saved);
     this.element.dataset.readOnly = 'false';
-    tone(this.element, saved ? 'success' : 'warning');
+    setStatusTone(this.element, saved ? 'success' : 'warning');
   }
 }
 
@@ -80,6 +64,6 @@ export class StackStatus extends BaseComponent {
     const size = documentSession.stack().length;
     this.label.textContent = stacked ? t('status.stacked', { size }) : t('status.notStacked');
     this.element.dataset.stacked = String(stacked);
-    tone(this.element, stacked ? 'success' : 'muted');
+    setStatusTone(this.element, stacked ? 'success' : 'muted');
   }
 }

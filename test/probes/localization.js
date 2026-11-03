@@ -8,7 +8,7 @@
  * reads. What this holds is the other half: that a component built under a language really shows
  * that language, so a translated catalogue is not a file nobody reads.
  *
- * @covers src/services/i18n.ts, src/ui/toolbar/index.ts, src/ui/document_status.ts
+ * @covers src/services/i18n.ts, src/ui/toolbar/index.ts
  */
 (async () => {
   const t = window.__t;
@@ -17,7 +17,6 @@
   const { ImageToolbar } = await t.app('/src/ui/toolbar/index.ts');
   const { FormattingToolbar } = await t.app('/src/ui/toolbar/index.ts');
   const { ListToolbar } = await t.app('/src/ui/toolbar/index.ts');
-  const { DocumentStatus } = await t.app('/src/ui/document_status.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const same = (name, actual, expected) =>

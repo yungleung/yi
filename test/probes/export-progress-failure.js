@@ -5,8 +5,8 @@
  * the other exit from the export flow: the failure message may wait for the reader, but the busy
  * indicator must not.
  *
- * @covers src/ui/export/workflow/index.ts, src/ui/export/workflow/index.ts, src/ui/status_bar.ts,
- *   src/main.ts
+ * @covers src/ui/export/workflow/index.ts, src/services/export_activity.ts,
+ *   src/ui/status_bar/export_progress.ts, src/main.ts
  */
 (async () => {
   const t = window.__t;
