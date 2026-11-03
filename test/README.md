@@ -91,7 +91,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and twelve probes (`probe:all` runs 276 and skips 36, each skip for the reason its
+three hundred and fifteen probes (`probe:all` runs 279 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -232,6 +232,10 @@ reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is 
 or the bibliography arriving asks for, leaves the caret in the note it was in: the reader's caret
 is a live DOM range, the browser relocates it rather than dropping it when the element it sits in
 is removed, and a letter typed at a caret that names no offset replaces the whole document;
+`revealable-caret-stability` — completing bold, math, a link, a citation, a wikilink or an
+automatic reference leaves the caret and its drawn bar inside the newly revealed source rather
+than on the following text; `revealable-block-caret-stability` — the same editing offset and drawn
+caret hold while writing in code, display math, frontmatter, quote and fenced-Div sources;
 `caret-rebuild-line` — undoing a table-caption edit never paints the caret at the table's
 provisional height before the rebuilt caption has settled),
 what a keystroke costs (`edit-cost` — the keystrokes at the end of the
@@ -247,7 +251,7 @@ the end of a long note leaves the window it was in rather than mounting the whol
 `typing-cost-by-kind`, `code-local-write` — writing into a highlighted code block locally, which
 shows nothing while the write is a letter or a digit, and `code-local-write-stale` — the delimiters,
 where the rest of the line keeps its old colours — `keystroke-parts`, `code-markup-layout`), finding (`find-replace`),
-localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is, and the next author-typed space is not mistaken for the candidate key; `input-source-switch` — one source-change event rebinds the focused seam so Chinese pinyin starts after English, delivered by AppKit on macOS, `WM_INPUTLANGCHANGE` on Windows, and IBus/Fcitx D-Bus signals on Linux (the Windows and Linux delivery paths await platform checks); `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-passthrough` — explicit 229 letters keep the method's own case and survive an editor-handled space, while English Caps Lock stays on the editor path across a source switch; `empty-task-composition-burst` — a committed word followed immediately by a fast burst keeps the empty task row, its placeholder and the input focus; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), `space-typing-visibility` — spaces at the end of a leaf and in a run stay visible while the source keeps ordinary spaces, paste (`paste-blocks`), source mode
+localization (`localization` — the catalogues a component reads when it is built, and the locale rule both readers share; the *menu's* own strings are held by Rust's tests, since no page can read a native menu), typing through the system (`input-method` — an input method's word, dictation and the emoji panel land in the document because an invisible textarea holds the keyboard where the caret is, and the next author-typed space is not mistaken for the candidate key; `input-source-switch` — one source-change event rebinds the focused seam so Chinese pinyin starts after English, delivered by AppKit on macOS, `WM_INPUTLANGCHANGE` on Windows, and IBus/Fcitx D-Bus signals on Linux (the Windows and Linux delivery paths await platform checks); `input-method-blocks` — the same in a paragraph, a heading and a list item; `input-method-passthrough` — explicit 229 letters keep the method's own case and survive an editor-handled space, while English Caps Lock stays on the editor path across a source switch; `input-method-caps-stability` — delayed, timer-interleaved and composition-adjacent 229 letters stay lower-case while an ordinary English Caps Lock key stays upper-case; `empty-task-composition-burst` — a committed word followed immediately by a fast burst keeps the empty task row, its placeholder and the input focus; `input-method-literals` — and in a table cell, a code block and an empty display formula; `input-method-escape` — a cancelled composition does not close the message the reader is reading, while a plain Escape still does), `space-typing-visibility` — spaces at the end of a leaf and in a run stay visible while the source keeps ordinary spaces, paste (`paste-blocks`), source mode
 (`display-math-*`, `math-*`, `inline-math-*`, `revealable-flows`,
 `revealable-edge-exit` and `revealable-edge-exit-format` — every inline revealable family keeps
 its source at the closing edge and renders when the caret moves beyond it;

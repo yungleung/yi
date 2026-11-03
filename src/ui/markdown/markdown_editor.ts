@@ -26,11 +26,13 @@ import {
   withHeldShownSource
 } from './source_mode';
 import {
+  caretOffset,
   keepScroll,
   restoreCaret,
   showSourceAt,
   type EditorContext
 } from './editing/context';
+import { sourceRangeAt } from './editing/source_range';
 import { documentOffsetAt } from './caret/offsets';
 import { insertCommitted } from './editing/text';
 import { installCompositionInput, type CompositionInput } from './editing/composition';
@@ -202,7 +204,25 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
       // it now needs has no remembered height), so the block is left out of the page — blank, with
       // its space in a spacer, until the window's range changes. Holding the decision is what the
       // plain write's caret placement already does for the same reason (`source_mode/`).
-      restore: (snapshot) => withHeldShownSource(() => this.view.reanchor(snapshot))
+      restore: (snapshot) => {
+        const restored = withHeldShownSource(() => this.view.reanchor(snapshot));
+        if (!restored) {
+          return;
+        }
+        // A rebuild can complete a construct whose source view belongs under the
+        // restored caret. Re-evaluate after the renderer's sync has returned, and only
+        // when a source exists there: an invalid label still being typed is source
+        // text, not a reason to hide the source the reader is editing.
+        queueMicrotask(() => {
+          const offset = caretOffset(this.context);
+          if (
+            offset !== null &&
+            sourceRangeAt(this.state, offset, getSelectionRange() !== null) !== null
+          ) {
+            this.followCaret();
+          }
+        });
+      }
     });
 
     const handleKey = (event: KeyboardEvent): void => {

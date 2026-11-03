@@ -3,9 +3,9 @@
  * could later change Markdown parsing.
  *
  * The document and caret update synchronously for every printable key; only the
- * parse and rendered shape wait for the burst to settle. This is what keeps a
- * capital, an underscore, or the next characters of a word from being lost
- * while the block is rebuilt.
+ * parse and rendered source shape wait for the burst to settle. This keeps a capital,
+ * an underscore, or the next characters of a word from being lost while the block is
+ * rebuilt, and the completed syntax stays editable as source under the caret.
  *
  * @covers src/ui/markdown/editing/context.ts,
  *   src/ui/markdown/editing/typed_text.ts,
@@ -84,9 +84,9 @@
   }
   await t.sleep(300);
   check(
-    'the deferred parse renders the completed syntax',
-    t.prose().querySelector('em')?.textContent ?? null,
-    'word'
+    'the deferred parse reveals the completed syntax at the caret',
+    t.prose().querySelector('.markdown-emphasis-source')?.textContent ?? null,
+    '_word_'
   );
   check('with the source intact', await t.raw(), 'Start _word_\n');
 

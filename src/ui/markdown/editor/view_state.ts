@@ -102,8 +102,13 @@ export class EditorViewState {
     });
   }
 
-  /** Re-anchors the caret after the renderer releases or replaces its block. */
-  reanchor(snapshot: unknown): void {
+  /**
+   * Re-anchors the caret after the renderer releases or replaces its block.
+   *
+   * Example: a replacement that relocates the caret returns true so its owner can
+   * re-evaluate which source belongs there; a swap elsewhere returns false.
+   */
+  reanchor(snapshot: unknown): boolean {
     const caret = getCaretRange();
     const survived =
       caret !== null &&
@@ -117,7 +122,7 @@ export class EditorViewState {
     if (survived) {
       this.pendingCaretOffset = null;
       ensureCaretRendered();
-      return;
+      return false;
     }
 
     const selection = window.getSelection();
@@ -129,17 +134,17 @@ export class EditorViewState {
       selection.anchorNode !== null &&
       selected.contains(selection.anchorNode)
     ) {
-      return;
+      return false;
     }
 
     const offset =
       this.pendingCaretOffset ?? (typeof snapshot === 'number' ? snapshot : null);
     if (offset === null) {
-      return;
+      return false;
     }
-    this.pendingCaretOffset = restoreCaret(this.editor.context, offset, false)
-      ? null
-      : offset;
+    const restored = restoreCaret(this.editor.context, offset, false);
+    this.pendingCaretOffset = restored ? null : offset;
+    return restored;
   }
 
   private caretForSnapshot(): number | null {

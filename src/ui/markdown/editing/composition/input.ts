@@ -80,6 +80,20 @@ export interface CompositionInput {
 const MOMENT_MS = 50;
 
 /**
+ * How long a routed letter can wait for the native input event that completes it.
+ *
+ * Example: `A` is routed at time 0 and arrives in the seam at time 120 ms; it is still
+ * lower-cased. A stale marker older than this window no longer changes later native text.
+ */
+const METHOD_LETTER_TIMEOUT_MS = 1000;
+
+/** A Latin key the input method routed before its native input arrived. */
+interface RoutedLetter {
+  readonly lower: string;
+  readonly at: number;
+}
+
+/**
  * Puts the seam in `host` (the scroller) and reports what committed.
  *
  * The element is parked off to the side until there is a caret to sit on, and follows
@@ -122,8 +136,8 @@ export function installCompositionInput(
   let committedValue = '';
   /** A deferred clear, so WebKit finishes the input event that produced the text. */
   let clearTimer: ReturnType<typeof setTimeout> | null = null;
-  /** A 229-routed Latin letter whose Caps Lock form should follow the method's case. */
-  let methodLetterLowercase = false;
+  /** Latin letters a 229-routed key declared before their native input arrived. */
+  let routedLetters: RoutedLetter[] = [];
   /** Whether native text entered the field since the last editor-handled key. */
   let nativeBurstActive = false;
   /**
@@ -157,19 +171,31 @@ export function installCompositionInput(
       }
       element.value = '';
       committedValue = '';
-      methodLetterLowercase = false;
     }, 0);
+  };
+
+  /** Lower-cases only the native capitals represented by 229-routed keys. */
+  const normalizeMethodCase = (text: string): string => {
+    const now = performance.now();
+    const waiting = routedLetters.filter((letter) => now - letter.at <= METHOD_LETTER_TIMEOUT_MS);
+    routedLetters = [];
+    return text.replace(/\p{Lu}/gu, (letter) => {
+      const lower = letter.toLocaleLowerCase();
+      const index = waiting.findIndex((entry) => entry.lower === lower);
+      if (index < 0) {
+        return letter;
+      }
+      waiting.splice(index, 1);
+      return lower;
+    });
   };
 
   /** Takes the new value the system left and hands it over; no new text commits nothing. */
   const commit = (fromInput = false) => {
     const pending = pendingText();
-    const text = methodLetterLowercase
-      ? pending.replace(/\p{Lu}/gu, (letter) => letter.toLocaleLowerCase())
-      : pending;
+    const text = normalizeMethodCase(pending);
     committedValue = element.value;
     nativeBurstActive ||= fromInput;
-    methodLetterLowercase = false;
     // Marked text stops being marked here, whether it committed a word or was cancelled.
     view.hide();
     if (text === '') {
@@ -197,7 +223,6 @@ export function installCompositionInput(
   element.addEventListener('compositionstart', () => {
     composing = true;
     keyAfterCommit = false;
-    methodLetterLowercase = false;
     nativeBurstActive = false;
     drawMarked();
   });
@@ -260,7 +285,7 @@ export function installCompositionInput(
     }
     element.value = '';
     committedValue = '';
-    methodLetterLowercase = false;
+    routedLetters = [];
     nativeBurstActive = false;
     resetCompositionKeyboard(element);
   };
@@ -277,7 +302,7 @@ export function installCompositionInput(
     composing = false;
     committedAt = 0;
     keyAfterCommit = false;
-    methodLetterLowercase = false;
+    routedLetters = [];
     nativeBurstActive = false;
     committedValue = '';
     element.value = '';
@@ -299,7 +324,11 @@ export function installCompositionInput(
         event.key.length === 1 &&
         /\p{L}/u.test(event.key)
       ) {
-        methodLetterLowercase = true;
+        const now = performance.now();
+        routedLetters = routedLetters.filter(
+          (letter) => now - letter.at <= METHOD_LETTER_TIMEOUT_MS
+        );
+        routedLetters.push({ lower: event.key.toLocaleLowerCase(), at: now });
       }
       if (event.key.length === 1 && performance.now() - committedAt < MOMENT_MS) {
         keyAfterCommit = true;
