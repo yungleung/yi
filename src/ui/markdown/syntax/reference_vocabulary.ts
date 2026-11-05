@@ -84,7 +84,7 @@ export function referenceVocabularyFromFrontmatter(
 /** The visible phrase for one numbered target. */
 export function referenceNumberText(
   kind: NumberedReferenceKind,
-  number: number,
+  number: number | string,
   vocabulary: ReferenceVocabulary
 ): string {
   return referenceKindText(kind, number, vocabulary[kind]);
@@ -92,8 +92,8 @@ export function referenceNumberText(
 
 /** The visible phrase for one kind's already-selected style. */
 export function referenceKindText(
-  kind: NumberedReferenceKind,
-  number: number,
+  kind: NumberedReferenceKind | 'theorem',
+  number: number | string,
   style: ReferenceStyle
 ): string {
   const numbered = `${style.prefix}${number}`;

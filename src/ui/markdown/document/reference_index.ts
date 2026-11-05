@@ -30,7 +30,8 @@ export type ReferenceKind =
   | 'listing'
   | 'table'
   | 'equation'
-  | 'list';
+  | 'list'
+  | 'theorem';
 
 /** One entry in document order. A target needs an ID; a numbered figure may not. */
 export interface ReferenceEntry {
@@ -38,7 +39,7 @@ export interface ReferenceEntry {
   kind: ReferenceKind;
   from: number;
   to: number;
-  number: number | null;
+  number: number | string | null;
   title: string;
   /** The document-owned kind word used by an automatic reference. */
   label: string;
@@ -66,6 +67,8 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
   let listingNumber = 0;
   let listNumber = 0;
   let tableNumber = 0;
+  const theoremCounters = new Map<string, number>();
+  const headingCounters = [0, 0, 0, 0, 0, 0];
   const entries: ReferenceEntry[] = [];
   walk(tree.children);
   let equationNumber = 0;
@@ -90,6 +93,7 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
   function walk(children: readonly RootContent[]): void {
     for (const child of children) {
       if (child.type === 'heading') {
+        advanceHeading(child.depth);
         addHeading(child);
       } else if (child.type === 'figure') {
         addFigure(child);
@@ -99,6 +103,8 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
         addTable(child);
       } else if (child.type === 'list') {
         addList(child);
+      } else if (child.type === 'theorem') {
+        addTheorem(child);
       }
       const nested = (child as { children?: RootContent[] }).children;
       if (Array.isArray(nested)) {
@@ -264,6 +270,95 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       explicit: caption.id !== null
     });
   }
+
+  function addTheorem(node: RootContent & {
+    type: 'theorem';
+    theorem: {
+      id: string | null;
+      bodyFrom: number;
+      type: {
+        className: string;
+        displayName: string;
+        counter: string;
+        numbered: boolean;
+        parentCounter:
+          | 'part'
+          | 'chapter'
+          | 'section'
+          | 'subsection'
+          | 'subsubsection'
+          | 'paragraph'
+          | 'subparagraph'
+          | null;
+      };
+    };
+  }): void {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (start === undefined || end === undefined) {
+      return;
+    }
+    let number: number | string | null = null;
+    if (node.theorem.type.numbered) {
+      const parent = node.theorem.type.parentCounter;
+      const depth = parent === null ? 0 : parentHeadingDepth(parent);
+      const prefix = headingCounters.slice(0, depth).join('.');
+      const counterKey = `${node.theorem.type.counter}@${prefix}`;
+      const next = (theoremCounters.get(counterKey) ?? 0) + 1;
+      theoremCounters.set(counterKey, next);
+      number = depth === 0 ? next : `${prefix}.${next}`;
+    }
+    const id = node.theorem.id;
+    if (id !== null) {
+      used.add(id);
+    }
+    entries.push({
+      id,
+      kind: 'theorem',
+      from: start,
+      to: end,
+      number,
+      title: node.theorem.type.displayName,
+      label: node.theorem.type.displayName,
+      numberPrefix: '',
+      caretAt: node.theorem.bodyFrom,
+      explicit: id !== null
+    });
+  }
+
+  function advanceHeading(level: number): void {
+    const index = Math.max(0, Math.min(5, level - 1));
+    headingCounters[index] += 1;
+    for (let deeper = index + 1; deeper < headingCounters.length; deeper += 1) {
+      headingCounters[deeper] = 0;
+    }
+  }
+}
+
+function parentHeadingDepth(
+  counter:
+    | 'part'
+    | 'chapter'
+    | 'section'
+    | 'subsection'
+    | 'subsubsection'
+    | 'paragraph'
+    | 'subparagraph'
+): number {
+  switch (counter) {
+    case 'part':
+    case 'chapter':
+    case 'section':
+      return 1;
+    case 'subsection':
+      return 2;
+    case 'subsubsection':
+      return 3;
+    case 'paragraph':
+      return 4;
+    case 'subparagraph':
+      return 5;
+  }
 }
 
 /** Where navigation enters the first item's editable content. */
@@ -297,7 +392,7 @@ export function referenceLabel(
     return entry.title;
   }
   return referenceKindText(
-    entry.kind as NumberedReferenceKind,
+    entry.kind as NumberedReferenceKind | 'theorem',
     entry.number,
     { label: entry.label, prefix: entry.numberPrefix } satisfies ReferenceStyle
   );

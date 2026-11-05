@@ -256,6 +256,74 @@ check(
   listingMarkdown.indexOf('print(1)')
 );
 
+const theoremSource = [
+  '---',
+  'amsthm:',
+  '  name_to_text:',
+  '    Theorem: 定理',
+  '    Lemma: 引理',
+  '---',
+  '',
+  '::: {#thm:one .Theorem}',
+  'One.',
+  ':::',
+  '',
+  '::: {.Lemma}',
+  'The same counter.',
+  ':::',
+  '',
+  '::: {#thm:three .Theorem}',
+  'Three.',
+  ':::',
+  '',
+  '::: proof',
+  'Done.',
+  ':::'
+].join('\n');
+const theoremEntries = referenceIndex(theoremSource)
+  .filter((entry) => entry.kind === 'theorem');
+check(
+  'theorems consume shared counters in document order',
+  theoremEntries.map((entry) => [entry.id, entry.number]),
+  [['thm:one', 1], [null, 2], ['thm:three', 3], [null, null]]
+);
+check(
+  'a theorem reference uses the note-owned title and number',
+  theoremEntries[2] === undefined ? null : referenceLabel(theoremEntries[2]),
+  '定理 3'
+);
+check(
+  'an ID-less lemma remains a counter consumer without a target',
+  theoremEntries[1]?.label,
+  '引理'
+);
+
+const sectionedTheoremSource = [
+  '---',
+  'amsthm:',
+  '  parent_counter: section',
+  '---',
+  '',
+  '# First',
+  '',
+  '::: {.Theorem}',
+  'One.',
+  ':::',
+  '',
+  '# Second',
+  '',
+  '::: {.Lemma}',
+  'Shared two.',
+  ':::'
+].join('\n');
+check(
+  'a theorem parent counter follows the numbered heading',
+  referenceIndex(sectionedTheoremSource)
+    .filter((entry) => entry.kind === 'theorem')
+    .map((entry) => entry.number),
+  ['1.1', '2.1']
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
