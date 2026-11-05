@@ -33,6 +33,8 @@ export const TASK_SOURCE_FROM = 'task-source-from';
 export const TABLE_ROW_START = 'table-row-start';
 /** Where an empty callout body accepts its first character. */
 export const CALLOUT_BODY_ANCHOR = 'callout-body-anchor';
+/** Where an empty theorem body accepts its first character. */
+export const THEOREM_BODY_ANCHOR = 'theorem-body-anchor';
 /** A block's own positions: its first character, and its first and last line. */
 export const CHAR_START = 'char-start';
 export const LINE_START = 'line-start';
@@ -49,6 +51,7 @@ export const OFFSET_TAGS = [
   TASK_SOURCE_FROM,
   TABLE_ROW_START,
   CALLOUT_BODY_ANCHOR,
+  THEOREM_BODY_ANCHOR,
   CHAR_START,
   LINE_START,
   LINE_END

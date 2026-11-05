@@ -65,6 +65,19 @@
   );
   check('source reveal does not edit the document', await t.raw(), text);
 
+  await t.load('::: {.Theorem}\n\n:::');
+  const empty = t.prose().querySelector('.markdown-theorem-empty');
+  check('an empty theorem keeps a visible body caret anchor', empty !== null, true);
+  empty?.click();
+  await t.sleep(180);
+  t.key('X');
+  await t.sleep(180);
+  check(
+    'typing at the empty theorem anchor creates its body line',
+    await t.raw(),
+    '::: {.Theorem}\nX\n:::'
+  );
+
   return {
     checks,
     failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)

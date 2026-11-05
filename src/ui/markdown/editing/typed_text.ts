@@ -41,6 +41,7 @@ import { sourceTextAt } from '../source_text';
 import { preserveSpaces } from '../text_spacing';
 import {
   CALLOUT_BODY_ANCHOR,
+  THEOREM_BODY_ANCHOR,
   CONTENT_END,
   CONTENT_START,
   FORMAT_FROM,
@@ -85,7 +86,8 @@ const MOVED_TAGS = [
   FORMAT_TO,
   TABLE_ROW_START,
   TASK_SOURCE_FROM,
-  CALLOUT_BODY_ANCHOR
+  CALLOUT_BODY_ANCHOR,
+  THEOREM_BODY_ANCHOR
 ] as const;
 
 /** The elements that carry one of them. */

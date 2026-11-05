@@ -687,6 +687,11 @@ body {
   margin-bottom: 0;
 }
 
+.markdown-theorem-empty {
+  min-height: 1lh;
+  margin: 0;
+}
+
 .markdown-theorem-qed {
   float: right;
   margin-inline-start: 0.75rem;

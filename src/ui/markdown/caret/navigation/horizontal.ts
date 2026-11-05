@@ -23,7 +23,11 @@ import {
   rangeBefore,
   sameLineTop
 } from '../dom';
-import { CALLOUT_BODY_ANCHOR, CONTENT_START } from '../../offset_tags';
+import {
+  CALLOUT_BODY_ANCHOR,
+  CONTENT_START,
+  THEOREM_BODY_ANCHOR
+} from '../../offset_tags';
 import {
   firstNavigableNodeIn,
   lastNavigableNodeIn
@@ -211,12 +215,16 @@ function adjacentCalloutRange(
     direction < 0
       ? lastNavigableNodeIn(neighbor)
       : firstNavigableNodeIn(neighbor);
-  const body = edge?.parentElement?.closest<HTMLElement>('.markdown-callout-body') ?? null;
+  const body = edge?.parentElement?.closest<HTMLElement>(
+    '.markdown-callout-body, .markdown-theorem-body'
+  ) ?? null;
   if (!body) {
     return null;
   }
 
-  const anchor = body.querySelector<HTMLElement>(`[data-${CALLOUT_BODY_ANCHOR}]`);
+  const anchor = body.querySelector<HTMLElement>(
+    `[data-${CALLOUT_BODY_ANCHOR}], [data-${THEOREM_BODY_ANCHOR}]`
+  );
   const text = anchor
     ? firstTextNodeIn(anchor)
     : direction < 0

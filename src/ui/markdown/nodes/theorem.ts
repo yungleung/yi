@@ -13,6 +13,7 @@ import type { AstTheorem } from '../ast';
 import { renderContext } from '../render_context';
 import { appendChildren } from '../registry';
 import { enterSourceOf, renderingBlock } from '../source_mode';
+import { TEXT_FROM, THEOREM_BODY_ANCHOR, setOffset } from '../offset_tags';
 import { EditableNodeComponent } from './editable_node';
 
 const THEOREM_CLASS: Record<string, string> = {
@@ -53,6 +54,22 @@ export class Theorem extends EditableNodeComponent {
     const body = document.createElement('div');
     body.className = 'markdown-theorem-body';
     appendChildren(body, node.children);
+    if (node.children.length === 0) {
+      const anchor = document.createElement('p');
+      anchor.className = 'markdown-theorem-empty';
+      setOffset(anchor, THEOREM_BODY_ANCHOR, node.theorem.bodyFrom);
+      setOffset(anchor, TEXT_FROM, node.theorem.bodyFrom);
+      anchor.appendChild(document.createTextNode(''));
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        enterSourceOf(this.element, node.theorem.bodyFrom);
+        (this.element.closest('.prose') as HTMLElement | null)?.focus({
+          preventScroll: true
+        });
+      });
+      body.appendChild(anchor);
+    }
     if (node.theorem.type.style === 'proof') {
       const qed = document.createElement('span');
       qed.className = 'markdown-theorem-qed';
