@@ -50,7 +50,7 @@ methodology; this file is the index and the conventions.
 | `check-heading-attributes.mjs` | Pandoc heading attributes on ATX and setext headings: separation from the title, quoted and escaped values, malformed braces left as text, and exact serialization |
 | `check-heading-index.mjs` | Pandoc automatic identifiers, Unicode, fallback and duplicate suffixes, explicit IDs staying literal, same-document target order, and first-match lookup |
 | `check-auto-references.mjs` | Yi's `[#id]` source spelling: IDs, multiple references, escapes, empty forms, and line boundaries |
-| `check-reference-header.mjs` | The generated LaTeX/PDF target header: native figure, table and listing labels/prefixes, table/equation/list counter macros, LaTeX escaping, and the `yilist` setup hook |
+| `check-reference-header.mjs` | The generated LaTeX/PDF target and theorem headers: native figure, table and listing labels/prefixes, table/equation/list counter macros, theorem environments and options, LaTeX escaping, and the `yilist` setup hook |
 | `check-reference-index.mjs` | Shared heading, figure, listing, captioned-table, captioned-list, and labeled-equation targets; document-order numbering; first-match duplicate resolution; labels and literal prefixes; inferred reference text; and later targets surviving an equation's full-document parse |
 | `check-reference-vocabulary.mjs` | Document-configured labels and literal number prefixes for every target kind, English/empty fallback, scalar validation, and interface-language independence |
 | `check-figures.mjs` | Pandoc implicit-figure recognition, image attribute parsing, inline and empty-alt exclusions, malformed attributes, and source serialization |

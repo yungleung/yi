@@ -124,7 +124,7 @@ export function referenceHeader(markdown: string): string {
 }
 
 /** Literal text placed inside `\mbox` or a macro argument. */
-function latexText(text: string): string {
+export function latexText(text: string): string {
   const special: Record<string, string> = {
     '\\': '\\textbackslash{}',
     '~': '\\textasciitilde{}',

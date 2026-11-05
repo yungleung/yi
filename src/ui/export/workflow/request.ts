@@ -40,7 +40,7 @@ import {
   rasterPictures
 } from '../assets';
 import { exportSource, TheoremCitationCollision } from '../pipeline';
-import { referenceHeader } from '../reference';
+import { referenceHeader, theoremHeader } from '../reference';
 
 /** The confirmed state needed to perform one export without reopening the question. */
 export interface ConfirmedExportRequest {
@@ -190,7 +190,9 @@ export async function runConfirmedExport(request: ConfirmedExportRequest): Promi
           ? null
           : { path: nativeBibliography.path, text: nativeBibliography.text },
       note_assets: noteAssets,
-      reference_header: isLatexKind(kind.kind) ? referenceHeader(text) : ''
+      reference_header: isLatexKind(kind.kind)
+        ? `${referenceHeader(text)}${theoremHeader(text)}`
+        : ''
     });
     finishProgress?.();
     reportExport({ kind: kind.kind, outputPath, unfetched, nativeBibliography, outcome });

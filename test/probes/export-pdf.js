@@ -67,6 +67,12 @@
     '',
     'A short paragraph with `inline code` and ~~strikethrough~~, and a citation [@smith2020].',
     '',
+    '::: {#thm:pdf .Theorem info="PDF"}',
+    'Every theorem exports.',
+    ':::',
+    '',
+    'See [#thm:pdf].',
+    '',
     'See [#fig:demo] and [#lst:demo].',
     '',
     `![Example figure](${window.__probePaths.checkout}src-tauri/icons/32x32.png){#fig:demo}`,
@@ -207,6 +213,18 @@
       }
     );
     const text = pdf === null ? '' : await t.pdfText(pdf);
+    check(
+      'and the native theorem environment is defined and used',
+      text.includes('Theorem1(PDF).Everytheoremexports.') &&
+        text.includes('SeeTheorem1.'),
+      {
+        theorem: /Theorem1\(PDF\)\./.exec(text)?.[0] ?? null,
+        reference: /SeeTheorem1\./.exec(text)?.[0] ?? null,
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
+      }
+    );
     check(
       'document labels and literal prefixes reach native figure and listing captions',
       text.includes('Diagram2-1') && text.includes('Codeexcerpt2-1'),

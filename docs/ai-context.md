@@ -813,7 +813,10 @@ heading and body, and the document reference index resolves `[#id]` by target
 kind. Only temporary Pandoc source changes that reference to `@Id`, where the
 bundled `pandoc-amsthm` v3.1.1 filter prints the note-owned theorem name;
 `@id`/`[@id]` remain citations in Yi source. Theorem export requires Pandoc
-3.1.1 or newer and refuses theorem IDs that collide with bibliography keys.
+3.1.1 or newer and refuses theorem IDs that collide with bibliography keys. A
+Pandoc `--include-in-header` overrides the filter's metadata contribution, so
+`ui/export/reference/theorem_header.ts` emits the same `amsthm` package and
+resolved declarations in Yi's generated header for both LaTeX and PDF.
 
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
 `syntax/code/fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/code/listings.ts`

@@ -70,6 +70,12 @@
     '',
     'And 简体中文 beside it.',
     '',
+    '::: {#thm:tex .Theorem info="TeX"}',
+    'Every theorem survives.',
+    ':::',
+    '',
+    'See [#thm:tex].',
+    '',
     'See [#fig:demo] for the numbered figure.',
     '',
     `![Demo figure](${picture}){#fig:demo .wide}`,
@@ -224,6 +230,19 @@
       'with the note’s heading as a section of it',
       /\\(?:chapter|section|subsection)\{Going out\}/.test(tex),
       { section: /\\(?:chapter|section|subsection)\{Going out\}/.exec(tex)?.[0] ?? null }
+    );
+    check(
+      'a theorem environment is declared before the filter’s native block and reference',
+      tex.includes('\\usepackage{amsthm}') &&
+        tex.includes('\\newtheorem{Theorem}{Theorem}') &&
+        tex.includes('\\begin{Theorem}[TeX]\\label{thm:tex}') &&
+        /Theorem~\\ref\{thm:tex\}/.test(tex),
+      {
+        package: tex.includes('\\usepackage{amsthm}'),
+        declaration: tex.includes('\\newtheorem{Theorem}{Theorem}'),
+        block: /\\begin\{Theorem\}(?:\[[^\]]*\])?\\label\{thm:tex\}/.exec(tex)?.[0] ?? null,
+        reference: /Theorem~\\ref\{thm:tex\}/.exec(tex)?.[0] ?? null
+      }
     );
     check(
       'and no font setup of its own: this file names none, so the compile is not stopped by a name the reader’s machine may not have',

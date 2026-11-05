@@ -1,9 +1,10 @@
 /**
- * Checks the LaTeX header that aligns native captions and Yi's reference macros.
+ * Checks the generated LaTeX target and theorem headers.
  *
  * Native figure, table and listing counters follow the document's labels and
  * literal prefixes. Table, equation and list automatic references use portable
- * macros whose final numbers come from LaTeX.
+ * macros whose final numbers come from LaTeX. Theorem declarations come from the
+ * same resolved vocabulary and options the editor and Pandoc filter read.
  */
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,16 +12,22 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-reference-header-'));
-const bundle = await rolldown({
-  input: 'src/ui/export/reference/header.ts',
-  logLevel: 'silent',
-  platform: 'node'
-});
-const { output } = await bundle.generate({ format: 'esm' });
-await bundle.close();
-const file = join(directory, 'header.mjs');
-writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { referenceHeader } = await import(file);
+const load = async (input, name) => {
+  const bundle = await rolldown({ input, logLevel: 'silent', platform: 'node' });
+  const { output } = await bundle.generate({ format: 'esm' });
+  await bundle.close();
+  const file = join(directory, `${name}.mjs`);
+  writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
+  return await import(file);
+};
+const { referenceHeader } = await load(
+  'src/ui/export/reference/header.ts',
+  'header'
+);
+const { theoremHeader } = await load(
+  'src/ui/export/reference/theorem_header.ts',
+  'theorem_header'
+);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -30,6 +37,92 @@ const check = (name, actual, expected) => {
 };
 
 check('a note with no numbered targets emits no header', referenceHeader('# No targets\n'), '');
+check('a note with no theorems emits no theorem header', theoremHeader('# No theorems\n'), '');
+
+const theoremPreamble = theoremHeader([
+  '---',
+  'amsthm:',
+  '  plain:',
+  '    - Theorem:',
+  '        - Lemma',
+  '  definition:',
+  '    - Definition',
+  '  name_to_text:',
+  '    Theorem: 定理',
+  '    Lemma: 引理',
+  '    proof: 证明',
+  '---',
+  '',
+  '::: {#thm:one .Theorem}',
+  'Body.',
+  ':::',
+  '',
+  '::: proof',
+  'Done.',
+  ':::'
+].join('\n'));
+check(
+  'the theorem preamble loads amsthm and declares the resolved environments',
+  theoremPreamble.includes('\\usepackage{amsthm}') &&
+    theoremPreamble.includes('\\theoremstyle{plain}') &&
+    theoremPreamble.includes('\\newtheorem{Theorem}{定理}') &&
+    theoremPreamble.includes('\\newtheorem{Lemma}[Theorem]{引理}') &&
+    theoremPreamble.includes('\\newtheorem{Definition}{Definition}'),
+  true
+);
+check(
+  'the theorem preamble carries the proof name',
+  theoremPreamble.includes('\\renewcommand{\\proofname}{证明}'),
+  true
+);
+check(
+  'a shared-counter parent declaration comes first',
+  theoremPreamble.indexOf('\\newtheorem{Theorem}{定理}') <
+    theoremPreamble.indexOf('\\newtheorem{Lemma}[Theorem]{引理}'),
+  true
+);
+
+const customTheoremPreamble = theoremHeader([
+  '---',
+  'amsthm:',
+  '  styles:',
+  '    margin:',
+  '      headfont: [italic, smallcaps]',
+  '      bodyfont: normal',
+  '      headpunct: ":"',
+  '      headspace: newline',
+  '  margin:',
+  '    - Claim:',
+  '        - Fact*',
+  '  parent_counter:',
+  '    Claim: section',
+  '  swapnumbers: true',
+  '  qed_symbol: "$\\\\blacksquare$"',
+  '  name_to_text:',
+  '    Claim: 主张',
+  '---',
+  '',
+  '::: {.Claim}',
+  'Body.',
+  ':::'
+].join('\n'));
+check(
+  'a custom style and declaration are carried into the preamble',
+  customTheoremPreamble.includes(
+    '\\newtheoremstyle{margin}{}{}{\\normalfont}{}{\\itshape\\scshape}{:}{\\newline}{}'
+  ) &&
+    customTheoremPreamble.includes('\\newtheorem{Claim}{主张}[section]'),
+  true
+);
+check(
+  'an unnumbered custom theorem and the upstream options survive',
+  customTheoremPreamble.includes('\\newtheorem*{Fact}{Fact}') &&
+    customTheoremPreamble.includes('\\swapnumbers') &&
+    customTheoremPreamble.includes(
+      '\\renewcommand{\\qedsymbol}{\\ensuremath{\\blacksquare}}'
+    ),
+  true
+);
 
 const tableHeader = referenceHeader(
   '---\n' +
