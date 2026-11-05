@@ -15,8 +15,12 @@ import { fenceBody } from '../syntax/markers';
 import { currentShownRange } from './state';
 
 /** Whether this block is one that shows its own text. */
-export function isSourceBlock(block: MarkdownBlock): boolean {
+export function isSourceBlock(
+  block: MarkdownBlock,
+  recognizedTheorem = false
+): boolean {
   if (
+    !recognizedTheorem &&
     (block.kind === 'fencedDiv' || block.kind === 'quote') &&
     hasGenericFencedDiv(block.text)
   ) {

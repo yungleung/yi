@@ -39,6 +39,8 @@ export interface RenderContext {
   listLabelAt(from: number): string | null;
   /** The visible equation number at this document offset, or null. */
   equationNumberAt(from: number): string | null;
+  /** The visible theorem phrase at this document offset, or null. */
+  theoremLabelAt(from: number): string | null;
 }
 
 /** What a rendering gets when the app has said nothing. */
@@ -52,7 +54,8 @@ const nothing: RenderContext = {
   listingLabelAt: (_from) => null,
   tableLabelAt: (_from) => null,
   listLabelAt: (_from) => null,
-  equationNumberAt: (_from) => null
+  equationNumberAt: (_from) => null,
+  theoremLabelAt: (_from) => null
 };
 
 let current: RenderContext = nothing;

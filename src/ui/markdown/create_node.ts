@@ -42,6 +42,7 @@ import type {
   AstTable,
   AstText,
   AstThematicBreak,
+  AstTheorem,
   AstWikilink
 } from './ast';
 import { registerComponent } from './registry';
@@ -68,6 +69,7 @@ import { AutoReference } from './nodes/auto_reference';
 import { Figure } from './nodes/figure';
 import { Image } from './nodes/image';
 import { Citation } from './nodes/citation';
+import { Theorem } from './nodes/theorem';
 import { Wikilink } from './nodes/wikilink';
 import { TextNode } from './nodes/text';
 
@@ -106,5 +108,6 @@ registerComponent(
 registerComponent('figure', (node) => new Figure(node as AstFigure), true);
 registerComponent('image', (node) => new Image(node as AstImage), true);
 registerComponent('citation', (node) => new Citation(node as AstCitation), true);
+registerComponent('theorem', (node) => new Theorem(node as AstTheorem));
 registerComponent('wikilink', (node) => new Wikilink(node as AstWikilink), true);
 registerComponent('text', (node) => new TextNode(node as AstText));

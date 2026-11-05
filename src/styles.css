@@ -656,6 +656,43 @@ body {
   margin: 0;
 }
 
+.markdown-theorem {
+  border-inline-start: 2px solid color-mix(in oklab, var(--color-base-content) 22%, transparent);
+  padding-inline-start: 1rem;
+}
+
+.markdown-theorem-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.markdown-theorem-definition .markdown-theorem-body,
+.markdown-theorem-remark .markdown-theorem-body,
+.markdown-theorem-proof .markdown-theorem-body,
+.markdown-theorem-custom .markdown-theorem-body {
+  font-style: normal;
+}
+
+.markdown-theorem-plain .markdown-theorem-body {
+  font-style: italic;
+}
+
+.markdown-theorem-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-theorem-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-theorem-qed {
+  float: right;
+  margin-inline-start: 0.75rem;
+  font-style: normal;
+}
+
 .markdown-listing-label,
 .markdown-caption-number {
   font-weight: 600;

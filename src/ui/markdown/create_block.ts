@@ -46,6 +46,7 @@ class BlockView implements BlockComponent {
   constructor(node: BlockNode, children: RootContent[]) {
     this.node = node;
     const callout = readCallout(node.text);
+    const theorem = containsTheorem(children);
     // The block is built with itself named as the one being built, so a node
     // inside it can tell whether its own source is the one being shown (see
     // `source_mode/`).
@@ -56,7 +57,7 @@ class BlockView implements BlockComponent {
           ? renderEquationBlock(node, (block) => this.container(block), (block, children, callout) =>
               this.renderParsed(block, children, callout)
             )
-        : isSourceBlock(node)
+        : isSourceBlock(node, theorem)
           ? renderSourceBlock(node, callout, (block) => this.container(block))
           : hasBodyView(node.kind)
             ? renderFenceBody(node, (block) => this.container(block))
@@ -147,4 +148,16 @@ class BlockView implements BlockComponent {
     setOffset(element, CHAR_START, node.charStart);
     return element;
   }
+}
+
+/** Whether a parsed block contains a theorem at any nesting depth. */
+function containsTheorem(children: RootContent[]): boolean {
+  return children.some((child) =>
+    child.type === 'theorem' ||
+    containsTheorem(
+      Array.isArray((child as { children?: RootContent[] }).children)
+        ? (child as { children: RootContent[] }).children
+        : []
+    )
+  );
 }

@@ -68,6 +68,12 @@ export function createEditorRenderContext(
         .referenceEntries()
         .find((entry) => entry.kind === 'equation' && entry.from === from);
       return target === undefined ? null : equationBlockNumber(target);
+    },
+    theoremLabelAt: (from) => {
+      const target = state
+        .referenceEntries()
+        .find((entry) => entry.kind === 'theorem' && entry.from === from);
+      return target === undefined ? null : referenceLabel(target);
     }
   };
 }
