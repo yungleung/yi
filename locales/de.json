@@ -121,6 +121,8 @@
   "export.landscape": "Querformat",
   "export.unknownPaper": "Yi kennt kein Papierformat namens {paper}.",
   "export.noPandoc": "Auf diesem Rechner wurde pandoc nicht gefunden, daher kann diese Art des Exports nicht laufen.",
+  "export.theoremPandocTooOld": "Theorem-Blöcke benötigen für diesen Export Pandoc 3.1.1 oder neuer.",
+  "export.theoremCitationCollision": "Die Theorem-ID {id} ist auch ein Literaturverweis-Schlüssel. Benennen Sie vor dem Export einen davon um.",
   "export.fontHint": "Für diese Zeichen hat dieser Export keine Schrift: {characters} — nennen Sie eine in den Konvertierungseinstellungen (`mainfont:` für jedes Schriftsystem, `yi-<script>-font:` für eines der mitgelieferten, `CJKmainfont:` für Han und Kana).",
   "export.fontHintFont": "Für diese Zeichen hat dieser Export keine Schrift: {characters} — fügen Sie `mainfont: \"{font}\"` in den Konvertierungseinstellungen hinzu; diese Schrift deckt auf dieser Maschine am meisten ab.",
   "export.notPictures": "Diese Ziele sind keine Bilder; der Export übernimmt sie als die Dateien, die sie sind: {destinations}",

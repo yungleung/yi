@@ -121,6 +121,8 @@
   "export.landscape": "Paysage",
   "export.unknownPaper": "Yi ne connaît pas de format de papier nommé {paper}.",
   "export.noPandoc": "pandoc est introuvable sur cette machine : ce type d’export ne peut pas s’exécuter.",
+  "export.theoremPandocTooOld": "Les blocs de théorème nécessitent Pandoc 3.1.1 ou une version ultérieure pour cet export.",
+  "export.theoremCitationCollision": "L’identifiant de théorème {id} est aussi une clé bibliographique. Renommez l’un des deux avant l’export.",
   "export.fontHint": "Ces caractères n'ont aucune police dans cet export : {characters} — nommez-en une dans les réglages de conversion (`mainfont:` pour toute écriture, `yi-<script>-font:` pour l'une de celles fournies, `CJKmainfont:` pour le han et le kana).",
   "export.fontHintFont": "Ces caractères n'ont aucune police dans cet export : {characters} — ajoutez `mainfont: \"{font}\"` dans les réglages de conversion ; cette police est la plus complète connue sur cette machine.",
   "export.notPictures": "Ces destinations ne désignent pas d’image : l’export les reprend comme les fichiers qu’elles sont : {destinations}",

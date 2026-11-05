@@ -121,6 +121,8 @@
   "export.landscape": "横",
   "export.unknownPaper": "用紙サイズ「{paper}」は Yi にはわかりません。",
   "export.noPandoc": "このマシンに pandoc が見つからないため、この形式ではエクスポートできません。",
+  "export.theoremPandocTooOld": "定理ブロックの書き出しには Pandoc 3.1.1 以降が必要です。",
+  "export.theoremCitationCollision": "定理 ID {id} は文献キーでもあります。書き出す前にどちらかを変更してください。",
   "export.fontHint": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定でフォントを指定してください（`mainfont:` はどの文字体系にも、`yi-<script>-font:` は同梱の文字体系の一つに、`CJKmainfont:` は漢字とかなに使えます）。",
   "export.fontHintFont": "この書き出しにはこれらの文字を描くフォントがありません: {characters} — 変換設定に `mainfont: \"{font}\"` を追加してください。このフォントはこのマシンで最も広い範囲をカバーします。",
   "export.notPictures": "これらの指定は画像ではないため、そのままファイルとして書き出しに含まれます: {destinations}",

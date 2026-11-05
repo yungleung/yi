@@ -30,6 +30,6 @@ export function theoremsForParsers(
     };
     return theoremFromOpening(opening, div, markdown, vocabulary) === null
       ? null
-      : 'theorem';
+      : 'thm';
   });
 }

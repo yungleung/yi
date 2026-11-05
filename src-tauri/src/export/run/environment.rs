@@ -9,6 +9,22 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+const AMSTHM_FILTER: &str = include_str!("../../../assets/export/amsthm.lua");
+
+/// Writes the pinned theorem filter where Pandoc can load it.
+///
+/// Example: upgrading the bundled filter replaces the old copy atomically; a run with the current
+/// bytes keeps the file untouched.
+pub(super) fn ensure_amsthm_filter(dir: &Path) -> Result<PathBuf, String> {
+    let path = dir.join("amsthm.lua");
+    if fs::read_to_string(&path).ok().as_deref() == Some(AMSTHM_FILTER) {
+        return Ok(path);
+    }
+    crate::files::write_atomically(&path, AMSTHM_FILTER)
+        .map_err(|error| crate::i18n::path_error("export.cannotWrite", path.display(), error))?;
+    Ok(path)
+}
+
 /// Writes the note where pandoc reads files, and says where: a name of the app's own inside its
 /// data folder, so nothing appears in the reader's own notes folder and no two exports collide.
 pub(super) fn write_note(dir: &Path, text: &str) -> Result<PathBuf, String> {

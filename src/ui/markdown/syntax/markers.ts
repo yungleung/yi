@@ -29,8 +29,17 @@ export function closesFrontmatter(line: string): boolean {
  * Example: `'---\ntitle: A\n---\nBody'` returns `'title: A'`.
  */
 export function frontmatterText(markdown: string): string | null {
+  return frontmatterRange(markdown)?.text ?? null;
+}
+
+/** The complete leading frontmatter block and the YAML text inside it. */
+export function frontmatterRange(
+  markdown: string
+): { from: number; to: number; text: string } | null {
   const match = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/.exec(markdown);
-  return match ? match[1] : null;
+  return match
+    ? { from: 0, to: match[0].length, text: match[1] }
+    : null;
 }
 
 /**

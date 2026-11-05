@@ -56,7 +56,6 @@ export function theoremVocabularyFromFrontmatter(
 
   const options = root.amsthm;
   const titles = readTitles(options.name_to_text);
-  const parentCounters = readParentCounters(options.parent_counter);
   const styleNames = [
     'plain',
     'definition',
@@ -98,6 +97,10 @@ export function theoremVocabularyFromFrontmatter(
       }
     }
   }
+  const parentCounters = readParentCounters(
+    options.parent_counter,
+    declared.map((declaration) => declaration.sourceName)
+  );
   const resolved = resolveVocabulary(
     BUILTIN_DECLARATIONS,
     declared,
@@ -123,7 +126,8 @@ function readTitles(value: unknown): ReadonlyMap<string, string> {
 }
 
 function readParentCounters(
-  value: unknown
+  value: unknown,
+  declaredNames: readonly string[]
 ): ReadonlyMap<string, TheoremParentCounter> {
   const counters = new Map<string, TheoremParentCounter>();
   if (typeof value === 'string') {
@@ -131,6 +135,9 @@ function readParentCounters(
     if (counter !== null) {
       for (const declaration of BUILTIN_DECLARATIONS) {
         counters.set(declaration.sourceName, counter);
+      }
+      for (const name of declaredNames) {
+        counters.set(name, counter);
       }
     }
     return counters;

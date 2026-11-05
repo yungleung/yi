@@ -72,6 +72,12 @@
     '',
     `A citation [@smith2020], and a picture: ![icon](${checkout}src-tauri/icons/icon.png).`,
     '',
+    '::: {#thm:demo .Theorem}',
+    'A theorem.',
+    ':::',
+    '',
+    'See [#thm:demo].',
+    '',
     'See [#fig:demo] for the figure.',
     '',
     `![Demo figure](${checkout}src-tauri/icons/icon.png){#fig:demo .wide}`,
@@ -155,22 +161,25 @@
     const asked = lines.slice(1);
     const scratch = asked.at(-1) ?? '';
     // The style pandoc was handed, read out of the call itself rather than guessed at.
-    const csl = asked[11] ?? '';
+    const csl = asked[13] ?? '';
     const parts = {
       written,
       program: lines[0],
-      defaults: asked[0] === '--defaults' && asked[1] === config,
-      output: asked[2] === '--output' && asked[3] === target,
-      resources: asked[4] === '--resource-path' && asked[5].split(':')[0] === folder,
-      library: asked.slice(6, 8).join(' ') === `--bibliography ${library}`,
-      heading: asked[8] === '--metadata' && asked[9] === 'reference-section-title=References',
-      style: asked[10] === '--csl' && csl.endsWith('/export/styles/apa.csl'),
+      filter:
+        asked[0] === '--lua-filter' &&
+        asked[1].endsWith('/export/amsthm.lua'),
+      defaults: asked[2] === '--defaults' && asked[3] === config,
+      output: asked[4] === '--output' && asked[5] === target,
+      resources: asked[6] === '--resource-path' && asked[7].split(':')[0] === folder,
+      library: asked.slice(8, 10).join(' ') === `--bibliography ${library}`,
+      heading: asked[10] === '--metadata' && asked[11] === 'reference-section-title=References',
+      style: asked[12] === '--csl' && csl.endsWith('/export/styles/apa.csl'),
       note:
         scratch.startsWith(`${config.slice(0, config.lastIndexOf('/'))}/`) &&
         scratch.endsWith('.md')
     };
     check(
-      'the app asks pandoc for the kind’s own defaults file, the output, the folders a destination resolves against, the library, the heading and the style the citations came from, and the note',
+      'the app asks pandoc for the theorem filter, the kind’s own defaults file, the output, the folders a destination resolves against, the library, the heading and the style the citations came from, and the note',
       Object.values(parts).every(Boolean),
       parts
     );
@@ -190,7 +199,7 @@
     const prepared = await readText(`${recorder}/input.md`);
     check(
       'the note pandoc is handed is the note on screen',
-      prepared.startsWith('# Going out'),
+      prepared.includes('# Going out'),
       prepared.split('\n').slice(0, 1)
     );
     check(

@@ -60,7 +60,26 @@ export function readAttributedDivOpening(
   const trimmed = content.trimEnd();
   const attribute = attributeBlockAtEnd(trimmed, trimmed.length, false);
   if (attribute === null) {
-    return null;
+    const bare = /^( {0,3})(:{3,})\s+([A-Za-z][A-Za-z0-9_]*)\s*$/.exec(trimmed);
+    if (bare === null) {
+      return null;
+    }
+    return {
+      fenceStart: bare[1].length,
+      fenceLength: bare[2].length,
+      attribute: {
+        id: null,
+        classes: [bare[3]],
+        attributes: {},
+        from: bare[1].length + bare[2].length,
+        to: trimmed.length,
+        source: '',
+        separatorFrom: bare[1].length + bare[2].length,
+        separator: ''
+      },
+      quoteDepth: quote?.depth ?? 0,
+      quotePrefix: quote === null ? '' : line.slice(0, quote.prefixEnd)
+    };
   }
   const before = trimmed.slice(0, attribute.from);
   const fence = /^( {0,3})(:{3,})\s*$/.exec(before);

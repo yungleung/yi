@@ -189,6 +189,7 @@ async fn export_with_pandoc(
         .ok_or_else(|| crate::i18n::now("export.noPandoc", &[]))?;
     let dir = export_dir(app)?;
     let defaults = ensure_defaults_in(&dir, kind)?;
+    let _theorem_filter = environment::ensure_amsthm_filter(&dir)?;
     let template = resolve_template(app, kind, request.template_id.as_deref())?;
     let template_defaults = template
         .as_ref()
@@ -233,6 +234,9 @@ async fn export_with_pandoc(
         .collect();
     let note = write_note(&dir, &request.text)?;
     let result = async {
+        if arguments::note_uses_theorems(&note) {
+            super::pandoc::require_theorem_pandoc(&pandoc)?;
+        }
         let arguments = pandoc_arguments(
             &dir,
             &defaults,

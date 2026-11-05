@@ -95,6 +95,46 @@ fn every_generated_header_reaches_pandoc_in_order() {
     let _ = fs::remove_dir_all(&dir);
 }
 
+/// The theorem filter is a local app asset, handed to Pandoc before its defaults so citeproc cannot
+/// consume the temporary theorem references first. A note without theorem metadata does not ask for
+/// the filter and keeps the older Pandoc floor.
+#[test]
+fn theorem_notes_receive_the_bundled_filter_before_defaults() {
+    let dir = scratch("theorem-filter");
+    let request = request_in(&dir);
+    let note = dir.join("note-1.md");
+    fs::write(
+        &note,
+        "---\namsthm:\n  plain:\n    - Theorem\n---\n\n::: {.Theorem}\nBody.\n:::\n",
+    )
+    .unwrap();
+    let arguments = pandoc_arguments(
+        &dir,
+        &dir.join("export.latex.yaml"),
+        &note,
+        &ExportRequest {
+            kind: "latex".to_string(),
+            ..request
+        },
+        kind_of("latex").unwrap(),
+        &[],
+        None,
+        None,
+        None,
+    )
+    .unwrap()
+    .iter()
+    .map(|argument| argument.to_string_lossy().into_owned())
+    .collect::<Vec<String>>();
+    assert_eq!(arguments[0], "--lua-filter");
+    assert_eq!(
+        arguments[1],
+        dir.join("amsthm.lua").to_string_lossy().into_owned()
+    );
+    assert_eq!(arguments[2], "--defaults");
+    let _ = fs::remove_dir_all(&dir);
+}
+
 /// A folder of this test's own, made and taken away again.
 #[test]
 fn the_arguments_are_the_whole_of_what_the_app_asks_pandoc_for() {

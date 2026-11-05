@@ -39,7 +39,7 @@ import {
   portableLatexImage,
   rasterPictures
 } from '../assets';
-import { exportSource } from '../pipeline';
+import { exportSource, TheoremCitationCollision } from '../pipeline';
 import { referenceHeader } from '../reference';
 
 /** The confirmed state needed to perform one export without reopening the question. */
@@ -122,34 +122,42 @@ export async function runConfirmedExport(request: ConfirmedExportRequest): Promi
       }
     }
 
-    const prepared = await exportSource(text, {
-      kind: kind.kind,
-      titleOf: (target) => documentManager.getTitle(target),
-      bases: imageBases(),
-      exists: fileExists,
-      fetchRemote: async (url) => {
-        if (keepPicturesRemote || !kind.needs_pandoc) {
-          return null;
-        }
-        if (fetched.has(url)) {
-          return fetched.get(url) ?? null;
-        }
-        return fetchedPicture(url, unfetched);
-      },
-      rasterised: (destination) => drawn.get(destination) ?? null,
-      imageTarget,
-      citationKeys: new Set(
-        bibliographyManager.entries().map((entry) => entry.key)
-      ),
-      citations: kind.needs_pandoc
-        ? null
-        : {
-            render: (source) => bibliographyManager.format(source),
-            references: (sources) =>
-              answer.suppressReferences ? [] : bibliographyManager.referenceList(sources),
-            title: t('export.references')
+    let prepared: string;
+    try {
+      prepared = await exportSource(text, {
+        kind: kind.kind,
+        titleOf: (target) => documentManager.getTitle(target),
+        bases: imageBases(),
+        exists: fileExists,
+        fetchRemote: async (url) => {
+          if (keepPicturesRemote || !kind.needs_pandoc) {
+            return null;
           }
-    });
+          if (fetched.has(url)) {
+            return fetched.get(url) ?? null;
+          }
+          return fetchedPicture(url, unfetched);
+        },
+        rasterised: (destination) => drawn.get(destination) ?? null,
+        imageTarget,
+        citationKeys: new Set(
+          bibliographyManager.entries().map((entry) => entry.key)
+        ),
+        citations: kind.needs_pandoc
+          ? null
+          : {
+              render: (source) => bibliographyManager.format(source),
+              references: (sources) =>
+                answer.suppressReferences ? [] : bibliographyManager.referenceList(sources),
+              title: t('export.references')
+            }
+      });
+    } catch (error) {
+      if (error instanceof TheoremCitationCollision) {
+        throw new Error(t('export.theoremCitationCollision', { id: error.id }));
+      }
+      throw error;
+    }
 
     const title = documentTitle(text, note?.path ?? null);
     const body = kind.names_its_body ? bodyWithItsName(prepared, title) : prepared;

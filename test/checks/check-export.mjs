@@ -36,7 +36,10 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'preprocess.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { exportSource } = await import(file);
+const {
+  exportSource,
+  materializeTheoremMetadata
+} = await import(file);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -89,6 +92,48 @@ const render = async (text, answers = {}) => {
   });
   return { rendered, asked: notes.asked, looked: notes.looked, fetched: notes.fetched };
 };
+
+const theoremMetadata = [
+  '::: {#thm:one .Theorem}',
+  'Body.',
+  ':::'
+].join('\n');
+const preparedTheorem = typeof materializeTheoremMetadata === 'function'
+  ? materializeTheoremMetadata(theoremMetadata)
+  : null;
+check(
+  'a theorem export gains the app-owned amsthm declarations',
+  {
+    kind: typeof materializeTheoremMetadata,
+    header: preparedTheorem?.startsWith('---\namsthm:\n  plain:') ?? false,
+    theorem: preparedTheorem?.includes('Theorem') ?? false,
+    lemma: preparedTheorem?.includes('Lemma') ?? false,
+    source: preparedTheorem?.includes(theoremMetadata) ?? false
+  },
+  { kind: 'function', header: true, theorem: true, lemma: true, source: true }
+);
+
+const localizedTheorem = [
+  '---',
+  'title: A theorem',
+  'amsthm:',
+  '  name_to_text:',
+  '    Theorem: 定理',
+  '---',
+  '',
+  '::: {#thm:local .Theorem}',
+  'Body.',
+  ':::'
+].join('\n');
+const preparedLocalized = materializeTheoremMetadata(localizedTheorem);
+check(
+  'merging declarations preserves other frontmatter and localized names',
+  preparedLocalized.startsWith('---\ntitle: A theorem\namsthm:') &&
+    preparedLocalized.includes('Theorem: 定理') &&
+    preparedLocalized.includes('Lemma') &&
+    preparedLocalized.includes('::: {#thm:local .Theorem}'),
+  true
+);
 
 // --- what a wikilink reads as ------------------------------------------------------------------
 
@@ -209,14 +254,16 @@ const render = async (text, answers = {}) => {
   const pandoc = await render(theorem, { kind: 'latex' });
   check(
     'a theorem reference uses the named filter form',
-    pandoc.rendered,
-    [
-      '::: {#thm:one .Theorem}',
-      'Body.',
-      ':::',
-      '',
-      'See @Thm:one and [@smith2020].'
-    ].join('\n')
+    pandoc.rendered.endsWith(
+      [
+        '::: {#thm:one .Theorem}',
+        'Body.',
+        ':::',
+        '',
+        'See @Thm:one and [@smith2020].'
+      ].join('\n')
+    ),
+    true
   );
 
   const markdown = await render(theorem, { kind: 'markdown' });
@@ -244,7 +291,7 @@ const render = async (text, answers = {}) => {
   check(
     'a theorem ID cannot silently claim a bibliography key',
     collision,
-    'Error: theorem reference thm:one collides with a citation key'
+    'TheoremCitationCollision: theorem reference thm:one collides with a citation key'
   );
 }
 

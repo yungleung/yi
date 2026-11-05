@@ -105,6 +105,46 @@ pub(super) fn run_pandoc_bytes(
     Ok(output.stdout)
 }
 
+/// Whether a Pandoc version is new enough for the bundled theorem filter.
+///
+/// Example: `pandoc 3.1.0` is refused while `pandoc 3.1.1` and `pandoc 3.12.1` are accepted.
+pub(super) fn theorem_versions_supported(version_output: &str) -> bool {
+    let version = version_output
+        .lines()
+        .next()
+        .and_then(|line| line.strip_prefix("pandoc "))
+        .and_then(|value| value.split_whitespace().next());
+    let Some(version) = version else {
+        return false;
+    };
+    let parts = version
+        .split('.')
+        .take(3)
+        .map(|part| part.parse::<u64>().ok())
+        .collect::<Option<Vec<_>>>();
+    matches!(
+        parts,
+        Some(parts)
+            if parts.get(0).copied().unwrap_or(0) > 3
+                || (parts.get(0).copied().unwrap_or(0) == 3
+                    && parts.get(1).copied().unwrap_or(0) > 1)
+                || (parts.get(0).copied().unwrap_or(0) == 3
+                    && parts.get(1).copied().unwrap_or(0) == 1
+                    && parts.get(2).copied().unwrap_or(0) >= 1)
+    )
+}
+
+/// Refuses an installed Pandoc older than the theorem filter supports.
+pub(super) fn require_theorem_pandoc(pandoc: &Path) -> Result<(), String> {
+    let output = run_pandoc_bytes(pandoc, &[OsString::from("--version")], None)?;
+    let text = String::from_utf8_lossy(&output);
+    if theorem_versions_supported(&text) {
+        Ok(())
+    } else {
+        Err(crate::i18n::now("export.theoremPandocTooOld", &[]))
+    }
+}
+
 fn pandoc_output(
     pandoc: &Path,
     arguments: &[OsString],

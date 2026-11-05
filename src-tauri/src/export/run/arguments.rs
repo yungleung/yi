@@ -32,10 +32,15 @@ pub(crate) fn pandoc_arguments(
     alias_root: Option<&Path>,
 ) -> Result<Vec<OsString>, String> {
     let output = absolute_output(&request.output_path, request.source_dir.as_deref());
-    let mut arguments: Vec<OsString> = vec![
+    let mut arguments: Vec<OsString> = Vec::new();
+    if note_uses_theorems(note) {
+        arguments.push(OsString::from("--lua-filter"));
+        arguments.push(dir.join("amsthm.lua").into_os_string());
+    }
+    arguments.extend([
         OsString::from("--defaults"),
         defaults.as_os_str().to_os_string(),
-    ];
+    ]);
     if let Some(package_defaults) = package_defaults {
         crate::export::templates::append_defaults(&mut arguments, package_defaults);
     }
@@ -186,6 +191,13 @@ pub(crate) fn pandoc_arguments(
     }
     arguments.push(note.as_os_str().to_os_string());
     Ok(arguments)
+}
+
+/// Whether the prepared note asks for theorem environments and therefore the bundled filter.
+pub(super) fn note_uses_theorems(note: &Path) -> bool {
+    std::fs::read_to_string(note)
+        .map(|text| text.lines().any(|line| line.trim_start().starts_with("amsthm:")))
+        .unwrap_or(false)
 }
 
 /// Resolves the package the window named, and refuses one that does not fit the kind. The id is

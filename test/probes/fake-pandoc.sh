@@ -16,6 +16,11 @@
 # was called `yi-probe-export-refused-…` had every export refused, including the ones meant to write
 # (`export-refused.js`'s picture).
 
+if [ "$1" = "--version" ]; then
+  echo "pandoc 3.12.1"
+  exit 0
+fi
+
 log="${HOME}/yi-probe-fake-pandoc"
 mkdir -p "$log" 2>/dev/null
 # One argument per line, because a path may hold a space — "/Users/…/Application Support/…" is

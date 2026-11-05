@@ -50,4 +50,12 @@ fn what_pandoc_says_on_the_way_is_kept_line_by_line() {
     assert!(warnings_in("").is_empty());
 }
 
+#[test]
+fn theorem_export_requires_pandoc_three_one_one() {
+    assert!(!theorem_versions_supported("pandoc 3.1.0"));
+    assert!(theorem_versions_supported("pandoc 3.1.1"));
+    assert!(theorem_versions_supported("pandoc 3.12.1\nFeatures: +server"));
+    assert!(!theorem_versions_supported("not pandoc"));
+}
+
 use super::*;

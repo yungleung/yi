@@ -121,6 +121,8 @@
   "export.landscape": "横向",
   "export.unknownPaper": "Yi 不认识名为 {paper} 的纸张大小。",
   "export.noPandoc": "本机未找到 pandoc，无法进行这种导出。",
+  "export.theoremPandocTooOld": "定理块需要 Pandoc 3.1.1 或更高版本才能导出。",
+  "export.theoremCitationCollision": "定理 ID {id} 同时是文献键。导出前请重命名其中一个。",
   "export.fontHint": "本次导出没有能显示这些字符的字体：{characters} —— 请在转换设置中指定字体（`mainfont:` 适用于任何文字系统，`yi-<script>-font:` 适用于随附的某一种文字系统，`CJKmainfont:` 适用于汉字与假名）。",
   "export.fontHintFont": "本次导出没有能显示这些字符的字体：{characters} —— 请在转换设置中加上 `mainfont: \"{font}\"`；该字体是本机已知覆盖最广的字体。",
   "export.notPictures": "这些目标不是图像，导出会将它们按文件原样带入: {destinations}",

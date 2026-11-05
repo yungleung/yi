@@ -57,6 +57,9 @@ import type { ExportAnswers, Rewrite, TitleLookup } from './contracts';
 import { applyRewrites } from './rewrites';
 import { figureRewrites } from './figure_rewrites';
 import { listingRewrites } from './listing_rewrites';
+import { materializeTheoremMetadata } from './theorem_metadata';
+
+export { materializeTheoremMetadata } from './theorem_metadata';
 
 export type {
   CitationRendering,
@@ -66,6 +69,14 @@ export type {
 export type { ImageBases } from '../assets';
 export type { ExportAnswers, Rewrite };
 
+/** A theorem reference could not be emitted because its ID is also a citation key. */
+export class TheoremCitationCollision extends Error {
+  constructor(readonly id: string) {
+    super(`theorem reference ${id} collides with a citation key`);
+    this.name = 'TheoremCitationCollision';
+  }
+}
+
 /**
  * The note as pandoc should read it: every wikilink written as the words it renders as, every
  * image's destination written as the file it names. Everything else in the document is left
@@ -74,7 +85,9 @@ export type { ExportAnswers, Rewrite };
 export async function exportSource(text: string, answers: ExportAnswers): Promise<string> {
   // Callouts become ordinary semantic Divs before the shared parse, so every
   // rewrite below sees the body at its final nesting level.
-  const withCallouts = applyRewrites(text, calloutRewrites(text));
+  const source =
+    answers.kind === 'markdown' ? text : materializeTheoremMetadata(text);
+  const withCallouts = applyRewrites(source, calloutRewrites(source));
   const tree = parseMarkdown(withCallouts) as unknown as Walkable;
   const references = referenceIndex(withCallouts);
   const figures = spansOfType(tree, 'figure');
@@ -159,9 +172,7 @@ function autoReferenceRewrites(
     const target = firstReference(references, node.id);
     if (target?.kind === 'theorem' && kind !== 'markdown') {
       if (citationKeys.has(target.id!)) {
-        throw new Error(
-          `theorem reference ${target.id} collides with a citation key`
-        );
+        throw new TheoremCitationCollision(target.id!);
       }
       return {
         start: span.start,

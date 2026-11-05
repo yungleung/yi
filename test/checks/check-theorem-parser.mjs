@@ -14,16 +14,20 @@ import { join } from 'node:path';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-theorem-parser-'));
-const bundle = await rolldown({
-  input: 'src/ui/markdown/syntax/parser.ts',
-  logLevel: 'silent',
-  platform: 'node'
-});
-const { output } = await bundle.generate({ format: 'esm' });
-await bundle.close();
-const file = join(directory, 'parser.mjs');
-writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { parseMarkdown } = await import(file);
+const load = async (input, name) => {
+  const bundle = await rolldown({ input, logLevel: 'silent', platform: 'node' });
+  const { output } = await bundle.generate({ format: 'esm' });
+  await bundle.close();
+  const file = join(directory, `${name}.mjs`);
+  writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
+  return await import(file);
+};
+const { parseMarkdown } = await load('src/ui/markdown/syntax/parser.ts', 'parser');
+const {
+  DEFAULT_THEOREM_VOCABULARY,
+  readTheorem,
+  theoremsForParsers
+} = await load('src/ui/markdown/syntax/theorem/index.ts', 'theorem');
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -76,6 +80,18 @@ const customSource = [
 const custom = nodeOf(parseMarkdown(customSource), 'theorem');
 check('a declared custom class becomes a theorem', custom.length, 1);
 check('it keeps the declared class', custom[0]?.theorem.type.className, 'Claim');
+const proofTree = parseMarkdown('::: proof\nDone.\n:::');
+check('a bare proof shorthand becomes a theorem', nodeOf(proofTree, 'theorem').length, 1);
+check(
+  'the proof shorthand is classified before remark runs',
+  readTheorem('::: proof\nDone.\n:::', DEFAULT_THEOREM_VOCABULARY)?.type.className,
+  'proof'
+);
+check(
+  'the proof opening has an equal-length directive spelling',
+  theoremsForParsers('::: proof\nDone.\n:::', DEFAULT_THEOREM_VOCABULARY),
+  ':::thm   \nDone.\n:::'
+);
 
 check(
   'an undeclared class stays an ordinary fenced Div',

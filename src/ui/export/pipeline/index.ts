@@ -7,7 +7,7 @@
  * May import: the pipeline stages. Upholds: one cross-kind pre-process and its public types.
  */
 
-export { exportSource } from './preprocess';
+export { exportSource, TheoremCitationCollision } from './preprocess';
 export type {
   CitationRendering,
   ExportAnswers,

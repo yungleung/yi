@@ -50,7 +50,7 @@ function visit(
     const start = node.position?.start?.offset;
     if (
       node.type === 'containerDirective' &&
-      node.name === 'theorem' &&
+      node.name === 'thm' &&
       start !== undefined
     ) {
       const theorem = readTheorem(markdown.slice(start), vocabulary);

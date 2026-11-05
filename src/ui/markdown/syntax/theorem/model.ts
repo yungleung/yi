@@ -139,11 +139,23 @@ export function resolveVocabulary(
       });
     }
   }
-  const types = [...merged.values()]
+  const declarations = [...merged.values()];
+  const declarationByClass = new Map(
+    declarations.map((declaration) => [declaration.className, declaration])
+  );
+  const types = declarations
     .map((declaration) => {
       const parent = parentCounters.get(declaration.sourceName) ??
         parentCounters.get(declaration.className) ??
         null;
+      const counterDeclaration = declaration.sharedCounter === null
+        ? null
+        : declarationByClass.get(declaration.sharedCounter) ?? null;
+      const counterParent = counterDeclaration === null
+        ? null
+        : parentCounters.get(counterDeclaration.sourceName) ??
+          parentCounters.get(counterDeclaration.className) ??
+          null;
       return {
         className: declaration.className,
         displayName: titles.get(declaration.sourceName) ??
@@ -152,7 +164,7 @@ export function resolveVocabulary(
         style: declaration.style,
         counter: declaration.sharedCounter ?? declaration.className,
         numbered: declaration.numbered,
-        parentCounter: declaration.sharedCounter === null ? parent : null
+        parentCounter: declaration.sharedCounter === null ? parent : counterParent
       } satisfies TheoremType;
     })
     .sort((one, other) => one.className.localeCompare(other.className));
