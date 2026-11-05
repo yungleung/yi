@@ -29,6 +29,10 @@ import {
 } from '../../syntax/footnote';
 import { parseMarkdown } from '../../syntax/parser';
 import { listingFenceData } from '../../syntax/code';
+import {
+  DEFAULT_THEOREM_VOCABULARY,
+  type TheoremVocabulary
+} from '../../syntax/theorem';
 
 /** Parsed blocks kept before the oldest is dropped. */
 const PARSED_BLOCK_LIMIT = 400;
@@ -38,6 +42,11 @@ export class BlockParseCache {
   private labels: ReadonlySet<string> | null = null;
   private labelsVersion = 0;
   private referencesVersion = 0;
+
+  constructor(
+    private readonly theoremVocabulary: () => TheoremVocabulary =
+      () => DEFAULT_THEOREM_VOCABULARY
+  ) {}
 
   /**
    * The key a block's parse is held under. Footnote labels and reference targets
@@ -53,9 +62,12 @@ export class BlockParseCache {
       /(?:^|\n)[ \t]*!\[/.test(block.text) ||
       /(?:^|\n):\s+/.test(block.text) ||
       (block.kind === 'fencedCode' && listingFenceData(block.text) !== null);
-    return referenceSensitive
+    const referenceKey = referenceSensitive
       ? `${labeled}:references@${this.referencesVersion}`
       : labeled;
+    return block.text.includes(':::')
+      ? `${referenceKey}:theorems@${this.theoremVocabulary().key}`
+      : referenceKey;
   }
 
   /** The block's parsed mdast nodes, borrowing the document's footnotes. */
@@ -72,7 +84,9 @@ export class BlockParseCache {
     const withContext = isRawRendered(block.kind)
       ? prepared
       : withFootnoteDefinitions(prepared, this.footnoteLabels(text));
-    const parsed = parseMarkdown(withContext)
+    const parsed = parseMarkdown(withContext, {
+      theoremVocabulary: this.theoremVocabulary()
+    })
       .children.filter((child) => isOwnNode(child, prepared.length));
     this.content.set(key, parsed);
     if (this.content.size > PARSED_BLOCK_LIMIT) {

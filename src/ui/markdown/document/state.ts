@@ -24,6 +24,11 @@ import type { HeadingTarget } from './heading_index';
 import { referenceIndex, type ReferenceEntry } from './reference_index';
 import { TextStore } from './text_store';
 import { BlockParseCache } from './block';
+import { readFrontmatterBlock } from './identity';
+import {
+  theoremVocabularyFromFrontmatter,
+  type TheoremVocabulary
+} from '../syntax/theorem';
 
 let nextDocumentNumber = 0;
 
@@ -57,13 +62,15 @@ export class MarkdownEditorState {
   private cachedText: string | null = null;
   private blocks: MarkdownBlock[];
   /** Derived block parses and the label/reference versions that key them. */
-  private readonly parses = new BlockParseCache();
+  private readonly parses = new BlockParseCache(() => this.theoremVocabulary());
   /** The edits applied to the loaded text, and where in them the document is. */
   private readonly history = new History();
   /** Shared targets for the current text, computed only when navigation asks. */
   private cachedReferences: readonly ReferenceEntry[] | null = null;
   /** Heading projection of the shared target index. */
   private cachedHeadings: readonly HeadingTarget[] | null = null;
+  /** The theorem declarations resolved from the current frontmatter. */
+  private cachedTheoremVocabulary: TheoremVocabulary | null = null;
 
   constructor(text = '') {
     this.text = new TextStore(text);
@@ -94,6 +101,13 @@ export class MarkdownEditorState {
   /** The document's blocks, in document order. */
   getBlocks(): readonly MarkdownBlock[] {
     return this.blocks;
+  }
+
+  /** The theorem vocabulary declared by the current document. */
+  theoremVocabulary(): TheoremVocabulary {
+    this.cachedTheoremVocabulary ??=
+      theoremVocabularyFromFrontmatter(readFrontmatterBlock(this.getText()));
+    return this.cachedTheoremVocabulary;
   }
 
   /** Every reference target and numbered object in the current document. */
@@ -183,6 +197,7 @@ export class MarkdownEditorState {
     this.cachedText = null;
     this.cachedHeadings = null;
     this.cachedReferences = null;
+    this.cachedTheoremVocabulary = null;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
     this.parses.afterEdit(this.getText(), edit);
   }
