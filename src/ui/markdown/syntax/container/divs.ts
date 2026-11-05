@@ -13,6 +13,7 @@
 
 import { closingFence, openingFence } from '../markers';
 import { quotePrefix } from './quote/lines';
+import { attributeBlockAtEnd, type PandocAttributeBlock } from '../pandoc';
 
 interface SourceLine {
   start: number;
@@ -39,6 +40,40 @@ export interface FencedDivSource {
   quoteDepth: number;
   quotePrefix: string;
   source: string;
+}
+
+/** A fenced Div opening with its Pandoc attributes and quote context. */
+export interface AttributedFencedDivOpening {
+  fenceStart: number;
+  fenceLength: number;
+  attribute: PandocAttributeBlock;
+  quoteDepth: number;
+  quotePrefix: string;
+}
+
+/** Read the attributes on one fenced-Div opening line. */
+export function readAttributedDivOpening(
+  line: string
+): AttributedFencedDivOpening | null {
+  const quote = quotePrefix(line);
+  const content = quote?.content ?? line;
+  const trimmed = content.trimEnd();
+  const attribute = attributeBlockAtEnd(trimmed, trimmed.length, false);
+  if (attribute === null) {
+    return null;
+  }
+  const before = trimmed.slice(0, attribute.from);
+  const fence = /^( {0,3})(:{3,})\s*$/.exec(before);
+  if (fence === null) {
+    return null;
+  }
+  return {
+    fenceStart: fence[1].length,
+    fenceLength: fence[2].length,
+    attribute,
+    quoteDepth: quote?.depth ?? 0,
+    quotePrefix: quote === null ? '' : line.slice(0, quote.prefixEnd)
+  };
 }
 
 /** Read one complete fenced Div from the start of `source`. */

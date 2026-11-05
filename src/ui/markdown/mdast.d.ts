@@ -18,6 +18,7 @@ import type { ListingNode } from './syntax/code';
 import type { WikilinkNode } from './plugins/remark-wikilink';
 import type { DescriptionDetails, DescriptionList, DescriptionTerm } from './plugins/remark-deflist';
 import type { CalloutNode } from './plugins/remark-callouts';
+import type { TheoremNode } from './plugins/remark-theorem';
 
 declare module 'mdast' {
   interface Heading {
@@ -35,6 +36,7 @@ declare module 'mdast' {
     descriptiondetails: DescriptionDetails;
     wikilink: WikilinkNode;
     callout: CalloutNode;
+    theorem: TheoremNode;
   }
 
   interface Table {

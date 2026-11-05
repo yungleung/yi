@@ -27,23 +27,42 @@ import { equationsForParsers } from './equation';
 import { restoreFigures } from './figures';
 import { listCaptionsForParsers } from './list';
 import { frontmatterForParsers } from './markers';
+import { frontmatterText } from './markers';
 import { createParseProcessor } from './remark_pipeline';
 import { serializeMarkdown } from './serializer';
 import { restoreSpacedDestinations } from './spaced_destinations';
+import {
+  theoremVocabularyFromFrontmatter,
+  theoremsForParsers,
+  type TheoremVocabulary
+} from './theorem';
 
 export { serializeMarkdown };
 
 const parseProcessor = createParseProcessor(remarkDeflistCompat);
 
-export function parseMarkdown(markdown: string): Root {
+export interface ParseOptions {
+  theoremVocabulary?: TheoremVocabulary;
+}
+
+export function parseMarkdown(markdown: string, options: ParseOptions = {}): Root {
+  const theoremVocabulary =
+    options.theoremVocabulary ??
+    theoremVocabularyFromFrontmatter(frontmatterText(markdown));
   const prepared = equationsForParsers(
-    calloutsForParsers(frontmatterForParsers(markdown))
+    theoremsForParsers(
+      calloutsForParsers(frontmatterForParsers(markdown)),
+      theoremVocabulary
+    )
   );
   const parserText = listCaptionsForParsers(prepared);
   const tree = parseProcessor.parse(parserText) as Root;
   const root = parseProcessor.runSync(tree, {
     value: parserText,
-    data: { calloutSource: markdown }
+    data: {
+      calloutSource: markdown,
+      theoremVocabulary
+    }
   }) as Root;
   fixDescriptionPositions(root, markdown);
   restoreBareMarkers(root, markdown);

@@ -24,6 +24,16 @@ export function closesFrontmatter(line: string): boolean {
 }
 
 /**
+ * The text between a leading YAML frontmatter's delimiters.
+ *
+ * Example: `'---\ntitle: A\n---\nBody'` returns `'title: A'`.
+ */
+export function frontmatterText(markdown: string): string | null {
+  const match = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/.exec(markdown);
+  return match ? match[1] : null;
+}
+
+/**
  * The same text with a leading frontmatter's `...` end marker written as `---`.
  *
  * `remark-frontmatter` closes a `---` block on `---` alone, so its parser is handed this spelling

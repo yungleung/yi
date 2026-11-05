@@ -20,6 +20,7 @@ import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import { remarkAutoReferences } from '../plugins/remark-auto-references';
 import { remarkCallouts } from '../plugins/remark-callouts';
+import { remarkTheorems } from '../plugins/remark-theorem';
 import { remarkCitation } from '../plugins/remark-citation/index';
 import { remarkHeadingAttributes } from '../plugins/remark-heading-attributes';
 import { remarkWikilink } from '../plugins/remark-wikilink/index';
@@ -31,6 +32,7 @@ export function createParseProcessor(
   return unified()
     .use(remarkParse)
     .use(remarkDirective)
+    .use(remarkTheorems)
     .use(remarkCallouts)
     .use(deflistCompat)
     .use(remarkDeflist)

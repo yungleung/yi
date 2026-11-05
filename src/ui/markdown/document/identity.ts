@@ -13,22 +13,20 @@
  */
 
 import { parseDocument } from 'yaml';
+import { frontmatterText } from '../syntax/markers';
 
 /**
  * The frontmatter block: `---`, its lines, then `---` or YAML's `...` end marker — the one shape
  * every reader of it agrees on, so a caller that wants the text under it and one that wants to
  * write *there* read the same pattern.
  */
-const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/;
-
 /**
  * The frontmatter block's own text, or null when the document has none.
  *
  * Example: `'---\ntitle: A\n---\n\nBody'` returns `'title: A'`.
  */
 export function readFrontmatterBlock(content: string): string | null {
-  const match = content.match(FRONTMATTER);
-  return match ? match[1] : null;
+  return frontmatterText(content);
 }
 
 /**
@@ -39,7 +37,7 @@ export function readFrontmatterBlock(content: string): string | null {
  * newline immediately after the closing marker.
  */
 export function frontmatterEnd(content: string): number {
-  const match = content.match(FRONTMATTER);
+  const match = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)/.exec(content);
   return match === null ? 0 : (match.index ?? 0) + match[0].length;
 }
 

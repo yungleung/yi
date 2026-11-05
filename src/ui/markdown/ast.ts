@@ -51,6 +51,7 @@ export type AstDescriptionList = RootContentMap['descriptionlist'];
 export type AstDescriptionTerm = RootContentMap['descriptionterm'];
 export type AstDescriptionDetails = RootContentMap['descriptiondetails'];
 export type AstCallout = RootContentMap['callout'];
+export type AstTheorem = RootContentMap['theorem'];
 
 /** Any node shape the renderer may encounter. */
 export type AstNode = Root | RootContent | TableCaptionNode | ListCaptionNode;

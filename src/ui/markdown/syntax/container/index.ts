@@ -8,10 +8,19 @@
  * boundaries and their pure text edits have one public entrypoint and source-derived offsets.
  */
 
-export { fencedDivAtOffset, readFencedDiv } from './divs';
-export type { FencedDivSource } from './divs';
+export {
+  fencedDivAtOffset,
+  readAttributedDivOpening,
+  readFencedDiv
+} from './divs';
+export type {
+  AttributedFencedDivOpening,
+  FencedDivSource
+} from './divs';
 export { fenceLanguageEdit, fenceNewlineWrite, fenceTypedWrite } from './fence_edits';
 export type { FenceWrite } from './fence_edits';
+export { divDirectivesForParsers } from './parser_directive';
+export type { DivDirectiveReader } from './parser_directive';
 export {
   deleteBlankQuoteLine,
   emptyQuoteTyping,
