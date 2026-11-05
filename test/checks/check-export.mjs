@@ -84,6 +84,7 @@ const render = async (text, answers = {}) => {
     exists: notes.exists,
     fetchRemote: notes.fetchRemote,
     imageTarget: answers.imageTarget,
+    citationKeys: answers.citationKeys ?? new Set(),
     citations: answers.citations ?? null
   });
   return { rendered, asked: notes.asked, looked: notes.looked, fetched: notes.fetched };
@@ -194,6 +195,56 @@ const render = async (text, answers = {}) => {
     'native fragment links and heading attributes are handed on character for character',
     rendered,
     crossreferences
+  );
+}
+
+{
+  const theorem = [
+    '::: {#thm:one .Theorem}',
+    'Body.',
+    ':::',
+    '',
+    'See [#thm:one] and [@smith2020].'
+  ].join('\n');
+  const pandoc = await render(theorem, { kind: 'latex' });
+  check(
+    'a theorem reference uses the named filter form',
+    pandoc.rendered,
+    [
+      '::: {#thm:one .Theorem}',
+      'Body.',
+      ':::',
+      '',
+      'See @Thm:one and [@smith2020].'
+    ].join('\n')
+  );
+
+  const markdown = await render(theorem, { kind: 'markdown' });
+  check(
+    'processed Markdown gets a visible theorem link',
+    markdown.rendered,
+    [
+      '::: {#thm:one .Theorem}',
+      'Body.',
+      ':::',
+      '',
+      'See [Theorem 1](#thm:one) and [@smith2020].'
+    ].join('\n')
+  );
+
+  let collision = null;
+  try {
+    await render(theorem, {
+      kind: 'latex',
+      citationKeys: new Set(['thm:one'])
+    });
+  } catch (error) {
+    collision = String(error);
+  }
+  check(
+    'a theorem ID cannot silently claim a bibliography key',
+    collision,
+    'Error: theorem reference thm:one collides with a citation key'
   );
 }
 

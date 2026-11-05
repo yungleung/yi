@@ -84,7 +84,12 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const sources = [...new Set((cited ?? []).map((span) => (span.node as AstCitation).value))];
   const fetched = new Map<string, string | null>();
   const rewritten = applyRewrites(withCallouts, [
-    ...autoReferenceRewrites(tree, references, answers.kind),
+    ...autoReferenceRewrites(
+      tree,
+      references,
+      answers.kind,
+      answers.citationKeys ?? new Set()
+    ),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
     ...listingRewrites(listings, references, answers),
@@ -146,11 +151,24 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
 function autoReferenceRewrites(
   tree: Walkable,
   references: readonly ReferenceEntry[],
-  kind: string
+  kind: string,
+  citationKeys: ReadonlySet<string>
 ): Rewrite[] {
   return spansOfType(tree, 'autoReference').map((span) => {
     const node = span.node as { id: string };
     const target = firstReference(references, node.id);
+    if (target?.kind === 'theorem' && kind !== 'markdown') {
+      if (citationKeys.has(target.id!)) {
+        throw new Error(
+          `theorem reference ${target.id} collides with a citation key`
+        );
+      }
+      return {
+        start: span.start,
+        end: span.end,
+        text: `@${target.id![0]?.toUpperCase() ?? ''}${target.id!.slice(1)}`
+      };
+    }
     if (
       target?.kind === 'table' &&
       isLatexKind(kind)

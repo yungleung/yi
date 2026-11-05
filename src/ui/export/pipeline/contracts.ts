@@ -44,6 +44,8 @@ export interface ExportAnswers {
    * to pandoc and citeproc.
    */
   citations: CitationRendering | null;
+  /** Every bibliography key loaded for this export, so theorem IDs cannot claim one. */
+  citationKeys?: ReadonlySet<string>;
 }
 
 /** The app rendering citations itself, and what the appended list is called. */

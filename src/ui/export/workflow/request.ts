@@ -138,6 +138,9 @@ export async function runConfirmedExport(request: ConfirmedExportRequest): Promi
       },
       rasterised: (destination) => drawn.get(destination) ?? null,
       imageTarget,
+      citationKeys: new Set(
+        bibliographyManager.entries().map((entry) => entry.key)
+      ),
       citations: kind.needs_pandoc
         ? null
         : {
