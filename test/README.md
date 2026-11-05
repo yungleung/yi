@@ -95,7 +95,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and eighteen probes (`probe:all` runs 282 and skips 36, each skip for the reason its
+three hundred and nineteen probes (`probe:all` runs 283 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
