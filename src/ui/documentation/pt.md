@@ -269,6 +269,24 @@ Lua. O filtro recebe `.callout`, `.callout-<tipo>`, `.callout-title` e o corpo n
 A conversão acontece antes dos filtros do modelo, que trabalham com essa estrutura estável em vez da
 sintaxe GitHub ou do Div original.
 
+## Blocos de teorema
+
+Yi exibe Divs Pandoc declarados como blocos de teorema, definição, observação e prova:
+
+```markdown
+::: {#thm:exemplo .Theorem info="Exemplo"}
+O conteúdo.
+:::
+
+Veja [#thm:exemplo].
+```
+
+As classes integradas são Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
+Problem, Vocabulary, Notation, Remark e proof. Nomes personalizados ou localizados são declarados em
+`amsthm` no frontmatter; `name_to_text` altera apenas o texto visível. `[#id]` continua sendo a única
+sintaxe de referência a teoremas. A exportação usa o filtro `pandoc-amsthm` incluído e exige
+Pandoc 3.1.1 ou posterior.
+
 ## Exportar uma nota
 
 | Tipo | Saída |

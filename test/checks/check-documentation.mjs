@@ -153,6 +153,15 @@ if (existsSync(file)) {
       /Use remote pictures/.test(text) &&
       /level-one headings for sections and level-two headings for\s+frames/i.test(text)
   );
+  check(
+    'it explains theorem declarations, references and the Pandoc floor',
+    /^## Theorem blocks$/m.test(text) &&
+      text.includes('name_to_text') &&
+      text.includes('::: {#thm:bayes .Theorem info="Bayes"}') &&
+      text.includes('See [#thm:bayes].') &&
+      /`@id` and\s+`\[@id\]` remain citations/.test(text) &&
+      /Pandoc 3\.1\.1 or later/.test(text)
+  );
   const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
   for (const kind of prompts) {
     check(
@@ -255,6 +264,12 @@ for (const [code, name, title] of localized) {
     ['Reveal.js', 'Beamer', 'js/dist/', 'images/', 'examples/revealjs.md', 'examples/beamer.md'].every(
       (needle) => text.includes(needle)
     )
+  );
+  check(
+    `${name} guide explains theorem blocks and their Pandoc floor`,
+    text.includes('amsthm') &&
+      text.includes('[#thm:') &&
+      text.includes('3.1.1')
   );
 }
 

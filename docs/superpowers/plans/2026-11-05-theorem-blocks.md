@@ -41,7 +41,7 @@
   - `DEFAULT_THEOREM_VOCABULARY: TheoremVocabulary`
   - `theoremVocabularyFromFrontmatter(frontmatter: string | null): TheoremVocabulary`
 
-- [ ] **Step 1: Write the failing vocabulary check**
+- [x] **Step 1: Write the failing vocabulary check**
 
 ```js
 const { theoremVocabularyFromFrontmatter } = await load(
@@ -80,13 +80,13 @@ check(
 Also assert malformed YAML falls back to defaults, duplicate classes are omitted, unsafe class names are
 omitted, a trailing `*` is unnumbered, and an explicit `Theorem` style replaces its built-in style.
 
-- [ ] **Step 2: Run the check and verify the module is missing**
+- [x] **Step 2: Run the check and verify the module is missing**
 
 Run: `node test/checks/check-theorem-vocabulary.mjs`
 
 Expected: failure naming the missing theorem facade.
 
-- [ ] **Step 3: Implement the value and resolver**
+- [x] **Step 3: Implement the value and resolver**
 
 ```ts
 export interface TheoremType {
@@ -109,13 +109,13 @@ export interface TheoremVocabulary {
 `theoremVocabularyFromFrontmatter` parses only YAML, starts from the built-in declarations, adds custom
 types, merges `name_to_text`, and builds a deterministic `key` from the resolved declarations.
 
-- [ ] **Step 4: Run the focused and layout checks**
+- [x] **Step 4: Run the focused and layout checks**
 
 Run: `node test/checks/check-theorem-vocabulary.mjs && node test/checks/module-layout.mjs`
 
 Expected: both pass after adding the theorem domain to the module-layout allowlist.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/theorem test/checks/check-theorem-vocabulary.mjs test/checks/module-layout.mjs
@@ -147,7 +147,7 @@ git commit -m "feat(theorems): resolve theorem vocabulary"
   - `ParseOptions { theoremVocabulary?: TheoremVocabulary }`
   - `AstTheorem` mdast node with `theorem`, `children`, `position`.
 
-- [ ] **Step 1: Write the failing parser checks**
+- [x] **Step 1: Write the failing parser checks**
 
 ```js
 const source = [
@@ -183,13 +183,13 @@ check(
 Add nested theorem, quote-carrier, malformed fence, multiple theorem classes, callout/theorem nesting,
 and exact source-length cases.
 
-- [ ] **Step 2: Run the check and verify theorem normalization is absent**
+- [x] **Step 2: Run the check and verify theorem normalization is absent**
 
 Run: `node test/checks/check-theorem-parser.mjs`
 
 Expected: zero theorem nodes where the test requires one.
 
-- [ ] **Step 3: Implement theorem reading and offset-preserving directive preparation**
+- [x] **Step 3: Implement theorem reading and offset-preserving directive preparation**
 
 ```ts
 export function readTheorem(
@@ -212,7 +212,7 @@ export function readTheorem(
 The parser-source transform replaces only the opening line with a same-length `:::theorem` directive.
 Reuse the existing balanced, code-fence-aware scan rather than writing a second colon-fence walker.
 
-- [ ] **Step 4: Add and order the remark theorem plugin**
+- [x] **Step 4: Add and order the remark theorem plugin**
 
 ```ts
 export function remarkTheorems() {
@@ -230,13 +230,13 @@ export function remarkTheorems() {
 Run `remarkTheorems` before `remarkCallouts`. Pass `theoremVocabulary` through parser `file.data`, and
 declare `theorem` in `mdast.d.ts` and `AstTheorem` in `ast.ts`.
 
-- [ ] **Step 5: Run parser tests**
+- [x] **Step 5: Run parser tests**
 
 Run: `node test/checks/check-theorem-parser.mjs && node test/checks/check-parser.mjs && node test/checks/check-callouts.mjs && node test/checks/check-fenced-divs.mjs`
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/callout/parser_source.ts \
@@ -263,7 +263,7 @@ git commit -m "feat(theorems): parse declared theorem divs"
   - `MarkdownEditorState.theoremVocabulary(): TheoremVocabulary`
   - `BlockParseCache` receives the current vocabulary and includes its key for blocks containing `:::`.
 
-- [ ] **Step 1: Write the failing cache check**
+- [x] **Step 1: Write the failing cache check**
 
 ```js
 const state = new MarkdownEditorState();
@@ -287,13 +287,13 @@ const removedBlock = state.getBlocks()[0];
 check('removing it restores exact source', nodesOfType(state.getBlockContent(removedBlock), 'theorem').length, 0);
 ```
 
-- [ ] **Step 2: Run the check and verify the stale parse**
+- [x] **Step 2: Run the check and verify the stale parse**
 
 Run: `node test/checks/check-theorem-reparse.mjs`
 
 Expected: the second theorem-node count is 0 because the block parse was cached.
 
-- [ ] **Step 3: Cache the vocabulary and include its key in Div parse keys**
+- [x] **Step 3: Cache the vocabulary and include its key in Div parse keys**
 
 ```ts
 theoremVocabulary(): TheoremVocabulary {
@@ -311,13 +311,13 @@ return block.text.includes(':::')
 Clear `cachedTheoremVocabulary` in `updateText`, and pass it into `parseMarkdown` from
 `BlockParseCache.get`.
 
-- [ ] **Step 4: Run cache and document checks**
+- [x] **Step 4: Run cache and document checks**
 
 Run: `node test/checks/check-theorem-reparse.mjs && node test/checks/check-document-revision.mjs && node test/checks/check-block-index.mjs`
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/document/state.ts src/ui/markdown/document/block/parse_cache.ts \
@@ -347,7 +347,7 @@ git commit -m "fix(theorems): reparse divs after metadata edits"
   - `renderContext().theoremLabelAt(from): string | null`
   - exact-source mode through the existing `FencedDivSourceView`.
 
-- [ ] **Step 1: Write the failing Tauri probe**
+- [x] **Step 1: Write the failing Tauri probe**
 
 ```js
 await t.load([
@@ -410,7 +410,7 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run the probe against a freshly restarted app**
+- [x] **Step 2: Run the probe against a freshly restarted app**
 
 Run: `npm run tauri dev`
 
@@ -418,7 +418,7 @@ Run: `npm run probe -- test/probes/theorem-blocks.js`
 
 Expected: failure because `.markdown-theorem` is not rendered.
 
-- [ ] **Step 3: Render the theorem surface and source mode**
+- [x] **Step 3: Render the theorem surface and source mode**
 
 ```ts
 export class Theorem extends EditableNodeComponent {
@@ -442,7 +442,7 @@ export class Theorem extends EditableNodeComponent {
 Pass `theoremRecognized` from `createBlockComponent` into `isSourceBlock`. For a declared theorem, show
 source only while the caret is inside it; use `FencedDivSourceView` for the exact bytes.
 
-- [ ] **Step 4: Add the theorem label to the render context**
+- [x] **Step 4: Add the theorem label to the render context**
 
 ```ts
 theoremLabelAt: (from) => {
@@ -454,7 +454,7 @@ theoremLabelAt: (from) => {
 
 Add the empty answer to the default render context.
 
-- [ ] **Step 5: Run the probe and existing callout probes**
+- [x] **Step 5: Run the probe and existing callout probes**
 
 Run: `npm run probe -- test/probes/theorem-blocks.js`
 
@@ -464,7 +464,7 @@ Run: `npm run probe -- test/probes/pandoc-div-source-mode.js`
 
 Expected: all focused probes pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/nodes/theorem.ts src/ui/markdown/create_node.ts \
@@ -489,7 +489,7 @@ git commit -m "feat(theorems): render and edit theorem blocks"
 - Produces: `ReferenceKind` includes `'theorem'`; ID-less theorem blocks consume counters; shared
   counters resolve; `referenceLabel` returns the localized type plus number.
 
-- [ ] **Step 1: Write failing reference checks**
+- [x] **Step 1: Write failing reference checks**
 
 ```js
 const theoremSource = [
@@ -515,13 +515,13 @@ check('the theorem reference reads as its type and number', referenceLabel(entri
 
 Add `name_to_text`, unnumbered proof, parent-counter, duplicate ID, and reference-before-target cases.
 
-- [ ] **Step 2: Run the checks and verify no theorem entries exist**
+- [x] **Step 2: Run the checks and verify no theorem entries exist**
 
 Run: `node test/checks/check-reference-index.mjs && node test/checks/check-reference-vocabulary.mjs`
 
 Expected: theorem entry count is 0.
 
-- [ ] **Step 3: Collect theorem entries during the ordered parse walk**
+- [x] **Step 3: Collect theorem entries during the ordered parse walk**
 
 ```ts
 export type ReferenceKind =
@@ -532,13 +532,13 @@ The reference index maintains heading counters and theorem counters in document 
 theorem increments `type.counter`; shared children use their parent's counter. Store the formatted
 counter as `entry.number` and the theorem display name as `entry.label`.
 
-- [ ] **Step 4: Run reference tests**
+- [x] **Step 4: Run reference tests**
 
 Run: `node test/checks/check-reference-index.mjs && node test/checks/check-reference-vocabulary.mjs && node test/checks/check-auto-references.mjs`
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/markdown/syntax/reference_vocabulary.ts \
@@ -563,7 +563,7 @@ git commit -m "feat(theorems): number theorem reference targets"
   Markdown receives a normal visible link; citations remain unchanged; theorem/citation ID collisions
   are refused before conversion.
 
-- [ ] **Step 1: Write failing export checks**
+- [x] **Step 1: Write failing export checks**
 
 ```js
 const theorem = [
@@ -598,13 +598,13 @@ check(
 );
 ```
 
-- [ ] **Step 2: Run the export check and verify the current link output**
+- [x] **Step 2: Run the export check and verify the current link output**
 
 Run: `node test/checks/check-export.mjs`
 
 Expected: theorem source still lowers to a Markdown link when the kind is `latex`.
 
-- [ ] **Step 3: Add theorem dispatch after target resolution**
+- [x] **Step 3: Add theorem dispatch after target resolution**
 
 ```ts
 if (target?.kind === 'theorem' && kind !== 'markdown') {
@@ -621,13 +621,13 @@ citation plugin. Before building `@Id`, refuse a theorem ID present in
 `answers.citationKeys`. The workflow supplies the keys from `bibliographyManager.entries()` and turns
 the pure failure into a localized reader-facing error.
 
-- [ ] **Step 4: Run the export check**
+- [x] **Step 4: Run the export check**
 
 Run: `node test/checks/check-export.mjs`
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ui/export/pipeline/preprocess.ts test/checks/check-export.mjs
@@ -658,7 +658,7 @@ git commit -m "feat(theorems): bridge references for pandoc"
   - `theoremKindEdit(text: string, className: string, offset?: number): TextEdit | null`
   - `chooseDivKind(anchor, current, lineStart, choices)`
 
-- [ ] **Step 1: Write the failing picker probe**
+- [x] **Step 1: Write the failing picker probe**
 
 ```js
 await t.load([
@@ -684,13 +684,13 @@ check('the callout Definition remains distinct', rows.some((row) =>
 Arrow onto `theorem:Claim`, press Enter, and assert the opening becomes
 `::: {.Claim}`.
 
-- [ ] **Step 2: Run the probe and verify the old seven-choice picker**
+- [x] **Step 2: Run the probe and verify the old seven-choice picker**
 
 Run: `npm run probe -- test/probes/div-kind-picker.js`
 
 Expected: no `data-div-kind-choice` rows.
 
-- [ ] **Step 3: Add optional group headings to `ChoiceCard`**
+- [x] **Step 3: Add optional group headings to `ChoiceCard`**
 
 ```ts
 export interface Choice {
@@ -703,7 +703,7 @@ export interface Choice {
 `draw()` appends a non-button `[data-choice-group]` heading when the group changes. `choices`,
 selection, arrows, Home/End and filtering continue to contain selectable rows only.
 
-- [ ] **Step 4: Supply callout and theorem groups from the document vocabulary**
+- [x] **Step 4: Supply callout and theorem groups from the document vocabulary**
 
 ```ts
 function divKindChoices(vocabulary: TheoremVocabulary): Choice[] {
@@ -723,7 +723,7 @@ The editor dispatches `callout:` values to `calloutKindEdit` and `theorem:` valu
 `theoremKindEdit`. The theorem editor changes only the matching class token and preserves IDs,
 `info`, unrelated classes, and other attributes.
 
-- [ ] **Step 5: Run picker and callout probes**
+- [x] **Step 5: Run picker and callout probes**
 
 Run: `npm run probe -- test/probes/div-kind-picker.js`
 
@@ -735,7 +735,7 @@ Run: `npm run probe -- test/probes/pandoc-div-container.js`
 
 Expected: all focused probes pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/markdown/editing/div_kind_picker.ts \
@@ -770,7 +770,7 @@ git commit -m "feat(theorems): group theorem div choices"
 - Produces: a cached `pandoc --version` probe that refuses versions below 3.1.1 when theorem metadata
   is present.
 
-- [ ] **Step 1: Write the failing Pandoc-argument test**
+- [x] **Step 1: Write the failing Pandoc-argument test**
 
 ```rust
 let theorem_filter = arguments
@@ -794,13 +794,13 @@ fn theorem_export_refuses_pandoc_before_three_one_one() {
 }
 ```
 
-- [ ] **Step 2: Run the focused Rust test and verify the argument is absent**
+- [x] **Step 2: Run the focused Rust test and verify the argument is absent**
 
 Run: `cargo test export::tests::run::arguments::theorem_filter`
 
 Expected: failure because `--lua-filter` is absent.
 
-- [ ] **Step 3: Vendor the filter and add one argument path**
+- [x] **Step 3: Vendor the filter and add one argument path**
 
 Use the released `amsthm.lua` from `https://github.com/ickc/pandoc-amsthm/releases` and retain the
 BSD-3-Clause notice. Resolve the asset with Tauri's resource path, then prepend:
@@ -815,7 +815,7 @@ Do not fetch the filter at runtime.
 Read `pandoc --version` once per export call, parse the first version number, and return the localized
 `export.theoremPandocTooOld` error before writing the note when the version is lower than `3.1.1`.
 
-- [ ] **Step 4: Materialize default theorem metadata for Pandoc only**
+- [x] **Step 4: Materialize default theorem metadata for Pandoc only**
 
 Add a source preparation step before `exportSource` dispatch:
 
@@ -826,7 +826,7 @@ const theoremSource = materializeTheoremMetadata(text);
 It merges the built-in declarations into the temporary frontmatter without changing the editor's
 document. Existing declarations win; `name_to_text` and options merge per the spec.
 
-- [ ] **Step 5: Run Rust and argument probes**
+- [x] **Step 5: Run Rust and argument probes**
 
 Run: `cargo test export::tests::run::arguments`
 
@@ -835,7 +835,7 @@ Run: `npm run probe -- test/probes/export-pandoc-arguments.js`
 Expected: the filter path appears before `--defaults`, and the temporary note contains merged theorem
 metadata.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src-tauri/assets/export/amsthm.lua src-tauri/assets/export/amsthm.LICENSE \
@@ -861,7 +861,7 @@ git commit -m "feat(export): run the bundled amsthm filter"
 - Modify: `docs/ai-context.md`
 - Modify: `test/README.md`
 
-- [ ] **Step 1: Add a fixture example and documentation assertions**
+- [x] **Step 1: Add a fixture example and documentation assertions**
 
 ```markdown
 ::: {#thm:fixture .Theorem info="Fixture"}
@@ -874,17 +874,17 @@ See [#thm:fixture].
 Document the metadata contract, custom declarations, grouped picker, `[#id]` references, proof,
 localized `name_to_text`, and the export boundary.
 
-- [ ] **Step 2: Run documentation and fixture checks**
+- [x] **Step 2: Run documentation and fixture checks**
 
 Run: `node test/checks/check-documentation.mjs && node test/checks/check-theorem-vocabulary.mjs && node test/checks/check-theorem-parser.mjs`
 
 Expected: pass with no placeholders.
 
-- [ ] **Step 3: Restart the app on the final branch**
+- [x] **Step 3: Restart the app on the final branch**
 
 Stop the running development app and restart `npm run tauri dev`.
 
-- [ ] **Step 4: Run focused probes**
+- [x] **Step 4: Run focused probes**
 
 Run: `npm run probe -- test/probes/theorem-blocks.js`
 
@@ -898,7 +898,7 @@ Run: `npm run probe -- test/probes/pandoc-div-source-mode.js`
 
 Expected: all focused probes pass.
 
-- [ ] **Step 5: Run the complete required verification**
+- [x] **Step 5: Run the complete required verification**
 
 Run: `npx tsc --noEmit`
 
@@ -911,7 +911,7 @@ Run: `npm run probe:all`
 Expected: every command exits zero; skipped probes are only those whose headers declare an unavailable
 machine dependency.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/ui/documentation test/fixtures/workspace/default-document.md \

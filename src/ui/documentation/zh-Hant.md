@@ -224,6 +224,23 @@ HTML、EPUB、DOCX、ODT 與 LaTeX/PDF 範本可分別透過 CSS、參照文件�
 接收 `.callout`、`.callout-<類型>`、`.callout-title` 與依文件順序排列的正文區塊。轉換發生在範本
 filter 之前，因此 filter 使用這個穩定結構，而不用處理 GitHub 或圍欄 Div 原文。
 
+## 定理區塊
+
+Yi 會把已宣告的 Pandoc Div 顯示為定理、定義、註記和證明區塊：
+
+```markdown
+::: {#thm:example .Theorem info="範例"}
+內容。
+:::
+
+參見 [#thm:example]。
+```
+
+內建類別為 Theorem、Lemma、Corollary、Proposition、Definition、Example、Exercise、Problem、
+Vocabulary、Notation、Remark 和 proof。自訂與本地化名稱在 frontmatter 的 `amsthm` 中宣告；
+`name_to_text` 只改變顯示文字。定理引用仍只使用 `[#id]`。匯出使用隨應用提供的
+`pandoc-amsthm` 篩選器，並需要 Pandoc 3.1.1 或更新版本。
+
 ## 匯出筆記
 
 | 類型 | 輸出 |

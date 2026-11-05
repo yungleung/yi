@@ -24,7 +24,7 @@
     '    proof: 证明',
     '---',
     '',
-    '::: {#thm:local .Theorem info="First"}',
+    '::: {#thm:local .Theorem info="**First**"}',
     'The body has **weight**.',
     ':::',
     '',
@@ -46,6 +46,11 @@
     'weight'
   );
   check(
+    'the theorem note renders inline Markdown',
+    t.prose().querySelector('.markdown-theorem-title strong')?.textContent ?? null,
+    'First'
+  );
+  check(
     'the automatic reference reads as the same theorem phrase',
     t.prose().querySelector('[data-auto-reference="thm:local"]')?.textContent ?? null,
     '定理 1'
@@ -61,7 +66,7 @@
   check(
     'clicking the theorem title reveals its exact source',
     t.prose().querySelector('.markdown-fenced-div-source')?.textContent ?? null,
-    '::: {#thm:local .Theorem info="First"}\nThe body has **weight**.\n:::'
+    '::: {#thm:local .Theorem info="**First**"}\nThe body has **weight**.\n:::'
   );
   check('source reveal does not edit the document', await t.raw(), text);
 

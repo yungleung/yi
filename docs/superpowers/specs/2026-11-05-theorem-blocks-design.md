@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-05
 
-**Status:** Proposed for review
+**Status:** Implemented
 
 ## Goal
 

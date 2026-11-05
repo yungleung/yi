@@ -650,12 +650,13 @@ locale-independent class name, with dashes shown as spaces. IDs, classes, and ot
 kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
 
 Typing three or more colons and then a space on a line of its own creates a closed Default Div with
-the same colon count on both fences, and opens a seven-choice picker: Default, Note, Tip, Important,
-Warning, Caution, or Definition. The colons remain literal until that space arrives. Default leaves
-the opening as a bare colon fence; a callout choice adds or changes only the `.callout-<kind>`
-metadata. The body, ID, other classes, and attributes stay intact. A nested Div uses a longer colon
-run than its outer fence, and choosing a kind edits only that innermost opening. The caret stays
-immediately after the opening colon run; press Down to move into the body.
+the same colon count on both fences, and opens a grouped picker. Its Callout group contains Note,
+Tip, Important, Warning, Caution, and Definition; declared theorem types appear separately. The
+colons remain literal until that space arrives. Default leaves the opening as a bare colon fence; a
+callout choice adds or changes only the `.callout-<kind>` metadata. The body, ID, other classes, and
+attributes stay intact. A nested Div uses a longer colon run than its outer fence, and choosing a
+kind edits only that innermost opening. The caret stays immediately after the opening colon run;
+press Down to move into the body.
 
 Yi does not guess how to render other Pandoc Divs, such as `.columns`, speaker-note, wrapper, or
 incremental and non-incremental list Divs. A complete unknown Div is always shown as exact source,
@@ -749,6 +750,64 @@ reference documents can provide matching styles. LaTeX/PDF templates can style t
 with a Lua filter. A filter receives the outer callout Div, its kind class, the visible title child,
 and the body blocks in document order. The conversion happens before template filters, so filters
 work with this stable structure rather than Yi's GitHub or fenced-Div source.
+
+## Theorem blocks
+
+Yi renders declared Pandoc fenced Divs as theorem, definition, remark, and proof blocks. The built-in
+classes are Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise, Problem,
+Vocabulary, Notation, Remark, and proof:
+
+```markdown
+::: {#thm:bayes .Theorem info="Bayes"}
+For events \(A\) and \(B\) with \(P(B)>0\),
+
+$$
+P(A\mid B)=\frac{P(B\mid A)P(A)}{P(B)}.
+$$
+:::
+
+See [#thm:bayes].
+
+::: proof
+The result follows from the definition of conditional probability.
+:::
+```
+
+The title and generated reference use the theorem's declared display name. `info=` is an optional
+parenthetical note. `[#id]` is the only Yi authoring syntax for theorem references; `@id` and
+`[@id]` remain citations. Pandoc-backed exports translate a theorem reference internally to the
+syntax expected by `pandoc-amsthm`. Processed Markdown keeps an ordinary visible link instead.
+
+Declare custom or localized environments under `amsthm` in the note's frontmatter:
+
+```yaml
+amsthm:
+  plain:
+    - Theorem:
+        - Lemma
+        - Corollary
+    - Conjecture:
+        - Claim
+  name_to_text:
+    Theorem: 定理
+    Lemma: 引理
+    Conjecture: 猜想
+    Claim: 断言
+    proof: 证明
+```
+
+Nested declarations share the parent's counter. A trailing `*`, such as `Conjecture*`, makes the
+environment unnumbered. `name_to_text` changes only the visible word. Custom classes must begin with
+an ASCII letter and may contain ASCII letters, digits, and underscores; a complete Div whose class is
+not declared remains exact source.
+
+Typing a fenced Div opens a grouped picker. Valid theorem declarations appear under **Theorem**,
+separately from the callout choices, and take effect as soon as the frontmatter changes. Clicking a
+rendered theorem heading reveals the complete source for editing. Empty theorem bodies keep a
+reachable caret anchor just as empty callouts do.
+
+Theorem export requires Pandoc 3.1.1 or later and uses Yi's bundled, pinned `pandoc-amsthm` filter.
+Yi creates no script from the note and fetches no filter from the network.
 
 ## Export a note
 

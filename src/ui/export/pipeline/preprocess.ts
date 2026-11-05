@@ -90,6 +90,18 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
   const withCallouts = applyRewrites(source, calloutRewrites(source));
   const tree = parseMarkdown(withCallouts) as unknown as Walkable;
   const references = referenceIndex(withCallouts);
+  if (answers.kind !== 'markdown') {
+    const citationKeys = answers.citationKeys ?? new Set();
+    const collision = references.find(
+      (entry) =>
+        entry.kind === 'theorem' &&
+        entry.id !== null &&
+        citationKeys.has(entry.id)
+    );
+    if (collision?.id !== undefined && collision.id !== null) {
+      throw new TheoremCitationCollision(collision.id);
+    }
+  }
   const figures = spansOfType(tree, 'figure');
   const tables = spansOfType(tree, 'table');
   const listings = spansOfType(tree, 'listing');
@@ -100,8 +112,7 @@ export async function exportSource(text: string, answers: ExportAnswers): Promis
     ...autoReferenceRewrites(
       tree,
       references,
-      answers.kind,
-      answers.citationKeys ?? new Set()
+      answers.kind
     ),
     ...(await wikilinkRewrites(tree, answers.titleOf)),
     ...(await figureRewrites(figures, references, answers, fetched)),
@@ -164,16 +175,12 @@ async function wikilinkRewrites(tree: Walkable, titleOf: TitleLookup): Promise<R
 function autoReferenceRewrites(
   tree: Walkable,
   references: readonly ReferenceEntry[],
-  kind: string,
-  citationKeys: ReadonlySet<string>
+  kind: string
 ): Rewrite[] {
   return spansOfType(tree, 'autoReference').map((span) => {
     const node = span.node as { id: string };
     const target = firstReference(references, node.id);
     if (target?.kind === 'theorem' && kind !== 'markdown') {
-      if (citationKeys.has(target.id!)) {
-        throw new TheoremCitationCollision(target.id!);
-      }
       return {
         start: span.start,
         end: span.end,

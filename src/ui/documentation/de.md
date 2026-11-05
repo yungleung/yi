@@ -286,6 +286,24 @@ Referenzdokument-Stilen oder Lua-Filter festlegen. Der Filter erhält `.callout`
 erfolgt vor den Vorlagenfiltern; diese arbeiten daher mit dieser stabilen Struktur statt mit der
 GitHub- oder Div-Quelle.
 
+## Theorem-Blöcke
+
+Yi stellt deklarierte Pandoc-Divs als Theorem-, Definitions-, Bemerkungs- und Beweisblöcke dar:
+
+```markdown
+::: {#thm:satz .Theorem info="Satz"}
+Der Inhalt.
+:::
+
+Siehe [#thm:satz].
+```
+
+Die eingebauten Klassen sind Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
+Problem, Vocabulary, Notation, Remark und proof. Eigene oder lokalisierte Namen werden unter
+`amsthm` im Frontmatter angegeben; `name_to_text` ändert nur die sichtbare Bezeichnung. `[#id]` ist
+die einzige Syntax für Theorem-Verweise. Der Export verwendet den mitgelieferten
+`pandoc-amsthm`-Filter und benötigt Pandoc 3.1.1 oder neuer.
+
 ## Eine Notiz exportieren
 
 | Art | Ausgabe |

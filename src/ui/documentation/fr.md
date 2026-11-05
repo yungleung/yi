@@ -277,6 +277,24 @@ référence ou filtre Lua. Le filtre reçoit `.callout`, `.callout-<type>`, `.ca
 dans l’ordre du document. La conversion précède les filtres du modèle : ceux-ci voient donc cette
 structure stable plutôt que la syntaxe GitHub ou le Div source.
 
+## Blocs de théorème
+
+Yi affiche les Divs Pandoc déclarés comme blocs de théorème, définition, remarque et preuve :
+
+```markdown
+::: {#thm:exemple .Theorem info="Exemple"}
+Le contenu.
+:::
+
+Voir [#thm:exemple].
+```
+
+Les classes intégrées sont Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
+Problem, Vocabulary, Notation, Remark et proof. Les noms personnalisés ou localisés se déclarent sous
+`amsthm` dans le frontmatter ; `name_to_text` ne change que le libellé visible. `[#id]` reste la seule
+syntaxe de renvoi vers un théorème. L’export utilise le filtre `pandoc-amsthm` fourni et exige
+Pandoc 3.1.1 ou ultérieur.
+
 ## Exporter une note
 
 | Type | Sortie |

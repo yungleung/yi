@@ -293,6 +293,21 @@ check(
     collision,
     'TheoremCitationCollision: theorem reference thm:one collides with a citation key'
   );
+
+  let unreferencedCollision = null;
+  try {
+    await render('::: {#thm:one .Theorem}\nBody.\n:::', {
+      kind: 'docx',
+      citationKeys: new Set(['thm:one'])
+    });
+  } catch (error) {
+    unreferencedCollision = String(error);
+  }
+  check(
+    'the collision is refused even without a [#id] use',
+    unreferencedCollision,
+    'TheoremCitationCollision: theorem reference thm:one collides with a citation key'
+  );
 }
 
 {

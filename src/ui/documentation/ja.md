@@ -265,6 +265,23 @@ HTML、EPUB、DOCX、ODT、LaTeX/PDF のテンプレートは CSS、参照文書
 受け取ります。変換はテンプレート filter より前に完了するため、filter は GitHub 記法やフェンス付き
 Div ではなく、この安定した構造を扱えます。
 
+## 定理ブロック
+
+Yi は宣言済みの Pandoc Div を定理、定義、注意、証明のブロックとして表示します。
+
+```markdown
+::: {#thm:example .Theorem info="例"}
+本文。
+:::
+
+[#thm:example] を参照。
+```
+
+組み込みクラスは Theorem、Lemma、Corollary、Proposition、Definition、Example、Exercise、Problem、
+Vocabulary、Notation、Remark、proof です。独自名や翻訳名は frontmatter の `amsthm` で宣言し、
+`name_to_text` は表示名だけを変更します。定理参照の入力構文は `[#id]` のみです。書き出しには
+同梱の `pandoc-amsthm` フィルターを使い、Pandoc 3.1.1 以降が必要です。
+
 ## ノートを書き出す
 
 | 種類 | 出力 |

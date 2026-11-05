@@ -21,6 +21,10 @@ methodology; this file is the index and the conventions.
 | `class-names.mjs` | That every `markdown-…` class name the app uses is drawn by `styles.css` or on the list of rule-less hooks (with its reason), and that no rule in the stylesheet is for a name nothing sets |
 | `check-blocks.mjs` | How the raw document splits into blocks (`document/block/model.ts`), and empty-paragraph runs — including direct and one-blank list/table captions, and that a fence or a display formula interrupting a paragraph is a block of its own, since both must be able to show their own text |
 | `check-callouts.mjs` | GitHub-alert and Pandoc fenced-Div callout grammar: nested quote depth, all five built-in labels, custom kinds/titles, kind-only class edits, exact IDs/classes/attributes, malformed and escaped markers, offset-preserving parser input, and unclosed or nested Div fences left literal |
+| `check-theorem-vocabulary.mjs` | App-default and frontmatter theorem declarations, localized names, shared and parent counters, unnumbered classes, malformed and duplicate rejection, deterministic cache keys, and minimal class edits |
+| `check-theorem-parser.mjs` | Declared theorem Divs into positioned theorem nodes, including bare proof, quote carriers, nested callouts, invalid IDs, ambiguous classes and exact-source fallback |
+| `check-theorem-reparse.mjs` | Frontmatter theorem declarations as a block-parse dependency: adding or removing one reclassifies the same Div without changing its bytes |
+| `check-theorem-export.mjs` | The pinned pandoc-amsthm filter and licence, and its native LaTeX theorem, localized-name and named-reference output when Pandoc is available |
 | `check-fenced-divs.mjs` | Generic Pandoc fenced-Div source ranges, nesting and quote carriers, plus the shared Div body and empty-body line rules |
 | `check-book-body.mjs` | The text a *book* is handed (`ui/export/workflow/body.ts`): the note's own level-1 heading where the note writes one, and the note's name written under the frontmatter where it does not — the line of a name that came from a heading, a name with a line break in it, no name at all, and what counts as the note's own heading (`#` at the line's own beginning, a bare `#` as much as `# A`, while `##`, `#foo` and `   # A` — which pandoc reads as prose — are not) |
 | `check-documentation.mjs` | The bundled Documentation guide and its native F1 menu entry: stable identity, read-only source, install instructions for Pandoc, TeX Live, MacTeX and MiKTeX, package-authoring chapters, security limits, fixture-package pointer and no unfinished placeholders |
@@ -91,7 +95,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and sixteen probes (`probe:all` runs 280 and skips 36, each skip for the reason its
+three hundred and eighteen probes (`probe:all` runs 282 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -176,6 +180,9 @@ inside quotes, GitHub callouts and fenced-Div callouts;
 opening mark;
 `callout-default-document` — the fixture's five built-in kinds, custom Div, nested callout and
 block-rich bodies);
+theorems (`theorem-blocks` — localized headings, theorem/proof bodies, QED, `[#id]`, exact source
+reveal and empty-body typing; `div-kind-picker` — grouped callout/theorem choices and a declared
+custom class);
 tables (`table-caption-editing` — a caption below its table, an unrendered optional separator that
 can be added or removed from the caption source boundary, source reveal, label, target ID, and
 direct/one-blank forms; `table-caption-crossrefs` — configured labels and

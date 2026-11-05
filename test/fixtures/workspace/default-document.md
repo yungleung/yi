@@ -186,6 +186,21 @@ Inside any Pandoc Div, a single backtick stays literal. Three backticks open a n
 block, and display math, list continuation, nested callouts, table insertion, citations, wikilinks,
 and automatic references keep their normal context-aware behavior.
 
+## Theorem blocks
+
+::: {#thm:fixture .Theorem info="The default theorem"}
+Every theorem fixture has a body.
+:::
+
+See [#thm:fixture].
+
+::: proof
+The proof has its own heading.
+:::
+
+::: {#thm:empty .Theorem}
+:::
+
 ## Code listings
 
 See [#lst:minimal] or [the captioned listing](#lst:sample).

@@ -355,6 +355,7 @@ expectFile('src/ui/markdown/syntax/theorem/model.ts');
 expectFile('src/ui/markdown/syntax/theorem/vocabulary.ts');
 expectFile('src/ui/markdown/syntax/theorem/reader.ts');
 expectFile('src/ui/markdown/syntax/theorem/parser_source.ts');
+expectFile('src/ui/markdown/syntax/theorem/kind_edit.ts');
 expectFile('src/ui/markdown/syntax/table/index.ts');
 expectFile('src/ui/markdown/syntax/table/source.ts');
 expectFile('src/ui/markdown/syntax/table/captions.ts');

@@ -13,6 +13,7 @@ import type { AstTheorem } from '../ast';
 import { renderContext } from '../render_context';
 import { appendChildren } from '../registry';
 import { enterSourceOf, renderingBlock } from '../source_mode';
+import { fragmentProcessor } from '../syntax/remark_pipeline';
 import { TEXT_FROM, THEOREM_BODY_ANCHOR, setOffset } from '../offset_tags';
 import { EditableNodeComponent } from './editable_node';
 
@@ -42,13 +43,27 @@ export class Theorem extends EditableNodeComponent {
     const label =
       renderContext().theoremLabelAt(blockStart + node.theorem.from) ??
       node.theorem.type.displayName;
-    title.textContent = `${label}${node.theorem.info ? ` (${node.theorem.info})` : ''}.`;
+    title.appendChild(document.createTextNode(label));
+    if (node.theorem.info !== '') {
+      title.appendChild(document.createTextNode(' ('));
+      const info = fragmentProcessor.parse(node.theorem.info);
+      fragmentProcessor.runSync(info, { value: node.theorem.info });
+      const paragraph = info.children[0];
+      appendChildren(
+        title,
+        paragraph?.type === 'paragraph' && paragraph.children
+          ? paragraph.children
+          : [{ type: 'text', value: node.theorem.info }]
+      );
+      title.appendChild(document.createTextNode(')'));
+    }
+    title.appendChild(document.createTextNode('.'));
     title.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
       enterSourceOf(this.element, node.theorem.markerFrom);
       (this.element.closest('.prose') as HTMLElement | null)?.focus({ preventScroll: true });
-    });
+    }, true);
     element.appendChild(title);
 
     const body = document.createElement('div');
@@ -75,7 +90,8 @@ export class Theorem extends EditableNodeComponent {
       qed.className = 'markdown-theorem-qed';
       qed.setAttribute('data-chrome', 'true');
       qed.textContent = '□';
-      body.appendChild(qed);
+      const last = body.lastElementChild;
+      (last?.tagName === 'P' ? last : body).appendChild(qed);
     }
     element.appendChild(body);
   }

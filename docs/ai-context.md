@@ -788,8 +788,9 @@ Unknown Pandoc Divs such as columns, speaker notes, wrappers and incremental
 lists always render as exact source through `nodes/fence/div_source.ts`; a
 quote or callout containing one also falls back to complete source.
 A run of three or more colons stays literal until its following space creates a
-closed bare Default Div with the same fence length on both lines and opens
-`editing/callout_kind_picker.ts` with Default plus the six callout choices; a
+closed bare Default Div with the same fence length on both lines and opens the
+grouped `editing/div_kind_picker.ts`; its Callout group has Default plus the six
+callout choices and its Theorem group comes from the document vocabulary. A
 callout choice adds only its class metadata, and an inner Div uses a longer run
 so its choice edits only that inner opening. A Div body inserts one newline per
 Enter after the child list/table/code/equation rules decline it, and a single
@@ -800,6 +801,19 @@ accepts repeated blank lines with the caret left on the newest.
 source rewrites, so template Lua filters receive one stable AST shape.
 `callout-rendering.js`, `callout-empty-navigation.js`, `quote-enter.js`, `quote-list-enter.js`, the
 default-fixture probe, and the export/filter probes hold the feature.
+
+**A theorem is a declared Pandoc fenced Div, not a guessed class.** `syntax/theorem/`
+owns app defaults, the `amsthm` frontmatter vocabulary, exact class matching,
+shared counters and the minimal class edit. Built-ins include Theorem, Lemma,
+Corollary, Proposition, Definition, Example, Exercise, Problem, Vocabulary,
+Notation, Remark and proof; custom classes are explicit and unknown classes
+remain source. `syntax/container/parser_directive.ts` prepares complete Divs for
+`plugins/remark-theorem.ts`, `nodes/theorem.ts` renders the generated localized
+heading and body, and the document reference index resolves `[#id]` by target
+kind. Only temporary Pandoc source changes that reference to `@Id`, where the
+bundled `pandoc-amsthm` v3.1.1 filter prints the note-owned theorem name;
+`@id`/`[@id]` remain citations in Yi source. Theorem export requires Pandoc
+3.1.1 or newer and refuses theorem IDs that collide with bibliography keys.
 
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
 `syntax/code/fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/code/listings.ts`
