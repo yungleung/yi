@@ -24,7 +24,7 @@
     await t.sleep(250);
   };
   const visibleKinds = () =>
-    [...document.querySelectorAll('[data-callout-kind-choice]')].filter(
+    [...document.querySelectorAll('[data-div-kind-choice]')].filter(
       (row) => row.closest('.hidden') === null
     );
   const emptyFirstLine = async () => {
@@ -66,9 +66,29 @@
   check(
     'the picker offers Default, all five built-in kinds and Definition',
     rows.map((row) => row.textContent),
-    ['Default', 'Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
+    [
+      'Default',
+      'Note',
+      'Tip',
+      'Important',
+      'Warning',
+      'Caution',
+      'Definition',
+      'Corollary',
+      'Definition',
+      'Example',
+      'Exercise',
+      'Lemma',
+      'Notation',
+      'Problem',
+      'Proof',
+      'Proposition',
+      'Remark',
+      'Theorem',
+      'Vocabulary'
+    ]
   );
-  rows.find((row) => row.getAttribute('data-callout-kind-choice') === 'warning')?.click();
+  rows.find((row) => row.getAttribute('data-div-kind-choice') === 'callout:warning')?.click();
   await t.sleep(300);
   check(
     'choosing Warning changes only the kind class',
@@ -88,7 +108,7 @@
   await emptyFirstLine();
   await type([':', ':', ':']);
   await type([' ']);
-  document.querySelector('[data-callout-kind-choice="default"]')?.click();
+  document.querySelector('[data-div-kind-choice="default"]')?.click();
   await t.sleep(220);
   check(
     'choosing Default leaves the opening with no attributes',

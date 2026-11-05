@@ -69,15 +69,15 @@
   await t.sleep(220);
   check(
     'the Div-kind picker starts on Default',
-    activeRow('[data-callout-kind-choice]')?.getAttribute('data-callout-kind-choice') ?? null,
+    activeRow('[data-div-kind-choice]')?.getAttribute('data-div-kind-choice') ?? null,
     'default'
   );
   press('ArrowDown');
   await t.sleep(100);
   check(
     'ArrowDown moves the Div-kind selection',
-    activeRow('[data-callout-kind-choice]')?.getAttribute('data-callout-kind-choice') ?? null,
-    'note'
+    activeRow('[data-div-kind-choice]')?.getAttribute('data-div-kind-choice') ?? null,
+    'callout:note'
   );
   press('Enter');
   await t.sleep(250);

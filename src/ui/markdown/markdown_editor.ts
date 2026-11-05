@@ -39,12 +39,13 @@ import { installCompositionInput, type CompositionInput } from './editing/compos
 import { choiceCardIsOpen, handleChoiceCardText } from './choice_card';
 import { installLanguagePicker, setLanguageChangeHandler, setLanguagePicker } from './editing/language_picker';
 import {
-  installCalloutKindPicker,
-  setCalloutKindChangeHandler,
-  setCalloutKindPicker
-} from './editing/callout_kind_picker';
+  installDivKindPicker,
+  setDivKindChangeHandler,
+  setDivKindPicker
+} from './editing/div_kind_picker';
 import { fenceLanguageEdit } from './syntax/container';
 import { calloutKindEdit } from './syntax/callout';
+import { theoremKindEdit } from './syntax/theorem';
 import { MarkdownFindSession, type MarkdownFindApi } from './editing/find';
 import { Completions } from './editing/completions';
 import { installEditorInteractions } from './editing/editor_interactions';
@@ -286,9 +287,9 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
     // (`syntax/container/fence_edits.ts: fenceLanguageEdit`).
     setLanguagePicker(installLanguagePicker());
     setLanguageChangeHandler((lineStart, language) => this.changeFenceLanguage(lineStart, language));
-    setCalloutKindPicker(installCalloutKindPicker());
-    setCalloutKindChangeHandler((lineStart, kind) =>
-      this.changeCalloutKind(lineStart, kind)
+    setDivKindPicker(installDivKindPicker());
+    setDivKindChangeHandler((lineStart, value) =>
+      this.changeDivKind(lineStart, value)
     );
 
     this.completions = new Completions(this.context);
@@ -539,14 +540,27 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
   }
 
   /** The fenced-Div kind the reader chose, with the body and caret left in place. */
-  private changeCalloutKind(lineStart: number, kind: string): void {
+  private changeDivKind(lineStart: number, choice: string): void {
     if (this.readOnly) {
       return;
     }
     applyBlockOpeningEdit(
       this.context,
       lineStart,
-      (text, relative) => calloutKindEdit(text, kind, relative),
+      (text, relative) => {
+        if (choice.startsWith('theorem:')) {
+          return theoremKindEdit(
+            text,
+            choice.slice('theorem:'.length),
+            this.state.theoremVocabulary(),
+            relative
+          );
+        }
+        const kind = choice.startsWith('callout:')
+          ? choice.slice('callout:'.length)
+          : 'default';
+        return calloutKindEdit(text, kind, relative);
+      },
       false
     );
   }

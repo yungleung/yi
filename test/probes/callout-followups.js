@@ -103,7 +103,7 @@
   await clickEnd(pickerSource, '> ');
   await type([':', ':', ':', ' ']);
   const pickerCard = document
-    .querySelector('[data-callout-kind-choice]')
+    .querySelector('[data-div-kind-choice]')
     ?.parentElement?.parentElement ?? null;
   const caretBox = (await t.app('/src/ui/markdown/caret/caret.ts'))
     .getCaretRange()
@@ -174,8 +174,8 @@
     if (name === 'default fenced Div') {
       check(
         'the Div-kind picker opens on an ordinary blank line',
-        document.querySelectorAll('[data-callout-kind-choice]').length,
-        7
+        document.querySelectorAll('[data-div-kind-choice]').length,
+        19
       );
     }
     const raw = await t.raw();

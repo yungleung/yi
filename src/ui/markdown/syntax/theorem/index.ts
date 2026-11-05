@@ -29,3 +29,4 @@ export { theoremVocabularyFromFrontmatter } from './vocabulary';
 export { readTheorem, theoremFromOpening } from './reader';
 export type { TheoremSource } from './reader';
 export { theoremsForParsers } from './parser_source';
+export { theoremKindEdit } from './kind_edit';

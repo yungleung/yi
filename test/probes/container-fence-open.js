@@ -98,7 +98,7 @@
   await t.click(t.prose().querySelector('blockquote'), 0.99);
   await clickEnd(source(), '>');
   await type([':', ':', ':', ' ']);
-  const choices = [...document.querySelectorAll('[data-callout-kind-choice]')].map(
+  const choices = [...document.querySelectorAll('[data-div-kind-choice]')].map(
     (row) => row.textContent
   );
   check(
@@ -109,9 +109,29 @@
   check(
     'the Div kind picker still opens inside the quote',
     choices,
-    ['Default', 'Note', 'Tip', 'Important', 'Warning', 'Caution', 'Definition']
+    [
+      'Default',
+      'Note',
+      'Tip',
+      'Important',
+      'Warning',
+      'Caution',
+      'Definition',
+      'Corollary',
+      'Definition',
+      'Example',
+      'Exercise',
+      'Lemma',
+      'Notation',
+      'Problem',
+      'Proof',
+      'Proposition',
+      'Remark',
+      'Theorem',
+      'Vocabulary'
+    ]
   );
-  document.querySelector('[data-callout-kind-choice="tip"]')?.click();
+  document.querySelector('[data-div-kind-choice="callout:tip"]')?.click();
   await t.sleep(180);
   check(
     'choosing a kind edits the nested Div rather than the outer quote',

@@ -95,7 +95,7 @@
   );
   check(
     'and no Div-kind picker opens yet',
-    visible('[data-callout-kind-choice]').length,
+    visible('[data-div-kind-choice]').length,
     0
   );
 
@@ -108,8 +108,8 @@
   );
   check(
     'and opens the Div-kind picker',
-    visible('[data-callout-kind-choice]').length,
-    7
+    visible('[data-div-kind-choice]').length,
+    19
   );
   t.key('X');
   await t.sleep(220);
@@ -251,7 +251,7 @@
   }
   await type([':', ':', ':', ':', ':', ' ']);
   document
-    .querySelector('[data-callout-kind-choice="warning"]')
+    .querySelector('[data-div-kind-choice="callout:warning"]')
     ?.click();
   await t.sleep(220);
   check(

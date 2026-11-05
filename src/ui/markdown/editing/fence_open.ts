@@ -31,9 +31,10 @@ import { blockPadding } from './blank_lines';
 import { applyEdit, type EditorContext } from './context';
 import { proseRoot } from './selection';
 import { chooseLanguageAt } from './language_picker';
-import { chooseCalloutKind } from './callout_kind_picker';
+import { chooseDivKind } from './div_kind_picker';
 import type { BlockKind, MarkdownBlock } from '../document/block';
 import { readCallout } from '../syntax/callout';
+import { readTheorem } from '../syntax/theorem';
 import {
   fencedDivAtOffset,
   prefixInsertedBreaks,
@@ -203,7 +204,7 @@ export function insertFenceOpen(
   if (write.kind === 'fencedCode') {
     askForLanguage(context, caret);
   } else if (write.kind === 'fencedDiv') {
-    askForCalloutKind(context, caret);
+    askForDivKind(context, caret);
   }
   return true;
 }
@@ -244,8 +245,8 @@ function askForLanguage(context: EditorContext, caret: number): void {
   );
 }
 
-/** Opens the callout-kind list beside the caret that completed the Div. */
-function askForCalloutKind(context: EditorContext, caret: number): void {
+/** Opens the grouped Div-kind list beside the caret that completed the Div. */
+function askForDivKind(context: EditorContext, caret: number): void {
   const block =
     context.state.getBlockAtOffset(caret) ??
     context.state.getBlockAtOffset(Math.max(0, caret - 1));
@@ -261,8 +262,12 @@ function askForCalloutKind(context: EditorContext, caret: number): void {
   if (source) {
     const relative = Math.min(Math.max(0, caret - block.charStart), block.text.length);
     const div = fencedDivAtOffset(block.text, relative);
-    const innerCallout =
-      div === null ? null : readCallout(block.text.slice(div.from, div.to));
+    const innerDiv = div === null ? null : block.text.slice(div.from, div.to);
+    const innerCallout = innerDiv === null ? null : readCallout(innerDiv);
+    const innerTheorem =
+      innerDiv === null
+        ? null
+        : readTheorem(innerDiv, context.state.theoremVocabulary());
     const range = getCaretRange();
     const measured = range === null ? null : caretRect(range);
     const anchor = measured
@@ -273,10 +278,15 @@ function askForCalloutKind(context: EditorContext, caret: number): void {
           height: measured.height
         }
       : boxOf(source);
-    chooseCalloutKind(
+    chooseDivKind(
       anchor,
-      innerCallout?.kind ?? 'default',
-      block.lineStart
+      innerTheorem === null
+        ? innerCallout === null
+          ? 'default'
+          : `callout:${innerCallout.kind}`
+        : `theorem:${innerTheorem.type.className}`,
+      block.lineStart,
+      context.state.theoremVocabulary()
     );
   }
 }

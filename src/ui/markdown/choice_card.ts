@@ -19,6 +19,7 @@ import { BesideCard, type Box } from '../floating';
 export interface Choice {
   value: string;
   label: string;
+  group?: string;
 }
 
 export interface ChoiceCardOptions {
@@ -133,16 +134,27 @@ export class ChoiceCard {
   }
 
   private draw(): void {
-    const rows = this.choices.map((choice, index) => {
+    const children: HTMLElement[] = [];
+    let group: string | undefined;
+    for (const [index, choice] of this.choices.entries()) {
+      if (choice.group !== undefined && choice.group !== group) {
+        group = choice.group;
+        const heading = document.createElement('div');
+        heading.className = 'px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide opacity-60';
+        heading.setAttribute('data-choice-group', choice.group);
+        heading.textContent = choice.group;
+        children.push(heading);
+      }
       const row = document.createElement('button');
       row.type = 'button';
       row.setAttribute(this.attribute, choice.value);
       row.className = 'rounded px-2 py-1 text-left text-sm hover:bg-base-300';
       this.mark(row, index);
       row.textContent = choice.label;
-      return row;
-    });
-    this.list.replaceChildren(...rows);
+      children.push(row);
+    }
+    this.list.replaceChildren(...children);
+    const rows = this.rows();
     rows[this.selected]?.scrollIntoView({ block: 'nearest' });
   }
 

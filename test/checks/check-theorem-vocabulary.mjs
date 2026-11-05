@@ -26,6 +26,7 @@ await bundle.close();
 const file = join(directory, 'theorem.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
+  theoremKindEdit,
   theoremVocabularyFromFrontmatter
 } = await import(file);
 
@@ -146,6 +147,41 @@ check(
   'two equivalent readers produce the same cache key',
   theoremVocabularyFromFrontmatter(null).key,
   theoremVocabularyFromFrontmatter('').key
+);
+
+const bareDiv = '::: {#claim:one}\nBody.\n:::';
+check(
+  'choosing a theorem adds only its class',
+  theoremKindEdit(bareDiv, 'Theorem', defaults),
+  {
+    from: 5,
+    to: 5,
+    replacement: '.Theorem '
+  }
+);
+const theoremDiv = '::: {#claim:one .Theorem info="First"}\nBody.\n:::';
+check(
+  'changing the theorem edits only the class token',
+  theoremKindEdit(theoremDiv, 'Lemma', defaults),
+  {
+    from: 17,
+    to: 24,
+    replacement: 'Lemma'
+  }
+);
+check(
+  'Default removes theorem metadata but preserves the ID and note',
+  theoremKindEdit(theoremDiv, 'default', defaults),
+  {
+    from: 4,
+    to: 38,
+    replacement: '{#claim:one info="First"}'
+  }
+);
+check(
+  'an undeclared theorem cannot be written',
+  theoremKindEdit(bareDiv, 'Unknown', defaults),
+  null
 );
 
 if (failures.length > 0) {
