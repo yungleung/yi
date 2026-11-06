@@ -18,6 +18,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { rolldown } from 'rolldown';
 import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
 
@@ -875,7 +876,6 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       [
         '--from=markdown',
         '--to=pdf',
-        `--lua-filter=${resolve('src-tauri/assets/export/amsthm.lua')}`,
         `--defaults=${appPdfDefaults}`,
         `--defaults=${join(rhoClass, 'defaults.yaml')}`,
         `--template=${join(rhoClass, 'template.tex')}`,
@@ -1031,14 +1031,31 @@ if (existsSync(join(legrand, 'template.json'))) {
   if (pandoc.status === 0) {
     const outputFolder = mkdtempSync(join(tmpdir(), 'yi-template-legrand-'));
     const output = join(outputFolder, 'legrand-orange-book.pdf');
+    const headerBundle = await rolldown({
+      input: 'src/ui/export/reference/theorem_header.ts',
+      logLevel: 'silent',
+      platform: 'node'
+    });
+    const { output: headerOutput } = await headerBundle.generate({ format: 'esm' });
+    await headerBundle.close();
+    const headerModule = join(outputFolder, 'theorem-header.mjs');
+    writeFileSync(
+      headerModule,
+      headerOutput.find((chunk) => chunk.type === 'chunk').code
+    );
+    const { theoremHeader } = await import(pathToFileURL(headerModule).href);
+    const header = join(outputFolder, 'theorem-header.tex');
+    writeFileSync(header, theoremHeader(example));
     const converted = spawnSync(
       'pandoc',
       [
         '--from=markdown',
         '--to=pdf',
+        `--lua-filter=${resolve('src-tauri/assets/export/amsthm.lua')}`,
         `--defaults=${appPdfDefaults}`,
         `--defaults=${join(legrand, 'defaults.yaml')}`,
         `--template=${join(legrand, 'template.tex')}`,
+        `--include-in-header=${header}`,
         `--resource-path=${legrand}`,
         `--output=${output}`,
         join(legrand, 'example.md')
@@ -1075,6 +1092,8 @@ if (existsSync(join(legrand, 'template.json'))) {
           squashed.includes('partone') &&
           squashed.includes('typographyandstructure') &&
           squashed.includes('mathematicaldesign') &&
+          squashed.includes('theorem1') &&
+          squashed.includes('definition1') &&
           squashed.includes('everydistinctionintheargument') &&
           squashed.includes('areadingrhythmis') &&
           squashed.includes('references') &&

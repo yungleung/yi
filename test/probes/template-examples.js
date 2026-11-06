@@ -648,7 +648,9 @@
       const read = await invoke('plugin:fs|read_file', { path: target });
       const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
       const page = (await t.pdfText(bytes)).normalize('NFKD').toLowerCase();
-      const squashed = page.replace(/[^a-z0-9]+/g, '');
+      const readablePage = page.replace(/002/g, 'fi');
+      const compactPage = readablePage.replace(/\s+/g, '');
+      const squashed = readablePage.replace(/[^a-z0-9]+/g, '');
       const pageSize = await t.pdfPageSize(bytes);
       check(
         'legrand-orange-book: the exported book keeps its title, parts, theorem and references',
@@ -657,10 +659,13 @@
           'partone',
           'typographyandstructure',
           'mathematicaldesign',
+          'theorem1',
+          'definition1',
           'completenessofthevisualhierarchy',
           'readingrhythm',
           'references'
         ].every((text) => squashed.includes(text)) &&
+          compactPage.includes('theorem1227completenessofthevisualhierarchy') &&
           !squashed.includes('index'),
         { tail: page.slice(-3000) }
       );
