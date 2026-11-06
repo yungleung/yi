@@ -158,7 +158,20 @@
     const written = await until(
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
-    const bytes = await bytesOf(target);
+    let bytes = null;
+    let page = '';
+    // The completion hint can arrive while the page is still being read back.
+    // Poll for a complete decode; exhausting the retries leaves `page` empty or
+    // partial, so each content assertion below still reports the real failure.
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      bytes = await bytesOf(target);
+      page =
+        bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
+      if (page.includes('ქართული') && page.includes('Andlatinafterit.')) {
+        break;
+      }
+      await sleep(200);
+    }
     check(
       'the export writes a PDF, so the file reached pandoc as it stands',
       written && bytes !== null && String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-',
@@ -167,7 +180,6 @@
 
     // The page, read back one font at a time. XeTeX positions words rather than drawing the spaces
     // between them, so each script is compared character by character rather than as a substring.
-    const page = bytes === null ? '' : (await t.pdfText(bytes)).normalize('NFKC');
     const missing = scripts.filter((script) =>
       [...script].some((character) => !page.includes(character))
     );
