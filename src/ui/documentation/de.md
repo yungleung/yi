@@ -301,7 +301,7 @@ Siehe [#thm:satz].
 Nur `Theorem` und `proof` sind eingebaut. Weitere Arten werden im Frontmatter unter `amsthm`
 deklariert; `styles.course-definition: {}` fordert einen benannten Stil an. Eine Vorlage darf Stile
 inline oder in einer separaten `.sty`-Datei vor `$header-includes$` definieren; Yi schützt seinen
-Fallback mit `\@ifundefined{th@${name}}`, sodass Vorlagenstile gewinnen. Vorlagen dürfen die
+Fallback mit `\@ifundefined{th@<style>}`, sodass Vorlagenstile gewinnen. Vorlagen dürfen die
 Großbuchstaben-Umgebungen von Yi nicht selbst definieren, sondern sollen Hooks verwenden. `[#id]`
 bleibt die einzige Verweissyntax; der Export benötigt Pandoc 3.1.1 oder neuer.
 

@@ -88,6 +88,14 @@ if (existsSync(file)) {
       /ATTRIBUTION\.txt/.test(text)
   );
   check(
+    'the Legrand Orange Book prompt preserves the upstream licence and attribution',
+    /#### Example prompt: Legrand Orange Book PDF/.test(text) &&
+      /igormcoelho\/pandoc-template-legrand-orange-book/.test(text) &&
+      /CC BY-NC-SA 3\.0/.test(text) &&
+      /Mathias Legrand/.test(text) &&
+      /ATTRIBUTION\.txt/.test(text)
+  );
+  check(
     'LaTeX source pictures and the BibTeX search path are explained',
     /BSTINPUTS/.test(text) &&
       /Local pictures named by the note are copied/i.test(text) &&
@@ -166,10 +174,11 @@ if (existsSync(file)) {
     'it explains explicit theorem kinds and template-owned styles',
     /Only\s+`Theorem`\s+and\s+`proof`\s+are\s+built in/i.test(text) &&
       /styles:\n    course-definition: \{\}/.test(text) &&
-      text.includes('\\@ifundefined{th@${name}}') &&
+      text.includes('\\@ifundefined{th@<style>}') &&
+      !text.includes('\\@ifundefined{th@${name}}') &&
       /separate `\.sty` file/i.test(text) &&
       /before `\$header-includes\$`/i.test(text) &&
-      /must not define.*capital-letter environment/i.test(text)
+      /must\s+not\s+define[\s\S]*capital-letter environment/i.test(text)
   );
   const legrandGuide = 'examples/templates/legrand-orange-book/README.md';
   check(
@@ -179,7 +188,16 @@ if (existsSync(file)) {
         (needle) => readFileSync(legrandGuide, 'utf8').includes(needle)
       )
   );
-  const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
+  const prompts = [
+    'HTML',
+    'LaTeX',
+    'PDF',
+    'Rho Class PDF',
+    'Legrand Orange Book PDF',
+    'EPUB',
+    'Word',
+    'OpenDocument'
+  ];
   for (const kind of prompts) {
     check(
       `it has a copy-ready ${kind} prompt`,

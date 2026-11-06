@@ -284,7 +284,7 @@ Veja [#thm:exemplo].
 Somente `Theorem` e `proof` são integrados. As outras classes são declaradas em `amsthm`;
 `styles.course-definition: {}` solicita um estilo nomeado. O modelo pode defini-lo inline ou em um
 arquivo `.sty` separado antes de `$header-includes$`; o Yi protege o fallback com
-`\@ifundefined{th@${name}}`, então o estilo do modelo vence. O modelo não deve definir os ambientes
+`\@ifundefined{th@<style>}`, então o estilo do modelo vence. O modelo não deve definir os ambientes
 em maiúsculas do Yi, mas usar hooks. `[#id]` continua sendo a única sintaxe de referência e a
 exportação exige Pandoc 3.1.1 ou posterior.
 

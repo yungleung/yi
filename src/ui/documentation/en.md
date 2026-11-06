@@ -825,7 +825,8 @@ $endif$
 ```
 
 Yi owns the generated `\newtheorem` environments and writes guarded custom-style fallbacks using
-`\@ifundefined{th@${name}}`. A style already defined by the template therefore wins. Templates must not define Yi's capital-letter environments directly; attach presentation with hooks instead:
+`\@ifundefined{th@<style>}`. A style already defined by the template therefore wins. Templates must
+not define Yi's capital-letter environments directly; attach presentation with hooks instead:
 
 ```tex
 \BeforeBeginEnvironment{Axiom}{\begin{DefinitionBox}}
@@ -1602,6 +1603,37 @@ Keep Markdown within Yi's supported syntax. Keep user-visible metadata out of th
 create `template.json`; Yi writes it on import. Do not download journal assets, install TeX
 packages, run `tlmgr`, enable shell escape, or use unrestricted `\write18`. Run Test PDF and export
 the complete example, then inspect the rendered page and report the result.
+```
+
+#### Example prompt: Legrand Orange Book PDF
+
+```text
+Create an importable Yi PDF template source package in `my-legrand-template/`, modelled on
+`examples/templates/legrand-orange-book/` and the CC BY-NC-SA 3.0 Legrand Orange Book:
+<https://github.com/igormcoelho/pandoc-template-legrand-orange-book>.
+
+Preserve the orange title page, part dividers, chapter-heading artwork, margin section numbers,
+running heads and theorem presentation. Credit Mathias Legrand and Vel, retain `ATTRIBUTION.txt`,
+and do not imply that the design is original or commercially reusable.
+
+Include:
+
+- `template.tex`, a Pandoc template containing `$body$` exactly once and taking title, subtitle,
+  authors, copyright, release and dedication from note metadata;
+- `theorem-styles.sty`, defining named theorem styles and attaching presentation to Yi's
+  capital-letter theorem environments with hooks;
+- `defaults.yaml` with pdfLaTeX, A4 output, `top-level-division: part`, numbered headings and a
+  package-local bibliography;
+- `metadata.yaml` and `example.md` that explicitly declare non-built-in theorem kinds and use Yi
+  theorem Divs for theorems, definitions, remarks, corollaries and exercises;
+- `README.md` explaining the upstream licence, required TeX packages, theorem style names, Test PDF
+  and export workflow.
+
+Omit the back-of-book index and every indexing command. Do not create `template.json`; Yi writes it
+on import. Do not download assets, install TeX packages, run `tlmgr`, enable shell escape, or use
+unrestricted `\write18`. Keep the template's images and bibliography inside the package. Run Test
+PDF and export the complete example, then inspect the title page, part pages, chapter transitions,
+theorem boxes and references.
 ```
 
 #### Example prompt: EPUB

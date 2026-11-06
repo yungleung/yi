@@ -238,7 +238,7 @@ Yi 會把已宣告的 Pandoc Div 顯示為定理、定義、註記和證明區�
 
 僅內建 `Theorem` 和 `proof`。其他類型在 frontmatter 的 `amsthm` 中宣告；
 `styles.course-definition: {}` 要求具名樣式。範本可在 `$header-includes$` 之前以內嵌或獨立
-`.sty` 檔案定義樣式；Yi 以 `\@ifundefined{th@${name}}` 保護後備定義，因此範本樣式優先。範本不得
+`.sty` 檔案定義樣式；Yi 以 `\@ifundefined{th@<style>}` 保護後備定義，因此範本樣式優先。範本不得
 直接定義 Yi 的大寫環境，而應使用 hook。`[#id]` 仍是唯一引用語法，匯出需要 Pandoc 3.1.1 或更新版本。
 
 ## 匯出筆記

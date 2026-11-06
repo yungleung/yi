@@ -280,7 +280,7 @@ Yi は宣言済みの Pandoc Div を定理、定義、注意、証明のブロ�
 組み込みは `Theorem` と `proof` だけです。その他の種類は frontmatter の `amsthm` で宣言し、
 `styles.course-definition: {}` で名前付きスタイルを要求します。テンプレートはスタイルを
 `$header-includes$` より前のインラインまたは別の `.sty` ファイルで定義できます。Yi は
-`\@ifundefined{th@${name}}` でフォールバックを保護するため、テンプレートのスタイルが優先されます。
+`\@ifundefined{th@<style>}` でフォールバックを保護するため、テンプレートのスタイルが優先されます。
 テンプレートは Yi の大文字の環境を直接定義せず、フックを使ってください。`[#id]` が唯一の参照構文で、
 Pandoc 3.1.1 以降が必要です。
 

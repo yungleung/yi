@@ -288,7 +288,7 @@ Consulta [#thm:ejemplo].
 Solo `Theorem` y `proof` están integrados. Las demás clases se declaran bajo `amsthm`;
 `styles.course-definition: {}` solicita un estilo con nombre. La plantilla puede definirlo en línea o
 en un archivo `.sty` separado antes de `$header-includes$`; Yi protege el fallback con
-`\@ifundefined{th@${name}}`, por lo que gana el estilo de la plantilla. La plantilla no debe definir
+`\@ifundefined{th@<style>}`, por lo que gana el estilo de la plantilla. La plantilla no debe definir
 los entornos en mayúsculas de Yi, sino usar hooks. `[#id]` sigue siendo la única sintaxis de
 referencia y la exportación requiere Pandoc 3.1.1 o posterior.
 
