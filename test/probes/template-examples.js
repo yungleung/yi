@@ -11,6 +11,7 @@
   const t = window.__t;
   const api = await t.app('/src/api/templates.ts');
   const exportApi = await t.app('/src/api/export.ts');
+  const referenceApi = await t.app('/src/ui/export/reference/index.ts');
   const files = await t.app('/src/api/files.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checkout = window.__probePaths.checkout;
@@ -606,11 +607,17 @@
       const visible = (t.prose().textContent ?? '').normalize('NFKC');
       check(
         'legrand-orange-book: the example opens as a two-part book without an index',
-        ['The Search for a Structure', 'Part One', 'Part Two', 'Mathematical Design'].every(
-          (text) => visible.includes(text)
+        ['Part One', 'Part Two', 'Mathematical Design'].every((text) =>
+          source.includes(text)
         ) &&
+          visible.includes('The Search for a Structure') &&
           !visible.includes('\\index{') &&
           !visible.includes('\\printindex')
+      );
+      check(
+        'legrand-orange-book: theorem Divs render semantically in the editor',
+        ['Theorem', 'Definition', 'Remark'].every((name) => visible.includes(name)) &&
+          !visible.includes(':::')
       );
       const testPdf = await api.testTemplatePdf(legrand.id);
       check(
@@ -634,7 +641,9 @@
         landscape: null,
         suppress_references: false,
         template_id: legrand.id,
-        self_contained: false
+        self_contained: false,
+        reference_header:
+          referenceApi.referenceHeader(source) + referenceApi.theoremHeader(source)
       });
       const read = await invoke('plugin:fs|read_file', { path: target });
       const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
@@ -649,6 +658,7 @@
           'typographyandstructure',
           'mathematicaldesign',
           'completenessofthevisualhierarchy',
+          'readingrhythm',
           'references'
         ].every((text) => squashed.includes(text)) &&
           !squashed.includes('index'),

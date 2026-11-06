@@ -23,7 +23,8 @@
     "defaults.yaml",
     "example.md",
     "metadata.yaml",
-    "references.bib"
+    "references.bib",
+    "theorem-styles.sty"
   ],
   "deliver": []
 }

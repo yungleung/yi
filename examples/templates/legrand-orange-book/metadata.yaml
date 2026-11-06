@@ -21,3 +21,24 @@ colorlinks: true
 linkcolor: ocre
 citecolor: ocre
 urlcolor: ocre
+amsthm:
+  styles:
+    legrand-plain: {}
+    legrand-definition: {}
+    legrand-remark: {}
+  legrand-plain:
+    - Theorem:
+        - Lemma
+        - Corollary
+    - Proposition
+  legrand-definition:
+    - Definition
+    - Example
+    - Exercise
+    - Problem
+    - Vocabulary
+  legrand-remark:
+    - Notation
+    - Remark
+  name_to_text:
+    proof: Proof

@@ -16,6 +16,7 @@ legrand-orange-book/
   metadata.yaml
   defaults.yaml
   references.bib
+  theorem-styles.sty
   template.json
   ATTRIBUTION.txt
   assets/
@@ -33,6 +34,40 @@ installation with `avant`, `mathptmx`, `tikz`, `mdframed`, `titletoc`,
 Citations use Yi's citeproc export path and the package-local `references.bib`.
 Export `example.md` as PDF, or use **Test PDF** in the template editor for the
 short package check.
+
+## Theorem kinds and styles
+
+Yi owns theorem environment and counter declarations. This package owns their
+appearance in `theorem-styles.sty`, which is loaded before `$header-includes$`.
+The file defines `legrand-plain`, `legrand-definition` and `legrand-remark`,
+then attaches the Legrand boxes and remark treatment to Yi's `Theorem`,
+`Definition`, `Corollary`, `Exercise` and `Remark` environments.
+
+The example declares each non-built-in kind in frontmatter. `Theorem` and
+`proof` are Yi's only built-ins. To add another kind, give it a style group and
+declare the style request:
+
+```yaml
+amsthm:
+  styles:
+    legrand-definition: {}
+  legrand-definition:
+    - Definition
+    - Assumption
+    - Axiom
+```
+
+Then use a normal theorem Div:
+
+```markdown
+::: {#ax:choice .Axiom info="Choice"}
+Every vector space has a basis.
+:::
+```
+
+If a template defines the named style before `$header-includes$`, Yi preserves
+it. Otherwise Yi creates a guarded fallback from the note's style settings.
+Write the style inline or in a separate `.sty` file; both use the same contract.
 
 ## Licence and attribution
 

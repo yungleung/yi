@@ -16,7 +16,9 @@ https://creativecommons.org/licenses/by-nc-sa/3.0/
 
 Yi's package removes the optional back-of-book index, replaces the upstream
 bibliography plumbing with Pandoc citeproc, and exposes the title, author,
-subtitle, copyright and dedication through document metadata.
+subtitle, copyright and dedication through document metadata. The upstream
+theorem presentation has been extracted into `theorem-styles.sty` and attached
+to Yi's generated theorem environments.
 
 The background, chapter-heading artwork and illustration are redistributed
 from the upstream package under the same licence.

@@ -22,6 +22,27 @@ colorlinks: true
 linkcolor: ocre
 citecolor: ocre
 urlcolor: ocre
+amsthm:
+  styles:
+    legrand-plain: {}
+    legrand-definition: {}
+    legrand-remark: {}
+  legrand-plain:
+    - Theorem:
+        - Lemma
+        - Corollary
+    - Proposition
+  legrand-definition:
+    - Definition
+    - Example
+    - Exercise
+    - Problem
+    - Vocabulary
+  legrand-remark:
+    - Notation
+    - Remark
+  name_to_text:
+    proof: Proof
 ---
 
 # Part One
@@ -86,41 +107,41 @@ The original template gives mathematical statements a framed, editorial
 presence. The orange heading and restrained rule distinguish a theorem from
 ordinary prose.
 
-\begin{theorem}[Completeness of the visual hierarchy]
+::: {.Theorem info="Completeness of the visual hierarchy"}
 Every distinction in the argument should have exactly one visible level, and
 that level should remain consistent throughout the book.
-\end{theorem}
+:::
 
 ### Definitions
 
-\begin{definition}[Reading rhythm]
+::: {.Definition info="Reading rhythm"}
 A reading rhythm is the recurring relation between paragraph width, line
 length, vertical space and heading weight.
-\end{definition}
+:::
 
 ### Remarks and corollaries
 
-\begin{remark}
+::: {.Remark}
 The page should remain legible when the ornamental color is removed. Color
 supports the hierarchy; it does not create it.
-\end{remark}
+:::
 
-\begin{corollary}[Consistency]
+::: {.Corollary info="Consistency"}
 A reader who understands the first chapter's visual grammar can predict the
 structure of every later chapter.
-\end{corollary}
+:::
 
 ### Propositions and examples
 
-\begin{proposition}
+::: {.Proposition}
 Part pages are navigation, chapter images are orientation, and section numbers
 are reference points.
-\end{proposition}
+:::
 
-\begin{example}[A chapter opening]
+::: {.Example info="A chapter opening"}
 A full-width image occupies the top of the page, while a translucent white
 panel keeps the chapter title readable over any illustration.
-\end{example}
+:::
 
 ### Presenting information
 
@@ -164,20 +185,20 @@ structure. Reusing it everywhere removes its meaning.
 
 ### Exercises and vocabulary
 
-\begin{exercise}
+::: {.Exercise}
 Remove every orange element from two facing pages. Which structural
 relationships remain visible, and which depended on color?
-\end{exercise}
+:::
 
-\begin{problem}
+::: {.Problem}
 Design a chapter-opening image that remains legible beneath a translucent
 title panel.
-\end{problem}
+:::
 
-\begin{vocabulary}[Accent]
+::: {.Vocabulary info="Accent"}
 A recurring visual signal that identifies structure without changing the
 meaning of the prose.
-\end{vocabulary}
+:::
 
 ### A final cross-reference
 

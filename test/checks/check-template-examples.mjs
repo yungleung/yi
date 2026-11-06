@@ -875,6 +875,7 @@ if (existsSync(join(rhoClass, 'template.json'))) {
       [
         '--from=markdown',
         '--to=pdf',
+        `--lua-filter=${resolve('src-tauri/assets/export/amsthm.lua')}`,
         `--defaults=${appPdfDefaults}`,
         `--defaults=${join(rhoClass, 'defaults.yaml')}`,
         `--template=${join(rhoClass, 'template.tex')}`,
@@ -946,7 +947,8 @@ check(
     'metadata.yaml',
     'references.bib',
     'template.json',
-    'template.tex'
+    'template.tex',
+    'theorem-styles.sty'
   ].every((file) => existsSync(join(legrand, file)))
 );
 if (existsSync(join(legrand, 'template.json'))) {
@@ -954,6 +956,9 @@ if (existsSync(join(legrand, 'template.json'))) {
   const defaults = parse(readFileSync(join(legrand, 'defaults.yaml'), 'utf8'));
   const template = readFileSync(join(legrand, 'template.tex'), 'utf8');
   const example = readFileSync(join(legrand, 'example.md'), 'utf8');
+  const theoremStyles = existsSync(join(legrand, 'theorem-styles.sty'))
+    ? readFileSync(join(legrand, 'theorem-styles.sty'), 'utf8')
+    : '';
   const attribution = readFileSync(join(legrand, 'ATTRIBUTION.txt'), 'utf8');
   check(
     'legrand-orange-book: the manifest identifies the licensed PDF package',
@@ -983,18 +988,37 @@ if (existsSync(join(legrand, 'template.json'))) {
       /\\definecolor\{ocre\}\{RGB\}\{243,102,25\}/.test(template) &&
       /background\.pdf/.test(template) &&
       /\\newcommand\{\\chapterimage\}/.test(template) &&
+      /\\usepackage\{theorem-styles\}/.test(template) &&
+      !/\\newenvironment\{theorem\}/.test(template) &&
       /chapter-head-1\.pdf/.test(example) &&
       /chapter-head-2\.pdf/.test(example)
   );
   check(
-    'legrand-orange-book: the example exercises the book design without source LaTeX indexes',
+    'legrand-orange-book: the example uses semantic theorem Divs without source LaTeX indexes',
     /^# Part One$/m.test(example) &&
       /^# Part Two$/m.test(example) &&
-      /\\begin\{theorem\}/.test(example) &&
-      /\\begin\{definition\}/.test(example) &&
+      /^::: \{\.Theorem\b/m.test(example) &&
+      /^::: \{\.Definition\b/m.test(example) &&
+      /^::: \{\.Remark\b/m.test(example) &&
+      /legrand-plain/.test(example) &&
+      /legrand-definition/.test(example) &&
+      /legrand-remark/.test(example) &&
+      !/\\begin\{(?:theorem|definition|remark|corollary|proposition|example)\}/.test(example) &&
       /\\begin\{importantblock\}/.test(example) &&
       /^```python$/m.test(example) &&
       /assets\/illustration\.jpg/.test(example)
+  );
+  check(
+    'legrand-orange-book: the external style package owns theorem presentation',
+    ['legrand-plain', 'legrand-definition', 'legrand-remark'].every((style) =>
+      theoremStyles.includes(`\\newtheoremstyle{${style}}`)
+    ) &&
+      ['Theorem', 'Definition', 'Corollary', 'Exercise', 'Remark'].every((name) =>
+        theoremStyles.includes(`\\BeforeBeginEnvironment{${name}}`)
+      ) &&
+      !/\\newenvironment\{(?:Theorem|Definition|Corollary|Exercise|Remark)\}/.test(
+        theoremStyles
+      )
   );
   check(
     'legrand-orange-book: the upstream authors and non-commercial licence travel with the package',
@@ -1051,7 +1075,8 @@ if (existsSync(join(legrand, 'template.json'))) {
           squashed.includes('partone') &&
           squashed.includes('typographyandstructure') &&
           squashed.includes('mathematicaldesign') &&
-          squashed.includes('theorem211') &&
+          squashed.includes('everydistinctionintheargument') &&
+          squashed.includes('areadingrhythmis') &&
           squashed.includes('references') &&
           !/\bIndex\b/.test(renderedText),
         rendered.stdout.slice(-3000)

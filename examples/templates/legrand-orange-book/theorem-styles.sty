@@ -1,0 +1,129 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{theorem-styles}[2026/11/06 Legrand theorem styles]
+\RequirePackage{amsthm}
+\RequirePackage{etoolbox}
+\RequirePackage[framemethod=default]{mdframed}
+\RequirePackage{tikz}
+\RequirePackage{xcolor}
+\providecolor{ocre}{RGB}{243,102,25}
+
+\newmdenv[
+  skipabove=7pt,
+  skipbelow=7pt,
+  backgroundcolor=black!5,
+  linecolor=ocre,
+  innerleftmargin=5pt,
+  innerrightmargin=5pt,
+  innertopmargin=5pt,
+  innerbottommargin=5pt,
+  leftmargin=0cm,
+  rightmargin=0cm
+]{LegrandTheoremBox}
+
+\newmdenv[
+  skipabove=7pt,
+  skipbelow=7pt,
+  rightline=false,
+  leftline=true,
+  topline=false,
+  bottomline=false,
+  backgroundcolor=ocre!10,
+  linecolor=ocre,
+  innerleftmargin=5pt,
+  innerrightmargin=5pt,
+  innertopmargin=5pt,
+  innerbottommargin=5pt,
+  leftmargin=0cm,
+  rightmargin=0cm,
+  linewidth=4pt
+]{LegrandExerciseBox}
+
+\newmdenv[
+  skipabove=7pt,
+  skipbelow=7pt,
+  rightline=false,
+  leftline=true,
+  topline=false,
+  bottomline=false,
+  linecolor=ocre,
+  innerleftmargin=5pt,
+  innerrightmargin=5pt,
+  innertopmargin=0pt,
+  innerbottommargin=0pt,
+  leftmargin=0cm,
+  rightmargin=0cm,
+  linewidth=4pt
+]{LegrandDefinitionBox}
+
+\newmdenv[
+  skipabove=7pt,
+  skipbelow=7pt,
+  rightline=false,
+  leftline=true,
+  topline=false,
+  bottomline=false,
+  linecolor=gray,
+  backgroundcolor=black!5,
+  innerleftmargin=5pt,
+  innerrightmargin=5pt,
+  innertopmargin=5pt,
+  innerbottommargin=5pt,
+  leftmargin=0cm,
+  rightmargin=0cm,
+  linewidth=4pt
+]{LegrandCorollaryBox}
+
+\newenvironment{LegrandRemark}
+  {\par\vspace{10pt}\small
+   \begin{list}{}{\leftmargin=35pt\rightmargin=25pt}\item\ignorespaces
+   \makebox[-2.5pt]{%
+     \begin{tikzpicture}[overlay]
+       \node[
+         draw=ocre!60,
+         line width=1pt,
+         circle,
+         fill=ocre!25,
+         font=\sffamily\bfseries,
+         inner sep=2pt,
+         outer sep=0pt
+       ] at (-15pt,0pt) {\textcolor{ocre}{R}};
+     \end{tikzpicture}}%
+   \advance\baselineskip -1pt}
+  {\end{list}\vskip5pt}
+
+\makeatletter
+\newtheoremstyle{legrand-plain}
+  {0pt}{0pt}{\normalfont}{}%
+  {\small\bfseries\sffamily\color{ocre}}{\;}{0.25em}%
+  {\small\sffamily\color{ocre}\thmname{#1}%
+   \nobreakspace\thmnumber{\@upn{#2}}%
+   \thmnote{\nobreakspace\bfseries\color{black}---\nobreakspace#3.}}
+
+\newtheoremstyle{legrand-definition}
+  {5pt}{5pt}{\normalfont}{}%
+  {\small\bfseries\sffamily}{\;}{0.25em}%
+  {\small\sffamily\thmname{#1}\nobreakspace\thmnumber{\@upn{#2}}%
+   \thmnote{\nobreakspace\bfseries---\nobreakspace#3.}}
+
+\newtheoremstyle{legrand-remark}
+  {10pt}{5pt}{\small\normalfont}{}%
+  {\small\bfseries\sffamily\color{ocre}}{\;}{0.25em}%
+  {\small\sffamily\color{ocre}\thmname{#1}%
+   \nobreakspace\thmnumber{\@upn{#2}}%
+   \thmnote{\nobreakspace\bfseries\color{black}---\nobreakspace#3.}}
+\makeatother
+
+\renewcommand{\qedsymbol}{\ensuremath{\blacksquare}}
+
+\BeforeBeginEnvironment{Theorem}{\begin{LegrandTheoremBox}}
+\AfterEndEnvironment{Theorem}{\end{LegrandTheoremBox}}
+\BeforeBeginEnvironment{Definition}{\begin{LegrandDefinitionBox}}
+\AfterEndEnvironment{Definition}{\end{LegrandDefinitionBox}}
+\BeforeBeginEnvironment{Corollary}{\begin{LegrandCorollaryBox}}
+\AfterEndEnvironment{Corollary}{\end{LegrandCorollaryBox}}
+\BeforeBeginEnvironment{Exercise}{\begin{LegrandExerciseBox}}
+\AtEndEnvironment{Exercise}{\hfill{\color{ocre}\tiny\ensuremath{\blacksquare}}}
+\AfterEndEnvironment{Exercise}{\end{LegrandExerciseBox}}
+\AtEndEnvironment{Example}{\hfill{\tiny\ensuremath{\blacksquare}}}
+\BeforeBeginEnvironment{Remark}{\begin{LegrandRemark}}
+\AfterEndEnvironment{Remark}{\end{LegrandRemark}}
