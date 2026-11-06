@@ -2,9 +2,9 @@
  * Builds the LaTeX theorem preamble that must survive alongside Yi's font
  * header.
  *
- * Example: a default `.Theorem` and `.Lemma` produce `\usepackage{amsthm}`,
- * a plain theorem style, and two `\newtheorem` declarations before Pandoc
- * writes the body.
+ * Example: a note with a built-in `.Theorem` and an explicitly declared
+ * `.Lemma` produces `\usepackage{amsthm}` and both `\newtheorem` declarations
+ * before Pandoc writes the body.
  *
  * May import: the theorem vocabulary, frontmatter reader and YAML. Upholds:
  * declarations match the resolved note vocabulary and are emitted only when a
