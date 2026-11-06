@@ -129,6 +129,31 @@ check(
   true
 );
 
+const builtInStylePreamble = theoremHeader([
+  '---',
+  'amsthm:',
+  '  styles:',
+  '    plain:',
+  '      headfont: italic',
+  '  plain:',
+  '    - Theorem',
+  '---',
+  '',
+  '::: {.Theorem}',
+  'Body.',
+  ':::'
+].join('\n'));
+check(
+  'a built-in style can still be configured by the note',
+  [
+    builtInStylePreamble.includes(
+      '\\newtheoremstyle{plain}{}{}{\\normalfont}{}{\\itshape}{.}{ }{}'
+    ),
+    !builtInStylePreamble.includes('\\@ifundefined{th@plain}')
+  ],
+  [true, true]
+);
+
 const tableHeader = referenceHeader(
   '---\n' +
     'reference-labels:\n' +

@@ -57,10 +57,12 @@ export function theoremVocabularyFromFrontmatter(
   const options = root.amsthm;
   const titles = readTitles(options.name_to_text);
   const styleNames = [
-    'plain',
-    'definition',
-    'remark',
-    ...Object.keys(isRecord(options.styles) ? options.styles : {}).sort()
+    ...new Set([
+      'plain',
+      'definition',
+      'remark',
+      ...Object.keys(isRecord(options.styles) ? options.styles : {}).sort()
+    ])
   ];
   const declared = [];
   const issues: TheoremIssue[] = [];

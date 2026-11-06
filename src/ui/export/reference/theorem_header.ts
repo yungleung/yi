@@ -130,6 +130,7 @@ function amsthmOptions(frontmatter: string | null): {
 
 function customStyles(styles: Record<string, unknown>): string[] {
   const lines: string[] = [];
+  const builtIn = new Set(['plain', 'definition', 'remark']);
   for (const [name, raw] of Object.entries(styles)) {
     if (!isRecord(raw) || !/^[a-z][a-z0-9_-]*$/i.test(name)) continue;
     const headfont = latexFont(raw.headfont, '\\bfseries');
@@ -146,6 +147,10 @@ function customStyles(styles: Record<string, unknown>): string[] {
     const declaration =
       `\\newtheoremstyle{${name}}{${above}}{${below}}{${bodyfont}}` +
       `{${indent}}{${headfont}}{${headpunct}}{${headspace}}{}`;
+    if (builtIn.has(name)) {
+      lines.push(declaration);
+      continue;
+    }
     lines.push(
       '\\makeatletter',
       `\\@ifundefined{th@${name}}{%`,
