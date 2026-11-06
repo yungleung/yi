@@ -807,8 +807,9 @@ owns app defaults, the `amsthm` frontmatter vocabulary, exact class matching,
 shared counters and the minimal class edit. Built-ins include Theorem, Lemma,
 Corollary, Proposition, Definition, Example, Exercise, Problem, Vocabulary,
 Notation, Remark and proof; custom classes are explicit and unknown classes
-remain source. `syntax/container/parser_directive.ts` prepares complete Divs for
-`plugins/remark-theorem.ts`, `nodes/theorem.ts` renders the generated localized
+remain source. `syntax/container/parser_directive.ts` skips labeled equations
+through the equation domain's own grammar, then prepares complete Divs for
+`plugins/remark-theorem.ts`; `nodes/theorem.ts` renders the generated localized
 heading and body, and the document reference index resolves `[#id]` by target
 kind. Only temporary Pandoc source changes that reference to `@Id`, where the
 bundled `pandoc-amsthm` v3.1.1 filter prints the note-owned theorem name;

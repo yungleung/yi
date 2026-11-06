@@ -128,6 +128,18 @@ const nested = parseMarkdown(
 check('a nested callout survives inside a theorem', nodeOf(nested, 'callout').length, 1);
 check('and the outer theorem survives', nodeOf(nested, 'theorem').length, 1);
 
+const afterEquation = parseMarkdown(
+  '[$$\nx = 1\n$$]{#eq:one}\n\n' +
+  '::: {#thm:after .Theorem}\n' +
+  'After the equation.\n' +
+  ':::'
+);
+check(
+  'an attributed equation does not hide a later theorem',
+  nodeOf(afterEquation, 'theorem').length,
+  1
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n\n'));
   process.exit(1);

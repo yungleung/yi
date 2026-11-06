@@ -3,7 +3,8 @@
  * blocks with an automatic reference.
  *
  * @covers test/fixtures/workspace/default-document.md,
- *   src/ui/markdown/nodes/theorem.ts
+ *   src/ui/markdown/nodes/theorem.ts,
+ *   src/ui/markdown/syntax/container/parser_directive.ts
  * @fixture test/fixtures/workspace/default-document.md
  */
 (async () => {
@@ -11,9 +12,10 @@
   const read = await window.__TAURI_INTERNALS__.invoke('plugin:fs|read_text_file', {
     path: `${window.__probePaths.checkout}test/fixtures/workspace/default-document.md`
   });
-  await t.load(
-    new TextDecoder().decode(read instanceof ArrayBuffer ? read : Uint8Array.from(read))
+  const fixture = new TextDecoder().decode(
+    read instanceof ArrayBuffer ? read : Uint8Array.from(read)
   );
+  await t.load(fixture);
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -63,6 +65,31 @@
     'the empty theorem keeps its caret anchor',
     emptyCount,
     1
+  );
+
+  const distant = [
+    '',
+    '::: {#thm:distant .Theorem info="Distant"}',
+    'A theorem far from the original section.',
+    ':::',
+    '',
+    'See [#thm:distant].',
+    ''
+  ].join('\n');
+  await t.load(`${fixture}${distant}`);
+  t.scroller().scrollTop = t.scroller().scrollHeight;
+  await t.sleep(800);
+  check(
+    'a theorem after the fixture’s labeled equations keeps its number',
+    t.prose().querySelector('.markdown-theorem-title')?.textContent?.trim() ?? null,
+    'Theorem 3 (Distant).'
+  );
+  check(
+    'and its automatic reference uses that number',
+    t.prose()
+      .querySelector('[data-auto-reference="thm:distant"]')
+      ?.textContent?.trim() ?? null,
+    'Theorem 3'
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

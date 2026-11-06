@@ -5,9 +5,9 @@
  * Example: a classifier can turn `::: {.Theorem}` into `:::theorem   ` while
  * leaving an undeclared `::: {.columns}` unchanged.
  *
- * May import: marker rules, the complete-div reader and quote carriers. Upholds:
- * only complete, enclosed Div frames are rewritten and code/frontmatter/math
- * regions are skipped.
+ * May import: marker rules, the equation grammar, the complete-div reader and
+ * quote carriers. Upholds: only complete, enclosed Div frames are rewritten
+ * and code/frontmatter/math regions are skipped.
  */
 
 import {
@@ -16,6 +16,7 @@ import {
   frontmatterDelimiter,
   openingFence
 } from '../markers';
+import { closesEquation, isEquationOpening } from '../equation';
 import {
   readAttributedDivOpening,
   type AttributedFencedDivOpening
@@ -52,6 +53,7 @@ export function divDirectivesForParsers(
   }
   let frontmatter = frontmatterDelimiter(lines[0].text) !== null;
   let codeFence: string | null = null;
+  let equationWrapper = false;
   let displayMath = false;
   const frames: DivFrame[] = [];
   const stack: DivFrame[] = [];
@@ -68,6 +70,19 @@ export function divDirectivesForParsers(
     }
     if (codeFence !== null) {
       if (closingFence(content, codeFence)) codeFence = null;
+      continue;
+    }
+    if (equationWrapper) {
+      if (closesEquation(content)) equationWrapper = false;
+      continue;
+    }
+    if (isEquationOpening(content)) {
+      equationWrapper = true;
+      continue;
+    }
+    // A labeled equation's `$$]…` tail closes its wrapper; it is not the
+    // start of an ordinary display-math block.
+    if (closesEquation(content)) {
       continue;
     }
     const fence = openingFence(content);
