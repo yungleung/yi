@@ -285,11 +285,12 @@ El contenido.
 Consulta [#thm:ejemplo].
 ```
 
-Las clases integradas son Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
-Problem, Vocabulary, Notation, Remark y proof. Los nombres personalizados o localizados se declaran
-bajo `amsthm` en el frontmatter; `name_to_text` solo cambia el texto visible. `[#id]` sigue siendo la
-única sintaxis para referencias a teoremas. La exportación usa el filtro `pandoc-amsthm` incluido y
-requiere Pandoc 3.1.1 o posterior.
+Solo `Theorem` y `proof` están integrados. Las demás clases se declaran bajo `amsthm`;
+`styles.course-definition: {}` solicita un estilo con nombre. La plantilla puede definirlo en línea o
+en un archivo `.sty` separado antes de `$header-includes$`; Yi protege el fallback con
+`\@ifundefined{th@${name}}`, por lo que gana el estilo de la plantilla. La plantilla no debe definir
+los entornos en mayúsculas de Yi, sino usar hooks. `[#id]` sigue siendo la única sintaxis de
+referencia y la exportación requiere Pandoc 3.1.1 o posterior.
 
 ## Exportar una nota
 
@@ -530,7 +531,7 @@ dos filtros duplican las referencias.
 ## Ejemplos completos y prompts de IA
 
 `examples/templates/` contiene paquetes completos para lectores en HTML, LaTeX, PDF, Rho Class,
-EPUB, Word y ODT. Un nivel arriba están las presentaciones de referencia completas
+Legrand Orange Book, EPUB, Word y ODT. Un nivel arriba están las presentaciones de referencia completas
 `examples/revealjs.md` y `examples/beamer.md`. `examples/` es material para lectores;
 `test/fixtures/` contiene datos de prueba controlados y cumple otro propósito.
 
@@ -540,6 +541,7 @@ Pide a un agente de IA una carpeta fuente importable, sin `template.json`:
 - **LaTeX:** tres autores e instituciones, resumen, figuras, tablas, notas y citas nativas.
 - **PDF:** XeLaTeX, portada, resumen, código, figuras, tablas y bibliografía.
 - **Rho Class PDF:** conservar el diseño CC BY 4.0, clase, URL de origen y atribución.
+- **Legrand Orange Book PDF:** conservar el diseño CC BY-NC-SA 3.0 y `theorem-styles.sty`; omitir el índice.
 - **EPUB:** portada, editorial, ISBN, derechos, dedicatoria, índice y tres capítulos.
 - **Word:** todos los estilos en `reference.docx`, `toc: true`, `toc-depth: 2`.
 - **OpenDocument:** tesis A4 con portada, resumen, índice de dos niveles y páginas desde 1.

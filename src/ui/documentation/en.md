@@ -753,9 +753,8 @@ work with this stable structure rather than Yi's GitHub or fenced-Div source.
 
 ## Theorem blocks
 
-Yi renders declared Pandoc fenced Divs as theorem, definition, remark, and proof blocks. The built-in
-classes are Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise, Problem,
-Vocabulary, Notation, Remark, and proof:
+Yi renders declared Pandoc fenced Divs as theorem and proof blocks. Only `Theorem` and `proof` are
+built in, so a new note can demonstrate the feature without imposing a field-specific taxonomy:
 
 ```markdown
 ::: {#thm:bayes .Theorem info="Bayes"}
@@ -773,33 +772,65 @@ The result follows from the definition of conditional probability.
 :::
 ```
 
-The title and generated reference use the theorem's declared display name. `info=` is an optional
-parenthetical note. `[#id]` is the only Yi authoring syntax for theorem references; `@id` and
-`[@id]` remain citations. Pandoc-backed exports translate a theorem reference internally to the
-syntax expected by `pandoc-amsthm`. Processed Markdown keeps an ordinary visible link instead.
-
-Declare custom or localized environments under `amsthm` in the note's frontmatter:
+Every other kind is declared in the note's frontmatter. The declaration defines the class, counter
+group, display name and style request:
 
 ```yaml
 amsthm:
-  plain:
-    - Theorem:
-        - Lemma
-        - Corollary
-    - Conjecture:
-        - Claim
+  styles:
+    course-definition: {}
+  course-definition:
+    - Definition
+    - Assumption
+    - Axiom
   name_to_text:
-    Theorem: 定理
-    Lemma: 引理
-    Conjecture: 猜想
-    Claim: 断言
-    proof: 证明
+    Definition: Definition
+    Assumption: Assumption
+    Axiom: Axiom
 ```
 
-Nested declarations share the parent's counter. A trailing `*`, such as `Conjecture*`, makes the
-environment unnumbered. `name_to_text` changes only the visible word. Custom classes must begin with
-an ASCII letter and may contain ASCII letters, digits, and underscores; a complete Div whose class is
-not declared remains exact source.
+Use the declared class as a normal fenced Div:
+
+```markdown
+::: {#ax:choice .Axiom info="Choice"}
+Every vector space has a basis.
+:::
+
+See [#ax:choice].
+```
+
+The title and generated reference use the declared display name. `info=` is an optional
+parenthetical note. Nested declarations share the parent's counter. A trailing `*`, such as
+`Axiom*`, makes the environment unnumbered. `name_to_text` changes only the visible word. Custom
+classes must begin with an ASCII letter and may contain ASCII letters, digits, and underscores; a
+complete Div whose class is not declared remains exact source.
+
+`[#id]` is the only Yi authoring syntax for theorem references; `@id` and `[@id]` remain citations.
+Pandoc-backed exports translate a theorem reference internally to the syntax expected by
+`pandoc-amsthm`. Processed Markdown keeps an ordinary visible link instead.
+
+### Custom theorem styles
+
+`styles.<name>: {}` requests a named amsthm style. It also supplies the metadata used by Yi's
+fallback when no matching template style exists. A template can define the style in its own
+preamble or in a separate `.sty` file. Define it before `$header-includes$`:
+
+```tex
+\newtheoremstyle{course-definition}{5pt}{5pt}{\normalfont}{}%
+  {\bfseries}{.}{ }{}%
+
+$if(header-includes)$
+$header-includes$
+$endif$
+```
+
+Yi owns the generated `\newtheorem` environments and writes guarded custom-style fallbacks using
+`\@ifundefined{th@${name}}`. A style already defined by the template therefore wins. Templates must not define Yi's capital-letter environments directly; attach presentation with hooks instead:
+
+```tex
+\BeforeBeginEnvironment{Axiom}{\begin{DefinitionBox}}
+\AfterEndEnvironment{Axiom}{\end{DefinitionBox}}
+```
 
 Typing a fenced Div opens a grouped picker. Valid theorem declarations appear under **Theorem**,
 separately from the callout choices, and take effect as soon as the frontmatter changes. Clicking a
@@ -1421,7 +1452,7 @@ what the template genuinely requires.
 ### Complete examples
 
 The repository contains one complete, workable package for every kind, plus the licensed Rho Class
-research-article design, under:
+research article and Legrand Orange Book, under:
 
 ```text
 examples/templates/
@@ -1429,6 +1460,7 @@ examples/templates/
   latex/
   pdf/
   rho-class/
+  legrand-orange-book/
   epub/
   docx/
   odt/
@@ -1437,6 +1469,8 @@ examples/templates/
 Each package contains `template.json`, its text entry or binary reference document,
 `defaults.yaml`, `metadata.yaml`, and an explanatory `README.md`. Open those folders as authoring
 references, then import the same folder into Yi to see the package in the Template library.
+The Legrand example also demonstrates a template-owned `theorem-styles.sty` package and explicit
+custom theorem kinds in note metadata.
 
 The user-facing presentations sit one level above the packages:
 

@@ -162,6 +162,23 @@ if (existsSync(file)) {
       /`@id` and\s+`\[@id\]` remain citations/.test(text) &&
       /Pandoc 3\.1\.1 or later/.test(text)
   );
+  check(
+    'it explains explicit theorem kinds and template-owned styles',
+    /Only\s+`Theorem`\s+and\s+`proof`\s+are\s+built in/i.test(text) &&
+      /styles:\n    course-definition: \{\}/.test(text) &&
+      text.includes('\\@ifundefined{th@${name}}') &&
+      /separate `\.sty` file/i.test(text) &&
+      /before `\$header-includes\$`/i.test(text) &&
+      /must not define.*capital-letter environment/i.test(text)
+  );
+  const legrandGuide = 'examples/templates/legrand-orange-book/README.md';
+  check(
+    'the Legrand guide names its theorem style package and styles',
+    existsSync(legrandGuide) &&
+      ['theorem-styles.sty', 'legrand-plain', 'legrand-definition', 'legrand-remark'].every(
+        (needle) => readFileSync(legrandGuide, 'utf8').includes(needle)
+      )
+  );
   const prompts = ['HTML', 'LaTeX', 'PDF', 'Rho Class PDF', 'EPUB', 'Word', 'OpenDocument'];
   for (const kind of prompts) {
     check(
@@ -258,6 +275,13 @@ for (const [code, name, title] of localized) {
       'Word',
       'ODT'
     ].every((needle) => text.includes(needle))
+  );
+  check(
+    `${name} guide explains explicit kinds and template theorem styles`,
+    text.includes('styles.course-definition') &&
+      text.includes('theorem-styles.sty') &&
+      text.includes('`Theorem`') &&
+      text.includes('`proof`')
   );
   check(
     `${name} guide explains template-free presentation exports`,

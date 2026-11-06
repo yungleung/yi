@@ -236,10 +236,10 @@ Yi 會把已宣告的 Pandoc Div 顯示為定理、定義、註記和證明區�
 參見 [#thm:example]。
 ```
 
-內建類別為 Theorem、Lemma、Corollary、Proposition、Definition、Example、Exercise、Problem、
-Vocabulary、Notation、Remark 和 proof。自訂與本地化名稱在 frontmatter 的 `amsthm` 中宣告；
-`name_to_text` 只改變顯示文字。定理引用仍只使用 `[#id]`。匯出使用隨應用提供的
-`pandoc-amsthm` 篩選器，並需要 Pandoc 3.1.1 或更新版本。
+僅內建 `Theorem` 和 `proof`。其他類型在 frontmatter 的 `amsthm` 中宣告；
+`styles.course-definition: {}` 要求具名樣式。範本可在 `$header-includes$` 之前以內嵌或獨立
+`.sty` 檔案定義樣式；Yi 以 `\@ifundefined{th@${name}}` 保護後備定義，因此範本樣式優先。範本不得
+直接定義 Yi 的大寫環境，而應使用 hook。`[#id]` 仍是唯一引用語法，匯出需要 Pandoc 3.1.1 或更新版本。
 
 ## 匯出筆記
 
@@ -468,8 +468,9 @@ Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有
 
 ## 完整範例與 AI 提示
 
-`examples/templates/` 有供讀者使用的 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
-完整套件。上一層還有完整參考簡報 `examples/revealjs.md` 和 `examples/beamer.md`。
+`examples/templates/` 有供讀者使用的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+EPUB、Word 和 ODT 完整套件。Legrand 以 `theorem-styles.sty` 分離定理樣式。上一層還有完整參考簡報
+`examples/revealjs.md` 和 `examples/beamer.md`。
 `examples/` 是讀者資料；`test/fixtures/` 是用途不同、受控的測試資料。
 
 給 AI 代理的提示應要求建立可匯入的來源資料夾，但不要建立 `template.json`：
@@ -478,6 +479,7 @@ Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有
 - **LaTeX**：三位作者、不同單位、摘要、圖表、腳註、原生引用、類別和 BibTeX 樣式。
 - **PDF**：XeLaTeX、標題頁、摘要、程式碼、圖表與文獻。
 - **Rho Class PDF**：保留 CC BY 4.0 設計、類別名稱、來源 URL 與署名。
+- **Legrand Orange Book PDF**：保留 CC BY-NC-SA 3.0 設計、`theorem-styles.sty` 與插圖；省略索引。
 - **EPUB**：封面、出版社、ISBN、版權、獻詞、目錄與三章。
 - **Word**：完整 `reference.docx` 樣式、`toc: true`、`toc-depth: 2`。
 - **OpenDocument**：A4 學位論文、封面、摘要、兩層目錄、正文從第 1 頁編號。

@@ -804,10 +804,9 @@ default-fixture probe, and the export/filter probes hold the feature.
 
 **A theorem is a declared Pandoc fenced Div, not a guessed class.** `syntax/theorem/`
 owns app defaults, the `amsthm` frontmatter vocabulary, exact class matching,
-shared counters and the minimal class edit. Built-ins include Theorem, Lemma,
-Corollary, Proposition, Definition, Example, Exercise, Problem, Vocabulary,
-Notation, Remark and proof; custom classes are explicit and unknown classes
-remain source. `syntax/container/parser_directive.ts` skips labeled equations
+shared counters and the minimal class edit. Only Theorem and proof are built in;
+every other class must be declared in frontmatter and unknown classes remain
+source. `syntax/container/parser_directive.ts` skips labeled equations
 through the equation domain's own grammar, then prepares complete Divs for
 `plugins/remark-theorem.ts`; `nodes/theorem.ts` renders the generated localized
 heading and body, and the document reference index resolves `[#id]` by target
@@ -817,7 +816,12 @@ bundled `pandoc-amsthm` v3.1.1 filter prints the note-owned theorem name;
 3.1.1 or newer and refuses theorem IDs that collide with bibliography keys. A
 Pandoc `--include-in-header` overrides the filter's metadata contribution, so
 `ui/export/reference/theorem_header.ts` emits the same `amsthm` package and
-resolved declarations in Yi's generated header for both LaTeX and PDF.
+resolved declarations in Yi's generated header for both LaTeX and PDF. Yi owns
+the capital-letter environments and counters; a template owns visual styles in
+its own preamble or a separate `.sty` file before `$header-includes$`. Generated
+custom-style fallbacks are guarded with `\@ifundefined{th@<style>}`, so a
+template definition wins. Templates must use environment hooks rather than
+define the generated environments.
 
 **An attributed fenced code block is a listing only when its ID or caption makes it one.**
 `syntax/code/fences.ts` reads both Pandoc opening-fence attribute forms; `syntax/code/listings.ts`

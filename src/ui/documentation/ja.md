@@ -277,10 +277,12 @@ Yi は宣言済みの Pandoc Div を定理、定義、注意、証明のブロ�
 [#thm:example] を参照。
 ```
 
-組み込みクラスは Theorem、Lemma、Corollary、Proposition、Definition、Example、Exercise、Problem、
-Vocabulary、Notation、Remark、proof です。独自名や翻訳名は frontmatter の `amsthm` で宣言し、
-`name_to_text` は表示名だけを変更します。定理参照の入力構文は `[#id]` のみです。書き出しには
-同梱の `pandoc-amsthm` フィルターを使い、Pandoc 3.1.1 以降が必要です。
+組み込みは `Theorem` と `proof` だけです。その他の種類は frontmatter の `amsthm` で宣言し、
+`styles.course-definition: {}` で名前付きスタイルを要求します。テンプレートはスタイルを
+`$header-includes$` より前のインラインまたは別の `.sty` ファイルで定義できます。Yi は
+`\@ifundefined{th@${name}}` でフォールバックを保護するため、テンプレートのスタイルが優先されます。
+テンプレートは Yi の大文字の環境を直接定義せず、フックを使ってください。`[#id]` が唯一の参照構文で、
+Pandoc 3.1.1 以降が必要です。
 
 ## ノートを書き出す
 
@@ -594,8 +596,9 @@ keywords:
 
 ## 完全な例
 
-`examples/templates/` には読者向けの HTML、LaTeX、PDF、Rho Class、EPUB、Word、ODT の
-実用的なパッケージがあります。一つ上の階層には完全な参照用プレゼンテーション
+`examples/templates/` には読者向けの HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+EPUB、Word、ODT の実用的なパッケージがあります。Legrand は `theorem-styles.sty` で定理表示を
+分離しています。一つ上の階層には完全な参照用プレゼンテーション
 `examples/revealjs.md` と `examples/beamer.md` があります。`examples/` は読者向け資料で、
 `test/fixtures/` は目的の異なる管理されたテストデータです。
 

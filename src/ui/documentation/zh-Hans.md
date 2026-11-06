@@ -246,10 +246,10 @@ Yi 会把已声明的 Pandoc Div 显示为定理、定义、注记和证明块�
 参见 [#thm:example]。
 ```
 
-内置类为 Theorem、Lemma、Corollary、Proposition、Definition、Example、Exercise、Problem、
-Vocabulary、Notation、Remark 和 proof。自定义名称和本地化名称在 frontmatter 的 `amsthm` 中声明；
-`name_to_text` 只改变显示文字。定理引用仍只使用 `[#id]`。导出使用随应用提供的
-`pandoc-amsthm` 过滤器，并要求 Pandoc 3.1.1 或更高版本。
+仅内置 `Theorem` 和 `proof`。其他类型在 frontmatter 的 `amsthm` 中声明；
+`styles.course-definition: {}` 请求具名样式。模板可以在 `$header-includes$` 之前以内联或独立
+`.sty` 文件定义样式；Yi 用 `\@ifundefined{th@${name}}` 保护后备定义，因此模板样式优先。模板不得
+直接定义 Yi 的大写环境，而应使用 hook。`[#id]` 仍是唯一引用语法，导出要求 Pandoc 3.1.1 或更高版本。
 
 ## 导出笔记
 
@@ -537,8 +537,9 @@ keywords:
 
 ## 完整示例
 
-`examples/templates/` 包含面向读者的 HTML、LaTeX、PDF、Rho Class、EPUB、Word 和 ODT
-完整包。上一级目录还有完整参考演示文稿 `examples/revealjs.md` 和 `examples/beamer.md`。
+`examples/templates/` 包含面向读者的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+EPUB、Word 和 ODT 完整包。Legrand 用 `theorem-styles.sty` 分离定理样式。上一级目录还有完整参考
+演示文稿 `examples/revealjs.md` 和 `examples/beamer.md`。
 `examples/` 是读者资料；`test/fixtures/` 是用途不同、受控的测试数据。
 
 ### 给 AI 代理的提示词

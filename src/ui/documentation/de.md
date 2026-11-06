@@ -298,11 +298,12 @@ Der Inhalt.
 Siehe [#thm:satz].
 ```
 
-Die eingebauten Klassen sind Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
-Problem, Vocabulary, Notation, Remark und proof. Eigene oder lokalisierte Namen werden unter
-`amsthm` im Frontmatter angegeben; `name_to_text` ändert nur die sichtbare Bezeichnung. `[#id]` ist
-die einzige Syntax für Theorem-Verweise. Der Export verwendet den mitgelieferten
-`pandoc-amsthm`-Filter und benötigt Pandoc 3.1.1 oder neuer.
+Nur `Theorem` und `proof` sind eingebaut. Weitere Arten werden im Frontmatter unter `amsthm`
+deklariert; `styles.course-definition: {}` fordert einen benannten Stil an. Eine Vorlage darf Stile
+inline oder in einer separaten `.sty`-Datei vor `$header-includes$` definieren; Yi schützt seinen
+Fallback mit `\@ifundefined{th@${name}}`, sodass Vorlagenstile gewinnen. Vorlagen dürfen die
+Großbuchstaben-Umgebungen von Yi nicht selbst definieren, sondern sollen Hooks verwenden. `[#id]`
+bleibt die einzige Verweissyntax; der Export benötigt Pandoc 3.1.1 oder neuer.
 
 ## Eine Notiz exportieren
 
@@ -560,7 +561,8 @@ citeproc hinzufügen; Yi liefert es bereits und doppelte Filter erzeugen doppelt
 ## Vollständige Beispiele und KI-Prompts
 
 Unter `examples/templates/` liegen vollständige benutzerseitige Pakete für HTML, LaTeX, PDF,
-Rho Class, EPUB, Word und ODT. Eine Ebene darüber liegen die vollständigen Referenzpräsentationen
+Rho Class, Legrand Orange Book, EPUB, Word und ODT. Eine Ebene darüber liegen die vollständigen
+Referenzpräsentationen
 `examples/revealjs.md` und `examples/beamer.md`. `examples/` dient Lesern;
 `test/fixtures/` enthält getrennte, kontrollierte Testdaten.
 
@@ -570,6 +572,7 @@ KI-Aufträge sollen einen importierbaren Quellordner erzeugen, aber kein `templa
 - **LaTeX:** drei Autoren und Institute, Abstract, Abbildungen, Tabellen, Fußnoten und native Zitate.
 - **PDF:** XeLaTeX, Titelseite, Abstract, Code, Abbildungen, Tabellen und Literatur.
 - **Rho Class PDF:** CC-BY-4.0-Design, Klassenname, Quell-URL und Attribution bewahren.
+- **Legrand Orange Book PDF:** CC-BY-NC-SA-3.0-Design und `theorem-styles.sty` bewahren; den Index weglassen.
 - **EPUB:** Cover, Verlag, ISBN, Rechte, Widmung, Inhaltsverzeichnis und drei Kapitel.
 - **Word:** vollständige `reference.docx`-Stile, `toc: true`, `toc-depth: 2`.
 - **OpenDocument:** A4-Dissertation mit Cover, Abstract, zweistufigem Inhalt und Seitennummern ab 1.

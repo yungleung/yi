@@ -281,11 +281,12 @@ O conteúdo.
 Veja [#thm:exemplo].
 ```
 
-As classes integradas são Theorem, Lemma, Corollary, Proposition, Definition, Example, Exercise,
-Problem, Vocabulary, Notation, Remark e proof. Nomes personalizados ou localizados são declarados em
-`amsthm` no frontmatter; `name_to_text` altera apenas o texto visível. `[#id]` continua sendo a única
-sintaxe de referência a teoremas. A exportação usa o filtro `pandoc-amsthm` incluído e exige
-Pandoc 3.1.1 ou posterior.
+Somente `Theorem` e `proof` são integrados. As outras classes são declaradas em `amsthm`;
+`styles.course-definition: {}` solicita um estilo nomeado. O modelo pode defini-lo inline ou em um
+arquivo `.sty` separado antes de `$header-includes$`; o Yi protege o fallback com
+`\@ifundefined{th@${name}}`, então o estilo do modelo vence. O modelo não deve definir os ambientes
+em maiúsculas do Yi, mas usar hooks. `[#id]` continua sendo a única sintaxe de referência e a
+exportação exige Pandoc 3.1.1 ou posterior.
 
 ## Exportar uma nota
 
@@ -521,8 +522,8 @@ filtros duplicam referências.
 
 ## Exemplos completos e prompts de IA
 
-`examples/templates/` contém pacotes completos para leitores em HTML, LaTeX, PDF, Rho Class, EPUB,
-Word e ODT. Um nível acima ficam as apresentações de referência completas
+`examples/templates/` contém pacotes completos para leitores em HTML, LaTeX, PDF, Rho Class,
+Legrand Orange Book, EPUB, Word e ODT. Um nível acima ficam as apresentações de referência completas
 `examples/revealjs.md` e `examples/beamer.md`. `examples/` é material para leitores;
 `test/fixtures/` contém dados de teste controlados e tem outro propósito.
 
@@ -532,6 +533,7 @@ Peça a um agente de IA uma pasta importável, sem `template.json`:
 - **LaTeX:** três autores e instituições, resumo, figuras, tabelas, notas e citações nativas.
 - **PDF:** XeLaTeX, capa, resumo, código, figuras, tabelas e bibliografia.
 - **Rho Class PDF:** preservar o design CC BY 4.0, a classe, URL de origem e atribuição.
+- **Legrand Orange Book PDF:** preservar o design CC BY-NC-SA 3.0 e `theorem-styles.sty`; omitir o índice.
 - **EPUB:** capa, editora, ISBN, direitos, dedicatória, sumário e três capítulos.
 - **Word:** todos os estilos em `reference.docx`, `toc: true`, `toc-depth: 2`.
 - **OpenDocument:** dissertação A4 com capa, resumo, sumário de dois níveis e páginas desde 1.
