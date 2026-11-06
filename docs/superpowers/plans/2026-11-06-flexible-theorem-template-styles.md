@@ -789,7 +789,7 @@ amsthm:
     - Axiom
 ---
 
-::: 
+:::
 ```
 
 Assert that `theorem:Axiom` appears and that selecting it writes `.Axiom`.

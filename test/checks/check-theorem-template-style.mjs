@@ -94,7 +94,10 @@ $body$
     console.log('theorem template style: pandoc is unavailable, integration check skipped');
   } else {
     check('Pandoc converts the guarded theorem header', pandoc.status === 0);
-    const tex = readFileSync(texPath, 'utf8');
+    const tex =
+      pandoc.status === 0 && existsSync(texPath)
+        ? readFileSync(texPath, 'utf8')
+        : '';
     check(
       'the template style and generated environment coexist in the conversion',
       tex.includes('\\@ifundefined{th@template-style}') &&
