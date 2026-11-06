@@ -107,10 +107,15 @@ const customTheoremPreamble = theoremHeader([
   ':::'
 ].join('\n'));
 check(
-  'a custom style and declaration are carried into the preamble',
-  customTheoremPreamble.includes(
-    '\\newtheoremstyle{margin}{}{}{\\normalfont}{}{\\itshape\\scshape}{:}{\\newline}{}'
-  ) &&
+  'a custom style is a guarded fallback',
+  customTheoremPreamble.includes('\\@ifundefined{th@margin}') &&
+    customTheoremPreamble.indexOf('\\@ifundefined{th@margin}') <
+      customTheoremPreamble.indexOf('\\newtheoremstyle{margin}'),
+  true
+);
+check(
+  'the environment still selects the template-owned style',
+  customTheoremPreamble.includes('\\theoremstyle{margin}') &&
     customTheoremPreamble.includes('\\newtheorem{Claim}{主张}[section]'),
   true
 );

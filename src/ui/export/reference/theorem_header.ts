@@ -143,8 +143,15 @@ function customStyles(styles: Record<string, unknown>): string[] {
       text(raw.headspace, ' ') === 'newline'
         ? '\\newline'
         : latexLength(raw.headspace, ' ');
+    const declaration =
+      `\\newtheoremstyle{${name}}{${above}}{${below}}{${bodyfont}}` +
+      `{${indent}}{${headfont}}{${headpunct}}{${headspace}}{}`;
     lines.push(
-      `\\newtheoremstyle{${name}}{${above}}{${below}}{${bodyfont}}{${indent}}{${headfont}}{${headpunct}}{${headspace}}{}`
+      '\\makeatletter',
+      `\\@ifundefined{th@${name}}{%`,
+      `  ${declaration}`,
+      '}{}',
+      '\\makeatother'
     );
   }
   return lines;
