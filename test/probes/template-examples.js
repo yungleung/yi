@@ -661,6 +661,7 @@
           'mathematicaldesign',
           'theorem1',
           'definition1',
+          'remark1',
           'completenessofthevisualhierarchy',
           'readingrhythm',
           'references'

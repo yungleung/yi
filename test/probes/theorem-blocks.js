@@ -83,6 +83,81 @@
     '::: {.Theorem}\nX\n:::'
   );
 
+  const declared = [
+    '---',
+    'amsthm:',
+    '  styles:',
+    '    custom-definition: {}',
+    '  custom-definition:',
+    '    - Definition',
+    '    - Axiom',
+    '---',
+    '',
+    '::: {#ax:choice .Axiom}',
+    'Every vector space has a basis.',
+    ':::',
+    '',
+    'See [#ax:choice].'
+  ].join('\n');
+  await t.load(declared);
+  check(
+    'a user-declared Axiom renders as a theorem block',
+    t.prose().querySelector('.markdown-theorem-title')?.textContent?.trim() ?? null,
+    'Axiom 1.'
+  );
+  check(
+    'the Axiom body renders',
+    t.prose().querySelector('.markdown-theorem-body')?.textContent?.trim() ?? null,
+    'Every vector space has a basis.'
+  );
+  check(
+    'the Axiom reference resolves',
+    t.prose()
+      .querySelector('[data-auto-reference="ax:choice"]')
+      ?.textContent?.trim() ?? null,
+    'Axiom 1'
+  );
+
+  await t.load(declared.replace('    - Definition\n    - Axiom\n', ''));
+  check(
+    'removing the declaration returns Axiom to exact source',
+    t.prose().querySelector('.markdown-theorem-title') === null &&
+      (t.prose().textContent ?? '').includes('::: {#ax:choice .Axiom}'),
+    true
+  );
+
+  const unclosed = [
+    '---',
+    'amsthm:',
+    '  styles:',
+    '    custom-definition: {}',
+    '  custom-definition:',
+    '    - Axiom',
+    '---',
+    '',
+    '::: {.Axiom}',
+    'A completed declaration.'
+  ].join('\n');
+  await t.load(unclosed);
+  check(
+    'an unclosed declared Div remains exact source',
+    t.prose().querySelector('.markdown-theorem-title') === null &&
+      (t.prose().textContent ?? '').includes('::: {.Axiom}'),
+    true
+  );
+  await t.load(`${unclosed}\n:::`);
+  await t.sleep(300);
+  check(
+    'closing the fence reclassifies the existing Div as the declared kind',
+    t.prose().querySelector('.markdown-theorem-title')?.textContent?.trim() ?? null,
+    'Axiom 1.'
+  );
+  check(
+    'the closing fence is retained in the source',
+    (await t.raw()).endsWith('\n:::'),
+    true
+  );
+
   return {
     checks,
     failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)

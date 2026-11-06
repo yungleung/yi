@@ -90,9 +90,15 @@
       reference_header: referenceHeader(note)
     });
 
-    const read = await invoke('plugin:fs|read_file', { path: target });
-    const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
-    const text = await t.pdfText(bytes);
+    let bytes = new Uint8Array();
+    let text = '';
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const read = await invoke('plugin:fs|read_file', { path: target });
+      bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
+      text = await t.pdfText(bytes);
+      if (text.includes('SeeTableR-1forthetable.')) break;
+      await t.sleep(200);
+    }
     check(
       'the package writes a readable PDF',
       bytes.length > 0 && String.fromCharCode(...bytes.slice(0, 5)) === '%PDF-',

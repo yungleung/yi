@@ -194,18 +194,8 @@
       'Warning',
       'Caution',
       'Definition',
-      'Corollary',
-      'Definition',
-      'Example',
-      'Exercise',
-      'Lemma',
-      'Notation',
-      'Problem',
       'Proof',
-      'Proposition',
-      'Remark',
-      'Theorem',
-      'Vocabulary'
+      'Theorem'
     ]
   );
 

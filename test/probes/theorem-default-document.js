@@ -92,5 +92,13 @@
     'Theorem 3'
   );
 
+  await t.load('::: {.Definition}\nBody.\n:::');
+  check(
+    'a non-built-in kind is exact source without a declaration',
+    t.prose().querySelector('.markdown-theorem-title') === null &&
+      (t.prose().textContent ?? '').includes('::: {.Definition}'),
+    true
+  );
+
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

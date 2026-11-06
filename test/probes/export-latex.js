@@ -64,6 +64,14 @@
   const notePath = `${folder}/note.md`;
   const target = `${folder}/note.tex`;
   const note = [
+    '---',
+    'amsthm:',
+    '  styles:',
+    '    custom-definition: {}',
+    '  custom-definition:',
+    '    - Definition',
+    '---',
+    '',
     '# Going out',
     '',
     `A picture: ![shot](${picture}), and a citation [@smith2020].`,
@@ -75,6 +83,12 @@
     ':::',
     '',
     'See [#thm:tex].',
+    '',
+    '::: {#def:tex .Definition info="TeX"}',
+    'A declared definition survives.',
+    ':::',
+    '',
+    'See [#def:tex].',
     '',
     'See [#fig:demo] for the numbered figure.',
     '',
@@ -195,7 +209,7 @@
     await show(notePath, note);
     check(
       'the note the probe opened is the document on screen',
-      (document.querySelector('.prose')?.textContent ?? '').startsWith('Going out'),
+      (document.querySelector('.prose')?.textContent ?? '').includes('Going out'),
       { onScreen: (document.querySelector('.prose')?.textContent ?? '').slice(0, 24) }
     );
 
@@ -242,6 +256,17 @@
         declaration: tex.includes('\\newtheorem{Theorem}{Theorem}'),
         block: /\\begin\{Theorem\}(?:\[[^\]]*\])?\\label\{thm:tex\}/.exec(tex)?.[0] ?? null,
         reference: /Theorem~\\ref\{thm:tex\}/.exec(tex)?.[0] ?? null
+      }
+    );
+    check(
+      'a declared custom kind gains its own native environment and reference',
+      tex.includes('\\newtheorem{Definition}{Definition}') &&
+        tex.includes('\\begin{Definition}[TeX]\\label{def:tex}') &&
+        /Definition~\\ref\{def:tex\}/.test(tex),
+      {
+        declaration: tex.includes('\\newtheorem{Definition}{Definition}'),
+        block: /\\begin\{Definition\}(?:\[[^\]]*\])?\\label\{def:tex\}/.exec(tex)?.[0] ?? null,
+        reference: /Definition~\\ref\{def:tex\}/.exec(tex)?.[0] ?? null
       }
     );
     check(

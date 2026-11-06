@@ -175,7 +175,7 @@
       check(
         'the Div-kind picker opens on an ordinary blank line',
         document.querySelectorAll('[data-div-kind-choice]').length,
-        19
+        9
       );
     }
     const raw = await t.raw();

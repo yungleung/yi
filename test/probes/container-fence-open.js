@@ -117,18 +117,8 @@
       'Warning',
       'Caution',
       'Definition',
-      'Corollary',
-      'Definition',
-      'Example',
-      'Exercise',
-      'Lemma',
-      'Notation',
-      'Problem',
       'Proof',
-      'Proposition',
-      'Remark',
-      'Theorem',
-      'Vocabulary'
+      'Theorem'
     ]
   );
   document.querySelector('[data-div-kind-choice="callout:tip"]')?.click();

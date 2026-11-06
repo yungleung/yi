@@ -61,6 +61,11 @@
     '  table: X-',
     '  equation: E-',
     '  list: L-',
+    'amsthm:',
+    '  styles:',
+    '    custom-definition: {}',
+    '  custom-definition:',
+    '    - Definition',
     '---',
     '',
     '# Going out',
@@ -72,6 +77,12 @@
     ':::',
     '',
     'See [#thm:pdf].',
+    '',
+    '::: {#def:pdf .Definition info="PDF"}',
+    'A declared definition reaches the PDF.',
+    ':::',
+    '',
+    'See [#def:pdf].',
     '',
     'See [#fig:demo] and [#lst:demo].',
     '',
@@ -220,6 +231,18 @@
       {
         theorem: /Theorem1\(PDF\)\./.exec(text)?.[0] ?? null,
         reference: /SeeTheorem1\./.exec(text)?.[0] ?? null,
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
+      }
+    );
+    check(
+      'a declared custom kind exports as its native environment and reference',
+      text.includes('Definition1(PDF).AdeclareddefinitionreachesthePDF.') &&
+        text.includes('SeeDefinition1.'),
+      {
+        definition: /Definition1\(PDF\)\./.exec(text)?.[0] ?? null,
+        reference: /SeeDefinition1\./.exec(text)?.[0] ?? null,
         messages: [...document.querySelectorAll('[data-message-text]')].map(
           (element) => element.textContent
         )

@@ -64,7 +64,7 @@
   );
   const rows = visibleKinds();
   check(
-    'the picker offers Default, all five built-in kinds and Definition',
+    'the picker offers the callout kinds and the two built-in theorem kinds',
     rows.map((row) => row.textContent),
     [
       'Default',
@@ -74,18 +74,8 @@
       'Warning',
       'Caution',
       'Definition',
-      'Corollary',
-      'Definition',
-      'Example',
-      'Exercise',
-      'Lemma',
-      'Notation',
-      'Problem',
       'Proof',
-      'Proposition',
-      'Remark',
-      'Theorem',
-      'Vocabulary'
+      'Theorem'
     ]
   );
   rows.find((row) => row.getAttribute('data-div-kind-choice') === 'callout:warning')?.click();

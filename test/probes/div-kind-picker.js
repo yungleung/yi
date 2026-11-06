@@ -25,18 +25,18 @@
     }
     await t.sleep(250);
   };
-  const openPicker = async () => {
-    await t.load([
-      '---',
-      'amsthm:',
-      '  plain:',
-      '    - Claim',
-      '---',
-      '',
-      'hello world',
-      '',
-      ''
-    ].join('\n'));
+  const openPicker = async (markdown = [
+    '---',
+    'amsthm:',
+    '  plain:',
+    '    - Claim',
+    '---',
+    '',
+    'hello world',
+    '',
+    ''
+  ].join('\n')) => {
+    await t.load(markdown);
     const blocks = t.blocks();
     const body = blocks[blocks.length - 1];
     await t.click(body, 0.5, 0.5);
@@ -77,6 +77,52 @@
     'choosing Claim writes its exact theorem class',
     await t.raw(),
     '---\namsthm:\n  plain:\n    - Claim\n---\n\nhello world\n\n::: {.Claim}\n\n:::\n\n'
+  );
+
+  await openPicker([
+    '---',
+    'amsthm:',
+    '  styles:',
+    '    custom-plain: {}',
+    '  custom-plain:',
+    '    - Axiom',
+    '---',
+    '',
+    'hello world',
+    '',
+    ''
+  ].join('\n'));
+  check(
+    'a custom style can introduce Axiom in the theorem group',
+    rows().some((row) =>
+      row.getAttribute('data-div-kind-choice') === 'theorem:Axiom'
+    ),
+    true
+  );
+  rows()
+    .find((row) => row.getAttribute('data-div-kind-choice') === 'theorem:Axiom')
+    ?.click();
+  await t.sleep(300);
+  check(
+    'choosing Axiom writes its exact theorem class',
+    await t.raw(),
+    [
+      '---',
+      'amsthm:',
+      '  styles:',
+      '    custom-plain: {}',
+      '  custom-plain:',
+      '    - Axiom',
+      '---',
+      '',
+      'hello world',
+      '',
+      '::: {.Axiom}',
+      '',
+      ':::',
+      '',
+      ''
+    ].join('\n')
   );
 
   return {

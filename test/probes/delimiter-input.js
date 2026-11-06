@@ -109,7 +109,7 @@
   check(
     'and opens the Div-kind picker',
     visible('[data-div-kind-choice]').length,
-    19
+    9
   );
   t.key('X');
   await t.sleep(220);
