@@ -145,7 +145,25 @@
       (t.prose().textContent ?? '').includes('::: {.Axiom}'),
     true
   );
-  await t.load(`${unclosed}\n:::`);
+  const runtime = await t.app('/src/commands/runtime.ts');
+  const position = await runtime.dispatchCommand(
+    'document:getRevision',
+    null,
+    { kind: 'toolbar' },
+    { correlationId: 'theorem-block-closing-fence' }
+  );
+  const edit = await runtime.dispatchCommand(
+    'document:replaceRange',
+    {
+      ...position.value,
+      from: unclosed.length,
+      to: unclosed.length,
+      replacement: '\n:::\n\nAfter.'
+    },
+    { kind: 'toolbar' },
+    { correlationId: 'theorem-block-closing-fence' }
+  );
+  check('the closing-fence edit is accepted', edit.ok, true);
   await t.sleep(300);
   check(
     'closing the fence reclassifies the existing Div as the declared kind',
@@ -154,8 +172,8 @@
   );
   check(
     'the closing fence is retained in the source',
-    (await t.raw()).endsWith('\n:::'),
-    true
+    await t.raw(),
+    `${unclosed}\n:::\n\nAfter.`
   );
 
   return {
