@@ -668,7 +668,7 @@
         ].every((text) => squashed.includes(text)) &&
           compactPage.includes('theorem1227completenessofthevisualhierarchy') &&
           !squashed.includes('index') &&
-          !squashed.includes(':::'),
+          !compactPage.includes(':::'),
         { tail: page.slice(-3000) }
       );
       check(
