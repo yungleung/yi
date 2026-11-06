@@ -1,0 +1,23 @@
+title: The Search for a Structure
+subtitle: A Book Template Study
+author:
+  - Ada Meridian
+  - Linus Vale
+date: November 2026
+released: First edition
+lang: en
+keywords:
+  - typography
+  - mathematical writing
+  - book design
+copyright: |
+  Copyright 2026 Ada Meridian and Linus Vale.
+
+  This example text is CC0-1.0. The Legrand Orange Book design is by
+  Mathias Legrand and Vel and is used under CC BY-NC-SA 3.0.
+dedication: |
+  For books that make their structure visible.
+colorlinks: true
+linkcolor: ocre
+citecolor: ocre
+urlcolor: ocre

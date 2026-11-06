@@ -100,8 +100,8 @@ document is **Help → Open Tutorial** (`menu/build.rs` emits `tutorial`; the co
 `src/ui/documentation/en.md` through the same pathless read-only reference rule
 (`src/ui/reference_document.ts`). It needs no workspace, enters no stack and is replaced by another
 file without a session question. The guide includes Pandoc and TeX installation requirements and
-points to the seven complete packages under `examples/templates/`, including the
-CC BY 4.0 Rho Class PDF article and its required attribution. The complete Reveal.js and Beamer
+points to the eight complete packages under `examples/templates/`, including the CC BY 4.0 Rho
+Class article and the CC BY-NC-SA 3.0 Legrand Orange Book, each with its required attribution. The complete Reveal.js and Beamer
 reference decks sit beside that directory as `examples/revealjs.md` and `examples/beamer.md`.
 `examples/` is reader-facing reference material; `test/fixtures/` is separate controlled test data.
 
@@ -656,7 +656,7 @@ by `check-template-manifest.mjs` over `test/fixtures/templates/manifest.fixture.
 `export-template-import.js`, `export-template-defaults.js`, `export-template-output.js`,
 `export-template-ui.js`, `export-template-create-ui.js`, `export-template-broken.js` and
 `export-template-pdf.js`; `export-template-native-bibliography.js` covers cited-only BibTeX source
-packaging, and `template-examples.js` validates and exports the seven authoring examples.
+packaging, and `template-examples.js` validates and exports the eight authoring examples.
 
 The editor is a *page*: the prose root is 210 mm of A4 with a 25 mm margin, centred on the
 scroller, which is the desk (`styles.css: .markdown-page`, `.markdown-scroller`; the box is

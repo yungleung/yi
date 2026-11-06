@@ -1,5 +1,5 @@
 /**
- * The seven authoring examples as Yi imports and validates them.
+ * The eight authoring examples as Yi imports and validates them.
  *
  * The Node check reads the packages; this probe takes them through the real Template library
  * commands, so a manifest that only looks valid still has to become a package Pandoc accepts.
@@ -575,6 +575,93 @@
       );
     } catch (error) {
       check('rho-class: the licensed PDF example imports and exports', false, String(error));
+    }
+
+    try {
+      const legrand = await api.importTemplate({
+        source: `${checkout}examples/templates/legrand-orange-book`,
+        name: `Legrand Orange Book ${stamp}`,
+        kind: 'pdf',
+        entry: 'template.tex',
+        source_url: 'https://github.com/igormcoelho/pandoc-template-legrand-orange-book',
+        license: 'CC-BY-NC-SA-3.0',
+        map_title: false,
+        map_author: false
+      });
+      made.push(legrand.id);
+      check(
+        'legrand-orange-book: the licensed PDF example imports as a template',
+        legrand.manifest?.kind === 'pdf' &&
+          legrand.manifest?.mode === 'template' &&
+          legrand.manifest?.template === 'template.tex' &&
+          /CC-BY-NC-SA-3\.0/.test(legrand.manifest?.origin?.license ?? '') &&
+          legrand.files.some((file) => file.name === 'ATTRIBUTION.txt') &&
+          legrand.files.some((file) => file.name === 'assets/background.pdf'),
+        legrand.manifest
+      );
+      const source = await api.readTemplateFile(legrand.id, 'example.md');
+      const validated = await api.validateTemplate(legrand.id);
+      check('legrand-orange-book: Pandoc validates the complete example', validated.ok, validated);
+      await t.load(source);
+      const visible = (t.prose().textContent ?? '').normalize('NFKC');
+      check(
+        'legrand-orange-book: the example opens as a two-part book without an index',
+        ['The Search for a Structure', 'Part One', 'Part Two', 'Mathematical Design'].every(
+          (text) => visible.includes(text)
+        ) &&
+          !visible.includes('\\index{') &&
+          !visible.includes('\\printindex')
+      );
+      const testPdf = await api.testTemplatePdf(legrand.id);
+      check(
+        'legrand-orange-book: Test PDF passes through pdfLaTeX',
+        testPdf.ok,
+        testPdf
+      );
+      const target = `${folder}/legrand-orange-book.pdf`;
+      await exportApi.runExport({
+        kind: 'pdf',
+        text: source,
+        output_path: target,
+        resource_paths: [],
+        source_dir: null,
+        bibliography: null,
+        csl: null,
+        references: null,
+        title: 'The Search for a Structure',
+        language: 'en',
+        paper: null,
+        landscape: null,
+        suppress_references: false,
+        template_id: legrand.id,
+        self_contained: false
+      });
+      const read = await invoke('plugin:fs|read_file', { path: target });
+      const bytes = read instanceof ArrayBuffer ? new Uint8Array(read) : Uint8Array.from(read);
+      const page = (await t.pdfText(bytes)).normalize('NFKD').toLowerCase();
+      const squashed = page.replace(/[^a-z0-9]+/g, '');
+      const pageSize = await t.pdfPageSize(bytes);
+      check(
+        'legrand-orange-book: the exported book keeps its title, parts, theorem and references',
+        [
+          'thesearchforastructure',
+          'partone',
+          'typographyandstructure',
+          'mathematicaldesign',
+          'completenessofthevisualhierarchy',
+          'references'
+        ].every((text) => squashed.includes(text)) &&
+          !squashed.includes('index'),
+        { tail: page.slice(-3000) }
+      );
+      check(
+        'legrand-orange-book: the exported book is A4',
+        Math.abs((pageSize?.width ?? 0) - 595.28) < 1 &&
+          Math.abs((pageSize?.height ?? 0) - 841.89) < 1,
+        pageSize
+      );
+    } catch (error) {
+      check('legrand-orange-book: the licensed PDF example imports and exports', false, String(error));
     }
   } finally {
     for (const id of made.reverse()) {

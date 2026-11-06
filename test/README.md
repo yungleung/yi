@@ -81,7 +81,7 @@ methodology; this file is the index and the conventions.
 | `check-table-source.mjs` | Reading and writing a table's raw source, and a mapper bounded by the table so a following line never resolves to its final cell |
 | `check-tag-offsets.mjs` | Which of the offsets a block's elements carry an edit moves, and that every one of them is on the moved list or exempt for a reason (`editing/typed_text.ts`) |
 | `check-tutorial.mjs` | The tutorial's language and first-start rules, and that all eight translated documents carry the same id and the markdown constructs they teach (`ui/tutorial/`) |
-| `check-template-examples.mjs` | One complete, readable template package for each template-backed kind under `examples/templates/`, plus the root-level Reveal.js and Beamer reference decks: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; the Reveal.js deck uses a bundled picture, and the Rho Class example keeps its custom callout lead-in and 70% column figure. It runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
+| `check-template-examples.mjs` | One complete, readable template package for each template-backed kind under `examples/templates/`, plus the root-level Reveal.js and Beamer reference decks: manifest and entry agreement, assets, metadata/defaults YAML, a metadata-driven three-author PRL source with native citations and a compiled figure/table manuscript, reference-document ZIPs, a complete DOCX style specimen, automatic two-level TOCs in Word and OpenDocument, and a dissertation ODT whose body numbering starts at 1; the Reveal.js deck uses a bundled picture, the Rho Class example keeps its custom callout lead-in and 70% column figure, and the Legrand Orange Book keeps its licensed art, part pages, theorem boxes and no-index book structure. It runs real Pandoc conversion, REVTeX/BibTeX or DOCX/ODT checks, and an A4 ODT render when the tools are installed |
 | `check-thematic-break.mjs` | What a rule insertion adds around the `---` line, and when it adds nothing |
 | `check-text-store.mjs` | The document text as a piece table (`document/text_store.ts`): any sequence of edits must leave it holding exactly what a string holds |
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
@@ -360,8 +360,8 @@ package asset delivered beside the `.tex`, and a Word export through a reference
 LaTeX asset tree, and an EPUB with its package assets packed into the book),
 `export-template-defaults-package` (a package's `defaults.yaml` reaching Pandoc after the app's file
 without replacing the explicit template or output),
-`template-examples` (all seven authoring examples imported and validated by the app, including the
-XeLaTeX PDF example and the pdfLaTeX Rho Class article), `documentation` (Help → Documentation as a read-only, replaceable guide
+`template-examples` (all eight authoring examples imported and validated by the app, including the
+XeLaTeX PDF example, the pdfLaTeX Rho Class article and the Legrand Orange Book), `documentation` (Help → Documentation as a read-only, replaceable guide
 with the installation and template-authoring chapters),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
 the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,

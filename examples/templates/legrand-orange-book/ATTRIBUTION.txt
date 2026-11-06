@@ -1,0 +1,22 @@
+The Legrand Orange Book Template
+================================
+
+Original author: Mathias Legrand
+Modifications by: Vel, LaTeXTemplates.com
+Original design: https://www.latextemplates.com/template/the-legrand-orange-book
+
+Pandoc adaptation:
+https://github.com/igormcoelho/pandoc-template-legrand-orange-book
+Adaptation by Igor Machado Coelho.
+
+The original design and this adapted package are licensed under
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported:
+CC BY-NC-SA 3.0.
+https://creativecommons.org/licenses/by-nc-sa/3.0/
+
+Yi's package removes the optional back-of-book index, replaces the upstream
+bibliography plumbing with Pandoc citeproc, and exposes the title, author,
+subtitle, copyright and dedication through document metadata.
+
+The background, chapter-heading artwork and illustration are redistributed
+from the upstream package under the same licence.

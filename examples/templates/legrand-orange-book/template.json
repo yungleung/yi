@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "example-legrand-orange-book",
+  "name": "Legrand Orange Book",
+  "kind": "pdf",
+  "mode": "template",
+  "origin": {
+    "type": "folder",
+    "path": "examples/templates/legrand-orange-book",
+    "source": "https://github.com/igormcoelho/pandoc-template-legrand-orange-book",
+    "license": "CC-BY-NC-SA-3.0"
+  },
+  "template": "template.tex",
+  "reference_doc": null,
+  "csl": null,
+  "assets": [
+    "ATTRIBUTION.txt",
+    "README.md",
+    "assets/background.pdf",
+    "assets/chapter-head-1.pdf",
+    "assets/chapter-head-2.pdf",
+    "assets/illustration.jpg",
+    "defaults.yaml",
+    "example.md",
+    "metadata.yaml",
+    "references.bib"
+  ],
+  "deliver": []
+}

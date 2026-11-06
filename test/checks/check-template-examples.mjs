@@ -1,5 +1,5 @@
 /**
- * The seven complete template packages kept beside the tests as authoring examples.
+ * The eight complete template packages kept beside the tests as authoring examples.
  *
  * Each package has to carry its own valid manifest, a real entry and any file that manifest names.
  * When Pandoc is available the check also converts one paragraph through the text templates and
@@ -931,8 +931,138 @@ if (existsSync(join(rhoClass, 'template.json'))) {
   }
 }
 
+const legrand = join(root, 'legrand-orange-book');
+check(
+  'legrand-orange-book: the licensed PDF example carries its complete source package',
+  [
+    'ATTRIBUTION.txt',
+    'README.md',
+    'assets/background.pdf',
+    'assets/chapter-head-1.pdf',
+    'assets/chapter-head-2.pdf',
+    'assets/illustration.jpg',
+    'defaults.yaml',
+    'example.md',
+    'metadata.yaml',
+    'references.bib',
+    'template.json',
+    'template.tex'
+  ].every((file) => existsSync(join(legrand, file)))
+);
+if (existsSync(join(legrand, 'template.json'))) {
+  const manifest = JSON.parse(readFileSync(join(legrand, 'template.json'), 'utf8'));
+  const defaults = parse(readFileSync(join(legrand, 'defaults.yaml'), 'utf8'));
+  const template = readFileSync(join(legrand, 'template.tex'), 'utf8');
+  const example = readFileSync(join(legrand, 'example.md'), 'utf8');
+  const attribution = readFileSync(join(legrand, 'ATTRIBUTION.txt'), 'utf8');
+  check(
+    'legrand-orange-book: the manifest identifies the licensed PDF package',
+    manifest.id === 'example-legrand-orange-book' &&
+      manifest.kind === 'pdf' &&
+      manifest.mode === 'template' &&
+      manifest.template === 'template.tex' &&
+      manifest.origin.source ===
+        'https://github.com/igormcoelho/pandoc-template-legrand-orange-book' &&
+      /CC-BY-NC-SA-3\.0/.test(manifest.origin.license) &&
+      manifest.assets.every((asset) => existsSync(join(legrand, asset)))
+  );
+  check(
+    'legrand-orange-book: pdfLaTeX builds parts without adding an index',
+    defaults['pdf-engine'] === 'pdflatex' &&
+      defaults['top-level-division'] === 'part' &&
+      defaults.toc === false &&
+      defaults.bibliography === 'references.bib' &&
+      !/\\makeindex|\\printindex|\\index\{/.test(template) &&
+      !/\\index\{/.test(example)
+  );
+  check(
+    'legrand-orange-book: the entry reads document metadata and preserves the orange layout',
+    ['$title$', '$subtitle$', '$for(author)$', '$dedication$', '$copyright$', '$body$', '$header-includes$'].every(
+      (variable) => template.includes(variable)
+    ) &&
+      /\\definecolor\{ocre\}\{RGB\}\{243,102,25\}/.test(template) &&
+      /background\.pdf/.test(template) &&
+      /\\newcommand\{\\chapterimage\}/.test(template) &&
+      /chapter-head-1\.pdf/.test(example) &&
+      /chapter-head-2\.pdf/.test(example)
+  );
+  check(
+    'legrand-orange-book: the example exercises the book design without source LaTeX indexes',
+    /^# Part One$/m.test(example) &&
+      /^# Part Two$/m.test(example) &&
+      /\\begin\{theorem\}/.test(example) &&
+      /\\begin\{definition\}/.test(example) &&
+      /\\begin\{importantblock\}/.test(example) &&
+      /^```python$/m.test(example) &&
+      /assets\/illustration\.jpg/.test(example)
+  );
+  check(
+    'legrand-orange-book: the upstream authors and non-commercial licence travel with the package',
+    /Mathias Legrand/.test(attribution) &&
+      /Vel/.test(attribution) &&
+      /CC BY-NC-SA 3\.0/.test(attribution) &&
+      /igormcoelho\/pandoc-template-legrand-orange-book/.test(attribution) &&
+      /CC BY-NC-SA 3\.0/.test(readFileSync(join(legrand, 'README.md'), 'utf8'))
+  );
+  if (pandoc.status === 0) {
+    const outputFolder = mkdtempSync(join(tmpdir(), 'yi-template-legrand-'));
+    const output = join(outputFolder, 'legrand-orange-book.pdf');
+    const converted = spawnSync(
+      'pandoc',
+      [
+        '--from=markdown',
+        '--to=pdf',
+        `--defaults=${appPdfDefaults}`,
+        `--defaults=${join(legrand, 'defaults.yaml')}`,
+        `--template=${join(legrand, 'template.tex')}`,
+        `--resource-path=${legrand}`,
+        `--output=${output}`,
+        join(legrand, 'example.md')
+      ],
+      {
+        cwd: legrand,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          TEXINPUTS: `.${process.platform === 'win32' ? ';' : ':'}${legrand}${process.platform === 'win32' ? ';' : ':'}`
+        }
+      }
+    );
+    check(
+      'legrand-orange-book: the complete example compiles through pdfLaTeX and citeproc',
+      converted.status === 0 && existsSync(output),
+      converted.stderr.trim()
+    );
+    if (converted.status === 0 && existsSync(output)) {
+      const rendered = spawnSync(
+        'gs',
+        ['-q', '-dNOPAUSE', '-dBATCH', '-sDEVICE=txtwrite', '-sOutputFile=-', output],
+        { encoding: 'utf8' }
+      );
+      const renderedText = rendered.stdout.replace(/\s+/g, ' ');
+      const squashed = renderedText
+        .normalize('NFKD')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+      check(
+        'legrand-orange-book: the rendered book has its title, parts, theorem and references',
+        rendered.status === 0 &&
+          squashed.includes('thesearchforastructure') &&
+          squashed.includes('partone') &&
+          squashed.includes('typographyandstructure') &&
+          squashed.includes('mathematicaldesign') &&
+          squashed.includes('theorem211') &&
+          squashed.includes('references') &&
+          !/\bIndex\b/.test(renderedText),
+        rendered.stdout.slice(-3000)
+      );
+    }
+    rmSync(outputFolder, { recursive: true, force: true });
+  }
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
 }
-console.log(`template examples: ${kinds.length + 1} packages passed`);
+console.log(`template examples: ${kinds.length + 2} packages passed`);
