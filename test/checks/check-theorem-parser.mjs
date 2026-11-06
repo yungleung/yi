@@ -105,7 +105,20 @@ check(
 );
 check(
   'two declared theorem classes are ambiguous and stay source',
-  nodeOf(parseMarkdown('::: {.Theorem .Lemma}\nBody.\n:::'), 'theorem').length,
+  nodeOf(
+    parseMarkdown([
+      '---',
+      'amsthm:',
+      '  plain:',
+      '    - Lemma',
+      '---',
+      '',
+      '::: {.Theorem .Lemma}',
+      'Body.',
+      ':::'
+    ].join('\n')),
+    'theorem'
+  ).length,
   0
 );
 check(
@@ -127,6 +140,29 @@ const nested = parseMarkdown(
 );
 check('a nested callout survives inside a theorem', nodeOf(nested, 'callout').length, 1);
 check('and the outer theorem survives', nodeOf(nested, 'theorem').length, 1);
+
+const declaredKinds = parseMarkdown([
+  '---',
+  'amsthm:',
+  '  plain:',
+  '    - Lemma',
+  '  definition:',
+  '    - Definition',
+  '---',
+  '',
+  '::: {.Lemma}',
+  'Lemma body.',
+  ':::',
+  '',
+  '::: {.Definition}',
+  'Definition body.',
+  ':::'
+].join('\n'));
+check(
+  'frontmatter declarations still create non-built-in kinds',
+  nodeOf(declaredKinds, 'theorem').map((node) => node.theorem.type.className),
+  ['Lemma', 'Definition']
+);
 
 const afterEquation = parseMarkdown(
   '[$$\nx = 1\n$$]{#eq:one}\n\n' +

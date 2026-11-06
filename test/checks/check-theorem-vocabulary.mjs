@@ -40,25 +40,22 @@ const type = (vocabulary, name) => vocabulary.byClass.get(name) ?? null;
 
 const defaults = theoremVocabularyFromFrontmatter(null);
 check(
+  'only Theorem and proof are built in',
+  defaults.types.map((entry) => entry.className).sort(),
+  ['Theorem', 'proof']
+);
+check(
   'the default Theorem is numbered',
   [type(defaults, 'Theorem')?.style, type(defaults, 'Theorem')?.numbered],
   ['plain', true]
-);
-check(
-  'Lemma shares Theorem as its counter',
-  type(defaults, 'Lemma')?.counter,
-  'Theorem'
-);
-check(
-  'Definition is a definition-style theorem',
-  type(defaults, 'Definition')?.style,
-  'definition'
 );
 check(
   'proof is predefined and unnumbered',
   [type(defaults, 'proof')?.style, type(defaults, 'proof')?.numbered],
   ['proof', false]
 );
+check('Lemma requires a declaration', type(defaults, 'Lemma'), null);
+check('Definition requires a declaration', type(defaults, 'Definition'), null);
 
 const custom = theoremVocabularyFromFrontmatter([
   'amsthm:',
@@ -162,7 +159,7 @@ check(
 const theoremDiv = '::: {#claim:one .Theorem info="First"}\nBody.\n:::';
 check(
   'changing the theorem edits only the class token',
-  theoremKindEdit(theoremDiv, 'Lemma', defaults),
+  theoremKindEdit(theoremDiv, 'Lemma', custom),
   {
     from: 17,
     to: 24,

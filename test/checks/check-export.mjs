@@ -102,15 +102,14 @@ const preparedTheorem = typeof materializeTheoremMetadata === 'function'
   ? materializeTheoremMetadata(theoremMetadata)
   : null;
 check(
-  'a theorem export gains the app-owned amsthm declarations',
+  'a theorem export gains only the app-owned Theorem declaration',
   {
-    kind: typeof materializeTheoremMetadata,
     header: preparedTheorem?.startsWith('---\namsthm:\n  plain:') ?? false,
     theorem: preparedTheorem?.includes('Theorem') ?? false,
-    lemma: preparedTheorem?.includes('Lemma') ?? false,
+    lemma: preparedTheorem?.includes('Lemma') ?? true,
     source: preparedTheorem?.includes(theoremMetadata) ?? false
   },
-  { kind: 'function', header: true, theorem: true, lemma: true, source: true }
+  { header: true, theorem: true, lemma: false, source: true }
 );
 
 const localizedTheorem = [
@@ -130,7 +129,7 @@ check(
   'merging declarations preserves other frontmatter and localized names',
   preparedLocalized.startsWith('---\ntitle: A theorem\namsthm:') &&
     preparedLocalized.includes('Theorem: 定理') &&
-    preparedLocalized.includes('Lemma') &&
+    !preparedLocalized.includes('Lemma') &&
     preparedLocalized.includes('::: {#thm:local .Theorem}'),
   true
 );

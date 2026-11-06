@@ -259,6 +259,9 @@ check(
 const theoremSource = [
   '---',
   'amsthm:',
+  '  plain:',
+  '    - Theorem:',
+  '        - Lemma',
   '  name_to_text:',
   '    Theorem: 定理',
   '    Lemma: 引理',
@@ -301,6 +304,9 @@ check(
 const sectionedTheoremSource = [
   '---',
   'amsthm:',
+  '  plain:',
+  '    - Theorem:',
+  '        - Lemma',
   '  parent_counter: section',
   '---',
   '',

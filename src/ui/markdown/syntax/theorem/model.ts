@@ -69,18 +69,20 @@ const PARENT_COUNTERS = new Set<TheoremParentCounter>([
 ]);
 
 const DEFAULT_DECLARATIONS: readonly Declaration[] = [
-  { sourceName: 'Theorem', className: 'Theorem', style: 'plain', sharedCounter: null, numbered: true },
-  { sourceName: 'Lemma', className: 'Lemma', style: 'plain', sharedCounter: 'Theorem', numbered: true },
-  { sourceName: 'Corollary', className: 'Corollary', style: 'plain', sharedCounter: 'Theorem', numbered: true },
-  { sourceName: 'Proposition', className: 'Proposition', style: 'plain', sharedCounter: null, numbered: true },
-  { sourceName: 'Definition', className: 'Definition', style: 'definition', sharedCounter: null, numbered: true },
-  { sourceName: 'Example', className: 'Example', style: 'definition', sharedCounter: null, numbered: true },
-  { sourceName: 'Exercise', className: 'Exercise', style: 'definition', sharedCounter: null, numbered: true },
-  { sourceName: 'Problem', className: 'Problem', style: 'definition', sharedCounter: null, numbered: true },
-  { sourceName: 'Vocabulary', className: 'Vocabulary', style: 'definition', sharedCounter: null, numbered: true },
-  { sourceName: 'Notation', className: 'Notation', style: 'remark', sharedCounter: null, numbered: true },
-  { sourceName: 'Remark', className: 'Remark', style: 'remark', sharedCounter: null, numbered: true },
-  { sourceName: 'proof', className: 'proof', style: 'proof', sharedCounter: null, numbered: false }
+  {
+    sourceName: 'Theorem',
+    className: 'Theorem',
+    style: 'plain',
+    sharedCounter: null,
+    numbered: true
+  },
+  {
+    sourceName: 'proof',
+    className: 'proof',
+    style: 'proof',
+    sharedCounter: null,
+    numbered: false
+  }
 ];
 
 /** The built-in environments every note has when it says nothing. */
