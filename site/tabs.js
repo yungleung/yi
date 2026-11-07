@@ -4,7 +4,9 @@
  * Owns the WAI-ARIA tabs contract — one selected tab, roving `tabindex`, one
  * visible panel and Arrow/Home/End keyboard movement — and routes
  * `[data-activates]` links to the tab they name, so the header Templates and
- * Documentation links open the matching panel.
+ * Documentation links open the matching panel. A successful activation also
+ * announces a `yi:tabchange` fact with `detail.tabId`, which the Documentation
+ * panel listens for to load its fragment.
  */
 
 /**
@@ -43,6 +45,13 @@ export function activateTab(tab, moveFocus = false) {
   }
 
   if (moveFocus && typeof tab.focus === 'function') tab.focus();
+  if (
+    typeof document !== 'undefined' &&
+    typeof CustomEvent !== 'undefined' &&
+    typeof document.dispatchEvent === 'function'
+  ) {
+    document.dispatchEvent(new CustomEvent('yi:tabchange', { detail: { tabId: tab.id } }));
+  }
   return true;
 }
 

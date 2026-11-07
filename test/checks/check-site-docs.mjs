@@ -14,7 +14,7 @@ const check = (name, pass) => {
 
 function tocHtml(html) {
   const start = html.indexOf('data-doc-toc');
-  const end = html.indexOf('</aside>', start);
+  const end = html.indexOf('</details>', start);
   return start === -1 || end === -1 ? '' : html.slice(start, end);
 }
 
@@ -30,6 +30,10 @@ for (const [language, required] of [
   if (!existsSync(path)) continue;
   const html = readFileSync(path, 'utf8');
   check(`${language} documentation has its TOC`, html.includes('data-doc-toc'));
+  check(
+    `${language} TOC is a collapsible disclosure`,
+    html.includes('<summary class="doc-toc__label"')
+  );
   check(`${language} documentation has anchored headings`, /<h2[^>]+id="/.test(html));
   check(
     `${language} nests level-three entries under their level-two heading`,

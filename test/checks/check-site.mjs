@@ -6,11 +6,14 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { cardLanguageAttribute } from '../../site/lang.js';
 import { activateTab, tabTargetIndex } from '../../site/tabs.js';
+import { selectActiveHeading } from '../../site/docs.js';
 
 const html = readFileSync('site/index.html', 'utf8');
 const css = readFileSync('site/styles.css', 'utf8');
 const js = readFileSync('site/app.js', 'utf8');
 const tabs = readFileSync('site/tabs.js', 'utf8');
+const docsPath = 'site/docs.js';
+const docs = existsSync(docsPath) ? readFileSync(docsPath, 'utf8') : '';
 const failures = [];
 const check = (name, pass) => {
   if (!pass) failures.push(name);
@@ -160,6 +163,49 @@ check(
     html.includes('data-i18n-label="brand.label"') &&
     html.includes('data-i18n="nav.skip"') &&
     js.includes("'nav.label': '主导航'")
+);
+check(
+  'the Documentation tab loads the selected language',
+  js.includes('documentation/${language}.html') && js.includes('loadDocumentation(language)')
+);
+check(
+  'the Documentation tab tracks the active heading',
+  docs.includes('IntersectionObserver') && docs.includes('data-doc-toc')
+);
+check(
+  'the Documentation tab has a localized failure state',
+  js.includes('docs.error') && js.includes('doc-error')
+);
+check(
+  'tab activation announces the selected tab',
+  tabs.includes('yi:tabchange') && js.includes("addEventListener('yi:tabchange'")
+);
+check(
+  'the Documentation tab reloads on a language change',
+  js.includes("addEventListener('yi:languagechange'") && js.includes('loadDocumentation(')
+);
+check(
+  'TOC clicks scroll past the sticky header and record the fragment',
+  docs.includes('scrollIntoView') && docs.includes('history.replaceState')
+);
+check(
+  'the active TOC link is marked for assistive tech',
+  docs.includes("setAttribute('aria-current', 'location')")
+);
+const aboveBand = { id: 'a', top: -40 };
+const enteringBand = { id: 'b', top: 80 };
+const belowBand = { id: 'c', top: 400 };
+check(
+  'the last intersecting heading wins the TOC',
+  selectActiveHeading([aboveBand, enteringBand, belowBand], new Set(['a', 'b']), 300).id === 'b'
+);
+check(
+  'the nearest preceding heading stays active when none intersect',
+  selectActiveHeading([aboveBand, enteringBand, belowBand], new Set(), 300).id === 'b'
+);
+check(
+  'no heading is active before the first heading',
+  selectActiveHeading([{ id: 'a', top: 400 }], new Set(), 300) === null
 );
 
 if (failures.length > 0) {

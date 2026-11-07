@@ -98,8 +98,8 @@ async function buildDocument(document) {
   const rendered = await renderProcessor.run(tree);
   const html = String(renderProcessor.stringify(rendered));
   return (
-    `<aside class="doc-toc" data-doc-toc>` +
-    `<p class="doc-toc__label">${document.tocLabel}</p>${tocMarkup(tocTree(headings))}</aside>` +
+    `<details class="doc-toc" data-doc-toc open>` +
+    `<summary class="doc-toc__label">${document.tocLabel}</summary>${tocMarkup(tocTree(headings))}</details>` +
     `<article class="docs-article">${html}</article>`
   );
 }

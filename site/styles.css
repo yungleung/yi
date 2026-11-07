@@ -1,8 +1,8 @@
 /* Public site design.
  *
  * Editorial paper-and-ink layout for the landing page. Task 2 owns the shell,
- * hero, feature story, template grid and the static tab chrome; Task 4 extends
- * `.doc-shell` with the full documentation styling. All URLs are relative so the
+ * hero, feature story, template grid and the static tab chrome; Task 4 adds the
+ * documentation article and sidebar-TOC styling. All URLs are relative so the
  * same artifact works under `/yi/` and from a local preview.
  */
 :root {
@@ -402,9 +402,148 @@ a {
   overflow: auto;
 }
 
+.doc-toc__label {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.doc-toc__label::-webkit-details-marker {
+  display: none;
+}
+
+.doc-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-toc ol ol {
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.doc-toc li + li {
+  margin-top: 6px;
+}
+
+.doc-toc a {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.doc-toc a:hover {
+  color: var(--ink);
+}
+
+.doc-toc a[aria-current="location"] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .docs-article {
   min-width: 0;
   max-width: 78ch;
+}
+
+.docs-article h2,
+.docs-article h3 {
+  font-family: var(--serif);
+  line-height: 1.2;
+  scroll-margin-top: 86px;
+}
+
+.docs-article h2 {
+  margin: 2.2em 0 0.6em;
+  font-size: 1.75rem;
+}
+
+.docs-article h2:first-child {
+  margin-top: 0;
+}
+
+.docs-article h3 {
+  margin: 1.6em 0 0.5em;
+  font-size: 1.25rem;
+}
+
+.docs-article p {
+  margin: 0 0 1em;
+}
+
+.docs-article ul,
+.docs-article ol {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+}
+
+.docs-article li + li {
+  margin-top: 4px;
+}
+
+.docs-article blockquote {
+  margin: 1em 0;
+  padding: 2px 0 2px 16px;
+  color: var(--muted);
+  border-left: 3px solid var(--accent);
+}
+
+.docs-article a {
+  color: var(--accent);
+}
+
+.docs-article code {
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+  background: var(--paper-deep);
+  border-radius: 4px;
+}
+
+.docs-article pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  background: var(--paper-deep);
+  border-radius: 8px;
+}
+
+.docs-article pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.docs-article table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.docs-article th,
+.docs-article td {
+  padding: 8px 12px;
+  text-align: left;
+  border: 1px solid var(--line);
+}
+
+.docs-article .katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.docs-article img {
+  max-width: 100%;
 }
 
 /* Footer */
@@ -447,6 +586,32 @@ footer p {
   .doc-toc {
     position: static;
     max-height: none;
+    margin-bottom: 24px;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .doc-toc__label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+  }
+
+  .doc-toc__label::after {
+    content: '+';
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .doc-toc[open] .doc-toc__label::after {
+    content: '−';
+  }
+
+  .doc-toc ol {
+    margin-top: 12px;
   }
 }
 

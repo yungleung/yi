@@ -3,12 +3,14 @@
  *
  * Task 2 owns the bilingual copy and `applyLanguage`; `tabs.js` owns the
  * accessible tab wiring and Task 4 loads the generated documentation fragments
- * into the Docs tab.
+ * into the Docs tab. `docs.js` owns the sidebar TOC that tracks the article
+ * headings; this file owns the language lifecycle and loads the fragment.
  * `applyLanguage('zh-Hans')` re-labels the whole page without a reload; an
  * unknown language falls back to English.
  */
 import { cardLanguageAttribute } from './lang.js';
 import { wireTabs } from './tabs.js';
+import { trackDocumentationHeadings } from './docs.js';
 
 const COPY = {
   en: {
@@ -96,6 +98,10 @@ const COPY = {
 };
 
 const STORAGE_KEY = 'yi-site-language';
+const docsBody = document.querySelector('[data-doc-body]');
+let currentLanguage = storedLanguage();
+let currentDocumentation = null;
+let stopDocumentationTracking = null;
 
 /**
  * Reads the persisted language, defaulting to English when storage is blocked.
@@ -118,6 +124,7 @@ function storedLanguage() {
  */
 function applyLanguage(language) {
   if (!Object.hasOwn(COPY, language)) language = 'en';
+  currentLanguage = language;
 
   document.documentElement.lang = language;
   document.title = COPY[language].title;
@@ -170,6 +177,66 @@ function wireLanguage() {
   }
 }
 
+/**
+ * Loads the generated documentation fragment for `language` into the Docs tab
+ * and starts heading tracking, falling back to a localized GitHub link when
+ * the fragment cannot be fetched.
+ *
+ * Example: opening the Documentation tab fetches `./documentation/en.html`,
+ * replaces the loading placeholder with the rendered guide and marks the TOC
+ * label from `COPY.en['docs.toc']`.
+ */
+async function loadDocumentation(language) {
+  if (currentDocumentation === language) return;
+  docsBody.setAttribute('aria-busy', 'true');
+  try {
+    const response = await fetch(`./documentation/${language}.html`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    stopDocumentationTracking?.();
+    docsBody.innerHTML = await response.text();
+    localizeDocumentation(language);
+    stopDocumentationTracking = trackDocumentationHeadings(docsBody);
+    currentDocumentation = language;
+  } catch {
+    currentDocumentation = null;
+    stopDocumentationTracking?.();
+    stopDocumentationTracking = null;
+    docsBody.innerHTML =
+      `<p class="doc-error">${COPY[language]['docs.error']} ` +
+      `<a href="https://github.com/yungleung/yi/blob/main/src/ui/documentation/${language}.md">GitHub</a>.</p>`;
+  } finally {
+    docsBody.removeAttribute('aria-busy');
+  }
+}
+
+/**
+ * Relabels the generated TOC from the selected language rather than trusting
+ * the label baked into the fragment.
+ */
+function localizeDocumentation(language) {
+  const label = docsBody.querySelector('.doc-toc__label');
+  if (label) label.textContent = COPY[language]['docs.toc'];
+}
+
+function docsTabSelected() {
+  const tab = document.getElementById('tab-docs');
+  return tab?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Loads the documentation when the Docs tab opens and reloads it in place when
+ * the language switches while that tab is showing.
+ */
+function wireDocumentation() {
+  document.addEventListener('yi:tabchange', (event) => {
+    if (event.detail?.tabId === 'tab-docs') loadDocumentation(currentLanguage);
+  });
+  document.addEventListener('yi:languagechange', (event) => {
+    if (docsTabSelected()) loadDocumentation(event.detail.language);
+  });
+}
+
 applyLanguage(storedLanguage());
 wireLanguage();
 wireTabs();
+wireDocumentation();
