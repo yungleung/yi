@@ -11,6 +11,7 @@
 import { cardLanguageAttribute } from './lang.js';
 import { wireTabs } from './tabs.js';
 import { trackDocumentationHeadings } from './docs.js';
+import { createDocumentationLoader } from './docs_loader.js';
 
 const COPY = {
   en: {
@@ -100,7 +101,6 @@ const COPY = {
 const STORAGE_KEY = 'yi-site-language';
 const docsBody = document.querySelector('[data-doc-body]');
 let currentLanguage = storedLanguage();
-let currentDocumentation = null;
 let stopDocumentationTracking = null;
 
 /**
@@ -186,27 +186,35 @@ function wireLanguage() {
  * replaces the loading placeholder with the rendered guide and marks the TOC
  * label from `COPY.en['docs.toc']`.
  */
-async function loadDocumentation(language) {
-  if (currentDocumentation === language) return;
-  docsBody.setAttribute('aria-busy', 'true');
-  try {
+const documentationLoader = createDocumentationLoader({
+  async fetchHtml(language) {
     const response = await fetch(`./documentation/${language}.html`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.text();
+  },
+  renderHtml(html, language) {
     stopDocumentationTracking?.();
-    docsBody.innerHTML = await response.text();
+    docsBody.innerHTML = html;
     localizeDocumentation(language);
     stopDocumentationTracking = trackDocumentationHeadings(docsBody);
-    currentDocumentation = language;
-  } catch {
-    currentDocumentation = null;
+  },
+  renderError(language) {
     stopDocumentationTracking?.();
     stopDocumentationTracking = null;
     docsBody.innerHTML =
       `<p class="doc-error">${COPY[language]['docs.error']} ` +
       `<a href="https://github.com/yungleung/yi/blob/main/src/ui/documentation/${language}.md">GitHub</a>.</p>`;
-  } finally {
+  },
+  begin() {
+    docsBody.setAttribute('aria-busy', 'true');
+  },
+  finish() {
     docsBody.removeAttribute('aria-busy');
   }
+});
+
+function loadDocumentation(language) {
+  return documentationLoader.load(language);
 }
 
 /**
