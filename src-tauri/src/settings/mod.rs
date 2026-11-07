@@ -1,7 +1,7 @@
 //! Settings command façade over the config model and store.
 //!
-//! Example: `get_config` reads and migrates one file; `set_config` validates its version, grants
-//! folder access and announces config-dependent facts.
+//! Example: `get_config` accepts only the current config shape, replacing a stale file with
+//! defaults; `set_config` validates its version, grants folder access and announces config facts.
 //!
 //! May import: the model/store children, i18n and Tauri app access. Upholds: the frontend sees the
 //! same command paths while schema and persistence remain private implementation.

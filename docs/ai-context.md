@@ -194,6 +194,10 @@ template is `ui/settings/new_document.ts`, which uses the shared
 `ui/code_editor/index.ts` CodeMirror view rather than a textarea. General also owns appearance:
 `services/theme.ts` maps the config's `theme` (`auto`, `light`, `dark`) to no explicit daisyUI
 theme, `winter` or `dim`, and applies it in both windows on startup and `config_changed`.
+The unreleased config has one strict current schema (`CURRENT_CONFIG_VERSION = 2`): every field is
+required, unknown fields are refused, and a missing-field, unknown-field, malformed or
+previous-version `config.json` is replaced on disk by `AppConfig::default()` before any command sees
+it. There is no migration or serde field fallback.
 `services/workspace/folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/flow.ts`
