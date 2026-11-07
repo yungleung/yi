@@ -359,7 +359,7 @@ praesentation/
   js/dist/
 ```
 
-`examples/revealjs.md` verwendet ein mitgeliefertes Bild; der standardmäßig lokale Export
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) verwendet ein mitgeliefertes Bild; der standardmäßig lokale Export
 funktioniert daher auch offline.
 
 Die Karte bietet zwei unabhängige Optionen, standardmäßig beide aus:
@@ -560,11 +560,20 @@ citeproc hinzufügen; Yi liefert es bereits und doppelte Filter erzeugen doppelt
 
 ## Vollständige Beispiele und KI-Prompts
 
-Unter `examples/templates/` liegen vollständige benutzerseitige Pakete für HTML, LaTeX, PDF,
+Unter [`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) liegen vollständige benutzerseitige Pakete für HTML, LaTeX, PDF,
 Rho Class, Legrand Orange Book, EPUB, Word und ODT. Eine Ebene darüber liegen die vollständigen
 Referenzpräsentationen
-`examples/revealjs.md` und `examples/beamer.md`. `examples/` dient Lesern;
-`test/fixtures/` enthält getrennte, kontrollierte Testdaten.
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) und
+[`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md).
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) dient Lesern;
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) enthält getrennte,
+kontrollierte Testdaten.
+
+Lassen Sie den Agenten vor einem Prompt den
+[Index der Vorlagenbeispiele](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)
+und die [Paketspezifikation](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml)
+lesen. `metadata.yaml` liefert das Start-Frontmatter einer neuen Notiz; `defaults.yaml` enthält die
+Pandoc-Einstellungen des Pakets. `date` und `id` schreibt immer Yi.
 
 KI-Aufträge sollen einen importierbaren Quellordner erzeugen, aber kein `template.json`:
 

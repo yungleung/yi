@@ -298,7 +298,7 @@ presentation/
   js/dist/
 ```
 
-`examples/revealjs.md` 使用随附图片，因此默认的本地导出可在离线时正常工作。
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) 使用随附图片，因此默认的本地导出可在离线时正常工作。
 
 导出卡片有两个相互独立的选项，默认都关闭：
 
@@ -537,12 +537,20 @@ keywords:
 
 ## 完整示例
 
-`examples/templates/` 包含面向读者的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+[`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) 包含面向读者的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
 EPUB、Word 和 ODT 完整包。Legrand 用 `theorem-styles.sty` 分离定理样式。上一级目录还有完整参考
-演示文稿 `examples/revealjs.md` 和 `examples/beamer.md`。
-`examples/` 是读者资料；`test/fixtures/` 是用途不同、受控的测试数据。
+演示文稿 [`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md)
+和 [`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md)。
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) 是读者资料；
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) 是用途不同、受控的测试数据。
 
 ### 给 AI 代理的提示词
+
+使用提示词前，请让代理读取
+[模板示例索引](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)和
+[包规范](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml)。
+`metadata.yaml` 提供新笔记的初始 frontmatter；`defaults.yaml` 提供该包的 Pandoc 设置。
+`date` 和 `id` 始终由 Yi 写入。
 
 下面各提示词要求创建可导入的源文件夹；不要让代理创建 `template.json`，由 Yi 在导入时写入。
 

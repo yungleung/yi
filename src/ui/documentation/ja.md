@@ -336,7 +336,7 @@ presentation/
   js/dist/
 ```
 
-`examples/revealjs.md` は同梱画像を使うため、既定のローカル書き出しはオフラインでも動作します。
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) は同梱画像を使うため、既定のローカル書き出しはオフラインでも動作します。
 
 カードには独立した二つの選択肢があり、どちらも既定ではオフです。
 
@@ -596,13 +596,21 @@ keywords:
 
 ## 完全な例
 
-`examples/templates/` には読者向けの HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+[`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) には読者向けの HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
 EPUB、Word、ODT の実用的なパッケージがあります。Legrand は `theorem-styles.sty` で定理表示を
 分離しています。一つ上の階層には完全な参照用プレゼンテーション
-`examples/revealjs.md` と `examples/beamer.md` があります。`examples/` は読者向け資料で、
-`test/fixtures/` は目的の異なる管理されたテストデータです。
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) と
+[`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md) があります。
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) は読者向け資料で、
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) は目的の異なる管理されたテストデータです。
 
 ### AI エージェント向けプロンプト
+
+プロンプトを使う前に、エージェントに
+[テンプレート例の索引](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)と
+[パッケージ仕様](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml)
+を読ませてください。`metadata.yaml` は新規ノートの初期 frontmatter、`defaults.yaml` はその
+パッケージの Pandoc 設定です。`date` と `id` は常に Yi が書き込みます。
 
 次の形式で AI エージェントへ依頼できます。`template.json` は作らせず、Yi に読み込み時に書かせます。
 

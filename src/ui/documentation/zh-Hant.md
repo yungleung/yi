@@ -289,7 +289,7 @@ presentation/
   js/dist/
 ```
 
-`examples/revealjs.md` 使用隨附圖片，因此預設的本機匯出可在離線時正常運作。
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) 使用隨附圖片，因此預設的本機匯出可在離線時正常運作。
 
 卡片有兩個彼此獨立的選項，預設都關閉：
 
@@ -468,12 +468,20 @@ Yi 覆寫。`export.yaml` 會接在 App 的 `export.<kind>.yaml` 之後，沒有
 
 ## 完整範例與 AI 提示
 
-`examples/templates/` 有供讀者使用的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
+[`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) 有供讀者使用的 HTML、LaTeX、PDF、Rho Class、Legrand Orange Book、
 EPUB、Word 和 ODT 完整套件。Legrand 以 `theorem-styles.sty` 分離定理樣式。上一層還有完整參考簡報
-`examples/revealjs.md` 和 `examples/beamer.md`。
-`examples/` 是讀者資料；`test/fixtures/` 是用途不同、受控的測試資料。
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) 和
+[`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md)。
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) 是讀者資料；
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) 是用途不同、受控的測試資料。
 
 給 AI 代理的提示應要求建立可匯入的來源資料夾，但不要建立 `template.json`：
+
+使用提示前，請讓代理讀取
+[範本範例索引](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)和
+[套件規格](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml)。
+`metadata.yaml` 提供新筆記的初始 frontmatter；`defaults.yaml` 提供該套件的 Pandoc 設定。
+`date` 和 `id` 一律由 Yi 寫入。
 
 - **HTML**：`$body$`、側邊目錄、`toc-depth: 2`、套件內 CSS/JavaScript。
 - **LaTeX**：三位作者、不同單位、摘要、圖表、腳註、原生引用、類別和 BibTeX 樣式。

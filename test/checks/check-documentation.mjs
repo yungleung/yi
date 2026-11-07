@@ -189,24 +189,41 @@ if (existsSync(file)) {
       )
   );
   const prompts = [
-    'HTML',
-    'LaTeX',
-    'PDF',
-    'Rho Class PDF',
-    'Legrand Orange Book PDF',
-    'EPUB',
-    'Word',
-    'OpenDocument'
+    ['HTML', 'html'],
+    ['LaTeX', 'latex'],
+    ['PDF', 'pdf'],
+    ['Rho Class PDF', 'rho-class'],
+    ['Legrand Orange Book PDF', 'legrand-orange-book'],
+    ['EPUB', 'epub'],
+    ['Word', 'docx'],
+    ['OpenDocument', 'odt']
   ];
-  for (const kind of prompts) {
+  for (const [kind, example] of prompts) {
+    const folder = `https://github.com/yungleung/yi/tree/main/examples/templates/${example}`;
+    const readme = `https://github.com/yungleung/yi/blob/main/examples/templates/${example}/README.md`;
     check(
       `it has a copy-ready ${kind} prompt`,
       new RegExp(`^#### Example prompt: ${kind}$`, 'm').test(text)
     );
+    check(
+      `the ${kind} prompt links to its online example and package contract`,
+      text.includes(folder) &&
+        text.includes(readme) &&
+        text.includes(
+          'https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml'
+        )
+    );
   }
   check(
+    'the AI prompts explain the separate jobs of metadata and Pandoc defaults',
+    /`metadata\.yaml` is sample note frontmatter/.test(text) &&
+      /`defaults\.yaml` is a Pandoc defaults file/.test(text) &&
+      /`date` and `id`, which Yi always writes/.test(text) &&
+      /`export\.yaml` is the explicit alternative and wins/.test(text)
+  );
+  check(
     'every example prompt leaves the package manifest to Yi',
-    (text.match(/Do not\s+create\s+`template\.json`/g) ?? []).length === prompts.length
+    (text.match(/Do not\s+create\s+`template\.json`/g) ?? []).length >= prompts.length
   );
   check(
     'the prompts repeat the package safety boundaries',
@@ -274,6 +291,16 @@ for (const [code, name, title] of localized) {
         text.includes(kind)
       ) &&
       text.includes('examples/templates')
+  );
+  check(
+    `the ${name} guide links examples and gives AI prompts the package contract`,
+    text.includes('https://github.com/yungleung/yi/tree/main/examples/templates') &&
+      text.includes('https://github.com/yungleung/yi/blob/main/examples/templates/README.md') &&
+      text.includes(
+        'https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml'
+      ) &&
+      text.includes('metadata.yaml') &&
+      text.includes('defaults.yaml')
   );
   check(
     `the ${name} guide has balanced code fences and no unfinished placeholders`,

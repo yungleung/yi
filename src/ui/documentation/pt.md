@@ -340,7 +340,7 @@ apresentacao/
   js/dist/
 ```
 
-`examples/revealjs.md` usa uma imagem incluída, então sua exportação local padrão também funciona
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) usa uma imagem incluída, então sua exportação local padrão também funciona
 offline.
 
 O cartão oferece duas opções independentes, ambas desativadas por padrão:
@@ -522,10 +522,19 @@ filtros duplicam referências.
 
 ## Exemplos completos e prompts de IA
 
-`examples/templates/` contém pacotes completos para leitores em HTML, LaTeX, PDF, Rho Class,
+[`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) contém pacotes completos para leitores em HTML, LaTeX, PDF, Rho Class,
 Legrand Orange Book, EPUB, Word e ODT. Um nível acima ficam as apresentações de referência completas
-`examples/revealjs.md` e `examples/beamer.md`. `examples/` é material para leitores;
-`test/fixtures/` contém dados de teste controlados e tem outro propósito.
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) e
+[`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md).
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) é material para leitores;
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) contém dados de teste
+controlados e tem outro propósito.
+
+Antes de usar um prompt, peça ao agente para ler o
+[índice de exemplos de modelos](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)
+e a [especificação do pacote](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml).
+`metadata.yaml` fornece o frontmatter inicial de uma nova nota e `defaults.yaml` contém as
+configurações Pandoc do pacote. O Yi sempre grava `date` e `id`.
 
 Peça a um agente de IA uma pasta importável, sem `template.json`:
 
