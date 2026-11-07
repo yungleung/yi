@@ -41,7 +41,5 @@ export {
   createPackageRow
 } from './rows';
 export type { PackageRowState } from './rows';
-export { createTemplateCodeEditor } from './code_editor';
-export type { TemplateCodeEditorOptions } from './code_editor';
 export { renderTemplateFiles } from './file_list';
 export type { TemplateFileActions } from './file_list';

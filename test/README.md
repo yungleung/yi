@@ -112,7 +112,7 @@ the page it happened on in place), making a note (`new-markdown` — the card th
 command opens: the generated id in the name field, the workspace's folders, the file written
 where it was asked for with its frontmatter on screen and its title selected, and the tree's own
 *New file* through the same command; `new-note-template` — a template written through the app's
-config, the settings tab that shows it, and the note that comes out;
+config, the settings tab's YAML editor that shows it, and the note that comes out;
 `new-note-package-metadata` — a package chosen for one note, its metadata merged over the configured
 frontmatter with app-owned stamps, and the tree's next note keeping the configured default;
 `new-note-presentation-metadata` — the built-in Reveal.js and Beamer starters create the expected
@@ -283,7 +283,7 @@ prose), the
 highlighted source (`source-theme` — the palette of a code block, the frontmatter and a
 formula's source, measured in both themes; `source-highlight-caret` — a click in the
 frontmatter, and in a code block, writes the character it was aimed at), the
-documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `stack-shortcuts-status` — the keyboard toggling and moving through the stack in either direction, auto-stacking an unstacked current document, and the stack/save state colours; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `document-session-restart` — the session file, and the startup path that reads it; `document-opens-without-a-caret` — a document opened with nothing remembered invents no caret, so a note opening on a picture draws the picture, while a caret the session *does* remember comes back where it was, and a keystroke with no caret writes at the text's own start), the
+documents and their stack (`document-stack` — a file opened, pushed, and the next file replacing it without a question; `document-stack-restore` — a document coming back with its caret and its view; `document-stack-ask` — the four answers the session asks about; `stack-shortcuts-status` — the keyboard toggling and moving through the stack in either direction, auto-stacking an unstacked current document, and the stack/save state colours; `settings-push-on-open` — the General tab's switch for that question, an editing document pushed without asking, a saved one replaced without being pushed; `settings-autosave-theme` — every settings page saving without a button, Light/Dark/Auto applying in both windows, text paths persisting after a pause, and the New Note YAML editor saving and resetting; `document-session-restart` — the session file, and the startup path that reads it; `document-opens-without-a-caret` — a document opened with nothing remembered invents no caret, so a note opening on a picture draws the picture, while a caret the session *does* remember comes back where it was, and a keystroke with no caret writes at the text's own start), the
 things the app says (`messages-and-hints` — a failure raised from the tree waiting in the window's
 bottom-right corner with its ✕ at the card's right edge, a press elsewhere leaving it, Escape and
 the ✕ closing it, a second message stacking above the first; and a copied path as a hint beside

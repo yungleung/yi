@@ -5,8 +5,7 @@
  * `new_file_frontmatter` is the template a new note is built from (`services/new_document/index.ts`):
  * the reader's lines are kept where they are, `id` and `date` are stamped over whatever the
  * template says there, and a required key the template leaves out is added. This probe writes a
- * template through the app's config manager — the same call `ui/settings/index.ts`
- * makes when a reader presses Save — has the tree make a note, and reads the file back.
+ * template through the app's config manager, has the tree make a note, and reads the file back.
  *
  * The workspace is the probe's own, at `~/yi-probe-new-note-template`, for the reason
  * `new-markdown.js` gives: the file plugin is scoped to the home directory.
@@ -28,6 +27,7 @@
   const workspace = `${home}/yi-probe-new-note-template`;
   const stamp = /^\d{14}\.md$/;
   const template = 'title: Untitle\nauthor: me\ndate:\nid:\nkeywords:\n  - untagged';
+  const shownTemplate = (tab) => tab.view?.state.doc.toString() ?? null;
   const entry = (path, basename, isFile) => ({ path, basename, isFile });
   const namesIn = async (folder) =>
     (await files.listFolderFiles(folder)).map((item) => item.basename).sort();
@@ -69,9 +69,9 @@
     await configManager.update({ new_file_frontmatter: null });
     const defaults = new NewDocumentSettings();
     await t.sleep(150);
-    const shown = defaults.element.querySelector('[data-new-file-frontmatter]')?.value ?? null;
+    const shown = shownTemplate(defaults);
     check(
-      'with no template of their own, the field shows the built-in one',
+      'with no template of their own, the editor shows the built-in one',
       shown === DEFAULT_TEMPLATE,
       shown
     );
@@ -80,8 +80,8 @@
     const tab = new NewDocumentSettings();
     await t.sleep(150);
     check(
-      'and the settings tab shows it, in its own field',
-      tab.element.querySelector('[data-new-file-frontmatter]')?.value ?? null,
+      'and the settings tab shows it in its YAML editor',
+      shownTemplate(tab),
       template
     );
 

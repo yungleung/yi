@@ -8,16 +8,16 @@
  * saved (`settings/`). The field takes a path the way a reader writes one — `~/Pictures/Yi` is
  * fine — and `services/settings_paths.ts` is what spells the home folder out when it is used.
  *
- * All but the last are saved the moment they are changed — a choice and a switch are complete
- * answers, and the language is one the window has to answer by reloading itself — while the folder
- * waits for the tab's Save, because its value is text the reader is still typing. The versioning
- * switch is a switch like the stack's, with one thing asked before it may be turned on: the same
- * question the action asks (`versioning/dialog.ts`), because consent belongs to a folder and this
- * window is the reader's other way to give it.
+ * Choices and switches save the moment they change. The folder is text the reader is still
+ * typing, so it saves after a short pause and immediately on blur, Browse, Clear or Enter. The
+ * appearance radios apply at once: Auto removes the explicit daisyUI theme, Light uses winter and
+ * Dark uses dim. The versioning switch asks the same question the action asks
+ * (`versioning/dialog.ts`), because consent belongs to a folder and this window is the reader's
+ * other way to give it.
  *
- * May import: the config manager, the dialog plugin's folder picker, and the component base.
- * Upholds: the app config is the one home of the setting — this window reads it when it opens and
- * writes it when the reader saves, and nothing keeps a second copy.
+ * May import: the config manager, theme service, dialog plugin's folder picker, autosave queue and
+ * component base. Upholds: the app config is the one home of every setting — this window reads it
+ * when it opens, writes each answer through the config manager, and keeps no second copy.
  */
 
 import { open } from '@tauri-apps/plugin-dialog';
@@ -25,17 +25,22 @@ import { versioningFacts } from '../../api/versioning';
 import { configManager } from '../../services/config_manager';
 import { LANGUAGES, t } from '../../services/i18n';
 import { languageFor } from '../../services/language';
+import { applyTheme, themeFor, type ThemeChoice } from '../../services/theme';
 import { consentFrom, versionLocation, versioningPlan } from '../../services/versioning';
 import { BaseComponent } from '../component';
 import { versioningDialog } from '../versioning/index';
+import { createTextAutosave } from './autosave';
+import { SaveStatus } from './save_status';
 
 export class GeneralSettings extends BaseComponent {
   private readonly languageSelect: HTMLSelectElement;
+  private readonly themeChoices: HTMLInputElement[];
   private readonly pushToggle: HTMLInputElement;
   private readonly versionToggle: HTMLInputElement;
   private readonly versionWhere: HTMLParagraphElement;
   private readonly folderInput: HTMLInputElement;
-  private readonly status: HTMLElement;
+  private readonly saveStatus: SaveStatus;
+  private readonly folderAutosave = createTextAutosave(() => this.saveImageFolder());
 
   constructor() {
     super('div', ['flex', 'flex-col', 'gap-6', 'max-w-xl']);
@@ -73,6 +78,45 @@ export class GeneralSettings extends BaseComponent {
     }
     this.languageSelect.addEventListener('change', () => void this.chooseLanguage());
     languageGroup.append(languageLabel, languageHint, this.languageSelect);
+
+    const appearanceGroup = document.createElement('fieldset');
+    appearanceGroup.className = 'form-control gap-2';
+    const appearanceLabel = document.createElement('legend');
+    appearanceLabel.className = 'label-text';
+    appearanceLabel.textContent = t('settings.general.appearance');
+    const appearanceHint = document.createElement('p');
+    appearanceHint.className = 'text-xs opacity-60';
+    appearanceHint.textContent = t('settings.general.appearanceHint');
+    const appearances = document.createElement('div');
+    appearances.className = 'flex flex-wrap gap-4';
+    this.themeChoices = (
+      [
+        ['auto', t('settings.general.themeAuto')],
+        ['light', t('settings.general.themeLight')],
+        ['dark', t('settings.general.themeDark')]
+      ] as const
+    ).map(([value, label]) => {
+      const row = document.createElement('label');
+      row.className = 'label cursor-pointer justify-start gap-2';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'settings-appearance';
+      input.value = value;
+      input.className = 'radio radio-sm';
+      input.setAttribute('data-theme-choice', value);
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          void this.chooseTheme(value);
+        }
+      });
+      const words = document.createElement('span');
+      words.className = 'label-text';
+      words.textContent = label;
+      row.append(input, words);
+      appearances.appendChild(row);
+      return input;
+    });
+    appearanceGroup.append(appearanceLabel, appearanceHint, appearances);
 
     // Whether the stack takes the document on screen when a file is opened over it. The switch
     // carries its own meaning: `session/rules.ts: openDecision` is where the rule the words
@@ -136,6 +180,14 @@ export class GeneralSettings extends BaseComponent {
     this.folderInput.placeholder = t('settings.general.imageFolderPlaceholder');
     this.folderInput.className = 'input input-bordered flex-1';
     this.folderInput.setAttribute('data-image-folder', 'true');
+    this.folderInput.addEventListener('input', () => this.folderAutosave.schedule());
+    this.folderInput.addEventListener('blur', () => void this.folderAutosave.flush());
+    this.folderInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void this.folderAutosave.flush();
+      }
+    });
     const row = document.createElement('div');
     row.className = 'flex gap-2';
     row.append(
@@ -143,19 +195,22 @@ export class GeneralSettings extends BaseComponent {
       this.button(t('settings.browse'), () => void this.pickFolder()),
       this.button(t('settings.clear'), () => {
         this.folderInput.value = '';
+        this.folderAutosave.schedule();
+        void this.folderAutosave.flush();
       })
     );
     group.append(label, hint, row);
 
     const actions = document.createElement('div');
     actions.className = 'flex items-center gap-3';
-    const saveButton = this.button(t('settings.save'), () => void this.save(), 'btn-primary');
-    this.status = document.createElement('span');
-    this.status.className = 'text-sm opacity-70';
-    actions.append(saveButton, this.status);
+    const status = document.createElement('span');
+    status.className = 'text-sm opacity-70';
+    this.saveStatus = new SaveStatus(status);
+    actions.append(status);
 
     this.appendChild(heading);
     this.appendChild(languageGroup);
+    this.appendChild(appearanceGroup);
     this.appendChild(stackGroup);
     this.appendChild(versionGroup);
     this.appendChild(group);
@@ -176,6 +231,10 @@ export class GeneralSettings extends BaseComponent {
     try {
       const config = await configManager.load();
       this.languageSelect.value = await languageFor(config);
+      const theme = themeFor(config);
+      for (const choice of this.themeChoices) {
+        choice.checked = choice.value === theme;
+      }
       this.pushToggle.checked = config.push_unstacked_on_open === true;
       const workspace = config.workspace ?? null;
       this.versionToggle.checked = workspace !== null && consentFrom(config, workspace) === 'yes';
@@ -183,28 +242,41 @@ export class GeneralSettings extends BaseComponent {
       await this.showVersionWhere();
     } catch (error) {
       console.error('Failed to load the general settings:', error);
-      this.status.textContent = t('settings.failedToLoad');
+      this.saveStatus.failedToLoad();
     }
   }
 
   private async chooseLanguage(): Promise<void> {
+    this.saveStatus.saving();
     try {
       await configManager.update({ language: this.languageSelect.value });
+      this.saveStatus.saved();
     } catch (error) {
-      console.error('Failed to save the language:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.status.textContent = t('settings.failedToSave', { message });
+      this.saveStatus.failed('the language', error);
+    }
+  }
+
+  private async chooseTheme(theme: ThemeChoice): Promise<void> {
+    const previous = themeFor(configManager.get());
+    applyTheme(theme);
+    this.saveStatus.saving();
+    try {
+      await configManager.update({ theme });
+      this.saveStatus.saved();
+    } catch (error) {
+      applyTheme(previous);
+      this.saveStatus.failed('the appearance', error);
     }
   }
 
   /** Saves the switch the moment it is flipped, the way the language is saved when it is chosen. */
   private async choosePush(): Promise<void> {
+    this.saveStatus.saving();
     try {
       await configManager.update({ push_unstacked_on_open: this.pushToggle.checked });
+      this.saveStatus.saved();
     } catch (error) {
-      console.error('Failed to save the stack setting:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.status.textContent = t('settings.failedToSave', { message });
+      this.saveStatus.failed('the stack setting', error);
     }
   }
 
@@ -235,14 +307,16 @@ export class GeneralSettings extends BaseComponent {
     const workspace = configManager.get()?.workspace ?? null;
     if (!workspace) {
       this.versionToggle.checked = false;
-      this.status.textContent = t('version.noWorkspace');
+      this.saveStatus.message(t('version.noWorkspace'));
       return;
     }
     try {
+      this.saveStatus.saving();
       if (!this.versionToggle.checked) {
         // Off stops future versions and touches nothing that exists: a repository already there is
         // the reader's own, and this only stops the app asking for versions of it.
         await configManager.update({ versioning: false, versioning_workspace: workspace });
+        this.saveStatus.saved();
         return;
       }
       const facts = await versioningFacts(workspace);
@@ -258,10 +332,9 @@ export class GeneralSettings extends BaseComponent {
       }
       await configManager.update({ versioning: true, versioning_workspace: workspace });
       await this.showVersionWhere();
+      this.saveStatus.saved();
     } catch (error) {
-      console.error('Failed to save the versioning setting:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.status.textContent = t('settings.failedToSave', { message });
+      this.saveStatus.failed('the versioning setting', error);
     }
   }
 
@@ -274,20 +347,18 @@ export class GeneralSettings extends BaseComponent {
     });
     if (typeof chosen === 'string') {
       this.folderInput.value = chosen;
+      this.folderAutosave.schedule();
+      void this.folderAutosave.flush();
     }
   }
 
-  private async save(): Promise<void> {
+  private async saveImageFolder(): Promise<void> {
+    this.saveStatus.saving();
     try {
       await configManager.update({ image_folder: this.folderInput.value.trim() });
-      this.status.textContent = t('settings.saved');
-      window.setTimeout(() => {
-        this.status.textContent = '';
-      }, 2000);
+      this.saveStatus.saved();
     } catch (error) {
-      console.error('Failed to save the general settings:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.status.textContent = t('settings.failedToSave', { message });
+      this.saveStatus.failed('the image folder', error);
     }
   }
 }

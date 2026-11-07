@@ -26,7 +26,7 @@ import {
 import { t } from '../../../services/i18n';
 import { notify } from '../../../services/messages';
 import { prompt } from '../../prompt';
-import { createTemplateCodeEditor } from './code_editor';
+import { createCodeEditor } from '../../code_editor';
 import { createTemplateEditorShell } from './editor_shell';
 import { renderTemplateFiles } from './file_list';
 
@@ -170,7 +170,7 @@ export class TemplateEditorPanel {
     this.dirtyMark.textContent = '';
     this.saveButton.disabled = readOnly;
     this.view?.destroy();
-    this.view = createTemplateCodeEditor({
+    this.view = createCodeEditor({
       parent: this.editorHost,
       file,
       text,

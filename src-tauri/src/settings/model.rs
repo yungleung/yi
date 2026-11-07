@@ -30,6 +30,8 @@ pub struct AppConfig {
     pub image_folder: String,
     #[serde(default)]
     pub language: String,
+    #[serde(default = "default_theme")]
+    pub theme: String,
     #[serde(default)]
     pub push_unstacked_on_open: bool,
     #[serde(default)]
@@ -52,6 +54,10 @@ fn default_editor_layout() -> String {
     "page".to_string()
 }
 
+fn default_theme() -> String {
+    "auto".to_string()
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -65,6 +71,7 @@ impl Default for AppConfig {
             new_file_frontmatter: None,
             image_folder: String::new(),
             language: String::new(),
+            theme: default_theme(),
             push_unstacked_on_open: false,
             export_templates: BTreeMap::new(),
             config_version: CURRENT_CONFIG_VERSION,
@@ -120,6 +127,22 @@ mod tests {
     }"#;
         let cfg: AppConfig = serde_json::from_str(json).unwrap();
         assert!(!cfg.push_unstacked_on_open);
+    }
+
+    #[test]
+    fn a_config_written_before_the_theme_setting_reads_as_automatic() {
+        let json = r#"{
+      "workspace": null,
+      "bibliography_file": "~/Documents/ZettlrNotes/zotero.json",
+      "csl_style": "apa",
+      "editor_layout": "page",
+      "new_file_frontmatter": null,
+      "image_folder": "",
+      "language": "",
+      "config_version": 1
+    }"#;
+        let cfg: AppConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(cfg.theme, "auto");
     }
 
     #[test]

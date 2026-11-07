@@ -56,6 +56,7 @@ import { openSettingsWindow } from './ui/settings/index';
 import { imageFolderPath } from './services/settings_paths';
 import { setImageFolder } from './ui/image/index';
 import { applyLanguage, languageFor } from './services/language';
+import { applyTheme, themeFor } from './services/theme';
 import { language } from './services/i18n';
 
 function createAppShell(): MarkdownEditor {
@@ -189,6 +190,7 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
     void eventManager.on('config_changed', () => {
       void (async () => {
         const cfg = await configManager.load();
+        applyTheme(themeFor(cfg));
         // A language is not a label to redraw but a catalogue to read again, and every component
         // built its strings in its constructor: the window is reloaded instead, and the session
         // brings the document, the caret and the view back (`docs/ai-context.md`).
@@ -229,9 +231,11 @@ async function initializeConfig(editor: MarkdownEditor): Promise<void> {
 
 window.addEventListener('DOMContentLoaded', async () => {
   await initializeEventListeners();
+  const initialConfig = await configManager.load();
   // The language has to be known before the shell is built: every label is read once, in the
   // constructor of the component that shows it.
-  await applyLanguage();
+  await applyLanguage(initialConfig);
+  applyTheme(themeFor(initialConfig));
   const editor = createAppShell();
   await initializeConfig(editor);
   console.log('DOM fully loaded and parsed');

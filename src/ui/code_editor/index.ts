@@ -1,11 +1,11 @@
 /**
- * Creates the CodeMirror view used by the export-template code panel.
+ * The CodeMirror editor shared by template files and settings text.
  *
- * Example: `notes.yaml` gets YAML highlighting and line numbers, while
- * `reference.docx` is created read-only and does not expose the save key.
+ * Example: `notes.yaml` gets YAML highlighting and line numbers, while a binary
+ * reference document is created read-only and does not expose the save key.
  *
  * May import: CodeMirror packages and the shared theme tokens. Upholds: every
- * template/default view has the same search, history, indentation and save
+ * code/default/settings view has the same search, history, indentation and save
  * bindings; this module owns no file state or persistence.
  */
 
@@ -59,7 +59,7 @@ const THEME = EditorView.theme({
   }
 });
 
-export interface TemplateCodeEditorOptions {
+export interface CodeEditorOptions {
   parent: HTMLElement;
   file: string;
   text: string;
@@ -68,14 +68,14 @@ export interface TemplateCodeEditorOptions {
   onSave(): void;
 }
 
-export function createTemplateCodeEditor({
+export function createCodeEditor({
   parent,
   file,
   text,
   readOnly,
   onDocumentChanged,
   onSave
-}: TemplateCodeEditorOptions): EditorView {
+}: CodeEditorOptions): EditorView {
   const language = languageFor(file);
   return new EditorView({
     parent,

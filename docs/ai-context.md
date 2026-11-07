@@ -187,6 +187,13 @@ the configured template supplies keys the package omits, and `date`/`id` remain 
 packages in the library.
 The choice belongs to that note only and is never written into `export_templates`; there is a
 template-only card for the tree's *New file*, where the folder is already known.
+Settings save themselves: choices and switches write immediately, while the image-folder,
+bibliography-file and new-note template fields save after a short pause and flush on blur,
+Browse/Clear, Enter or `Mod-s`. `ui/settings/autosave.ts` orders those writes. The New Note
+template is `ui/settings/new_document.ts`, which uses the shared
+`ui/code_editor/index.ts` CodeMirror view rather than a textarea. General also owns appearance:
+`services/theme.ts` maps the config's `theme` (`auto`, `light`, `dark`) to no explicit daisyUI
+theme, `winter` or `dim`, and applies it in both windows on startup and `config_changed`.
 `services/workspace/folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/flow.ts`
@@ -645,9 +652,10 @@ through the running app and proves uncited works do not reach the source tree.
 
 The editor is `src/ui/export/templates/editor.ts`, a panel that never becomes the markdown editor or
 a session document; its modal DOM and controls are `templates/editor_shell.ts`.
-`templates/code_editor.ts` creates the CodeMirror 6 view (YAML and TeX through
+The shared `src/ui/code_editor/index.ts` creates the CodeMirror 6 view (YAML and TeX through
 `StreamLanguage`, line numbers, search, undo, bracket matching), while `templates/file_list.ts` draws
-editable and binary rows. The panel owns loading, dirty state, discard confirmation, atomic save and
+editable and binary rows. The same editor is also Settings → New Note's frontmatter field. The panel
+owns loading, dirty state, discard confirmation, atomic save and
 **Validate** / **Test PDF**; binaries remain read-only with *Open in system*. The same panel edits a
 kind's defaults YAML, which is why the export card's old
 *Reveal in folder* is now **Edit defaults**. The library is `library.ts` (choose, import, create,

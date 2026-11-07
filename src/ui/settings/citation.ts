@@ -2,14 +2,17 @@
  * The Citation tab: the bibliography file and the CSL style, each chosen through the system's own
  * file picker.
  *
- * May import: the dialog plugin, the config manager, the catalogue and the component base. Upholds:
- * the tab writes the config through one manager, so the bibliography's own reload hears about it.
+ * May import: the dialog plugin, the config manager, the catalogue, the autosave queue and the
+ * component base. Upholds: paths save after a pause or on blur, the style saves when chosen, and
+ * the bibliography's own reload hears every write through one manager.
  */
 
 import { open } from '@tauri-apps/plugin-dialog';
 import { configManager } from '../../services/config_manager';
 import { t } from '../../services/i18n';
 import { BaseComponent } from '../component';
+import { createTextAutosave } from './autosave';
+import { SaveStatus } from './save_status';
 
 /** CSL styles bundled with citation-js. */
 const CSL_STYLES = [
@@ -25,7 +28,8 @@ const CSL_STYLES = [
 export class CitationSettings extends BaseComponent {
   private readonly bibliographyInput: HTMLInputElement;
   private readonly styleSelect: HTMLSelectElement;
-  private readonly status: HTMLElement;
+  private readonly saveStatus: SaveStatus;
+  private readonly autosave = createTextAutosave(() => this.saveCitation());
 
   constructor() {
     super('div', ['flex', 'flex-col', 'gap-6', 'max-w-xl']);
@@ -47,9 +51,23 @@ export class CitationSettings extends BaseComponent {
     this.bibliographyInput.type = 'text';
     this.bibliographyInput.placeholder = t('settings.citation.filePlaceholder');
     this.bibliographyInput.className = 'input input-bordered flex-1';
+    this.bibliographyInput.addEventListener('input', () =>
+      this.autosave.schedule()
+    );
+    this.bibliographyInput.addEventListener('blur', () =>
+      void this.autosave.flush()
+    );
+    this.bibliographyInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void this.autosave.flush();
+      }
+    });
     const browseButton = this.button(t('settings.browse'), () => void this.pickBibliography());
     const clearButton = this.button(t('settings.clear'), () => {
       this.bibliographyInput.value = '';
+      this.autosave.schedule();
+      void this.autosave.flush();
     });
     const row = document.createElement('div');
     row.className = 'flex gap-2';
@@ -72,14 +90,18 @@ export class CitationSettings extends BaseComponent {
       option.textContent = style.label;
       this.styleSelect.appendChild(option);
     }
+    this.styleSelect.addEventListener('change', () => {
+      this.autosave.schedule();
+      void this.autosave.flush();
+    });
     styleGroup.appendChild(this.styleSelect);
 
     const actions = document.createElement('div');
     actions.className = 'flex items-center gap-3';
-    const saveButton = this.button(t('settings.save'), () => void this.save(), 'btn-primary');
-    this.status = document.createElement('span');
-    this.status.className = 'text-sm opacity-70';
-    actions.append(saveButton, this.status);
+    const status = document.createElement('span');
+    status.className = 'text-sm opacity-70';
+    this.saveStatus = new SaveStatus(status);
+    actions.append(status);
 
     this.appendChild(heading);
     this.appendChild(fileGroup);
@@ -121,7 +143,7 @@ export class CitationSettings extends BaseComponent {
       this.styleSelect.value = config.csl_style || '';
     } catch (error) {
       console.error('Failed to load the settings:', error);
-      this.status.textContent = t('settings.failedToLoad');
+      this.saveStatus.failedToLoad();
     }
   }
 
@@ -138,23 +160,21 @@ export class CitationSettings extends BaseComponent {
     });
     if (typeof selected === 'string') {
       this.bibliographyInput.value = selected;
+      this.autosave.schedule();
+      void this.autosave.flush();
     }
   }
 
-  private async save(): Promise<void> {
+  private async saveCitation(): Promise<void> {
+    this.saveStatus.saving();
     try {
       await configManager.update({
         bibliography_file: this.bibliographyInput.value.trim(),
         csl_style: this.styleSelect.value.trim()
       });
-      this.status.textContent = t('settings.saved');
-      window.setTimeout(() => {
-        this.status.textContent = '';
-      }, 2000);
+      this.saveStatus.saved();
     } catch (error) {
-      console.error('Failed to save the settings:', error);
-      const message = error instanceof Error ? error.message : String(error);
-      this.status.textContent = t('settings.failedToSave', { message });
+      this.saveStatus.failed('the citation settings', error);
     }
   }
 }
