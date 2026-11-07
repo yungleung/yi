@@ -12,6 +12,7 @@
   const api = await t.app('/src/api/templates.ts');
   const exportApi = await t.app('/src/api/export.ts');
   const referenceApi = await t.app('/src/ui/export/reference/index.ts');
+  const pipeline = await t.app('/src/ui/export/pipeline/index.ts');
   const files = await t.app('/src/api/files.ts');
   const invoke = (command, args) => window.__TAURI_INTERNALS__.invoke(command, args);
   const checkout = window.__probePaths.checkout;
@@ -604,20 +605,38 @@
       const validated = await api.validateTemplate(legrand.id);
       check('legrand-orange-book: Pandoc validates the complete example', validated.ok, validated);
       await t.load(source);
-      const visible = (t.prose().textContent ?? '').normalize('NFKC');
+      const opening = (t.prose().textContent ?? '').normalize('NFKC');
       check(
         'legrand-orange-book: the example opens as a two-part book without an index',
         ['Part One', 'Part Two', 'Mathematical Design'].every((text) =>
           source.includes(text)
         ) &&
-          visible.includes('The Search for a Structure') &&
-          !visible.includes('\\index{') &&
-          !visible.includes('\\printindex')
+          opening.includes('The Search for a Structure') &&
+          !opening.includes('\\index{') &&
+          !opening.includes('\\printindex')
       );
       check(
         'legrand-orange-book: theorem Divs render semantically in the editor',
-        ['Theorem', 'Definition', 'Remark'].every((name) => visible.includes(name)) &&
-          !visible.includes(':::')
+        ['Theorem', 'Definition', 'Remark'].every((name) => opening.includes(name)) &&
+          !opening.includes(':::')
+      );
+      const calloutStart = source.indexOf('> [!IMPORTANT]');
+      const calloutEnd = source.indexOf('\n\n### Exercises', calloutStart);
+      await t.load(source.slice(calloutStart, calloutEnd));
+      const visible = (t.prose().textContent ?? '').normalize('NFKC');
+      check(
+        'legrand-orange-book: the semantic admonition renders without source LaTeX',
+        calloutStart >= 0 &&
+          calloutEnd > calloutStart &&
+          visible.includes('Important') &&
+          visible.includes('The orange accent is reserved for orientation') &&
+          !visible.includes('\\begin{importantblock}'),
+        {
+          important: visible.includes('Important'),
+          body: visible.includes('The orange accent is reserved for orientation'),
+          sourceLatex: visible.includes('\\begin{importantblock}'),
+          text: visible.slice(-3000)
+        }
       );
       const testPdf = await api.testTemplatePdf(legrand.id);
       check(
@@ -625,10 +644,20 @@
         testPdf.ok,
         testPdf
       );
+      const prepared = await pipeline.exportSource(source, {
+        kind: 'pdf',
+        titleOf: async () => null,
+        bases: { document: null, images: null },
+        exists: async () => false,
+        fetchRemote: async () => null,
+        imageTarget: (_file, destination) => destination,
+        citationKeys: new Set(),
+        citations: null
+      });
       const target = `${folder}/legrand-orange-book.pdf`;
       await exportApi.runExport({
         kind: 'pdf',
-        text: source,
+        text: prepared,
         output_path: target,
         resource_paths: [],
         source_dir: null,
@@ -662,11 +691,13 @@
           'theorem1',
           'definition1',
           'remark1',
+          'theorangeaccentisreservedfororientation',
           'completenessofthevisualhierarchy',
           'readingrhythm',
           'references'
         ].every((text) => squashed.includes(text)) &&
           compactPage.includes('theorem1227completenessofthevisualhierarchy') &&
+          !squashed.includes('important') &&
           !squashed.includes('index') &&
           !compactPage.includes(':::'),
         { tail: page.slice(-3000) }

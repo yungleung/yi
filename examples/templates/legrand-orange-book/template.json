@@ -20,6 +20,7 @@
     "assets/chapter-head-1.pdf",
     "assets/chapter-head-2.pdf",
     "assets/illustration.jpg",
+    "callout.lua",
     "defaults.yaml",
     "example.md",
     "metadata.yaml",

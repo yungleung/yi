@@ -942,6 +942,7 @@ check(
     'assets/chapter-head-1.pdf',
     'assets/chapter-head-2.pdf',
     'assets/illustration.jpg',
+    'callout.lua',
     'defaults.yaml',
     'example.md',
     'metadata.yaml',
@@ -956,6 +957,19 @@ if (existsSync(join(legrand, 'template.json'))) {
   const defaults = parse(readFileSync(join(legrand, 'defaults.yaml'), 'utf8'));
   const template = readFileSync(join(legrand, 'template.tex'), 'utf8');
   const example = readFileSync(join(legrand, 'example.md'), 'utf8');
+  const calloutFilter = existsSync(join(legrand, 'callout.lua'))
+    ? readFileSync(join(legrand, 'callout.lua'), 'utf8')
+    : '';
+  const convertCallouts = (markdown) =>
+    spawnSync(
+      'pandoc',
+      [
+        '--from=markdown',
+        '--to=latex',
+        `--lua-filter=${join(legrand, 'callout.lua')}`
+      ],
+      { input: markdown, encoding: 'utf8' }
+    );
   const theoremStyles = existsSync(join(legrand, 'theorem-styles.sty'))
     ? readFileSync(join(legrand, 'theorem-styles.sty'), 'utf8')
     : '';
@@ -969,6 +983,7 @@ if (existsSync(join(legrand, 'template.json'))) {
       manifest.origin.source ===
         'https://github.com/igormcoelho/pandoc-template-legrand-orange-book' &&
       /CC-BY-NC-SA-3\.0/.test(manifest.origin.license) &&
+      manifest.assets.includes('callout.lua') &&
       manifest.assets.every((asset) => existsSync(join(legrand, asset)))
   );
   check(
@@ -977,6 +992,8 @@ if (existsSync(join(legrand, 'template.json'))) {
       defaults['top-level-division'] === 'part' &&
       defaults.toc === false &&
       defaults.bibliography === 'references.bib' &&
+      defaults.filters?.length === 1 &&
+      defaults.filters[0] === 'callout.lua' &&
       !/\\makeindex|\\printindex|\\index\{/.test(template) &&
       !/\\index\{/.test(example)
   );
@@ -1004,9 +1021,89 @@ if (existsSync(join(legrand, 'template.json'))) {
       /legrand-definition/.test(example) &&
       /legrand-remark/.test(example) &&
       !/\\begin\{(?:theorem|definition|remark|corollary|proposition|example)\}/.test(example) &&
-      /\\begin\{importantblock\}/.test(example) &&
+      example.includes('> [!IMPORTANT]\n') &&
+      !/\\begin\{importantblock\}/.test(example) &&
       /^```python$/m.test(example) &&
       /assets\/illustration\.jpg/.test(example)
+  );
+  const builtInCallouts = [
+    ['note', 'Note', 'noteblock'],
+    ['tip', 'Tip', 'tipblock'],
+    ['important', 'Important', 'importantblock'],
+    ['warning', 'Warning', 'warningblock'],
+    ['caution', 'Caution', 'cautionblock']
+  ];
+  const builtInConversion = convertCallouts(
+    builtInCallouts
+      .map(
+        ([kind, title]) =>
+          `:::: {.callout .callout-${kind}}\n` +
+          `::: {.callout-title}\n${title}\n:::\n\n` +
+          `${title} body.\n` +
+          '::::'
+      )
+      .join('\n\n')
+  );
+  check(
+    'legrand-orange-book: semantic built-in callouts become their awesomebox environments',
+    calloutFilter.length > 0 &&
+      pandoc.status === 0 &&
+      builtInConversion.status === 0 &&
+      builtInCallouts.every(
+        ([kind, title, environment]) =>
+          new RegExp(`\\\\begin\\{${environment}\\}`).test(builtInConversion.stdout) &&
+          builtInConversion.stdout.includes(`${title} body.`)
+      ) &&
+      !builtInCallouts.some(([, title]) =>
+        new RegExp(`\\\\textbf\\{${title}\\}`).test(builtInConversion.stdout)
+      ),
+    builtInConversion
+  );
+  check(
+    'legrand-orange-book: the semantic callout keeps a custom title',
+    calloutFilter.length > 0 &&
+      pandoc.status === 0 &&
+      (() => {
+        const converted = convertCallouts(
+          ':::: {.callout .callout-warning}\n' +
+            '::: {.callout-title}\n' +
+            'Check the margins\n' +
+            ':::\n\n' +
+            'The rule needs room.\n' +
+            '::::\n'
+        );
+        return (
+          converted.status === 0 &&
+          /\\begin\{warningblock\}/.test(converted.stdout) &&
+          /\\textbf\{Check the margins\}/.test(converted.stdout) &&
+          /The rule needs room\./.test(converted.stdout)
+        );
+      })()
+  );
+  const unsupportedConversion = convertCallouts(
+    ':::: {.callout .callout-definition}\n' +
+      '::: {.callout-title}\n' +
+      'Definition\n' +
+      ':::\n\n' +
+      'A defined term.\n' +
+      '::::\n'
+  );
+  check(
+    'legrand-orange-book: an unsupported callout kind is left for the template author',
+    calloutFilter.length > 0 &&
+      pandoc.status === 0 &&
+      unsupportedConversion.status === 0 &&
+      unsupportedConversion.stdout.includes('A defined term.') &&
+      ![
+        'noteblock',
+        'tipblock',
+        'importantblock',
+        'warningblock',
+        'cautionblock'
+      ].some((environment) =>
+        unsupportedConversion.stdout.includes(`\\begin{${environment}}`)
+      ),
+    unsupportedConversion
   );
   check(
     'legrand-orange-book: the external style package owns theorem presentation',

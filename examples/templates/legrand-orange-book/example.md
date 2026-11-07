@@ -178,10 +178,9 @@ def chapter_opening(title: str, image: str) -> dict[str, str]:
 
 #### An admonition
 
-\begin{importantblock}
-The orange accent is reserved for orientation, emphasis and mathematical
-structure. Reusing it everywhere removes its meaning.
-\end{importantblock}
+> [!IMPORTANT]
+> The orange accent is reserved for orientation, emphasis and mathematical
+> structure. Reusing it everywhere removes its meaning.
 
 ### Exercises and vocabulary
 

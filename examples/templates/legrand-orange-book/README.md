@@ -17,6 +17,7 @@ legrand-orange-book/
   defaults.yaml
   references.bib
   theorem-styles.sty
+  callout.lua
   template.json
   ATTRIBUTION.txt
   assets/
@@ -34,6 +35,31 @@ installation with `avant`, `mathptmx`, `tikz`, `mdframed`, `titletoc`,
 Citations use Yi's citeproc export path and the package-local `references.bib`.
 Export `example.md` as PDF, or use **Test PDF** in the template editor for the
 short package check.
+
+## Semantic callouts
+
+The package-local `callout.lua` keeps Yi's callout syntax portable and maps it
+to the `awesomebox` environments the template already loads:
+
+| Yi kind | LaTeX environment |
+| --- | --- |
+| Note | `noteblock` |
+| Tip | `tipblock` |
+| Important | `importantblock` |
+| Warning | `warningblock` |
+| Caution | `cautionblock` |
+
+Write a GitHub-style callout in the note:
+
+```markdown
+> [!IMPORTANT]
+> The orange accent marks a structural relationship.
+```
+
+Yi lowers this to one semantic Div before Pandoc runs, and `callout.lua`
+rewrites that Div for this template. The generated title is omitted because
+the box supplies its own icon and heading. A custom title remains in the box as
+a bold lead-in; other callout kinds are left for a template author to handle.
 
 ## Theorem kinds and styles
 

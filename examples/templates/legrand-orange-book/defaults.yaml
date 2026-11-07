@@ -5,3 +5,5 @@ number-sections: true
 toc: false
 shift-heading-level-by: 0
 bibliography: references.bib
+filters:
+  - callout.lua
