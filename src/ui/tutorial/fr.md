@@ -59,9 +59,7 @@ keywords: notes, exemple
 ---
 ```
 
-L'`id` est l'identité stable de la note, que les wikiliens peuvent utiliser. Dans
-**Réglages → Nouvelle note**, vous modifiez dans un éditeur YAML le frontmatter du début de chaque
-nouvelle note ; les changements sont enregistrés automatiquement.
+L'`id` est l'identité stable de la note, que les wikiliens peuvent utiliser.
 
 ## Donner une structure à la page
 
@@ -130,14 +128,13 @@ propose les notes qu'il trouve. Un lien web ordinaire s'écrit
 `[les mots](https://example.com)`.
 
 Une image est une image markdown ordinaire : `![description](image.png)`. Un chemin relatif est
-cherché d'abord à côté de la note, puis dans le dossier d'images de **Réglages → Général**. Le
-bouton d'image insère une image depuis un fichier ou le presse-papiers.
+cherché à côté de la note. Le bouton d'image insère une image depuis un fichier ou le
+presse-papiers.
 
 ## Citer ce que vous lisez
 
-Les citations utilisent la syntaxe de pandoc : `[@smith2020]`. Choisissez un fichier de
-bibliographie et un style de citation dans **Réglages → Citations** ; Yi affiche alors la citation
-formatée dans la page et les œuvres citées sous Références à l'export.
+Les citations utilisent la syntaxe de pandoc : `[@smith2020]`. Yi affiche la citation formatée dans
+la page et les œuvres citées sous Références à l'export.
 
 ## Chercher et remplacer
 
@@ -147,9 +144,9 @@ toutes. La recherche fonctionne dans la page affichée et dans le code source d'
 ## Exporter la note
 
 **Fichier → Exporter** propose un document Word, un fichier OpenDocument, LaTeX, HTML, un livre
-EPUB, un PDF et le markdown traité par l'application. La carte nomme le fichier et les réglages de
-conversion. Les images sont reprises dans la sortie ; un SVG ou un WebP est dessiné en PNG là où le
-format choisi ne peut pas le contenir.
+EPUB, un PDF et le markdown traité par l'application. La carte nomme le fichier de sortie. Les
+images sont reprises dans la sortie ; un SVG ou un WebP est dessiné en PNG là où le format choisi ne
+peut pas le contenir.
 
 ## Garder une version
 
@@ -157,15 +154,10 @@ format choisi ne peut pas le contenir.
 versions ne sont créées que lorsque vous le demandez, et le panneau des versions vous laisse lire
 une copie ancienne et la comparer au texte actuel.
 
-## Adapter l'application
+## Plus de documentation
 
-**Réglages** change la langue, l'apparence, le dossier d'images, les citations, le frontmatter des
-nouvelles notes et si un document non enregistré s'ouvre dans la pile. Il n'y a pas de bouton
-Enregistrer : les champs de texte sont enregistrés après une courte pause ou quand vous les quittez,
-et les choix et interrupteurs immédiatement. **Apparence** propose Automatique, Clair et Sombre ;
-Automatique suit le système. **Nouvelle note** utilise un éditeur YAML, et Réinitialiser restaure le
-modèle de l'application. L'espace de travail se change avec **Fichier → Ouvrir un dossier…**, pas
-dans les Réglages.
+**Aide → Documentation** (`F1`) explique les modèles, les citations, les options d'export et
+d'autres fonctions avancées.
 
 L'application se souvient des documents ouverts et de l'endroit où vous étiez. Fermez la fenêtre et
 rouvrez-la ; la même page revient.

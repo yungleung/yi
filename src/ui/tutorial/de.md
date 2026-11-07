@@ -60,9 +60,7 @@ keywords: notizen, beispiel
 ---
 ```
 
-Die `id` ist die feste Identität der Notiz, die Wikilinks verwenden können. Unter
-**Einstellungen → Neue Notiz** bearbeitest du das Frontmatter neuer Notizen in einem YAML-Editor;
-Änderungen werden automatisch gesichert.
+Die `id` ist die feste Identität der Notiz, die Wikilinks verwenden können.
 
 ## Der Seite Struktur geben
 
@@ -131,14 +129,13 @@ und Yi bietet die Notizen an, die es findet. Ein normaler Weblink sieht so aus:
 `[die Worte](https://example.com)`.
 
 Ein Bild ist ein gewöhnliches Markdown-Bild: `![Beschreibung](bild.png)`. Ein relativer Pfad wird
-zuerst neben der Notiz gesucht, dann im Bilderordner aus **Einstellungen → Allgemein**. Die
-Bild-Schaltfläche fügt ein Bild aus einer Datei oder der Zwischenablage ein.
+neben der Notiz gesucht. Die Bild-Schaltfläche fügt ein Bild aus einer Datei oder der Zwischenablage
+ein.
 
 ## Belege zitieren
 
-Zitate verwenden die Pandoc-Syntax: `[@smith2020]`. Wähle unter **Einstellungen → Zitate** eine
-Bibliografiedatei und einen Zitierstil; Yi zeigt dann das formatierte Zitat auf der Seite und die
-zitierten Werke beim Export unter den Literaturangaben.
+Zitate verwenden die Pandoc-Syntax: `[@smith2020]`. Yi zeigt das formatierte Zitat auf der Seite und
+die zitierten Werke beim Export unter den Literaturangaben.
 
 ## Suchen und ersetzen
 
@@ -148,9 +145,9 @@ alle. Die Suche arbeitet auf der dargestellten Seite und im Quelltext eines Code
 ## Die Notiz exportieren
 
 **Datei → Exportieren** bietet ein Word-Dokument, eine OpenDocument-Datei, LaTeX, HTML, ein
-EPUB-Buch, ein PDF und das verarbeitete Markdown der App. Die Karte nennt die Datei und die
-Konvertierungseinstellungen. Bilder werden in die Ausgabe übernommen; ein SVG oder WebP wird als
-PNG gezeichnet, wo das gewählte Format es nicht aufnehmen kann.
+EPUB-Buch, ein PDF und das verarbeitete Markdown der App. Die Karte nennt die Ausgabedatei. Bilder
+werden in die Ausgabe übernommen; ein SVG oder WebP wird als PNG gezeichnet, wo das gewählte Format
+es nicht aufnehmen kann.
 
 ## Eine Version behalten
 
@@ -158,14 +155,10 @@ PNG gezeichnet, wo das gewählte Format es nicht aufnehmen kann.
 entstehen nur, wenn du eine anforderst; im Versionsfenster kannst du eine ältere Kopie lesen und
 mit dem aktuellen Text vergleichen.
 
-## Die App anpassen
+## Weitere Dokumentation
 
-**Einstellungen** ändert Sprache, Darstellung, Bilderordner, Zitate, das Frontmatter neuer Notizen
-und ob ein ungespeichertes Dokument im Stapel geöffnet wird. Es gibt keine Schaltfläche zum Sichern:
-Textfelder sichern nach einer kurzen Pause oder beim Verlassen, Auswahlfelder und Schalter sofort.
-Unter **Darstellung** wählst du Automatisch, Hell oder Dunkel; Automatisch folgt dem System. **Neue
-Notiz** verwendet einen YAML-Editor; Zurücksetzen stellt die App-Vorlage wieder her. Der
-Arbeitsbereich wird mit **Datei → Ordner öffnen…** gewechselt, nicht in den Einstellungen.
+**Hilfe → Dokumentation** (`F1`) erklärt Vorlagen, Zitate, Exportoptionen und weitere
+fortgeschrittene Funktionen.
 
 Die App merkt sich die geöffneten Dokumente und deine Position darin. Schließe das Fenster und
 öffne es wieder; dieselbe Seite kommt zurück.

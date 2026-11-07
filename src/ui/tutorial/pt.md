@@ -57,9 +57,7 @@ keywords: notas, exemplo
 ---
 ```
 
-O `id` é a identidade estável da nota, que os wikilinks podem usar. Em
-**Configurações → Nova nota** você edita num editor YAML o frontmatter com que toda nota nova começa;
-as alterações são salvas automaticamente.
+O `id` é a identidade estável da nota, que os wikilinks podem usar.
 
 ## Dê estrutura à página
 
@@ -127,14 +125,12 @@ Um wikilink liga notas por título, nome de arquivo ou id: `[[Outra nota]]`. Dig
 oferece as notas que encontra. Um link da web comum é escrito como
 `[as palavras](https://example.com)`.
 
-Uma imagem é uma imagem markdown comum: `![descrição](imagem.png)`. Um caminho relativo é
-procurado primeiro ao lado da nota, depois na pasta de imagens de **Configurações → Geral**. O botão
-de imagem insere uma imagem de um arquivo ou da área de transferência.
+Uma imagem é uma imagem markdown comum: `![descrição](imagem.png)`. Um caminho relativo é procurado
+ao lado da nota. O botão de imagem insere uma imagem de um arquivo ou da área de transferência.
 
 ## Cite o que você lê
 
-Citações usam a sintaxe do pandoc: `[@smith2020]`. Escolha um arquivo de bibliografia e um estilo
-de citação em **Configurações → Citações**; o Yi então mostra a citação formatada na página e as
+Citações usam a sintaxe do pandoc: `[@smith2020]`. O Yi mostra a citação formatada na página e as
 obras citadas em Referências ao exportar.
 
 ## Localize e substitua
@@ -145,8 +141,8 @@ busca funciona na página exibida e no próprio código de um bloco.
 ## Exporte a nota
 
 **Arquivo → Exportar** oferece um documento do Word, um arquivo OpenDocument, LaTeX, HTML, um livro
-EPUB, um PDF e o markdown processado pelo aplicativo. O cartão nomeia o arquivo e as configurações
-de conversão. Imagens são levadas para a saída; um SVG ou WebP é desenhado como PNG onde o formato
+EPUB, um PDF e o markdown processado pelo aplicativo. O cartão nomeia o arquivo de saída. Imagens
+são levadas para a saída; um SVG ou WebP é desenhado como PNG onde o formato
 escolhido não consegue contê-lo.
 
 ## Guarde uma versão
@@ -155,14 +151,10 @@ escolhido não consegue contê-lo.
 só quando você pede, e o painel de versões deixa você ler uma cópia antiga e compará-la com o texto
 atual.
 
-## Deixe o aplicativo do seu jeito
+## Mais documentação
 
-**Configurações** muda o idioma, a aparência, a pasta de imagens, as citações, o frontmatter de notas
-novas e se um documento não salvo abre na pilha. Não há botão Salvar: campos de texto salvam após
-uma pequena pausa ou ao sair, enquanto opções e interruptores salvam imediatamente. **Aparência**
-oferece Automático, Claro e Escuro; Automático segue o sistema. **Nova nota** usa um editor YAML, e
-Redefinir restaura o modelo do aplicativo. O espaço de trabalho muda com **Arquivo → Abrir pasta…**,
-não nas Configurações.
+**Ajuda → Documentação** (`F1`) explica modelos, citações, opções de exportação e outros
+recursos avançados.
 
 O aplicativo lembra os documentos abertos e onde você estava neles. Feche a janela e abra de novo; a
 mesma página volta.

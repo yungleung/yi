@@ -57,8 +57,7 @@ keywords: notes, example
 ---
 ```
 
-The `id` is the note's stable identity, which wikilinks can use. **Settings → New Note** edits the
-frontmatter every new note starts from in a YAML editor; changes save automatically.
+The `id` is the note's stable identity, which wikilinks can use.
 
 ## Put structure on the page
 
@@ -126,14 +125,12 @@ A wikilink connects notes by title, file name or id: `[[Another note]]`. Type `[
 the notes it can find. A normal web link is written as `[the words](https://example.com)`.
 
 An image is a normal markdown image: `![description](picture.png)`. A relative path is read beside
-the note first, then in the pictures folder chosen in **Settings → General**. The image button can
-insert a picture from a file or the clipboard.
+the note. The image button can insert a picture from a file or the clipboard.
 
 ## Cite what you read
 
-Citations use pandoc's syntax: `[@smith2020]`. Choose a bibliography file and a citation style in
-**Settings → Citations**; Yi then shows the formatted citation in the page and the works you cite
-under References when the note is exported.
+Citations use pandoc's syntax: `[@smith2020]`. Yi shows the formatted citation in the page and the
+works you cite under References when the note is exported.
 
 ## Find and change
 
@@ -143,9 +140,8 @@ works in the rendered page and in a code block's own source.
 ## Export the note
 
 **File → Export** offers a Word document, an OpenDocument file, LaTeX, HTML, an EPUB book, a PDF and
-the app's own processed markdown. The card names the file it will write and the conversion settings
-it will use. Pictures are carried in the output; an SVG or webp is drawn as a PNG where the chosen
-format cannot hold it.
+the app's own processed markdown. The card names the file it will write. Pictures are carried in the
+output; an SVG or webp is drawn as a PNG where the chosen format cannot hold it.
 
 ## Keep a version
 
@@ -153,14 +149,10 @@ format cannot hold it.
 only when you ask for one, and the version panel lets you read an older copy and compare it with
 the current text.
 
-## Make the app yours
+## More documentation
 
-**Settings** changes the language, appearance, pictures folder, citations, new-note frontmatter and
-whether an unsaved document opens in the stack. There is no Save button: text fields save after a
-short pause or when you leave them, while choices and switches save immediately. **Appearance**
-offers Auto, Light and Dark; Auto follows the system. **New Note** uses a YAML editor, and Reset
-restores the app-owned default. The workspace is changed with **File → Open Folder…**, not in
-Settings.
+**Help → Documentation** (`F1`) explains templates, citations, export options and other advanced
+features.
 
 The app remembers the documents you had open and where you were in them. Close the window and open
 it again; the same page comes back.

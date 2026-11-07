@@ -59,9 +59,7 @@ keywords: notas, ejemplo
 ---
 ```
 
-El `id` es la identidad estable de la nota, que los wikienlaces pueden usar. En
-**Ajustes → Nota nueva** editas en un editor YAML el frontmatter con el que empieza cada nota; los
-cambios se guardan automáticamente.
+El `id` es la identidad estable de la nota, que los wikienlaces pueden usar.
 
 ## Da estructura a la página
 
@@ -130,14 +128,12 @@ te ofrece las notas que encuentra. Un enlace web normal se escribe así:
 `[las palabras](https://example.com)`.
 
 Una imagen es una imagen markdown normal: `![descripción](imagen.png)`. Una ruta relativa se busca
-primero junto a la nota y después en la carpeta de imágenes de **Ajustes → General**. El botón de
-imagen inserta una desde un archivo o el portapapeles.
+junto a la nota. El botón de imagen inserta una desde un archivo o el portapapeles.
 
 ## Cita lo que lees
 
-Las citas usan la sintaxis de pandoc: `[@smith2020]`. Elige un archivo de bibliografía y un estilo
-de cita en **Ajustes → Citas**; Yi muestra entonces la cita formateada en la página y las obras
-citadas bajo Referencias al exportar.
+Las citas usan la sintaxis de pandoc: `[@smith2020]`. Yi muestra la cita formateada en la página y
+las obras citadas bajo Referencias al exportar.
 
 ## Busca y cambia
 
@@ -147,8 +143,8 @@ La búsqueda funciona en la página mostrada y en el propio código de un bloque
 ## Exporta la nota
 
 **Archivo → Exportar** ofrece un documento de Word, un archivo OpenDocument, LaTeX, HTML, un libro
-EPUB, un PDF y el markdown procesado de la app. La tarjeta nombra el archivo y la configuración de
-conversión. Las imágenes se llevan a la salida; un SVG o un WebP se dibuja como PNG donde el
+EPUB, un PDF y el markdown procesado de la app. La tarjeta nombra el archivo de salida. Las imágenes
+se llevan a la salida; un SVG o un WebP se dibuja como PNG donde el
 formato elegido no puede contenerlo.
 
 ## Guarda una versión
@@ -157,14 +153,10 @@ formato elegido no puede contenerlo.
 versiones se crean solo cuando las pides, y el panel de versiones te deja leer una copia anterior
 y compararla con el texto actual.
 
-## Haz tuya la aplicación
+## Más documentación
 
-**Ajustes** cambia el idioma, la apariencia, la carpeta de imágenes, las citas, el frontmatter de
-notas nuevas y si un documento sin guardar se abre en la pila. No hay botón Guardar: los campos de
-texto se guardan tras una pausa breve o al salir, y las opciones e interruptores al cambiar.
-**Apariencia** ofrece Automático, Claro y Oscuro; Automático sigue al sistema. **Nota nueva** usa un
-editor YAML y Restablecer recupera la plantilla de la aplicación. El espacio de trabajo se cambia con
-**Archivo → Abrir carpeta…**, no en Ajustes.
+**Ayuda → Documentación** (`F1`) explica las plantillas, las citas, las opciones de exportación y otras
+funciones avanzadas.
 
 La app recuerda los documentos que tenías abiertos y dónde estabas en ellos. Cierra la ventana y
 vuelve a abrirla; la misma página regresa.
