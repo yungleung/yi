@@ -146,6 +146,10 @@ function applyLanguage(language) {
     element.textContent = element.getAttribute(`data-${cardLanguage}`);
   }
 
+  for (const image of document.querySelectorAll('[data-alt-en][data-alt-zh]')) {
+    image.setAttribute('alt', image.getAttribute(`data-alt-${cardLanguage}`));
+  }
+
   for (const button of document.querySelectorAll('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.getAttribute('data-lang') === language));
   }

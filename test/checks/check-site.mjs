@@ -44,6 +44,13 @@ for (const example of ['html', 'latex', 'pdf', 'rho-class', 'legrand-orange-book
 }
 
 check('the site icon exists', existsSync('site/assets/icon.png'));
+for (const screenshot of ['hero.webp', 'cross-references.webp', 'template-workbench.webp']) {
+  check(`the site ships ${screenshot}`, existsSync(`site/assets/screenshots/${screenshot}`));
+}
+check(
+  'screenshots have descriptive alternatives',
+  html.includes('data-alt-en=') && html.includes('data-alt-zh=')
+);
 check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
 check('relative assets are used', html.includes('./assets/icon.png') && !html.includes('href="/'));
@@ -155,6 +162,10 @@ check(
   js.includes("'template.open'") &&
     js.includes('打开仓库') &&
     html.includes('data-i18n="template.open"')
+);
+check(
+  'screenshots copy the selected language into their alt text',
+  js.includes('[data-alt-en][data-alt-zh]') && js.includes("setAttribute('alt'")
 );
 check(
   'accessible header labels switch with the language',

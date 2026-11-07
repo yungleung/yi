@@ -391,7 +391,12 @@ a {
   display: grid;
   grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
   gap: clamp(28px, 5vw, 72px);
+  min-width: 0;
   margin-top: 28px;
+}
+
+.doc-shell > * {
+  min-width: 0;
 }
 
 .doc-toc {
@@ -438,6 +443,7 @@ a {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 
@@ -580,7 +586,7 @@ footer p {
   }
 
   .doc-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .doc-toc {
