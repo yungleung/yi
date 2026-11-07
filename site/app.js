@@ -46,6 +46,7 @@ const COPY = {
     'tabs.templates': 'Templates',
     'tabs.docs': 'Documentation',
     'templates.all': 'Browse every template package',
+    'template.open': 'Open repository',
     'docs.toc': 'On this page',
     'docs.loading': 'Loading documentation…',
     'docs.error': 'Documentation could not be loaded.',
@@ -86,6 +87,7 @@ const COPY = {
     'tabs.templates': '模板示例',
     'tabs.docs': '文档',
     'templates.all': '浏览全部模板包',
+    'template.open': '打开仓库',
     'docs.toc': '本页目录',
     'docs.loading': '正在加载文档…',
     'docs.error': '文档加载失败。',
@@ -150,5 +152,24 @@ function applyLanguage(language) {
   return language;
 }
 
+/**
+ * Binds the header language buttons to `applyLanguage` and announces the switch as
+ * a `yi:languagechange` event, so the Documentation tab can reload its fragment.
+ *
+ * Example: clicking 简体中文 re-labels the page, persists `zh-Hans` and emits
+ * `CustomEvent('yi:languagechange', { detail: { language: 'zh-Hans' } })`.
+ */
+function wireLanguage() {
+  for (const button of document.querySelectorAll('[data-lang]')) {
+    button.addEventListener('click', () => {
+      const language = applyLanguage(button.getAttribute('data-lang'));
+      document.dispatchEvent(
+        new CustomEvent('yi:languagechange', { detail: { language } })
+      );
+    });
+  }
+}
+
 applyLanguage(storedLanguage());
+wireLanguage();
 wireTabs();

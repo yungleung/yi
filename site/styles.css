@@ -369,9 +369,16 @@ a {
   font-size: 1.15rem;
 }
 
-.template-card > span:last-child {
+.template-card > span:nth-of-type(2) {
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.template-card__open {
+  margin-top: auto;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .all-templates {

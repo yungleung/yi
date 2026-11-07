@@ -1,9 +1,10 @@
 /**
  * Tab activation for the public site.
  *
- * Owns the WAI-ARIA tabs contract — one selected tab, roving `tabindex` and one
- * visible panel — and routes `[data-activates]` links to the tab they name, so
- * the header Templates and Documentation links open the matching panel.
+ * Owns the WAI-ARIA tabs contract — one selected tab, roving `tabindex`, one
+ * visible panel and Arrow/Home/End keyboard movement — and routes
+ * `[data-activates]` links to the tab they name, so the header Templates and
+ * Documentation links open the matching panel.
  */
 
 /**
@@ -30,6 +31,16 @@ export function activateTab(tab, moveFocus = false) {
 }
 
 /**
+ * Returns the tab `distance` steps away from `tabs[index]`, wrapping at both ends.
+ *
+ * Example: with tabs `[A, B, C]`, `stepTo(tabs, 0, -1)` is `C` and
+ * `stepTo(tabs, 2, 1)` is `A`, so ArrowLeft on the first tab lands on the last.
+ */
+function stepTo(tabs, index, distance) {
+  return tabs[(index + distance + tabs.length) % tabs.length];
+}
+
+/**
  * Wires tab buttons and `[data-activates]` links to `activateTab`.
  *
  * Example: clicking a header link with `data-activates="tab-docs"` selects and
@@ -38,6 +49,28 @@ export function activateTab(tab, moveFocus = false) {
 export function wireTabs(root = document) {
   for (const tab of root.querySelectorAll('[role="tab"]')) {
     tab.addEventListener('click', () => activateTab(tab));
+  }
+
+  for (const tablist of root.querySelectorAll('[role="tablist"]')) {
+    const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    tablist.addEventListener('keydown', (event) => {
+      if (!tabs.includes(event.target)) return;
+      const index = tabs.indexOf(event.target);
+      let target;
+      if (event.key === 'ArrowRight') {
+        target = stepTo(tabs, index, 1);
+      } else if (event.key === 'ArrowLeft') {
+        target = stepTo(tabs, index, -1);
+      } else if (event.key === 'Home') {
+        target = tabs[0];
+      } else if (event.key === 'End') {
+        target = tabs[tabs.length - 1];
+      } else {
+        return;
+      }
+      event.preventDefault();
+      activateTab(target, true);
+    });
   }
 
   for (const link of root.querySelectorAll('[data-activates]')) {

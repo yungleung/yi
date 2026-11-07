@@ -71,6 +71,34 @@ check(
 );
 check('the card loop uses the mapped attribute', js.includes('cardLanguageAttribute'));
 check(
+  'tabs expose keyboard semantics',
+  html.includes('role="tablist"') &&
+    html.includes('aria-selected="true"') &&
+    html.includes('aria-controls="panel-templates"') &&
+    tabs.includes("event.key === 'ArrowRight'") &&
+    tabs.includes("event.key === 'ArrowLeft'") &&
+    tabs.includes("event.key === 'Home'") &&
+    tabs.includes("event.key === 'End'")
+);
+check(
+  'language switching persists and switches the page',
+  js.includes("localStorage.setItem(STORAGE_KEY, language)") &&
+    js.includes('document.documentElement.lang = language') &&
+    js.includes("querySelectorAll('[data-lang]')")
+);
+check(
+  'language buttons announce the switch for the Documentation tab',
+  js.includes("addEventListener('click'") &&
+    js.includes('yi:languagechange') &&
+    js.includes("applyLanguage(button.getAttribute('data-lang'))")
+);
+check(
+  'template cards carry a localized open label',
+  js.includes("'template.open'") &&
+    js.includes('打开仓库') &&
+    html.includes('data-i18n="template.open"')
+);
+check(
   'accessible header labels switch with the language',
   html.includes('data-i18n-label="nav.label"') &&
     html.includes('data-i18n-label="language.label"') &&
