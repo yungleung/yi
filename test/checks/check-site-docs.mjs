@@ -12,6 +12,12 @@ const check = (name, pass) => {
   if (!pass) failures.push(name);
 };
 
+function tocHtml(html) {
+  const start = html.indexOf('data-doc-toc');
+  const end = html.indexOf('</aside>', start);
+  return start === -1 || end === -1 ? '' : html.slice(start, end);
+}
+
 const build = spawnSync(process.execPath, ['scripts/build-site.mjs'], { encoding: 'utf8' });
 check('the site build succeeds', build.status === 0);
 
@@ -26,6 +32,10 @@ for (const [language, required] of [
   check(`${language} documentation has its TOC`, html.includes('data-doc-toc'));
   check(`${language} documentation has anchored headings`, /<h2[^>]+id="/.test(html));
   check(
+    `${language} nests level-three entries under their level-two heading`,
+    /doc-toc__item--h2">[\s\S]*?<ol>[\s\S]*?doc-toc__item--h3/.test(tocHtml(html))
+  );
+  check(
     `${language} documentation has current source content`,
     required.every((needle) => html.includes(needle))
   );
@@ -35,4 +45,4 @@ if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
 }
-console.log('site documentation: both languages built with heading targets');
+console.log('site documentation: both languages built with a nested TOC');

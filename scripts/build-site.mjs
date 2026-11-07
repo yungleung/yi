@@ -30,15 +30,34 @@ function textOf(node) {
   return (node.children ?? []).map(textOf).join('');
 }
 
-function tocMarkup(items) {
-  if (items.length === 0) return '';
-  return `<ol>${items
-    .map(
-      (item) =>
-        `<li class="doc-toc__item doc-toc__item--h${item.depth}">` +
-        `<a href="#${item.id}">${escapeHtml(item.text)}</a></li>`
-    )
-    .join('')}</ol>`;
+/**
+ * Groups the flat heading list into a tree so level-three headings nest under
+ * the level-two heading that precedes them.
+ *
+ * Example: `[{depth: 2, …}, {depth: 3, …}, {depth: 2, …}]` becomes two roots,
+ * the first carrying the level-three heading as its only child.
+ */
+function tocTree(items) {
+  const roots = [];
+  const stack = [];
+  for (const item of items) {
+    const node = { ...item, children: [] };
+    while (stack.length > 0 && stack[stack.length - 1].depth >= item.depth) stack.pop();
+    (stack.length === 0 ? roots : stack[stack.length - 1].children).push(node);
+    stack.push(node);
+  }
+  return roots;
+}
+
+function tocMarkup(nodes) {
+  if (nodes.length === 0) return '';
+  return `<ol>${nodes.map(tocItemMarkup).join('')}</ol>`;
+}
+
+function tocItemMarkup(node) {
+  const link = `<a href="#${node.id}">${escapeHtml(node.text)}</a>`;
+  const children = node.children.length > 0 ? tocMarkup(node.children) : '';
+  return `<li class="doc-toc__item doc-toc__item--h${node.depth}">${link}${children}</li>`;
 }
 
 function escapeHtml(value) {
@@ -80,7 +99,7 @@ async function buildDocument(document) {
   const html = String(renderProcessor.stringify(rendered));
   return (
     `<aside class="doc-toc" data-doc-toc>` +
-    `<p class="doc-toc__label">${document.tocLabel}</p>${tocMarkup(headings)}</aside>` +
+    `<p class="doc-toc__label">${document.tocLabel}</p>${tocMarkup(tocTree(headings))}</aside>` +
     `<article class="docs-article">${html}</article>`
   );
 }

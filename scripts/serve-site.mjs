@@ -24,8 +24,8 @@ createServer(async (request, response) => {
   const relative = normalize(requested === '/' ? 'index.html' : requested.slice(1));
   const file = new URL(relative, root);
   try {
-    const body = await readFile(file);
     if (!file.href.startsWith(root.href)) throw new Error('outside the site');
+    const body = await readFile(file);
     response.writeHead(200, {
       'content-type': types[extname(file.pathname)] ?? 'application/octet-stream'
     });
