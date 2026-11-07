@@ -44,8 +44,38 @@ for (const example of ['html', 'latex', 'pdf', 'rho-class', 'legrand-orange-book
 }
 
 check('the site icon exists', existsSync('site/assets/icon.png'));
+const webpSize = (path) => {
+  const bytes = readFileSync(path);
+  const chunk = bytes.toString('ascii', 12, 16);
+  if (chunk === 'VP8 ') {
+    return {
+      width: bytes.readUInt16LE(26) & 0x3fff,
+      height: bytes.readUInt16LE(28) & 0x3fff
+    };
+  }
+  if (chunk === 'VP8X') {
+    return {
+      width: 1 + bytes.readUIntLE(24, 3),
+      height: 1 + bytes.readUIntLE(27, 3)
+    };
+  }
+  throw new Error(`${path} is not a supported WebP image`);
+};
 for (const screenshot of ['hero.webp', 'cross-references.webp', 'template-workbench.webp']) {
-  check(`the site ships ${screenshot}`, existsSync(`site/assets/screenshots/${screenshot}`));
+  const path = `site/assets/screenshots/${screenshot}`;
+  check(`the site ships ${screenshot}`, existsSync(path));
+  if (!existsSync(path)) continue;
+  const size = webpSize(path);
+  const image = html
+    .match(/<img\b[^>]*>/g)
+    ?.find((element) => element.includes(`src="./assets/screenshots/${screenshot}"`));
+  check(
+    `${screenshot} keeps its actual dimensions`,
+    size.width === 1800 &&
+      size.height === 1200 &&
+      image?.includes('width="1800"') === true &&
+      image?.includes('height="1200"') === true
+  );
 }
 check(
   'screenshots have descriptive alternatives',
