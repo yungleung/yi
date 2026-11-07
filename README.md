@@ -17,6 +17,9 @@ TypeScript — no server, no database, no account.
   pandoc-style footnotes and citations render through CSL and a bibliography file.
 - **Made for long notes.** Blocks outside the viewport are unmounted; a 320 KB note
   stays editable.
+- **Settings that save themselves.** Text fields save after a short pause or when
+  you leave them; choices and switches save immediately. Appearance can follow
+  the system or use Light or Dark.
 - **A tutorial on first start.** A fresh install opens a read-only tour in its own
   language; **Help → Open Tutorial** brings it back at any time.
 
@@ -39,6 +42,20 @@ npm run check          # every test that needs no browser
 
 Open a workspace with **Open folder** in the app. `test/fixtures/workspace/` is a
 committed notes folder the tests use; you can open it to see the app in action.
+
+## Settings
+
+Settings has no Save button. Changes are persisted as they are made: text fields
+such as the image folder and bibliography path save after a short pause or on
+blur, while selects, switches and appearance choices save immediately.
+
+**General → Appearance** offers **Auto**, **Light** and **Dark**. Auto follows the
+operating system's current preference; Light and Dark are fixed. The choice
+applies to both the main window and the Settings window.
+
+**New Note** edits the default frontmatter in the same CodeMirror YAML editor used
+by template management. Edits autosave, and **Reset** restores and persists the
+app-owned default.
 
 ## Testing
 

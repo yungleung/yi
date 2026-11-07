@@ -60,7 +60,8 @@ keywords: notes, exemple
 ```
 
 L'`id` est l'identité stable de la note, que les wikiliens peuvent utiliser. Dans
-**Réglages → Nouvelle note**, vous choisissez le frontmatter du début de chaque nouvelle note.
+**Réglages → Nouvelle note**, vous modifiez dans un éditeur YAML le frontmatter du début de chaque
+nouvelle note ; les changements sont enregistrés automatiquement.
 
 ## Donner une structure à la page
 
@@ -158,9 +159,13 @@ une copie ancienne et la comparer au texte actuel.
 
 ## Adapter l'application
 
-**Réglages** change la langue, le dossier d'images, les citations, le modèle des nouvelles notes et
-si un document non enregistré s'ouvre dans la pile. Un réglage est enregistré quand vous le
-changez. L'espace de travail se change avec **Fichier → Ouvrir un dossier…**, pas dans les Réglages.
+**Réglages** change la langue, l'apparence, le dossier d'images, les citations, le frontmatter des
+nouvelles notes et si un document non enregistré s'ouvre dans la pile. Il n'y a pas de bouton
+Enregistrer : les champs de texte sont enregistrés après une courte pause ou quand vous les quittez,
+et les choix et interrupteurs immédiatement. **Apparence** propose Automatique, Clair et Sombre ;
+Automatique suit le système. **Nouvelle note** utilise un éditeur YAML, et Réinitialiser restaure le
+modèle de l'application. L'espace de travail se change avec **Fichier → Ouvrir un dossier…**, pas
+dans les Réglages.
 
 L'application se souvient des documents ouverts et de l'endroit où vous étiez. Fermez la fenêtre et
 rouvrez-la ; la même page revient.

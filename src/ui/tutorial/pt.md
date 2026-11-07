@@ -58,7 +58,8 @@ keywords: notas, exemplo
 ```
 
 O `id` é a identidade estável da nota, que os wikilinks podem usar. Em
-**Configurações → Nova nota** você escolhe o frontmatter com que toda nota nova começa.
+**Configurações → Nova nota** você edita num editor YAML o frontmatter com que toda nota nova começa;
+as alterações são salvas automaticamente.
 
 ## Dê estrutura à página
 
@@ -156,9 +157,12 @@ atual.
 
 ## Deixe o aplicativo do seu jeito
 
-**Configurações** muda o idioma, a pasta de imagens, as citações, o modelo de nota nova e se um
-documento não salvo abre na pilha. Uma configuração é salva quando você a altera. O espaço de
-trabalho muda com **Arquivo → Abrir pasta…**, não nas Configurações.
+**Configurações** muda o idioma, a aparência, a pasta de imagens, as citações, o frontmatter de notas
+novas e se um documento não salvo abre na pilha. Não há botão Salvar: campos de texto salvam após
+uma pequena pausa ou ao sair, enquanto opções e interruptores salvam imediatamente. **Aparência**
+oferece Automático, Claro e Escuro; Automático segue o sistema. **Nova nota** usa um editor YAML, e
+Redefinir restaura o modelo do aplicativo. O espaço de trabalho muda com **Arquivo → Abrir pasta…**,
+não nas Configurações.
 
 O aplicativo lembra os documentos abertos e onde você estava neles. Feche a janela e abra de novo; a
 mesma página volta.

@@ -61,7 +61,8 @@ keywords: notizen, beispiel
 ```
 
 Die `id` ist die feste Identität der Notiz, die Wikilinks verwenden können. Unter
-**Einstellungen → Neue Notiz** wählst du das Frontmatter, mit dem jede neue Notiz beginnt.
+**Einstellungen → Neue Notiz** bearbeitest du das Frontmatter neuer Notizen in einem YAML-Editor;
+Änderungen werden automatisch gesichert.
 
 ## Der Seite Struktur geben
 
@@ -159,10 +160,12 @@ mit dem aktuellen Text vergleichen.
 
 ## Die App anpassen
 
-**Einstellungen** ändert die Sprache, den Bilderordner, die Zitate, die Vorlage für neue Notizen
-und ob ein ungespeichertes Dokument im Stapel geöffnet wird. Eine Einstellung wird gespeichert,
-sobald du sie änderst. Der Arbeitsbereich wird mit **Datei → Ordner öffnen…** gewechselt, nicht in
-den Einstellungen.
+**Einstellungen** ändert Sprache, Darstellung, Bilderordner, Zitate, das Frontmatter neuer Notizen
+und ob ein ungespeichertes Dokument im Stapel geöffnet wird. Es gibt keine Schaltfläche zum Sichern:
+Textfelder sichern nach einer kurzen Pause oder beim Verlassen, Auswahlfelder und Schalter sofort.
+Unter **Darstellung** wählst du Automatisch, Hell oder Dunkel; Automatisch folgt dem System. **Neue
+Notiz** verwendet einen YAML-Editor; Zurücksetzen stellt die App-Vorlage wieder her. Der
+Arbeitsbereich wird mit **Datei → Ordner öffnen…** gewechselt, nicht in den Einstellungen.
 
 Die App merkt sich die geöffneten Dokumente und deine Position darin. Schließe das Fenster und
 öffne es wieder; dieselbe Seite kommt zurück.

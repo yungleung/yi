@@ -57,8 +57,8 @@ keywords: notes, example
 ---
 ```
 
-The `id` is the note's stable identity, which wikilinks can use. **Settings → New Note** chooses
-the frontmatter every new note starts from.
+The `id` is the note's stable identity, which wikilinks can use. **Settings → New Note** edits the
+frontmatter every new note starts from in a YAML editor; changes save automatically.
 
 ## Put structure on the page
 
@@ -155,9 +155,12 @@ the current text.
 
 ## Make the app yours
 
-**Settings** changes the language, the pictures folder, the citations, the new-note template and
-whether an unsaved document opens in the stack. A setting is saved when you change it. The workspace
-is changed with **File → Open Folder…**, not in Settings.
+**Settings** changes the language, appearance, pictures folder, citations, new-note frontmatter and
+whether an unsaved document opens in the stack. There is no Save button: text fields save after a
+short pause or when you leave them, while choices and switches save immediately. **Appearance**
+offers Auto, Light and Dark; Auto follows the system. **New Note** uses a YAML editor, and Reset
+restores the app-owned default. The workspace is changed with **File → Open Folder…**, not in
+Settings.
 
 The app remembers the documents you had open and where you were in them. Close the window and open
 it again; the same page comes back.

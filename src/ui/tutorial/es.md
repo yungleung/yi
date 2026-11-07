@@ -60,7 +60,8 @@ keywords: notas, ejemplo
 ```
 
 El `id` es la identidad estable de la nota, que los wikienlaces pueden usar. En
-**Ajustes → Nota nueva** eliges el frontmatter con el que empieza cada nota.
+**Ajustes → Nota nueva** editas en un editor YAML el frontmatter con el que empieza cada nota; los
+cambios se guardan automáticamente.
 
 ## Da estructura a la página
 
@@ -158,9 +159,12 @@ y compararla con el texto actual.
 
 ## Haz tuya la aplicación
 
-**Ajustes** cambia el idioma, la carpeta de imágenes, las citas, la plantilla de notas nuevas y si
-un documento sin guardar se abre en la pila. Un ajuste se guarda cuando lo cambias. El espacio de
-trabajo se cambia con **Archivo → Abrir carpeta…**, no en Ajustes.
+**Ajustes** cambia el idioma, la apariencia, la carpeta de imágenes, las citas, el frontmatter de
+notas nuevas y si un documento sin guardar se abre en la pila. No hay botón Guardar: los campos de
+texto se guardan tras una pausa breve o al salir, y las opciones e interruptores al cambiar.
+**Apariencia** ofrece Automático, Claro y Oscuro; Automático sigue al sistema. **Nota nueva** usa un
+editor YAML y Restablecer recupera la plantilla de la aplicación. El espacio de trabajo se cambia con
+**Archivo → Abrir carpeta…**, no en Ajustes.
 
 La app recuerda los documentos que tenías abiertos y dónde estabas en ellos. Cierra la ventana y
 vuelve a abrirla; la misma página regresa.
