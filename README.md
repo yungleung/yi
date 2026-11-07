@@ -38,8 +38,9 @@ usable in any other Markdown tool.
 
 ## Requirements
 
-Node 20 or newer, and the [Tauri prerequisites](https://tauri.app/start/prerequisites/)
-for your platform (Rust stable plus the system webview libraries).
+Node.js 20.19 or newer in the 20.x line, or 22.12 or newer, and the
+[Tauri prerequisites](https://tauri.app/start/prerequisites/) for your platform
+(Rust stable plus the system webview libraries).
 
 An AI agent driving the app rather than editing by hand needs two more things
 installed — the Tauri MCP server and the skills this project relies on. Both are
@@ -50,7 +51,8 @@ in [AI agents](#ai-agents) below.
 ```bash
 npm install
 npm run tauri dev      # run the app
-npm run check          # every test that needs no browser
+npm run check          # pure Node checks
+cargo test --manifest-path src-tauri/Cargo.toml  # Rust tests
 ```
 
 Open a workspace with **Open folder** in the app. `test/fixtures/workspace/` is a
@@ -63,8 +65,9 @@ Both layers live in `test/`:
 | Command | What it covers |
 | --- | --- |
 | `npm run check` | Pure Node checks: block splitting, editing rules, source-entry offsets, layering. No browser, milliseconds. |
+| `cargo test --manifest-path src-tauri/Cargo.toml` | Rust unit tests: files, export, fonts, settings, session, versioning and native integration. No browser. |
 | `npm run probe -- test/probes/<name>.js` | A probe evaluated in the running app through the Tauri MCP bridge: real clicks, real carets. Needs `npm run tauri dev` in another terminal. |
-| `npm run probe:all` | Every probe that needs no fixture workspace. |
+| `npm run probe:all` | Every non-interactive probe that needs no configured workspace. Probes needing a source workspace or foreground native window are skipped. |
 | `npm run fixtures` | Re-copies the fixture workspace from your own notes folder. |
 
 `docs/testing.md` explains the methodology; `test/README.md` indexes the tests.
@@ -107,7 +110,8 @@ possible, and why it is not in a release build. To narrow it to this machine:
 
 Skills are instructions an agent loads on demand. They are *not* committed here —
 `.agents` is in `.gitignore` — so every machine installs its own. This project
-relies on three:
+requires two project-specific skills, with `find-skills` as an optional discovery
+helper:
 
 | Skill | What it is for | Where it comes from |
 | --- | --- | --- |
