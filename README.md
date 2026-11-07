@@ -1,8 +1,26 @@
 # Yi
 
-A local-first notes app: a WYSIWYG markdown editor that keeps your notes as plain
-markdown files in a folder you own. Built with [Tauri](https://tauri.app/) and
-TypeScript — no server, no database, no account.
+Yi is a local-first writing environment for notes, research and long-form
+documents. It combines a WYSIWYG Markdown editor with the portability of ordinary
+files: a workspace is just a folder of `.md` notes, and Yi adds rendering,
+project navigation, references, citations and publishing tools without taking
+ownership of the text. There is no account, server, proprietary database or
+required cloud service.
+
+The editor keeps the page readable while the exact Markdown stays close at hand.
+Links, headings, tables, callouts, theorems, equations and formatted text are
+rendered in place; selecting one reveals its source where the caret is, so editing
+never requires a separate preview pane. The workspace tree, document search,
+wikilinks, cross-references and structured frontmatter make a large collection of
+notes feel like one connected document. KaTeX, CSL citations and bibliography
+files cover mathematical and academic writing.
+
+Yi can publish the same note through Word, OpenDocument, LaTeX, HTML, EPUB, PDF,
+Reveal.js and Beamer. Importable Pandoc template packages control the result, and
+the application remains fast on long notes by mounting only the blocks around the
+viewport. Built with [Tauri](https://tauri.app/), Rust and TypeScript, Yi is a
+native desktop application while the notes themselves stay portable, readable and
+usable in any other Markdown tool.
 
 ## What it does
 
@@ -17,8 +35,6 @@ TypeScript — no server, no database, no account.
   pandoc-style footnotes and citations render through CSL and a bibliography file.
 - **Made for long notes.** Blocks outside the viewport are unmounted; a 320 KB note
   stays editable.
-- **A tutorial on first start.** A fresh install opens a read-only tour in its own
-  language; **Help → Open Tutorial** brings it back at any time.
 
 ## Requirements
 
