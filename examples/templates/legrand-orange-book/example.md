@@ -23,6 +23,7 @@ linkcolor: ocre
 citecolor: ocre
 urlcolor: ocre
 amsthm:
+  parent_counter: section
   styles:
     legrand-plain: {}
     legrand-definition: {}

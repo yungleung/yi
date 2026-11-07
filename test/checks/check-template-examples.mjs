@@ -955,8 +955,12 @@ check(
 if (existsSync(join(legrand, 'template.json'))) {
   const manifest = JSON.parse(readFileSync(join(legrand, 'template.json'), 'utf8'));
   const defaults = parse(readFileSync(join(legrand, 'defaults.yaml'), 'utf8'));
+  const metadata = parse(readFileSync(join(legrand, 'metadata.yaml'), 'utf8'));
   const template = readFileSync(join(legrand, 'template.tex'), 'utf8');
   const example = readFileSync(join(legrand, 'example.md'), 'utf8');
+  const exampleMetadata = parse(
+    example.slice(4, example.indexOf('\n---', 4))
+  );
   const calloutFilter = existsSync(join(legrand, 'callout.lua'))
     ? readFileSync(join(legrand, 'callout.lua'), 'utf8')
     : '';
@@ -1118,6 +1122,11 @@ if (existsSync(join(legrand, 'template.json'))) {
       )
   );
   check(
+    'legrand-orange-book: theorem counters reset in each section',
+    metadata.amsthm?.parent_counter === 'section' &&
+      exampleMetadata.amsthm?.parent_counter === 'section'
+  );
+  check(
     'legrand-orange-book: the upstream authors and non-commercial licence travel with the package',
     /Mathias Legrand/.test(attribution) &&
       /Vel/.test(attribution) &&
@@ -1142,7 +1151,17 @@ if (existsSync(join(legrand, 'template.json'))) {
     );
     const { theoremHeader } = await import(pathToFileURL(headerModule).href);
     const header = join(outputFolder, 'theorem-header.tex');
-    writeFileSync(header, theoremHeader(example));
+    const theoremPreamble = theoremHeader(example);
+    writeFileSync(header, theoremPreamble);
+    check(
+      'legrand-orange-book: generated theorem declarations carry the section parent',
+      [
+        '\\newtheorem{Theorem}{Theorem}[section]',
+        '\\newtheorem{Definition}{Definition}[section]',
+        '\\newtheorem{Remark}{Remark}[section]'
+      ].every((declaration) => theoremPreamble.includes(declaration)),
+      theoremPreamble
+    );
     const converted = spawnSync(
       'pandoc',
       [
@@ -1189,8 +1208,9 @@ if (existsSync(join(legrand, 'template.json'))) {
           squashed.includes('partone') &&
           squashed.includes('typographyandstructure') &&
           squashed.includes('mathematicaldesign') &&
-          squashed.includes('theorem1') &&
-          squashed.includes('definition1') &&
+          squashed.includes('theorem211') &&
+          squashed.includes('definition221') &&
+          squashed.includes('remark231') &&
           squashed.includes('everydistinctionintheargument') &&
           squashed.includes('areadingrhythmis') &&
           squashed.includes('references') &&

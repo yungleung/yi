@@ -615,10 +615,24 @@
           !opening.includes('\\index{') &&
           !opening.includes('\\printindex')
       );
+      const frontmatterEnd = source.indexOf('\n---', 4) + 4;
+      const theoremExcerpt = [
+        source.slice(0, frontmatterEnd),
+        '# Part One',
+        source.slice(
+          source.indexOf('# Part Two'),
+          source.indexOf('### Propositions')
+        )
+      ].join('\n\n');
+      await t.load(theoremExcerpt);
+      const numbered = (t.prose().textContent ?? '').normalize('NFKC');
       check(
-        'legrand-orange-book: theorem Divs render semantically in the editor',
-        ['Theorem', 'Definition', 'Remark'].every((name) => opening.includes(name)) &&
-          !opening.includes(':::')
+        'legrand-orange-book: theorem Divs follow the section parent in the editor',
+        ['Theorem 2.1', 'Definition 2.1', 'Remark 2.1'].every((label) =>
+          numbered.includes(label)
+        ) &&
+          !numbered.includes(':::'),
+        numbered
       );
       const calloutStart = source.indexOf('> [!IMPORTANT]');
       const calloutEnd = source.indexOf('\n\n### Exercises', calloutStart);
@@ -688,15 +702,15 @@
           'partone',
           'typographyandstructure',
           'mathematicaldesign',
-          'theorem1',
-          'definition1',
-          'remark1',
+          'theorem211',
+          'definition221',
+          'remark231',
           'theorangeaccentisreservedfororientation',
           'completenessofthevisualhierarchy',
           'readingrhythm',
           'references'
         ].every((text) => squashed.includes(text)) &&
-          compactPage.includes('theorem1227completenessofthevisualhierarchy') &&
+          compactPage.includes('theorem2.1.1227completenessofthevisualhierarchy') &&
           !squashed.includes('important') &&
           !squashed.includes('index') &&
           !compactPage.includes(':::'),

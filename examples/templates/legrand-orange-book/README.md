@@ -69,12 +69,18 @@ The file defines `legrand-plain`, `legrand-definition` and `legrand-remark`,
 then attaches the Legrand boxes and remark treatment to Yi's `Theorem`,
 `Definition`, `Corollary`, `Exercise` and `Remark` environments.
 
+Like the original book template, theorem counters restart in each section. The
+example declares `amsthm.parent_counter: section`, so its first theorem in
+section 2.1 is numbered **Theorem 2.1.1**. The same setting is included in
+`metadata.yaml` for notes created from this package.
+
 The example declares each non-built-in kind in frontmatter. `Theorem` and
 `proof` are Yi's only built-ins. To add another kind, give it a style group and
 declare the style request:
 
 ```yaml
 amsthm:
+  parent_counter: section
   styles:
     legrand-definition: {}
   legrand-definition:
