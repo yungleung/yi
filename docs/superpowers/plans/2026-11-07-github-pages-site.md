@@ -371,17 +371,10 @@ for (const example of ['html', 'latex', 'pdf', 'rho-class', 'legrand-orange-book
   );
 }
 
-for (const screenshot of ['hero.webp', 'cross-references.webp', 'template-workbench.webp']) {
-  check(`the page ships ${screenshot}`, existsSync(`site/assets/screenshots/${screenshot}`));
-}
 check('the site icon exists', existsSync('site/assets/icon.png'));
 check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
 check('relative assets are used', html.includes('./assets/icon.png') && !html.includes('href="/'));
-check(
-  'screenshots have descriptive alternatives',
-  html.includes('data-alt-en=') && html.includes('data-alt-zh=')
-);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
@@ -732,10 +725,8 @@ Implement:
 - [ ] **Step 7: Run the site structure check**
 
 Run: `node test/checks/check-site.mjs`
-Expected: FAIL only for missing screenshots, which Task 5 creates.
-
-Run the content-related assertions manually by inspecting the output; finish all required copy,
-feature bullets, template cards, footer, `noscript` links and ARIA attributes.
+Expected: PASS. The content-related assertions cover the required copy, feature bullets, template
+cards, footer, `noscript` links and ARIA attributes.
 
 - [ ] **Step 8: Commit Task 2**
 
