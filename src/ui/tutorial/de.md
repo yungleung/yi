@@ -97,6 +97,16 @@ Absatz beginnt mit `> `; eine Zeile ohne ist außerhalb des Zitats.
 
 Tabellen schreibst du mit senkrechten Strichen:
 
+```markdown
+| Funktion | Verwendung |
+| --- | --- |
+| Fett | Text markieren und **Fett** drücken |
+| Tabelle | **Einfügen → Tabelle** |
+| Code | einen eingezäunten Block tippen |
+```
+
+Yi stellt diesen Quelltext so dar:
+
 | Funktion | Verwendung |
 | --- | --- |
 | Fett | Text markieren und **Fett** drücken |
@@ -125,8 +135,8 @@ Eine Fußnote ist ein Verweis im Satz und eine Erklärung unter dem Text.[^erste
 ## Notizen und Bilder verknüpfen
 
 Ein Wikilink verbindet Notizen über Titel, Dateiname oder id: `[[Eine andere Notiz]]`. Tippe `[[`,
-und Yi bietet die Notizen an, die es findet. Ein normaler Weblink sieht so aus:
-`[die Worte](https://example.com)`.
+und Yi bietet die Notizen an, die es findet. Weitertippen filtert sie nach Titel, Dateiname oder id.
+Ein normaler Weblink sieht so aus: `[die Worte](https://example.com)`.
 
 Ein Bild ist ein gewöhnliches Markdown-Bild: `![Beschreibung](bild.png)`. Ein relativer Pfad wird
 neben der Notiz gesucht. Die Bild-Schaltfläche fügt ein Bild aus einer Datei oder der Zwischenablage
@@ -134,8 +144,9 @@ ein.
 
 ## Belege zitieren
 
-Zitate verwenden die Pandoc-Syntax: `[@smith2020]`. Yi zeigt das formatierte Zitat auf der Seite und
-die zitierten Werke beim Export unter den Literaturangaben.
+Zitate verwenden die Pandoc-Syntax: `[@smith2020]`. Tippe `[@` und danach weiter, um die verfügbaren
+Bibliografieschlüssel zu filtern. Yi zeigt das formatierte Zitat auf der Seite und die zitierten
+Werke beim Export unter den Literaturangaben.
 
 ## Suchen und ersetzen
 

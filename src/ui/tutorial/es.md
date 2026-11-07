@@ -96,6 +96,16 @@ citado empieza con `> `; una línea sin esa marca queda fuera de la cita.
 
 Las tablas se escriben con barras verticales:
 
+```markdown
+| Función | Cómo usarla |
+| --- | --- |
+| Negrita | selecciona texto y pulsa **Negrita** |
+| Tabla | **Insertar → Tabla** |
+| Código | escribe un bloque delimitado |
+```
+
+Yi representa ese código así:
+
 | Función | Cómo usarla |
 | --- | --- |
 | Negrita | selecciona texto y pulsa **Negrita** |
@@ -124,16 +134,17 @@ Una nota al pie es una referencia en la frase y una explicación bajo el texto.[
 ## Enlaza notas e imágenes
 
 Un wikienlace conecta notas por título, nombre de archivo o id: `[[Otra nota]]`. Escribe `[[` y Yi
-te ofrece las notas que encuentra. Un enlace web normal se escribe así:
-`[las palabras](https://example.com)`.
+te ofrece las notas que encuentra. Sigue escribiendo para filtrarlas por título, nombre de archivo o
+id. Un enlace web normal se escribe así: `[las palabras](https://example.com)`.
 
 Una imagen es una imagen markdown normal: `![descripción](imagen.png)`. Una ruta relativa se busca
 junto a la nota. El botón de imagen inserta una desde un archivo o el portapapeles.
 
 ## Cita lo que lees
 
-Las citas usan la sintaxis de pandoc: `[@smith2020]`. Yi muestra la cita formateada en la página y
-las obras citadas bajo Referencias al exportar.
+Las citas usan la sintaxis de pandoc: `[@smith2020]`. Escribe `[@` y sigue escribiendo para filtrar
+las claves disponibles de la bibliografía. Yi muestra la cita formateada en la página y las obras
+citadas bajo Referencias al exportar.
 
 ## Busca y cambia
 

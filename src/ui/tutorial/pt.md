@@ -94,6 +94,16 @@ começa com `> `; uma linha sem essa marca fica fora da citação.
 
 Tabelas são escritas com barras verticais:
 
+```markdown
+| Recurso | Como usar |
+| --- | --- |
+| Negrito | selecione o texto e pressione **Negrito** |
+| Tabela | **Inserir → Tabela** |
+| Código | digite um bloco delimitado |
+```
+
+O Yi mostra esse código assim:
+
 | Recurso | Como usar |
 | --- | --- |
 | Negrito | selecione o texto e pressione **Negrito** |
@@ -122,16 +132,17 @@ Uma nota de rodapé é uma referência na frase e uma explicação abaixo do tex
 ## Ligue notas e imagens
 
 Um wikilink liga notas por título, nome de arquivo ou id: `[[Outra nota]]`. Digite `[[` e o Yi
-oferece as notas que encontra. Um link da web comum é escrito como
-`[as palavras](https://example.com)`.
+oferece as notas que encontra. Continue digitando para filtrá-las por título, nome de arquivo ou id.
+Um link da web comum é escrito como `[as palavras](https://example.com)`.
 
 Uma imagem é uma imagem markdown comum: `![descrição](imagem.png)`. Um caminho relativo é procurado
 ao lado da nota. O botão de imagem insere uma imagem de um arquivo ou da área de transferência.
 
 ## Cite o que você lê
 
-Citações usam a sintaxe do pandoc: `[@smith2020]`. O Yi mostra a citação formatada na página e as
-obras citadas em Referências ao exportar.
+Citações usam a sintaxe do pandoc: `[@smith2020]`. Digite `[@` e continue digitando para filtrar as
+chaves disponíveis da bibliografia. O Yi mostra a citação formatada na página e as obras citadas em
+Referências ao exportar.
 
 ## Localize e substitua
 

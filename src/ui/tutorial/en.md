@@ -94,6 +94,16 @@ starts with `> `; a line without it is outside the quote.
 
 Tables are written with pipes:
 
+```markdown
+| Feature | How to use it |
+| --- | --- |
+| Bold | select text and press **Bold** |
+| Table | **Insert → Table** |
+| Code | type a fenced block |
+```
+
+Yi renders that source as:
+
 | Feature | How to use it |
 | --- | --- |
 | Bold | select text and press **Bold** |
@@ -122,15 +132,17 @@ A footnote is a reference in the sentence and a definition under the body.[^firs
 ## Link notes and pictures
 
 A wikilink connects notes by title, file name or id: `[[Another note]]`. Type `[[` and Yi offers
-the notes it can find. A normal web link is written as `[the words](https://example.com)`.
+the notes it can find. Keep typing to filter those notes by title, file name or id. A normal web
+link is written as `[the words](https://example.com)`.
 
 An image is a normal markdown image: `![description](picture.png)`. A relative path is read beside
 the note. The image button can insert a picture from a file or the clipboard.
 
 ## Cite what you read
 
-Citations use pandoc's syntax: `[@smith2020]`. Yi shows the formatted citation in the page and the
-works you cite under References when the note is exported.
+Citations use pandoc's syntax: `[@smith2020]`. Type `[@` and keep typing to filter the available
+bibliography keys. Yi shows the formatted citation in the page and the works you cite under
+References when the note is exported.
 
 ## Find and change
 

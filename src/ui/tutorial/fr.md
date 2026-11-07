@@ -96,6 +96,16 @@ paragraphe cité commence par `> ` ; une ligne sans cette marque est hors de la 
 
 Les tableaux s'écrivent avec des barres verticales :
 
+```markdown
+| Fonction | Comment l'utiliser |
+| --- | --- |
+| Gras | sélectionnez du texte et appuyez sur **Gras** |
+| Tableau | **Insérer → Tableau** |
+| Code | tapez un bloc délimité |
+```
+
+Yi affiche cette source ainsi :
+
 | Fonction | Comment l'utiliser |
 | --- | --- |
 | Gras | sélectionnez du texte et appuyez sur **Gras** |
@@ -124,8 +134,8 @@ Une note de bas de page est une référence dans la phrase et une explication so
 ## Lier les notes et les images
 
 Un wikilien relie des notes par titre, nom de fichier ou id : `[[Une autre note]]`. Tapez `[[` et Yi
-propose les notes qu'il trouve. Un lien web ordinaire s'écrit
-`[les mots](https://example.com)`.
+propose les notes qu'il trouve. Continuez à taper pour les filtrer par titre, nom de fichier ou id.
+Un lien web ordinaire s'écrit `[les mots](https://example.com)`.
 
 Une image est une image markdown ordinaire : `![description](image.png)`. Un chemin relatif est
 cherché à côté de la note. Le bouton d'image insère une image depuis un fichier ou le
@@ -133,8 +143,9 @@ presse-papiers.
 
 ## Citer ce que vous lisez
 
-Les citations utilisent la syntaxe de pandoc : `[@smith2020]`. Yi affiche la citation formatée dans
-la page et les œuvres citées sous Références à l'export.
+Les citations utilisent la syntaxe de pandoc : `[@smith2020]`. Tapez `[@`, puis continuez à taper pour
+filtrer les clés disponibles de la bibliographie. Yi affiche la citation formatée dans la page et
+les œuvres citées sous Références à l'export.
 
 ## Chercher et remplacer
 
