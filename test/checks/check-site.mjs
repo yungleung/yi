@@ -72,14 +72,22 @@ for (const screenshot of ['hero.webp', 'cross-references.webp', 'template-workbe
   check(
     `${screenshot} keeps its actual dimensions`,
     size.width === 1800 &&
-      size.height === 1200 &&
+      size.height === 1125 &&
       image?.includes('width="1800"') === true &&
-      image?.includes('height="1200"') === true
+      image?.includes('height="1125"') === true
   );
 }
+const screenshotImages = [...html.matchAll(/<img\b[^>]*src="\.\/assets\/screenshots\/[^"]+"[^>]*>/g)].map(
+  (match) => match[0]
+);
+check('the page uses four screenshot placements', screenshotImages.length === 4);
 check(
-  'screenshots have descriptive alternatives',
-  html.includes('data-alt-en=') && html.includes('data-alt-zh=')
+  'every screenshot has non-empty bilingual alternatives',
+  screenshotImages.every(
+    (image) =>
+      /data-alt-en="[^"]+"/.test(image) &&
+      /data-alt-zh="[^"]+"/.test(image)
+  )
 );
 check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
