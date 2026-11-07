@@ -617,9 +617,8 @@ GitHub-style alerts create callouts:
 
 The five built-in kinds are `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`. Their visible
 titles are always `Note`, `Tip`, `Important`, `Warning`, and `Caution`; they do not change with Yi's
-interface language. Labels are case-insensitive.
-
-A quoted blank line after the marker is optional. Both forms are equivalent:
+interface language. Labels are case-insensitive, and the quoted blank line after the marker is
+optional:
 
 ```markdown
 > [!NOTE]
@@ -633,7 +632,7 @@ A quoted blank line after the marker is optional. Both forms are equivalent:
 Unknown labels, labels followed by other text, and escaped markers such as `> \[!NOTE]` remain
 ordinary blockquotes. This lets a quote show the marker literally without becoming a callout.
 
-Yi also accepts Pandoc fenced-Div syntax:
+Use a Pandoc fenced Div for a callout with other metadata or a custom kind:
 
 ```markdown
 ::: {.callout .callout-note}
@@ -645,93 +644,20 @@ A custom callout kind.
 :::
 ```
 
-The lone shorthand `.callout-note` is also accepted. A custom kind without `title=` uses its
+The shorthand `.callout-note` is also accepted. A custom kind without `title=` uses its
 locale-independent class name, with dashes shown as spaces. IDs, classes, and other attributes are
 kept for export. A Div ID is ordinary Pandoc metadata; it is not a Yi cross-reference target.
 
-Typing three or more colons and then a space on a line of its own creates a closed Default Div with
-the same colon count on both fences, and opens a grouped picker. Its Callout group contains Note,
-Tip, Important, Warning, Caution, and Definition; declared theorem types appear separately. The
-colons remain literal until that space arrives. Default leaves the opening as a bare colon fence; a
-callout choice adds or changes only the `.callout-<kind>` metadata. The body, ID, other classes, and
-attributes stay intact. A nested Div uses a longer colon run than its outer fence, and choosing a
-kind edits only that innermost opening. The caret stays immediately after the opening colon run;
-press Down to move into the body.
+Typing three or more colons and then a space opens Yi's Div picker. The Callout group contains Note,
+Tip, Important, Warning, Caution, and Definition. Choosing a kind changes only the
+`.callout-<kind>` class. A nested Div needs a longer colon fence than its parent; Yi edits only the
+innermost opening.
 
-Yi does not guess how to render other Pandoc Divs, such as `.columns`, speaker-note, wrapper, or
-incremental and non-incremental list Divs. A complete unknown Div is always shown as exact source,
-with or without the caret inside it. Use a longer outer colon fence for a nested Div, as Pandoc
-requires. If an unknown Div is nested in a quote or callout, that container also falls back to its
-complete source so no unknown content is rendered as a guess.
-
-Callouts may be nested inside quotes and inside other callouts. Their bodies accept ordinary
-Markdown blocks, including paragraphs, lists, tables, code fences, equations, captions, citations,
-and nested quotes.
-
-Opening markers remain container-aware while editing. Typing `$$`, `[$$`, a triple-backtick code
-fence, or three or more colons followed by a space creates the matching paired construct and gives
-every generated physical line the current `>` prefix. The code-fence and Div choosers work at that
-opening line in the same way as outside a container. In Pandoc Div source a single backtick stays
-literal; three typed backticks open the nested code fence. Enter follows list, table, code,
-equation, and other child-block rules inside the Div. A plain Div body line creates one prefixed
-newline per Enter, including when it is nested in another quote or callout.
-
-Citation completion after `@`, wikilink completion after `[[`, and automatic-reference completion
-after `[#` remain available in both source forms. Choosing a row writes only the key or target ID;
-the surrounding quote prefix and brackets stay intact. The list opens as soon as the marker is
-typed or committed by an input method; Tab is not needed to reveal it.
-
-Opening `[`, `(`, and `{` pair automatically in ordinary text, blockquotes, GitHub callouts, and
-fenced-Div callouts, including when the character arrives through an input method. In an ordinary
-same-document link destination, typing `#` after `](` also lists the document's reference targets;
-accepting a row writes only the fragment ID. Accepting any of these completions keeps the caret
-at the completed node's closing edge and leaves its Markdown source open for editing. Typing the
-next character writes it after the node and renders the completed link, reference, citation, or
-wikilink. A character that continues the same construct, such as another key character in a
-narrative citation, keeps its source open.
-
-Yi shows a rendered callout while the caret is outside it. Clicking its title or body reveals the
-complete source, including every `>` or `:::` marker. Leaving the block restores the rendered view.
-An ordinary blockquote uses the same source-visible behavior while the caret is inside it, so escape
-markers, carrier prefixes, and child delimiters are exactly the characters being edited.
-Outside source mode, an ordinary quote is inset from both sides and has one large opening quotation
-mark. It has no thick side rule and no closing quotation mark.
-
-Inside an ordinary quoted paragraph, Enter creates the quoted equivalent of a blank line:
-
-```markdown
-> First paragraph.
->
->
-```
-
-Because the generated line is a bare `>`, the next text becomes `>Second paragraph.`; type a space
-yourself if you want the visible `> ` form. A second consecutive Enter on the empty paragraph removes
-one quote level. In nested quotes, repeat the action once per level; it never removes every `>` at
-once.
-
-Typing on a blank `>` line produces exactly `>B`, not an invented `> B`. If the source already has
-the visible `> ` delimiter space, Yi keeps it. Backspace or Delete on a blank quoted line removes
-that complete physical line rather than removing only the `>` character.
-
-Lists, tables, code fences, and equations keep their normal Enter behaviour. Every inserted source
-line carries the complete quote prefix. Enter after one of these child blocks has closed adds the
-same two quoted empty lines as any other paragraph break.
-Enter on an empty list item removes its list marker and leaves a normal quote or callout body line.
-Inserting a table while editing a quote or GitHub-style callout prefixes every table row and separator
-with that container’s `>` chain, so the table stays inside the container.
-
-Inside a fenced-Div callout, Enter inserts exactly one newline at the caret. Every additional Enter
-adds another blank line, and the caret stays on the newest line. A quoted Div keeps its visible
-quote prefix on each inserted line.
-
-Empty callouts keep an invisible body caret anchor. ArrowLeft from the following block and
-ArrowRight from the preceding block both enter that anchor. Navigation alone does not edit the
-source; the first typed character creates the missing body line.
-Enter on the opening marker of an empty GitHub callout creates the same two quoted empty lines as a
-quoted paragraph and places the caret on the second. A further Enter removes those quote markers and
-leaves the callout. Enter on an empty fenced-Div opening creates one editable body line before its
-closing fence.
+Callouts may be nested in quotes and other callouts. Their bodies accept ordinary Markdown blocks,
+and citation, wikilink and automatic-reference completion remain available while editing source.
+Clicking a rendered callout reveals its exact `>` or `:::` source; leaving it restores the rendered
+view. Other Pandoc Divs, such as `.columns` or speaker notes, remain source because Yi does not
+invent a rendering for them.
 
 Every Pandoc-backed export lowers both source forms to the same semantic Div:
 
@@ -895,7 +821,9 @@ presentation/
   js/dist/
 ```
 
-`examples/revealjs.md` uses a bundled picture, so its default local export also works offline.
+The [Reveal.js example](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) uses a
+bundled picture, so its default local export also works offline. A complete
+[Beamer example](https://github.com/yungleung/yi/blob/main/examples/beamer.md) is in the same folder.
 
 The card offers two independent choices, both off by default:
 
@@ -961,7 +889,8 @@ the same Pandoc vocabulary.
 A template package is a directory under Yi's export-data folder. It is not a note, never appears in
 the workspace tree, and never enters the session stack. The package chooser lists only packages for
 the export kind you chose. A package whose manifest cannot be read remains listed so you can select
-and remove it, but it cannot be used or edited.
+and remove it, but it cannot be used or edited. Complete source packages are in the
+[template examples](https://github.com/yungleung/yi/tree/main/examples/templates) directory.
 
 ```text
 example-latex/
@@ -996,6 +925,9 @@ example-latex/
 }
 ```
 
+See the [LaTeX example manifest](https://github.com/yungleung/yi/blob/main/examples/templates/latex/template.json)
+for a complete package record.
+
 The important fields are:
 
 - `kind` is one of `html`, `latex`, `pdf`, `epub`, `docx` or `odt`.
@@ -1012,8 +944,9 @@ The important fields are:
 
 ### Wrapper mode
 
-Use `mode: "wrapper"` when the file you start from is a **complete LaTeX document**, not a Pandoc
-template. A journal sample commonly looks like this:
+Use wrapper mode when the import source is a complete LaTeX document but not yet a Pandoc template:
+it has `\begin{document}` and `\end{document}` and no `$body$`. Journal samples commonly have this
+shape:
 
 ```tex
 \documentclass{journal}
@@ -1026,10 +959,11 @@ The journal's example prose.
 ```
 
 It has a preamble and its own document environment, but no `$body$`. Pandoc cannot use it as a
-template directly. During import, Yi recognizes that shape and proposes wrapper mode. It keeps the
-original sample as a package asset, such as `source.tex`, and writes a new `template.tex` with
-`$body$` inserted immediately before `\end{document}`. You may also ask Yi to replace the sample's
-`\title{...}` and `\author{...}` with `$title$` and `$author$`; those replacements are optional.
+template directly. Yi previews a conversion that keeps the original as a sibling `source.tex` and
+writes `template.tex` with `$body$` immediately before `\end{document}`. Literal dollar signs in the
+sample are escaped so formulas survive the Pandoc template pass. The import options can also replace
+the sample's `\title{...}` and `\author{...}` with `$title$` and `$author$`; both mappings are off
+unless selected.
 
 Choose between the three modes by asking what the entry already is:
 
@@ -1039,11 +973,9 @@ Choose between the three modes by asking what the entry already is:
 | `wrapper` | The file is a complete LaTeX sample with `\begin{document}` and `\end{document}` but no `$body$` | Yi's generated wrapper, with the original sample kept as an asset |
 | `reference-doc` | The entry is a binary Word or OpenDocument styled document | `reference.docx` or `reference.odt` |
 
-Wrapper mode preserves the journal sample's document class, packages and front matter. It does not
-turn the sample into a polished template automatically: the sample's own prose is still present
-unless you edit `template.tex`, and Yi does not infer replacements for arbitrary journal commands.
-Use a normal Pandoc **template mode** instead when the kit already provides a template with
-`$body$`, or when you can refactor the sample yourself into a clean template.
+Wrapper mode preserves the sample's document class, packages and front matter. It is a starting
+point, not an automatic refactor: remove the sample prose and map any other metadata your template
+uses. Use normal template mode when the kit already contains `$body$`.
 
 ### Create from Pandoc’s default
 
@@ -1072,10 +1004,6 @@ For a folder or zip it:
    `\end{document}` and offers a wrapper;
 4. treats a lone `.docx` or `.odt` as a reference document;
 5. keeps other class, style, bibliography, image, font, CSS and JavaScript files as assets.
-
-A complete LaTeX document without `$body$` can be converted into a wrapper: Yi keeps the original
-as an asset and inserts `$body$` immediately before `\end{document}`. Title and author replacements
-are optional and never inferred silently.
 
 Zip import rejects absolute paths, `..`, symlinks, oversized archives and archives with too many
 files. Extraction happens in a temporary package area that is removed whether import succeeds or
@@ -1417,6 +1345,8 @@ category:
 ```
 
 This choice belongs to one note. It does not set the package as the note's export template.
+See the [LaTeX metadata example](https://github.com/yungleung/yi/blob/main/examples/templates/latex/metadata.yaml)
+for a complete structured-author record.
 
 ### export.yaml and defaults.yaml
 
@@ -1448,54 +1378,62 @@ metadata:
 ```
 
 Do not copy every setting from Yi's global defaults. Keep the package file small and document only
-what the template genuinely requires.
+what the template genuinely requires. The
+[HTML defaults example](https://github.com/yungleung/yi/blob/main/examples/templates/html/defaults.yaml)
+shows the minimal case.
 
 ### Complete examples
 
-The repository contains one complete, workable package for every kind, plus the licensed Rho Class
-research article and Legrand Orange Book, under:
+The repository contains a complete package for every template-backed kind:
 
-```text
-examples/templates/
-  html/
-  latex/
-  pdf/
-  rho-class/
-  legrand-orange-book/
-  epub/
-  docx/
-  odt/
-```
+| Package | What it demonstrates |
+| --- | --- |
+| [HTML](https://github.com/yungleung/yi/tree/main/examples/templates/html) | Responsive article layout, sidebar contents, local CSS and JavaScript |
+| [LaTeX](https://github.com/yungleung/yi/tree/main/examples/templates/latex) | REVTeX source, structured authors, figures, a Lua table filter and native BibTeX |
+| [PDF](https://github.com/yungleung/yi/tree/main/examples/templates/pdf) | The same Pandoc contract with a PDF engine |
+| [Rho Class](https://github.com/yungleung/yi/tree/main/examples/templates/rho-class) | A licensed two-column journal class, callouts and package CSL |
+| [Legrand Orange Book](https://github.com/yungleung/yi/tree/main/examples/templates/legrand-orange-book) | Parts, chapter art, callouts and template-owned theorem styles |
+| [EPUB](https://github.com/yungleung/yi/tree/main/examples/templates/epub) | Cover, front matter, styles and navigation |
+| [Word](https://github.com/yungleung/yi/tree/main/examples/templates/docx) | A styled reference document and field-based contents |
+| [OpenDocument](https://github.com/yungleung/yi/tree/main/examples/templates/odt) | A dissertation reference document with page masters and cached contents |
 
-Each package contains `template.json`, its text entry or binary reference document,
-`defaults.yaml`, `metadata.yaml`, and an explanatory `README.md`. Open those folders as authoring
-references, then import the same folder into Yi to see the package in the Template library.
-The Legrand example also demonstrates a template-owned `theorem-styles.sty` package and explicit
-custom theorem kinds in note metadata.
-
-The user-facing presentations sit one level above the packages:
-
-```text
-examples/
-  revealjs.md
-  beamer.md
-  templates/
-```
-
-They are complete reference decks. `examples/` is material for readers; `test/fixtures/` is
-controlled test data and serves a separate purpose.
+Each source folder contains an explanatory `README.md`, `metadata.yaml`, `defaults.yaml` and the
+entry file. The repository copies also include the `template.json` Yi writes during import. Import
+any folder into Yi to inspect the resulting package in the Template library. The complete
+presentation decks are
+[Reveal.js](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) and
+[Beamer](https://github.com/yungleung/yi/blob/main/examples/beamer.md).
 
 ### Prompts for AI agents
 
-The prompts below ask an AI coding agent to create an importable source folder for each finished
-example. They intentionally leave out `template.json`: Yi inspects the source folder and writes that
-manifest during import. Replace the example folder name and visual direction when adapting a prompt.
+These prompts create importable source folders. Before using one, open its linked example package
+and the [template examples README](https://github.com/yungleung/yi/blob/main/examples/templates/README.md).
+The package contract is the [Package YAML](#package-yaml) section above and its
+[repository copy](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml).
+
+The two YAML files have different jobs:
+
+- `metadata.yaml` is sample note frontmatter. It seeds **New note** when the package is chosen and
+  should contain every document field the template reads. Its keys override the configured note
+  template, except `date` and `id`, which Yi always writes.
+- `defaults.yaml` is a Pandoc defaults file for exports made with this package. It should contain
+  only package-specific settings such as the PDF engine, contents depth, filters and bibliography
+  path. A root `export.yaml` is the explicit alternative and wins when both exist.
+
+Do not create `template.json`; Yi writes that manifest while importing the source folder. A text
+entry must contain `$body$` exactly once. Word and OpenDocument packages instead use a styled
+`reference.docx` or `reference.odt`. `example.md` is an authoring sample for testing the package, not
+part of the export contract.
 
 #### Example prompt: HTML
 
 ```text
 Create an importable Yi HTML template source package in `my-html-template/`, modelled on
-`examples/templates/html/`. Make a polished technical article or documentation page
+https://github.com/yungleung/yi/tree/main/examples/templates/html. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/html/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `template.html`. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Make a polished technical article or documentation page
 with a responsive main column, a sticky sidebar table of contents, accessible landmarks, and
 print-friendly styles.
 
@@ -1521,7 +1459,11 @@ that could not run.
 
 ```text
 Create an importable Yi LaTeX template source package in `my-latex-template/`, modelled on
-`examples/templates/latex/`. Design a restrained journal-style article with a title,
+https://github.com/yungleung/yi/tree/main/examples/templates/latex. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/latex/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `template.tex`. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Design a restrained journal-style article with a title,
 author block, abstract, two-level table of contents, highlighted code, figures, tables, footnotes,
 and a bibliography.
 
@@ -1554,7 +1496,11 @@ affiliations out of the template: they must come from note metadata.
 
 ```text
 Create an importable Yi PDF template source package in `my-pdf-template/`, modelled on
-`examples/templates/pdf/`. Design a polished academic report for XeLaTeX with a
+https://github.com/yungleung/yi/tree/main/examples/templates/pdf. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/pdf/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `template.tex`. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Design a polished academic report for XeLaTeX with a
 title page, abstract, section hierarchy, code highlighting, figures, a table, footnotes, and a
 bibliography.
 
@@ -1580,8 +1526,12 @@ and report the output and diagnostics.
 
 ```text
 Create an importable Yi PDF template source package in `my-rho-template/`, modelled on
-`examples/templates/rho-class/` and the CC BY 4.0 Rho Class research-article design:
-<https://latextemplates.com/template/rho-class-article/>.
+https://github.com/yungleung/yi/tree/main/examples/templates/rho-class and the CC BY 4.0 Rho Class
+research-article design: <https://latextemplates.com/template/rho-class-article/>. Before writing,
+fetch and read https://github.com/yungleung/yi/blob/main/examples/templates/rho-class/README.md and
+the package's `template.json`, `metadata.yaml`, `defaults.yaml`, `template.tex` and attribution
+files. Use https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the
+package contract.
 
 Preserve the upstream `rho.cls`, `rhobabel.sty`, `rhoenvs.sty`, source URL and
 `ATTRIBUTION.txt`. Credit Guillermo Jimenez as the licence requires. Do not rename the upstream
@@ -1609,8 +1559,13 @@ the complete example, then inspect the rendered page and report the result.
 
 ```text
 Create an importable Yi PDF template source package in `my-legrand-template/`, modelled on
-`examples/templates/legrand-orange-book/` and the CC BY-NC-SA 3.0 Legrand Orange Book:
-<https://github.com/igormcoelho/pandoc-template-legrand-orange-book>.
+https://github.com/yungleung/yi/tree/main/examples/templates/legrand-orange-book and the
+CC BY-NC-SA 3.0 Legrand Orange Book:
+<https://github.com/igormcoelho/pandoc-template-legrand-orange-book>. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/legrand-orange-book/README.md and the
+package's `template.json`, `metadata.yaml`, `defaults.yaml`, `template.tex` and attribution files.
+Use https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract.
 
 Preserve the orange title page, part dividers, chapter-heading artwork, margin section numbers,
 running heads and theorem presentation. Credit Mathias Legrand and Vel, retain `ATTRIBUTION.txt`,
@@ -1640,7 +1595,11 @@ theorem boxes and references.
 
 ```text
 Create an importable Yi EPUB template source package in `my-epub-template/`, modelled on
-`examples/templates/epub/`. Design a literary novella with a striking cover, a title
+https://github.com/yungleung/yi/tree/main/examples/templates/epub. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/epub/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `template.xhtml`. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Design a literary novella with a striking cover, a title
 and imprint page carrying publisher, edition, ISBN, rights, and dedication, followed by three short
 chapters and a visible Contents page.
 
@@ -1668,7 +1627,11 @@ epubcheck when it is available and report all diagnostics.
 
 ```text
 Create an importable Yi Word reference-document package in `my-word-template/`, modelled on
-`examples/templates/docx/`. Design a clean academic or professional report whose
+https://github.com/yungleung/yi/tree/main/examples/templates/docx. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/docx/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `reference.docx` handling notes. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Design a clean academic or professional report whose
 styles carry title, subtitle, author, date, abstract title, abstract, headings one through nine,
 body and first paragraphs, quotations, code, captions, lists, footnotes, tables, figures, and a
 bibliography.
@@ -1693,7 +1656,11 @@ and style set, and report the checks and any unavailable tooling.
 
 ```text
 Create an importable Yi OpenDocument reference package in `my-odt-template/`, modelled on
-`examples/templates/odt/`. Design an A4 academic dissertation with a college-image
+https://github.com/yungleung/yi/tree/main/examples/templates/odt. Before writing, fetch and read
+https://github.com/yungleung/yi/blob/main/examples/templates/odt/README.md and the package's
+`template.json`, `metadata.yaml`, `defaults.yaml` and `reference.odt` handling notes. Use
+https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml as the package
+contract. Design an A4 academic dissertation with a college-image
 cover, four labelled and underlined lines for author, institution, instructor, and date, a second
 page for the abstract and keywords, a third-page two-level Contents table, and body pages starting
 at page 1.
@@ -1717,13 +1684,17 @@ example when possible and verify the visible two-level Contents table, page numb
 embedded assets in LibreOffice or OnlyOffice; report any tooling that was unavailable.
 ```
 
-The Word package also contains `example.md`. Open it as a note and export it as Word to inspect every
-reference style: title metadata, all nine heading levels, first and body paragraphs, lists, code,
-math, quotes, footnotes, captions, a figure, definitions and a bibliography.
+The Word package also contains an
+[example note](https://github.com/yungleung/yi/blob/main/examples/templates/docx/example.md). Open it
+as a note and export it as Word to inspect every reference style: title metadata, all nine heading
+levels, first and body paragraphs, lists, code, math, quotes, footnotes, captions, a figure,
+definitions and a bibliography.
 
-The LaTeX package's `example.md` is a three-author PRL paper. Export it as LaTeX, set the Citation
-tab to its `references.bib`, and the output folder contains the generated `.tex`, a cited-only
-`references.bib`, `figures/cmb-spectrum.pdf`, and `bibliography/apsrev4-2.bst`.
+The LaTeX package's
+[example note](https://github.com/yungleung/yi/blob/main/examples/templates/latex/example.md) is a
+three-author PRL paper. Export it as LaTeX, set the Citation tab to its `references.bib`, and the
+output folder contains the generated `.tex`, a cited-only `references.bib`,
+`figures/cmb-spectrum.pdf`, and `bibliography/apsrev4-2.bst`.
 
 ## Validate before using a template
 

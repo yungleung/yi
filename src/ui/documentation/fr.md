@@ -351,7 +351,7 @@ presentation/
   js/dist/
 ```
 
-`examples/revealjs.md` utilise une image fournie ; son export local par défaut fonctionne donc
+[`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md) utilise une image fournie ; son export local par défaut fonctionne donc
 aussi hors connexion.
 
 La carte propose deux choix indépendants, désactivés par défaut :
@@ -542,10 +542,19 @@ seconde fois : Yi le fournit déjà et deux filtres dupliquent les références.
 
 ## Exemples complets et prompts IA
 
-`examples/templates/` contient des paquets complets destinés aux lecteurs pour HTML, LaTeX, PDF,
+[`examples/templates/`](https://github.com/yungleung/yi/tree/main/examples/templates) contient des paquets complets destinés aux lecteurs pour HTML, LaTeX, PDF,
 Rho Class, Legrand Orange Book, EPUB, Word et ODT. Les présentations de référence complètes se trouvent un niveau
-au-dessus, dans `examples/revealjs.md` et `examples/beamer.md`. `examples/` est destiné aux lecteurs ;
-`test/fixtures/` contient des données de test contrôlées et remplit un autre rôle.
+au-dessus, dans [`examples/revealjs.md`](https://github.com/yungleung/yi/blob/main/examples/revealjs.md)
+et [`examples/beamer.md`](https://github.com/yungleung/yi/blob/main/examples/beamer.md).
+[`examples/`](https://github.com/yungleung/yi/tree/main/examples) est destiné aux lecteurs ;
+[`test/fixtures/`](https://github.com/yungleung/yi/tree/main/test/fixtures) contient des données de
+test contrôlées et remplit un autre rôle.
+
+Avant d’utiliser un prompt, demandez à l’agent de lire
+[l’index des exemples de modèles](https://github.com/yungleung/yi/blob/main/examples/templates/README.md)
+et la [spécification d’un paquet](https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml).
+`metadata.yaml` fournit le frontmatter initial d’une nouvelle note et `defaults.yaml` les réglages
+Pandoc du paquet. Yi écrit toujours `date` et `id`.
 
 Demandez à un agent IA un dossier source importable, sans `template.json` :
 

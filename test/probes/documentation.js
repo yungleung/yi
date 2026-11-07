@@ -89,6 +89,7 @@
         '#### Example prompt: LaTeX',
         '#### Example prompt: PDF',
         '#### Example prompt: Rho Class PDF',
+        '#### Example prompt: Legrand Orange Book PDF',
         '#### Example prompt: EPUB',
         '#### Example prompt: Word',
         '#### Example prompt: OpenDocument'
@@ -103,6 +104,39 @@
       { length: text.length }
     );
     const rendered = t.prose();
+    const examples = [
+      'html',
+      'latex',
+      'pdf',
+      'rho-class',
+      'legrand-orange-book',
+      'epub',
+      'docx',
+      'odt'
+    ];
+    check(
+      'the guide links to every online template example',
+      examples.every((example) =>
+        text.includes(
+          `](https://github.com/yungleung/yi/tree/main/examples/templates/${example})`
+        )
+      ),
+      (text.match(/https:\/\/github\.com\/yungleung\/yi\//g) ?? []).length
+    );
+    check(
+      'the AI prompts can fetch the examples and package contract',
+      examples.every((example) =>
+        text.includes(
+          `https://github.com/yungleung/yi/blob/main/examples/templates/${example}/README.md`
+        )
+      ) &&
+        text.includes(
+          'https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml'
+        ) &&
+        text.includes('`metadata.yaml` is sample note frontmatter') &&
+        text.includes('`defaults.yaml` is a Pandoc defaults file'),
+      { length: text.length }
+    );
     check(
       'it links to Pandoc’s reference-document workflow and shows both commands',
       text.includes('### Start from Pandoc’s reference document') &&
@@ -149,7 +183,13 @@
         localized?.title === title &&
           localized?.readOnly === true &&
           localizedText.includes(`lang: ${code}`) &&
-          localizedText.includes('https://pandoc.org/MANUAL.html#option--reference-doc'),
+          localizedText.includes('https://pandoc.org/MANUAL.html#option--reference-doc') &&
+          localizedText.includes(
+            'https://github.com/yungleung/yi/blob/main/examples/templates/README.md'
+          ) &&
+          localizedText.includes(
+            'https://github.com/yungleung/yi/blob/main/src/ui/documentation/en.md#package-yaml'
+          ),
         {
           title: localized?.title ?? null,
           lang: localizedText.match(/^lang: (.+)$/m)?.[1] ?? null
