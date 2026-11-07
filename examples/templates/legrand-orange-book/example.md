@@ -148,19 +148,13 @@ panel keeps the chapter title readable over any illustration.
 
 #### A table
 
-\begin{table}[h]
-\centering
-\begin{tabular}{l l l}
-\toprule
-\textbf{Treatment} & \textbf{Response A} & \textbf{Response B}\\
-\midrule
-Control & 0.0003262 & 0.562\\
-Structured & 0.0015681 & 0.910\\
-Emphasized & 0.0009271 & 0.296\\
-\bottomrule
-\end{tabular}
-\caption{A compact results table using the book's horizontal rules.}
-\end{table}
+| Treatment | Response A | Response B |
+| --- | ---: | ---: |
+| Control | 0.0003262 | 0.562 |
+| Structured | 0.0015681 | 0.910 |
+| Emphasized | 0.0009271 | 0.296 |
+
+: A compact results table using the book's horizontal rules.
 
 #### A figure
 

@@ -21,6 +21,7 @@ import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 import { parse } from 'yaml';
 import { runEpubcheck } from './support/epubcheck.mjs';
+import { remarkMarkerAlignment } from './support/remark-geometry.mjs';
 
 const root = resolve('examples/templates');
 const exampleRoot = resolve('examples');
@@ -1030,6 +1031,12 @@ if (existsSync(join(legrand, 'template.json'))) {
       /^```python$/m.test(example) &&
       /assets\/illustration\.jpg/.test(example)
   );
+  check(
+    'legrand-orange-book: the results are a Markdown pipe table',
+    /^\| Treatment \| Response A \| Response B \|$/m.test(example) &&
+      /^\| --- \| ---: \| ---: \|$/m.test(example) &&
+      !/\\begin\{(?:table|tabular)\}/.test(example)
+  );
   const builtInCallouts = [
     ['note', 'Note', 'noteblock'],
     ['tip', 'Tip', 'tipblock'],
@@ -1120,6 +1127,12 @@ if (existsSync(join(legrand, 'template.json'))) {
       !/\\newenvironment\{(?:Theorem|Definition|Corollary|Exercise|Remark)\}/.test(
         theoremStyles
       )
+  );
+  const remarkAlignment = remarkMarkerAlignment(legrand);
+  check(
+    'legrand-orange-book: the remark marker aligns with its first line',
+    remarkAlignment.skipped === true || remarkAlignment.distance <= 4,
+    remarkAlignment
   );
   check(
     'legrand-orange-book: theorem counters reset in each section',

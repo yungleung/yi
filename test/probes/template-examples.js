@@ -634,6 +634,20 @@
           !numbered.includes(':::'),
         numbered
       );
+      const tableStart = source.indexOf('| Treatment');
+      const tableEnd = source.indexOf('#### A figure', tableStart);
+      await t.load(source.slice(tableStart, tableEnd));
+      const tableText = (t.prose().textContent ?? '').normalize('NFKC');
+      check(
+        'legrand-orange-book: the pipe table renders without source LaTeX',
+        tableStart >= 0 &&
+          tableEnd > tableStart &&
+          ['Treatment', 'Response A', 'Control', '0.0003262', 'Emphasized'].every(
+            (text) => tableText.includes(text)
+          ) &&
+          !tableText.includes('\\begin{tabular}'),
+        tableText
+      );
       const calloutStart = source.indexOf('> [!IMPORTANT]');
       const calloutEnd = source.indexOf('\n\n### Exercises', calloutStart);
       await t.load(source.slice(calloutStart, calloutEnd));
@@ -705,6 +719,8 @@
           'theorem211',
           'definition221',
           'remark231',
+          'treatmentresponsearesponseb',
+          'compactresultstableusingthebookshorizontalrules',
           'theorangeaccentisreservedfororientation',
           'completenessofthevisualhierarchy',
           'readingrhythm',
