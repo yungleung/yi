@@ -9,6 +9,7 @@ import { cardLanguageAttribute } from '../../site/lang.js';
 const html = readFileSync('site/index.html', 'utf8');
 const css = readFileSync('site/styles.css', 'utf8');
 const js = readFileSync('site/app.js', 'utf8');
+const tabs = readFileSync('site/tabs.js', 'utf8');
 const failures = [];
 const check = (name, pass) => {
   if (!pass) failures.push(name);
@@ -48,6 +49,16 @@ check(
     html.includes('href="#explore"') &&
     !html.includes('href="#examples"') &&
     !html.includes('href="#documentation"')
+);
+check(
+  'header navigation activates the matching tab',
+  html.includes('data-activates="tab-templates"') &&
+    html.includes('data-activates="tab-docs"') &&
+    tabs.includes('function activateTab') &&
+    tabs.includes("candidate.setAttribute('aria-selected'") &&
+    tabs.includes('panel.hidden = !selected') &&
+    tabs.includes("root.querySelectorAll('[data-activates]')") &&
+    js.includes('wireTabs()')
 );
 check(
   'Simplified Chinese reads the data-zh card attribute',

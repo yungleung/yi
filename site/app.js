@@ -1,12 +1,14 @@
 /**
  * Public site behaviour.
  *
- * Task 2 owns the bilingual copy and `applyLanguage`; Task 3 adds the accessible
- * tabs and Task 4 loads the generated documentation fragments into the Docs tab.
+ * Task 2 owns the bilingual copy and `applyLanguage`; `tabs.js` owns the
+ * accessible tab wiring and Task 4 loads the generated documentation fragments
+ * into the Docs tab.
  * `applyLanguage('zh-Hans')` re-labels the whole page without a reload; an
  * unknown language falls back to English.
  */
 import { cardLanguageAttribute } from './lang.js';
+import { wireTabs } from './tabs.js';
 
 const COPY = {
   en: {
@@ -149,3 +151,4 @@ function applyLanguage(language) {
 }
 
 applyLanguage(storedLanguage());
+wireTabs();
