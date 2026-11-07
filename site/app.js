@@ -6,6 +6,8 @@
  * `applyLanguage('zh-Hans')` re-labels the whole page without a reload; an
  * unknown language falls back to English.
  */
+import { cardLanguageAttribute } from './lang.js';
+
 const COPY = {
   en: {
     title: 'Yi — local-first Markdown writing',
@@ -13,6 +15,10 @@ const COPY = {
     'nav.features': 'Features',
     'nav.templates': 'Templates',
     'nav.docs': 'Documentation',
+    'nav.skip': 'Skip to content',
+    'nav.label': 'Primary',
+    'language.label': 'Language',
+    'brand.label': 'Yi home',
     'hero.eyebrow': 'Local-first writing',
     'hero.title': 'Your notes, at home in Markdown.',
     'hero.body': 'Write in a calm, rendered page while every note stays an ordinary file you own.',
@@ -49,6 +55,10 @@ const COPY = {
     'nav.features': '功能',
     'nav.templates': '模板示例',
     'nav.docs': '文档',
+    'nav.skip': '跳到主要内容',
+    'nav.label': '主导航',
+    'language.label': '语言',
+    'brand.label': '易首页',
     'hero.eyebrow': '本地优先写作',
     'hero.title': '让笔记回到 Markdown。',
     'hero.body': '在舒适的渲染页面中书写，同时让每一篇笔记都保持为你拥有的普通文件。',
@@ -115,8 +125,14 @@ function applyLanguage(language) {
     if (Object.hasOwn(COPY[language], key)) element.textContent = COPY[language][key];
   }
 
+  for (const element of document.querySelectorAll('[data-i18n-label]')) {
+    const key = element.getAttribute('data-i18n-label');
+    if (Object.hasOwn(COPY[language], key)) element.setAttribute('aria-label', COPY[language][key]);
+  }
+
+  const cardLanguage = cardLanguageAttribute(language);
   for (const element of document.querySelectorAll('[data-en][data-zh]')) {
-    element.textContent = element.getAttribute(`data-${language}`);
+    element.textContent = element.getAttribute(`data-${cardLanguage}`);
   }
 
   for (const button of document.querySelectorAll('[data-lang]')) {

@@ -4,6 +4,7 @@
  * Example: removing a template card or an English/Chinese string fails `npm run check`.
  */
 import { existsSync, readFileSync } from 'node:fs';
+import { cardLanguageAttribute } from '../../site/lang.js';
 
 const html = readFileSync('site/index.html', 'utf8');
 const css = readFileSync('site/styles.css', 'utf8');
@@ -41,6 +42,31 @@ check('the site icon exists', existsSync('site/assets/icon.png'));
 check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
 check('relative assets are used', html.includes('./assets/icon.png') && !html.includes('href="/'));
+check(
+  'header navigation points at real sections',
+  html.includes('href="#features"') &&
+    html.includes('href="#explore"') &&
+    !html.includes('href="#examples"') &&
+    !html.includes('href="#documentation"')
+);
+check(
+  'Simplified Chinese reads the data-zh card attribute',
+  cardLanguageAttribute('zh-Hans') === 'zh'
+);
+check('English reads the data-en card attribute', cardLanguageAttribute('en') === 'en');
+check(
+  'an unknown language falls back to the English attribute',
+  cardLanguageAttribute('fr') === 'en'
+);
+check('the card loop uses the mapped attribute', js.includes('cardLanguageAttribute'));
+check(
+  'accessible header labels switch with the language',
+  html.includes('data-i18n-label="nav.label"') &&
+    html.includes('data-i18n-label="language.label"') &&
+    html.includes('data-i18n-label="brand.label"') &&
+    html.includes('data-i18n="nav.skip"') &&
+    js.includes("'nav.label': '主导航'")
+);
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
