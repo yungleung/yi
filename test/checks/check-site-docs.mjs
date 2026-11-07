@@ -43,6 +43,22 @@ for (const [language, required] of [
     `${language} documentation has current source content`,
     required.every((needle) => html.includes(needle))
   );
+
+  const pagePath = `_site/documentation/${language}-page.html`;
+  check(`${language} standalone documentation exists`, existsSync(pagePath));
+  if (existsSync(pagePath)) {
+    const page = readFileSync(pagePath, 'utf8');
+    check(
+      `${language} standalone documentation is a complete styled page`,
+      page.startsWith('<!doctype html>') &&
+        page.includes(`<html lang="${language}">`) &&
+        page.includes('<link rel="stylesheet" href="../styles.css">') &&
+        page.includes('<link rel="stylesheet" href="../assets/katex/katex.min.css">') &&
+        page.includes('data-doc-toc') &&
+        page.includes('class="docs-article"') &&
+        page.includes('href="../index.html"')
+    );
+  }
 }
 
 if (failures.length > 0) {

@@ -21,8 +21,20 @@ const root = new URL('../', import.meta.url);
 const source = new URL('site/', root);
 const output = new URL('_site/', root);
 const documents = [
-  { language: 'en', path: 'src/ui/documentation/en.md', tocLabel: 'On this page' },
-  { language: 'zh-Hans', path: 'src/ui/documentation/zh-Hans.md', tocLabel: '本页目录' }
+  {
+    language: 'en',
+    path: 'src/ui/documentation/en.md',
+    tocLabel: 'On this page',
+    title: 'Yi Documentation',
+    backLabel: 'Back to Yi'
+  },
+  {
+    language: 'zh-Hans',
+    path: 'src/ui/documentation/zh-Hans.md',
+    tocLabel: '本页目录',
+    title: 'Yi 文档',
+    backLabel: '返回 Yi'
+  }
 ];
 
 function textOf(node) {
@@ -104,6 +116,35 @@ async function buildDocument(document) {
   );
 }
 
+/**
+ * Wraps a generated Documentation fragment in a complete page for no-script readers.
+ *
+ * Example: `/documentation/en-page.html` uses the same article and TOC as the tab while also
+ * loading the public-site typography and local KaTeX resources.
+ */
+function standalonePage(document, fragment) {
+  return `<!doctype html>
+<html lang="${document.language}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${escapeHtml(document.title)}</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../assets/katex/katex.min.css">
+  </head>
+  <body class="standalone-page">
+    <header class="standalone-header">
+      <a class="brand" href="../index.html"><span>Yi</span></a>
+      <a href="../index.html">${escapeHtml(document.backLabel)}</a>
+    </header>
+    <main class="standalone-docs">
+      <div class="doc-shell">${fragment}</div>
+    </main>
+  </body>
+</html>
+`;
+}
+
 if (!existsSync(source)) throw new Error('site/ is missing');
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
@@ -118,7 +159,11 @@ await cp(new URL('node_modules/katex/dist/fonts/', root), new URL('assets/katex/
   recursive: true
 });
 for (const document of documents) {
-  const html = await buildDocument(document);
-  await writeFile(new URL(`documentation/${document.language}.html`, output), html);
+  const fragment = await buildDocument(document);
+  await writeFile(new URL(`documentation/${document.language}.html`, output), fragment);
+  await writeFile(
+    new URL(`documentation/${document.language}-page.html`, output),
+    standalonePage(document, fragment)
+  );
 }
-console.log('site: built _site/index.html and both documentation fragments');
+console.log('site: built _site/index.html and both documentation formats');

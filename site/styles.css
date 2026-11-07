@@ -552,6 +552,29 @@ a {
   max-width: 100%;
 }
 
+/* Standalone documentation pages */
+.standalone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: var(--measure);
+  margin-inline: auto;
+  padding-block: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.standalone-header > a:last-child {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.standalone-docs {
+  width: var(--measure);
+  margin-inline: auto;
+  padding-block: clamp(28px, 5vw, 56px);
+}
+
 /* Footer */
 footer {
   display: flex;

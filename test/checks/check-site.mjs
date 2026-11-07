@@ -93,6 +93,13 @@ check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
 check('relative assets are used', html.includes('./assets/icon.png') && !html.includes('href="/'));
 check(
+  'no-script readers reach standalone styled documentation',
+  html.includes('href="./documentation/en-page.html"') &&
+    html.includes('href="./documentation/zh-Hans-page.html"') &&
+    !html.includes('href="./documentation/en.html"') &&
+    !html.includes('href="./documentation/zh-Hans.html"')
+);
+check(
   'header navigation points at real sections',
   html.includes('href="#features"') &&
     html.includes('href="#explore"') &&
