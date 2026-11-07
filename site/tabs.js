@@ -15,7 +15,22 @@
  * shows `#panel-docs` and moves `aria-selected` from the Templates tab to the Docs tab.
  */
 export function activateTab(tab, moveFocus = false) {
-  if (!tab || tab.getAttribute('role') !== 'tab') return;
+  if (
+    !tab ||
+    typeof tab.getAttribute !== 'function' ||
+    tab.getAttribute('role') !== 'tab'
+  ) {
+    return false;
+  }
+  const controls = tab.getAttribute('aria-controls');
+  if (
+    !controls ||
+    typeof document === 'undefined' ||
+    typeof document.getElementById !== 'function' ||
+    !document.getElementById(controls)
+  ) {
+    return false;
+  }
   const tablist = tab.closest('[role="tablist"]');
   const tabs = tablist ? Array.from(tablist.querySelectorAll('[role="tab"]')) : [tab];
 
@@ -27,17 +42,31 @@ export function activateTab(tab, moveFocus = false) {
     if (panel) panel.hidden = !selected;
   }
 
-  if (moveFocus) tab.focus();
+  if (moveFocus && typeof tab.focus === 'function') tab.focus();
+  return true;
 }
 
 /**
- * Returns the tab `distance` steps away from `tabs[index]`, wrapping at both ends.
+ * Returns the index selected by an Arrow, Home or End key, wrapping at both ends.
  *
- * Example: with tabs `[A, B, C]`, `stepTo(tabs, 0, -1)` is `C` and
- * `stepTo(tabs, 2, 1)` is `A`, so ArrowLeft on the first tab lands on the last.
+ * Example: `tabTargetIndex(0, 3, 'ArrowLeft')` is `2`, while
+ * `tabTargetIndex(2, 3, 'ArrowRight')` is `0`.
  */
-function stepTo(tabs, index, distance) {
-  return tabs[(index + distance + tabs.length) % tabs.length];
+export function tabTargetIndex(index, count, key) {
+  if (
+    !Number.isInteger(index) ||
+    !Number.isInteger(count) ||
+    count <= 0 ||
+    index < 0 ||
+    index >= count
+  ) {
+    return -1;
+  }
+  if (key === 'ArrowRight') return (index + 1) % count;
+  if (key === 'ArrowLeft') return (index - 1 + count) % count;
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
+  return -1;
 }
 
 /**
@@ -56,20 +85,10 @@ export function wireTabs(root = document) {
     tablist.addEventListener('keydown', (event) => {
       if (!tabs.includes(event.target)) return;
       const index = tabs.indexOf(event.target);
-      let target;
-      if (event.key === 'ArrowRight') {
-        target = stepTo(tabs, index, 1);
-      } else if (event.key === 'ArrowLeft') {
-        target = stepTo(tabs, index, -1);
-      } else if (event.key === 'Home') {
-        target = tabs[0];
-      } else if (event.key === 'End') {
-        target = tabs[tabs.length - 1];
-      } else {
-        return;
-      }
+      const targetIndex = tabTargetIndex(index, tabs.length, event.key);
+      if (targetIndex < 0) return;
       event.preventDefault();
-      activateTab(target, true);
+      activateTab(tabs[targetIndex], true);
     });
   }
 

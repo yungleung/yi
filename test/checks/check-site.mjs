@@ -5,6 +5,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { cardLanguageAttribute } from '../../site/lang.js';
+import { activateTab, tabTargetIndex } from '../../site/tabs.js';
 
 const html = readFileSync('site/index.html', 'utf8');
 const css = readFileSync('site/styles.css', 'utf8');
@@ -75,11 +76,65 @@ check(
   html.includes('role="tablist"') &&
     html.includes('aria-selected="true"') &&
     html.includes('aria-controls="panel-templates"') &&
-    tabs.includes("event.key === 'ArrowRight'") &&
-    tabs.includes("event.key === 'ArrowLeft'") &&
-    tabs.includes("event.key === 'Home'") &&
-    tabs.includes("event.key === 'End'")
+    tabs.includes('tabTargetIndex(index, tabs.length, event.key)')
 );
+check(
+  'Arrow and Home/End move through tabs with wrap-around',
+  tabTargetIndex(0, 3, 'ArrowLeft') === 2 &&
+    tabTargetIndex(2, 3, 'ArrowRight') === 0 &&
+    tabTargetIndex(1, 3, 'ArrowLeft') === 0 &&
+    tabTargetIndex(1, 3, 'ArrowRight') === 2 &&
+    tabTargetIndex(1, 3, 'Home') === 0 &&
+    tabTargetIndex(1, 3, 'End') === 2 &&
+    tabTargetIndex(0, 0, 'End') === -1
+);
+
+let focused = false;
+let attributeChanges = 0;
+let panelHidden = false;
+const activePanel = {
+  set hidden(value) {
+    panelHidden = value;
+  }
+};
+const activeTab = {
+  getAttribute(name) {
+    if (name === 'role') return 'tab';
+    if (name === 'aria-controls') return 'active-panel';
+    return null;
+  },
+  setAttribute() {
+    attributeChanges += 1;
+  },
+  focus() {}
+};
+const staleTab = {
+  getAttribute(name) {
+    if (name === 'role') return 'tab';
+    if (name === 'aria-controls') return 'missing-panel';
+    return null;
+  },
+  closest() {
+    return { querySelectorAll: () => [activeTab, staleTab] };
+  },
+  setAttribute() {
+    attributeChanges += 1;
+  },
+  focus() {
+    focused = true;
+  }
+};
+const previousDocument = globalThis.document;
+globalThis.document = {
+  getElementById(id) {
+    return id === 'active-panel' ? activePanel : null;
+  }
+};
+check('an invalid tab target leaves the current UI unchanged', activateTab(staleTab, true) === false);
+check('an invalid tab target does not move focus', focused === false);
+check('an invalid tab target does not hide a panel', panelHidden === false);
+check('an invalid tab target does not rewrite tab state', attributeChanges === 0);
+globalThis.document = previousDocument;
 check(
   'language switching persists and switches the page',
   js.includes("localStorage.setItem(STORAGE_KEY, language)") &&
