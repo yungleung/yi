@@ -72,6 +72,19 @@ Both layers live in `test/`:
 
 `docs/testing.md` explains the methodology; `test/README.md` indexes the tests.
 
+## Project website
+
+The public site lives in `site/` and deploys to
+<https://yungleung.github.io/yi/> through GitHub Pages.
+
+```bash
+npm run site:build
+npm run site:preview
+```
+
+The build converts the current bundled English and Simplified Chinese Documentation rather than
+maintaining a separate copy.
+
 ## AI agents
 
 An agent works on this repository the way a person does — the running app, the

@@ -257,6 +257,19 @@ check(
   selectActiveHeading([{ id: 'a', top: 400 }], new Set(), 300) === null
 );
 
+const workflowPath = '.github/workflows/pages.yml';
+const workflow = existsSync(workflowPath) ? readFileSync(workflowPath, 'utf8') : '';
+check('Pages deploys from main', workflow.includes('branches: [main]'));
+check(
+  'Pages uploads the generated artifact',
+  workflow.includes('actions/upload-pages-artifact') && workflow.includes('path: _site')
+);
+check('Pages uses the deployment action', workflow.includes('actions/deploy-pages'));
+check(
+  'Pages has the required permissions',
+  ['contents: read', 'pages: write', 'id-token: write'].every((line) => workflow.includes(line))
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);
