@@ -2,7 +2,8 @@
 name = "yi"
 version = "0.1.0"
 description = "A Versatile Note App"
-authors = ["urshanabi"]
+authors = ["yungleung"]
+license = "MIT"
 edition = "2021"
 default-run = "Yi"
 
