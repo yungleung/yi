@@ -1,0 +1,105 @@
+/**
+ * Builds the public GitHub Pages artifact from the static shell and bundled Documentation.
+ *
+ * Example: `npm run site:build` writes `_site/index.html` and
+ * `_site/documentation/{en,zh-Hans}.html`; neither output is committed.
+ */
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkMath from 'remark-math';
+import remarkRehype from 'remark-rehype';
+import rehypeSlug from 'rehype-slug';
+import rehypeKatex from 'rehype-katex';
+import rehypeStringify from 'rehype-stringify';
+import GithubSlugger from 'github-slugger';
+
+const root = new URL('../', import.meta.url);
+const source = new URL('site/', root);
+const output = new URL('_site/', root);
+const documents = [
+  { language: 'en', path: 'src/ui/documentation/en.md', tocLabel: 'On this page' },
+  { language: 'zh-Hans', path: 'src/ui/documentation/zh-Hans.md', tocLabel: '本页目录' }
+];
+
+function textOf(node) {
+  if (typeof node.value === 'string') return node.value;
+  return (node.children ?? []).map(textOf).join('');
+}
+
+function tocMarkup(items) {
+  if (items.length === 0) return '';
+  return `<ol>${items
+    .map(
+      (item) =>
+        `<li class="doc-toc__item doc-toc__item--h${item.depth}">` +
+        `<a href="#${item.id}">${escapeHtml(item.text)}</a></li>`
+    )
+    .join('')}</ol>`;
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+async function buildDocument(document) {
+  const markdown = await readFile(new URL(document.path, root), 'utf8');
+  const parseProcessor = unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkFrontmatter, ['yaml'])
+    .use(remarkMath);
+  const tree = parseProcessor.parse(markdown);
+  const slugs = new GithubSlugger();
+  const headings = [];
+  for (const node of tree.children) {
+    if (node.type !== 'heading' || node.depth < 2 || node.depth > 3) continue;
+    const label = textOf(node).trim();
+    const id = slugs.slug(label);
+    node.data ??= {};
+    node.data.hProperties ??= {};
+    node.data.hProperties.id = id;
+    headings.push({ depth: node.depth, id, text: label });
+  }
+  if (headings.length === 0) {
+    throw new Error(`${document.path} produced no table-of-contents headings`);
+  }
+  const renderProcessor = unified()
+    .use(remarkRehype)
+    .use(rehypeSlug)
+    .use(rehypeKatex, { output: 'htmlAndMathml' })
+    .use(rehypeStringify);
+  const rendered = await renderProcessor.run(tree);
+  const html = String(renderProcessor.stringify(rendered));
+  return (
+    `<aside class="doc-toc" data-doc-toc>` +
+    `<p class="doc-toc__label">${document.tocLabel}</p>${tocMarkup(headings)}</aside>` +
+    `<article class="docs-article">${html}</article>`
+  );
+}
+
+if (!existsSync(source)) throw new Error('site/ is missing');
+await rm(output, { recursive: true, force: true });
+await mkdir(output, { recursive: true });
+await cp(source, output, { recursive: true });
+await mkdir(new URL('documentation/', output), { recursive: true });
+await mkdir(new URL('assets/katex/', output), { recursive: true });
+await cp(
+  new URL('node_modules/katex/dist/katex.min.css', root),
+  new URL('assets/katex/katex.min.css', output)
+);
+await cp(new URL('node_modules/katex/dist/fonts/', root), new URL('assets/katex/fonts/', output), {
+  recursive: true
+});
+for (const document of documents) {
+  const html = await buildDocument(document);
+  await writeFile(new URL(`documentation/${document.language}.html`, output), html);
+}
+console.log('site: built _site/index.html and both documentation fragments');

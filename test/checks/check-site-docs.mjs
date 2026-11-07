@@ -1,0 +1,38 @@
+/**
+ * Builds the public site and proves both documentation fragments come from the bundled guides.
+ *
+ * Example: changing the first heading in `src/ui/documentation/en.md` changes the generated
+ * English fragment and its sidebar target.
+ */
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+
+const failures = [];
+const check = (name, pass) => {
+  if (!pass) failures.push(name);
+};
+
+const build = spawnSync(process.execPath, ['scripts/build-site.mjs'], { encoding: 'utf8' });
+check('the site build succeeds', build.status === 0);
+
+for (const [language, required] of [
+  ['en', ['Package YAML', 'Template packages', 'A4']],
+  ['zh-Hans', ['包内 YAML', '模板包', 'A4']]
+]) {
+  const path = `_site/documentation/${language}.html`;
+  check(`${language} documentation exists`, existsSync(path));
+  if (!existsSync(path)) continue;
+  const html = readFileSync(path, 'utf8');
+  check(`${language} documentation has its TOC`, html.includes('data-doc-toc'));
+  check(`${language} documentation has anchored headings`, /<h2[^>]+id="/.test(html));
+  check(
+    `${language} documentation has current source content`,
+    required.every((needle) => html.includes(needle))
+  );
+}
+
+if (failures.length > 0) {
+  console.error(failures.join('\n'));
+  process.exit(1);
+}
+console.log('site documentation: both languages built with heading targets');
