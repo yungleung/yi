@@ -11,6 +11,9 @@ body:
         Provide enough of the package and example note to reproduce the problem.
         Do not upload a template you are not permitted to share.
 
+        For open-ended template help or compatibility discussion, use the
+        [Templates category](https://github.com/yungleung/yi/discussions/categories/templates).
+
   - type: dropdown
     id: export_kind
     attributes:

@@ -11,6 +11,9 @@ body:
         Describe the writing or knowledge-management problem first. A concrete
         workflow and sample Markdown help more than a list of interface controls.
 
+        If this is an early idea rather than a concrete request, start a
+        [discussion in Ideas](https://github.com/yungleung/yi/discussions/categories/ideas).
+
   - type: textarea
     id: problem
     attributes:

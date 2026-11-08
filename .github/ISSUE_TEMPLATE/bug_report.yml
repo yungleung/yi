@@ -12,6 +12,9 @@ body:
         template package when possible. Do not include private notes, credentials
         or other sensitive data.
 
+        Looking for usage help rather than reporting a defect? Ask in the
+        [Q&A category](https://github.com/yungleung/yi/discussions/categories/q-a).
+
   - type: input
     id: yi_version
     attributes:

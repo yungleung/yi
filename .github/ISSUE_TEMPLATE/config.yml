@@ -1,5 +1,20 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Ask a usage question
+    url: https://github.com/yungleung/yi/discussions/categories/q-a
+    about: Get help with installation, editing, citations, exports or daily workflows.
+  - name: Discuss an idea
+    url: https://github.com/yungleung/yi/discussions/categories/ideas
+    about: Explore a product or workflow idea before opening a concrete feature request.
+  - name: Share a workflow
+    url: https://github.com/yungleung/yi/discussions/categories/show-and-tell
+    about: Share notes, screenshots, exports, template packages and personal workflows.
+  - name: Ask about a template
+    url: https://github.com/yungleung/yi/discussions/categories/templates
+    about: Discuss template authoring, styling and compatibility.
+  - name: Contributor discussion
+    url: https://github.com/yungleung/yi/discussions/categories/development
+    about: Discuss architecture, code, tests, builds and releases.
   - name: Read the documentation
     url: https://yungleung.github.io/yi/documentation/en-page.html
     about: Find setup, editing, citation, export and template-package guidance.

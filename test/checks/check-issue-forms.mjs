@@ -45,17 +45,35 @@ for (const [kind, path] of Object.entries(files)) {
 
 const bodyIds = (form) => new Set((form?.body ?? []).map((entry) => entry?.id).filter(Boolean));
 if (existsSync(files.bug)) {
-  const ids = bodyIds(parse(readFileSync(files.bug, 'utf8')));
+  const form = parse(readFileSync(files.bug, 'utf8'));
+  const ids = bodyIds(form);
   check(
     'the bug form captures version, platform, reproduction, expected and actual behaviour',
     ['yi_version', 'platform', 'steps', 'expected', 'actual'].every((id) => ids.has(id))
   );
+  check(
+    'the bug form routes usage questions to Q&A',
+    form.body.some(
+      (entry) =>
+        entry.type === 'markdown' &&
+        entry.attributes?.value?.includes('discussions/categories/q-a')
+    )
+  );
 }
 if (existsSync(files.feature)) {
-  const ids = bodyIds(parse(readFileSync(files.feature, 'utf8')));
+  const form = parse(readFileSync(files.feature, 'utf8'));
+  const ids = bodyIds(form);
   check(
     'the feature form captures the problem, proposal and affected workflow',
     ['problem', 'proposal', 'workflow'].every((id) => ids.has(id))
+  );
+  check(
+    'the feature form points early ideas to Ideas',
+    form.body.some(
+      (entry) =>
+        entry.type === 'markdown' &&
+        entry.attributes?.value?.includes('discussions/categories/ideas')
+    )
   );
 }
 if (existsSync(files.template)) {
@@ -74,6 +92,14 @@ if (existsSync(files.template)) {
       kind?.attributes?.options?.includes(label)
     )
   );
+  check(
+    'the template form routes open-ended help to Templates',
+    form.body.some(
+      (entry) =>
+        entry.type === 'markdown' &&
+        entry.attributes?.value?.includes('discussions/categories/templates')
+    )
+  );
 }
 
 const chooserPath = `${root}/config.yml`;
@@ -82,10 +108,14 @@ if (existsSync(chooserPath)) {
   const chooser = parse(readFileSync(chooserPath, 'utf8'));
   check('the chooser disables blank issues', chooser?.blank_issues_enabled === false);
   check(
-    'the chooser links to documentation and contribution guidance',
-    ['https://yungleung.github.io/yi/documentation/en-page.html', 'https://github.com/yungleung/yi/blob/main/CONTRIBUTING.md'].every(
-      (url) => chooser?.contact_links?.some((link) => link.url === url)
-    )
+    'the chooser links to discussions, documentation and contribution guidance',
+    [
+      'https://github.com/yungleung/yi/discussions/categories/q-a',
+      'https://github.com/yungleung/yi/discussions/categories/ideas',
+      'https://github.com/yungleung/yi/discussions/categories/show-and-tell',
+      'https://yungleung.github.io/yi/documentation/en-page.html',
+      'https://github.com/yungleung/yi/blob/main/CONTRIBUTING.md'
+    ].every((url) => chooser?.contact_links?.some((link) => link.url === url))
   );
 }
 
