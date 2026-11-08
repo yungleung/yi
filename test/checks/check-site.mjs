@@ -187,6 +187,22 @@ check(
     html.includes('data-i18n="template.open"')
 );
 check(
+  'the landing page states the audience and three advantages',
+  html.includes('data-i18n="hero.audience"') &&
+    html.includes('data-i18n="advantages.one"') &&
+    html.includes('data-i18n="advantages.two"') &&
+    html.includes('data-i18n="advantages.three"') &&
+    js.includes('面向研究人员、学者与长文写作者') &&
+    css.includes('.advantage-grid')
+);
+check(
+  'the bilingual descriptions carry the public positioning',
+  js.includes('Yi is a local-first WYSIWYG Markdown editor') &&
+    js.includes('Yi 是一款本地优先的所见即所得 Markdown 编辑器') &&
+    js.includes('ordinary files, linked ideas, citations and Pandoc publishing') &&
+    js.includes('用普通文件连接笔记、研究与长文写作')
+);
+check(
   'screenshots copy the selected language into their alt text',
   js.includes('[data-alt-en][data-alt-zh]') && js.includes("setAttribute('alt'")
 );
