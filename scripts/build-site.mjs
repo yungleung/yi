@@ -27,7 +27,12 @@ const documents = [
     tocLabel: 'On this page',
     title: 'Yi Documentation',
     kicker: 'Documentation',
-    backLabel: 'Back to Yi'
+    backLabel: 'Back to Yi',
+    footerLabel: 'Community and contribution links',
+    contributeLabel: 'Contribute',
+    goodFirstLabel: 'Good first issues',
+    helpWantedLabel: 'Help wanted',
+    discussionsLabel: 'Discussions'
   },
   {
     language: 'zh-Hans',
@@ -35,7 +40,12 @@ const documents = [
     tocLabel: '本页目录',
     title: 'Yi 文档',
     kicker: '文档',
-    backLabel: '返回 Yi'
+    backLabel: '返回 Yi',
+    footerLabel: '社区与贡献链接',
+    contributeLabel: '参与贡献',
+    goodFirstLabel: '适合初次贡献的问题',
+    helpWantedLabel: '需要帮助的问题',
+    discussionsLabel: '讨论区'
   }
 ];
 
@@ -149,6 +159,16 @@ function standalonePage(document, fragment) {
       </header>
       <div class="doc-shell">${fragment}</div>
     </main>
+    <footer>
+      <p>Yi · MIT</p>
+      <nav class="footer-links" aria-label="${escapeHtml(document.footerLabel)}">
+        <a href="https://github.com/yungleung/yi">GitHub</a>
+        <a href="https://github.com/yungleung/yi/contribute">${escapeHtml(document.contributeLabel)}</a>
+        <a href="https://github.com/yungleung/yi/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22">${escapeHtml(document.goodFirstLabel)}</a>
+        <a href="https://github.com/yungleung/yi/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22">${escapeHtml(document.helpWantedLabel)}</a>
+        <a href="https://github.com/yungleung/yi/discussions">${escapeHtml(document.discussionsLabel)}</a>
+      </nav>
+    </footer>
     <script type="module" src="../standalone_docs.js"></script>
   </body>
 </html>
