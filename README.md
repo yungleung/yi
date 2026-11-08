@@ -160,10 +160,19 @@ is for and when it applies at the top of its own `SKILL.md`.
 
 ## Contributing
 
-Read `CONTRIBUTING.md`, then `docs/ai-context.md` — the same pack an AI assistant
-should read before touching the code. Behaviour changes need a test; the recipes in
-`docs/` say which kind.
+Contributions are welcome, whether code, documentation, translations, template
+packages or reproducible bug reports. Start at Yi's
+[contribution page](https://github.com/yungleung/yi/contribute).
 
+- New to the project? Browse the [good first issues](https://github.com/yungleung/yi/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+- Looking for something substantial? See the [help wanted issues](https://github.com/yungleung/yi/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22).
+- Have a question or workflow to share? Join [GitHub Discussions](https://github.com/yungleung/yi/discussions).
+- Ready to work on the code or documentation? Read `CONTRIBUTING.md`, then
+  `docs/ai-context.md` — the same pack an AI assistant should read before touching
+  the code. Behaviour changes need a test; the recipes in `docs/` say which kind.
+
+For concrete bugs, feature proposals and template-package problems, use the
+[structured issue forms](https://github.com/yungleung/yi/issues/new/choose).
 This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
 
 ## Licence

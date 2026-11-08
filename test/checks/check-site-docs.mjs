@@ -62,6 +62,9 @@ for (const [language, required] of [
         page.includes('<h1>') &&
         page.includes('data-doc-toc') &&
         page.includes('class="docs-article"') &&
+        page.includes('class="footer-links"') &&
+        page.includes('https://github.com/yungleung/yi/contribute') &&
+        page.includes('https://github.com/yungleung/yi/discussions') &&
         page.includes('href="../index.html"') &&
         !page.includes('易')
     );

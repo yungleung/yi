@@ -46,7 +46,12 @@ const COPY = {
     'explore.label': 'Explore Yi',
     'templates.all': 'Browse every template package',
     'template.open': 'Open repository',
-    'footer.author': 'Made by yungleung'
+    'footer.author': 'Made by yungleung',
+    'footer.label': 'Community and contribution links',
+    'footer.contribute': 'Contribute',
+    'footer.goodFirst': 'Good first issues',
+    'footer.helpWanted': 'Help wanted',
+    'footer.discussions': 'Discussions'
   },
   'zh-Hans': {
     title: 'Yi — 本地优先的 Markdown 写作环境',
@@ -85,7 +90,12 @@ const COPY = {
     'explore.label': '探索 Yi',
     'templates.all': '浏览全部模板包',
     'template.open': '打开仓库',
-    'footer.author': '由 yungleung 制作'
+    'footer.author': '由 yungleung 制作',
+    'footer.label': '社区与贡献链接',
+    'footer.contribute': '参与贡献',
+    'footer.goodFirst': '适合初次贡献的问题',
+    'footer.helpWanted': '需要帮助的问题',
+    'footer.discussions': '讨论区'
   }
 };
 
