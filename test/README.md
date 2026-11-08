@@ -58,6 +58,7 @@ methodology; this file is the index and the conventions.
 | `check-code-fences.mjs` | Both Pandoc fenced-code attribute forms, language classes, captions, malformed attributes, and body offsets |
 | `check-history.mjs` | The edit log (`document/history.ts`): what an edit inverts to, the edges of undo and redo, and that a keystroke's history is bytes rather than a document |
 | `check-image-edits.mjs` | How an image is written (`syntax/image_edits.ts`): the markdown of `![alt](destination)` and where the caret lands, which clipboard text counts as a destination, the name a saved image gets, and the kind it is encoded as |
+| `check-issue-forms.mjs` | GitHub issue forms for bugs, feature requests and template-package problems: required metadata, workflow fields, version and platform capture, export-kind choices, acknowledgement checkboxes and the issue-template chooser links |
 | `check-latex-images.mjs` | Where pictures go in a LaTeX source tree (`ui/export/assets/latex_images.ts`): package pictures keep their relative path, a note picture may replace a package asset, and other or unsafe destinations are reduced to unique relative files under `<output>.assets/` |
 | `check-local-events.mjs` | Typed same-window fact delivery: subscription order, unsubscribe, unique envelopes, correlation, and isolation from a failing listener |
 | `check-locales.mjs` | The app's words (`locales/*.json`, read by `services/i18n.ts` and `src-tauri/src/i18n.rs`): one key set per language, nothing blank, every key used by a source, and one reading of a system locale |

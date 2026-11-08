@@ -1,0 +1,112 @@
+name: Template package problem
+description: Report a problem importing, validating or exporting with a template package.
+title: "[Template]: "
+labels:
+  - template
+  - needs triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide enough of the package and example note to reproduce the problem.
+        Do not upload a template you are not permitted to share.
+
+  - type: dropdown
+    id: export_kind
+    attributes:
+      label: Export kind
+      options:
+        - HTML
+        - LaTeX
+        - PDF
+        - EPUB
+        - Word
+        - OpenDocument
+    validations:
+      required: true
+
+  - type: input
+    id: package
+    attributes:
+      label: Package name or source
+      description: The name in Yi, or a public repository or source URL.
+      placeholder: Journal X LaTeX, https://example.org/template…
+    validations:
+      required: true
+
+  - type: input
+    id: yi_version
+    attributes:
+      label: Yi version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: pandoc_version
+    attributes:
+      label: Pandoc version
+      description: Run `pandoc --version`.
+    validations:
+      required: true
+
+  - type: input
+    id: tex_version
+    attributes:
+      label: TeX engine and version
+      description: Required for PDF, LaTeX or Beamer problems.
+      placeholder: XeLaTeX 4.0.0, pdfLaTeX 1.40.28, not applicable…
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation or Test PDF result
+      description: Include the complete error and the action that produced it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal note and package files
+      description: Paste the smallest note and relevant template or defaults file.
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected output
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual output
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I am permitted to share the attached package files.
+          required: true
+        - label: I removed private document content, paths and credentials.
+          required: true
+        - label: I tried Validate and, for PDF, Test PDF.
+          required: true

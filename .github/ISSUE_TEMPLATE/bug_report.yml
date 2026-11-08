@@ -1,0 +1,91 @@
+name: Bug report
+description: Report reproducible behaviour that does not work as documented.
+title: "[Bug]: "
+labels:
+  - bug
+  - needs triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please use a minimal Markdown document or
+        template package when possible. Do not include private notes, credentials
+        or other sensitive data.
+
+  - type: input
+    id: yi_version
+    attributes:
+      label: Yi version
+      description: Find this in **Yi → About** or in the release name.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: installation
+    attributes:
+      label: Installation source
+      description: Release build, development build, package manager or another source.
+      placeholder: GitHub release, npm run tauri dev, Homebrew…
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Type ...
+        3. Choose ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal Markdown or steps to reproduce
+      description: Attach a small note, export, template or screenshot when useful.
+      render: markdown
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Logs, diagnostics or screenshots
+      description: Remove personal paths and private document content before posting.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and discussions.
+          required: true
+        - label: I tested with the latest build available to me.
+          required: true
+        - label: I removed private document content and credentials.
+          required: true
