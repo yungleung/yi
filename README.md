@@ -1,5 +1,7 @@
 # Yi
 
+[简体中文](README.zh-CN.md)
+
 Yi is a local-first writing environment for notes, research and long-form
 documents. It combines a WYSIWYG Markdown editor with the portability of ordinary
 files: a workspace is just a folder of `.md` notes, and Yi adds rendering,
@@ -21,6 +23,18 @@ the application remains fast on long notes by mounting only the blocks around th
 viewport. Built with [Tauri](https://tauri.app/), Rust and TypeScript, Yi is a
 native desktop application while the notes themselves stay portable, readable and
 usable in any other Markdown tool.
+
+## Who it is for
+
+Yi is for researchers, academics and long-form writers who want Markdown files
+they own without giving up citations, cross-references, mathematics or
+publication-quality exports.
+
+## Why Yi
+
+- WYSIWYG editing without giving up raw Markdown
+- Citations, cross-references, equations and theorem blocks
+- Reusable Word, LaTeX, EPUB, HTML and PDF template packages
 
 ## What it does
 
@@ -79,6 +93,7 @@ The public site lives in `site/` and deploys to
 
 ```bash
 npm run site:favicon
+npm run site:social
 npm run site:build
 npm run site:preview
 ```

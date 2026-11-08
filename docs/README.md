@@ -14,6 +14,7 @@ disagrees with it, fix the document.
 | `testing.md` | you are writing a test — the methodology; `../test/README.md` is the index of what exists |
 | `roadmap.md` | you want the ledger: what is planned, what was measured, what was decided and left alone |
 | `release-checklist.md` | you are publishing |
+| `promotion.md` | you are announcing Yi, recruiting contributors, or updating repository metadata |
 | `superpowers/` | the phase handoffs — specs and plans, kept as the record of *why* a decision was taken, not as instructions |
 
 A first change reads `ai-context.md`, then `architecture.md`, then the adding-* document for what is

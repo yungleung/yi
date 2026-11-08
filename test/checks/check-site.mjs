@@ -56,6 +56,36 @@ check(
     ) &&
     html.includes('src="./assets/favicon.svg"')
 );
+const pngSize = (path) => {
+  const bytes = readFileSync(path);
+  if (bytes.toString('ascii', 1, 4) !== 'PNG') return null;
+  return {
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20)
+  };
+};
+const socialPath = 'site/assets/social-preview.png';
+check('the social preview image exists', existsSync(socialPath));
+if (existsSync(socialPath)) {
+  const size = pngSize(socialPath);
+  check(
+    'the social preview image is 1280 by 640',
+    size?.width === 1280 && size?.height === 640
+  );
+}
+for (const metadata of [
+  '<meta property="og:type" content="website">',
+  '<meta property="og:url" content="https://yungleung.github.io/yi/">',
+  '<meta property="og:title" content="Yi — local-first Markdown writing">',
+  '<meta property="og:image" content="https://yungleung.github.io/yi/assets/social-preview.png">',
+  '<meta property="og:image:width" content="1280">',
+  '<meta property="og:image:height" content="640">',
+  '<meta name="twitter:card" content="summary_large_image">',
+  '<meta name="twitter:image" content="https://yungleung.github.io/yi/assets/social-preview.png">',
+  '<link rel="canonical" href="https://yungleung.github.io/yi/">'
+]) {
+  check(`the page includes social metadata ${metadata}`, html.includes(metadata));
+}
 const webpSize = (path) => {
   const bytes = readFileSync(path);
   const chunk = bytes.toString('ascii', 12, 16);
@@ -155,6 +185,22 @@ check(
   js.includes("'template.open'") &&
     js.includes('打开仓库') &&
     html.includes('data-i18n="template.open"')
+);
+check(
+  'the landing page states the audience and three advantages',
+  html.includes('data-i18n="hero.audience"') &&
+    html.includes('data-i18n="advantages.one"') &&
+    html.includes('data-i18n="advantages.two"') &&
+    html.includes('data-i18n="advantages.three"') &&
+    js.includes('面向研究人员、学者与长文写作者') &&
+    css.includes('.advantage-grid')
+);
+check(
+  'the bilingual descriptions carry the public positioning',
+  js.includes('Yi is a local-first WYSIWYG Markdown editor') &&
+    js.includes('Yi 是一款本地优先的所见即所得 Markdown 编辑器') &&
+    js.includes('ordinary files, linked ideas, citations and Pandoc publishing') &&
+    js.includes('用普通文件连接笔记、研究与长文写作')
 );
 check(
   'screenshots copy the selected language into their alt text',
