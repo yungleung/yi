@@ -131,6 +131,9 @@ function standalonePage(document, fragment) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(document.title)}</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../assets/katex/katex.min.css">
   </head>

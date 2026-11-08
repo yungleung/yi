@@ -1270,6 +1270,7 @@ npm run tauri dev                       # the app (Tauri MCP bridge on 9223)
 npx tsc --noEmit                        # types (strict, noUnusedLocals)
 cargo test                              # Rust tests
 npm run check                           # pure checks, no browser
+npm run site:favicon                    # regenerate circular site icons from site/assets/icon.png
 npm run probe -- test/probes/<name>.js  # one DOM probe, app must be running
 npm run probe:all                       # probes that need no fixture workspace
 npm run fixtures                        # refresh the fixture workspace

@@ -52,6 +52,10 @@ for (const [language, required] of [
       `${language} standalone documentation is a complete styled page`,
       page.startsWith('<!doctype html>') &&
         page.includes(`<html lang="${language}">`) &&
+        page.includes(
+          '<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">'
+        ) &&
+        page.includes('<link rel="icon" type="image/png" href="../assets/favicon.png">') &&
         page.includes('<link rel="stylesheet" href="../styles.css">') &&
         page.includes('<link rel="stylesheet" href="../assets/katex/katex.min.css">') &&
         page.includes('<script type="module" src="../standalone_docs.js"></script>') &&

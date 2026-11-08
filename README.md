@@ -78,6 +78,7 @@ The public site lives in `site/` and deploys to
 <https://yungleung.github.io/yi/> through GitHub Pages.
 
 ```bash
+npm run site:favicon
 npm run site:build
 npm run site:preview
 ```

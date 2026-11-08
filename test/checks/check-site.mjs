@@ -42,6 +42,20 @@ for (const example of ['html', 'latex', 'pdf', 'rho-class', 'legrand-orange-book
 }
 
 check('the site icon exists', existsSync('site/assets/icon.png'));
+for (const icon of ['favicon.svg', 'favicon.png', 'apple-touch-icon.png']) {
+  check(`the site ships ${icon}`, existsSync(`site/assets/${icon}`));
+}
+check(
+  'the favicon uses the circular SVG with PNG fallbacks',
+  html.includes(
+    '<link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">'
+  ) &&
+    html.includes('<link rel="icon" type="image/png" href="./assets/favicon.png">') &&
+    html.includes(
+      '<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">'
+    ) &&
+    html.includes('src="./assets/favicon.svg"')
+);
 const webpSize = (path) => {
   const bytes = readFileSync(path);
   const chunk = bytes.toString('ascii', 12, 16);
@@ -89,7 +103,10 @@ check(
 );
 check('the layout is responsive', css.includes('@media (max-width'));
 check('reduced motion is respected', css.includes('prefers-reduced-motion'));
-check('relative assets are used', html.includes('./assets/icon.png') && !html.includes('href="/'));
+check(
+  'relative assets are used',
+  html.includes('./assets/favicon.svg') && !html.includes('href="/')
+);
 check(
   'no-script readers reach standalone styled documentation',
   html.includes('href="./documentation/en-page.html"') &&
