@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Yi is a local-first Markdown writing environment for notes, research and long-form documents.">
+    <title>Yi — local-first Markdown writing</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+    <link rel="icon" type="image/png" href="./assets/favicon.png">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="./assets/katex/katex.min.css">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="nav.skip">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Yi home" data-i18n-label="brand.label">
+        <img src="./assets/favicon.svg" width="38" height="38" alt="">
+        <span>Yi</span>
+      </a>
+      <nav aria-label="Primary" data-i18n-label="nav.label">
+        <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#explore" data-i18n="nav.templates">Templates</a>
+        <a href="./documentation/en-page.html" data-doc-link data-i18n="nav.docs">Documentation</a>
+      </nav>
+      <div class="language" role="group" aria-label="Language" data-i18n-label="language.label">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="zh-Hans" aria-pressed="false">简体中文</button>
+      </div>
+      <a class="github" href="https://github.com/yungleung/yi">GitHub</a>
+    </header>
+    <main id="main">
+      <section class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow" data-i18n="hero.eyebrow">Local-first writing</p>
+          <h1 data-i18n="hero.title">Your notes, at home in Markdown.</h1>
+          <p class="hero__body" data-i18n="hero.body">Write in a calm, rendered page while every note stays an ordinary file you own.</p>
+          <div class="actions">
+            <a class="button button--primary" href="#explore" data-i18n="hero.templates">Explore templates</a>
+            <a class="button" href="https://github.com/yungleung/yi" data-i18n="hero.github">View on GitHub</a>
+          </div>
+        </div>
+        <figure class="hero__media">
+          <img
+            data-screenshot="hero"
+            src="./assets/screenshots/hero.webp"
+            data-alt-en="The Yi editor showing rendered Markdown, the workspace tree and native desktop controls."
+            data-alt-zh="Yi 编辑器界面，显示渲染后的 Markdown、工作区目录树和原生桌面控件。"
+            alt=""
+            width="1800"
+            height="1125"
+            loading="eager">
+        </figure>
+      </section>
+      <section id="features" class="feature-story">
+        <header class="section-heading">
+          <p class="eyebrow" data-i18n="features.eyebrow">A writing home</p>
+          <h2 data-i18n="features.title">One place for notes, knowledge and finished work.</h2>
+        </header>
+        <article class="feature" id="daily-notes">
+          <div class="feature__copy">
+            <p class="feature__number">01</p>
+            <h3 data-i18n="daily.title">Daily notes</h3>
+            <p data-i18n="daily.body">Open a folder, capture a thought and stay in the writing. Files remain readable outside Yi.</p>
+            <ul>
+              <li data-i18n="daily.one">Quick capture with ordinary Markdown files.</li>
+              <li data-i18n="daily.two">Workspace tree, search, session stack and autosave.</li>
+              <li data-i18n="daily.three">Light, dark and automatic themes with long-note performance.</li>
+            </ul>
+          </div>
+          <figure class="feature__media">
+            <img
+              src="./assets/screenshots/hero.webp"
+              data-alt-en="Daily writing in Yi with rendered prose and workspace navigation."
+              data-alt-zh="在 Yi 中日常写作，显示渲染后的正文与工作区导航。"
+              alt=""
+              width="1800"
+              height="1125"
+              loading="lazy">
+          </figure>
+        </article>
+        <article class="feature feature--reverse" id="knowledge-base">
+          <div class="feature__copy">
+            <p class="feature__number">02</p>
+            <h3 data-i18n="knowledge.title">Personal knowledge base</h3>
+            <p data-i18n="knowledge.body">Connect notes without trapping them in a database. Yi resolves the links while the source stays portable.</p>
+            <ul>
+              <li data-i18n="knowledge.one">Wikilinks and automatic cross-references.</li>
+              <li data-i18n="knowledge.two">Structured frontmatter and stable document IDs.</li>
+              <li data-i18n="knowledge.three">CSL citations and local bibliography files.</li>
+            </ul>
+          </div>
+          <figure class="feature__media">
+            <img
+              src="./assets/screenshots/cross-references.webp"
+              data-alt-en="Yi showing linked notes, citations and cross-references in rendered Markdown."
+              data-alt-zh="Yi 在渲染后的 Markdown 中显示笔记链接、引用与交叉引用。"
+              alt=""
+              width="1800"
+              height="1125"
+              loading="lazy">
+          </figure>
+        </article>
+        <article class="feature" id="writing-publishing">
+          <div class="feature__copy">
+            <p class="feature__number">03</p>
+            <h3 data-i18n="writing.title">Writing and publishing</h3>
+            <p data-i18n="writing.body">Write mathematical and academic prose in the editor, then hand the same note to a trusted template.</p>
+            <ul>
+              <li data-i18n="writing.one">KaTeX mathematics, callouts, theorem blocks and footnotes.</li>
+              <li data-i18n="writing.two">Export to Word, ODT, LaTeX, HTML, EPUB, PDF, Reveal.js and Beamer.</li>
+              <li data-i18n="writing.three">Reusable Pandoc template packages and native citation workflows.</li>
+            </ul>
+          </div>
+          <figure class="feature__media">
+            <img
+              src="./assets/screenshots/template-workbench.webp"
+              data-alt-en="The Yi template workbench showing packaged export styles."
+              data-alt-zh="Yi 的模板工作台，显示打包的导出样式。"
+              alt=""
+              width="1800"
+              height="1125"
+              loading="lazy">
+          </figure>
+        </article>
+      </section>
+      <section class="workbench" id="explore">
+        <nav class="explore-tabs" aria-label="Explore Yi" data-i18n-label="explore.label">
+          <a href="#template-examples" aria-current="location" data-i18n="tabs.templates">Templates</a>
+          <a href="./documentation/en-page.html" data-doc-link data-i18n="tabs.docs">Documentation</a>
+        </nav>
+        <section id="template-examples" class="template-panel">
+          <div class="template-grid">
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/html">
+              <span class="template-card__kind">HTML</span>
+              <strong data-en="Technical article" data-zh="技术文章">Technical article</strong>
+              <span data-en="Sidebar contents, responsive layout and local CSS." data-zh="侧边目录、响应式布局与本地 CSS。">Sidebar contents, responsive layout and local CSS.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/latex">
+              <span class="template-card__kind">LaTeX</span>
+              <strong data-en="PRL manuscript" data-zh="PRL 论文稿">PRL manuscript</strong>
+              <span data-en="REVTeX, structured authors, figures and native BibTeX." data-zh="REVTeX、结构化作者、图表与原生 BibTeX。">REVTeX, structured authors, figures and native BibTeX.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/pdf">
+              <span class="template-card__kind">PDF</span>
+              <strong data-en="Academic report" data-zh="学术报告">Academic report</strong>
+              <span data-en="XeLaTeX title page, sections, code and references." data-zh="XeLaTeX 标题页、章节、代码与参考文献。">XeLaTeX title page, sections, code and references.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/rho-class">
+              <span class="template-card__kind">PDF</span>
+              <strong data-en="Rho Class article" data-zh="Rho Class 论文">Rho Class article</strong>
+              <span data-en="A licensed two-column journal class with callouts and IEEE references." data-zh="带提示框与 IEEE 参考文献的授权双栏期刊样式。">A licensed two-column journal class with callouts and IEEE references.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/legrand-orange-book">
+              <span class="template-card__kind">PDF</span>
+              <strong data-en="Legrand Orange Book" data-zh="Legrand Orange Book">Legrand Orange Book</strong>
+              <span data-en="Book parts, chapter art, callouts and template-owned theorem styles." data-zh="书籍分部、章节插图、提示框与模板定理样式。">Book parts, chapter art, callouts and template-owned theorem styles.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/epub">
+              <span class="template-card__kind">EPUB</span>
+              <strong data-en="Literary EPUB" data-zh="文学 EPUB">Literary EPUB</strong>
+              <span data-en="Cover, front matter, navigation and reflowable chapter design." data-zh="封面、前置页、导航与可重排章节设计。">Cover, front matter, navigation and reflowable chapter design.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/docx">
+              <span class="template-card__kind">Word</span>
+              <strong data-en="Word report" data-zh="Word 报告">Word report</strong>
+              <span data-en="A styled reference document with field-based contents." data-zh="带字段目录与完整样式的参考文档。">A styled reference document with field-based contents.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+            <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/odt">
+              <span class="template-card__kind">ODT</span>
+              <strong data-en="Dissertation" data-zh="学位论文">Dissertation</strong>
+              <span data-en="Cover, abstract, cached contents and body-only page numbering." data-zh="封面、摘要、缓存目录与仅正文页码。">Cover, abstract, cached contents and body-only page numbering.</span>
+              <span class="template-card__open" data-i18n="template.open">Open repository</span>
+            </a>
+          </div>
+          <a class="all-templates" href="https://github.com/yungleung/yi/tree/main/examples/templates" data-i18n="templates.all">Browse every template package</a>
+        </section>
+      </section>
+    </main>
+    <footer>
+      <p>Yi · MIT · <span data-i18n="footer.author">Made by yungleung</span></p>
+      <a href="https://github.com/yungleung/yi">GitHub</a>
+    </footer>
+    <noscript>
+      <p>
+        <a href="./documentation/en-page.html">English documentation</a>
+        ·
+        <a href="./documentation/zh-Hans-page.html">简体中文文档</a>
+      </p>
+    </noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

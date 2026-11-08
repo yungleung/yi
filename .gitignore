@@ -27,3 +27,6 @@ dist-ssr
 
 target/
 untitled.md
+
+# Generated public site artifact
+_site

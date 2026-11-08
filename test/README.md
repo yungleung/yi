@@ -88,6 +88,8 @@ methodology; this file is the index and the conventions.
 | `check-tree-menu.mjs` | What the workspace tree's context menu offers for a file, a folder and the workspace itself, and which items cannot mean anything there |
 | `check-tree-rules.mjs` | The tree's pure rules: what a rename starts with selected (the name, without the markdown extension) and whether a drop into a folder is allowed |
 | `check-workspace-folders.mjs` | Where a new note may go (`services/workspace/folders.ts`): the order and depth of the walk, a folder that cannot be read, the folder it refuses to walk past, and the path rules the card, the tree and a system sheet's answer all read — including which file an image destination names, and that a `%20` spelling is tried *resolved* before it is tried as written |
+| `check-site.mjs` | The public landing page held to its content, language, standalone-documentation navigation, circular favicon, screenshots and GitHub Pages workflow contract (`site/index.html`, `site/app.js`, `site/docs.js`, `site/assets/`) |
+| `check-site-docs.mjs` | The built public Documentation: both language fragments come from the bundled guides with anchored headings and a generated TOC (`scripts/build-site.mjs` over `src/ui/documentation/{en,zh-Hans}.md`) |
 | `commands.mjs` | That a command has one typed name, one home and one dispatch path: retired editor-local registries cannot return, and triggers name ids from the app-wide command catalogue |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |

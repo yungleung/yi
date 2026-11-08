@@ -1270,14 +1270,20 @@ npm run tauri dev                       # the app (Tauri MCP bridge on 9223)
 npx tsc --noEmit                        # types (strict, noUnusedLocals)
 cargo test                              # Rust tests
 npm run check                           # pure checks, no browser
+npm run site:favicon                    # regenerate circular site icons from site/assets/icon.png
 npm run probe -- test/probes/<name>.js  # one DOM probe, app must be running
 npm run probe:all                       # probes that need no fixture workspace
 npm run fixtures                        # refresh the fixture workspace
+npm run site:build                      # build the public site into _site/
+npm run site:preview                    # serve _site/ on 127.0.0.1:1430
 ```
 
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.
+
+`site/` is the public GitHub Pages site and `_site/` is the generated artifact the Pages
+workflow deploys; both `site:build` and `site:preview` live in `scripts/`.
 
 **Restart the app on a new branch.** The dev app holds the modules it loaded, and a branch
 change swaps the files under it: what answers a probe is then some mixture of the two branches,
