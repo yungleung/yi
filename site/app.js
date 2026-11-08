@@ -1,17 +1,12 @@
 /**
  * Public site behaviour.
  *
- * Task 2 owns the bilingual copy and `applyLanguage`; `tabs.js` owns the
- * accessible tab wiring and Task 4 loads the generated documentation fragments
- * into the Docs tab. `docs.js` owns the sidebar TOC that tracks the article
- * headings; this file owns the language lifecycle and loads the fragment.
- * `applyLanguage('zh-Hans')` re-labels the whole page without a reload; an
- * unknown language falls back to English.
+ * Owns bilingual copy, local persistence and the Documentation destination.
+ * `applyLanguage('zh-Hans')` re-labels the page and points its documentation
+ * links at the Simplified Chinese standalone page without a reload; unknown
+ * languages fall back to English.
  */
 import { cardLanguageAttribute } from './lang.js';
-import { wireTabs } from './tabs.js';
-import { trackDocumentationHeadings } from './docs.js';
-import { createDocumentationLoader } from './docs_loader.js';
 
 const COPY = {
   en: {
@@ -48,23 +43,21 @@ const COPY = {
     'writing.three': 'Reusable Pandoc template packages and native citation workflows.',
     'tabs.templates': 'Templates',
     'tabs.docs': 'Documentation',
+    'explore.label': 'Explore Yi',
     'templates.all': 'Browse every template package',
     'template.open': 'Open repository',
-    'docs.toc': 'On this page',
-    'docs.loading': 'Loading documentation…',
-    'docs.error': 'Documentation could not be loaded.',
     'footer.author': 'Made by yungleung'
   },
   'zh-Hans': {
-    title: '易 — 本地优先的 Markdown 写作环境',
-    description: '易是一款面向笔记、研究与长文写作的本地优先 Markdown 编辑器。',
+    title: 'Yi — 本地优先的 Markdown 写作环境',
+    description: 'Yi 是一款面向笔记、研究与长文写作的本地优先 Markdown 编辑器。',
     'nav.features': '功能',
     'nav.templates': '模板示例',
     'nav.docs': '文档',
     'nav.skip': '跳到主要内容',
     'nav.label': '主导航',
     'language.label': '语言',
-    'brand.label': '易首页',
+    'brand.label': 'Yi 首页',
     'hero.eyebrow': '本地优先写作',
     'hero.title': '让笔记回到 Markdown。',
     'hero.body': '在舒适的渲染页面中书写，同时让每一篇笔记都保持为你拥有的普通文件。',
@@ -73,12 +66,12 @@ const COPY = {
     'features.eyebrow': '写作的家',
     'features.title': '笔记、知识与完成的作品，都在同一个地方。',
     'daily.title': '日常笔记',
-    'daily.body': '打开文件夹，记录想法，继续写作；文件在易之外也能正常阅读。',
+    'daily.body': '打开文件夹，记录想法，继续写作；文件在 Yi 之外也能正常阅读。',
     'daily.one': '用普通 Markdown 文件快速记录。',
     'daily.two': '工作区目录、搜索、会话栈与自动保存。',
     'daily.three': '浅色、深色与自动主题，并保持长文性能。',
     'knowledge.title': '个人知识库',
-    'knowledge.body': '连接笔记，而不把它们锁进数据库；易负责解析链接，源文件依然可移植。',
+    'knowledge.body': '连接笔记，而不把它们锁进数据库；Yi 负责解析链接，源文件依然可移植。',
     'knowledge.one': 'Wiki 链接与自动交叉引用。',
     'knowledge.two': '结构化 frontmatter 与稳定文档 ID。',
     'knowledge.three': 'CSL 引用与本地文献库文件。',
@@ -89,19 +82,14 @@ const COPY = {
     'writing.three': '可复用的 Pandoc 模板包与原生引用流程。',
     'tabs.templates': '模板示例',
     'tabs.docs': '文档',
+    'explore.label': '探索 Yi',
     'templates.all': '浏览全部模板包',
     'template.open': '打开仓库',
-    'docs.toc': '本页目录',
-    'docs.loading': '正在加载文档…',
-    'docs.error': '文档加载失败。',
     'footer.author': '由 yungleung 制作'
   }
 };
 
 const STORAGE_KEY = 'yi-site-language';
-const docsBody = document.querySelector('[data-doc-body]');
-let currentLanguage = storedLanguage();
-let stopDocumentationTracking = null;
 
 /**
  * Reads the persisted language, defaulting to English when storage is blocked.
@@ -124,7 +112,6 @@ function storedLanguage() {
  */
 function applyLanguage(language) {
   if (!Object.hasOwn(COPY, language)) language = 'en';
-  currentLanguage = language;
 
   document.documentElement.lang = language;
   document.title = COPY[language].title;
@@ -150,6 +137,10 @@ function applyLanguage(language) {
     image.setAttribute('alt', image.getAttribute(`data-alt-${cardLanguage}`));
   }
 
+  for (const link of document.querySelectorAll('[data-doc-link]')) {
+    link.setAttribute('href', `./documentation/${language}-page.html`);
+  }
+
   for (const button of document.querySelectorAll('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.getAttribute('data-lang') === language));
   }
@@ -164,91 +155,18 @@ function applyLanguage(language) {
 }
 
 /**
- * Binds the header language buttons to `applyLanguage` and announces the switch as
- * a `yi:languagechange` event, so the Documentation tab can reload its fragment.
+ * Binds the language buttons to `applyLanguage`.
  *
- * Example: clicking 简体中文 re-labels the page, persists `zh-Hans` and emits
- * `CustomEvent('yi:languagechange', { detail: { language: 'zh-Hans' } })`.
+ * Example: clicking 简体中文 re-labels the page, persists `zh-Hans` and changes
+ * every Documentation link to `./documentation/zh-Hans-page.html`.
  */
 function wireLanguage() {
   for (const button of document.querySelectorAll('[data-lang]')) {
     button.addEventListener('click', () => {
-      const language = applyLanguage(button.getAttribute('data-lang'));
-      document.dispatchEvent(
-        new CustomEvent('yi:languagechange', { detail: { language } })
-      );
+      applyLanguage(button.getAttribute('data-lang'));
     });
   }
 }
 
-/**
- * Loads the generated documentation fragment for `language` into the Docs tab
- * and starts heading tracking, falling back to a localized GitHub link when
- * the fragment cannot be fetched.
- *
- * Example: opening the Documentation tab fetches `./documentation/en.html`,
- * replaces the loading placeholder with the rendered guide and marks the TOC
- * label from `COPY.en['docs.toc']`.
- */
-const documentationLoader = createDocumentationLoader({
-  async fetchHtml(language) {
-    const response = await fetch(`./documentation/${language}.html`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.text();
-  },
-  renderHtml(html, language) {
-    stopDocumentationTracking?.();
-    docsBody.innerHTML = html;
-    localizeDocumentation(language);
-    stopDocumentationTracking = trackDocumentationHeadings(docsBody);
-  },
-  renderError(language) {
-    stopDocumentationTracking?.();
-    stopDocumentationTracking = null;
-    docsBody.innerHTML =
-      `<p class="doc-error">${COPY[language]['docs.error']} ` +
-      `<a href="https://github.com/yungleung/yi/blob/main/src/ui/documentation/${language}.md">GitHub</a>.</p>`;
-  },
-  begin() {
-    docsBody.setAttribute('aria-busy', 'true');
-  },
-  finish() {
-    docsBody.removeAttribute('aria-busy');
-  }
-});
-
-function loadDocumentation(language) {
-  return documentationLoader.load(language);
-}
-
-/**
- * Relabels the generated TOC from the selected language rather than trusting
- * the label baked into the fragment.
- */
-function localizeDocumentation(language) {
-  const label = docsBody.querySelector('.doc-toc__label');
-  if (label) label.textContent = COPY[language]['docs.toc'];
-}
-
-function docsTabSelected() {
-  const tab = document.getElementById('tab-docs');
-  return tab?.getAttribute('aria-selected') === 'true';
-}
-
-/**
- * Loads the documentation when the Docs tab opens and reloads it in place when
- * the language switches while that tab is showing.
- */
-function wireDocumentation() {
-  document.addEventListener('yi:tabchange', (event) => {
-    if (event.detail?.tabId === 'tab-docs') loadDocumentation(currentLanguage);
-  });
-  document.addEventListener('yi:languagechange', (event) => {
-    if (docsTabSelected()) loadDocumentation(event.detail.language);
-  });
-}
-
 applyLanguage(storedLanguage());
 wireLanguage();
-wireTabs();
-wireDocumentation();

@@ -26,6 +26,7 @@ const documents = [
     path: 'src/ui/documentation/en.md',
     tocLabel: 'On this page',
     title: 'Yi Documentation',
+    kicker: 'Documentation',
     backLabel: 'Back to Yi'
   },
   {
@@ -33,6 +34,7 @@ const documents = [
     path: 'src/ui/documentation/zh-Hans.md',
     tocLabel: '本页目录',
     title: 'Yi 文档',
+    kicker: '文档',
     backLabel: '返回 Yi'
   }
 ];
@@ -138,8 +140,13 @@ function standalonePage(document, fragment) {
       <a href="../index.html">${escapeHtml(document.backLabel)}</a>
     </header>
     <main class="standalone-docs">
+      <header class="standalone-title">
+        <p>${escapeHtml(document.kicker)}</p>
+        <h1>${escapeHtml(document.title)}</h1>
+      </header>
       <div class="doc-shell">${fragment}</div>
     </main>
+    <script type="module" src="../standalone_docs.js"></script>
   </body>
 </html>
 `;

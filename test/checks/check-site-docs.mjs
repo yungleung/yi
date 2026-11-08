@@ -54,9 +54,12 @@ for (const [language, required] of [
         page.includes(`<html lang="${language}">`) &&
         page.includes('<link rel="stylesheet" href="../styles.css">') &&
         page.includes('<link rel="stylesheet" href="../assets/katex/katex.min.css">') &&
+        page.includes('<script type="module" src="../standalone_docs.js"></script>') &&
+        page.includes('<h1>') &&
         page.includes('data-doc-toc') &&
         page.includes('class="docs-article"') &&
-        page.includes('href="../index.html"')
+        page.includes('href="../index.html"') &&
+        !page.includes('易')
     );
   }
 }

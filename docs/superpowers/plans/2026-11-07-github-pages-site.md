@@ -1261,3 +1261,12 @@ git commit -m "ci(pages): deploy the public project site"
 - [ ] Confirm `_site/` is ignored and `git status --short` contains only intended source changes.
 - [ ] Report the branch, commits, validation results and the remaining manual GitHub setting:
       select **GitHub Actions** as the repository’s Pages source after pushing.
+
+## Implementation amendment — 2026-11-08
+
+The approved final interaction differs from Tasks 3-4 above: Templates and Documentation are
+tab-style navigation links rather than an ARIA tab panel. Documentation opens the generated
+standalone page in the same browser tab, using the selected language. The embedded fragment
+loader and tab module were removed. The standalone page includes local TOC tracking through
+`standalone_docs.js`. This amendment follows the user's final clarification and supersedes the
+earlier in-page Documentation design described in those task sections.

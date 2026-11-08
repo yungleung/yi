@@ -20,9 +20,9 @@ The site is English by default and supports English and Simplified Chinese.
   and writing.
 - At least one real screenshot of the running desktop application appears in the hero
   and additional real screenshots support the feature story.
-- A Templates tab lists every shipped example package and links to its GitHub folder.
-- A Documentation tab displays the current bundled Documentation as HTML.
-- The Documentation tab has a sidebar table of contents generated from its headings.
+- A Templates tab-style link lists every shipped example package and links to its GitHub folder.
+- A Documentation tab-style link opens the current bundled Documentation as a standalone HTML page.
+- The standalone Documentation page has a sidebar table of contents generated from its headings.
 - English and Simplified Chinese switch together across navigation, landing content,
   template descriptions, documentation and TOC.
 - The site is responsive, keyboard-accessible and free of runtime CDN or tracker
@@ -44,7 +44,8 @@ The site stays independent of the application entrypoint:
 site/
   index.html             page shell and bilingual landing content
   styles.css             public-site design and responsive layouts
-  app.js                 language, tabs, documentation loading and TOC behaviour
+  app.js                 language state and Documentation destination
+  standalone_docs.js     activates TOC tracking on generated standalone pages
   assets/
     icon.png             application icon
     screenshots/         real screenshots captured from Yi
@@ -132,9 +133,9 @@ Each section combines concise copy with a real screenshot or an honest illustrat
 UI detail derived from the application. It must not imply a feature the current build
 does not ship.
 
-### Templates tab
+### Template branch
 
-The Templates tab contains one card for every shipped example:
+The Templates branch contains one card for every shipped example:
 
 - HTML
 - LaTeX
@@ -149,32 +150,33 @@ Each card describes what the package demonstrates and links to its folder under
 `https://github.com/yungleung/yi/tree/main/examples/templates/`. A final link points
 to the template examples index.
 
-### Documentation tab
+### Documentation destination
 
-The Documentation tab loads the generated HTML fragment for the active language.
+The Documentation navigation opens the generated standalone page for the active language in
+the same browser tab. English opens `documentation/en-page.html`; Simplified Chinese opens
+`documentation/zh-Hans-page.html`. The landing page does not embed the documentation article.
 
 Desktop layout:
 
 - a sticky sidebar labeled **On this page** / **本页目录**;
 - an article column with readable line length;
 - active TOC link updates as headings enter the viewport;
-- selecting a TOC link scrolls to the heading within the tab.
+- selecting a TOC link scrolls to the heading on the standalone page.
 
 Mobile layout:
 
 - the TOC becomes a compact expandable block above the article;
-- opening the tab preserves the selected language;
+- the page keeps the language selected on the landing page;
 - the article remains horizontally contained, with code blocks scrolling internally.
 
 Documentation links keep their destinations. External links open normally; in-document
-links resolve inside the generated fragment. The landing page remains readable when
-JavaScript fails. A `<noscript>` notice links directly to the generated English and
-Simplified Chinese documentation pages because tab switching itself needs JavaScript.
+links resolve on the standalone page. The landing page and both standalone documentation
+pages remain readable when JavaScript fails; script only adds active-heading tracking.
 
 ## Interaction and accessibility
 
-- Tabs follow the WAI-ARIA tabs pattern with `tablist`, `tab`, `tabpanel`,
-  `aria-selected`, roving `tabindex`, ArrowLeft/ArrowRight and Home/End support.
+- Templates and Documentation are ordinary navigation links styled as a compact switch;
+  Documentation exposes a real URL and can open in another tab.
 - The language switch has an explicit accessible label and pressed state.
 - Keyboard focus is visible on all links, buttons and TOC entries.
 - Screenshots have descriptive alternative text in both languages.
@@ -198,8 +200,8 @@ No Typora or Zettlr logos, illustrations, layouts or copy are reused.
 
 ## Error handling
 
-- If a documentation fragment fails to load, the tab shows a concise bilingual error
-  with a direct GitHub documentation link.
+- If a standalone documentation page cannot load, the browser presents its normal HTTP
+  error; the landing page's GitHub fallback remains available.
 - Unknown or missing stored language falls back to English.
 - Missing screenshots fail the site build rather than publishing a broken image.
 - Invalid tabs or missing target panels leave the page on the current valid tab.

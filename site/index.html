@@ -18,8 +18,8 @@
       </a>
       <nav aria-label="Primary" data-i18n-label="nav.label">
         <a href="#features" data-i18n="nav.features">Features</a>
-        <a href="#explore" data-activates="tab-templates" data-i18n="nav.templates">Templates</a>
-        <a href="#explore" data-activates="tab-docs" data-i18n="nav.docs">Documentation</a>
+        <a href="#explore" data-i18n="nav.templates">Templates</a>
+        <a href="./documentation/en-page.html" data-doc-link data-i18n="nav.docs">Documentation</a>
       </nav>
       <div class="language" role="group" aria-label="Language" data-i18n-label="language.label">
         <button type="button" data-lang="en" aria-pressed="true">English</button>
@@ -43,7 +43,7 @@
             data-screenshot="hero"
             src="./assets/screenshots/hero.webp"
             data-alt-en="The Yi editor showing rendered Markdown, the workspace tree and native desktop controls."
-            data-alt-zh="易编辑器界面，显示渲染后的 Markdown、工作区目录树和原生桌面控件。"
+            data-alt-zh="Yi 编辑器界面，显示渲染后的 Markdown、工作区目录树和原生桌面控件。"
             alt=""
             width="1800"
             height="1125"
@@ -70,7 +70,7 @@
             <img
               src="./assets/screenshots/hero.webp"
               data-alt-en="Daily writing in Yi with rendered prose and workspace navigation."
-              data-alt-zh="在易中日常写作，显示渲染后的正文与工作区导航。"
+              data-alt-zh="在 Yi 中日常写作，显示渲染后的正文与工作区导航。"
               alt=""
               width="1800"
               height="1125"
@@ -92,7 +92,7 @@
             <img
               src="./assets/screenshots/cross-references.webp"
               data-alt-en="Yi showing linked notes, citations and cross-references in rendered Markdown."
-              data-alt-zh="易在渲染后的 Markdown 中显示笔记链接、引用与交叉引用。"
+              data-alt-zh="Yi 在渲染后的 Markdown 中显示笔记链接、引用与交叉引用。"
               alt=""
               width="1800"
               height="1125"
@@ -114,7 +114,7 @@
             <img
               src="./assets/screenshots/template-workbench.webp"
               data-alt-en="The Yi template workbench showing packaged export styles."
-              data-alt-zh="易的模板工作台，显示打包的导出样式。"
+              data-alt-zh="Yi 的模板工作台，显示打包的导出样式。"
               alt=""
               width="1800"
               height="1125"
@@ -123,11 +123,11 @@
         </article>
       </section>
       <section class="workbench" id="explore">
-        <div role="tablist" aria-label="Explore Yi">
-          <button role="tab" id="tab-templates" aria-controls="panel-templates" aria-selected="true" data-i18n="tabs.templates">Templates</button>
-          <button role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="false" tabindex="-1" data-i18n="tabs.docs">Documentation</button>
-        </div>
-        <section id="panel-templates" role="tabpanel" aria-labelledby="tab-templates">
+        <nav class="explore-tabs" aria-label="Explore Yi" data-i18n-label="explore.label">
+          <a href="#template-examples" aria-current="location" data-i18n="tabs.templates">Templates</a>
+          <a href="./documentation/en-page.html" data-doc-link data-i18n="tabs.docs">Documentation</a>
+        </nav>
+        <section id="template-examples" class="template-panel">
           <div class="template-grid">
             <a class="template-card" href="https://github.com/yungleung/yi/tree/main/examples/templates/html">
               <span class="template-card__kind">HTML</span>
@@ -179,13 +179,6 @@
             </a>
           </div>
           <a class="all-templates" href="https://github.com/yungleung/yi/tree/main/examples/templates" data-i18n="templates.all">Browse every template package</a>
-        </section>
-        <section id="panel-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
-          <div class="doc-shell" data-doc-shell>
-            <div data-doc-body>
-              <p data-i18n="docs.loading">Loading documentation…</p>
-            </div>
-          </div>
         </section>
       </section>
     </main>
