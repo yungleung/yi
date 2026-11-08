@@ -79,6 +79,7 @@ The public site lives in `site/` and deploys to
 
 ```bash
 npm run site:favicon
+npm run site:social
 npm run site:build
 npm run site:preview
 ```

@@ -56,6 +56,36 @@ check(
     ) &&
     html.includes('src="./assets/favicon.svg"')
 );
+const pngSize = (path) => {
+  const bytes = readFileSync(path);
+  if (bytes.toString('ascii', 1, 4) !== 'PNG') return null;
+  return {
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20)
+  };
+};
+const socialPath = 'site/assets/social-preview.png';
+check('the social preview image exists', existsSync(socialPath));
+if (existsSync(socialPath)) {
+  const size = pngSize(socialPath);
+  check(
+    'the social preview image is 1280 by 640',
+    size?.width === 1280 && size?.height === 640
+  );
+}
+for (const metadata of [
+  '<meta property="og:type" content="website">',
+  '<meta property="og:url" content="https://yungleung.github.io/yi/">',
+  '<meta property="og:title" content="Yi — local-first Markdown writing">',
+  '<meta property="og:image" content="https://yungleung.github.io/yi/assets/social-preview.png">',
+  '<meta property="og:image:width" content="1280">',
+  '<meta property="og:image:height" content="640">',
+  '<meta name="twitter:card" content="summary_large_image">',
+  '<meta name="twitter:image" content="https://yungleung.github.io/yi/assets/social-preview.png">',
+  '<link rel="canonical" href="https://yungleung.github.io/yi/">'
+]) {
+  check(`the page includes social metadata ${metadata}`, html.includes(metadata));
+}
 const webpSize = (path) => {
   const bytes = readFileSync(path);
   const chunk = bytes.toString('ascii', 12, 16);
