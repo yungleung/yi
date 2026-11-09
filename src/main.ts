@@ -21,6 +21,7 @@ import {
 } from './ui/status_bar/index';
 import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
+import { registerSidebarCommand } from './ui/sidebar_commands';
 import { WorkspaceTree } from './ui/workspace';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
@@ -43,6 +44,7 @@ import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutoria
 import { registerDocumentationCommand } from './ui/documentation/index';
 import { registerIssueCommand } from './ui/help';
 import { exportActivity } from './services/export_activity';
+import { runCommand } from './commands/runtime';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
 import { installMessages } from './ui/messages';
@@ -59,6 +61,14 @@ import { setImageFolder } from './ui/image/index';
 import { applyLanguage, languageFor } from './services/language';
 import { applyTheme, themeFor } from './services/theme';
 import { language } from './services/i18n';
+import { usesCustomTitleBar } from './ui/platform_chrome';
+import {
+  editorActionAnchor,
+  SelectionToolbar,
+  installSelectionToolbar
+} from './ui/selection_toolbar';
+import { StackPopover } from './ui/session';
+import { registerTablePickerCommand, TablePicker } from './ui/table';
 
 function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
@@ -72,7 +82,9 @@ function createAppShell(): MarkdownEditor {
   root.className = 'flex flex-col h-screen w-screen overflow-hidden bg-base-100 text-base-content';
   root.replaceChildren();
 
-  const titleBar = new TitleBar(platform().toLowerCase());
+  const platformName = platform().toLowerCase();
+  const showTitleBar = usesCustomTitleBar(platformName);
+  const titleBar = showTitleBar ? new TitleBar(platformName) : null;
   const editor = new MarkdownEditor();
   const statusBar = new StatusBar();
   const wordsCount = new WordsCountStatus();
@@ -82,20 +94,21 @@ function createAppShell(): MarkdownEditor {
   const resizeHandle = new ResizeHandle((width) => {
     sidebar.setWidth(width);
   }, 180, 420, sidebar.getWidth());
-  const formattingToolbar = new FormattingToolbar();
-  const linkToolbar = new LinkToolbar();
-  const imageToolbar = new ImageToolbar();
-  const listToolbar = new ListToolbar();
-  const footnoteToolbar = new FootnoteToolbar();
-  const tableToolbar = new TableToolbar();
+  const tablePicker = new TablePicker((size) => {
+    runCommand('table:insert', size, 'toolbar');
+  });
+  const stackPopover = new StackPopover(editorActionAnchor(editor.element));
+  const selectionToolbar = new SelectionToolbar(tablePicker);
+  registerTablePickerCommand(tablePicker, editorActionAnchor(editor.element));
+  registerSidebarCommand(sidebar);
+  installSelectionToolbar(selectionToolbar, editor.element);
   const layoutStatus = new LayoutStatus();
-  const sessionToolbar = new SessionToolbar();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
   const versionStatus = new VersionStatus(() => editor.focusText());
   const exportProgress = new ExportProgressStatus();
 
-  titleBar.mount(root);
+  titleBar?.mount(root);
   sidebar.mount(contentShell.element);
   sidebar.addSection(workspaceTree);
   resizeHandle.mount(contentShell.element);
@@ -107,15 +120,16 @@ function createAppShell(): MarkdownEditor {
   // And what it only has to notice: a hint sits beside what it is about, and the next press ends it.
   installHints();
 
-  titleBar.addComponent(formattingToolbar, 'center');
-  titleBar.addComponent(linkToolbar, 'center');
-  titleBar.addComponent(imageToolbar, 'center');
-  titleBar.addComponent(listToolbar, 'center');
-  titleBar.addComponent(footnoteToolbar, 'center');
-  titleBar.addComponent(tableToolbar, 'center');
-  titleBar.addComponent(sessionToolbar, 'right');
-
-  sidebar.attachToTitleBar(titleBar.element);
+  if (titleBar) {
+    titleBar.addComponent(new FormattingToolbar(), 'center');
+    titleBar.addComponent(new LinkToolbar(), 'center');
+    titleBar.addComponent(new ImageToolbar(), 'center');
+    titleBar.addComponent(new ListToolbar(), 'center');
+    titleBar.addComponent(new FootnoteToolbar(), 'center');
+    titleBar.addComponent(new TableToolbar(tablePicker), 'center');
+    titleBar.addComponent(new SessionToolbar(stackPopover), 'right');
+    sidebar.attachToTitleBar(titleBar.element);
+  }
 
   statusBar.addComponent(wordsCount, 'right');
   statusBar.addComponent(layoutStatus, 'right');

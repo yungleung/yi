@@ -1,12 +1,13 @@
 /**
  * The table picker: the grid a reader drags over to say how big a new table is.
  *
- * May import: the catalogue and the anchored-panel base. Upholds: one place that turns a size into a
- * hover state and an answer, so the table command gets a size rather than a pointer stream.
+ * May import: the catalogue and the floating-card base. Upholds: one place that turns a size into
+ * a hover state and an answer, so the table command gets a size rather than a pointer stream.
  */
 
 import { t } from '../../services/i18n';
-import { AnchoredPanel } from '../floating';
+import { BesideCard, type Box } from '../floating';
+import { registerCommand } from '../../commands/runtime';
 
 /** The size the author picked, in rows (header included) and columns. */
 export interface TableSize {
@@ -34,12 +35,17 @@ const INACTIVE = 'text-base-content/25';
  * labels the size, and clicking one picks it. The panel closes on Esc, on a
  * click outside, and after a pick.
  */
-export class TablePicker extends AnchoredPanel {
+export class TablePicker extends BesideCard {
   private readonly label: HTMLSpanElement;
   private readonly squares: HTMLButtonElement[] = [];
+  private anchorBox: () => Box | null = () => null;
 
   constructor(private readonly onPick: (size: TableSize) => void) {
-    super({ className: 'left-1/2 -translate-x-1/2 w-[248px] p-2' });
+    super({
+      anchor: () => this.anchorBox(),
+      className: 'table-picker w-[248px] p-2'
+    });
+    this.element.dataset.tablePicker = 'true';
 
     this.label = document.createElement('span');
     this.label.className = 'mb-1 block text-center text-xs opacity-70';
@@ -55,12 +61,27 @@ export class TablePicker extends AnchoredPanel {
 
     this.element.append(this.label, grid);
     this.highlight(1, 1);
+    document.addEventListener('mousedown', (event) => {
+      if (this.isOpen() && !this.element.contains(event.target as Node)) {
+        this.close();
+      }
+    });
   }
 
-  /** Opens on the first square, so hovering reads as the chooser it is. */
-  open(): void {
+  /** Opens near the control or caret that asked for it. */
+  openAt(anchor: () => Box | null = () => null): void {
+    this.anchorBox = anchor;
     super.open();
     this.highlight(1, 1);
+  }
+
+  /** The toolbar button's press: open the picker, or put the same one away. */
+  toggleAt(anchor: () => Box | null = () => null): void {
+    if (this.isOpen()) {
+      this.close();
+      return;
+    }
+    this.openAt(anchor);
   }
 
   private createSquare(row: number, column: number): HTMLButtonElement {
@@ -94,4 +115,18 @@ export class TablePicker extends AnchoredPanel {
       square.classList.toggle(INACTIVE, !active);
     }
   }
+}
+
+/** Registers the command native menus use to open the same grid picker. */
+export function registerTablePickerCommand(
+  picker: TablePicker,
+  anchor: () => Box | null
+): void {
+  registerCommand({
+    id: 'table:choose',
+    run: () => {
+      picker.openAt(anchor);
+      return null;
+    }
+  });
 }

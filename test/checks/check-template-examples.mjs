@@ -1037,85 +1037,84 @@ if (existsSync(join(legrand, 'template.json'))) {
       /^\| --- \| ---: \| ---: \|$/m.test(example) &&
       !/\\begin\{(?:table|tabular)\}/.test(example)
   );
-  const builtInCallouts = [
-    ['note', 'Note', 'noteblock'],
-    ['tip', 'Tip', 'tipblock'],
-    ['important', 'Important', 'importantblock'],
-    ['warning', 'Warning', 'warningblock'],
-    ['caution', 'Caution', 'cautionblock']
-  ];
-  const builtInConversion = convertCallouts(
-    builtInCallouts
-      .map(
-        ([kind, title]) =>
-          `:::: {.callout .callout-${kind}}\n` +
-          `::: {.callout-title}\n${title}\n:::\n\n` +
-          `${title} body.\n` +
-          '::::'
-      )
-      .join('\n\n')
-  );
-  check(
-    'legrand-orange-book: semantic built-in callouts become their awesomebox environments',
-    calloutFilter.length > 0 &&
-      pandoc.status === 0 &&
-      builtInConversion.status === 0 &&
-      builtInCallouts.every(
-        ([kind, title, environment]) =>
-          new RegExp(`\\\\begin\\{${environment}\\}`).test(builtInConversion.stdout) &&
-          builtInConversion.stdout.includes(`${title} body.`)
-      ) &&
-      !builtInCallouts.some(([, title]) =>
-        new RegExp(`\\\\textbf\\{${title}\\}`).test(builtInConversion.stdout)
-      ),
-    builtInConversion
-  );
-  check(
-    'legrand-orange-book: the semantic callout keeps a custom title',
-    calloutFilter.length > 0 &&
-      pandoc.status === 0 &&
-      (() => {
-        const converted = convertCallouts(
-          ':::: {.callout .callout-warning}\n' +
-            '::: {.callout-title}\n' +
-            'Check the margins\n' +
-            ':::\n\n' +
-            'The rule needs room.\n' +
-            '::::\n'
-        );
-        return (
-          converted.status === 0 &&
-          /\\begin\{warningblock\}/.test(converted.stdout) &&
-          /\\textbf\{Check the margins\}/.test(converted.stdout) &&
-          /The rule needs room\./.test(converted.stdout)
-        );
-      })()
-  );
-  const unsupportedConversion = convertCallouts(
-    ':::: {.callout .callout-definition}\n' +
-      '::: {.callout-title}\n' +
-      'Definition\n' +
-      ':::\n\n' +
-      'A defined term.\n' +
-      '::::\n'
-  );
-  check(
-    'legrand-orange-book: an unsupported callout kind is left for the template author',
-    calloutFilter.length > 0 &&
-      pandoc.status === 0 &&
-      unsupportedConversion.status === 0 &&
-      unsupportedConversion.stdout.includes('A defined term.') &&
-      ![
-        'noteblock',
-        'tipblock',
-        'importantblock',
-        'warningblock',
-        'cautionblock'
-      ].some((environment) =>
-        unsupportedConversion.stdout.includes(`\\begin{${environment}}`)
-      ),
-    unsupportedConversion
-  );
+  if (pandoc.status === 0) {
+    const builtInCallouts = [
+      ['note', 'Note', 'noteblock'],
+      ['tip', 'Tip', 'tipblock'],
+      ['important', 'Important', 'importantblock'],
+      ['warning', 'Warning', 'warningblock'],
+      ['caution', 'Caution', 'cautionblock']
+    ];
+    const builtInConversion = convertCallouts(
+      builtInCallouts
+        .map(
+          ([kind, title]) =>
+            `:::: {.callout .callout-${kind}}\n` +
+            `::: {.callout-title}\n${title}\n:::\n\n` +
+            `${title} body.\n` +
+            '::::'
+        )
+        .join('\n\n')
+    );
+    check(
+      'legrand-orange-book: semantic built-in callouts become their awesomebox environments',
+      calloutFilter.length > 0 &&
+        builtInConversion.status === 0 &&
+        builtInCallouts.every(
+          ([kind, title, environment]) =>
+            new RegExp(`\\\\begin\\{${environment}\\}`).test(builtInConversion.stdout) &&
+            builtInConversion.stdout.includes(`${title} body.`)
+        ) &&
+        !builtInCallouts.some(([, title]) =>
+          new RegExp(`\\\\textbf\\{${title}\\}`).test(builtInConversion.stdout)
+        ),
+      builtInConversion
+    );
+    check(
+      'legrand-orange-book: the semantic callout keeps a custom title',
+      calloutFilter.length > 0 &&
+        (() => {
+          const converted = convertCallouts(
+            ':::: {.callout .callout-warning}\n' +
+              '::: {.callout-title}\n' +
+              'Check the margins\n' +
+              ':::\n\n' +
+              'The rule needs room.\n' +
+              '::::\n'
+          );
+          return (
+            converted.status === 0 &&
+            /\\begin\{warningblock\}/.test(converted.stdout) &&
+            /\\textbf\{Check the margins\}/.test(converted.stdout) &&
+            /The rule needs room\./.test(converted.stdout)
+          );
+        })()
+    );
+    const unsupportedConversion = convertCallouts(
+      ':::: {.callout .callout-definition}\n' +
+        '::: {.callout-title}\n' +
+        'Definition\n' +
+        ':::\n\n' +
+        'A defined term.\n' +
+        '::::\n'
+    );
+    check(
+      'legrand-orange-book: an unsupported callout kind is left for the template author',
+      calloutFilter.length > 0 &&
+        unsupportedConversion.status === 0 &&
+        unsupportedConversion.stdout.includes('A defined term.') &&
+        ![
+          'noteblock',
+          'tipblock',
+          'importantblock',
+          'warningblock',
+          'cautionblock'
+        ].some((environment) =>
+          unsupportedConversion.stdout.includes(`\\begin{${environment}}`)
+        ),
+      unsupportedConversion
+    );
+  }
   check(
     'legrand-orange-book: the external style package owns theorem presentation',
     ['legrand-plain', 'legrand-definition', 'legrand-remark'].every((style) =>

@@ -118,8 +118,8 @@ a box the caller measures, or in the window's corner when it names nothing), `An
 `relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
 card, and one answer
 with Escape giving the cautious one). The footnote preview, the citation preview, the completion
-list, the stack panel, the table picker, the prompt and the two cards are all one of those kinds
-now; a kind may *add* to Escape but never replace it, and the base must not grow a mode flag — a
+list, the stack panel, the table picker, the selection toolbar, the prompt and the two cards are
+all one of those kinds now; a kind may *add* to Escape but never replace it, and the base must not grow a mode flag — a
 fact one kind has is a parameter it is built with, or a subclass of it. `ui/messages.ts` replaces
 the old toast: one `BesideCard` per message in the window's bottom-right corner *whatever it is
 about*, stacked upward,
@@ -924,7 +924,10 @@ key itself.
 The menu's platform profile keeps macOS-only application and predefined items out of Windows and
 Linux. Settings moves to File and About to Help outside macOS; unsupported fullscreen, window and
 close items are omitted. Help → Report Issue is the typed command `help:reportIssue`, which opens
-the guided GitHub issue form in the system browser.
+the guided GitHub issue form in the system browser. Yi's overlay title bar is macOS-only; Windows
+and Linux keep the native frame, with the editing, sidebar and session actions available from the
+native menus. Selecting document text also opens a floating editing bar whose buttons reuse the
+same command ids and exclude workspace and session controls.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with

@@ -11,6 +11,7 @@ import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { runCommand } from '../../commands/runtime';
 import { StackPopover } from '../session';
+import { boxOf } from '../floating';
 import { t } from '../../services/i18n';
 import { TOOL_ICON_SIZE, Toolbar } from '../toolbar';
 
@@ -54,10 +55,9 @@ export class SessionToolbar extends Toolbar {
   private readonly stackButton: HTMLButtonElement;
   private readonly popover: StackPopover;
 
-  constructor() {
-    // `relative`, so the stack hangs under the buttons rather than somewhere in the page.
-    super(['relative', 'flex', 'items-center', 'gap-1']);
-    this.popover = new StackPopover();
+  constructor(popover: StackPopover) {
+    super(['flex', 'items-center', 'gap-1']);
+    this.popover = popover;
     this.stackButton = this.addButton(
       { label: t('session.push'), icon: STACK_PUSH, className: TOOL_ICON_SIZE },
       () => {
@@ -67,10 +67,9 @@ export class SessionToolbar extends Toolbar {
     this.addButton(
       { label: t('session.open'), icon: STACK_OPEN, className: TOOL_ICON_SIZE },
       () => {
-        runCommand('session:openStack', null, 'toolbar');
+        this.popover.toggleAt(() => boxOf(this.stackButton));
       }
     );
-    this.appendChild(this.popover.element);
     this.showStack(false);
     void eventManager.on(DOCUMENT_SESSION_CHANGED, () => {
       this.showStack(documentSession.current()?.stacked === true);

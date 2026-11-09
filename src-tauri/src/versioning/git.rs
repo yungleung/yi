@@ -53,11 +53,12 @@ pub(super) fn find_git_from(
     // Only now the shell's `PATH`, and never `/usr/bin/git` on a machine whose command line tools
     // are missing: that path is the installer's shim.
     if let Some(entries) = path {
-        for entry in std::env::split_paths(&entries) {
-            let candidate = entry.join("git");
-            if candidate.exists() && (clt_ok || candidate != Path::new("/usr/bin/git")) {
-                return (Some(candidate), "path".to_string());
-            }
+        if let Some(candidate) =
+            crate::program_search::candidates_in_path("git", &entries, std::env::consts::EXE_SUFFIX)
+                .into_iter()
+                .find(|candidate| clt_ok || candidate != Path::new("/usr/bin/git"))
+        {
+            return (Some(candidate), "path".to_string());
         }
     }
     (None, String::new())

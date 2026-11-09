@@ -2,7 +2,7 @@
  * The visible table picker keeps a quote or callout's carrier on every row it
  * creates, not only when the command is invoked through the registry.
  *
- * @covers src/ui/toolbar/table_picker.ts, src/ui/markdown/editing/table.ts
+ * @covers src/ui/table/picker.ts, src/ui/markdown/editing/table.ts
  */
 (async () => {
   const t = window.__t;
@@ -44,8 +44,8 @@
     button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
     button.click();
     await t.sleep(120);
-    button.parentElement
-      .querySelector('.grid-cols-10')
+    document
+      .querySelector('[data-table-picker]')
       .querySelector('button[data-row="3"][data-column="2"]')
       .click();
     await t.sleep(250);

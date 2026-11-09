@@ -33,12 +33,37 @@ pub(super) fn find_pandoc_from(
     }
     // Only now the shell's `PATH`.
     if let Some(entries) = path {
-        for entry in std::env::split_paths(&entries) {
-            let candidate = entry.join("pandoc");
-            if candidate.exists() {
-                return (Some(candidate), "path".to_string());
-            }
+        if let Some(candidate) =
+            crate::program_search::find_in_path("pandoc", &entries, std::env::consts::EXE_SUFFIX)
+        {
+            return (Some(candidate), "path".to_string());
         }
     }
     (None, String::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::super::program_search::find_in_path;
+    use std::fs;
+
+    #[test]
+    fn a_windows_executable_suffix_is_tried_on_path() {
+        let directory = std::env::temp_dir().join(format!(
+            "yi-program-search-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&directory).unwrap();
+        let executable = directory.join("pandoc.exe");
+        fs::write(&executable, "").unwrap();
+        assert_eq!(
+            find_in_path("pandoc", &directory.to_string_lossy(), ".exe"),
+            Some(executable.clone())
+        );
+        let _ = fs::remove_dir_all(directory);
+    }
 }

@@ -112,7 +112,9 @@ export type CommandContracts = FormattingContracts &
     'find:open': NoInputContract;
     'find:replace': NoInputContract;
     'find:close': NoInputContract;
+    'table:choose': NoInputContract;
     'table:insert': CommandContract<TableSizeInput>;
+    'view:toggleSidebar': NoInputContract;
     'document:getRevision': CommandContract<null, DocumentPosition>;
     'document:replaceRange': CommandContract<ReplaceRangeInput, DocumentPosition>;
   };
@@ -390,9 +392,11 @@ export const commandContracts: CommandContracts = {
     parse: (value) => parseRequiredString(value, 'document id')
   },
   'view:togglePage': noInput('switch between the page and full-width layout'),
+  'view:toggleSidebar': noInput('toggle the workspace sidebar'),
   'find:open': noInput('open find'),
   'find:replace': noInput('open find and replace'),
   'find:close': noInput('close find'),
+  'table:choose': noInput('choose and insert a table'),
   'table:insert': {
     effect: 'document.write',
     timing: 'sync',

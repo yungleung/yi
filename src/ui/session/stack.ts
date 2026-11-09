@@ -19,15 +19,19 @@
 import { eventManager } from '../../services/events';
 import { DOCUMENT_SESSION_CHANGED, documentSession } from '../../services/session';
 import { t } from '../../services/i18n';
-import { AnchoredPanel } from '../floating';
+import { BesideCard, type Box } from '../floating';
 import { registerCommand, runCommand } from '../../commands/runtime';
 
-export class StackPopover extends AnchoredPanel {
+export class StackPopover extends BesideCard {
   private readonly list: HTMLDivElement;
+  private anchorProvider: () => Box | null = () => null;
 
-  constructor() {
-    // `right-0`, inside the `relative` toolbar that hosts it.
-    super({ className: 'w-64 p-1 right-0' });
+  constructor(defaultAnchor: () => Box | null = () => null) {
+    super({
+      anchor: () => this.anchorProvider(),
+      className: 'w-64 p-1'
+    });
+    this.anchorProvider = defaultAnchor;
     this.list = document.createElement('div');
     this.list.className = 'flex flex-col';
     this.list.dataset.stackList = 'true';
@@ -36,8 +40,13 @@ export class StackPopover extends AnchoredPanel {
     registerCommand({
       id: 'session:openStack',
       run: () => {
-        this.toggle();
+        this.open();
         return null;
+      }
+    });
+    document.addEventListener('mousedown', (event) => {
+      if (this.isOpen() && !this.element.contains(event.target as Node)) {
+        this.close();
       }
     });
     void eventManager.on(DOCUMENT_SESSION_CHANGED, () => {
@@ -47,8 +56,23 @@ export class StackPopover extends AnchoredPanel {
     });
   }
 
+  /** Opens beside the control or caret that asked for the stack. */
+  openAt(anchor: () => Box | null = this.anchorProvider): void {
+    this.anchorProvider = anchor;
+    this.open();
+  }
+
+  /** The press that opens and closes the panel again. */
+  toggleAt(anchor: () => Box | null = this.anchorProvider): void {
+    if (this.isOpen()) {
+      this.close();
+      return;
+    }
+    this.openAt(anchor);
+  }
+
   /** Shows the stack as it stands — the kind unhides and places it. */
-  open(): void {
+  override open(): void {
     this.render();
     super.open();
   }

@@ -93,6 +93,7 @@ methodology; this file is the index and the conventions.
 | `check-site.mjs` | The public landing page held to its content, language, standalone-documentation navigation, circular favicon, screenshots and GitHub Pages workflow contract (`site/index.html`, `site/app.js`, `site/docs.js`, `site/assets/`) |
 | `check-site-docs.mjs` | The built public Documentation: both language fragments come from the bundled guides with anchored headings and a generated TOC (`scripts/build-site.mjs` over `src/ui/documentation/{en,zh-Hans}.md`) |
 | `commands.mjs` | That a command has one typed name, one home and one dispatch path: retired editor-local registries cannot return, and triggers name ids from the app-wide command catalogue |
+| `check-platform-chrome.mjs` | The custom title bar is macOS-only, while Windows and Linux keep native window chrome and use native menu actions |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `probe-markers.mjs` | That a probe opening the native table menu carries `@needs-foreground-window`, so `probe:all` skips it instead of leaving the menu open for every probe after it |
@@ -100,14 +101,16 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and twenty-two probes (`probe:all` runs 286 and skips 36, each skip for the reason its
+three hundred and twenty-five probes (`probe:all` runs 289 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
 before emit settles while a native event still arrives through Tauri; `agent-range-edit` — a range
 edit tied to the current document revision succeeds, while an old plan returns `stale` and cannot
 overwrite newer text; `document-change-event` — one edit and one undo each emit exactly one typed
-local fact with the expected revision and text), the workspace tree (`tree-rename` — a name edited
+local fact with the expected revision and text; `native-editor-menu` — formatting, table, sidebar
+and stack commands arrive from native menu events; `selection-toolbar` — selected document text
+shows the editing bar without workspace or session controls), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

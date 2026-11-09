@@ -111,7 +111,7 @@ export class BibliographyManager {
       if (!configured) {
         return;
       }
-      const tildePath = configured.startsWith('~/');
+      const tildePath = configured.startsWith('~/') || configured.startsWith('~\\');
       unwatch = await watch(
         tildePath ? configured.slice(2) : configured,
         () => {

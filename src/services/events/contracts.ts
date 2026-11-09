@@ -80,9 +80,23 @@ export interface AppEvents {
   select_all: null;
   find: null;
   replace: null;
+  format_bold: null;
+  format_italic: null;
+  format_strikethrough: null;
+  format_inline_code: null;
+  insert_link: null;
+  insert_image: null;
+  insert_footnote: null;
+  choose_table: null;
+  list_ordered: null;
+  list_bullet: null;
+  list_task: null;
+  list_indent: null;
+  toggle_sidebar: null;
   toggle_stack: null;
   next_stacked: null;
   previous_stacked: null;
+  open_stack: null;
   /** The kind the Export submenu's own item names — the event *is* the choice of kind. */
   export: string | null;
   documentation: null;
@@ -136,9 +150,23 @@ export const EVENT_BOUNDARIES: Readonly<
   select_all: 'inbound',
   find: 'inbound',
   replace: 'inbound',
+  format_bold: 'inbound',
+  format_italic: 'inbound',
+  format_strikethrough: 'inbound',
+  format_inline_code: 'inbound',
+  insert_link: 'inbound',
+  insert_image: 'inbound',
+  insert_footnote: 'inbound',
+  choose_table: 'inbound',
+  list_ordered: 'inbound',
+  list_bullet: 'inbound',
+  list_task: 'inbound',
+  list_indent: 'inbound',
+  toggle_sidebar: 'inbound',
   toggle_stack: 'inbound',
   next_stacked: 'inbound',
   previous_stacked: 'inbound',
+  open_stack: 'inbound',
   export: 'inbound',
   documentation: 'inbound',
   report_issue: 'inbound',

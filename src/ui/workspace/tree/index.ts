@@ -23,6 +23,7 @@ import { t } from '../../../services/i18n';
 import { SidebarSection } from '../../sidebar_section';
 import { TreeNode } from './node';
 import { setTreeHost, type TreeHost } from './ops';
+import { fileName } from '../../../services/workspace';
 
 /** Emitted with the file content when the user opens a document from the tree. */
 export const DOCUMENT_OPENED = 'document_opened';
@@ -104,7 +105,7 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
   }
 
   private basename(path: string): string {
-    return path.split('/').filter(Boolean).pop() ?? path;
+    return fileName(path);
   }
 }
 

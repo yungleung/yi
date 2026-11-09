@@ -9,7 +9,7 @@
   button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
   button.click();
   await t.sleep(150);
-  const panel = button.parentElement.querySelector('.grid-cols-10').parentElement;
+  const panel = document.querySelector('[data-table-picker]');
   const square = panel.querySelector('button[data-row="3"][data-column="4"]');
   t.report({ open: !panel.className.includes('hidden'), hasSquare: square !== null });
   square.click();

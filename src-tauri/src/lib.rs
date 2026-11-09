@@ -5,6 +5,7 @@ mod fonts;
 mod i18n;
 mod input_source;
 mod menu;
+mod program_search;
 mod session;
 mod settings;
 mod stats;

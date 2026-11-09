@@ -59,7 +59,7 @@ export class Sidebar extends BaseComponent {
     this.element.style.width = `${this.width}px`;
   }
 
-  private toggle(): void {
+  toggle(): void {
     this.isOpen = !this.isOpen;
     this.element.classList.toggle('hidden', !this.isOpen);
     this.element.style.width = this.isOpen ? `${this.width}px` : '0px';

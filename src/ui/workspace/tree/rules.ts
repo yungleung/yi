@@ -75,10 +75,13 @@ export function dropDecision(dragged: TreeEntry, target: TreeEntry): DropDecisio
   if (target.path === dragged.path) {
     return { allowed: false, reason: 'itself' };
   }
-  if (target.path.startsWith(`${dragged.path}/`)) {
+  const targetPath = target.path.replace(/\\/g, '/');
+  const draggedPath = dragged.path.replace(/\\/g, '/');
+  if (targetPath.startsWith(`${draggedPath}/`)) {
     return { allowed: false, reason: 'inside-itself' };
   }
-  const parent = dragged.path.slice(0, dragged.path.lastIndexOf('/'));
+  const cut = Math.max(dragged.path.lastIndexOf('/'), dragged.path.lastIndexOf('\\'));
+  const parent = cut > 0 ? dragged.path.slice(0, cut) : null;
   if (parent === target.path) {
     return { allowed: false, reason: 'already-there' };
   }

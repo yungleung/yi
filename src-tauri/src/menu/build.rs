@@ -27,6 +27,7 @@ struct MenuProfile {
     window_menu: bool,
     close_window: bool,
     file_quit: bool,
+    toolbar_fallback: bool,
 }
 
 fn menu_profile(platform: MenuPlatform) -> MenuProfile {
@@ -37,6 +38,7 @@ fn menu_profile(platform: MenuPlatform) -> MenuProfile {
             window_menu: true,
             close_window: true,
             file_quit: false,
+            toolbar_fallback: false,
         },
         MenuPlatform::Windows => MenuProfile {
             application_menu: false,
@@ -44,6 +46,7 @@ fn menu_profile(platform: MenuPlatform) -> MenuProfile {
             window_menu: true,
             close_window: true,
             file_quit: true,
+            toolbar_fallback: true,
         },
         MenuPlatform::Linux => MenuProfile {
             application_menu: false,
@@ -51,6 +54,7 @@ fn menu_profile(platform: MenuPlatform) -> MenuProfile {
             window_menu: false,
             close_window: false,
             file_quit: false,
+            toolbar_fallback: true,
         },
     }
 }
@@ -93,6 +97,7 @@ mod tests {
         assert!(profile.window_menu);
         assert!(profile.close_window);
         assert!(!profile.file_quit);
+        assert!(!profile.toolbar_fallback);
     }
 
     #[test]
@@ -103,6 +108,7 @@ mod tests {
         assert!(profile.window_menu);
         assert!(profile.close_window);
         assert!(profile.file_quit);
+        assert!(profile.toolbar_fallback);
     }
 
     #[test]
@@ -113,6 +119,7 @@ mod tests {
         assert!(!profile.window_menu);
         assert!(!profile.close_window);
         assert!(!profile.file_quit);
+        assert!(profile.toolbar_fallback);
     }
 }
 
@@ -206,7 +213,7 @@ pub(super) fn build(
     }
     let file_submenu = file_submenu.build()?;
 
-    let edit_submenu = SubmenuBuilder::new(app, t(language, "menu.edit", &[]))
+    let mut edit_submenu = SubmenuBuilder::new(app, t(language, "menu.edit", &[]))
         .item(
             &MenuItemBuilder::new(t(language, "menu.edit.undo", &[]))
                 .accelerator("CmdOrCtrl+Z")
@@ -246,10 +253,37 @@ pub(super) fn build(
                 .accelerator("CmdOrCtrl+Shift+F")
                 .id("replace")
                 .build(app)?,
-        )
-        .build()?;
+        );
+    if profile.toolbar_fallback {
+        edit_submenu = edit_submenu
+            .separator()
+            .text("format_bold", t(language, "toolbar.bold", &[]))
+            .text("format_italic", t(language, "toolbar.italic", &[]))
+            .text(
+                "format_strikethrough",
+                t(language, "toolbar.strikethrough", &[]),
+            )
+            .text("format_inline_code", t(language, "toolbar.inlineCode", &[]))
+            .separator()
+            .text("insert_link", t(language, "toolbar.link", &[]))
+            .text("insert_image", t(language, "toolbar.image", &[]))
+            .text("insert_footnote", t(language, "toolbar.footnote", &[]))
+            .text("choose_table", t(language, "toolbar.table", &[]))
+            .separator()
+            .text("list_ordered", t(language, "toolbar.orderedList", &[]))
+            .text("list_bullet", t(language, "toolbar.bulletList", &[]))
+            .text("list_task", t(language, "toolbar.taskList", &[]))
+            .text("list_indent", t(language, "toolbar.indentItem", &[]));
+    }
+    let edit_submenu = edit_submenu.build()?;
 
-    let mut view_submenu = SubmenuBuilder::new(app, t(language, "menu.view", &[]))
+    let mut view_submenu = SubmenuBuilder::new(app, t(language, "menu.view", &[]));
+    if profile.toolbar_fallback {
+        view_submenu = view_submenu
+            .text("toggle_sidebar", t(language, "sidebar.toggle", &[]))
+            .separator();
+    }
+    view_submenu = view_submenu
         .item(
             &MenuItemBuilder::new(t(language, "menu.view.toggleStack", &[]))
                 .accelerator("CmdOrCtrl+P")
@@ -268,6 +302,11 @@ pub(super) fn build(
                 .id("previous_stacked")
                 .build(app)?,
         );
+    if profile.toolbar_fallback {
+        view_submenu = view_submenu
+            .separator()
+            .text("open_stack", t(language, "session.open", &[]));
+    }
     if profile.fullscreen {
         view_submenu =
             view_submenu
