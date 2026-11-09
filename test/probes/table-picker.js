@@ -15,7 +15,7 @@
   button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
   button.click();
   await t.sleep(150);
-  const panel = button.parentElement.querySelector('.grid-cols-10')?.parentElement ?? null;
+  const panel = document.querySelector('[data-table-picker]');
   const square = (row, column) =>
     panel?.querySelector(`button[data-row="${row}"][data-column="${column}"]`) ?? null;
   square(3, 4).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));

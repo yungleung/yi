@@ -15,5 +15,3 @@ export { LinkToolbar } from './link';
 export { ListToolbar } from './list';
 export { SessionToolbar } from './session';
 export { TableToolbar } from './table';
-export { TablePicker } from './table_picker';
-export type { TableSize } from './table_picker';

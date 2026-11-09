@@ -94,6 +94,24 @@ check(
   { allowed: false, reason: 'already-there' }
 );
 
+const windowsWorkspace = 'C:\\Users\\me\\notes';
+check(
+  'a Windows path does not drop into the folder it already lives in',
+  dropDecision(
+    asFile(`${windowsWorkspace}\\a.md`, 'a.md'),
+    folder(windowsWorkspace, 'notes')
+  ),
+  { allowed: false, reason: 'already-there' }
+);
+check(
+  'a Windows folder does not drop inside itself',
+  dropDecision(
+    folder(`${windowsWorkspace}\\one`, 'one'),
+    folder(`${windowsWorkspace}\\one\\inner`, 'inner')
+  ),
+  { allowed: false, reason: 'inside-itself' }
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

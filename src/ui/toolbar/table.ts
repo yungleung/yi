@@ -6,8 +6,8 @@
  * button names the command; what a table's source looks like stays with the table edits.
  */
 
-import { runCommand } from '../../commands/runtime';
-import { TablePicker, type TableSize } from './table_picker';
+import { TablePicker } from '../table';
+import { boxOf } from '../floating';
 import { t } from '../../services/i18n';
 import { Toolbar } from '../toolbar';
 
@@ -30,28 +30,11 @@ const TABLE_ICON =
  * chose to the editor's `table:insert` command.
  */
 export class TableToolbar extends Toolbar {
-  private readonly picker: TablePicker;
-
-  constructor() {
-    // `relative`, so the picker hangs under the button rather than somewhere
-    // in the page.
-    super(['relative', 'flex', 'items-center']);
-    this.picker = new TablePicker((size: TableSize) => {
-      runCommand('table:insert', size, 'toolbar');
-    });
+  constructor(private readonly picker: TablePicker) {
+    super();
     this.addButton(
       { label: t('toolbar.table'), icon: TABLE_ICON, className: 'text-[1.1em]' },
-      () => this.togglePicker()
+      () => this.picker.toggleAt(() => boxOf(this.element))
     );
-    this.appendChild(this.picker.element);
-  }
-
-  /** The button opens the picker, and closes it again. */
-  private togglePicker(): void {
-    if (this.picker.isOpen()) {
-      this.picker.close();
-    } else {
-      this.picker.open();
-    }
   }
 }

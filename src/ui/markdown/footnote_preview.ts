@@ -59,7 +59,11 @@ function definitionFor(
   }
   const node = context.state
     .getBlockContent(block)
-    .find((child) => child.type === 'footnoteDefinition') as AstFootnoteDefinition | undefined;
+    .find(
+      (child) =>
+        child.type === 'footnoteDefinition' &&
+        String(child.identifier ?? child.label ?? '') === label
+    ) as AstFootnoteDefinition | undefined;
   return node ? { node, block } : null;
 }
 

@@ -100,6 +100,7 @@ export type CommandContracts = FormattingContracts &
     'file:newMarkdown': CommandContract<NewDocumentCommandInput | null>;
     'help:tutorial': NoInputContract;
     'help:documentation': NoInputContract;
+    'help:reportIssue': NoInputContract;
     'version:save': NoInputContract;
     'session:toggleStack': NoInputContract;
     'session:nextStacked': NoInputContract;
@@ -111,7 +112,9 @@ export type CommandContracts = FormattingContracts &
     'find:open': NoInputContract;
     'find:replace': NoInputContract;
     'find:close': NoInputContract;
+    'table:choose': NoInputContract;
     'table:insert': CommandContract<TableSizeInput>;
+    'view:toggleSidebar': NoInputContract;
     'document:getRevision': CommandContract<null, DocumentPosition>;
     'document:replaceRange': CommandContract<ReplaceRangeInput, DocumentPosition>;
   };
@@ -352,6 +355,10 @@ export const commandContracts: CommandContracts = {
   },
   'help:tutorial': noInput('open the tutorial'),
   'help:documentation': noInput('open Documentation'),
+  'help:reportIssue': {
+    ...noInput('open the issue chooser'),
+    timing: 'async'
+  },
   'version:save': {
     ...noInput('save a version of the document'),
     effect: 'version.write',
@@ -385,9 +392,11 @@ export const commandContracts: CommandContracts = {
     parse: (value) => parseRequiredString(value, 'document id')
   },
   'view:togglePage': noInput('switch between the page and full-width layout'),
+  'view:toggleSidebar': noInput('toggle the workspace sidebar'),
   'find:open': noInput('open find'),
   'find:replace': noInput('open find and replace'),
   'find:close': noInput('close find'),
+  'table:choose': noInput('choose and insert a table'),
   'table:insert': {
     effect: 'document.write',
     timing: 'sync',

@@ -20,6 +20,7 @@ export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> =
   select_all: 'edit:selectAll',
   tutorial: 'help:tutorial',
   documentation: 'help:documentation',
+  report_issue: 'help:reportIssue',
   new_markdown: 'file:newMarkdown',
   save: 'file:save',
   save_as: 'file:saveAs',
@@ -30,7 +31,21 @@ export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> =
   next_stacked: 'session:nextStacked',
   previous_stacked: 'session:previousStacked',
   find: 'find:open',
-  replace: 'find:replace'
+  replace: 'find:replace',
+  format_bold: 'format:bold',
+  format_italic: 'format:italic',
+  format_strikethrough: 'format:strikethrough',
+  format_inline_code: 'format:inlineCode',
+  insert_link: 'edit:insertLink',
+  insert_image: 'edit:insertImage',
+  insert_footnote: 'edit:insertFootnote',
+  choose_table: 'table:choose',
+  list_ordered: 'list:ordered',
+  list_bullet: 'list:bullet',
+  list_task: 'list:task',
+  list_indent: 'list:indent',
+  toggle_sidebar: 'view:toggleSidebar',
+  open_stack: 'session:openStack'
 };
 
 /** The command a menu event runs, or null when the name is not a command. */

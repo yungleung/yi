@@ -377,6 +377,16 @@ async function runProbe() {
        } catch (error) {
          // Nor a build without the Reveal.js download seam.
        }
+       try {
+         // Probes may use checked-in fixtures and example assets by absolute path. The dev
+         // checkout can itself live under a hidden folder, which the static home scope need not
+         // match; granting this one folder is the same runtime grant a document gets.
+         await window.__TAURI_INTERNALS__.invoke('grant_folder', {
+           path: ${JSON.stringify(probePaths.checkout)}
+         });
+       } catch (error) {
+         // A test-only checkout that is already readable needs no grant.
+       }
        return null;
      })()`
   );
@@ -466,13 +476,17 @@ async function readConfigText() {
 async function useFixtureWorkspace() {
   await call(
     `(async () => {
+       const current = await window.__TAURI_INTERNALS__.invoke('get_config');
        const cfg = {
+         ...current,
          workspace: ${JSON.stringify(fixturesRoot)},
          bibliography_file: ${JSON.stringify(join(fixturesRoot, 'zotero.bib'))},
          csl_style: '',
          config_version: await window.__TAURI_INTERNALS__.invoke('get_current_config_version')
        };
        await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+       const { configManager } = await import('/src/services/config_manager.ts');
+       await configManager.load();
        const { eventManager } = await import('/src/services/events/index.ts');
        await eventManager.emit('workspace_changed', cfg.workspace);
        return 'workspace set';
@@ -528,6 +542,8 @@ async function openTheConfig() {
         await call(
           `(async () => {
              await window.__TAURI_INTERNALS__.invoke('set_config', { cfg: ${JSON.stringify(cfg)} });
+             const { configManager } = await import('/src/services/config_manager.ts');
+             await configManager.load();
              return 'template selection cleared';
            })()`,
           15000
@@ -555,6 +571,8 @@ async function restoreConfig(previous) {
     `(async () => {
        const cfg = ${previous};
        await window.__TAURI_INTERNALS__.invoke('set_config', { cfg });
+       const { configManager } = await import('/src/services/config_manager.ts');
+       await configManager.load();
        const { eventManager } = await import('/src/services/events/index.ts');
        await eventManager.emit('workspace_changed', cfg.workspace);
        return 'workspace restored';

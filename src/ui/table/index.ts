@@ -9,3 +9,5 @@
  */
 
 export { showTableMenu } from './menu';
+export { TablePicker, registerTablePickerCommand } from './picker';
+export type { TableSize } from './picker';

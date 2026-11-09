@@ -58,14 +58,17 @@ fn save_to_path(path: &std::path::Path, cfg: &AppConfig) -> anyhow::Result<()> {
 }
 
 pub(super) fn expand_tilde(path: &str, app: &tauri::AppHandle) -> PathBuf {
-    match path.strip_prefix("~/") {
-        Some(rest) => app
-            .path()
-            .home_dir()
-            .map(|home| home.join(rest))
-            .unwrap_or_else(|_| PathBuf::from(path)),
-        None => PathBuf::from(path),
+    match app.path().home_dir() {
+        Ok(home) => expand_home_path(path, &home),
+        Err(_) => PathBuf::from(path),
     }
+}
+
+pub(super) fn expand_home_path(path: &str, home: &std::path::Path) -> PathBuf {
+    path.strip_prefix("~/")
+        .or_else(|| path.strip_prefix("~\\"))
+        .map(|rest| home.join(rest))
+        .unwrap_or_else(|| PathBuf::from(path))
 }
 
 #[cfg(test)]
@@ -78,7 +81,10 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        std::env::temp_dir().join(format!("yi-settings-{name}-{}-{stamp}.json", std::process::id()))
+        std::env::temp_dir().join(format!(
+            "yi-settings-{name}-{}-{stamp}.json",
+            std::process::id()
+        ))
     }
 
     #[test]
@@ -116,10 +122,17 @@ mod tests {
         };
         fs::write(&path, serde_json::to_string(&previous).unwrap()).unwrap();
         let cfg = load_from_path(&path).unwrap();
-        let written: AppConfig =
-            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        let written: AppConfig = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
         fs::remove_file(path).unwrap();
         assert_eq!(cfg.config_version, CURRENT_CONFIG_VERSION);
         assert_eq!(written.config_version, CURRENT_CONFIG_VERSION);
+    }
+
+    #[test]
+    fn a_windows_home_shortcut_is_expanded() {
+        let home = PathBuf::from(r"C:\Users\someone");
+        let expanded = expand_home_path(r"~\Documents\library.bib", &home);
+        assert_eq!(expanded.parent(), Some(home.as_path()));
+        assert!(expanded.to_string_lossy().ends_with("library.bib"));
     }
 }

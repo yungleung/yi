@@ -79,7 +79,7 @@ Three families, each with one base class — or one table — and one rule.
 surfaces and the toolbars. `ui/floating/surface.ts: FloatingSurface` → `BesideCard` (fixed on the
 body, placed by the pure rule in `floating/placement.ts`) and `AnchoredPanel` (inside the button's
 own `relative` host) → the footnote preview, the citation preview, the completion list, the session
-stack, the table picker, the messages; `ui/floating/question_card.ts: QuestionCard<T>` (6
+stack, the table picker, the selection toolbar and the messages; `ui/floating/question_card.ts: QuestionCard<T>` (6
 subclasses) is the one that asks. `ui/toolbar.ts: Toolbar` is a button row
 that knows its command's *name*, not its behaviour. The rule: a kind may *add* to Escape but never
 replace it, and a fact one kind has is a parameter it is built with, or a subclass — never a mode

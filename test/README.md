@@ -93,6 +93,7 @@ methodology; this file is the index and the conventions.
 | `check-site.mjs` | The public landing page held to its content, language, standalone-documentation navigation, circular favicon, screenshots and GitHub Pages workflow contract (`site/index.html`, `site/app.js`, `site/docs.js`, `site/assets/`) |
 | `check-site-docs.mjs` | The built public Documentation: both language fragments come from the bundled guides with anchored headings and a generated TOC (`scripts/build-site.mjs` over `src/ui/documentation/{en,zh-Hans}.md`) |
 | `commands.mjs` | That a command has one typed name, one home and one dispatch path: retired editor-local registries cannot return, and triggers name ids from the app-wide command catalogue |
+| `check-platform-chrome.mjs` | The custom title bar is macOS-only, while Windows and Linux keep native window chrome and use native menu actions |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
 | `probe-markers.mjs` | That a probe opening the native table menu carries `@needs-foreground-window`, so `probe:all` skips it instead of leaving the menu open for every probe after it |
@@ -100,19 +101,22 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and nineteen probes (`probe:all` runs 283 and skips 36, each skip for the reason its
+three hundred and twenty-five probes (`probe:all` runs 289 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
 before emit settles while a native event still arrives through Tauri; `agent-range-edit` — a range
 edit tied to the current document revision succeeds, while an old plan returns `stale` and cannot
 overwrite newer text; `document-change-event` — one edit and one undo each emit exactly one typed
-local fact with the expected revision and text), the workspace tree (`tree-rename` — a name edited
+local fact with the expected revision and text; `native-editor-menu` — formatting, table, sidebar
+and stack commands arrive from native menu events; `selection-toolbar` — selected document text
+shows the editing bar without workspace or session controls), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
 moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
-the page it happened on in place), making a note (`new-markdown` — the card the menu item's
+the page it happened on in place; `workspace-clear` — a null workspace fact clears the tree
+without turning the event envelope into a path), making a note (`new-markdown` — the card the menu item's
 command opens: the generated id in the name field, the workspace's folders, the file written
 where it was asked for with its frontmatter on screen and its title selected, and the tree's own
 *New file* through the same command; `new-note-template` — a template written through the app's
@@ -222,7 +226,8 @@ the arrows move), footnotes
 the preview card, the label's own edits, and the shapes a definition is written in:
 `footnote-containers`, `footnote-container-jump`, `footnote-table-cell`,
 `footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,
-`footnote-label-rebuild`, `footnote-label-edge`), description
+`footnote-label-rebuild`, `footnote-label-edge`, `footnote-many-definitions`),
+description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `wrapped-line-left` — a left arrow from a soft-wrapped line's start draws the caret at the visual
 line above's right edge,
@@ -367,7 +372,8 @@ LaTeX asset tree, and an EPUB with its package assets packed into the book),
 without replacing the explicit template or output),
 `template-examples` (all eight authoring examples imported and validated by the app, including the
 XeLaTeX PDF example, the pdfLaTeX Rho Class article and the Legrand Orange Book), `documentation` (Help → Documentation as a read-only, replaceable guide
-with the installation and template-authoring chapters),
+with the installation and template-authoring chapters), `report-issue` (Help →
+Report Issue opens the guided GitHub issue chooser through the system opener),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
 the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,
 literal dollars escaped for Pandoc, and another sample selected without losing the folder), `export-template-ui` (the Template row,

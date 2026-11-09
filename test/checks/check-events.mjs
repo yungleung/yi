@@ -19,10 +19,12 @@ const rustDirectory = 'src-tauri/src';
 
 const source = readFileSync(eventsFile, 'utf8');
 const declared = new Set(
-  source
-    .slice(readFileSync(eventsFile, 'utf8').indexOf('export interface AppEvents'))
-    .matchAll(/^\s{2}([a-z_]+)\??:/gm)
-    .map((match) => match[1])
+  Array.from(
+    source
+      .slice(readFileSync(eventsFile, 'utf8').indexOf('export interface AppEvents'))
+      .matchAll(/^\s{2}([a-z_]+)\??:/gm),
+    (match) => match[1]
+  )
 );
 
 const failures = [];

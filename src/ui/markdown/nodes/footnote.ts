@@ -206,7 +206,8 @@ function authoredLabel(node: { position?: { start?: { offset?: number } } }): st
   if (block === null || start === undefined) {
     return null;
   }
-  const at = start - block.charStart;
-  const marker = /^\[\^([^\]\n]+)\]/.exec(block.text.slice(at));
+  // Parsed node positions are block-relative; `renderingBlock` only supplies the
+  // source they are relative to.
+  const marker = /^\[\^([^\]\n]+)\]/.exec(block.text.slice(start));
   return marker === null ? null : marker[1];
 }
