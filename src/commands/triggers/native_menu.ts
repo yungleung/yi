@@ -20,6 +20,7 @@ export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> =
   select_all: 'edit:selectAll',
   tutorial: 'help:tutorial',
   documentation: 'help:documentation',
+  report_issue: 'help:reportIssue',
   new_markdown: 'file:newMarkdown',
   save: 'file:save',
   save_as: 'file:saveAs',

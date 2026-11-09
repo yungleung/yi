@@ -73,6 +73,15 @@ export class BibliographyManager {
 
   private async doLoad(): Promise<boolean> {
     try {
+      const configured = configManager.get()?.bibliography_file.trim() ?? '';
+      if (configured === '') {
+        bibliography = null;
+        formatCache.clear();
+        referenceCache.clear();
+        await this.stopWatcher();
+        await eventManager.emit(CITATION_UPDATED);
+        return false;
+      }
       const content = await readBibliography();
       bibliography = loadCitationLibrary(content)?.cite ?? null;
       // Previous renders may have cached raw fallbacks; formatting data changed.

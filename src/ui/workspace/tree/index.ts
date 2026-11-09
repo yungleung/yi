@@ -37,9 +37,8 @@ export class WorkspaceTree extends SidebarSection implements TreeHost {
     this.renderEmptyState();
     setTreeHost(this);
     // React to workspace changes without being registered globally.
-    void eventManager.on(WORKSPACE_CHANGED, (event: any) => {
-      const path = event?.payload ?? event;
-      void this.setWorkspace(path);
+    void eventManager.on(WORKSPACE_CHANGED, (event) => {
+      void this.setWorkspace(event.payload);
     });
   }
 

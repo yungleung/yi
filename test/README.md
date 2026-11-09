@@ -100,7 +100,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and nineteen probes (`probe:all` runs 283 and skips 36, each skip for the reason its
+three hundred and twenty-two probes (`probe:all` runs 286 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -112,7 +112,8 @@ where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the
 moves that are refused; `tree-no-reload` — a change in the *fixture* workspace that leaves
-the page it happened on in place), making a note (`new-markdown` — the card the menu item's
+the page it happened on in place; `workspace-clear` — a null workspace fact clears the tree
+without turning the event envelope into a path), making a note (`new-markdown` — the card the menu item's
 command opens: the generated id in the name field, the workspace's folders, the file written
 where it was asked for with its frontmatter on screen and its title selected, and the tree's own
 *New file* through the same command; `new-note-template` — a template written through the app's
@@ -222,7 +223,8 @@ the arrows move), footnotes
 the preview card, the label's own edits, and the shapes a definition is written in:
 `footnote-containers`, `footnote-container-jump`, `footnote-table-cell`,
 `footnote-repeat-label`, `footnote-labelled`, `footnote-label-undo`,
-`footnote-label-rebuild`, `footnote-label-edge`), description
+`footnote-label-rebuild`, `footnote-label-edge`, `footnote-many-definitions`),
+description
 lists (`description-list`), the caret (`boundary-caret`, `pointer`,
 `wrapped-line-left` — a left arrow from a soft-wrapped line's start draws the caret at the visual
 line above's right edge,
@@ -367,7 +369,8 @@ LaTeX asset tree, and an EPUB with its package assets packed into the book),
 without replacing the explicit template or output),
 `template-examples` (all eight authoring examples imported and validated by the app, including the
 XeLaTeX PDF example, the pdfLaTeX Rho Class article and the Legrand Orange Book), `documentation` (Help → Documentation as a read-only, replaceable guide
-with the installation and template-authoring chapters),
+with the installation and template-authoring chapters), `report-issue` (Help →
+Report Issue opens the guided GitHub issue chooser through the system opener),
 `export-template-metadata` (a cover from the note's YAML and a literal seal path, with both files in
 the bundle), `export-template-nested-wrapper` (a complete sample in `samples/` wrapped beside itself,
 literal dollars escaped for Pandoc, and another sample selected without losing the folder), `export-template-ui` (the Template row,

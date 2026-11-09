@@ -41,6 +41,7 @@ import {
 } from './ui/export/manager/index';
 import { openTutorialForFirstStart, registerTutorialCommand } from './ui/tutorial/index';
 import { registerDocumentationCommand } from './ui/documentation/index';
+import { registerIssueCommand } from './ui/help';
 import { exportActivity } from './services/export_activity';
 import { prompt } from './ui/prompt';
 import { EDITOR_LAYOUT_CHANGED, type EditorLayout } from './ui/markdown/markdown_editor';
@@ -134,6 +135,7 @@ function createAppShell(): MarkdownEditor {
   registerNewDocumentCommand();
   registerTutorialCommand();
   registerDocumentationCommand();
+  registerIssueCommand();
   // And the one that keeps a version: the File menu's item names it, and nothing else ever runs git.
   registerVersionCommand();
   // And the one that writes the note out: the File menu's *Export* names it, and what it exports is

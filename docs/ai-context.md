@@ -194,10 +194,11 @@ template is `ui/settings/new_document.ts`, which uses the shared
 `ui/code_editor/index.ts` CodeMirror view rather than a textarea. General also owns appearance:
 `services/theme.ts` maps the config's `theme` (`auto`, `light`, `dark`) to no explicit daisyUI
 theme, `winter` or `dim`, and applies it in both windows on startup and `config_changed`.
-The unreleased config has one strict current schema (`CURRENT_CONFIG_VERSION = 2`): every field is
+The unreleased config has one strict current schema (`CURRENT_CONFIG_VERSION = 3`): every field is
 required, unknown fields are refused, and a missing-field, unknown-field, malformed or
 previous-version `config.json` is replaced on disk by `AppConfig::default()` before any command sees
-it. There is no migration or serde field fallback.
+it. There is no migration or serde field fallback. The default bibliography path is empty: a fresh
+app loads no citation library until the reader chooses one.
 `services/workspace/folders.ts`
 walks the workspace for the places a note can go, and holds the two path rules the answers are
 read with (`parentFolder`, `fileName`, `placementOfPath`). `ui/new_document/flow.ts`
@@ -920,6 +921,10 @@ then puts the reader's choice back.
 `src-tauri/build.rs` watches `../locales`, because the binary embeds those files at compile time:
 without that line a new key reaches the webview but the menu keeps the old catalogue and shows the
 key itself.
+The menu's platform profile keeps macOS-only application and predefined items out of Windows and
+Linux. Settings moves to File and About to Help outside macOS; unsupported fullscreen, window and
+close items are omitted. Help → Report Issue is the typed command `help:reportIssue`, which opens
+the guided GitHub issue form in the system browser.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with

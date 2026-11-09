@@ -100,6 +100,7 @@ export type CommandContracts = FormattingContracts &
     'file:newMarkdown': CommandContract<NewDocumentCommandInput | null>;
     'help:tutorial': NoInputContract;
     'help:documentation': NoInputContract;
+    'help:reportIssue': NoInputContract;
     'version:save': NoInputContract;
     'session:toggleStack': NoInputContract;
     'session:nextStacked': NoInputContract;
@@ -352,6 +353,10 @@ export const commandContracts: CommandContracts = {
   },
   'help:tutorial': noInput('open the tutorial'),
   'help:documentation': noInput('open Documentation'),
+  'help:reportIssue': {
+    ...noInput('open the issue chooser'),
+    timing: 'async'
+  },
   'version:save': {
     ...noInput('save a version of the document'),
     effect: 'version.write',

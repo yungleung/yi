@@ -28,10 +28,10 @@ pub struct AppConfig {
     pub config_version: u32,
 }
 
-pub(crate) const CURRENT_CONFIG_VERSION: u32 = 2;
+pub(crate) const CURRENT_CONFIG_VERSION: u32 = 3;
 
 fn default_bibliography_file() -> String {
-    "~/Documents/ZettlrNotes/zotero.json".to_string()
+    String::new()
 }
 
 fn default_csl_style() -> String {
@@ -77,6 +77,11 @@ mod tests {
         let cfg: AppConfig = serde_json::from_str(&text).unwrap();
         assert_eq!(cfg.theme, "auto");
         assert_eq!(cfg.config_version, CURRENT_CONFIG_VERSION);
+    }
+
+    #[test]
+    fn a_fresh_config_names_no_bibliography() {
+        assert_eq!(AppConfig::default().bibliography_file, "");
     }
 
     #[test]

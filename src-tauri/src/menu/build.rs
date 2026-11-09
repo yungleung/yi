@@ -13,6 +13,109 @@ use tauri::AppHandle;
 use super::events::export_item_id;
 use crate::i18n::t;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MenuPlatform {
+    Macos,
+    Windows,
+    Linux,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct MenuProfile {
+    application_menu: bool,
+    fullscreen: bool,
+    window_menu: bool,
+    close_window: bool,
+    file_quit: bool,
+}
+
+fn menu_profile(platform: MenuPlatform) -> MenuProfile {
+    match platform {
+        MenuPlatform::Macos => MenuProfile {
+            application_menu: true,
+            fullscreen: true,
+            window_menu: true,
+            close_window: true,
+            file_quit: false,
+        },
+        MenuPlatform::Windows => MenuProfile {
+            application_menu: false,
+            fullscreen: false,
+            window_menu: true,
+            close_window: true,
+            file_quit: true,
+        },
+        MenuPlatform::Linux => MenuProfile {
+            application_menu: false,
+            fullscreen: false,
+            window_menu: false,
+            close_window: false,
+            file_quit: false,
+        },
+    }
+}
+
+fn current_menu_platform() -> MenuPlatform {
+    if cfg!(target_os = "macos") {
+        MenuPlatform::Macos
+    } else if cfg!(target_os = "windows") {
+        MenuPlatform::Windows
+    } else {
+        MenuPlatform::Linux
+    }
+}
+
+fn about_metadata() -> AboutMetadata<'static> {
+    AboutMetadata {
+        name: Some(String::from("Yi")),
+        version: Some(String::from(env!("CARGO_PKG_VERSION"))),
+        short_version: None,
+        authors: Some(vec![String::from(env!("CARGO_PKG_AUTHORS"))]),
+        comments: None,
+        copyright: Some(String::from("Copyright © 2026 yungleung")),
+        license: Some(String::from("MIT")),
+        website: None,
+        website_label: None,
+        credits: None,
+        icon: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{menu_profile, MenuPlatform};
+
+    #[test]
+    fn macos_keeps_the_application_and_window_menus() {
+        let profile = menu_profile(MenuPlatform::Macos);
+        assert!(profile.application_menu);
+        assert!(profile.fullscreen);
+        assert!(profile.window_menu);
+        assert!(profile.close_window);
+        assert!(!profile.file_quit);
+    }
+
+    #[test]
+    fn windows_moves_app_actions_into_file_and_help() {
+        let profile = menu_profile(MenuPlatform::Windows);
+        assert!(!profile.application_menu);
+        assert!(!profile.fullscreen);
+        assert!(profile.window_menu);
+        assert!(profile.close_window);
+        assert!(profile.file_quit);
+    }
+
+    #[test]
+    fn linux_omits_the_unsupported_native_items() {
+        let profile = menu_profile(MenuPlatform::Linux);
+        assert!(!profile.application_menu);
+        assert!(!profile.fullscreen);
+        assert!(!profile.window_menu);
+        assert!(!profile.close_window);
+        assert!(!profile.file_quit);
+    }
+}
+
 fn export_submenu(
     app: &AppHandle,
     language: &str,
@@ -31,34 +134,25 @@ pub(super) fn build(
     app: &AppHandle,
     language: &str,
 ) -> Result<tauri::menu::Menu<tauri::Wry>, Box<dyn Error>> {
-    let yi_submenu = SubmenuBuilder::new(app, "Yi")
-        .about_with_text(
-            t(language, "menu.about", &[]),
-            Some(AboutMetadata {
-                name: Some(String::from("Yi")),
-                version: Some(String::from(env!("CARGO_PKG_VERSION"))),
-                short_version: None,
-                authors: Some(vec![String::from(env!("CARGO_PKG_AUTHORS"))]),
-                comments: None,
-                copyright: Some(String::from("Copyright © 2026 yungleung")),
-                license: Some(String::from("MIT")),
-                website: None,
-                website_label: None,
-                credits: None,
-                icon: None,
-            }),
-        )
-        .separator()
-        .text("settings", t(language, "menu.settings", &[]))
-        .separator()
-        .hide_with_text(t(language, "menu.hide", &[]))
-        .hide_others_with_text(t(language, "menu.hideOthers", &[]))
-        .show_all_with_text(t(language, "menu.showAll", &[]))
-        .separator()
-        .quit_with_text(t(language, "menu.quit", &[]))
-        .build()?;
+    let profile = menu_profile(current_menu_platform());
+    let yi_submenu = profile
+        .application_menu
+        .then(|| {
+            SubmenuBuilder::new(app, "Yi")
+                .about_with_text(t(language, "menu.about", &[]), Some(about_metadata()))
+                .separator()
+                .text("settings", t(language, "menu.settings", &[]))
+                .separator()
+                .hide_with_text(t(language, "menu.hide", &[]))
+                .hide_others_with_text(t(language, "menu.hideOthers", &[]))
+                .show_all_with_text(t(language, "menu.showAll", &[]))
+                .separator()
+                .quit_with_text(t(language, "menu.quit", &[]))
+                .build()
+        })
+        .transpose()?;
 
-    let file_submenu = SubmenuBuilder::new(app, t(language, "menu.file", &[]))
+    let mut file_submenu = SubmenuBuilder::new(app, t(language, "menu.file", &[]))
         .item(
             &MenuItemBuilder::new(t(language, "menu.file.newMarkdown", &[]))
                 .accelerator("CmdOrCtrl+N")
@@ -93,10 +187,24 @@ pub(super) fn build(
             &MenuItemBuilder::new(t(language, "menu.file.manageExportTemplates", &[]))
                 .id("manage_export_templates")
                 .build(app)?,
-        )
-        .separator()
-        .close_window_with_text(t(language, "menu.window.close", &[]))
-        .build()?;
+        );
+    if !profile.application_menu {
+        file_submenu = file_submenu
+            .separator()
+            .text("settings", t(language, "menu.settings", &[]));
+    }
+    if profile.close_window {
+        file_submenu =
+            file_submenu
+                .separator()
+                .close_window_with_text(t(language, "menu.window.close", &[]));
+    }
+    if profile.file_quit {
+        file_submenu = file_submenu
+            .separator()
+            .quit_with_text(t(language, "menu.quit", &[]));
+    }
+    let file_submenu = file_submenu.build()?;
 
     let edit_submenu = SubmenuBuilder::new(app, t(language, "menu.edit", &[]))
         .item(
@@ -141,7 +249,7 @@ pub(super) fn build(
         )
         .build()?;
 
-    let view_submenu = SubmenuBuilder::new(app, t(language, "menu.view", &[]))
+    let mut view_submenu = SubmenuBuilder::new(app, t(language, "menu.view", &[]))
         .item(
             &MenuItemBuilder::new(t(language, "menu.view.toggleStack", &[]))
                 .accelerator("CmdOrCtrl+P")
@@ -159,19 +267,29 @@ pub(super) fn build(
                 .accelerator("CmdOrCtrl+Shift+T")
                 .id("previous_stacked")
                 .build(app)?,
+        );
+    if profile.fullscreen {
+        view_submenu =
+            view_submenu
+                .separator()
+                .fullscreen_with_text(t(language, "menu.view.fullscreen", &[]));
+    }
+    let view_submenu = view_submenu.build()?;
+
+    let window_submenu = if profile.window_menu {
+        Some(
+            SubmenuBuilder::new(app, t(language, "menu.window", &[]))
+                .minimize_with_text(t(language, "menu.window.minimize", &[]))
+                .maximize_with_text(t(language, "menu.window.maximize", &[]))
+                .separator()
+                .close_window_with_text(t(language, "menu.window.close", &[]))
+                .build()?,
         )
-        .separator()
-        .fullscreen_with_text(t(language, "menu.view.fullscreen", &[]))
-        .build()?;
+    } else {
+        None
+    };
 
-    let window_submenu = SubmenuBuilder::new(app, t(language, "menu.window", &[]))
-        .minimize_with_text(t(language, "menu.window.minimize", &[]))
-        .maximize_with_text(t(language, "menu.window.maximize", &[]))
-        .separator()
-        .close_window_with_text(t(language, "menu.window.close", &[]))
-        .build()?;
-
-    let help_submenu = SubmenuBuilder::new(app, t(language, "menu.help", &[]))
+    let mut help_submenu = SubmenuBuilder::new(app, t(language, "menu.help", &[]))
         .text("tutorial", t(language, "menu.help.tutorial", &[]))
         .item(
             &MenuItemBuilder::new(t(language, "menu.help.documentation", &[]))
@@ -183,17 +301,20 @@ pub(super) fn build(
         .text(
             "check_for_updates",
             t(language, "menu.help.checkForUpdates", &[]),
-        )
-        .build()?;
+        );
+    if !profile.application_menu {
+        help_submenu =
+            help_submenu.about_with_text(t(language, "menu.about", &[]), Some(about_metadata()));
+    }
+    let help_submenu = help_submenu.build()?;
 
-    Ok(MenuBuilder::new(app)
-        .items(&[
-            &yi_submenu,
-            &file_submenu,
-            &edit_submenu,
-            &view_submenu,
-            &window_submenu,
-            &help_submenu,
-        ])
-        .build()?)
+    let mut menu = MenuBuilder::new(app);
+    if let Some(submenu) = &yi_submenu {
+        menu = menu.item(submenu);
+    }
+    menu = menu.items(&[&file_submenu, &edit_submenu, &view_submenu]);
+    if let Some(submenu) = &window_submenu {
+        menu = menu.item(submenu);
+    }
+    Ok(menu.item(&help_submenu).build()?)
 }
