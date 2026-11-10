@@ -4,17 +4,9 @@
  */
 (async () => {
   const t = window.__t;
-  const button = [...document.querySelectorAll('button')].find(
-    (element) => element.getAttribute('aria-label') === 'Insert table'
-  );
-  if (!button) {
-    return { error: 'no insert-table button' };
-  }
   await t.load('First paragraph.\n\n');
   await t.click(t.blocks()[0]);
-  button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-  button.click();
-  await t.sleep(150);
+  await t.toolbarAction('Insert table');
   const panel = document.querySelector('[data-table-picker]');
   const square = (row, column) =>
     panel?.querySelector(`button[data-row="${row}"][data-column="${column}"]`) ?? null;

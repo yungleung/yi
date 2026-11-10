@@ -61,11 +61,30 @@
   const greek = 'Ελληνικά';
   const latin = 'And latin after it.';
   const note = `# Going out\n\n${cjk.join(' ')} ${hangul} ${hebrew} ${greek} ${latin}\n`;
-  /** The font the reader names, and how its own name appears in the PDF once it has drawn anything. */
-  const named = 'Songti SC';
-  const namedFace = 'STSongti';
-  const namedHebrew = 'Arial Unicode MS';
-  const namedHebrewFace = 'ArialUnicodeMS';
+  /** A face each desktop ships, and the family name its PDF font entry contains. */
+  const platform = t.platform();
+  const fonts =
+    platform === 'macos'
+      ? {
+          named: 'Songti SC',
+          namedFace: 'STSongti',
+          namedHebrew: 'Arial Unicode MS',
+          namedHebrewFace: 'ArialUnicodeMS'
+        }
+      : platform === 'windows'
+        ? {
+            named: 'Microsoft YaHei',
+            namedFace: 'MicrosoftYaHei',
+            namedHebrew: 'Arial',
+            namedHebrewFace: 'ArialMT'
+          }
+        : {
+            named: 'Noto Sans CJK SC',
+            namedFace: 'NotoSansCJK',
+            namedHebrew: 'Noto Sans Hebrew',
+            namedHebrewFace: 'NotoSansHebrew'
+          };
+  const { named, namedFace, namedHebrew, namedHebrewFace } = fonts;
 
   const card = () => document.querySelector('[data-export-dialog]');
   const open = () => {

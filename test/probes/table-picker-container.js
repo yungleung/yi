@@ -6,6 +6,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -14,9 +15,6 @@
       expected,
       pass: JSON.stringify(actual) === JSON.stringify(expected)
     });
-  const button = [...document.querySelectorAll('button')].find(
-    (element) => element.getAttribute('aria-label') === 'Insert table'
-  );
   const clickTextEnd = async (needle) => {
     const node = [...t.textNodesIn(t.prose())]
       .find((candidate) => candidate.data.includes(needle));
@@ -24,26 +22,15 @@
     if (!node || at < 0) return false;
     const range = document.createRange();
     const end = at + needle.length;
-    range.setStart(node, end - 1);
+    range.setStart(node, end);
     range.setEnd(node, end);
-    const box = range.getBoundingClientRect();
-    const event = {
-      bubbles: true,
-      cancelable: true,
-      clientX: box.right - 0.5,
-      clientY: box.top + box.height / 2
-    };
-    const target = node.parentElement;
-    target.dispatchEvent(new PointerEvent('pointerdown', event));
-    target.dispatchEvent(new PointerEvent('pointerup', event));
-    target.dispatchEvent(new MouseEvent('click', event));
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(120);
     return true;
   };
   const insertFromPicker = async () => {
-    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    button.click();
-    await t.sleep(120);
+    await t.toolbarAction('Insert table');
     document
       .querySelector('[data-table-picker]')
       .querySelector('button[data-row="3"][data-column="2"]')

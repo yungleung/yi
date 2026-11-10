@@ -12,10 +12,6 @@
  */
 (async () => {
   const t = window.__t;
-  const button = (label) =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === label
-    );
   const styles = [
     { label: 'Bold', raw: '**Alpha** beta.\n', source: '.markdown-strong-source', shown: '**Alpha**', tag: 'STRONG' },
     { label: 'Italic', raw: '*Alpha* beta.\n', source: '.markdown-emphasis-source', shown: '*Alpha*', tag: 'EM' },
@@ -47,10 +43,7 @@
     selection.removeAllRanges();
     selection.addRange(range);
     await t.sleep(120);
-    const target = button(style.label);
-    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    target.click();
-    await t.sleep(200);
+    await t.toolbarAction(style.label);
     // The marked run shows its source, because the caret the button left is
     // inside it; moving the caret past the run renders the style.
     const revealed = t.prose().querySelector(style.source);

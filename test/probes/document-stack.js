@@ -117,7 +117,7 @@
   await t.sleep(120);
   t.key('X');
   await t.sleep(150);
-  button('Push to the stack')?.click();
+  await t.command('session:toggleStack');
   await t.sleep(200);
   step('pushed');
   const held = session.documentSession.stack().find((document) => document.id === state().current);
@@ -125,7 +125,7 @@
     'the stack button pushes the document in, and the copy it keeps is the current text',
     status('document-saved') === 'Editing' &&
       status('document-stacked')?.startsWith('In the stack') === true &&
-      button('Take out of the stack') !== undefined &&
+      (t.platform() !== 'macos' || button('Take out of the stack') !== undefined) &&
       (held?.content ?? '').includes('ThiX'),
     { saved: status('document-saved'), stack: status('document-stacked'), held: (held?.content ?? '').slice(0, 24) }
   );
@@ -142,7 +142,7 @@
   );
 
   // 4. The stack lists what it holds, by title.
-  button('Open the stack')?.click();
+  await t.command('session:openStack');
   await t.sleep(150);
   step('popover');
   const listed = [...document.querySelectorAll('[data-stack-row]')].map((row) => ({

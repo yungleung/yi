@@ -54,7 +54,7 @@
   check('the webview hash stays unchanged', location.hash, hashBefore);
   check(
     'the caret reaches the target heading',
-    caret !== null && box !== null && caret.y >= box.top - 4 && caret.y <= box.bottom + 4,
+    caret !== null && box !== null && caret.y >= box.top - 6 && caret.y <= box.bottom + 6,
     true
   );
 

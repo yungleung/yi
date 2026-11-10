@@ -63,9 +63,9 @@
   let section = [...document.querySelectorAll('.prose .markdown-block')].find((block) =>
     (block.textContent ?? '').includes('Pandoc-style citations')
   );
-  for (let step = 0; step < 25 && !section; step += 1) {
-    t.scroller().scrollTop += 200;
-    await t.sleep(110);
+  for (let fraction = 0.1; fraction <= 1.0001 && !section; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
     section = [...document.querySelectorAll('.prose .markdown-block')].find((block) =>
       (block.textContent ?? '').includes('Pandoc-style citations')
     );

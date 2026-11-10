@@ -13,16 +13,75 @@ window.__t = (() => {
     return out;
   };
 
-  /** The whole raw document, read through Select All + copy. */
+  const platform = () => window.__TAURI_OS_PLUGIN_INTERNALS__.platform;
+  const homeDir = () =>
+    window.__TAURI_INTERNALS__.invoke('plugin:path|resolve_directory', { directory: 21 });
+  const tempDir = () =>
+    window.__TAURI_INTERNALS__.invoke('plugin:path|resolve_directory', { directory: 12 });
+  const joinPath = (...paths) =>
+    window.__TAURI_INTERNALS__.invoke('plugin:path|join', { paths });
+
+  /**
+   * The whole raw document, read through Select All + copy.
+   *
+   * A block rebuild can finish a frame after the probe's own edit; Select All then lands while the
+   * old selection is being replaced, and WebKitGTK answers an empty copy. Retry the same document
+   * read instead of making every editor probe wait longer for an operation it did not perform.
+   */
   const raw = async () => {
-    await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'select_all' });
-    await sleep(120);
-    const dt = new DataTransfer();
-    scroller().dispatchEvent(
-      new ClipboardEvent('copy', { clipboardData: dt, bubbles: true, cancelable: true })
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'select_all' });
+      await sleep(120);
+      const dt = new DataTransfer();
+      scroller().dispatchEvent(
+        new ClipboardEvent('copy', { clipboardData: dt, bubbles: true, cancelable: true })
+      );
+      const text = dt.getData('text/plain');
+      window.getSelection()?.removeAllRanges();
+      if (text !== '') {
+        return text;
+      }
+      await sleep(80);
+    }
+    return '';
+  };
+
+  /** Runs the same typed command a toolbar or native menu item names. */
+  const command = async (id, input = null, origin = 'toolbar') => {
+    const { runCommand } = await app('/src/commands/runtime.ts');
+    return await runCommand(id, input, origin);
+  };
+
+  /** A command button when the custom title bar exists; otherwise the command it names. */
+  const toolbarAction = async (label) => {
+    const ids = {
+      Bold: 'format:bold',
+      Italic: 'format:italic',
+      Strikethrough: 'format:strikethrough',
+      'Inline code': 'format:inlineCode',
+      'Ordered list': 'list:ordered',
+      'Bullet list': 'list:bullet',
+      'Task list': 'list:task',
+      'Increase indent': 'list:indent',
+      'Decrease indent': 'list:outdent',
+      Link: 'edit:insertLink',
+      Image: 'edit:insertImage',
+      Footnote: 'edit:insertFootnote',
+      'Insert table': 'table:choose'
+    };
+    const button = [...document.querySelectorAll('button')].find(
+      (element) => element.getAttribute('aria-label') === label
     );
-    window.getSelection()?.removeAllRanges();
-    return dt.getData('text/plain');
+    if (button) {
+      button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      button.click();
+    } else if (ids[label]) {
+      await command(ids[label], null, 'toolbar');
+    } else {
+      throw new Error(`no toolbar action for ${label}`);
+    }
+    await sleep(250);
+    return button;
   };
 
   /**
@@ -552,6 +611,12 @@ window.__t = (() => {
     scroller,
     blocks,
     textNodesIn,
+    platform,
+    homeDir,
+    tempDir,
+    joinPath,
+    command,
+    toolbarAction,
     raw,
     hintsNow,
     newHint,

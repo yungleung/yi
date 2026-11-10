@@ -343,10 +343,12 @@
     );
 
     const code = document.querySelector('[data-template-editor-code] .cm-content');
+    const meta = t.platform() === 'macos';
     code?.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'f',
-        metaKey: true,
+        metaKey: meta,
+        ctrlKey: !meta,
         bubbles: true,
         cancelable: true
       })

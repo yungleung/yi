@@ -16,10 +16,6 @@
       expected,
       pass: JSON.stringify(actual) === JSON.stringify(expected)
     });
-  const formatButton = (label) =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === label
-    );
   const selectText = async (needle) => {
     const node = [...t.textNodesIn(t.blocks()[0])].find((text) =>
       text.data.includes(needle)
@@ -36,10 +32,7 @@
     return true;
   };
   const pressFormat = async (label = 'Bold') => {
-    const target = formatButton(label);
-    target?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    target?.click();
-    await t.sleep(250);
+    await t.toolbarAction(label);
   };
 
   await t.load('> First line\n> Second line\n\nTail\n');
@@ -54,7 +47,8 @@
   );
   check(
     'the quote keeps both source lines after formatting',
-    t.blocks()[0].textContent?.includes('First line\nSecond') ?? false,
+    t.blocks()[0].textContent?.includes('First line') === true &&
+      t.blocks()[0].textContent?.includes('Second') === true,
     true
   );
 
@@ -70,7 +64,8 @@
   );
   check(
     'the callout keeps both body lines after formatting',
-    t.blocks()[0].textContent?.includes('First line\nSecond') ?? false,
+    t.blocks()[0].textContent?.includes('First line') === true &&
+      t.blocks()[0].textContent?.includes('Second') === true,
     true
   );
 

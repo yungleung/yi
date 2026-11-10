@@ -17,6 +17,7 @@
 (async () => {
   const t = window.__t;
   const session = await t.app('/src/services/session/index.ts');
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
 
@@ -57,22 +58,35 @@
   }
   await t.sleep(100);
 
-  // 1. A document with a caret inside a paragraph and the view part-way down.
+  // 1. A document with a caret inside a visible paragraph and the view part-way down.
   await openRow('default-document.md', 'no');
-  const text = t.textNodesIn(t.prose().querySelector('p'))[0];
+  t.scroller().scrollTop = 400;
+  await t.sleep(250);
+  const viewport = t.scroller().getBoundingClientRect();
+  const paragraph = [...t.prose().querySelectorAll('p')].find((element) => {
+    const box = element.getBoundingClientRect();
+    return box.top >= viewport.top + 8 && box.bottom <= viewport.bottom - 8;
+  });
+  const text = paragraph === undefined ? null : t.textNodesIn(paragraph)[0];
+  check('a visible paragraph holds the caret', text !== null && text.data.length >= 3, Boolean(text));
+  if (text === null) {
+    return {
+      checks,
+      failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name)
+    };
+  }
   const caret = document.createRange();
   caret.setStart(text, 3);
   caret.collapse(true);
-  const rect = caret.getBoundingClientRect();
-  text.parentElement.dispatchEvent(
-    new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-  );
+  caretModule.showCaret(caret);
+  t.prose().focus({ preventScroll: true });
   await t.sleep(120);
   t.key('X');
   await t.sleep(150);
-  button('Push to the stack')?.click();
+  const typedParagraph = paragraph?.textContent ?? '';
+  const expectedSequence = `${typedParagraph.slice(0, 3)}XY`;
+  await t.command('session:toggleStack');
   await t.sleep(150);
-  t.scroller().scrollTop = 400;
   await t.sleep(200);
   const leftAt = Math.round(t.scroller().scrollTop);
   const stackId = state().current;
@@ -86,7 +100,7 @@
   );
 
   // 3. The stack's own row brings it back.
-  button('Open the stack')?.click();
+  await t.command('session:openStack');
   await t.sleep(150);
   document.querySelector(`[data-stack-open="${CSS.escape(stackId)}"]`)?.click();
   await t.sleep(500);
@@ -104,12 +118,33 @@
     { scroll: { leftAt, back }, page: (t.prose().textContent ?? '').slice(0, 26) }
   );
 
+  const restoredRange = caretModule.getCaretRange();
   t.key('Y');
   await t.sleep(200);
+  const restoredContent = current()?.content ?? '';
+  const restoredAt = restoredContent.indexOf(expectedSequence);
+  const restoredDocument = current();
   check(
     'with the caret where it was left, inside the word it was in',
-    (current()?.content ?? '').includes('ThiXY'),
-    { content: (current()?.content ?? '').slice(0, 40) }
+    restoredAt >= 0,
+    {
+      restoredAt,
+      caret: restoredRange === null
+        ? null
+        : {
+            text: restoredRange.startContainer.textContent,
+            offset: restoredRange.startOffset,
+            connected: restoredRange.startContainer.isConnected
+          },
+      id: restoredDocument?.id ?? null,
+      expectedId: stackId,
+      view: restoredDocument?.view ?? null,
+      lines: [...t.prose().querySelectorAll('.markdown-block')].map(
+        (block) => block.dataset.lineStart
+      ),
+      active: document.activeElement?.className ?? null,
+      content: restoredAt >= 0 ? restoredContent.slice(restoredAt - 20, restoredAt + 24) : restoredContent.slice(0, 80)
+    }
   );
 
   return {

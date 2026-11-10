@@ -1290,6 +1290,12 @@ npm run site:build                      # build the public site into _site/
 npm run site:preview                    # serve _site/ on 127.0.0.1:1430
 ```
 
+On a headless or software-rendered Linux session, prefix the app command with
+`GDK_BACKEND=x11 WEBKIT_DISABLE_COMPOSITING_MODE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1`;
+without it WebKitGTK reports the page as visible but delivers no animation frames or
+`ResizeObserver` callbacks, so frame-dependent probes fail for the test display rather
+than for the app.
+
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.

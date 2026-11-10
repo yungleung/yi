@@ -174,7 +174,9 @@
         (await exists(`${target}/js/dist/reveal.js`)) &&
         (await exists(`${target}/js/dist/reveal.css`)) &&
         (await exists(`${target}/js/dist/theme/black.css`)) &&
-        (await exists(`${target}/js/dist/plugin/notes.js`)),
+        (await exists(`${target}/js/plugin/notes/notes.js`)) &&
+        (await exists(`${target}/js/plugin/search/search.js`)) &&
+        (await exists(`${target}/js/plugin/zoom/zoom.js`)),
       local.page?.match(/(?:src|href)="[^"]*reveal[^"]*"/g)
     );
     check(

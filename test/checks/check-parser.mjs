@@ -138,6 +138,14 @@ check('an ordinary paragraph keeps every node it had', (() => {
     : [parsed.error];
 })(), [1, 1, 1, 1]);
 
+const narrativeThenSpace = 'See @smith2020  tail\n';
+const narrativeTree = parseMarkdown(narrativeThenSpace);
+check(
+  'a narrative citation leaves the surrounding space outside its source',
+  nodesOfType(narrativeTree, 'citation').map((node) => sourceOf(narrativeThenSpace, node)),
+  ['@smith2020']
+);
+
 // The frontmatter is YAML: its two closing markers are read, and a TOML fence is text.
 const dotted = '---\ntitle: X\n...\n\nBody\n';
 const dottedTree = parseMarkdown(dotted);

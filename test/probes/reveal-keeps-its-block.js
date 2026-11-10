@@ -76,8 +76,8 @@
   }
   await t.sleep(300);
   let section = blockWith('Pandoc-style citations');
-  for (let step = 0; step < 25 && !section; step += 1) {
-    t.scroller().scrollTop += 200;
+  for (let fraction = 0.1; fraction <= 1.0001 && !section; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
     await t.sleep(100);
     section = blockWith('Pandoc-style citations');
   }
@@ -96,6 +96,7 @@
     { section: Boolean(section), citation: Boolean(citation) }
   );
   const citationsBefore = lines();
+  const citationsLine = section?.dataset.lineStart ?? null;
   if (citation) {
     await show(citation);
   }
@@ -106,21 +107,28 @@
   );
   check(
     'and the citations paragraph is still mounted',
-    lines().includes('70'),
-    { before: citationsBefore, after: lines() }
+    citationsLine !== null && lines().includes(citationsLine),
+    { line: citationsLine, before: citationsBefore, after: lines() }
   );
 
   const wikilink = document.querySelector('.markdown-wikilink');
   check('a wikilink is mounted below it', Boolean(wikilink), Boolean(wikilink));
   const wikilinksBefore = lines();
+  const wikilinksLine =
+    wikilink?.closest('.markdown-block')?.dataset.lineStart ?? null;
   if (wikilink) {
     await show(wikilink);
   }
-  check('and the wikilinks paragraph is still mounted', lines().includes('78'), {
-    before: wikilinksBefore,
-    after: lines()
-  });
-  check('and the citations paragraph did not leave with it', lines().includes('70'), lines());
+  check(
+    'and the wikilinks paragraph is still mounted',
+    wikilinksLine !== null && lines().includes(wikilinksLine),
+    { line: wikilinksLine, before: wikilinksBefore, after: lines() }
+  );
+  check(
+    'and the citations paragraph did not leave with it',
+    citationsLine !== null && lines().includes(citationsLine),
+    { line: citationsLine, lines: lines() }
+  );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()

@@ -15,7 +15,7 @@ const svg = Buffer.from(
     '<circle cx="60" cy="30" r="20" fill="#f59e0b"/></svg>'
 );
 const webp = Buffer.from(
-  'UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoCAQIAAUAmJQBOgCHwAP7+4AAAAA==',
+  'UklGRh4AAABXRUJQVlA4TBEAAAAvAUEAAAdQwe7Uvv+BiOh/AAA=',
   'base64'
 );
 
@@ -47,7 +47,10 @@ export async function startHttpFixture() {
       response.end(png);
       return;
     }
-    if (path.startsWith('/revealjs/dist/')) {
+    if (
+      path.startsWith('/revealjs/dist/') ||
+      path.startsWith('/revealjs/plugin/')
+    ) {
       const type = path.endsWith('.css') ? 'text/css' : 'text/javascript';
       response.writeHead(200, { 'content-type': type });
       response.end(`/* local Reveal.js fixture: ${path} */\n`);

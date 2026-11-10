@@ -5,10 +5,6 @@
  */
 (async () => {
   const t = window.__t;
-  const button = () =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === 'Footnote'
-    );
   await t.load('Body text.\n\nLast paragraph.\n');
   await t.click(t.blocks()[0], 0.4);
   const before = {
@@ -17,10 +13,7 @@
     caret: t.caretRect()
   };
   t.report({ before });
-  const target = button();
-  target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-  target.click();
-  await t.sleep(350);
+  await t.toolbarAction('Footnote');
   const sup = t.prose().querySelector('sup');
   const definition = t.prose().querySelector('.markdown-footnote');
   const after = {

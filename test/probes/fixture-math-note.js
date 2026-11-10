@@ -25,13 +25,26 @@
     expected: 'more than 20',
     pass: blocks > 20
   });
-  const formulas = t.prose().querySelectorAll('.katex').length;
+  const renderedFormulas = new Set();
+  let rawSource = 0;
+  for (let fraction = 0; fraction <= 1.0001; fraction += 0.1) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(150);
+    for (const formula of t.prose().querySelectorAll('.katex')) {
+      renderedFormulas.add(formula);
+    }
+    rawSource = Math.max(
+      rawSource,
+      t.prose().querySelectorAll('.markdown-source-text').length
+    );
+  }
+  const formulas = renderedFormulas.size;
   checks.push({
     name: 'the visible formulas are rendered with KaTeX',
     actual: formulas,
     expected: 'more than 3',
     pass: formulas > 3
   });
-  check('and no display formula is left as raw source', t.prose().querySelectorAll('.markdown-source-text').length, 0);
+  check('and no display formula is left as raw source', rawSource, 0);
   return { checks, blocks, formulas, failed: checks.filter((c) => !c.pass).map((c) => c.name) };
 })()

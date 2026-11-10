@@ -4,16 +4,7 @@
  */
 (async () => {
   const t = window.__t;
-  const button = () =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === 'Footnote'
-    );
-  const press = async () => {
-    const target = button();
-    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    target.click();
-    await t.sleep(300);
-  };
+  const press = () => t.toolbarAction('Footnote');
   const measure = () => {
     const blocks = [...t.prose().querySelectorAll('.markdown-block')];
     const definitions = [...t.prose().querySelectorAll('.markdown-footnote')];

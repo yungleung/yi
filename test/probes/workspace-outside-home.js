@@ -10,7 +10,7 @@
  * in* are granted at run time (`src-tauri/src/access.rs`): the ones the config names where the config is
  * read, and a document's own before the session reads it.
  *
- * Everything here happens under `/private/tmp`, which is outside the home folder by construction, and
+ * Everything here happens under the platform temp folder, which is outside the home folder by construction, and
  * the probe takes the measurement first — a folder nothing has been asked about is refused — so that
  * what the fix changes is visible in one run. The last check is the half that must not change: a
  * folder nobody asked about stays refused however many others were granted.
@@ -28,6 +28,7 @@
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   const sleep = t.sleep;
+  const outsideRoot = await t.tempDir();
 
   const readText = async (path) => {
     const read = await invoke('plugin:fs|read_text_file', { path });
@@ -52,13 +53,14 @@
   };
 
   const run = Date.now().toString(36);
-  const outside = `/private/tmp/yi-probe-outside-${run}`;
-  const untaken = `/private/tmp/yi-probe-untaken-${run}`;
-  const pictures = `/private/tmp/yi-probe-pictures-${run}`;
+  const outside = await t.joinPath(outsideRoot, `yi-probe-outside-${run}`);
+  const untaken = await t.joinPath(outsideRoot, `yi-probe-untaken-${run}`);
+  const pictures = await t.joinPath(outsideRoot, `yi-probe-pictures-${run}`);
   const notePath = `${outside}/note.md`;
   const shotPath = `${outside}/shot.png`;
   const elsewhere = `${untaken}/note.md`;
   const storedPicture = `${pictures}/shot.png`;
+  const stranger = await t.joinPath(outsideRoot, `yi-probe-elsewhere-${run}`);
   // A 1x1 png, so the picture a note names is one the page can paint.
   const png = Uint8Array.from(
     atob(
@@ -72,9 +74,9 @@
   try {
     // The folders are made by the app's own commands, which carry no scope of their own.
     for (const [parent, name] of [
-      ['/private/tmp', `yi-probe-outside-${run}`],
-      ['/private/tmp', `yi-probe-untaken-${run}`],
-      ['/private/tmp', `yi-probe-pictures-${run}`]
+      [outsideRoot, `yi-probe-outside-${run}`],
+      [outsideRoot, `yi-probe-untaken-${run}`],
+      [outsideRoot, `yi-probe-pictures-${run}`]
     ]) {
       await files.createEntry(parent, name, false);
     }
@@ -158,9 +160,8 @@
 
     // --- and nothing else was opened up ---------------------------------------------------------
 
-    await files.createEntry('/private/tmp', `yi-probe-elsewhere-${run}`, false);
-    await files.createEntry(`/private/tmp/yi-probe-elsewhere-${run}`, 'note.md', true);
-    const stranger = `/private/tmp/yi-probe-elsewhere-${run}`;
+    await files.createEntry(outsideRoot, `yi-probe-elsewhere-${run}`, false);
+    await files.createEntry(stranger, 'note.md', true);
     const stillRefused = await refused(() => readText(`${stranger}/note.md`));
     const refusedWrite = await refused(() =>
       writeTextThroughThePage(`${stranger}/nothing.md`, 'no')
@@ -177,7 +178,7 @@
     );
   } finally {
     await configManager.save(before);
-    for (const folder of [outside, untaken, pictures, `/private/tmp/yi-probe-elsewhere-${run}`]) {
+    for (const folder of [outside, untaken, pictures, stranger]) {
       try {
         await files.deleteEntry(folder);
       } catch {

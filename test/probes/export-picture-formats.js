@@ -92,12 +92,15 @@
     await sleep(200);
   };
   const exportTo = async (kind, target) => {
+    const hints = t.hintsNow();
     await invoke('plugin:event|emit', { event: 'export', payload: kind });
     await until(() => open(), 60);
     await sleep(150);
     card().querySelector('[data-export-target]').value = target;
     card().querySelector('[data-export-run]').click();
-    return await until(async () => (await bytesOf(target)) !== null);
+    return await until(
+      () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
+    );
   };
 
   const before = await invoke('get_config');
@@ -115,7 +118,7 @@
     // for the type answers null here, measured) — the drawing half is the app's, not the probe's. Its
     // own size is what its PNG must keep, and the page is asked for it rather than assumed.
     const webp = Uint8Array.from(
-      atob('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoCAQIAAUAmJQBOgCHwAP7+4AAAAA=='),
+      atob('UklGRh4AAABXRUJQVlA4TBEAAAAvAUEAAAdQwe7Uvv+BiOh/AAA='),
       (character) => character.charCodeAt(0)
     );
     const webpSource = await (async () => {

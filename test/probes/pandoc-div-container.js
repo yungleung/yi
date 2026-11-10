@@ -7,6 +7,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, actual, expected) =>
     checks.push({
@@ -23,17 +24,8 @@
     const range = document.createRange();
     range.setStart(node, offset);
     range.collapse(true);
-    const box = range.getBoundingClientRect();
-    const target = node.parentElement;
-    const event = {
-      bubbles: true,
-      cancelable: true,
-      clientX: box.left + 0.5,
-      clientY: box.top + box.height / 2
-    };
-    target.dispatchEvent(new PointerEvent('pointerdown', event));
-    target.dispatchEvent(new PointerEvent('pointerup', event));
-    target.dispatchEvent(new MouseEvent('click', event));
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(120);
     return true;
   };
@@ -48,23 +40,15 @@
     const range = document.createRange();
     range.setStart(node, offset);
     range.collapse(true);
-    const box = range.getBoundingClientRect();
-    const target = node.parentElement;
-    const event = {
-      bubbles: true,
-      cancelable: true,
-      clientX: box.left + 0.5,
-      clientY: box.top + box.height / 2
-    };
-    target.dispatchEvent(new PointerEvent('pointerdown', event));
-    target.dispatchEvent(new PointerEvent('pointerup', event));
-    target.dispatchEvent(new MouseEvent('click', event));
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(120);
     return true;
   };
 
   await t.load(':::\n:::\n');
   await clickText(':::', true, false);
+  await t.sleep(150);
   t.key('Enter');
   await t.sleep(220);
   t.key('X');
@@ -194,21 +178,25 @@
       'Warning',
       'Caution',
       'Definition',
-      'Proof',
-      'Theorem'
+      'Theorem',
+      'Proof'
     ]
   );
+  t.key('Escape');
+  await t.sleep(120);
 
   await t.load('::: {.callout .callout-note}\n\n:::\n');
   await t.click(t.prose().querySelector('.markdown-callout-title'));
-  await t.sleep(160);
+  await t.sleep(220);
   await clickOffset('::: {.callout .callout-note}\n'.length);
   for (let typed = 0; typed < 4; typed += 1) {
     t.key(':');
-    await t.sleep(80);
+    await t.sleep(100);
+    await t.raw();
   }
   t.key(' ');
-  await t.sleep(100);
+  await t.raw();
+  await t.sleep(200);
   const visibleKinds = [...document.querySelectorAll('[data-div-kind-choice]')].filter(
     (row) => row.closest('.hidden') === null
   );
@@ -219,7 +207,7 @@
     'default'
   );
   visibleKinds.find((row) => row.dataset.divKindChoice === 'callout:warning')?.click();
-  await t.sleep(220);
+  await t.sleep(350);
   check(
     'choosing a nested kind changes the inner Div and preserves the outer attributes',
     await t.raw(),

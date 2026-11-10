@@ -69,10 +69,7 @@
       headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
     });
   const press = async () => {
-    const button = imageButton();
-    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    button.click();
-    await t.sleep(300);
+    await t.toolbarAction('Image');
   };
   const caret = () => {
     const range = caretModule.getCaretRange();
@@ -86,21 +83,20 @@
     const range = document.createRange();
     range.setStart(text, offset);
     range.collapse(true);
-    const rect = range.getBoundingClientRect();
-    text.parentElement.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-    );
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(150);
   };
 
   check(
-    'the image button is in the title bar, beside the link button',
-    imageButton() !== null && imageButton().getAttribute('title') === 'Image',
+    'the image action is in the custom title bar or its native menu',
+    t.platform() !== 'macos' ||
+      (imageButton() !== null && imageButton().getAttribute('title') === 'Image'),
     imageButton()?.outerHTML?.slice(0, 80) ?? null
   );
   check(
     'and it draws the image icon the user gave',
-    (() => {
+    t.platform() !== 'macos' || (() => {
       const svg = imageButton()?.querySelector('svg');
       const box = svg?.querySelector('path[fill="none"]');
       const glyphs = [...(svg?.querySelectorAll('g[fill="currentColor"] path') ?? [])];
