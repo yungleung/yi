@@ -78,6 +78,9 @@ export class EditorViewState {
 
   /** Restores the caret/selection and scroll anchor remembered by the session. */
   restore(view: EditorDocumentView): void {
+    // Mount the remembered window before placing an offset inside it. The previous document's
+    // scroll may leave a different block mounted, and a virtualized-out caret cannot be placed.
+    this.editor.renderer.scrollToAnchor(view.scroll);
     if (view.caret !== null) {
       const placed =
         view.to !== null && view.to !== view.caret
@@ -91,10 +94,13 @@ export class EditorViewState {
       hideCaret();
     }
 
-    this.editor.renderer.scrollToAnchor(view.scroll);
     const anchor = this.editor.contentView.scrollTop;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        const pending = this.pendingCaretOffset;
+        if (pending !== null) {
+          this.reanchor(pending);
+        }
         if (Math.abs(this.editor.contentView.scrollTop - anchor) > 0.5) {
           this.editor.contentView.scrollTop = anchor;
         }

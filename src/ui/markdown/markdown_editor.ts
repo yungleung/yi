@@ -17,7 +17,8 @@ import { BaseComponent } from '../component';
 import {
   getCaretRange,
   getSelectionRange,
-  onCaretRangeChanged
+  onCaretRangeChanged,
+  repositionCaret
 } from './caret/caret';
 import {
   isSourceBlock,
@@ -223,7 +224,8 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
             this.followCaret();
           }
         });
-      }
+      },
+      settled: () => repositionCaret()
     });
 
     const handleKey = (event: KeyboardEvent): void => {

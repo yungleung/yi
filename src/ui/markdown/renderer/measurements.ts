@@ -70,6 +70,26 @@ export class RendererMeasurements {
     }
   }
 
+  /**
+   * Measures a block whose text was patched in place without rebuilding its element.
+   *
+   * Example: typing enough characters to wrap a one-line paragraph from 32px to 72px
+   * updates the stored height and its intrinsic size before the spacers are recalculated.
+   *
+   * WebKitGTK keeps returning pre-mutation geometry for a `content-visibility: auto`
+   * block until that property changes. An edited block stays `visible` until it is
+   * rebuilt or unmounted, so both its measured height and its caret geometry use the
+   * text it now holds.
+   */
+  remeasureAfterTextMutation(block: MarkdownBlock, element: HTMLElement): void {
+    element.style.setProperty('content-visibility', 'visible');
+    // WebKitGTK can leave `offsetHeight` at the pre-mutation layout while the box already
+    // reports the wrapped line count. The rectangle is the geometry the reader sees.
+    const height = element.getBoundingClientRect().height;
+    this.sizes.remember(block, height);
+    this.setIntrinsicSize(element, height);
+  }
+
   /** Measures every mounted block in the visible range. */
   measureMounted(
     blocks: readonly MarkdownBlock[],
