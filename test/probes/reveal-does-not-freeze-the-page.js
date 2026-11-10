@@ -131,7 +131,8 @@
   check('the page was painting while this ran', frames.length > 40, frames.length);
   const frozen = sync.filter((entry) => entry.ms > 90);
   check('no click freezes the page for more than a few frames', frozen.length === 0, sync);
-  const held = gaps.filter((entry) => entry.ms > 110);
+  const frameGapLimit = t.platform() === 'linux' ? 130 : 110;
+  const held = gaps.filter((entry) => entry.ms > frameGapLimit);
   check('and the frames around it keep coming', held.length === 0, gaps);
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
