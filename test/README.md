@@ -38,6 +38,8 @@ methodology; this file is the index and the conventions.
 | `check-code-edits.mjs` | Tab/Shift+Tab inside a fenced code block and a display formula |
 | `check-command-contracts.mjs` | The typed command catalogue: every command family is present, each parser accepts its real trigger shape, malformed external input is refused, and every contract declares effect, timing, exposure and description |
 | `check-command-dispatch.mjs` | The one command dispatch path: duplicate registration is refused; invalid, forbidden, unavailable and thrown commands cannot report success; source authority distinguishes writable, read-only and unconfigured automation; sync and async results keep their correlation id |
+| `check-editor-context-menu.mjs` | The editor context menu's command order, shortcut labels and enabled state in writable, read-only, selected-text and caret-only documents |
+| `check-editor-shortcuts.mjs` | The approved formatting and insertion chords on both macOS Cmd and Windows/Linux Ctrl, including Option's composed-character behavior |
 | `check-event-manager.mjs` | That the app event manager uses the typed local bus for same-window facts and Tauri only for declared inbound events |
 | `check-completions.mjs` | What the caret is inside when a list should open, and which entries belong in it (`syntax/completions.ts`): citation, wikilink, automatic-reference and same-document link-fragment queries, the places an `@`, `[#` or `](#` is not one, path fragments and escapes, entries matching on either field, and the cap |
 | `check-enter.mjs` | What `Enter` inserts at a block edge and on an empty paragraph, and list rules |
@@ -96,7 +98,7 @@ methodology; this file is the index and the conventions.
 | `check-platform-chrome.mjs` | The custom title bar is macOS-only, while Windows and Linux keep native window chrome and use native menu actions |
 | `headers.mjs` | That every module under `src/ui/markdown` opens with the three-line header: what it is for, what it may import, what it upholds (`docs/writing-comments.md`) |
 | `layering.mjs` | That the syntax layer imports nothing from outside itself (no DOM, no state) |
-| `probe-markers.mjs` | That a probe opening the native table menu carries `@needs-foreground-window`, so `probe:all` skips it instead of leaving the menu open for every probe after it |
+| `probe-markers.mjs` | That a probe opening a native menu carries `@needs-foreground-window`, or declares `@intercepts-menu` when it replaces the presenter for automation |
 | `syntax-home.mjs` | That each markdown-syntax fact is defined in exactly one module |
 
 ## The probes
@@ -109,8 +111,8 @@ before emit settles while a native event still arrives through Tauri; `agent-ran
 edit tied to the current document revision succeeds, while an old plan returns `stale` and cannot
 overwrite newer text; `document-change-event` — one edit and one undo each emit exactly one typed
 local fact with the expected revision and text; `native-editor-menu` — formatting, table, sidebar
-and stack commands arrive from native menu events; `selection-toolbar` — selected document text
-shows the editing bar without workspace or session controls), the workspace tree (`tree-rename` — a name edited
+and stack commands arrive from native menu events; `editor-context-menu` — right-clicks outside
+tables request the general editor menu, while a table cell keeps its own menu), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

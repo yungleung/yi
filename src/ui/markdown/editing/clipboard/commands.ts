@@ -44,40 +44,49 @@ export function copySelection(context: EditorContext, event: ClipboardEvent): vo
   event.clipboardData?.setData('text/plain', selected.text);
 }
 
-/** Copies the selection to the system clipboard and removes it. */
-export async function cutSelection(context: EditorContext): Promise<void> {
+/**
+ * Copies the raw selection for a command-triggered context-menu action.
+ *
+ * Example: selecting text across two virtualized blocks and choosing Copy puts
+ * their complete Markdown on the clipboard even though only one is mounted.
+ */
+export async function copySelectedMarkdown(context: EditorContext): Promise<boolean> {
   const selected = selectedRawRange(context);
   if (!selected) {
-    return;
+    return false;
   }
   try {
     await navigator.clipboard.writeText(selected.text);
+    return true;
   } catch (error) {
-    console.error('Failed to copy the cut selection to the clipboard:', error);
-    return;
+    console.error('Failed to copy the selection to the clipboard:', error);
+    return false;
   }
-  applyEdit(context, selected.from, selected.to, '', selected.from);
 }
 
-/** Inserts pasted text at the selection or caret. */
-export function pasteText(context: EditorContext, event: ClipboardEvent): void {
-  const replacement = event.clipboardData?.getData('text/plain');
-  if (replacement === undefined) {
+/** Copies the selection to the system clipboard and removes it. */
+export async function cutSelection(context: EditorContext): Promise<void> {
+  const range = selectedRawRange(context);
+  if (!range || !(await copySelectedMarkdown(context))) {
     return;
   }
+  applyEdit(context, range.from, range.to, '', range.from);
+}
+
+/** Inserts plain text at the selection or caret, giving multi-block text its separators. */
+export function insertPastedText(context: EditorContext, replacement: string): boolean {
   const range = editorSelection(context, true);
   if (!range) {
-    return;
+    return false;
   }
   const offsets = rangeOffsets(context, range);
   if (!offsets) {
-    return;
+    return false;
   }
-  event.preventDefault();
   const block = context.state.getBlockAtOffset(offsets.from);
   if (block?.kind === 'blank' && offsets.from === offsets.to) {
     materializeInsertion(context, offsets, replacement);
-    return;
+    return true;
   }
   // Blocks pasted where they were not alone get the blank lines they need at the
   // seam, and the caret lands at the end of what was pasted; one line, or one
@@ -85,6 +94,21 @@ export function pasteText(context: EditorContext, event: ClipboardEvent): void {
   const text = context.state.getText();
   const insertion = pasteInsertion(text, offsets.from, offsets.to, replacement);
   applyEdit(context, offsets.from, offsets.to, insertion.replacement, insertion.caret);
+  return true;
+}
+
+/** Inserts text from the browser's paste event at the selection or caret. */
+export function pasteText(context: EditorContext, event: ClipboardEvent): void {
+  const replacement = event.clipboardData?.getData('text/plain');
+  if (replacement !== undefined && insertPastedText(context, replacement)) {
+    event.preventDefault();
+  }
+}
+
+/** Reads the platform clipboard and inserts its text for the context menu. */
+export async function pasteClipboard(context: EditorContext): Promise<boolean> {
+  const replacement = await context.host.clipboard.readText();
+  return replacement === null ? false : insertPastedText(context, replacement);
 }
 
 /**

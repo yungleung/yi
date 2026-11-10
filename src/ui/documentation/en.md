@@ -71,10 +71,21 @@ Yi displays rendered markdown while keeping the markdown source authoritative. W
 enters a link, formula, fenced block or other source-shaped item, its markdown becomes visible so
 you can edit it directly.
 
+Right-click in the editor to open the editing menu. It contains clipboard actions, formatting,
+links, images, footnotes, table creation, lists, and the session stack controls. Right-clicking in a
+table cell opens the table's own row, column, alignment and deletion menu instead.
+
 Useful commands include:
 
 | Command | Shortcut |
 | --- | --- |
+| Bold | ⌘B or Ctrl+B |
+| Italic | ⌘I or Ctrl+I |
+| Strikethrough | ⇧⌘X or Ctrl+Shift+X |
+| Inline code | ⌘E or Ctrl+E |
+| Insert link | ⌘K or Ctrl+K |
+| Insert image | ⇧⌘I or Ctrl+Shift+I |
+| Insert footnote | ⌥⌘F or Ctrl+Alt+F |
 | Save | ⌘S or Ctrl+S |
 | New Markdown | ⌘N or Ctrl+N |
 | Find | ⌘F or Ctrl+F |

@@ -1,11 +1,11 @@
 /**
- * The window box a floating editing surface should point at.
+ * The window box an editor action should point at.
  *
- * Example: a non-collapsed range in the prose returns its own rectangle; with no
- * selection, the logical caret is used; with neither, there is no anchor.
+ * Example: a non-collapsed range returns its own rectangle; with no selection,
+ * the logical caret is used; with neither, there is no anchor.
  *
- * May import: the floating `Box` shape. Upholds: selection, native-menu table
- * and stack surfaces share one geometric answer without reading editor state.
+ * May import: the floating `Box` shape. Upholds: the native menu's table picker
+ * and stack panel share one geometric answer without reading editor state.
  */
 
 import type { Box } from '../floating';
@@ -37,7 +37,7 @@ export function documentCaretBox(scroller: HTMLElement): Box | null {
   return caret ? box(caret.getBoundingClientRect()) : null;
 }
 
-/** A menu action anchors to selected text first and to the caret otherwise. */
+/** A command launched from a menu anchors to selected text first and to the caret otherwise. */
 export function editorActionAnchor(scroller: HTMLElement): () => Box | null {
   return () => documentSelectionBox(scroller) ?? documentCaretBox(scroller);
 }

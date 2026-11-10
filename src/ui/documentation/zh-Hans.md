@@ -51,8 +51,11 @@ Pandoc 和模板包。
 ### 编辑
 
 Yi 以 Markdown 原文为准，同时显示渲染结果。光标进入链接、公式或围栏代码块时，会显示并允许编辑其
-Markdown。常用快捷键：⌘S / Ctrl+S 保存，⌘N / Ctrl+N 新建，⌘F / Ctrl+F 查找，
-⇧⌘F / Ctrl+Shift+F 替换，F1 打开文档。
+Markdown。在编辑区右键可打开编辑菜单，其中包含剪切、复制、粘贴、全选、格式、插入、列表和暂存
+操作；在表格单元格内右键仍打开表格专用菜单。常用快捷键：⌘B / Ctrl+B 粗体，⌘I / Ctrl+I 斜体，
+⇧⌘X / Ctrl+Shift+X 删除线，⌘E / Ctrl+E 行内代码，⌘K / Ctrl+K 插入链接，
+⇧⌘I / Ctrl+Shift+I 插入图片，⌥⌘F / Ctrl+Alt+F 插入脚注，⌘S / Ctrl+S 保存，
+⌘N / Ctrl+N 新建，⌘F / Ctrl+F 查找，⇧⌘F / Ctrl+Shift+F 替换，F1 打开文档。
 
 ### 列表
 

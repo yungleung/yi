@@ -307,12 +307,12 @@ function ensureListeners(): void {
     if (target instanceof Element && target.closest('.markdown-scroller')) {
       return;
     }
-    // The titlebar and the floating editing surfaces hold the editor's own
-    // controls: reaching for them is not leaving the document, so the caret
-    // stays where the author left it.
+    // The titlebar and the floating table picker hold the editor's own controls:
+    // reaching for them is not leaving the document, so the caret stays where
+    // the author left it.
     if (
       target instanceof Element &&
-      target.closest('.titlebar, [data-selection-toolbar], [data-table-picker]')
+      target.closest('.titlebar, [data-table-picker]')
     ) {
       return;
     }

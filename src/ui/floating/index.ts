@@ -1,7 +1,7 @@
 /**
  * The app's floating-surface domain.
  *
- * Example: a message, the selection toolbar and the table picker use `BesideCard`, while a question
+ * Example: a message, the stack and the table picker use `BesideCard`, while a question
  * extends `QuestionCard`; all three share `FloatingSurface` through this entrypoint.
  *
  * May import: the domain's surface kinds and pure placement rule. Upholds: every floating surface

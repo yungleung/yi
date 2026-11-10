@@ -257,17 +257,49 @@ pub(super) fn build(
     if profile.toolbar_fallback {
         edit_submenu = edit_submenu
             .separator()
-            .text("format_bold", t(language, "toolbar.bold", &[]))
-            .text("format_italic", t(language, "toolbar.italic", &[]))
-            .text(
-                "format_strikethrough",
-                t(language, "toolbar.strikethrough", &[]),
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.bold", &[]))
+                    .accelerator("CmdOrCtrl+B")
+                    .id("format_bold")
+                    .build(app)?,
             )
-            .text("format_inline_code", t(language, "toolbar.inlineCode", &[]))
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.italic", &[]))
+                    .accelerator("CmdOrCtrl+I")
+                    .id("format_italic")
+                    .build(app)?,
+            )
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.strikethrough", &[]))
+                    .accelerator("CmdOrCtrl+Shift+X")
+                    .id("format_strikethrough")
+                    .build(app)?,
+            )
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.inlineCode", &[]))
+                    .accelerator("CmdOrCtrl+E")
+                    .id("format_inline_code")
+                    .build(app)?,
+            )
             .separator()
-            .text("insert_link", t(language, "toolbar.link", &[]))
-            .text("insert_image", t(language, "toolbar.image", &[]))
-            .text("insert_footnote", t(language, "toolbar.footnote", &[]))
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.link", &[]))
+                    .accelerator("CmdOrCtrl+K")
+                    .id("insert_link")
+                    .build(app)?,
+            )
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.image", &[]))
+                    .accelerator("CmdOrCtrl+Shift+I")
+                    .id("insert_image")
+                    .build(app)?,
+            )
+            .item(
+                &MenuItemBuilder::new(t(language, "toolbar.footnote", &[]))
+                    .accelerator("CmdOrCtrl+Alt+F")
+                    .id("insert_footnote")
+                    .build(app)?,
+            )
             .text("choose_table", t(language, "toolbar.table", &[]))
             .separator()
             .text("list_ordered", t(language, "toolbar.orderedList", &[]))

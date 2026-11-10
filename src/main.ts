@@ -62,13 +62,10 @@ import { applyLanguage, languageFor } from './services/language';
 import { applyTheme, themeFor } from './services/theme';
 import { language } from './services/i18n';
 import { usesCustomTitleBar } from './ui/platform_chrome';
-import {
-  editorActionAnchor,
-  SelectionToolbar,
-  installSelectionToolbar
-} from './ui/selection_toolbar';
+import { editorActionAnchor, showEditorContextMenu } from './ui/editor_context_menu';
 import { StackPopover } from './ui/session';
 import { registerTablePickerCommand, TablePicker } from './ui/table';
+import { setEditorMenuHandler } from './ui/markdown/editor_menu';
 
 function createAppShell(): MarkdownEditor {
   const existingRoot = document.getElementById('app');
@@ -98,10 +95,11 @@ function createAppShell(): MarkdownEditor {
     runCommand('table:insert', size, 'toolbar');
   });
   const stackPopover = new StackPopover(editorActionAnchor(editor.element));
-  const selectionToolbar = new SelectionToolbar(tablePicker);
+  setEditorMenuHandler((request) => {
+    void showEditorContextMenu(request);
+  });
   registerTablePickerCommand(tablePicker, editorActionAnchor(editor.element));
   registerSidebarCommand(sidebar);
-  installSelectionToolbar(selectionToolbar, editor.element);
   const layoutStatus = new LayoutStatus();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();

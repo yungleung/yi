@@ -2,9 +2,9 @@
  * The clicks the editor routes itself.
  *
  * A click inside the document is not always "put the caret here": a task
- * checkbox toggles, a footnote marker jumps to its definition, a right-click in
- * a table cell opens the table's menu on that cell, and a click that missed
- * every markdown node still places the caret. The editor wires these listeners
+ * checkbox toggles, a footnote marker jumps to its definition, a right-click
+ * opens either the table menu or the editor menu, and a click that missed every
+ * markdown node still places the caret. The editor wires these listeners
  * — and the order they run in — while the behaviour lives here.
  *
  * The module reads the editor context and calls the editing commands and the
@@ -19,9 +19,12 @@
  */
 
 import type { EditorContext } from './editing/context';
+import { caretOffset } from './editing/context';
 import { jumpToFootnote } from './editing/footnotes';
 import { jumpToReference } from './editing/references';
 import { placeCaretFromPointer } from './editing/pointer';
+import { editorSelection, proseRoot } from './editing/selection';
+import { caretRangeAtPoint, showCaret } from './caret/caret';
 import { isFilePath, isOpenableUrl, isSameDocumentFragment } from './syntax/link_edits';
 import {
   tableMenuModel,
@@ -35,6 +38,7 @@ import {
   openWikilinkTarget
 } from './link_opens';
 import { requestTableMenu } from './table_menu';
+import { requestEditorMenu } from './editor_menu';
 
 /** Toggles a task-list checkbox without moving the caret. */
 export function routeTaskClick(context: EditorContext, event: MouseEvent): void {
@@ -80,17 +84,18 @@ export function routeFootnoteClick(context: EditorContext, event: MouseEvent): v
  * this file waits for never arrives and the jump would be unreachable. The gesture is
  * the same, so the result is: a Ctrl-held context menu on a marker jumps.
  */
-export function routeFootnoteMenu(context: EditorContext, event: MouseEvent): void {
+export function routeFootnoteMenu(context: EditorContext, event: MouseEvent): boolean {
   const target = event.target as Element | null;
   const marker = target?.closest<HTMLElement>('[data-footnote-ref]');
   const definition = target?.closest<HTMLElement>('[data-footnote-def]');
   const element = marker ?? definition;
   const label = element?.dataset.footnoteRef ?? element?.dataset.footnoteDef;
   if (!element || !label || !event.ctrlKey) {
-    return;
+    return false;
   }
   event.preventDefault();
   jumpToFootnote(context, label, marker ? 'reference' : 'definition');
+  return true;
 }
 
 /**
@@ -184,32 +189,65 @@ export function routeWikilinkClick(event: MouseEvent): void {
 }
 
 /**
- * A right-click inside a table cell opens the table's menu on that cell.
+ * A right-click routes to the table menu inside a writable table cell and to
+ * the general editor menu everywhere else.
  *
- * The cell is captured *before* the menu opens: the native menu takes focus,
- * so the command that follows has to be told what it acts on.
+ * The cell is captured before the menu opens: the native menu takes focus, so
+ * the command that follows has to be told what it acts on.
  */
-export function routeContextMenu(context: EditorContext, event: MouseEvent): void {
+export function routeContextMenu(
+  context: EditorContext,
+  event: MouseEvent,
+  readOnly = false
+): void {
   const cell = (event.target as Element | null)?.closest<HTMLElement>('[data-table-cell]');
-  if (!cell) {
+  if (cell && !readOnly) {
+    // The webview has its own context menu; ours replaces it.
+    event.preventDefault();
+    const blockElement = cell.closest('.markdown-block') as HTMLElement | null;
+    const lineStart = Number(blockElement?.dataset.lineStart);
+    const [row, column] = (cell.dataset.tableCell ?? '').split(':').map(Number);
+    if (!Number.isFinite(lineStart) || !Number.isFinite(row) || !Number.isFinite(column)) {
+      return;
+    }
+    const target: TableTarget = { lineStart, row, column };
+    const snapshot = tableSnapshot(context, target);
+    if (snapshot) {
+      requestTableMenu({
+        nodes: tableMenuModel(snapshot.source, row, column),
+        target,
+        at: { x: event.clientX, y: event.clientY }
+      });
+    }
     return;
   }
-  // The webview has its own context menu; ours replaces it.
   event.preventDefault();
-  const blockElement = cell.closest('.markdown-block') as HTMLElement | null;
-  const lineStart = Number(blockElement?.dataset.lineStart);
-  const [row, column] = (cell.dataset.tableCell ?? '').split(':').map(Number);
-  if (!Number.isFinite(lineStart) || !Number.isFinite(row) || !Number.isFinite(column)) {
-    return;
+  if (!readOnly) {
+    placeCaretForContextMenu(context, event);
   }
-  const target: TableTarget = { lineStart, row, column };
-  const snapshot = tableSnapshot(context, target);
-  if (!snapshot) {
-    return;
-  }
-  requestTableMenu({
-    nodes: tableMenuModel(snapshot.source, row, column),
-    target,
-    at: { x: event.clientX, y: event.clientY }
+  requestEditorMenu({
+    at: { x: event.clientX, y: event.clientY },
+    readOnly,
+    hasSelection: editorSelection(context, false) !== null,
+    hasCaret: caretOffset(context) !== null
   });
+}
+
+/**
+ * Preserves a selection under a right-click, otherwise places the caret at the
+ * point clicked so menu commands act where the reader pointed.
+ */
+function placeCaretForContextMenu(context: EditorContext, event: MouseEvent): void {
+  if (editorSelection(context, false)) {
+    return;
+  }
+  const range = caretRangeAtPoint(event.clientX, event.clientY);
+  const root = proseRoot(context);
+  if (range && root?.contains(range.startContainer)) {
+    window.getSelection()?.removeAllRanges();
+    showCaret(range, false);
+    context.focusText();
+    return;
+  }
+  placeCaretFromPointer(context, event.clientX, event.clientY);
 }

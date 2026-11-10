@@ -41,7 +41,11 @@ Pandoc 和範本套件。**Settings → New note** 控制新筆記的初始內�
 **Reveal.js presentation** 和 **Beamer presentation**；它們是簡報中繼資料，不是匯出範本套件。
 
 Yi 以 Markdown 原文為準，同時顯示呈現結果。游標進入連結、公式或圍欄程式碼時，可在原處編輯
-Markdown。常用快捷鍵為 ⌘S / Ctrl+S 儲存、⌘N / Ctrl+N 新增、⌘F / Ctrl+F 尋找、
+Markdown。在編輯區按右鍵可開啟編輯選單，其中包含剪下、複製、貼上、全選、格式、插入、清單和
+暫存操作；在表格儲存格內按右鍵仍會開啟表格專用選單。常用快捷鍵為 ⌘B / Ctrl+B 粗體、
+⌘I / Ctrl+I 斜體、⇧⌘X / Ctrl+Shift+X 刪除線、⌘E / Ctrl+E 行內程式碼、
+⌘K / Ctrl+K 插入連結、⇧⌘I / Ctrl+Shift+I 插入圖片、⌥⌘F / Ctrl+Alt+F 插入腳註、
+⌘S / Ctrl+S 儲存、⌘N / Ctrl+N 新增、⌘F / Ctrl+F 尋找、
 ⇧⌘F / Ctrl+Shift+F 取代，以及 F1 文件。
 
 ### 清單
