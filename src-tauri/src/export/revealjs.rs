@@ -1,8 +1,8 @@
 //! Reveal.js bundle output and its local distribution files.
 //!
 //! May import: std and the export's HTTP/download seam. Upholds: every local
-//! asset reference stays below `js/dist`, and the generated page lives inside a
-//! folder named after the deck.
+//! asset reference stays below the distribution or plugin folders under `js`,
+//! and the generated page lives inside a folder named after the deck.
 
 use std::collections::HashSet;
 use std::fs;
@@ -50,7 +50,7 @@ pub(crate) fn revealjs_output(requested: &str) -> Result<(PathBuf, PathBuf, bool
 pub(crate) fn reveal_asset_path(reference: &str) -> Result<PathBuf, String> {
     let reference = reference.trim().trim_start_matches("./");
     let path = Path::new(reference);
-    let safe = reference.starts_with("js/dist/")
+    let safe = (reference.starts_with("js/dist/") || reference.starts_with("js/plugin/"))
         && !reference.contains('\\')
         && path
             .components()

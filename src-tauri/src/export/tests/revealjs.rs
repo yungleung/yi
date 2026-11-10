@@ -16,7 +16,7 @@ fn revealjs_output_is_a_folder_with_a_named_page() {
 }
 
 #[test]
-fn revealjs_asset_paths_stay_below_js_dist() {
+fn revealjs_asset_paths_stay_below_js_distribution_folders() {
     assert_eq!(
         reveal_asset_path("js/dist/reveal.js").unwrap(),
         PathBuf::from("js/dist/reveal.js")
@@ -25,7 +25,12 @@ fn revealjs_asset_paths_stay_below_js_dist() {
         reveal_asset_path("js/dist/theme/black.css").unwrap(),
         PathBuf::from("js/dist/theme/black.css")
     );
+    assert_eq!(
+        reveal_asset_path("js/plugin/notes/notes.js").unwrap(),
+        PathBuf::from("js/plugin/notes/notes.js")
+    );
     assert!(reveal_asset_path("../secret").is_err());
+    assert!(reveal_asset_path("js/other/secret.js").is_err());
     assert!(reveal_asset_path("images/shot.png").is_err());
     assert!(reveal_asset_path("/js/dist/reveal.js").is_err());
 }
@@ -36,6 +41,7 @@ fn revealjs_local_asset_references_are_unique() {
       <link href="js/dist/reveal.css">
       <script src="js/dist/reveal.js"></script>
       <script src="js/dist/reveal.js"></script>
+      <script src="js/plugin/notes/notes.js"></script>
       <script src="https://unpkg.com/reveal.js/dist/reveal.js"></script>
       <img src="images/shot.png">
     "#;
@@ -43,7 +49,8 @@ fn revealjs_local_asset_references_are_unique() {
         revealjs_asset_references(html),
         vec![
             PathBuf::from("js/dist/reveal.css"),
-            PathBuf::from("js/dist/reveal.js")
+            PathBuf::from("js/dist/reveal.js"),
+            PathBuf::from("js/plugin/notes/notes.js")
         ]
     );
 }
@@ -53,6 +60,10 @@ fn revealjs_downloads_distribution_files_from_the_package_dist_folder() {
     assert_eq!(
         revealjs_download_url(REVEALJS_CDN, "js/dist/theme/black.css").unwrap(),
         "https://unpkg.com/reveal.js@6.0.1/dist/theme/black.css"
+    );
+    assert_eq!(
+        revealjs_download_url(REVEALJS_CDN, "js/plugin/notes/notes.js").unwrap(),
+        "https://unpkg.com/reveal.js@6.0.1/plugin/notes/notes.js"
     );
     assert!(revealjs_download_url(REVEALJS_CDN, "images/shot.png").is_err());
 }

@@ -7,20 +7,36 @@
 //! May import: `std`, the shared search rule and the app's i18n. Upholds: the app never runs a
 //! pandoc it did not find, and every call is made the same way.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
 
 use super::search::find_pandoc_from;
 
-/// The known places a pandoc lives on a Mac, before `PATH` is consulted at all.
+/// The known places pandoc lives on each desktop, before `PATH` is consulted at all.
 fn known_pandoc_locations() -> Vec<PathBuf> {
-    vec![
-        PathBuf::from("/opt/homebrew/bin/pandoc"),
-        PathBuf::from("/usr/local/bin/pandoc"),
-        PathBuf::from("/usr/bin/pandoc"),
-    ]
+    let mut locations = Vec::new();
+    if cfg!(target_os = "macos") {
+        locations.push(PathBuf::from("/opt/homebrew/bin/pandoc"));
+        locations.push(PathBuf::from("/usr/local/bin/pandoc"));
+        locations.push(PathBuf::from("/usr/bin/pandoc"));
+    } else if cfg!(target_os = "windows") {
+        if let Some(local) = dirs::data_local_dir() {
+            locations.push(local.join("Pandoc/pandoc.exe"));
+        }
+        if let Some(program_files) = std::env::var_os("ProgramFiles") {
+            locations.push(PathBuf::from(program_files).join("Pandoc/pandoc.exe"));
+        }
+    } else {
+        if let Some(home) = dirs::home_dir() {
+            locations.push(home.join(".local/bin/pandoc"));
+        }
+        locations.push(PathBuf::from("/usr/local/bin/pandoc"));
+        locations.push(PathBuf::from("/usr/bin/pandoc"));
+        locations.push(PathBuf::from("/snap/bin/pandoc"));
+    }
+    locations
 }
 /// The pandoc a probe has pointed the app at, if it has. `YI_PANDOC` is the same seam; this is the
 /// one a caller can reach while the process is already running.
@@ -152,6 +168,9 @@ fn pandoc_output(
     environment: &[(&str, OsString)],
 ) -> Result<std::process::Output, String> {
     let mut command = Command::new(pandoc);
+    if let Some(path) = path_with_program_dir(pandoc, std::env::var_os("PATH").as_deref()) {
+        command.env("PATH", path);
+    }
     if let Some(dir) = working_dir.filter(|dir| dir.is_dir()) {
         command.current_dir(dir);
     }
@@ -165,6 +184,17 @@ fn pandoc_output(
             ],
         )
     })
+}
+
+/// Prepends pandoc's own folder to `PATH`, so an engine installed beside it is found when the
+/// desktop launcher did not inherit the reader's shell path.
+///
+/// Example: a user-local `/home/me/.local/bin/pandoc` makes that folder the first place its
+/// `xelatex` lookup searches, while every existing PATH entry remains available.
+pub(super) fn path_with_program_dir(program: &Path, current: Option<&OsStr>) -> Option<OsString> {
+    let directory = program.parent()?;
+    let entries = current.into_iter().flat_map(std::env::split_paths);
+    std::env::join_paths(std::iter::once(directory.to_path_buf()).chain(entries)).ok()
 }
 
 /// The lines pandoc wrote that are not blank: its warnings, one sentence each.
