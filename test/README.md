@@ -103,7 +103,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and twenty-six probes (`probe:all` runs 290 and skips 36, each skip for the reason its
+three hundred and twenty-seven probes (`probe:all` runs 291 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -111,8 +111,10 @@ before emit settles while a native event still arrives through Tauri; `agent-ran
 edit tied to the current document revision succeeds, while an old plan returns `stale` and cannot
 overwrite newer text; `document-change-event` — one edit and one undo each emit exactly one typed
 local fact with the expected revision and text; `native-editor-menu` — formatting, table, sidebar
-and stack commands arrive from native menu events; `editor-context-menu` — right-clicks outside
-tables request the general editor menu, while a table cell keeps its own menu), the workspace tree (`tree-rename` — a name edited
+and stack commands arrive from native menu events; `sidebar-toggle-placement` — the custom title
+bar owns the toggle while native-chrome platforms omit it from the sidebar; `editor-context-menu`
+— right-clicks outside tables request the general editor menu, while a table cell keeps its own
+menu), the workspace tree (`tree-rename` — a name edited
 where it sits, the tree unmoved and the extension left out of the selection;
 `tree-create`, `tree-file-actions`, `tree-delete` — what the context menu does;
 `tree-drag`, `tree-drag-refusals` — a move that updates only the rows it touched, and the

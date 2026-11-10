@@ -2,7 +2,8 @@
  * The sidebar: the sections a reader can fold, and where they are put.
  *
  * May import: the component base and the catalogue. Upholds: one sidebar per window, whose sections
- * are added to it rather than positioned by whoever made them.
+ * are added to it rather than positioned by whoever made them, and whose toggle is mounted only by
+ * the custom title bar.
  */
 
 import { t } from '../services/i18n';
@@ -32,9 +33,10 @@ export class Sidebar extends BaseComponent {
     this.toggleButton.style.flexShrink = '0';
     this.toggleButton.innerHTML = this.isOpen ? this.toggleButtonOpenIcon : this.toggleButtonCloseIcon;
     this.toggleButton.title = t('sidebar.toggle');
+    this.toggleButton.setAttribute('data-sidebar-toggle', 'true');
     this.toggleButton.addEventListener('click', () => this.toggle());
 
-    this.element.append(this.toggleButton, this.content);
+    this.element.append(this.content);
   }
 
   mount(parent: HTMLElement): this {
