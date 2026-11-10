@@ -52,7 +52,10 @@ export function applyEditorHistory(
     from: Math.min(mark.from, length),
     to: Math.min(mark.to, length)
   };
-  showSourceAt(context, target.to);
+  // The mark the edit restores is the authority on whether undo restores a selection or a
+  // caret. Native menu focus can clear the browser's tracked selection while the edit runs,
+  // so inferring it here would open a whole fenced Div as source instead of its rendering.
+  showSourceAt(context, target.to, target.from !== target.to);
   context.renderer.renderChanged();
   restoreMark(context, target);
   keepScroll(context, anchor);

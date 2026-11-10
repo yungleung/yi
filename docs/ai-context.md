@@ -31,7 +31,7 @@ in the same change that moves a module.
 | Caret and offsets | `caret/*` — `offsets.ts` reads a DOM position, `node_projection.ts` maps rendered node lengths and raw ranges, `dom_position.ts` places one back | the logical caret, and mapping offsets |
 | Markdown editing | `markdown_editor.ts`, `host.ts`, `editing/*`, `editing/editor_interactions.ts`, `click_routing.ts` | synchronous text operations, caret behavior and narrow integration ports needed by render/caret code |
 | Markdown commands | `commands/*` | register the editor's owned operations against the app-wide command runtime; keyboard, toolbar, menus and future agent/MCP clients still use the same ids |
-| Commands and shell presentation | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_panel.ts`, `ui/session/commands.ts` | parse, authorize and dispatch commands; keep dialogs, translated status, native menus, file IO and external URL presentation in the shell |
+| Commands and shell presentation | `src/commands/*` (contracts, registry, dispatcher, authority, triggers), `ui/find/*`, `ui/image/*`, `ui/table/*`, `ui/editor_context_menu/*`, `ui/editor_panel.ts`, `ui/session/commands.ts` | parse, authorize and dispatch commands; keep dialogs, translated status, native menus, file IO and external URL presentation in the shell |
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
@@ -58,7 +58,7 @@ from outside it; implementation files are internal. Markdown is not an import-se
 integration capabilities may import stable external modules when that is their responsibility.
 `MarkdownHost` remains for render/caret facts that should be injected rather than read through hidden
 globals, while `commands/` imports the app-wide command runtime to register the editor's operations.
-Keyboard, toolbar, native menus and future MCP/agent edits still converge on one command path. Find
+Keyboard, toolbar, native and context menus, and future MCP/agent edits still converge on one command path. Find
 presentation and image IO live in the shell; Markdown owns their document semantics and narrow APIs.
 
 **And the webview may work where the app is working.** The file plugin and the asset protocol that
@@ -118,7 +118,7 @@ a box the caller measures, or in the window's corner when it names nothing), `An
 `relative` host, above or below the button it hangs from) and `QuestionCard` (the veil, the centred
 card, and one answer
 with Escape giving the cautious one). The footnote preview, the citation preview, the completion
-list, the stack panel, the table picker, the selection toolbar, the prompt and the two cards are
+list, the stack panel, the table picker, the prompt and the two cards are
 all one of those kinds now; a kind may *add* to Escape but never replace it, and the base must not grow a mode flag — a
 fact one kind has is a parameter it is built with, or a subclass of it. `ui/messages.ts` replaces
 the old toast: one `BesideCard` per message in the window's bottom-right corner *whatever it is
@@ -926,8 +926,11 @@ Linux. Settings moves to File and About to Help outside macOS; unsupported fulls
 close items are omitted. Help → Report Issue is the typed command `help:reportIssue`, which opens
 the guided GitHub issue form in the system browser. Yi's overlay title bar is macOS-only; Windows
 and Linux keep the native frame, with the editing, sidebar and session actions available from the
-native menus. Selecting document text also opens a floating editing bar whose buttons reuse the
-same command ids and exclude workspace and session controls.
+native menus. Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in
+the editor opens a native menu for clipboard actions, formatting, insertion, lists, table creation
+and session controls. Every item dispatches the same command id as its titlebar, keyboard or native
+menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`, `Mod+Shift+X`, `Mod+E`,
+`Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with

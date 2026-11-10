@@ -88,6 +88,8 @@ export type CommandContracts = FormattingContracts &
     'history:undo': NoInputContract;
     'history:redo': NoInputContract;
     'edit:cut': NoInputContract;
+    'edit:copy': NoInputContract;
+    'edit:paste': NoInputContract;
     'edit:selectAll': NoInputContract;
     'edit:insertFootnote': NoInputContract;
     'edit:insertLink': NoInputContract;
@@ -320,6 +322,20 @@ export const commandContracts: CommandContracts = {
   'history:undo': documentWrite('undo the last document edit'),
   'history:redo': documentWrite('redo the last undone document edit'),
   'edit:cut': documentWrite('cut the current selection'),
+  'edit:copy': {
+    effect: 'none',
+    timing: 'async',
+    exposure: 'public',
+    description: 'copy the current selection',
+    parse: parseNoInput
+  },
+  'edit:paste': {
+    effect: 'document.write',
+    timing: 'async',
+    exposure: 'public',
+    description: 'paste clipboard text at the caret',
+    parse: parseNoInput
+  },
   'edit:selectAll': noInput('select the whole document'),
   'edit:insertFootnote': documentWrite('insert a footnote'),
   'edit:insertLink': documentWrite('insert a link'),

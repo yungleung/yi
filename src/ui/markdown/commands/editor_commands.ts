@@ -10,7 +10,12 @@
 
 import { CommandExecutionError } from '../../../commands/dispatch';
 import { registerCommand } from '../../../commands/runtime';
-import { cutSelection, selectAll } from '../editing/clipboard';
+import {
+  copySelectedMarkdown,
+  cutSelection,
+  pasteClipboard,
+  selectAll
+} from '../editing/clipboard';
 import { applyEdit, type EditorContext } from '../editing/context';
 import { applyFormatting } from '../editing/formatting';
 import { insertFootnote } from '../editing/footnotes';
@@ -59,8 +64,22 @@ export function registerEditorCommands(host: CommandHost): void {
   });
   registerCommand({
     id: 'edit:cut',
-    run: () => {
-      cutSelection(context);
+    run: async () => {
+      await cutSelection(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:copy',
+    run: async () => {
+      await copySelectedMarkdown(context);
+      return null;
+    }
+  });
+  registerCommand({
+    id: 'edit:paste',
+    run: async () => {
+      await pasteClipboard(context);
       return null;
     }
   });

@@ -58,9 +58,8 @@ export function installEditorInteractions({
   installFootnotePreview(context);
   installCitationPreview(context);
   contentView.addEventListener('contextmenu', (event) => {
-    routeFootnoteMenu(context, event);
-    if (!readOnly()) {
-      routeContextMenu(context, event);
+    if (!routeFootnoteMenu(context, event)) {
+      routeContextMenu(context, event, readOnly());
     }
   });
   contentView.addEventListener('copy', (event) => copySelection(context, event));

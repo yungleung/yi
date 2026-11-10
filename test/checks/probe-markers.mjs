@@ -20,6 +20,8 @@ const directory = fileURLToPath(new URL('../probes/', import.meta.url));
 /** A gesture the webview cannot undo: the menu stays open until a person closes it. */
 const OPENS_A_MENU = /new MouseEvent\(\s*['"]contextmenu['"]/;
 const MARKER = '@needs-foreground-window';
+/** A probe that replaces the native presenter before dispatching the gesture. */
+const INTERCEPTS_MENU = '@intercepts-menu';
 
 const failures = [];
 let marked = 0;
@@ -32,9 +34,13 @@ for (const name of readdirSync(directory).filter((entry) => entry.endsWith('.js'
     marked += 1;
     continue;
   }
+  if (source.includes(INTERCEPTS_MENU)) {
+    continue;
+  }
   failures.push(
     `${name} opens the native menu but has no ${MARKER} marker: the suite would run it ` +
-      'and every probe after it would wait for a menu nobody can close'
+      `and every probe after it would wait for a menu nobody can close; add ${MARKER} or ` +
+      `replace the presenter and declare ${INTERCEPTS_MENU}`
   );
 }
 

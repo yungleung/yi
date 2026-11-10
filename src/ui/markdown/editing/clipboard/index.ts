@@ -9,4 +9,12 @@
  * `MarkdownHost.clipboard`.
  */
 
-export { copySelection, cutSelection, pasteText, selectAll } from './commands';
+export {
+  copySelectedMarkdown,
+  copySelection,
+  cutSelection,
+  insertPastedText,
+  pasteClipboard,
+  pasteText,
+  selectAll
+} from './commands';
