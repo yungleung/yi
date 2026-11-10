@@ -47,13 +47,18 @@ export function caretOffset(context: EditorContext): number | null {
  * Shows the source belonging to `offset`, or no source for null.
  *
  * Example: moving the caret into a link rebuilds that block in link-source shape and places the
- * caret back at the same offset; entering plain prose removes any previously shown source.
+ * caret back at the same offset; entering plain prose removes any previously shown source. An
+ * explicit `selecting` value lets history replay use the edit's restored mark rather than the
+ * transient native focus state a context menu may have changed.
  */
-export function showSourceAt(context: EditorContext, offset: number | null): void {
+export function showSourceAt(
+  context: EditorContext,
+  offset: number | null,
+  selecting = getSelectionRange() !== null
+): void {
   if (shownSourceHeld()) {
     return;
   }
-  const selecting = getSelectionRange() !== null;
   const range = offset === null ? null : sourceRangeAt(context.state, offset, selecting);
   if (!setShownRange(range)) {
     return;

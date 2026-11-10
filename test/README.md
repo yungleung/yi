@@ -103,7 +103,7 @@ methodology; this file is the index and the conventions.
 
 ## The probes
 
-three hundred and twenty-five probes (`probe:all` runs 289 and skips 36, each skip for the reason its
+three hundred and twenty-six probes (`probe:all` runs 290 and skips 36, each skip for the reason its
 header names), grouped by area: command plumbing (`command-contract` — the running app exposes the
 typed catalogue, parses a tree-shaped new-note payload, refuses invalid table dimensions before
 execution, and has one runtime dispatcher; `event-transport` — a local fact reaches its listener
@@ -243,8 +243,9 @@ next click, because a gesture released where it went down is not a drag —
 that ends it lands the caret back in the block whose own text is the shape being shown —
 `regression-arrows`, `edit-stability`, `regression-undo`, `undo-after-scroll`,
 `plain-edit-offsets`, `undo-typing`, `undo-run-taken-back`, `undo-selection-return`,
-`undo-selection-across-blocks`, `undo-plain-write` — the page follows a plain write's undo, for a
-committed word and a typed letter),
+`undo-selection-across-blocks`, `undo-plain-write`, `undo-format-fenced-div` — the page follows a
+plain write's undo, for a committed word and a typed letter, and a native-menu focus gap does not
+turn a theorem's restored selection into its raw source),
 and the page staying where the reader put it while the window turns over
 (`scroll-caret-anchor` — scrolling up from the end of a document must not jump to a caret the
 reader left behind; `rebuild-keeps-the-caret` — a page-wide rebuild, which is what a saved setting
