@@ -309,10 +309,15 @@ mod vocabulary {
         let _ = fs::remove_dir_all(&directory);
     }
 }
+#[cfg(unix)]
 use super::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::facts::{cloud_kind, repository_shape};
-use super::git::{commit_at, find_git_from, init_repository_at};
-use super::versions::{read_version_text, read_versions, version_text_arguments, versions_from};
+use super::git::find_git_from;
+#[cfg(unix)]
+use super::git::{commit_at, init_repository_at};
+#[cfg(unix)]
+use super::versions::{read_version_text, read_versions};
+use super::versions::{version_text_arguments, versions_from};

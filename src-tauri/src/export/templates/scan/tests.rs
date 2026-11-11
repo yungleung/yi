@@ -204,6 +204,7 @@ fn a_zip_entry_that_climbs_out_is_refused() {
     let _ = fs::remove_dir_all(folder);
 }
 
+#[cfg(any(unix, windows))]
 #[test]
 fn a_folder_symlink_is_refused() {
     let folder = temp_dir();
@@ -211,7 +212,14 @@ fn a_folder_symlink_is_refused() {
     write(&outside.join("note.tex"), "$body$");
     let kit = folder.join("kit");
     fs::create_dir_all(&kit).unwrap();
+    #[cfg(unix)]
     std::os::unix::fs::symlink(&outside, kit.join("linked")).unwrap();
+    #[cfg(windows)]
+    if std::os::windows::fs::symlink_dir(&outside, kit.join("linked")).is_err() {
+        // GitHub's Windows runners may not grant SeCreateSymbolicLinkPrivilege.
+        let _ = fs::remove_dir_all(folder);
+        return;
+    }
     assert!(inspect(&kit).is_err());
     let _ = fs::remove_dir_all(folder);
 }

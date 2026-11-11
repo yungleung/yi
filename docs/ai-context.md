@@ -1306,6 +1306,11 @@ without it WebKitGTK reports the page as visible but delivers no animation frame
 `ResizeObserver` callbacks, so frame-dependent probes fail for the test display rather
 than for the app.
 
+The debug-only MCP bridge is still compiled by every CI platform. Keep
+`tauri-plugin-mcp-bridge` aligned with Tauri's WebView2 generation: 0.13.x uses the same
+`webview2-com` and `windows` crates as Tauri 2.12 on Windows, while 0.12.x leaves two COM
+type trees in the graph and cannot compile.
+
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.

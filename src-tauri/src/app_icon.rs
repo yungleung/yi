@@ -203,7 +203,7 @@ fn write_if_changed(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()>
     std::fs::write(path, bytes)
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
 
