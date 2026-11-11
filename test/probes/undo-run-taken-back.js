@@ -14,6 +14,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   /** Undo, the way the menu and the keymap ask for it. */
@@ -34,14 +35,8 @@
     const range = document.createRange();
     range.setStart(node, node.data.indexOf(needle) + inside);
     range.collapse(true);
-    const box = range.getBoundingClientRect();
-    node.parentElement.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        clientX: box.left,
-        clientY: box.top + box.height / 2
-      })
-    );
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(150);
   };
 

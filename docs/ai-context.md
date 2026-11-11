@@ -926,9 +926,19 @@ Linux. Settings moves to File and About to Help outside macOS; unsupported fulls
 close items are omitted. Help → Report Issue is the typed command `help:reportIssue`, which opens
 the guided GitHub issue form in the system browser. Yi's overlay title bar is macOS-only; Windows
 and Linux keep the native frame, with the editing, sidebar and session actions available from the
-native menus. Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in
-the editor opens a native menu for clipboard actions, formatting, insertion, lists, table creation
-and session controls. Every item dispatches the same command id as its titlebar, keyboard or native
+native menus. The runtime window icon on Linux and Windows comes from
+`src-tauri/icons/icon.png` through `src-tauri/src/app_icon.rs`; the Linux About dialog uses the
+64px image at `src-tauri/icons/64x64.png`, while Tauri does not support an About icon on Windows.
+The Linux and Windows PNG/ICO assets use a 9% transparent margin and an 82%-wide rounded content
+tile, so a dock or taskbar does not draw Yi larger than neighbouring applications. The macOS
+`icon.icns` stays unchanged.
+An uninstalled Linux run, including an AppImage without host integration, also writes its
+`Yi.desktop` entry and hicolor icons under `$XDG_DATA_HOME` so GNOME/Wayland can associate the
+`Yi` app ID with the dock icon; an installed package keeps ownership of that entry. macOS keeps
+its existing bundle-owned icon unchanged.
+Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in the editor
+opens a native menu for clipboard actions, formatting, insertion, lists, table creation and
+session controls. Every item dispatches the same command id as its titlebar, keyboard or native
 menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`, `Mod+Shift+X`, `Mod+E`,
 `Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
@@ -1289,6 +1299,17 @@ npm run fixtures                        # refresh the fixture workspace
 npm run site:build                      # build the public site into _site/
 npm run site:preview                    # serve _site/ on 127.0.0.1:1430
 ```
+
+On a headless or software-rendered Linux session, prefix the app command with
+`GDK_BACKEND=x11 WEBKIT_DISABLE_COMPOSITING_MODE=1 WEBKIT_DISABLE_DMABUF_RENDERER=1`;
+without it WebKitGTK reports the page as visible but delivers no animation frames or
+`ResizeObserver` callbacks, so frame-dependent probes fail for the test display rather
+than for the app.
+
+The debug-only MCP bridge is still compiled by every CI platform. Keep
+`tauri-plugin-mcp-bridge` aligned with Tauri's WebView2 generation: 0.13.x uses the same
+`webview2-com` and `windows` crates as Tauri 2.12 on Windows, while 0.12.x leaves two COM
+type trees in the graph and cannot compile.
 
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`

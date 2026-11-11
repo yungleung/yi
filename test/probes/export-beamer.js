@@ -31,6 +31,14 @@
     }
     return false;
   };
+  const bytesWhenReady = async (path, tries = 50) => {
+    for (let attempt = 0; attempt < tries; attempt += 1) {
+      const bytes = await bytesOf(path);
+      if (bytes !== null) return bytes;
+      await sleep(100);
+    }
+    return null;
+  };
 
   const home = await invoke('plugin:path|resolve_directory', { directory: 21 });
   const folderName = `yi-probe-export-beamer-${Date.now().toString(36)}`;
@@ -118,7 +126,7 @@
     const wrote = await until(
       () => t.newHint(hints, (words) => words.startsWith('Exported to')) !== null
     );
-    const pdf = await bytesOf(target);
+    const pdf = await bytesWhenReady(target);
     check(
       'Beamer writes a real PDF',
       wrote && pdf !== null && String.fromCharCode(...pdf.slice(0, 5)) === '%PDF-',

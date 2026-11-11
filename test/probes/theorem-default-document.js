@@ -77,8 +77,18 @@
     ''
   ].join('\n');
   await t.load(`${fixture}${distant}`);
-  t.scroller().scrollTop = t.scroller().scrollHeight;
-  await t.sleep(800);
+  for (let fraction = 0.1; fraction <= 1.0001; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
+    if (
+      [...t.prose().querySelectorAll('.markdown-theorem-title')].some(
+        (title) => title.textContent?.trim() === 'Theorem 3 (Distant).'
+      ) &&
+      t.prose().querySelector('[data-auto-reference="thm:distant"]') !== null
+    ) {
+      break;
+    }
+  }
   check(
     'a theorem after the fixture’s labeled equations keeps its number',
     t.prose().querySelector('.markdown-theorem-title')?.textContent?.trim() ?? null,

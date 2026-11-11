@@ -81,13 +81,13 @@ fn about_metadata() -> AboutMetadata<'static> {
         website: None,
         website_label: None,
         credits: None,
-        icon: None,
+        icon: crate::app_icon::about_icon(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{menu_profile, MenuPlatform};
+    use super::{about_metadata, menu_profile, MenuPlatform};
 
     #[test]
     fn macos_keeps_the_application_and_window_menus() {
@@ -120,6 +120,18 @@ mod tests {
         assert!(!profile.close_window);
         assert!(!profile.file_quit);
         assert!(profile.toolbar_fallback);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_about_dialog_has_the_application_icon() {
+        assert!(about_metadata().icon.is_some());
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn about_dialog_leaves_unsupported_platform_icon_none() {
+        assert!(about_metadata().icon.is_none());
     }
 }
 

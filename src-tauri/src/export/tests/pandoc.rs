@@ -31,6 +31,24 @@ fn a_known_place_is_searched_before_the_shells_path() {
 }
 
 #[test]
+fn pandocs_folder_leads_the_path_its_engine_is_found_on() {
+    let current = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
+    let path = path_with_program_dir(
+        &PathBuf::from("/home/reader/.local/bin/pandoc"),
+        Some(&current),
+    )
+    .unwrap();
+    assert_eq!(
+        std::env::split_paths(&path).collect::<Vec<_>>(),
+        vec![
+            PathBuf::from("/home/reader/.local/bin"),
+            PathBuf::from("/usr/bin"),
+            PathBuf::from("/bin")
+        ]
+    );
+}
+
+#[test]
 fn and_a_machine_with_neither_answers_nothing() {
     let (found, source) = find_pandoc_from(None, &[], Some("/nowhere".to_string()));
     assert!(found.is_none());

@@ -11,7 +11,7 @@
  * not insert text (`docs/testing.md`) — so the probe types the way the browser does,
  * through `document.execCommand('insertText', …)`.
  *
- * The probe makes its own workspace under `/private/tmp` with the app's own commands and
+ * The probe makes its own workspace under the user's home folder with the app's own commands and
  * removes it again: the repository's fixtures are not a test's to rename.
  *
  * @covers src/ui/workspace/tree/rename.ts, src/ui/workspace/tree/rules.ts,
@@ -24,7 +24,9 @@
   const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const workspace = '/private/tmp/yi-tree-rename-probe';
+  const parent = await t.homeDir();
+  const folderName = `yi-tree-rename-probe-${Date.now().toString(36)}`;
+  const workspace = await t.joinPath(parent, folderName);
   const rename = (path, basename) => ops.runTreeAction('rename', { path, basename, isFile: true });
   const rowFor = (path) => document.querySelector(`[data-tree-path="${path}"]`);
   const labelFor = (path) => rowFor(path)?.querySelector('span.truncate') ?? null;
@@ -53,7 +55,7 @@
     } catch {
       // A leftover from a probe that was cut off; it is about to be replaced.
     }
-    await files.createEntry('/private/tmp', 'yi-tree-rename-probe', false);
+    await files.createEntry(parent, folderName, false);
     await files.createEntry(workspace, 'note.md', true);
     await files.createEntry(workspace, 'other.md', true);
     await files.createEntry(workspace, 'sub', false);

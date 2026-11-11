@@ -1,4 +1,5 @@
 mod access;
+mod app_icon;
 mod export;
 mod files;
 mod fonts;
@@ -29,6 +30,9 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            app_icon::install_window_icon(app.handle())?;
+            #[cfg(target_os = "linux")]
+            app_icon::install_linux_desktop_identity();
             input_source::install(app.handle());
             // Set the main menu for the application
             menu::set_as_main_menu(app)

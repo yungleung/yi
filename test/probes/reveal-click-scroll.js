@@ -51,13 +51,11 @@
    * the reader came through is part of what the view does.
    */
   const bringRuleToTheFold = async () => {
-    scroller.scrollTop = Math.round(scroller.scrollHeight * 0.5);
-    await t.sleep(500);
-    for (let step = 0; step < 30; step += 1) {
+    for (let fraction = 0.1; fraction <= 1.0001; fraction += 0.02) {
+      scroller.scrollTop = Math.round(scroller.scrollHeight * fraction);
+      await t.sleep(100);
       const rule = t.prose().querySelector('hr')?.closest('.markdown-block') ?? null;
       if (!rule) {
-        scroller.scrollTop = Math.round(scroller.scrollHeight * 0.5);
-        await t.sleep(400);
         continue;
       }
       const box = scroller.getBoundingClientRect();
@@ -65,8 +63,6 @@
         await placeRuleBelow(rule, 4);
         return rule;
       }
-      scroller.scrollTop += 120;
-      await t.sleep(200);
     }
     return null;
   };

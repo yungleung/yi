@@ -8,7 +8,7 @@
  * but a person can answer one — the same limit as the menu — so this probe drives
  * `deleteNow`, the half a yes leaves, and the question itself is a person's check.
  *
- * The probe makes its own workspace under `/private/tmp` with the app's own commands and
+ * The probe makes its own workspace under the user's home folder with the app's own commands and
  * removes it again.
  *
  * @covers src/ui/workspace/tree/ops.ts, src/api/files.ts, src/ui/workspace/index.ts
@@ -20,7 +20,9 @@
   const ops = await t.app('/src/ui/workspace/tree/ops.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const workspace = '/private/tmp/yi-tree-delete-probe';
+  const parent = await t.homeDir();
+  const folderName = `yi-tree-delete-probe-${Date.now().toString(36)}`;
+  const workspace = await t.joinPath(parent, folderName);
   const folder = `${workspace}/doomed`;
   const namesIn = async () => (await files.listFolderFiles(workspace)).map((item) => item.basename).sort();
   let previous = null;
@@ -30,7 +32,7 @@
     } catch {
       // A leftover from a probe that was cut off.
     }
-    await files.createEntry('/private/tmp', 'yi-tree-delete-probe', false);
+    await files.createEntry(parent, folderName, false);
     await files.createEntry(workspace, 'note.md', true);
     await files.createEntry(workspace, 'doomed', false);
     await files.createEntry(folder, 'deep.md', true);

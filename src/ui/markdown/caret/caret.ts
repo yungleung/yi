@@ -294,6 +294,16 @@ export function setCaretRange(range: Range | null): void {
   showCaret(range);
 }
 
+/**
+ * Re-anchors the drawn bar after a surrounding layout change without moving the logical caret.
+ *
+ * Example: syntax highlighting rewrites a source span after a typed character; the range still
+ * names the same offset, while the span has moved to its new line box.
+ */
+export function repositionCaret(): void {
+  span.reposition();
+}
+
 function ensureListeners(): void {
   if (listenersAttached) {
     return;
@@ -312,7 +322,7 @@ function ensureListeners(): void {
     // the author left it.
     if (
       target instanceof Element &&
-      target.closest('.titlebar, [data-table-picker]')
+      target.closest('.titlebar, [data-table-picker], [data-stack-list]')
     ) {
       return;
     }

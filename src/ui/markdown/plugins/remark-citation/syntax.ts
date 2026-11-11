@@ -327,6 +327,7 @@ function tokenizeNarrativeLocator(
 
   function open(code: Code) {
     if (code !== OPEN_BRACKET) {
+      effects.exit('citationNarrativeLocator');
       return nok(code);
     }
     effects.consume(code);
@@ -339,6 +340,7 @@ function tokenizeNarrativeLocator(
       return escaped;
     }
     if (code === OPEN_BRACKET || code === null || markdownLineEnding(code)) {
+      effects.exit('citationNarrativeLocator');
       return nok(code);
     }
     if (code === CLOSE_BRACKET) {
@@ -352,6 +354,7 @@ function tokenizeNarrativeLocator(
 
   function escaped(code: Code) {
     if (code === null || markdownLineEnding(code)) {
+      effects.exit('citationNarrativeLocator');
       return nok(code);
     }
     effects.consume(code);

@@ -10,7 +10,7 @@
  * needs no standing in for: the app's prompt (`ui/prompt.ts`) answers a probe on a card in the
  * page, so a probe that drives `deleteWithQuestion` presses it.
  *
- * The probe makes its own workspace under `/private/tmp` with the app's own commands and
+ * The probe makes its own workspace under the user's home folder with the app's own commands and
  * removes it again; the note it copies an id from is one of the fixtures, read but never
  * written.
  *
@@ -19,11 +19,21 @@
  */
 (async () => {
   const t = window.__t;
+  t.report({ step: 'started' });
   const files = await t.app('/src/api/files.ts');
   const ops = await t.app('/src/ui/workspace/tree/ops.ts');
+  t.report({ step: 'modules loaded' });
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const workspace = '/private/tmp/yi-tree-actions-probe';
+  const dismissStalePrompt = async () => {
+    if (document.querySelector('[data-prompt]')?.classList.contains('hidden') === false) {
+      document.querySelector('[data-prompt-no]')?.click();
+      await t.sleep(100);
+    }
+  };
+  const parent = await t.homeDir();
+  const folderName = `yi-tree-actions-probe-${Date.now().toString(36)}`;
+  const workspace = await t.joinPath(parent, folderName);
   const sub = `${workspace}/sub`;
   const inner = `${sub}/inner.md`;
   const entry = (path, basename, isFile) => ({ path, basename, isFile });
@@ -56,25 +66,31 @@
   });
   let previous = null;
   try {
+    await dismissStalePrompt();
     try {
       await files.deleteEntry(workspace);
     } catch {
       // A leftover from a probe that was cut off.
     }
-    await files.createEntry('/private/tmp', 'yi-tree-actions-probe', false);
+    await files.createEntry(parent, folderName, false);
     await files.createEntry(workspace, 'sub', false);
     await files.createEntry(sub, 'inner.md', true);
+    t.report({ step: 'folders made' });
     previous = await t.openWorkspace(workspace);
+    t.report({ step: 'workspace ready' });
 
     answer.calls.length = 0;
     await ops.runTreeAction('reveal', entry(inner, 'inner.md', true));
-    await t.sleep(120);
+    for (let attempt = 0; attempt < 10 && answer.calls.length === 0; attempt += 1) {
+      await t.sleep(100);
+    }
     check(
       'Reveal in folder asks the system to show the entry',
       answer.calls.some((call) => call.url.includes('reveal_item_in_dir') && call.body.includes(inner)),
       answer.calls
     );
 
+    t.report({ step: 'reveal checked' });
     await ops.runTreeAction('copy-path', entry(inner, 'inner.md', true));
     await ops.runTreeAction('copy-name', entry(inner, 'inner.md', true));
     check(
@@ -88,6 +104,7 @@
     copied.length = 0;
     await ops.runTreeAction('copy-id', entry(withId, 'Language and Thought.md', true));
     await t.sleep(120);
+    t.report({ step: 'id copied' });
     check('Copy id puts the frontmatter id on the clipboard', copied, ['20240707122715']);
     copied.length = 0;
     await ops.runTreeAction('copy-id', entry(inner, 'inner.md', true));
@@ -100,6 +117,7 @@
     const doomed = await files.createEntry(workspace, 'doomed.md', true);
     const refusing = ops.deleteWithQuestion(entry(doomed, 'doomed.md', true));
     await t.sleep(250);
+    t.report({ step: 'delete prompt open' });
     const asked = document.querySelector('[data-prompt]')?.classList.contains('hidden') === false;
     document.querySelector('[data-prompt-no]')?.click();
     await refusing;

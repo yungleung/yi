@@ -70,9 +70,19 @@
     rounds.slice(-2)
   );
 
+  // Use a short citation note for the click itself: the demo document continues with other
+  // sections after its citation paragraph, so its citation is not at the end any more.
+  await t.load('A citation at the end [@Abel2024].\n');
+  scroller.scrollTop = 0;
+  await t.sleep(900);
+
   // A click on a citation the reader can see, at the end, moves neither the page nor the document.
   const citation = [...t.prose().querySelectorAll('.markdown-citation')].find(onScreen) ?? null;
-  check('a citation is on screen at the end', Boolean(citation), Boolean(citation));
+  check('a citation is on screen at the end', Boolean(citation), {
+    page: (t.prose().textContent ?? '').slice(-80),
+    blocks: t.blocks().length,
+    citations: t.prose().querySelectorAll('.markdown-citation').length
+  });
   if (citation) {
     const box = citation.getBoundingClientRect();
     const at = {

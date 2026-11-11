@@ -6,7 +6,7 @@
  * as a target, and nothing may move either. The drag is driven with the pointer's own
  * events, which is what the tree listens for (`workspace/tree/drag.ts`).
  *
- * The probe makes its own workspace under `/private/tmp` with the app's own commands and
+ * The probe makes its own workspace under the user's home folder with the app's own commands and
  * removes it again.
  *
  * @covers src/ui/workspace/tree/drag.ts, src/ui/workspace/tree/rules.ts
@@ -17,7 +17,9 @@
   const files = await t.app('/src/api/files.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const workspace = '/private/tmp/yi-tree-drag-refusal-probe';
+  const parent = await t.homeDir();
+  const folderName = `yi-tree-drag-refusal-probe-${Date.now().toString(36)}`;
+  const workspace = await t.joinPath(parent, folderName);
   const sub = `${workspace}/sub`;
   const note = `${workspace}/note.md`;
   const rowFor = (path) => document.querySelector(`[data-tree-path="${path}"]`);
@@ -62,7 +64,7 @@
     } catch {
       // A leftover from a probe that was cut off.
     }
-    await files.createEntry('/private/tmp', 'yi-tree-drag-refusal-probe', false);
+    await files.createEntry(parent, folderName, false);
     await files.createEntry(workspace, 'note.md', true);
     await files.createEntry(workspace, 'sub', false);
     await files.createEntry(sub, 'inner.md', true);

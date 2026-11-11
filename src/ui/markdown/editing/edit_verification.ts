@@ -20,7 +20,7 @@ import { nodeShape } from '../syntax/node_shape';
  * one per keystroke, short enough that a block rendered in the wrong shape is
  * put right while the author is still looking at it.
  */
-const VERIFY_DELAY_MS = 200;
+export const VERIFY_DELAY_MS = 200;
 
 interface PendingVerify {
   /** The parse shape the block's element was built from. */

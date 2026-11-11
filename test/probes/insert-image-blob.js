@@ -18,6 +18,7 @@
 (async () => {
   const t = window.__t;
   const files = await t.app('/src/api/files.ts');
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const { configManager } = await t.app('/src/services/config_manager.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
@@ -75,10 +76,8 @@
     const range = document.createRange();
     range.setStart(text, offset);
     range.collapse(true);
-    const rect = range.getBoundingClientRect();
-    text.parentElement.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-    );
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(150);
   };
   /** Clicks past the end of the note's own line, which takes the caret out of the image. */
@@ -109,12 +108,7 @@
     await t.load('Note body.\n');
     await place(t.textNodesIn(t.blocks()[0])[0], 10);
 
-    const button = [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === 'Image'
-    );
-    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    button.click();
-    await t.sleep(400);
+    await t.toolbarAction('Image');
 
     const card = document.querySelector('[data-image-dialog]');
     const preview = card?.querySelector('[data-image-preview]');

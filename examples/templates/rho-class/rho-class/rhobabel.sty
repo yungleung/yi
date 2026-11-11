@@ -43,6 +43,13 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{rho-class/rhobabel}[15/04/2026 Rhobabel LaTeX2e package]
 
+% `iflang`'s \iflanguage tests whether a language is loaded, not whether it is
+% selected. Compare babel's current language instead so loading Spanish as an
+% alternate does not switch an English document's labels.
+\newcommand{\ifcurrentspanish}[2]{%
+    \ifdefstring{\languagename}{spanish}{#1}{#2}%
+}
+
 %----------------------------------------------------------
 % Label for "keywords"
 %----------------------------------------------------------
@@ -59,7 +66,7 @@
 
 % Cross-reference label for figure
 \newcommand{\figlabel}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Fig.}%
     }{%else
         {Fig.}%
@@ -68,7 +75,7 @@
 
 % Cross-reference label for figures
 \newcommand{\figslabel}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Figs.}%
     }{%else
         {Figs.}%
@@ -77,7 +84,7 @@
 
 % Cross-reference label for tables
 \newcommand{\tablabel}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Tabla}%
     }{%else
         {Table}%
@@ -86,7 +93,7 @@
 
 % Caption and cross-reference label for codes
 \newcommand{\captionlabelcode}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {C\'odigo}%
     }{%else
         {Code}%
@@ -95,7 +102,7 @@
 
 % Cross-reference label for equations
 \newcommand{\eqlabel}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Ecuaci\'on}%
     }{%else
         {Equation}%
@@ -107,7 +114,7 @@
 %----------------------------------------------------------
 
 \newcommand{\andlanguage}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         { y }%
     }{%else
         { and }%
@@ -120,7 +127,7 @@
 
 % Info environment
 \newcommand{\infolanguage}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Informaci\'on}%
     }{%else
         {Information}%
@@ -129,7 +136,7 @@
 
 % Note environment
 \newcommand{\notelanguage}{%
-    \iflanguage{spanish}{%
+    \ifcurrentspanish{%
         {Nota}%
     }{%else
         {Note}%

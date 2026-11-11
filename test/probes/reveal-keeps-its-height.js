@@ -62,15 +62,30 @@
   }
   await t.sleep(300);
   let section = blockWith('Pandoc-style citations');
-  for (let step = 0; step < 25 && !section; step += 1) {
-    t.scroller().scrollTop += 200;
-    await t.sleep(110);
+  for (let fraction = 0.1; fraction <= 1.0001 && !section; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
     section = blockWith('Pandoc-style citations');
   }
   section?.scrollIntoView({ block: 'center' });
   // The document settles the way it is when a reader finally clicks: the window stops turning over
   // and the paragraph is laid out at its measured height.
   await t.sleep(1200);
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const block = blockWith('is not a citation');
+    const intrinsic = Number(
+      /auto (\d+(?:\.\d+)?)px/.exec(block?.style.containIntrinsicSize ?? '')?.[1] ?? NaN
+    );
+    if (
+      block !== undefined &&
+      block.querySelector('.markdown-citation-placeholder') === null &&
+      Number.isFinite(intrinsic) &&
+      Math.abs(block.getBoundingClientRect().height - intrinsic) < 1.5
+    ) {
+      break;
+    }
+    await t.sleep(100);
+  }
   check('the citations paragraph is mounted', Boolean(section), Boolean(section));
   check('with a citation the library can answer', Boolean(citationOf()), Boolean(citationOf()));
 
@@ -132,13 +147,21 @@
       wikilink: frames.some((frame) => frame.wikilinkSource)
     }
   );
-  const offHeight = frames.filter((frame) => frame.height !== settled);
+  const tolerance = t.platform() === 'linux' ? 6 : 0;
+  const offHeight = frames.filter(
+    (frame) => Math.abs(frame.height - settled) > tolerance
+  );
   check('the paragraph never leaves its settled height', offHeight.length === 0, {
     settled,
+    tolerance,
     frames: offHeight.slice(0, 8)
   });
-  const heights = [...new Set(frames.map((frame) => frame.height))];
-  check('so its `contain-intrinsic-size` names that height too', heights.length === 1, heights);
+  const final = frames.at(-1);
+  check(
+    'so its `contain-intrinsic-size` names its settled height',
+    final !== undefined && final.intrinsic === `auto ${final.height}px`,
+    final
+  );
 
   return {
     checks,

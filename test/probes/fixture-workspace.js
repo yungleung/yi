@@ -38,7 +38,7 @@
   const scroller = t.scroller();
   const rendered = new Set();
   t.report({ step: 'scrolling for wikilinks' });
-  for (let step = 0; step < 10; step += 1) {
+  for (let step = 0; step < 30; step += 1) {
     for (const element of t.prose().querySelectorAll('.markdown-wikilink')) {
       rendered.add(element.textContent ?? '');
     }

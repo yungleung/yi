@@ -6,7 +6,7 @@
  * pointer's drag arrives at the page. What is asserted is both the *hint* the pointer gets
  * (a `dragover` the row accepted, and the class that shows the target) and the move itself.
  *
- * The probe makes its own workspace under `/private/tmp` with the app's own commands and
+ * The probe makes its own workspace under the user's home folder with the app's own commands and
  * removes it again.
  *
  * @covers src/ui/workspace/tree/drag.ts, src/ui/workspace/tree/rules.ts,
@@ -18,7 +18,9 @@
   const files = await t.app('/src/api/files.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const workspace = '/private/tmp/yi-tree-drag-probe';
+  const parent = await t.homeDir();
+  const folderName = `yi-tree-drag-probe-${Date.now().toString(36)}`;
+  const workspace = await t.joinPath(parent, folderName);
   const sub = `${workspace}/sub`;
   const other = `${workspace}/other`;
   const note = `${workspace}/note.md`;
@@ -63,7 +65,7 @@
     } catch {
       // A leftover from a probe that was cut off.
     }
-    await files.createEntry('/private/tmp', 'yi-tree-drag-probe', false);
+    await files.createEntry(parent, folderName, false);
     await files.createEntry(workspace, 'note.md', true);
     await files.createEntry(workspace, 'sub', false);
     await files.createEntry(sub, 'inner.md', true);
@@ -102,6 +104,13 @@
     check('a folder takes a file from elsewhere, and shows it as the target', moved.highlighted === true, moved);
     check('the file is in the folder now', await namesIn(sub), ['inner.md', 'note.md']);
     check('and it is gone from where it was', await namesIn(workspace), ['other', 'sub']);
+    for (
+      let attempt = 0;
+      attempt < 20 && rowFor(`${sub}/note.md`) === null;
+      attempt += 1
+    ) {
+      await t.sleep(100);
+    }
     check(
       'and the tree shows it inside the folder',
       rowFor(`${sub}/note.md`) !== null && rowFor(note) === null,
@@ -131,6 +140,7 @@
     check('a folder is a target for another folder', folderMoved.highlighted === true, folderMoved);
     check('with what was inside it', await namesIn(`${other}/sub`), ['inner.md', 'note.md']);
     check('and its old place is empty of it', await namesIn(workspace), ['other']);
+    await t.sleep(500);
   } finally {
     await t.restoreWorkspace(previous);
     try {

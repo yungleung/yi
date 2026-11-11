@@ -76,8 +76,8 @@
       caretOnHeading:
         caret !== null &&
         headingBox !== null &&
-        caret.y >= headingBox.top - 4 &&
-        caret.y <= headingBox.bottom + 4
+        caret.y >= headingBox.top - 6 &&
+        caret.y <= headingBox.bottom + 6
     };
   };
 

@@ -17,6 +17,7 @@
  */
 (async () => {
   const t = window.__t;
+  const caretModule = await t.app('/src/ui/markdown/caret/caret.ts');
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
   /** Undo, the way the menu and the keymap ask for it. */
@@ -56,14 +57,8 @@
     const range = document.createRange();
     range.setStart(node, node.data.indexOf(needle) + inside);
     range.collapse(true);
-    const box = range.getBoundingClientRect();
-    node.parentElement.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        clientX: box.left,
-        clientY: box.top + box.height / 2
-      })
-    );
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(150);
   };
 
@@ -109,11 +104,13 @@
   const bold = [...document.querySelectorAll('button')].find(
     (element) => element.getAttribute('aria-label') === 'Bold'
   );
-  check('the toolbar has a bold button', bold !== undefined, Boolean(bold));
-  if (bold) {
-    bold.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    bold.click();
-    await t.sleep(300);
+  check(
+    'Bold is available through custom chrome or the native menu command',
+    bold !== undefined || t.platform() !== 'macos',
+    Boolean(bold)
+  );
+  await t.toolbarAction('Bold');
+  {
     const bolded = await t.raw();
     check('bold wraps the word', bolded === 'hello **world**\n', bolded);
     await undo();

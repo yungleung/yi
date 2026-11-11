@@ -46,6 +46,8 @@ import {
 export interface RendererSyncHooks {
   capture(): unknown;
   restore(snapshot: unknown): void;
+  /** A patched block's deferred measurement has completed and its layout is stable. */
+  settled?(lineStart: number): void;
 }
 
 export class VirtualBlockRenderer {
@@ -65,6 +67,7 @@ export class VirtualBlockRenderer {
   private readonly geometry: RendererGeometry;
   private range: { first: number; last: number } | null = null;
   private syncing = false;
+  private readonly pendingTextMeasurements = new Map<number, number>();
   /** What a rendering may ask the app for; the editor sets it (see `render_context.ts`). */
   private renderContext: RenderContext | null = null;
 
@@ -186,8 +189,6 @@ export class VirtualBlockRenderer {
     if (!block || !element) {
       return;
     }
-    const before = this.measurements.sizes.heightOf(block);
-    this.measurements.rememberHeight(block, element);
     // The element now holds what the block holds, and its record has to say so: this wrote
     // characters the block did not have when the element was built, so an edit that later
     // returns to that text — one undo — would compare equal and look like "nothing to
@@ -196,8 +197,39 @@ export class VirtualBlockRenderer {
     // watches it from the reader's side: ⌘Z after a committed word).
     this.cache.markBuilt(element, this.renderKey(block));
     this.refreshBlockTags();
-    if (Math.abs(this.measurements.sizes.heightOf(block) - before) >= 1) {
-      this.updateSpacers();
+    if (!this.pendingTextMeasurements.has(lineStart)) {
+      const before = this.measurements.sizes.heightOf(block);
+      const timer = window.setTimeout(() => {
+        this.pendingTextMeasurements.delete(lineStart);
+        const current = this.state.getBlockAtLine(lineStart);
+        const mounted = this.cache.mountedAt(lineStart);
+        if (!current || !mounted) {
+          return;
+        }
+        this.measurements.remeasureAfterTextMutation(current, mounted);
+        if (Math.abs(this.measurements.sizes.heightOf(current) - before) >= 1) {
+          this.updateSpacers();
+        }
+        // Making a WebKitGTK block visible can expose one more wrap on the following task. Read
+        // again after that layout before the caret and spacers treat the block as settled.
+        window.setTimeout(() => {
+          if (this.pendingTextMeasurements.has(lineStart)) {
+            return;
+          }
+          const latest = this.state.getBlockAtLine(lineStart);
+          const live = this.cache.mountedAt(lineStart);
+          if (!latest || !live) {
+            return;
+          }
+          const settledBefore = this.measurements.sizes.heightOf(latest);
+          this.measurements.remeasureAfterTextMutation(latest, live);
+          if (Math.abs(this.measurements.sizes.heightOf(latest) - settledBefore) >= 1) {
+            this.updateSpacers();
+          }
+          this.hooks?.settled?.(lineStart);
+        }, 16);
+      }, 0);
+      this.pendingTextMeasurements.set(lineStart, timer);
     }
   }
 

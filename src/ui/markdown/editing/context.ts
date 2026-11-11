@@ -25,8 +25,8 @@ import type { EditKind, EditMark } from '../document/history';
 import type { EditCaret, MarkdownEditorState } from '../document/state';
 import { editsId } from './id_lock';
 import type { VirtualBlockRenderer } from '../virtual_block_renderer';
-import { scheduleEditVerification } from './edit_verification';
-import { keepScroll, restoreCaret, showSourceAt } from './caret_placement';
+import { scheduleEditVerification, VERIFY_DELAY_MS } from './edit_verification';
+import { caretOffset, keepScroll, restoreCaret, showSourceAt } from './caret_placement';
 import type { MarkdownHost } from '../host';
 
 export { quoteContextAt } from './quote_context';
@@ -62,6 +62,34 @@ export interface EditorContext {
    * selection the command has just made (`clipboard.ts: selectAll`).
    */
   readonly focusText: () => void;
+}
+
+/** One pending source-mode reconsideration per editor, replaced by each edit in a burst. */
+const pendingSourceEvaluation = new WeakMap<EditorContext, number>();
+
+/**
+ * Reconsiders source mode once a typing burst has settled.
+ *
+ * Example: typing a space after a narrative citation leaves its source range without rebuilding
+ * the link, footnote or heading source under the author's fingers on every earlier keystroke.
+ */
+function scheduleSourceEvaluation(context: EditorContext, target: number): void {
+  const waiting = pendingSourceEvaluation.get(context);
+  if (waiting !== undefined) {
+    clearTimeout(waiting);
+  }
+  const documentKey = context.state.getDocumentKey();
+  const timer = window.setTimeout(() => {
+    pendingSourceEvaluation.delete(context);
+    if (
+      context.state.getDocumentKey() === documentKey &&
+      caretOffset(context) === target &&
+      context.state.getBlockAtOffset(target)
+    ) {
+      showSourceAt(context, target);
+    }
+  }, VERIFY_DELAY_MS);
+  pendingSourceEvaluation.set(context, timer);
 }
 
 /**
@@ -146,6 +174,12 @@ export function applyEdit(
       context.renderer.measureEditedBlock(block.lineStart);
     }
     withHeldShownSource(() => restoreCaret(context, target));
+    // The direct write held source-mode decisions while it restored the caret. A narrative
+    // citation is the one editable source whose closing delimiter is surrounding prose, so after
+    // the burst its caret may now lie beyond the source and the citation must render again.
+    if (run.sourceElement?.classList.contains('markdown-citation-source')) {
+      scheduleSourceEvaluation(context, target);
+    }
     keepScroll(context, anchor);
     context.onChanged?.(kind);
     return true;

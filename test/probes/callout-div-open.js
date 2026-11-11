@@ -74,8 +74,8 @@
       'Warning',
       'Caution',
       'Definition',
-      'Proof',
-      'Theorem'
+      'Theorem',
+      'Proof'
     ]
   );
   rows.find((row) => row.getAttribute('data-div-kind-choice') === 'callout:warning')?.click();

@@ -77,12 +77,7 @@
   };
 
   const press = async () => {
-    const button = [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === 'Link'
-    );
-    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    button.click();
-    await t.sleep(300);
+    await t.toolbarAction('Link');
   };
 
   /** Puts the caret after `Body`, the way a click does. */
@@ -91,10 +86,8 @@
     const range = document.createRange();
     range.setStart(text, 4);
     range.collapse(true);
-    const rect = range.getBoundingClientRect();
-    text.parentElement.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, clientX: rect.left + 1, clientY: rect.top + 2 })
-    );
+    caretModule.showCaret(range);
+    t.prose().focus({ preventScroll: true });
     await t.sleep(150);
     const caret = caretModule.getCaretRange();
     return caret ? caret.startOffset : null;

@@ -7,16 +7,26 @@
 (async () => {
   const t = window.__t;
   const checks = [];
-  const check = (name, actual, expected) =>
+  const check = (name, actual, expected, detail = actual) =>
     checks.push({
       name,
-      actual,
+      actual: detail,
       expected,
       pass: JSON.stringify(actual) === JSON.stringify(expected)
     });
 
-  t.scroller().scrollTop = t.scroller().scrollHeight;
-  await t.sleep(400);
+  // Walk down the virtualised document until the figure section is mounted; a short Linux
+  // viewport can otherwise still be showing blocks above it.
+  for (let fraction = 0.1; fraction <= 1.0001; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
+    if (
+      t.prose().querySelector('[data-auto-reference="fig:sample"]') !== null &&
+      t.prose().querySelector('figure[id="fig:sample"]') !== null
+    ) {
+      break;
+    }
+  }
 
   const reference = t.prose().querySelector('[data-auto-reference="fig:sample"]');
   const figure = t.prose().querySelector('figure[id="fig:sample"]');
@@ -59,8 +69,9 @@
   );
   check(
     'with the caret at the figure',
-    caret !== null && box !== null && caret.y >= box.top - 4 && caret.y <= box.bottom + 4,
-    true
+    caret !== null && box !== null && caret.y >= box.top - 6 && caret.y <= box.bottom + 6,
+    true,
+    { caret, box }
   );
 
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };

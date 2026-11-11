@@ -32,30 +32,53 @@
       (heading) => heading.id === id
     );
 
-  t.scroller().scrollTop = t.scroller().scrollHeight;
-  await t.sleep(400);
+  const hrefs = [
+    '#automatic-heading-ids',
+    '#automatic-heading-ids-1',
+    '#reading-methods',
+    '#setext-heading'
+  ];
+  const link = (href) => t.prose().querySelector(`a.markdown-link[href="${href}"]`);
+  for (let fraction = 0.1; fraction <= 1.0001; fraction += 0.02) {
+    t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+    await t.sleep(100);
+    if (hrefs.every((href) => link(href) !== null)) {
+      break;
+    }
+  }
 
   check(
     'the fixture names all four destinations',
-    ['#automatic-heading-ids', '#automatic-heading-ids-1', '#reading-methods', '#setext-heading'].every(
-      (href) => t.prose().querySelector(`a.markdown-link[href="${href}"]`) !== null
-    ),
+    hrefs.every((href) => link(href) !== null),
     true
   );
+  const follow = async (href, id) => {
+    let anchor = null;
+    for (let fraction = 0.1; fraction <= 1.0001 && anchor === null; fraction += 0.02) {
+      t.scroller().scrollTop = t.scroller().scrollHeight * fraction;
+      await t.sleep(100);
+      anchor = link(href);
+    }
+    if (anchor === null) {
+      return null;
+    }
+    commandClick(anchor);
+    for (let attempt = 0; attempt < 30 && target(id) === undefined; attempt += 1) {
+      await t.sleep(100);
+    }
+    return target(id) ?? null;
+  };
+
+  const automatic = await follow('#automatic-heading-ids', 'automatic-heading-ids');
+  const duplicate = await follow('#automatic-heading-ids-1', 'automatic-heading-ids-1');
+  const methods = await follow('#reading-methods', 'reading-methods');
   check(
-    'automatic, duplicate, custom and setext IDs are rendered',
-    [
-      target('automatic-heading-ids') !== undefined,
-      target('automatic-heading-ids-1') !== undefined,
-      target('reading-methods') !== undefined,
-      target('setext-heading') !== undefined
-    ],
-    [true, true, true, true]
+    'automatic, duplicate and custom IDs are reachable',
+    [automatic?.tagName ?? null, duplicate?.tagName ?? null, methods?.tagName ?? null],
+    ['H3', 'H3', 'H3']
   );
 
-  commandClick(t.prose().querySelector('a.markdown-link[href="#reading-methods"]'));
-  await t.sleep(300);
-  const source = target('reading-methods')?.querySelector(
+  const source = methods?.querySelector(
     '.markdown-heading-attributes-source'
   );
   check(
@@ -64,11 +87,10 @@
     '{#reading-methods .unnumbered data-owner=demo}'
   );
 
-  commandClick(t.prose().querySelector('a.markdown-link[href="#setext-heading"]'));
-  await t.sleep(300);
+  const setext = await follow('#setext-heading', 'setext-heading');
   check(
     'the setext destination resolves to its level-one heading',
-    target('setext-heading')?.tagName ?? null,
+    setext?.tagName ?? null,
     'H1'
   );
 

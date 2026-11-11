@@ -4,10 +4,6 @@
  */
 (async () => {
   const t = window.__t;
-  const button = (label) =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === label
-    );
   const shape = () => ({
     ordered: t.prose().querySelectorAll('ol').length,
     bullets: t.prose().querySelectorAll('ul').length,
@@ -19,20 +15,16 @@
   await t.click(t.blocks()[0]);
   steps.plain = shape();
   t.report(steps);
-  button('Ordered list').click();
-  await t.sleep(250);
+  await t.toolbarAction('Ordered list');
   steps.ordered = shape();
   t.report(steps);
-  button('Bullet list').click();
-  await t.sleep(250);
+  await t.toolbarAction('Bullet list');
   steps.bullet = shape();
   t.report(steps);
-  button('Task list').click();
-  await t.sleep(250);
+  await t.toolbarAction('Task list');
   steps.task = shape();
   t.report(steps);
-  button('Task list').click();
-  await t.sleep(250);
+  await t.toolbarAction('Task list');
   steps.toggledOff = shape();
   return steps;
 })()

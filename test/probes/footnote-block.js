@@ -13,16 +13,9 @@
   const t = window.__t;
   const checks = [];
   const check = (name, pass, actual) => checks.push({ name, pass, actual });
-  const button = () =>
-    [...document.querySelectorAll('button')].find(
-      (element) => element.getAttribute('aria-label') === 'Footnote'
-    );
   await t.load('Body text.\n\nLast paragraph.\n');
   await t.click(t.blocks()[1], 0.99);
-  const target = button();
-  target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-  target.click();
-  await t.sleep(350);
+  await t.toolbarAction('Footnote');
   const blocks = [...t.prose().querySelectorAll('.markdown-block')];
   const last = blocks[blocks.length - 1];
   const previous = blocks[blocks.length - 2];
