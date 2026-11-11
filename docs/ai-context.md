@@ -929,6 +929,9 @@ and Linux keep the native frame, with the editing, sidebar and session actions a
 native menus. The runtime window icon on Linux and Windows comes from
 `src-tauri/icons/icon.png` through `src-tauri/src/app_icon.rs`; the Linux About dialog uses the
 64px image at `src-tauri/icons/64x64.png`, while Tauri does not support an About icon on Windows.
+The Linux and Windows PNG/ICO assets use a 9% transparent margin and an 82%-wide rounded content
+tile, so a dock or taskbar does not draw Yi larger than neighbouring applications. The macOS
+`icon.icns` stays unchanged.
 An uninstalled Linux run, including an AppImage without host integration, also writes its
 `Yi.desktop` entry and hicolor icons under `$XDG_DATA_HOME` so GNOME/Wayland can associate the
 `Yi` app ID with the dock icon; an installed package keeps ownership of that entry. macOS keeps

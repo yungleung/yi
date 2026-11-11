@@ -218,6 +218,23 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
+    fn linux_platform_icon_keeps_the_transparent_dock_margin() {
+        let icon = Image::from_bytes(WINDOW_ICON).expect("the bundled PNG decodes");
+        let rgba = icon.rgba();
+        let alpha = |x: u32, y: u32| rgba[((y * icon.width() + x) * 4 + 3) as usize];
+
+        for (x, y) in [(0, 0), (511, 0), (0, 511), (511, 511)] {
+            assert_eq!(alpha(x, y), 0, "corner ({x}, {y}) stays transparent");
+        }
+        assert!(alpha(45, 256) == 0, "the left margin stays transparent");
+        assert!(
+            alpha(46, 256) > 0,
+            "the rounded content begins after the margin"
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
     fn unpackaged_linux_run_writes_the_desktop_entry_and_theme_icons() {
         use std::fs;
 
