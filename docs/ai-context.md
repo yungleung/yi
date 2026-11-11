@@ -928,12 +928,16 @@ the guided GitHub issue form in the system browser. Yi's overlay title bar is ma
 and Linux keep the native frame, with the editing, sidebar and session actions available from the
 native menus. The runtime window icon on Linux and Windows comes from
 `src-tauri/icons/icon.png` through `src-tauri/src/app_icon.rs`; the Linux About dialog uses the
-same image, while Tauri does not support an About icon on Windows. macOS keeps its existing
-bundle-owned icon unchanged. Right-clicking a table cell opens the table's own menu; right-clicking
-elsewhere in the editor opens a native menu for clipboard actions, formatting, insertion, lists,
-table creation and session controls. Every item dispatches the same command id as its titlebar,
-keyboard or native menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`,
-`Mod+Shift+X`, `Mod+E`, `Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
+64px image at `src-tauri/icons/64x64.png`, while Tauri does not support an About icon on Windows.
+An uninstalled Linux run, including an AppImage without host integration, also writes its
+`Yi.desktop` entry and hicolor icons under `$XDG_DATA_HOME` so GNOME/Wayland can associate the
+`Yi` app ID with the dock icon; an installed package keeps ownership of that entry. macOS keeps
+its existing bundle-owned icon unchanged.
+Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in the editor
+opens a native menu for clipboard actions, formatting, insertion, lists, table creation and
+session controls. Every item dispatches the same command id as its titlebar, keyboard or native
+menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`, `Mod+Shift+X`, `Mod+E`,
+`Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with
