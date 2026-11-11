@@ -926,11 +926,14 @@ Linux. Settings moves to File and About to Help outside macOS; unsupported fulls
 close items are omitted. Help → Report Issue is the typed command `help:reportIssue`, which opens
 the guided GitHub issue form in the system browser. Yi's overlay title bar is macOS-only; Windows
 and Linux keep the native frame, with the editing, sidebar and session actions available from the
-native menus. Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in
-the editor opens a native menu for clipboard actions, formatting, insertion, lists, table creation
-and session controls. Every item dispatches the same command id as its titlebar, keyboard or native
-menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`, `Mod+Shift+X`, `Mod+E`,
-`Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
+native menus. The runtime window icon on Linux and Windows comes from
+`src-tauri/icons/icon.png` through `src-tauri/src/app_icon.rs`; the Linux About dialog uses the
+same image, while Tauri does not support an About icon on Windows. macOS keeps its existing
+bundle-owned icon unchanged. Right-clicking a table cell opens the table's own menu; right-clicking
+elsewhere in the editor opens a native menu for clipboard actions, formatting, insertion, lists,
+table creation and session controls. Every item dispatches the same command id as its titlebar,
+keyboard or native menu counterpart. Formatting and insertion shortcuts are `Mod+B`, `Mod+I`,
+`Mod+Shift+X`, `Mod+E`, `Mod+K`, `Mod+Shift+I` and `Mod+Alt+F`.
 **Sentences the *backend* writes are the third caller of the same keys**: a failed write, a folder it
 cannot make, a kind with no configuration file — written where they happen, deep inside a command, and
 met by the reader in a toast beside translated chrome. They go through `i18n::now`, which is `t` with
