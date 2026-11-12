@@ -17,6 +17,14 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/check-release-version.mjs "${GITHUB_REF_NAME}"
+      - name: Require updater signing key
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::Add the Yi updater private key as the TAURI_SIGNING_PRIVATE_KEY repository secret."
+            exit 1
+          fi
 
   publish-tauri:
     needs: verify-version
