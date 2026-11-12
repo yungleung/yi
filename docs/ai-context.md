@@ -1311,6 +1311,11 @@ The debug-only MCP bridge is still compiled by every CI platform. Keep
 `webview2-com` and `windows` crates as Tauri 2.12 on Windows, while 0.12.x leaves two COM
 type trees in the graph and cannot compile.
 
+The update check waits for Tauri to report an installed bundle type. Development binaries on Linux
+and Windows report no bundle type; asking the updater would fall back to the AppImage artifact and
+replace the executable being developed. macOS reports `app` for its development app and keeps its
+existing updater behavior.
+
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`
 under *AI agents*.
