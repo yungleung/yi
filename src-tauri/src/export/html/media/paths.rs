@@ -109,18 +109,20 @@ mod tests {
 
     #[test]
     fn local_images_are_distinguished_from_remote_and_relative_urls() {
+        let shot = std::env::temp_dir().join("shot one.png");
         assert_eq!(
-            local_image("file:///tmp/shot%20one.png"),
-            Some(PathBuf::from("/tmp/shot one.png"))
+            local_image(&Url::from_file_path(&shot).unwrap().to_string()),
+            Some(shot)
         );
-        assert_eq!(
-            local_image("/tmp/cover.PNG"),
-            Some(PathBuf::from("/tmp/cover.PNG"))
-        );
+        let cover = std::env::temp_dir().join("cover.PNG");
+        assert_eq!(local_image(&cover.to_string_lossy()), Some(cover));
         assert_eq!(local_image("https://example.com/cover.png"), None);
         assert_eq!(local_image("data:image/png;base64,abc"), None);
         assert_eq!(local_image("images/cover.png"), None);
-        assert_eq!(local_image("/tmp/notes.txt"), None);
+        assert_eq!(
+            local_image(&std::env::temp_dir().join("notes.txt").to_string_lossy()),
+            None
+        );
     }
 
     #[test]
