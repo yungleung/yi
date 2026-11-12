@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- The updater private key lives at `/Users/urshanabi/.tauri/yi-updater.key` and must never enter the repository.
+- The updater private key lives at `~/.tauri/yi-updater.key` and must never enter the repository.
 - The release tag must be `v` plus one exact SemVer shared by `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`.
 - The first release is `v0.1.0`.
 - Updater signatures are mandatory; do not disable them.
@@ -26,8 +26,8 @@
 ### Task 1: Generate and register updater keys
 
 **Files:**
-- Create outside repository: `/Users/urshanabi/.tauri/yi-updater.key`
-- Create outside repository: `/Users/urshanabi/.tauri/yi-updater.key.pub`
+- Create outside repository: `~/.tauri/yi-updater.key`
+- Create outside repository: `~/.tauri/yi-updater.key.pub`
 - Modify: `src-tauri/tauri.conf.json`
 
 **Interfaces:**
@@ -39,7 +39,7 @@
 Run:
 
 ```bash
-mkdir -p /Users/urshanabi/.tauri
+mkdir -p ~/.tauri
 ```
 
 Expected: the directory exists and is not under the Yi checkout.
@@ -49,7 +49,7 @@ Expected: the directory exists and is not under the Yi checkout.
 Run:
 
 ```bash
-npm run tauri -- signer generate --ci -w /Users/urshanabi/.tauri/yi-updater.key
+npm run tauri -- signer generate --ci -w ~/.tauri/yi-updater.key
 ```
 
 Expected: the two files above exist and the summary prints only the secret-key path and public-key path.
@@ -59,9 +59,9 @@ Expected: the two files above exist and the summary prints only the secret-key p
 Run:
 
 ```bash
-test -s /Users/urshanabi/.tauri/yi-updater.key
-test -s /Users/urshanabi/.tauri/yi-updater.key.pub
-git check-ignore -q /Users/urshanabi/.tauri/yi-updater.key || true
+test -s ~/.tauri/yi-updater.key
+test -s ~/.tauri/yi-updater.key.pub
+git check-ignore -q ~/.tauri/yi-updater.key || true
 git status --short
 ```
 
@@ -83,7 +83,7 @@ Add a top-level `plugins` object:
 ```json
 "plugins": {
   "updater": {
-    "pubkey": "<contents of /Users/urshanabi/.tauri/yi-updater.key.pub>",
+    "pubkey": "<contents of ~/.tauri/yi-updater.key.pub>",
     "endpoints": [
       "https://github.com/yungleung/yi/releases/latest/download/latest.json"
     ],
@@ -660,8 +660,8 @@ git commit -m "build(release): publish signed builds from tags"
 Document:
 
 ```text
-Private key: /Users/urshanabi/.tauri/yi-updater.key
-Public key:  /Users/urshanabi/.tauri/yi-updater.key.pub
+Private key: ~/.tauri/yi-updater.key
+Public key:  ~/.tauri/yi-updater.key.pub
 GitHub secret: TAURI_SIGNING_PRIVATE_KEY
 Optional password secret: TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 ```

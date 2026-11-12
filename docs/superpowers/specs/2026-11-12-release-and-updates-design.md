@@ -39,13 +39,13 @@ private key is never committed.
 The private key is generated outside the repository at:
 
 ```text
-/Users/urshanabi/.tauri/yi-updater.key
+~/.tauri/yi-updater.key
 ```
 
 The corresponding public key is written beside it:
 
 ```text
-/Users/urshanabi/.tauri/yi-updater.key.pub
+~/.tauri/yi-updater.key.pub
 ```
 
 The user must back up `yi-updater.key` securely. Losing it prevents existing installations from

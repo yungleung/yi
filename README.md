@@ -35,6 +35,7 @@ publication-quality exports.
 - WYSIWYG editing without giving up raw Markdown
 - Citations, cross-references, equations and theorem blocks
 - Reusable Word, LaTeX, EPUB, HTML and PDF template packages
+- Signed GitHub Releases that installed builds check before offering an update
 
 ## What it does
 
@@ -49,6 +50,8 @@ publication-quality exports.
   pandoc-style footnotes and citations render through CSL and a bibliography file.
 - **Made for long notes.** Blocks outside the viewport are unmounted; a 320 KB note
   stays editable.
+- **Updates stay in the app.** Installed builds check signed GitHub Releases and
+  ask before downloading and installing a newer version.
 
 ## Requirements
 
