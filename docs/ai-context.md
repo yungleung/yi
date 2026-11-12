@@ -932,9 +932,12 @@ native menus. The runtime window icon on Linux and Windows comes from
 The Linux and Windows PNG/ICO assets use a 9% transparent margin and an 82%-wide rounded content
 tile, so a dock or taskbar does not draw Yi larger than neighbouring applications. The macOS
 `icon.icns` stays unchanged.
-An uninstalled Linux run, including an AppImage without host integration, also writes its
-`Yi.desktop` entry and hicolor icons under `$XDG_DATA_HOME` so GNOME/Wayland can associate the
-`Yi` app ID with the dock icon; an installed package keeps ownership of that entry. macOS keeps
+A portable AppImage without host integration writes its `Yi.desktop` entry and hicolor icons under
+`$XDG_DATA_HOME` so GNOME/Wayland can associate the `Yi` app ID with the dock icon. Raw development
+and other unpackaged binaries do not create a persistent Show Apps launcher; they remove any entry
+written by an older build. An installed package keeps ownership of that entry, and a later installed
+run also removes an older generated user entry so it cannot shadow the package with a stale
+development executable. The Debian desktop entry declares the Productivity category. macOS keeps
 its existing bundle-owned icon unchanged.
 Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in the editor
 opens a native menu for clipboard actions, formatting, insertion, lists, table creation and

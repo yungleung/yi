@@ -30,6 +30,7 @@
   },
   "bundle": {
     "active": true,
+    "category": "Productivity",
     "targets": "all",
     "createUpdaterArtifacts": true,
     "macOS": {
