@@ -7,6 +7,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({ input: 'src/ui/markdown/editing/id_lock.ts', logLevel: 'silent' });
@@ -15,7 +16,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-id-lock-'));
 const file = join(directory, 'id_lock.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { editsId } = await import(file);
+const { editsId } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

@@ -9,3 +9,5 @@
  */
 
 export { REPORT_ISSUE_URL, openIssueTracker, registerIssueCommand } from './report_issue';
+export { createUpdates } from './updates';
+export type { Updates } from './updates';

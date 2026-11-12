@@ -10,6 +10,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -27,7 +28,7 @@ const {
   isOpenableUrl,
   isFilePath,
   isSameDocumentFragment
-} = await import(file);
+} = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

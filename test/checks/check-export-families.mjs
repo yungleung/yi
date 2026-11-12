@@ -4,6 +4,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({ input: 'src/ui/export/kind_family.ts', logLevel: 'silent' });
@@ -12,7 +13,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-export-families-'));
 const file = join(directory, 'kind_family.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { isLatexKind, isHtmlLikeKind } = await import(file);
+const { isLatexKind, isHtmlLikeKind } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

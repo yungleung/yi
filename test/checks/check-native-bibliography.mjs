@@ -9,6 +9,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-native-bibliography-'));
@@ -26,7 +27,7 @@ for (const chunk of output) {
 }
 const entry = output.find((chunk) => chunk.type === 'chunk' && chunk.isEntry);
 const file = join(directory, entry.fileName);
-const { citedKeys, nativeBibliographyTarget, packageCitedBibliography } = await import(file);
+const { citedKeys, nativeBibliographyTarget, packageCitedBibliography } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, pass, actual = null) => {

@@ -8,6 +8,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-quote-edits-'));
@@ -30,13 +31,19 @@ const {
   projectQuoteSource,
   quoteNeedsSourceAt
 } = await import(
-  await bundle('quote', 'src/ui/markdown/syntax/container/quote/index.ts')
+  pathToFileURL(
+    await bundle('quote', 'src/ui/markdown/syntax/container/quote/index.ts')
+  ).href
 );
 const { emptyCalloutNewline, materializeCalloutBody } = await import(
-  await bundle('callout_body', 'src/ui/markdown/syntax/callout/body.ts')
+  pathToFileURL(
+    await bundle('callout_body', 'src/ui/markdown/syntax/callout/body.ts')
+  ).href
 );
 const { calloutBodyInsertion, readCallout } = await import(
-  await bundle('callouts', 'src/ui/markdown/syntax/callout/index.ts')
+  pathToFileURL(
+    await bundle('callouts', 'src/ui/markdown/syntax/callout/index.ts')
+  ).href
 );
 
 const failures = [];

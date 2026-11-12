@@ -21,6 +21,7 @@ export const MENU_COMMANDS: Readonly<Partial<Record<AppEventName, CommandId>>> =
   tutorial: 'help:tutorial',
   documentation: 'help:documentation',
   report_issue: 'help:reportIssue',
+  check_for_updates: 'help:checkForUpdates',
   new_markdown: 'file:newMarkdown',
   save: 'file:save',
   save_as: 'file:saveAs',

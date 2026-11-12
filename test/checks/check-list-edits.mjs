@@ -5,6 +5,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -16,7 +17,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-list-'));
 const file = join(directory, 'edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { listEdit, indentEdit, readMarker } = await import(file);
+const { listEdit, indentEdit, readMarker } = await import(pathToFileURL(file).href);
 
 /** How deep the lists of a document nest, per the markdown parser itself. */
 const nestingDepth = (markdown) => {

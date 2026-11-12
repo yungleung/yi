@@ -7,6 +7,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-fenced-divs-'));
@@ -16,7 +17,7 @@ async function bundle(input, name) {
   await build.close();
   const file = join(directory, `${name}.mjs`);
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-  return import(file);
+  return import(pathToFileURL(file).href);
 }
 
 const { fencedDivAtOffset, fencedDivNewline, readFencedDiv } = await bundle(

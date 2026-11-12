@@ -12,6 +12,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({
@@ -23,7 +24,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-fence-edits-'));
 const file = join(directory, 'fence_edits.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { fenceTypedWrite, fenceNewlineWrite, fenceLanguageEdit } = await import(file);
+const { fenceTypedWrite, fenceNewlineWrite, fenceLanguageEdit } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

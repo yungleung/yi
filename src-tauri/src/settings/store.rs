@@ -129,10 +129,13 @@ mod tests {
     }
 
     #[test]
-    fn a_windows_home_shortcut_is_expanded() {
-        let home = PathBuf::from(r"C:\Users\someone");
-        let expanded = expand_home_path(r"~\Documents\library.bib", &home);
-        assert_eq!(expanded.parent(), Some(home.as_path()));
-        assert!(expanded.to_string_lossy().ends_with("library.bib"));
+    fn a_home_shortcut_is_expanded_with_the_native_separator() {
+        let home = std::env::temp_dir().join("someone");
+        let separator = std::path::MAIN_SEPARATOR;
+        let shortcut = format!("~{separator}Documents{separator}library.bib");
+        assert_eq!(
+            expand_home_path(&shortcut, &home),
+            home.join("Documents").join("library.bib")
+        );
     }
 }

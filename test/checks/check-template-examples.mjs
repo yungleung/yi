@@ -128,7 +128,7 @@ for (const kind of kinds) {
     if (existsSync(examplePath)) {
       const example = readFileSync(examplePath, 'utf8');
       const frontmatter = /^---\n([\s\S]*?)\n---/.exec(example)?.[1] ?? '';
-      const metadata = parse(frontmatter);
+      const metadata = parse(frontmatter) ?? {};
       const authors = Array.isArray(metadata.author) ? metadata.author : [];
       check(
         'latex: the metadata carries three authors with distinct institutions and emails',

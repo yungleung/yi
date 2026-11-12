@@ -10,7 +10,7 @@
  * is, not what it does.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const editorRoot = 'src/ui/markdown';
 const markersFile = 'src/ui/markdown/syntax/markers.ts';
@@ -40,14 +40,16 @@ const files = [];
 })(editorRoot);
 
 const failures = [];
+const markersPath = resolve(markersFile);
 const check = (name, condition) => {
   if (!condition) {
     failures.push(name);
   }
 };
 
-check(`${markersFile} exists`, files.includes(markersFile));
-const markers = files.includes(markersFile) ? readFileSync(markersFile, 'utf8') : '';
+const hasMarkers = files.some((file) => resolve(file) === markersPath);
+check(`${markersFile} exists`, hasMarkers);
+const markers = hasMarkers ? readFileSync(markersFile, 'utf8') : '';
 
 for (const fact of facts) {
   check(`${markersFile} exports ${fact}`, new RegExp(`export (?:function|const) ${fact}\\b`).test(markers));
@@ -57,7 +59,7 @@ for (const fact of facts) {
 const definingPattern = (fact) =>
   new RegExp(`(?:^|\\n)\\s*(?:export )?(?:function|const) ${fact}\\b`, 'm');
 for (const file of files) {
-  if (file === markersFile) {
+  if (resolve(file) === markersPath) {
     continue;
   }
   const source = readFileSync(file, 'utf8');

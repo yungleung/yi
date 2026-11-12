@@ -6,6 +6,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({
@@ -17,7 +18,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-source-highlight-'));
 const file = join(directory, 'frontmatter_highlight.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { highlightFrontmatter } = await import(file);
+const { highlightFrontmatter } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

@@ -5,6 +5,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-command-contracts-'));
@@ -21,7 +22,7 @@ const {
   commandContracts,
   parseCommandInput,
   CommandInputError
-} = await import(file);
+} = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -104,6 +105,12 @@ check(
   null
 );
 rejects('an export kind cannot be a number', 'file:export', 3);
+check(
+  'the Help menu has a typed update command',
+  parseCommandInput('help:checkForUpdates', undefined),
+  null
+);
+rejects('the update command refuses accidental data', 'help:checkForUpdates', { silent: true });
 
 check(
   'the document position command takes no input',

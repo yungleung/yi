@@ -8,6 +8,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-completions-'));
@@ -19,7 +20,7 @@ async function bundleModule(input, name) {
   await bundle.close();
   const file = join(directory, `${name}.mjs`);
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-  return import(file);
+  return import(pathToFileURL(file).href);
 }
 
 const {

@@ -8,6 +8,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-latex-images-'));
@@ -21,7 +22,7 @@ await bundle.close();
 const entry = output.find((chunk) => chunk.type === 'chunk');
 const file = join(directory, entry.fileName);
 writeFileSync(file, entry.code);
-const { portableLatexImage } = await import(file);
+const { portableLatexImage } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

@@ -8,6 +8,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-table-captions-'));
@@ -20,7 +21,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'captions.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { isTableCaptionLine, tableCaptionLine } = await import(file);
+const { isTableCaptionLine, tableCaptionLine } = await import(pathToFileURL(file).href);
 
 const parserBundle = await rolldown({
   input: 'src/ui/markdown/syntax/parser.ts',
@@ -31,7 +32,7 @@ const { output: parserOutput } = await parserBundle.generate({ format: 'esm' });
 await parserBundle.close();
 const parserFile = join(directory, 'parser.mjs');
 writeFileSync(parserFile, parserOutput.find((chunk) => chunk.type === 'chunk').code);
-const { parseMarkdown, serializeMarkdown } = await import(parserFile);
+const { parseMarkdown, serializeMarkdown } = await import(pathToFileURL(parserFile).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

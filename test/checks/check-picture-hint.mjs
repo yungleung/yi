@@ -12,6 +12,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-picture-hint-'));
@@ -25,7 +26,7 @@ await bundle.close();
 const file = join(directory, 'picture_hint.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const { destinationsThatNameNoImage, imageDestinations, isWebDestination, namesNoImage } =
-  await import(file);
+  await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

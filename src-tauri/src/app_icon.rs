@@ -10,7 +10,9 @@
 use std::error::Error;
 
 use tauri::image::Image;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+use tauri::Manager;
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 const WINDOW_ICON: &[u8] = include_bytes!("../icons/icon.png");
@@ -32,10 +34,10 @@ const DESKTOP_FILE_NAME: &str = "Yi.desktop";
 const GENERATED_MARKER: &str = "X-Yi-Generated=true";
 
 /// Sets the main window's runtime icon on the desktops whose dock/taskbar reads it.
-pub(crate) fn install_window_icon(app: &AppHandle) -> Result<(), Box<dyn Error>> {
+pub(crate) fn install_window_icon(_app: &AppHandle) -> Result<(), Box<dyn Error>> {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
-        let window = app.get_webview_window("main").ok_or_else(|| {
+        let window = _app.get_webview_window("main").ok_or_else(|| {
             std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "the main webview window is not available",

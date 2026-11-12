@@ -7,6 +7,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-list-captions-'));
@@ -19,7 +20,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'captions.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { listCaptionAfterList, listCaptionLine } = await import(file);
+const { listCaptionAfterList, listCaptionLine } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

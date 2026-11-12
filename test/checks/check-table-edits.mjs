@@ -5,6 +5,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 async function bundleModule(input) {
@@ -14,7 +15,7 @@ async function bundleModule(input) {
   const directory = mkdtempSync(join(tmpdir(), 'yi-table-edits-'));
   const file = join(directory, `${input.split('/').pop().replace('.ts', '')}.mjs`);
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-  return import(file);
+  return import(pathToFileURL(file).href);
 }
 
 const { readTableSource } = await bundleModule('src/ui/markdown/syntax/table/source.ts');

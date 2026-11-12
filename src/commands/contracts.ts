@@ -103,6 +103,7 @@ export type CommandContracts = FormattingContracts &
     'help:tutorial': NoInputContract;
     'help:documentation': NoInputContract;
     'help:reportIssue': NoInputContract;
+    'help:checkForUpdates': NoInputContract;
     'version:save': NoInputContract;
     'session:toggleStack': NoInputContract;
     'session:nextStacked': NoInputContract;
@@ -373,6 +374,10 @@ export const commandContracts: CommandContracts = {
   'help:documentation': noInput('open Documentation'),
   'help:reportIssue': {
     ...noInput('open the issue chooser'),
+    timing: 'async'
+  },
+  'help:checkForUpdates': {
+    ...noInput('check GitHub Releases for a newer Yi'),
     timing: 'async'
   },
   'version:save': {

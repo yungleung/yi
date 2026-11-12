@@ -131,6 +131,7 @@ fn copy_media(source: &Path, target: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use tauri::Url;
 
     fn scratch(name: &str) -> PathBuf {
         let path = std::env::temp_dir().join(format!(
@@ -155,12 +156,7 @@ mod tests {
             &output,
             format!(
                 r#"<img src="{}"><img src="https://example.com/a.png">"#,
-                image
-                    .to_string_lossy()
-                    .split('/')
-                    .map(encode_url)
-                    .collect::<Vec<_>>()
-                    .join("/")
+                Url::from_file_path(&image).unwrap()
             ),
         )
         .unwrap();

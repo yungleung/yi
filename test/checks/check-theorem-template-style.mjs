@@ -18,6 +18,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const failures = [];
@@ -36,7 +37,7 @@ try {
   await bundle.close();
   const headerModule = join(directory, 'theorem_header.mjs');
   writeFileSync(headerModule, output.find((chunk) => chunk.type === 'chunk').code);
-  const { theoremHeader } = await import(headerModule);
+  const { theoremHeader } = await import(pathToFileURL(headerModule).href);
 
   const note = [
     '---',

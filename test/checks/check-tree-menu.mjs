@@ -10,6 +10,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({ input: 'src/ui/workspace/tree/menu_model.ts', logLevel: 'silent' });
@@ -18,7 +19,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-tree-menu-'));
 const file = join(directory, 'tree_menu_model.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { treeMenuActions, treeMenuNodes } = await import(file);
+const { treeMenuActions, treeMenuNodes } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

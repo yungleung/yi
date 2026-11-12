@@ -9,6 +9,7 @@
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-tutorial-'));
@@ -21,7 +22,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'tutorial_rules.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { shouldOpenTutorial, tutorialLanguage } = await import(file);
+const { shouldOpenTutorial, tutorialLanguage } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

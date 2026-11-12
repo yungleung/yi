@@ -178,8 +178,8 @@
       'Warning',
       'Caution',
       'Definition',
-      'Theorem',
-      'Proof'
+      'Proof',
+      'Theorem'
     ]
   );
   t.key('Escape');

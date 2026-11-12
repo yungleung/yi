@@ -167,17 +167,23 @@
 
     const local = await runMode(false, false);
     check('the local bundle is written', local.wrote && local.page !== null, local);
+    const localFiles = {
+      revealJs: await exists(`${target}/js/dist/reveal.js`),
+      revealCss: await exists(`${target}/js/dist/reveal.css`),
+      theme: await exists(`${target}/js/dist/theme/black.css`),
+      notes: await exists(`${target}/js/dist/plugin/notes.js`),
+      search: await exists(`${target}/js/dist/plugin/search.js`),
+      zoom: await exists(`${target}/js/dist/plugin/zoom.js`)
+    };
     check(
       'local Reveal.js uses js/dist files instead of the CDN',
       local.page?.includes('js/dist/reveal.js') &&
         !local.page.includes('unpkg.com/reveal.js') &&
-        (await exists(`${target}/js/dist/reveal.js`)) &&
-        (await exists(`${target}/js/dist/reveal.css`)) &&
-        (await exists(`${target}/js/dist/theme/black.css`)) &&
-        (await exists(`${target}/js/plugin/notes/notes.js`)) &&
-        (await exists(`${target}/js/plugin/search/search.js`)) &&
-        (await exists(`${target}/js/plugin/zoom/zoom.js`)),
-      local.page?.match(/(?:src|href)="[^"]*reveal[^"]*"/g)
+        Object.values(localFiles).every(Boolean),
+      {
+        references: local.page?.match(/(?:src|href)="[^"]*reveal[^"]*"/g),
+        files: localFiles
+      }
     );
     check(
       'local pictures are copied into images',

@@ -34,8 +34,12 @@
   const sleep = t.sleep;
 
   const readText = async (path) => {
-    const read = await invoke('plugin:fs|read_text_file', { path });
-    return new TextDecoder().decode(read instanceof ArrayBuffer ? read : Uint8Array.from(read));
+    try {
+      const read = await invoke('plugin:fs|read_text_file', { path });
+      return new TextDecoder().decode(read instanceof ArrayBuffer ? read : Uint8Array.from(read));
+    } catch {
+      return null;
+    }
   };
   const until = async (ready, tries = 80) => {
     for (let attempt = 0; attempt < tries; attempt += 1) {
@@ -177,7 +181,15 @@
   } finally {
     // The settings file is the app's own, and nothing else puts it back: whatever happened above, the
     // copy this run found is the copy the next run meets.
-    await files.writeTextAtomically(config, configBefore);
+    if (configBefore === null) {
+      try {
+        await files.deleteEntry(config);
+      } catch {
+        // The app folder may have made the parent while the file remained absent.
+      }
+    } else {
+      await files.writeTextAtomically(config, configBefore);
+    }
     try {
       await files.deleteEntry(folder);
     } catch {

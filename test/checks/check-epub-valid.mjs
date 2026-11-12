@@ -38,6 +38,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 import { epubcheckJar, have, runEpubcheck } from './support/epubcheck.mjs';
 
@@ -81,7 +82,7 @@ await bundle.close();
 const bundleDirectory = mkdtempSync(join(tmpdir(), 'yi-epub-valid-rule-'));
 const ruleFile = join(bundleDirectory, 'book_body.mjs');
 writeFileSync(ruleFile, output.find((chunk) => chunk.type === 'chunk').code);
-const { bodyWithItsName } = await import(ruleFile);
+const { bodyWithItsName } = await import(pathToFileURL(ruleFile).href);
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-epub-valid-'));
 const notePath = join(directory, 'note.md');

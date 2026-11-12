@@ -6,6 +6,7 @@
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({ input: 'src/ui/platform_chrome.ts', logLevel: 'silent' });
@@ -14,7 +15,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-platform-chrome-'));
 const file = join(directory, 'platform-chrome.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { usesCustomTitleBar } = await import(file);
+const { usesCustomTitleBar } = await import(pathToFileURL(file).href);
 const main = readFileSync('src/main.ts', 'utf8');
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 
