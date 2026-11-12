@@ -6,6 +6,7 @@
  */
 
 export { UpdateController } from './flow';
+export { TauriUpdateBackend } from './backend';
 export type {
   RemoteUpdate,
   UpdateBackend,

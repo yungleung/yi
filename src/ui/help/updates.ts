@@ -15,11 +15,11 @@ import { t } from '../../services/i18n';
 import { showHint } from '../../services/hints';
 import { showMessage } from '../../services/messages';
 import {
+  TauriUpdateBackend,
   UpdateController,
   type UpdatePresenter,
   type UpdateSummary
 } from '../../services/updates';
-import { TauriUpdateBackend } from '../../services/updates/backend';
 import { prompt } from '../prompt';
 
 /** The update domain's reader-facing half. */
