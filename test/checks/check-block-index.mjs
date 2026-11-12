@@ -13,6 +13,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({
@@ -24,7 +25,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-block-index-'));
 const file = join(directory, 'block_index.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { BlockIndex } = await import(file);
+const { BlockIndex } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

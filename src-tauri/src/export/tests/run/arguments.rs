@@ -156,7 +156,10 @@ fn the_arguments_are_the_whole_of_what_the_app_asks_pandoc_for() {
             "--metadata".to_string(),
             "reference-section-title=References".to_string(),
             "--csl".to_string(),
-            dir.join("styles/apa.csl").to_string_lossy().into_owned(),
+            dir.join("styles")
+                .join("apa.csl")
+                .to_string_lossy()
+                .into_owned(),
             dir.join("note-1.md").to_string_lossy().into_owned(),
         ]
     );

@@ -24,6 +24,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-export-'));
@@ -39,7 +40,7 @@ writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
 const {
   exportSource,
   materializeTheoremMetadata
-} = await import(file);
+} = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

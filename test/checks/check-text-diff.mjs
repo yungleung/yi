@@ -6,6 +6,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-text-diff-'));
@@ -14,7 +15,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'text_diff.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { textDiff } = await import(file);
+const { textDiff } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

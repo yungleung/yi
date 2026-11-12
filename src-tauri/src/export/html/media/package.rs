@@ -157,6 +157,7 @@ mod tests {
                 r#"<img src="{}"><img src="https://example.com/a.png">"#,
                 image
                     .to_string_lossy()
+                    .replace('\\', "/")
                     .split('/')
                     .map(encode_url)
                     .collect::<Vec<_>>()

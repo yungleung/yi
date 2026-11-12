@@ -5,6 +5,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-local-events-'));
@@ -13,7 +14,7 @@ const { output } = await build.generate({ format: 'esm' });
 await build.close();
 const file = join(directory, 'local_bus.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { LocalEventBus } = await import(file);
+const { LocalEventBus } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

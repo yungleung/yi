@@ -7,6 +7,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({
@@ -19,7 +20,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-editor-context-menu-'));
 const file = join(directory, 'editor-context-menu.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { editorContextMenuModel } = await import(file);
+const { editorContextMenuModel } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

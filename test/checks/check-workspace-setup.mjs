@@ -6,6 +6,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-workspace-setup-'));
@@ -14,7 +15,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'workspace_setup.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { DEFAULT_WORKSPACE_NAME, needsWorkspaceQuestion } = await import(file);
+const { DEFAULT_WORKSPACE_NAME, needsWorkspaceQuestion } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

@@ -8,6 +8,8 @@
  */
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
 const npm = JSON.parse(readFileSync('package.json', 'utf8'));
@@ -24,8 +26,12 @@ if (metadata.status !== 0) {
 }
 
 const cargo = JSON.parse(metadata.stdout);
-const manifestPath = new URL('../../src-tauri/Cargo.toml', import.meta.url).pathname;
-const pkg = cargo.packages.find((candidate) => candidate.manifest_path === manifestPath);
+const manifestPath = resolve(
+  fileURLToPath(new URL('../../src-tauri/Cargo.toml', import.meta.url))
+);
+const pkg = cargo.packages.find(
+  (candidate) => resolve(candidate.manifest_path) === manifestPath
+);
 const binaries = pkg.targets
   .filter((target) => target.kind.includes('bin'))
   .map((target) => target.name);

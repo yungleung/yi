@@ -7,6 +7,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-probe-stash-'));
@@ -15,7 +16,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'probe_stash.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { frameFor, ownFrame } = await import(file);
+const { frameFor, ownFrame } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

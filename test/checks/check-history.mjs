@@ -9,6 +9,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({ input: 'src/ui/markdown/document/history.ts', logLevel: 'silent' });
@@ -17,7 +18,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-history-'));
 const file = join(directory, 'history.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { History, invert, coalesceRun, trimRun } = await import(file);
+const { History, invert, coalesceRun, trimRun } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -227,7 +228,7 @@ const { output: stateOutput } = await stateBundle.generate({ format: 'esm' });
 await stateBundle.close();
 const stateFile = join(directory, 'state.mjs');
 writeFileSync(stateFile, stateOutput.find((chunk) => chunk.type === 'chunk').code);
-const { MarkdownEditorState } = await import(stateFile);
+const { MarkdownEditorState } = await import(pathToFileURL(stateFile).href);
 
 const document_ = new MarkdownEditorState('one\ntwo\n');
 document_.replaceRange(3, 3, 'X');

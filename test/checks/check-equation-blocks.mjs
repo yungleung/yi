@@ -8,6 +8,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-equation-blocks-'));
@@ -28,7 +29,7 @@ const {
   readEquationBlockSource,
   readEquationBody,
   unnumberedEquationBody
-} = await import(file);
+} = await import(pathToFileURL(file).href);
 const maskingBundle = await rolldown({
   input: 'src/ui/markdown/syntax/equation/masking.ts',
   logLevel: 'silent',
@@ -41,7 +42,7 @@ writeFileSync(
   maskingFile,
   maskingOutput.find((chunk) => chunk.type === 'chunk').code
 );
-const { equationsForParsers } = await import(maskingFile);
+const { equationsForParsers } = await import(pathToFileURL(maskingFile).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

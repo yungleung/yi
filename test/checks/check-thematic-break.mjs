@@ -9,6 +9,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 // The editing modules import the caret layer, which touches the DOM at import
@@ -35,7 +36,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'thematic_break.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { thematicBreakInsertion } = await import(file);
+const { thematicBreakInsertion } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

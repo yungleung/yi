@@ -7,6 +7,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 // The editing modules import the caret layer, which touches the DOM at import
@@ -38,7 +39,7 @@ async function bundleModule(input, name) {
   await bundle.close();
   const file = join(directory, `${name}.mjs`);
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-  return await import(file);
+  return await import(pathToFileURL(file).href);
 }
 
 const {

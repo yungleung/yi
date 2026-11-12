@@ -9,6 +9,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-reference-header-'));
@@ -18,7 +19,7 @@ const load = async (input, name) => {
   await bundle.close();
   const file = join(directory, `${name}.mjs`);
   writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-  return await import(file);
+  return await import(pathToFileURL(file).href);
 };
 const { referenceHeader } = await load(
   'src/ui/export/reference/header.ts',

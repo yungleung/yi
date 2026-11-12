@@ -13,6 +13,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const bundle = await rolldown({
@@ -25,7 +26,7 @@ await bundle.close();
 const directory = mkdtempSync(join(tmpdir(), 'yi-blocks-'));
 const file = join(directory, 'blocks.mjs');
 writeFileSync(file, output[0].code);
-const { splitBlocks, splitBlocksFrom } = await import(file);
+const { splitBlocks, splitBlocksFrom } = await import(pathToFileURL(file).href);
 
 /** A compact shape of the sliced document: `kind@line` per block. */
 const shape = (text) =>

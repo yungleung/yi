@@ -7,6 +7,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 // The stamp is the reader's local time, so the check pins the zone it runs in.
@@ -28,7 +29,7 @@ const {
   versionsState,
   versionsVisible,
   versioningPlan
-} = await import(file);
+} = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

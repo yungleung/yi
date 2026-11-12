@@ -11,6 +11,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 // The editing modules import the caret layer and the language list, which touch the DOM at
@@ -49,7 +50,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'fence_open.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { containerFenceOpenWrite, fenceOpenWrite } = await import(file);
+const { containerFenceOpenWrite, fenceOpenWrite } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {

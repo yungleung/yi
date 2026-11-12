@@ -6,6 +6,7 @@
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { rolldown } from 'rolldown';
 
 const directory = mkdtempSync(join(tmpdir(), 'yi-placement-'));
@@ -14,7 +15,7 @@ const { output } = await bundle.generate({ format: 'esm' });
 await bundle.close();
 const file = join(directory, 'placement.mjs');
 writeFileSync(file, output.find((chunk) => chunk.type === 'chunk').code);
-const { besidePlacement } = await import(file);
+const { besidePlacement } = await import(pathToFileURL(file).href);
 
 const failures = [];
 const check = (name, actual, expected) => {
