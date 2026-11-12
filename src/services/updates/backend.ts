@@ -11,6 +11,7 @@
 
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
+import { getBundleType } from '@tauri-apps/api/app';
 import type { RemoteUpdate, UpdateBackend } from './contracts';
 
 /** How long GitHub may take before a manual or startup check gives up. */
@@ -19,6 +20,12 @@ const CHECK_TIMEOUT_MS = 30_000;
 /** The desktop implementation of the update ports. */
 export class TauriUpdateBackend implements UpdateBackend {
   async check(): Promise<RemoteUpdate | null> {
+    // Tauri reports no bundle type for development binaries on Linux and Windows. Asking the
+    // updater anyway makes it fall back to the AppImage artifact and replace the development
+    // executable. macOS reports `app` in development, so its established behavior is unchanged.
+    if ((await getBundleType()) === null) {
+      return null;
+    }
     const update = await check({ timeout: CHECK_TIMEOUT_MS });
     if (!update) {
       return null;

@@ -11,11 +11,18 @@
   const before = t.hintsNow();
   const realFetch = window.fetch;
   const updaterCalls = [];
+  let bundleType = 'appimage';
 
   window.fetch = async (input, init) => {
     const url = decodeURIComponent(
       typeof input === 'string' ? input : input instanceof Request ? input.url : String(input)
     );
+    if (url.includes('plugin:app|bundle_type')) {
+      return new Response(JSON.stringify(bundleType), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
+      });
+    }
     if (!url.includes('plugin:updater|check')) {
       return await realFetch.call(window, input, init);
     }
@@ -42,6 +49,22 @@
       runtime.registeredCommands().some((command) => command.id === 'help:checkForUpdates'),
       runtime.registeredCommands().map((command) => command.id)
     );
+
+    const { TauriUpdateBackend } = await t.app('/src/services/updates/backend.ts');
+    const backend = new TauriUpdateBackend();
+    bundleType = null;
+    check(
+      'a development build on Linux or Windows does not ask for an update',
+      (await backend.check()) === null && updaterCalls.length === 0,
+      [...updaterCalls]
+    );
+    bundleType = 'appimage';
+    check(
+      'an installed bundle asks for an update once',
+      (await backend.check()) === null && updaterCalls.length === 1,
+      [...updaterCalls]
+    );
+    updaterCalls.length = 0;
 
     await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'check_for_updates' });
     for (let attempt = 0; attempt < 30; attempt += 1) {
