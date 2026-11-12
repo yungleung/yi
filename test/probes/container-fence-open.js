@@ -117,8 +117,8 @@
       'Warning',
       'Caution',
       'Definition',
-        'Theorem',
-        'Proof'
+      'Proof',
+      'Theorem'
     ]
   );
   document.querySelector('[data-div-kind-choice="callout:tip"]')?.click();

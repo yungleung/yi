@@ -211,11 +211,14 @@
       field()?.value === target,
       field()?.value
     );
-    const config = veil?.querySelector('[data-export-config]')?.textContent ?? '';
+    const configPath = (await api.exportKinds()).kinds.find(
+      (kind) => kind.kind === 'docx'
+    ).config_path;
+    const configLabel = veil?.querySelector('[data-export-config]')?.textContent ?? '';
     check(
       'the card names the conversion settings file it would hand to pandoc',
-      config.endsWith('/export/export.docx.yaml'),
-      config
+      configLabel.endsWith('/export/export.docx.yaml'),
+      configLabel
     );
     const status = veil?.querySelector('[data-export-status]')?.textContent ?? '';
     check('and says which pandoc would write the file', status.includes('pandoc:'), status);
@@ -251,15 +254,21 @@
     const opened = await until(
       () => document.querySelector('[data-template-editor] .cm-editor') !== null
     );
+    const configWritten = await until(() => exists(configPath));
     check(
       'the settings button has the file written and opens it in the defaults editor',
       opened &&
-        (await exists(config)) &&
+        configWritten &&
         document.querySelector('[data-template-file="export.docx.yaml"]') !== null,
       {
         opened,
-        written: await exists(config),
-        file: document.querySelector('[data-template-file="export.docx.yaml"]') !== null
+        written: configWritten,
+        file: document.querySelector('[data-template-file="export.docx.yaml"]') !== null,
+        editor: document.querySelector('[data-template-editor] .cm-content')?.textContent?.slice(0, 80) ??
+          null,
+        messages: [...document.querySelectorAll('[data-message-text]')].map(
+          (element) => element.textContent
+        )
       }
     );
     document.querySelector('[data-template-editor-close]')?.click();
@@ -425,7 +434,7 @@
       (hint?.textContent ?? '').includes('note.docx'),
       hint?.textContent ?? null
     );
-    const settings = await textOf(config);
+    const settings = await textOf(configPath);
     check(
       'the settings file is on the disk, with the writer this kind needs',
       settings !== null && settings.includes('writer: docx'),
