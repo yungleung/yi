@@ -1,11 +1,12 @@
 //! The application icon and Linux desktop identity.
 //!
-//! Example: an unpackaged run writes `$XDG_DATA_HOME/applications/Yi.desktop` so GNOME can match
-//! its Wayland app ID `Yi` to the Yi icon; an installed package already supplies that entry.
+//! Example: an AppImage writes `$XDG_DATA_HOME/applications/Yi.desktop` so GNOME can match its
+//! Wayland app ID `Yi` to the Yi icon; an installed package already supplies that entry.
 //!
 //! May import: `std`, `dirs` and Tauri's image/window APIs. Upholds: macOS keeps its existing
 //! bundle-owned icon path, the Windows About dialog receives no icon, and Linux writes desktop
-//! integration only when no installed entry owns the `Yi` application ID.
+//! integration for a portable AppImage when no installed entry owns the `Yi` application ID.
+//! Development and other raw binaries remove generated entries so GNOME cannot launch a stale one.
 
 use std::error::Error;
 
@@ -65,11 +66,11 @@ pub(crate) fn about_icon() -> Option<Image<'static>> {
     }
 }
 
-/// Gives an unpackaged Linux build the launcher identity its Wayland app ID names.
+/// Gives a portable AppImage the launcher identity its Wayland app ID names.
 ///
-/// Example: `APPIMAGE=/opt/Yi.AppImage` writes an entry whose `Exec` launches that file; a run
-/// from `target/debug/Yi` writes that binary instead. Failures are cosmetic, so they are logged
-/// rather than preventing the app from opening.
+/// Example: `APPIMAGE=/opt/Yi.AppImage` writes an entry whose `Exec` launches that file. A raw
+/// `target/debug/Yi` does not create a persistent launcher and removes one left by an older
+/// build. Failures are cosmetic, so they are logged rather than preventing the app from opening.
 #[cfg(target_os = "linux")]
 pub(crate) fn install_linux_desktop_identity() {
     if let Err(error) = ensure_linux_desktop_identity() {
@@ -85,18 +86,16 @@ fn ensure_linux_desktop_identity() -> std::io::Result<()> {
             "the XDG data directory is not available",
         )
     })?;
-    let executable = std::env::var_os("APPIMAGE")
+    let appimage = std::env::var_os("APPIMAGE")
         .filter(|path| !path.is_empty())
-        .map(std::path::PathBuf::from)
-        .map(Ok)
-        .unwrap_or_else(std::env::current_exe)?;
+        .map(std::path::PathBuf::from);
     let app_dir = std::env::var_os("APPDIR")
         .filter(|path| !path.is_empty())
         .map(std::path::PathBuf::from);
     ensure_linux_desktop_entry(
         &data_home,
         &xdg_data_dirs(),
-        &executable,
+        appimage.as_deref(),
         app_dir.as_deref(),
     )
 }
@@ -105,7 +104,7 @@ fn ensure_linux_desktop_identity() -> std::io::Result<()> {
 fn ensure_linux_desktop_entry(
     data_home: &std::path::Path,
     data_dirs: &[std::path::PathBuf],
-    executable: &std::path::Path,
+    appimage: Option<&std::path::Path>,
     app_dir: Option<&std::path::Path>,
 ) -> std::io::Result<()> {
     use std::fs;
@@ -118,9 +117,17 @@ fn ensure_linux_desktop_entry(
         if !generated {
             return Ok(());
         }
+        if appimage.is_none() || installed_desktop_entry_exists(data_home, data_dirs, app_dir) {
+            fs::remove_file(&entry)?;
+            return Ok(());
+        }
     } else if installed_desktop_entry_exists(data_home, data_dirs, app_dir) {
         return Ok(());
     }
+
+    let Some(executable) = appimage else {
+        return Ok(());
+    };
 
     for (size, bytes) in DESKTOP_ICONS {
         write_if_changed(
@@ -237,26 +244,22 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn unpackaged_linux_run_writes_the_desktop_entry_and_theme_icons() {
+    fn a_development_binary_removes_a_generated_launcher_without_creating_one() {
         use std::fs;
 
         let root = std::env::temp_dir().join(format!("yi-desktop-icon-{}", std::process::id()));
         let data_home = root.join("data");
-        let executable = root.join("Yi App/Yi");
+        let entry = data_home.join("applications/Yi.desktop");
         let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(entry.parent().unwrap()).unwrap();
+        fs::write(&entry, desktop_entry(&root.join("target/debug/Yi"))).unwrap();
 
-        ensure_linux_desktop_entry(&data_home, &[], &executable, None)
-            .expect("desktop identity is written");
+        ensure_linux_desktop_entry(&data_home, &[], None, None)
+            .expect("the stale desktop identity is removed");
+        ensure_linux_desktop_entry(&data_home, &[], None, None)
+            .expect("a development run stays without a persistent launcher");
 
-        let entry = fs::read_to_string(data_home.join("applications/Yi.desktop")).unwrap();
-        assert!(entry.contains("Exec=\""));
-        assert!(entry.contains("Yi App/Yi\""));
-        assert!(entry.contains("Icon=Yi"));
-        assert!(entry.contains("StartupWMClass=Yi"));
-        assert!(data_home.join("icons/hicolor/32x32/apps/Yi.png").is_file());
-        assert!(data_home
-            .join("icons/hicolor/256x256/apps/Yi.png")
-            .is_file());
+        assert!(!entry.exists());
 
         let _ = fs::remove_dir_all(root);
     }
@@ -269,12 +272,15 @@ mod tests {
         let root = std::env::temp_dir().join(format!("yi-installed-icon-{}", std::process::id()));
         let data_home = root.join("data");
         let system_data = root.join("system");
+        let generated = data_home.join("applications/Yi.desktop");
+        fs::create_dir_all(generated.parent().unwrap()).unwrap();
+        fs::write(&generated, desktop_entry(&root.join("target/debug/Yi"))).unwrap();
         fs::create_dir_all(system_data.join("applications")).unwrap();
         fs::write(system_data.join("applications/Yi.desktop"), "installed").unwrap();
 
-        ensure_linux_desktop_entry(&data_home, &[system_data], &root.join("Yi"), None).unwrap();
+        ensure_linux_desktop_entry(&data_home, &[system_data], None, None).unwrap();
 
-        assert!(!data_home.join("applications/Yi.desktop").exists());
+        assert!(!generated.exists());
         let _ = fs::remove_dir_all(root);
     }
 
@@ -293,7 +299,7 @@ mod tests {
         ensure_linux_desktop_entry(
             &data_home,
             &[bundled_data],
-            &root.join("Yi.AppImage"),
+            Some(&root.join("Yi.AppImage")),
             Some(&app_dir),
         )
         .unwrap();
