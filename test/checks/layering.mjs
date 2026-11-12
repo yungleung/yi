@@ -13,7 +13,7 @@
  * for nothing (`markdown_editor.ts`), until the first start was made to load nothing at all.
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
 const syntaxDirectory = 'src/ui/markdown/syntax';
 const markdownDirectory = 'src/ui/markdown';
@@ -33,6 +33,7 @@ function typescriptFiles(directory) {
 }
 
 const files = typescriptFiles(syntaxDirectory);
+const slashPath = (path) => path.split(sep).join('/');
 
 const failures = [];
 for (const file of files) {
@@ -46,8 +47,8 @@ for (const file of files) {
       continue;
     }
     const target = resolve(dirname(file), specifier);
-    const within = relative(resolve(syntaxDirectory), target);
-    const withinMarkdown = relative(resolve(markdownDirectory), target);
+    const within = slashPath(relative(resolve(syntaxDirectory), target));
+    const withinMarkdown = slashPath(relative(resolve(markdownDirectory), target));
     const allowed =
       !within.startsWith('..') || // another syntax module
       withinMarkdown === 'ast' || // the type aliases

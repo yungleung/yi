@@ -10,6 +10,7 @@
 //! not.
 
 use std::path::PathBuf;
+use tauri::Url;
 
 const IMAGE_EXTENSIONS: [&str; 9] = [
     "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "bmp", "tif",
@@ -31,15 +32,13 @@ pub(super) fn local_image(token: &str) -> Option<PathBuf> {
     {
         return None;
     }
-    let decoded = if let Some(uri) = token.strip_prefix("file://") {
-        let uri = uri.strip_prefix("localhost").unwrap_or(uri);
-        decode_percent(uri)
+    let path = if token.starts_with("file://") {
+        Url::parse(token).ok()?.to_file_path().ok()?
     } else if token.starts_with('/') || is_drive_path(token) {
-        decode_percent(token)
+        PathBuf::from(decode_percent(token))
     } else {
         return None;
     };
-    let path = PathBuf::from(decoded);
     let extension = path
         .extension()
         .and_then(|extension| extension.to_str())
