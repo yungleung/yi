@@ -45,7 +45,11 @@ check('npm names the author', npm.author, 'yungleung');
 check('npm declares the licence', npm.license, 'MIT');
 check('Cargo names the author', pkg.authors, ['yungleung']);
 check('Cargo declares the licence', pkg.license, 'MIT');
-check('Tauri uses the author identity in its bundle identifier', config.identifier, 'com.yungleung.yi');
+check(
+  'Tauri uses the GitHub identity in its bundle identifier',
+  config.identifier,
+  'io.github.yungleung.yi'
+);
 check('the MIT licence names the copyright holder', licence.includes('Copyright (c) 2026 yungleung'), true);
 
 if (failures.length > 0) {
