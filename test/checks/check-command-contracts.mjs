@@ -105,6 +105,12 @@ check(
   null
 );
 rejects('an export kind cannot be a number', 'file:export', 3);
+check(
+  'the Help menu has a typed update command',
+  parseCommandInput('help:checkForUpdates', undefined),
+  null
+);
+rejects('the update command refuses accidental data', 'help:checkForUpdates', { silent: true });
 
 check(
   'the document position command takes no input',

@@ -56,6 +56,9 @@ export class UpdateController {
         return 'current';
       }
       if (!(await this.presenter.confirm(update))) {
+        // The reader's answer is already final; failing to release the transient
+        // resource must not turn a successful decline into a visible error.
+        await update.discard().catch(() => {});
         return 'declined';
       }
       await update.install();

@@ -1,6 +1,9 @@
 /**
  * The updater's ports: what a release provides, how the app installs it, and
  * how the reader hears the result. No Tauri or DOM type crosses this boundary.
+ *
+ * May import: nothing. Upholds: backend and presentation dependencies are
+ * interfaces, so the flow stays testable without Tauri or a page.
  */
 
 /** The reader-facing facts about one release, before it is installed. */
@@ -14,6 +17,8 @@ export interface UpdateSummary {
 /** A release the backend knows how to install. */
 export interface RemoteUpdate extends UpdateSummary {
   install(): Promise<void>;
+  /** Releases the backend's temporary update resource when installation is declined. */
+  discard(): Promise<void>;
 }
 
 /** The platform work an update check needs. */

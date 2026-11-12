@@ -34,7 +34,8 @@ function remote(version = '1.1.0') {
     currentVersion: '0.1.0',
     notes: 'A focused release.',
     date: '2026-11-12T00:00:00Z',
-    install: async () => {}
+    install: async () => {},
+    discard: async () => {}
   };
 }
 
@@ -42,6 +43,7 @@ function scenario({
   update = null,
   checkFailure = null,
   installFailure = null,
+  discardFailure = null,
   confirm = true,
   checkDelay = 0
 } = {}) {
@@ -58,6 +60,10 @@ function scenario({
         async install() {
           calls.push(`install:${update.version}`);
           if (installFailure) throw new Error(installFailure);
+        },
+        async discard() {
+          calls.push(`discard:${update.version}`);
+          if (discardFailure) throw new Error(discardFailure);
         }
       };
     },
@@ -111,7 +117,17 @@ function scenario({
 {
   const run = scenario({ update: remote(), confirm: false });
   check('declined-update-stops-before-install', await run.controller.check('manual'), 'declined');
-  check('declined-update-does-not-install', run.calls, ['check', 'confirm:1.1.0']);
+  check('declined-update-releases-its-resource', run.calls, [
+    'check',
+    'confirm:1.1.0',
+    'discard:1.1.0'
+  ]);
+}
+
+{
+  const run = scenario({ update: remote(), confirm: false, discardFailure: 'close failed' });
+  check('cleanup-failure-does-not-override-decline', await run.controller.check('manual'), 'declined');
+  check('cleanup-failure-is-not-a-reader-event', run.events, []);
 }
 
 {
