@@ -90,6 +90,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - run: gh release edit "${GITHUB_REF_NAME}" --draft=false
+      - run: gh release edit "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --draft=false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
