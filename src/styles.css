@@ -525,6 +525,12 @@ body {
   white-space: pre-wrap;
 }
 
+/* Revealed source is the author's text in the prose column, so a destination or identifier
+   with no spaces must wrap just like the words around it instead of painting past the page. */
+.markdown-source-view {
+  overflow-wrap: anywhere;
+}
+
 .markdown-list-placeholder {
   display: inline-block;
   min-width: 0.5em;
