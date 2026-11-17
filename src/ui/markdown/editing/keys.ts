@@ -45,16 +45,21 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
     event.preventDefault();
     return;
   }
-  // A character the input method is handling is not the editor's. The keys *during* a
-  // composition say so with `isComposing`; a key the method routes does so with
-  // `keyCode` 229. Caps Lock alone is not that signal: in the English source it is
-  // ordinary editor input, and delegating it to the seam leaves stale native context
-  // across a source switch. Typing a 229 character both places writes it twice.
+  // A key while the input method is composing marked text is not the editor's. The event
+  // often says so with `isComposing`, but WebKit can omit that flag for Enter while the
+  // composition seam still holds the word, so the seam's own state answers first. A routed
+  // key outside a composition says so with `keyCode` 229. Caps Lock alone is not that signal:
+  // in the English source it is ordinary editor input, and delegating it to the seam leaves
+  // stale native context across a source switch. Typing a 229 character both places writes it
+  // twice.
   // A 229 key that is *not* a character — `Enter` while a method is merely active, an
   // arrow, `Backspace`, `Tab` — is still the editor's, which is why the guard is about
   // the character and not about 229 alone (see
   // `docs/superpowers/specs/2026-10-03-input-method-typing-design.md`).
-  if (event.isComposing || (event.keyCode === 229 && event.key.length === 1)) {
+  if (event.isComposing || host.composition.composing()) {
+    return;
+  }
+  if (event.keyCode === 229 && event.key.length === 1) {
     return;
   }
   // A Backspace that edits the word being composed is the input method's: while the word is
