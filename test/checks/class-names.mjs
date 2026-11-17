@@ -7,8 +7,8 @@
  * nothing sets (a leftover). Both directions are checked.
  *
  * A name may be *deliberately* rule-less: a **hook** is a name the app uses to find or mark
- * something, not to draw it — the placeholder spans, the source-view wrapper — and those are listed
- * below with the reason. Everything else must have a rule.
+ * something, not to draw it — the placeholder spans — and those are listed below with the reason.
+ * Everything else must have a rule.
  *
  * This check reads sources rather than bundling them: it is about where the names are, not what
  * they do. `docs/structure.md`'s conventions table names it.
@@ -25,8 +25,7 @@ const hooks = {
   'markdown-citation-preview': 'the card is drawn by the floating surface it is',
   'markdown-empty-line-placeholder': 'the empty line is drawn by its paragraph',
   'markdown-footnote-preview': 'the card is drawn by the floating surface it is',
-  'markdown-footnote-source': 'a label’s source is shown inline, without the source chrome',
-  'markdown-source-view': 'marks the element a source is shown in; the source styles it'
+  'markdown-footnote-source': 'a label’s source is shown inline, without the source chrome'
 };
 
 const files = [];
