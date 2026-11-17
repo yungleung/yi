@@ -39,6 +39,13 @@ export interface CompositionInput {
   /** The element that holds the keyboard. The editor focuses it, and nothing else may. */
   readonly element: HTMLTextAreaElement;
   /**
+   * Whether the input method is composing marked text now.
+   *
+   * Example: Enter choosing a CJK candidate belongs to the method even when WebKit reports the
+   * key with `isComposing: false`; once `compositionend` arrives, this answer returns to false.
+   */
+  composing(): boolean;
+  /**
    * Whether the input method is holding a word — composing one now, or having let one go a
    * moment ago. A key that edits *that word* (Backspace) belongs to the method rather than to
    * the editor, and the event cannot be asked: the key that emptied the word arrives with the
@@ -375,6 +382,7 @@ export function installCompositionInput(
 
   return {
     element,
+    composing: () => composing,
     markedText,
     keepKeyboard,
     regainKeyboard,

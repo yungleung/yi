@@ -242,6 +242,18 @@ line the reader asked for and did not get. (It was first narrowed further, to a 
 within 100 ms of a commit, `composition_input.ts: justComposed`; that turned out to be too narrow
 — see below — and the window is gone.)
 
+### The Enter that confirmed a CJK candidate
+
+Found by the reader: during a CJK composition, Enter confirmed the candidate and also broke the
+document's line. WebKit delivered that key with `isComposing: false` and `keyCode` 229, so the
+event looked like an ordinary Enter even though the composition seam still held marked text.
+
+The seam's `composing()` state now owns every key while marked text is active. That keeps the
+IME's Enter unprevented and allows the word to commit in place. A 229 Enter with no active
+composition remains the editor's, so an author's actual line break still works.
+`test/probes/input-method-enter.js` holds both sides; `input-method-passthrough.js` still holds
+the no-composition case.
+
 ### A letter written twice (Caps Lock on)
 
 Found by a reader: with a Chinese input method and **Caps Lock on**, typing a Latin letter duplicates

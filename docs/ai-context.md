@@ -1187,9 +1187,11 @@ A key the input method routes is the method's, whether a composition is behind i
 `keydown` marked `keyCode` 229 that carries a character belongs to the method, and the seam writes
 that character — typing it as well writes it twice (measured with Caps Lock on, where the method
 composes nothing and passes every letter through; `test/probes/input-method-passthrough.js`). A 229
-key that carries no character — `Enter`, an arrow, `Backspace` — is still the editor's. Caps Lock
-alone is not a delegation signal: in the English source its key is ordinary editor input, and
-sending it to the seam leaves stale native context when the reader then switches to Chinese. A
+key that carries no character is the editor's only while no composition is active. WebKit can send
+the `Enter` that confirms a CJK candidate with `isComposing: false`, so the seam's `composing()` state
+owns every key while marked text is in flight; an Enter after `compositionend` still starts a line.
+Caps Lock alone is not a delegation signal: in the English source its key is ordinary editor input,
+and sending it to the seam leaves stale native context when the reader then switches to Chinese. A
 printable keydown after a commit also proves that the next space is the author's rather than the
 duplicate space that chose the prior candidate.
 
