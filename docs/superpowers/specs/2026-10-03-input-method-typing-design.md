@@ -251,8 +251,14 @@ event looked like an ordinary Enter even though the composition seam still held 
 The seam's `composing()` state now owns every key while marked text is active. That keeps the
 IME's Enter unprevented and allows the word to commit in place. A 229 Enter with no active
 composition remains the editor's, so an author's actual line break still works.
-`test/probes/input-method-enter.js` holds both sides; `input-method-passthrough.js` still holds
-the no-composition case.
+The seam commits the input method's own default value from the hidden field. It does not reinterpret
+`compositionend.data` into a different candidate; when the system's default is the marked pinyin,
+that pinyin commits. WebKit may then deliver the same Enter as an `insertLineBreak` input after
+`compositionend`, or as a second non-composing keydown. The seam never accepts native line-break
+input from its composition field, and its one-shot Enter ownership consumes the repeated keydown
+until keyup, instead of adding a document newline.
+`test/probes/input-method-enter.js` holds the Enter ownership, the system-default commit and the
+repeated line break; `input-method-passthrough.js` still holds the no-composition case.
 
 ### A letter written twice (Caps Lock on)
 
