@@ -189,6 +189,15 @@ export class Completions {
   }
 
   close(): void {
+    // A workspace lookup can answer after the reader has clicked away. Closing is an answer
+    // too: advancing the generation makes every promise from the old query inert, so its late
+    // `offer` cannot restore the old caret or reopen the source the reader left.
+    this.generation += 1;
+    this.clear();
+  }
+
+  /** Removes the current card without cancelling the query that may populate it. */
+  private clear(): void {
     this.from = null;
     this.to = null;
     this.closing = 0;
@@ -214,7 +223,7 @@ export class Completions {
       // A query with no matches closes the card, but the caret must stay on
       // the query it just rejected: the next Backspace belongs to that text.
       this.restoreQueryCaret(true);
-      this.close();
+      this.clear();
       return;
     }
     this.draw();
