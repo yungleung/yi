@@ -87,11 +87,15 @@ const many = Array.from({ length: 30 }, (_, index) => block(`line ${index}\n`));
 for (const item of many) {
   tall.remember(item, 100);
 }
-check('at the top the margin reaches thirteen blocks down', windowRange(tall, many, 0, 100), [0, 13]);
-check('scrolled to 2000 the window starts at block seven', windowRange(tall, many, 2000, 100), [
-  7,
-  29
+check('at the top the margin reaches twenty-six blocks down', windowRange(tall, many, 0, 100), [
+  0,
+  25
 ]);
+check(
+  'scrolled to 2000 every block is within the pre-render window',
+  windowRange(tall, many, 2000, 100),
+  [0, 29]
+);
 check('the whole document mounts when the margin covers it', windowRange(sizes, blocks, 0, 100), [
   0,
   2
@@ -102,13 +106,13 @@ check('the whole document mounts when the margin covers it', windowRange(sizes, 
 // document (which is what the fixture note mounted at one keystroke, measured: 484 blocks).
 const estimated = new BlockSizes((candidate) => candidate.text);
 const long = Array.from({ length: 200 }, (_, index) => block(`line ${index}\n`));
-check('scrolled past the estimates, the window is the end', windowRange(estimated, long, 13000, 100), [
-  155,
+check('scrolled past the estimates, the window is the end', windowRange(estimated, long, 20000, 100), [
+  112,
   199
 ]);
 check(
   'and a document the estimates call shorter than the window still mounts whole',
-  windowRange(estimated, many, 13000, 100),
+  windowRange(estimated, many, 20000, 100),
   [0, 29]
 );
 

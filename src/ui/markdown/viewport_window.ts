@@ -11,8 +11,14 @@
 import { BLOCK_GAP, type BlockSizes } from './block_sizes';
 import type { MarkdownBlock } from './document/block';
 
-/** Extra content kept mounted above and below the viewport. */
-export const VIEWPORT_MARGIN = 1200;
+/**
+ * Extra content kept mounted above and below the viewport.
+ *
+ * Two screens pre-render the next blocks before their paint enters the viewport; the
+ * 323 KB fixture mounts 64 blocks at its top and 144 at its estimated end, still below
+ * the 200-block bound the large-document probe holds.
+ */
+export const VIEWPORT_MARGIN = 2400;
 
 /** Rendered elements kept for blocks that left the window, at the least. */
 export const MIN_SPARE_ELEMENTS = 20;
