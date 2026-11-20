@@ -59,6 +59,10 @@ export function handleEditorKey(event: KeyboardEvent, host: KeyHost): void {
   if (event.isComposing || host.composition.composing()) {
     return;
   }
+  if (event.key === 'Enter' && host.composition.markedText()) {
+    event.preventDefault();
+    return;
+  }
   if (event.key === 'Enter' && host.composition.consumeRepeatedEnter()) {
     event.preventDefault();
     return;

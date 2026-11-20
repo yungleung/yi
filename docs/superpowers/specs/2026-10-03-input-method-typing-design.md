@@ -256,7 +256,10 @@ The seam commits the input method's own default value from the hidden field. It 
 that pinyin commits. WebKit may then deliver the same Enter as an `insertLineBreak` input after
 `compositionend`, or as a second non-composing keydown. The seam never accepts native line-break
 input from its composition field, and its one-shot Enter ownership consumes the repeated keydown
-until keyup, instead of adding a document newline.
+until keyup. Measured on macOS WebKit with the Simplified Chinese source, `compositionend` with
+`data: "nihao"` arrives first; the committing `keydown Enter` then has `isComposing: false` and
+`keyCode: 229`. While `markedText()` is true, the router treats that Enter as the method's too.
+Neither path adds a document newline.
 `test/probes/input-method-enter.js` holds the Enter ownership, the system-default commit and the
 repeated line break; `input-method-passthrough.js` still holds the no-composition case.
 

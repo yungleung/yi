@@ -80,5 +80,29 @@
   await t.sleep(250);
   check('an Enter after composition still starts a line', await t.raw(), 'helloni\n\n');
 
+  // macOS WebKit ends this composition first, then sends the committing Enter with its browser
+  // code (229) but `isComposing: false`.
+  await t.load('hello\n');
+  await t.click(t.blocks()[0], 0.99, 0.5);
+  await t.sleep(200);
+  const lateArea = seam();
+  lateArea.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+  lateArea.value = 'ni';
+  lateArea.dispatchEvent(
+    new CompositionEvent('compositionupdate', { data: 'ni', bubbles: true })
+  );
+  lateArea.dispatchEvent(
+    new CompositionEvent('compositionend', { data: 'ni', bubbles: true })
+  );
+  const lateEnter = new KeyboardEvent('keydown', {
+    key: 'Enter',
+    bubbles: true,
+    cancelable: true
+  });
+  Object.defineProperty(lateEnter, 'keyCode', { value: 229 });
+  lateArea.dispatchEvent(lateEnter);
+  await t.sleep(200);
+  check('an Enter after compositionend inserts no new line', await t.raw(), 'helloni\n');
+
   return { checks, failed: checks.filter((entry) => !entry.pass).map((entry) => entry.name) };
 })()
