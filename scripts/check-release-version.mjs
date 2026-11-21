@@ -46,6 +46,17 @@ export function validateVersion(tag, root = process.cwd()) {
     const details = mismatched.map(([path, value]) => `${path}=${value ?? 'missing'}`).join(', ');
     throw new Error(`release tag ${tag} does not match ${details}`);
   }
+
+  const notesPath = join(root, '.github', 'release-notes', `${tag}.md`);
+  let notes = '';
+  try {
+    notes = readFileSync(notesPath, 'utf8').trim();
+  } catch {
+    throw new Error(`release notes are missing: .github/release-notes/${tag}.md`);
+  }
+  if (notes === '') {
+    throw new Error(`release notes are empty: .github/release-notes/${tag}.md`);
+  }
   return version;
 }
 

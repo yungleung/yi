@@ -69,6 +69,17 @@ jobs:
 
       - run: npm ci
 
+      - name: Read release notes
+        id: release-notes
+        shell: bash
+        run: |
+          {
+            echo 'body<<YI_RELEASE_NOTES_EOF'
+            cat ".github/release-notes/${GITHUB_REF_NAME}.md"
+            echo
+            echo 'YI_RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,7 +89,7 @@ jobs:
         with:
           tagName: "v__VERSION__"
           releaseName: "Yi v__VERSION__"
-          releaseBody: "Yi v__VERSION__. See the release assets for platform builds."
+          releaseBody: ${{ steps.release-notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true

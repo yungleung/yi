@@ -69,8 +69,11 @@ own writing, published under CC BY 4.0, and their README says so.
 - `CONTRIBUTING.md` and `docs/ai-context.md` name the commands that actually exist
   in `package.json`.
 - `test/fixtures/workspace/README.md` records provenance and licence.
-- The version in `package.json`, `src-tauri/Cargo.toml` and
-  `src-tauri/tauri.conf.json` agree with the tag.
+- The version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`,
+  `src-tauri/Cargo.lock` and `src-tauri/tauri.conf.json` agrees with the tag.
+- `.github/release-notes/<tag>.md` exists, is non-empty, and describes the
+  user-visible changes and release caveats. The release workflow publishes it as
+  the GitHub Release body.
 
 ## CI is green on the branch being published
 
@@ -83,8 +86,8 @@ After the verified branch is merged into `main` and the signing secret exists:
 
 ```bash
 git push origin main
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 The `release` workflow validates the tag, builds macOS Apple Silicon, macOS Intel, Linux x64 and
@@ -107,7 +110,7 @@ curl --fail --location \
   https://github.com/yungleung/yi/releases/latest/download/latest.json
 ```
 
-Check that the JSON names version `0.1.0`, includes the expected signed platform entries, and
+Check that the JSON names version `0.1.3`, includes the expected signed platform entries, and
 contains URLs for the same release. Then use **Yi → Help → Check for Updates** in an installed build.
 
 ## Then
