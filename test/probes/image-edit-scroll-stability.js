@@ -1,14 +1,14 @@
 /**
- * An image above the caret must keep its laid-out height through an edit and while scrolling back to it.
+ * An image and the block below it must keep their laid-out geometry through an edit and scroll-back.
  *
  * The renderer only mounts the blocks around the viewport. `content-visibility: auto` can still
  * collapse a mounted-but-offscreen image when an edit forces layout, then expand it as the reader
- * scrolls near it. That changes the document below the image twice: once after the edit and once
- * when the image paints. The caret must instead keep its viewport position, and every slow scroll
- * step must move the page only by that step.
+ * scrolls near it. The edited block can separately fall back to the placeholder for a frame even
+ * though the caret and image have not moved. Both must keep their viewport geometry, and every
+ * slow scroll step must move the page only by that step.
  *
- * @covers src/styles.css, src/ui/markdown/renderer/measurements.ts,
- *   src/ui/markdown/virtual_block_renderer.ts
+ * @covers src/styles.css, src/ui/markdown/editing/context.ts,
+ *   src/ui/markdown/renderer/measurements.ts, src/ui/markdown/virtual_block_renderer.ts
  */
 (async () => {
   const t = window.__t;
@@ -45,7 +45,7 @@
     (_, index) => `第 ${index + 1} 段后续文字，让页面有足够的内容可以滚动。`
   ).join('\n\n');
   const markdown =
-    '---\ntitle: CSDN推广\ndate: 2026-11-17\nid: 20261117172747\n---\n\n' +
+    '---\ntitle: CSDN推广\ndate: 2026-11-17\nid: 20990101000000\n---\n\n' +
     '# 从 AI Agent 到可验证开发：我用 Rust、Tauri 和 Markdown 构建研究写作工具 Yi\n\n' +
     '> 摘要：AI Agent 写代码并不稀奇，难的是让它持续写出可维护、\n' +
     '> 可验证的软件。本文复盘我用 AI Agent 开发本地优先 Markdown\n' +
@@ -73,7 +73,12 @@
       figureTop: figureRect ? Math.round(figureRect.top - viewport.top) : null,
       figureBottom: figureRect ? Math.round(figureRect.bottom - viewport.top) : null,
       figureHeight: figureRect ? Math.round(figureRect.height) : null,
-      paragraphY: paragraph ? Math.round(paragraph.getBoundingClientRect().top - viewport.top) : null
+      paragraphY: paragraph ? Math.round(paragraph.getBoundingClientRect().top - viewport.top) : null,
+      paragraphHeight: paragraph
+        ? Math.round(paragraph.getBoundingClientRect().height)
+        : null,
+      paragraphVisibility: paragraph ? getComputedStyle(paragraph).contentVisibility : null,
+      paragraphInlineVisibility: paragraph?.style.contentVisibility ?? null
     };
   };
 
@@ -112,12 +117,31 @@
 
     const before = metric();
     t.key('Backspace');
+    const editFrames = [metric()];
+    for (let frameIndex = 0; frameIndex < 4; frameIndex += 1) {
+      await sleep(16);
+      editFrames.push(metric());
+    }
     await frame();
     await t.sleep(250);
     const afterEdit = metric();
     check(
       'the edit keeps the caret at its viewport position',
       close(afterEdit.caretY, before.caretY),
+      true,
+      { before, afterEdit }
+    );
+    check(
+      'the edited block never collapses while it resettles',
+      editFrames.every((entry) =>
+        close(entry.paragraphHeight, afterEdit.paragraphHeight)
+      ),
+      true,
+      editFrames
+    );
+    check(
+      'the edited block keeps its viewport position',
+      close(afterEdit.paragraphY, before.paragraphY),
       true,
       { before, afterEdit }
     );

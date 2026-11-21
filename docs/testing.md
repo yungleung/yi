@@ -111,7 +111,8 @@ Harness flags:
   does, and `table-menu-open.js` is why that check exists.
 - **A layout read cannot see a block the browser is skipping.** Ordinary blocks are
   `content-visibility: auto`; image-bearing blocks stay laid out because their file owns their
-  height. A block the browser is skipping reports its own
+  height, and the block just edited is promoted before paint so it cannot show the containment
+  placeholder for a frame. A block the browser is skipping reports its own
   `contain-intrinsic-size` to `offsetHeight` until the frame ends — so a probe that only reads
   layout sees a stable number while the reader sees a paragraph painted blank for one frame
   (measured: 176px against a real 156px for the citations paragraph, and only the pixels show the
