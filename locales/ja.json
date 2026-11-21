@@ -40,6 +40,7 @@
   "update.available.title": "Yi {version} を利用できます",
   "update.available.message": "現在 Yi {currentVersion} を使用しています。\n\n{notes}\n\n今すぐアップデートをダウンロードしてインストールしますか？インストール後に Yi が再起動します。",
   "update.available.noNotes": "リリースノートはありません。",
+  "update.available.notes": "リリースノートを見る",
   "update.available.yes": "インストールして再起動",
   "update.available.no": "後で",
   "update.current": "最新バージョンの Yi を使用しています。",

@@ -13,6 +13,7 @@ import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
 import { getBundleType } from '@tauri-apps/api/app';
 import type { RemoteUpdate, UpdateBackend } from './contracts';
+import { releasePageUrl } from './rules';
 
 /** How long GitHub may take before a manual or startup check gives up. */
 const CHECK_TIMEOUT_MS = 30_000;
@@ -35,6 +36,7 @@ export class TauriUpdateBackend implements UpdateBackend {
       currentVersion: update.currentVersion,
       notes: update.body ?? null,
       date: update.date ?? null,
+      releaseUrl: releasePageUrl(update.version),
       install: async () => {
         await update.downloadAndInstall();
       },

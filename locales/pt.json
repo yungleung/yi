@@ -40,6 +40,7 @@
   "update.available.title": "Yi {version} está disponível",
   "update.available.message": "Você está usando o Yi {currentVersion}.\n\n{notes}\n\nBaixar e instalar a atualização agora? O Yi será reiniciado após a instalação.",
   "update.available.noNotes": "Nenhuma nota de versão foi fornecida.",
+  "update.available.notes": "Ver notas da versão",
   "update.available.yes": "Instalar e reiniciar",
   "update.available.no": "Agora não",
   "update.current": "Você está usando a versão mais recente do Yi.",

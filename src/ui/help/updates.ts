@@ -10,31 +10,59 @@
  * translated.
  */
 
+import { message } from '@tauri-apps/plugin-dialog';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { registerCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
 import { showHint } from '../../services/hints';
 import { showMessage } from '../../services/messages';
 import {
+  releaseNotesExcerpt,
   TauriUpdateBackend,
   UpdateController,
   type UpdatePresenter,
   type UpdateSummary
 } from '../../services/updates';
 import { prompt } from '../prompt';
+import { drivenByTools } from '../under_test';
 
 /** The update domain's reader-facing half. */
 class HelpUpdatePresenter implements UpdatePresenter {
+  /**
+   * Shows release notes as an in-page question rather than a native alert.
+   *
+   * Example: a long GitHub release body scrolls inside the card while the install and decline
+   * buttons remain visible.
+   */
   async confirm(update: UpdateSummary): Promise<boolean> {
-    const notes = update.notes?.trim() || t('update.available.noNotes');
-    return await prompt.ask({
+    const question = {
       title: t('update.available.title', { version: update.version }),
       message: t('update.available.message', {
         currentVersion: update.currentVersion,
-        notes
+        notes: releaseNotesExcerpt(update.notes, t('update.available.noNotes'))
       }),
       yes: t('update.available.yes'),
       no: t('update.available.no')
+    };
+    if (drivenByTools()) {
+      return await prompt.ask(question);
+    }
+    const answer = await message(question.message, {
+      title: question.title,
+      kind: 'warning',
+      buttons: {
+        yes: question.yes,
+        no: t('update.available.notes'),
+        cancel: question.no
+      }
     });
+    if (answer === question.yes) {
+      return true;
+    }
+    if (answer === t('update.available.notes')) {
+      await openUrl(update.releaseUrl).catch(() => undefined);
+    }
+    return false;
   }
 
   current(): void {

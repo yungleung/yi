@@ -12,6 +12,7 @@ export interface UpdateSummary {
   readonly currentVersion: string;
   readonly notes: string | null;
   readonly date: string | null;
+  readonly releaseUrl: string;
 }
 
 /** A release the backend knows how to install. */

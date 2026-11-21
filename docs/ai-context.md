@@ -117,7 +117,9 @@ Asking the reader a question is `ui/prompt.ts`: one `Prompt` with two hands — 
 for a reader, a card in the page for a probe — chosen by whether the harness's `__t` is on the
 window, not by a flag. Reach for it whenever the answer has to arrive before the work can go on (a
 call, where `eventManager` carries news); the session takes it as a port (`attachPrompter`), and
-the workspace tree's delete asks the exported `prompt` directly.
+the workspace tree's delete asks the exported `prompt` directly. Update consent uses the native
+three-button dialog: the first five meaningful release-note lines, then Install, View Release Notes
+and Not Now. The release-notes button opens the version's GitHub release page.
 
 Everything that floats over the page is one shallow family in `src/ui/floating/`: `FloatingSurface`
 (hidden until opened, the card's chrome, Escape, never the focus), and three kinds that say *where*

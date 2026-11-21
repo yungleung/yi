@@ -40,6 +40,7 @@
   "update.available.title": "Yi {version} is available",
   "update.available.message": "You are using Yi {currentVersion}.\n\n{notes}\n\nDownload and install the update now? Yi will restart after installation.",
   "update.available.noNotes": "No release notes were provided.",
+  "update.available.notes": "View Release Notes",
   "update.available.yes": "Install and Restart",
   "update.available.no": "Not Now",
   "update.current": "You are using the latest version of Yi.",

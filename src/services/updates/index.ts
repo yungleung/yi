@@ -7,6 +7,7 @@
 
 export { UpdateController } from './flow';
 export { TauriUpdateBackend } from './backend';
+export { releaseNotesExcerpt, releasePageUrl, RELEASE_NOTE_LINES } from './rules';
 export type {
   RemoteUpdate,
   UpdateBackend,
