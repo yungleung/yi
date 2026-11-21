@@ -29,6 +29,9 @@ export class SidebarToggle extends BaseComponent {
     this.button.title = t('sidebar.toggle');
     this.button.setAttribute('aria-label', this.button.title);
     this.button.setAttribute('data-sidebar-toggle', 'true');
+    // The title bar contributes 12px of left padding: 138px keeps the button at the original x=150,
+    // leaving a 6px gap before the default sidebar divider.
+    this.button.style.marginLeft = '138px';
     this.button.addEventListener('mousedown', (event) => {
       event.preventDefault();
       event.stopPropagation();
