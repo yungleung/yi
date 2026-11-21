@@ -102,8 +102,10 @@ export class BlockParseCache {
    * Advances dependency versions after an edit. Reading every definition on
    * every keystroke is avoided by updating the known label set incrementally.
    */
-  afterEdit(text: string, edit: DocumentEdit): void {
-    this.referencesVersion += 1;
+  afterEdit(text: string, edit: DocumentEdit, referencesChanged: boolean): void {
+    if (referencesChanged) {
+      this.referencesVersion += 1;
+    }
     if (!this.labels) {
       return;
     }

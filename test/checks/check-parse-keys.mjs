@@ -84,6 +84,37 @@ state.undo();
 check('one undo puts the label back', state.getText() === doc.replace('first note', 'firstX note'), true);
 check('and the marker parses as a reference again', hasReference(body()), true);
 
+// Reference-sensitive blocks borrow document-wide numbering and labels. Plain prose must not
+// invalidate those parses, while changing a target must.
+const references = [
+  '# Targets',
+  '',
+  'See [#fig:one].',
+  '',
+  '![One](one.png){#fig:one}',
+  '',
+  'Tail.'
+].join('\n');
+state.loadText(references);
+const autoReference = () => state.getBlocks().find((block) => block.text.includes('[#fig:one]'));
+const keyBeforePlainEdit = state.parseKey(autoReference());
+state.referenceEntries();
+const tail = state.getText().indexOf('Tail.') + 4;
+state.replaceRange(tail, tail, 'X');
+check(
+  'plain prose keeps the automatic-reference block`s key',
+  state.parseKey(autoReference()) === keyBeforePlainEdit,
+  true
+);
+
+const figure = state.getText().indexOf('fig:one', state.getText().indexOf('![One]'));
+state.replaceRange(figure + 'fig:'.length, figure + 'fig:one'.length, 'two');
+check(
+  'changing the target moves the automatic-reference block`s key',
+  state.parseKey(autoReference()) !== keyBeforePlainEdit,
+  true
+);
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

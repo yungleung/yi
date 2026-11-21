@@ -10,6 +10,7 @@
 
 import {
   getCaretRange,
+  getRenderedCaretBox,
   getSelectionRange,
   scheduleCaret,
   scheduleNativeSelection,
@@ -88,9 +89,11 @@ export function keepScroll(context: EditorContext, anchor: number): void {
         scroller.scrollTop = anchor;
         return;
       }
-      const caretInContent = caret.getBoundingClientRect().top - box.top + scroller.scrollTop;
-      const viewportY = caretInContent - anchor + box.top;
-      if (viewportY >= box.top + 8 && viewportY <= box.bottom - 24) {
+      const caretBox = getRenderedCaretBox() ?? caret.getBoundingClientRect();
+      const offset = scroller.scrollTop - anchor;
+      const caretTop = caretBox.top - offset;
+      const caretBottom = caretBox.bottom - offset;
+      if (caretTop >= box.top && caretBottom <= box.bottom) {
         scroller.scrollTop = anchor;
       }
     });

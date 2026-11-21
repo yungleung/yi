@@ -43,6 +43,19 @@ Both exceptions prevent blocks below from moving and keep the edited block's top
 `image-edit-scroll-stability.js` holds the caret, edited block, picture height, and slow scroll
 steps.
 
+Reference-sensitive block parses keep a dependency version, but it advances only when an edit
+changes reference facts in the blocks it touches. Plain prose and an Enter that makes an empty
+paragraph therefore keep their measured heights. `keepScroll` reads the rendered caret span rather
+than the logical `Range`, whose rectangle can be empty after a rebuild, and leaves the page static
+when the new caret is still fully visible. `section-paragraph-enter-stability.js` holds the citation
+and wikilink paragraphs near the viewport bottom and checks paragraph top and `scrollTop` across
+Enter. A structural edit can also make the renderer mount more blocks above the viewport, and the
+browser's scroll anchoring then moves `scrollTop` while `renderChanged` reconciles the spacers;
+the renderer restores the pre-reconciliation scroll for content-only changes (`renderChanged`,
+`renderBlock` and `refresh`) before placing the caret. The image-offscreen variant is
+`section-paragraph-enter-images-offscreen.js`; it covers Enter, Undo and the offscreen picture
+heights.
+
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
 through the app's own file commands (`src-tauri/src/files/`, wrapped in `src/api/files.ts`)
 and it re-reads the disk after a change instead of patching its own rows. The recursive row and

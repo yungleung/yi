@@ -21,7 +21,11 @@ import { splitBlocks, splitBlocksFrom, type MarkdownBlock } from './block';
 import type { RootContent } from 'mdast';
 import { History, type DocumentEdit, type EditKind, type EditMark } from './history';
 import type { HeadingTarget } from './heading_index';
-import { referenceIndex, type ReferenceEntry } from './reference_index';
+import {
+  referenceIndex,
+  sameReferenceFacts,
+  type ReferenceEntry
+} from './reference_index';
 import { TextStore } from './text_store';
 import { BlockParseCache } from './block';
 import { readFrontmatterBlock } from './identity';
@@ -31,6 +35,50 @@ import {
 } from '../syntax/theorem';
 
 let nextDocumentNumber = 0;
+
+/** Blocks whose character ranges meet an edited range. */
+function touchedBlocks(
+  blocks: readonly MarkdownBlock[],
+  from: number,
+  to: number
+): readonly MarkdownBlock[] {
+  return blocks.filter((block) => block.charEnd >= from && block.charStart <= to);
+}
+
+/**
+ * The reference facts contributed by the blocks an edit touched.
+ *
+ * Example: typing in a citation paragraph contributes none, while changing a figure ID contributes
+ * that figure's target facts and warns the parse cache that reference-sensitive renders may change.
+ */
+function referenceFactsInRange(
+  blocks: readonly MarkdownBlock[],
+  from: number,
+  to: number
+): readonly ReferenceEntry[] {
+  return touchedBlocks(blocks, from, to).flatMap((block) => referenceIndex(block.text));
+}
+
+/** Whether an edit touches the frontmatter that owns reference vocabulary. */
+function touchesFrontmatter(
+  blocks: readonly MarkdownBlock[],
+  from: number,
+  to: number
+): boolean {
+  return touchedBlocks(blocks, from, to).some((block) => block.kind === 'frontmatter');
+}
+
+/**
+ * Fenced Divs can be declared as custom theorem targets by frontmatter, so their edits are kept
+ * conservative even when the default theorem vocabulary does not name them.
+ */
+function touchesFencedDiv(
+  blocks: readonly MarkdownBlock[],
+  from: number,
+  to: number
+): boolean {
+  return touchedBlocks(blocks, from, to).some((block) => block.kind === 'fencedDiv');
+}
 
 /** Mints the identity an agent can use to tell one loaded document from another. */
 function newDocumentKey(): string {
@@ -192,6 +240,9 @@ export class MarkdownEditorState {
    */
   private updateText(edit: DocumentEdit, apply: () => void): void {
     const previous = this.blocks;
+    const referenceFactsBefore = referenceFactsInRange(previous, edit.from, edit.to);
+    const frontmatterTouched = touchesFrontmatter(previous, edit.from, edit.to);
+    const fencedDivTouched = touchesFencedDiv(previous, edit.from, edit.to);
     apply();
     this.revisionValue += 1;
     this.cachedText = null;
@@ -199,7 +250,16 @@ export class MarkdownEditorState {
     this.cachedReferences = null;
     this.cachedTheoremVocabulary = null;
     this.blocks = splitBlocksFrom(this.getText(), previous, edit);
-    this.parses.afterEdit(this.getText(), edit);
+    const editedEnd = edit.from + edit.inserted.length;
+    const referencesChanged =
+      frontmatterTouched ||
+      fencedDivTouched ||
+      touchesFencedDiv(this.blocks, edit.from, editedEnd) ||
+      !sameReferenceFacts(
+        referenceFactsBefore,
+        referenceFactsInRange(this.blocks, edit.from, editedEnd)
+      );
+    this.parses.afterEdit(this.getText(), edit, referencesChanged);
   }
 
   /**

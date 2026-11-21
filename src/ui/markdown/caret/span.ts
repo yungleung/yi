@@ -205,6 +205,11 @@ export function ensureRendered(): void {
   }
 }
 
+/** The page box of the caret the reader can see, once it has been drawn. */
+export function renderedCaretBox(): DOMRect | null {
+  return caretElement?.isConnected ? caretElement.getBoundingClientRect() : null;
+}
+
 /** Watches the editor's scroll container so content mutations re-anchor the caret. */
 function ensureLayoutWatcher(host: HTMLElement): void {
   if (stopWatchingLayout) {

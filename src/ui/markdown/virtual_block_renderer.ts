@@ -159,19 +159,21 @@ export class VirtualBlockRenderer {
     if (!block || !current || !this.root) {
       return;
     }
-    const snapshot = this.hooks?.capture();
-    const element = this.createBlockElement(block);
-    // The element being replaced is kept as the spare for the content it was
-    // built from — undo brings that content back — but it stays in the document
-    // until `replaceWith` puts the new one where it was: a removed node has no
-    // parent to be replaced in, and the block would simply leave the page.
-    this.cache.keepSpare(current, this.cache.keyOf(current), this.spareLimit());
-    current.replaceWith(element);
-    this.cache.mount(lineStart, element);
-    this.measurements.rememberHeight(block, element);
-    this.updateSpacers();
-    this.refreshBlockTags();
-    this.hooks?.restore(snapshot);
+    this.keepScrollDuring(() => {
+      const snapshot = this.hooks?.capture();
+      const element = this.createBlockElement(block);
+      // The element being replaced is kept as the spare for the content it was
+      // built from — undo brings that content back — but it stays in the document
+      // until `replaceWith` puts the new one where it was: a removed node has no
+      // parent to be replaced in, and the block would simply leave the page.
+      this.cache.keepSpare(current, this.cache.keyOf(current), this.spareLimit());
+      current.replaceWith(element);
+      this.cache.mount(lineStart, element);
+      this.measurements.rememberHeight(block, element);
+      this.updateSpacers();
+      this.refreshBlockTags();
+      this.hooks?.restore(snapshot);
+    });
   }
 
   /**
@@ -276,23 +278,25 @@ export class VirtualBlockRenderer {
       this.render();
       return;
     }
-    const byLine = new Map<number, MarkdownBlock>();
-    for (const block of this.state.getBlocks()) {
-      byLine.set(block.lineStart, block);
-    }
-    for (const [lineStart, element] of this.cache.entries()) {
-      const block = byLine.get(lineStart);
-      if (block) {
-        const key = this.renderKey(block);
-        if (this.cache.keyOf(element) === key) {
-          continue;
-        }
-        this.measurements.carryHeightOver(block, this.cache.keyOf(element), key);
+    this.keepScrollDuring(() => {
+      const byLine = new Map<number, MarkdownBlock>();
+      for (const block of this.state.getBlocks()) {
+        byLine.set(block.lineStart, block);
       }
-      this.cache.release(element, this.cache.keyOf(element), this.spareLimit());
-      this.cache.unmount(lineStart);
-    }
-    this.syncWindow(true);
+      for (const [lineStart, element] of this.cache.entries()) {
+        const block = byLine.get(lineStart);
+        if (block) {
+          const key = this.renderKey(block);
+          if (this.cache.keyOf(element) === key) {
+            continue;
+          }
+          this.measurements.carryHeightOver(block, this.cache.keyOf(element), key);
+        }
+        this.cache.release(element, this.cache.keyOf(element), this.spareLimit());
+        this.cache.unmount(lineStart);
+      }
+      this.syncWindow(true);
+    });
   }
 
   /**
@@ -314,7 +318,7 @@ export class VirtualBlockRenderer {
     // 176px against a real 156px for the citations paragraph, which is painted for one frame). The
     // rebuild measures each block once it is laid out again, and that measurement replaces the
     // carried height wherever the rendering really did change.
-    this.syncWindow(true, true);
+    this.keepScrollDuring(() => this.syncWindow(true, true));
   }
 
   /** Scrolls so the block containing `offset` is visible, then mounts it. */
@@ -472,5 +476,19 @@ export class VirtualBlockRenderer {
   /** Sizes the spacers from the remembered block heights. */
   private updateSpacers(): void {
     this.geometry.updateSpacers();
+  }
+
+  /**
+   * Keeps the visible page fixed while content-only DOM reconciliation changes the mounted window.
+   *
+   * Example: mounting more pre-render blocks above the viewport must not let native scroll anchoring
+   * replace the reader's viewport with a new scrollTop.
+   */
+  private keepScrollDuring(render: () => void): void {
+    const scrollTop = this.scroller.scrollTop;
+    render();
+    if (Math.abs(this.scroller.scrollTop - scrollTop) >= 1) {
+      this.scroller.scrollTop = scrollTop;
+    }
   }
 }

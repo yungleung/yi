@@ -78,6 +78,11 @@ export function onCaretRangeChanged(listener: CaretRangeListener): () => void {
 export function normalizeCaretDom(): void {
 }
 
+/** The page box of the rendered caret, whose range rectangle can be empty after a block rebuild. */
+export function getRenderedCaretBox(): DOMRect | null {
+  return span.renderedCaretBox();
+}
+
 /**
  * Applies a native (browser) selection after the current frame's paint.
  *

@@ -50,6 +50,35 @@ export interface ReferenceEntry {
   explicit: boolean;
 }
 
+/**
+ * Whether two indexes present the same reference facts to rendered blocks.
+ *
+ * Positions are deliberately excluded: an insertion can move every target without changing any
+ * visible reference, while an ID, number, title, label or prefix change can alter rendered text.
+ *
+ * Example: typing `X` before a figure leaves the facts equal; renaming `fig:one` to `fig:two`
+ * changes the resolved reference and the facts differ.
+ */
+export function sameReferenceFacts(
+  one: readonly ReferenceEntry[],
+  other: readonly ReferenceEntry[]
+): boolean {
+  if (one.length !== other.length) {
+    return false;
+  }
+  return one.every((entry, index) => {
+    const peer = other[index];
+    return (
+      entry.id === peer.id &&
+      entry.kind === peer.kind &&
+      entry.number === peer.number &&
+      entry.title === peer.title &&
+      entry.label === peer.label &&
+      entry.numberPrefix === peer.numberPrefix
+    );
+  });
+}
+
 /** Build all referenceable and number-consuming targets. */
 export function referenceIndex(markdown: string): ReferenceEntry[] {
   const tree = parseMarkdown(markdown);
