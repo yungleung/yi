@@ -48,6 +48,8 @@ export interface ReferenceEntry {
   /** Where navigation places the caret; null uses `from`. */
   caretAt: number | null;
   explicit: boolean;
+  /** Heading depth (`1`–`6`); absent for every other target kind. */
+  level?: number;
 }
 
 /**
@@ -174,7 +176,8 @@ export function referenceIndex(markdown: string): ReferenceEntry[] {
       label: title,
       numberPrefix: '',
       caretAt: start,
-      explicit: explicit !== null
+      explicit: explicit !== null,
+      level: heading.depth
     });
   }
 

@@ -112,6 +112,7 @@ export type CommandContracts = FormattingContracts &
     'session:restore': CommandContract<string>;
     'session:drop': CommandContract<string>;
     'view:togglePage': NoInputContract;
+    'view:toggleSidebarView': NoInputContract;
     'find:open': NoInputContract;
     'find:replace': NoInputContract;
     'find:close': NoInputContract;
@@ -413,6 +414,7 @@ export const commandContracts: CommandContracts = {
     parse: (value) => parseRequiredString(value, 'document id')
   },
   'view:togglePage': noInput('switch between the page and full-width layout'),
+  'view:toggleSidebarView': noInput('switch the sidebar between workspace and contents'),
   'view:toggleSidebar': noInput('toggle the workspace sidebar'),
   'find:open': noInput('open find'),
   'find:replace': noInput('open find and replace'),

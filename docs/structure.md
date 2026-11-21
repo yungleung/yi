@@ -50,7 +50,8 @@ anywhere in them.
 | `src/ui/export/dialog/` | 3 | 733 | the export question card, presentation-only form and its DOM controls |
 | `src/ui/export/manager/` | 6 | 927 | the Export Manager surface, backend/config source, kind navigation, flow, kind page and pure rules |
 | `src/ui/export/templates/` | 16 | 2,220 | template package browser, lifecycle operations, rows, editor shell, file list, dialogs and rules |
-| `src/ui/status_bar/` | 8 | 374 | document/words/layout/version status items, export progress and shared tone/button rules |
+| `src/ui/status_bar/` | 9 | 428 | document/words/layout/version status items, the Workspace/Contents switch, export progress and shared tone/button rules |
+| `src/ui/table_of_contents/` | 1 | 97 | the sidebar's document-heading view over the editor's heading and reveal ports |
 | `src/ui/toolbar/` | 9 | 515 | the title bar's feature-specific command-button families |
 | `src/ui/**` outside `markdown/` (the shell) | 145 | 14,452 | peer title/status/toolbar containers, sidebar, panels, prompts, settings, workspace, status items, version and find presentation |
 | `src/services/` | 33 | 3,865 | cross-cutting services beside the feature directories |

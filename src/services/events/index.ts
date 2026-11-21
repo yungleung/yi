@@ -10,6 +10,7 @@
 export {
   DOCUMENT_CHANGED,
   EVENT_BOUNDARIES,
+  SIDEBAR_CHANGED,
   isInboundEvent
 } from './contracts';
 export type {

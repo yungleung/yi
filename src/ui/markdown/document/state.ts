@@ -173,7 +173,8 @@ export class MarkdownEditorState {
         from: entry.from,
         to: entry.to,
         title: entry.title,
-        explicit: entry.explicit
+        explicit: entry.explicit,
+        level: entry.level ?? 1
       }));
     return this.cachedHeadings;
   }

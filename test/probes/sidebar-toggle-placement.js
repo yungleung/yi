@@ -8,13 +8,29 @@
   const sidebar = document.querySelector('[data-workspace-tree]')?.closest('aside');
   const titleBar = document.querySelector('.titlebar');
   const toggle = document.querySelector('[data-sidebar-toggle]');
+  const divider = sidebar?.nextElementSibling;
 
   check('the workspace sidebar is mounted', Boolean(sidebar), Boolean(sidebar));
   if (titleBar) {
     check(
       'the custom title bar owns the workspace toggle',
-      toggle?.parentElement === titleBar && titleBar.contains(toggle),
-      toggle?.parentElement?.className ?? null
+      titleBar.contains(toggle) && !sidebar?.contains(toggle),
+      {
+        parent: toggle?.parentElement?.className ?? null,
+        inTitleBar: titleBar.contains(toggle),
+        inSidebar: sidebar?.contains(toggle) ?? false
+      }
+    );
+    const toggleRect = toggle?.getBoundingClientRect() ?? null;
+    const dividerRect = divider?.getBoundingClientRect() ?? null;
+    const toggleLeft = toggleRect ? Math.round(toggleRect.left) : null;
+    const gapToDivider = toggleRect && dividerRect
+      ? Math.round(dividerRect.left - toggleRect.right)
+      : null;
+    check(
+      'the workspace toggle sits near the divider at its original offset',
+      toggleLeft === 150 && gapToDivider >= 0 && gapToDivider <= 12,
+      { toggleLeft, gapToDivider }
     );
   } else {
     check(

@@ -962,6 +962,15 @@ written by an older build. An installed package keeps ownership of that entry, a
 run also removes an older generated user entry so it cannot shadow the package with a stale
 development executable. The Debian desktop entry declares the Productivity category. macOS keeps
 its existing bundle-owned icon unchanged.
+
+The sidebar is a one-view shell: `ui/sidebar.ts` owns width and visibility, while `WorkspaceTree`
+and `TableOfContents` are independent views mounted one at a time by `SidebarNavigation`.
+`SidebarToggle` is the extracted title-bar visibility control, and `SidebarViewStatus` is the
+leftmost status-bar switch between Workspace and Contents. Both issue commands and redraw from the
+typed local `sidebar_changed` fact; `src/contracts/sidebar.ts` is the one home for its view name and
+state. Switching views reveals the sidebar without changing its width or remembered open state,
+and the Contents view reads heading levels from the document rather than parsing Markdown again.
+
 Right-clicking a table cell opens the table's own menu; right-clicking elsewhere in the editor
 opens a native menu for clipboard actions, formatting, insertion, lists, table creation and
 session controls. Every item dispatches the same command id as its titlebar, keyboard or native

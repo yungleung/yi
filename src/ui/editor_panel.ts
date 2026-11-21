@@ -54,6 +54,7 @@ import { registerImageCommand } from './image';
 import { FindBar, FindController } from './find';
 import { installNativeMenuCommandDispatch } from '../commands/triggers/native_menu';
 import { setDocumentWritable } from '../commands/authority';
+import type { HeadingTarget } from './markdown/document/heading_index';
 
 export class MarkdownEditor extends BaseComponent {
   private readonly innerEditor: WysiwygMarkdownEditor;
@@ -275,6 +276,16 @@ export class MarkdownEditor extends BaseComponent {
 
   getContent(): string {
     return this.innerEditor.getContent();
+  }
+
+  /** Every heading the document on screen currently offers. */
+  headings(): readonly HeadingTarget[] {
+    return this.innerEditor.headings();
+  }
+
+  /** Mounts and focuses the document position a contents entry names. */
+  revealOffset(offset: number): void {
+    this.innerEditor.revealOffset(offset);
   }
 
   /**

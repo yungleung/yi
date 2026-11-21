@@ -19,6 +19,7 @@ for (const path of [
   'src/ui/status_bar/document.ts',
   'src/ui/status_bar/words.ts',
   'src/ui/status_bar/layout.ts',
+  'src/ui/status_bar/sidebar_view.ts',
   'src/ui/status_bar/version.ts',
   'src/ui/status_bar/export_progress.ts',
   'src/ui/status_bar/button.ts',
@@ -27,6 +28,10 @@ for (const path of [
   'src/ui/title_bar.ts',
   'src/ui/toolbar.ts',
   'src/ui/toolbar/index.ts',
+  'src/ui/sidebar.ts',
+  'src/ui/sidebar_navigation.ts',
+  'src/ui/sidebar_toggle.ts',
+  'src/ui/table_of_contents/index.ts',
   'src/services/export_activity.ts'
 ]) {
   expect(existsSync(path), `missing domain module: ${path}`);
@@ -53,18 +58,31 @@ expect(main.includes("from './ui/title_bar'"), 'main mounts the generic title-ba
 expect(
   main.includes('new StatusBar') &&
     main.includes('statusBar.addComponent(wordsCount,') &&
+    main.includes('new SidebarNavigation') &&
+    main.includes('new SidebarToggle') &&
+    main.includes('new TableOfContents') &&
+    main.includes('statusBar.addComponent(sidebarViewStatus,') &&
     main.includes('statusBar.addComponent(versionStatus,'),
-  'main keeps composing items into the generic status-bar container'
+  'main composes sidebar views and their status-bar switch'
 );
 
 const statusIndex = read('src/ui/status_bar/index.ts');
 const toolbarIndex = read('src/ui/toolbar/index.ts');
 const statusBar = read('src/ui/status_bar.ts');
 const titleBar = read('src/ui/title_bar.ts');
+const sidebar = read('src/ui/sidebar.ts');
 const toolbar = read('src/ui/toolbar.ts');
 expect(!/export\s+\*\s+from/.test(statusIndex), 'status-bar facade has named exports');
 expect(statusBar.includes('addComponent('), 'status bar stays a generic component container');
 expect(titleBar.includes('addComponent('), 'title bar stays a generic component container');
+expect(
+  sidebar.includes('replaceChildren(view.element)'),
+  'the sidebar shell keeps only the displayed view mounted'
+);
+expect(
+  !sidebar.includes('data-sidebar-toggle'),
+  'the sidebar shell does not own the extracted title-bar toggle'
+);
 expect(toolbar.includes('abstract class Toolbar'), 'toolbar stays a generic component container');
 expect(
   !/export\s*\{[^}]*\bStatusBar\b/.test(statusIndex),
