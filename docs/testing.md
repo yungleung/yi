@@ -109,8 +109,9 @@ Harness flags:
   apiece), and the culprit is the probe *before*: one that right-clicked. It must carry
   `@needs-foreground-window` so `probe:all` skips it — `probe-markers.mjs` fails until it
   does, and `table-menu-open.js` is why that check exists.
-- **A layout read cannot see a block the browser is skipping.** Blocks are
-  `content-visibility: auto`, and one that was just put in the document reports its own
+- **A layout read cannot see a block the browser is skipping.** Ordinary blocks are
+  `content-visibility: auto`; image-bearing blocks stay laid out because their file owns their
+  height. A block the browser is skipping reports its own
   `contain-intrinsic-size` to `offsetHeight` until the frame ends — so a probe that only reads
   layout sees a stable number while the reader sees a paragraph painted blank for one frame
   (measured: 176px against a real 156px for the citations paragraph, and only the pixels show the

@@ -35,6 +35,12 @@ in the same change that moves a module.
 | Events | `src/events/local_bus.ts` and `src/services/events/manager.ts` over the payload/boundary map in `src/services/events/contracts.ts` | typed facts: local delivery is synchronous; only declared inbound events use Tauri |
 | Shell | `src/ui/*` (the editor panel is `src/ui/editor_panel.ts`, the workspace tree is `src/ui/workspace/*`), `src/services/*`, `src/api/*` (one file per backend seam — the app's own commands through `invoke`, a granted plugin through its `@tauri-apps/plugin-*` package) | the window, workspace, settings, bibliography |
 
+Mounted blocks use `content-visibility: auto` except blocks containing a picture, which stay laid
+out. An image's height comes from its file rather than its source lines; letting WebKit replace that
+height with the containment placeholder while the picture is just outside the viewport makes both a
+nearby edit and a later slow scroll move every character below it. `image-edit-scroll-stability.js`
+holds the caret's viewport position, the picture's height, and every slow scroll step.
+
 The workspace tree is a *view of the folder*: its menu, its drags and its renames all go
 through the app's own file commands (`src-tauri/src/files/`, wrapped in `src/api/files.ts`)
 and it re-reads the disk after a change instead of patching its own rows. The recursive row and
