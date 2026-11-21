@@ -502,7 +502,7 @@ elements) unless it says otherwise.
   `check-workspace-setup.mjs` and the probes `first-run.js` (the card, both answers, the tree and the
   config) and `first-run-create.js` (the folder made, then adopted). Measured end to end: with
   `{workspace: null, workspace_asked: false}` and a real page reload, the page that came up asked —
-  "A new workspace will be made in /Users/urshanabi/Documents/Yi." — with all three answers on it.
+  "A new workspace will be made in ~/Documents/Yi." — with all three answers on it.
 - **A first start has a tutorial**, as the user asked. The empty page after the workspace question
   became eight read-only markdown documents — English, German, Spanish, French, Japanese, Portuguese,
   Simplified Chinese and Traditional Chinese — chosen by the app's own language and opened with the
