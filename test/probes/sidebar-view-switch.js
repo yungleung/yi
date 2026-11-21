@@ -56,6 +56,9 @@
   const contents = document.querySelector('[data-table-of-contents]');
   const entries = [...document.querySelectorAll('[data-toc-entry]')];
   const levels = entries.map((entry) => Number(entry.getAttribute('data-level')));
+  const singleLineEntries = entries.slice(1, 4);
+  const contentsList = contents?.querySelector('ul');
+  const contentsListStyle = contentsList ? getComputedStyle(contentsList) : null;
   check('the swap button switches to Contents', switchButton?.dataset.activeView, 'contents');
   check(
     'the swap button draws the supplied Contents icon',
@@ -65,6 +68,16 @@
   check('Contents is loaded into the sidebar shell', contents?.parentElement?.hasAttribute('data-sidebar-content'), true);
   check('the Workspace view is no longer mounted', document.querySelector('[data-workspace-tree]'), null);
   check('switching views preserves the sidebar width', sidebar.getBoundingClientRect().width, sidebarWidth);
+  check(
+    'single-line contents rows are compact',
+    singleLineEntries.map((entry) => Math.round(entry.getBoundingClientRect().height)),
+    [24, 24, 24]
+  );
+  check(
+    'the contents list has no outer vertical padding',
+    [contentsListStyle?.paddingTop ?? null, contentsListStyle?.paddingBottom ?? null],
+    ['0px', '0px']
+  );
   check('the fixture headings have their own levels', levels.slice(0, 3), [1, 2, 2]);
   check(
     'the contents list includes the citation heading',

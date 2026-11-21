@@ -73,12 +73,12 @@ export class TableOfContents extends SidebarSection implements SidebarView {
     }
 
     const list = document.createElement('ul');
-    list.className = 'menu menu-sm w-full';
+    list.className = 'menu menu-sm w-full py-0';
     for (const entry of entries) {
       const item = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'whitespace-normal text-left';
+      button.className = 'whitespace-normal text-left leading-5 py-0.5';
       button.style.paddingInlineStart = `${8 + Math.max(0, entry.level - 1) * 12}px`;
       button.setAttribute('data-toc-entry', entry.id);
       button.setAttribute('data-level', String(entry.level));
