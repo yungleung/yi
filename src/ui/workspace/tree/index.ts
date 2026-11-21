@@ -11,16 +11,18 @@
  * The rows carry their path as `data-tree-path`, which is how the tree finds a row again
  * after a change and how a probe addresses one.
  *
- * May import: the backend's listing (`api/files`), the app's events, the sidebar's
- * section, and the tree's own modules. Upholds: the tree is a view of the folder — it
- * re-reads the disk after every change rather than patching rows by hand, and keeps the
- * folders the reader had open.
+ * May import: the backend's listing (`api/files`), the app's events, the neutral sidebar
+ * contract, the sidebar's section/view contracts, and the tree's own modules. Upholds: the tree
+ * is a view of the folder — it re-reads the disk after every change rather than patching rows by
+ * hand, and keeps the folders the reader had open.
  */
 
 import { eventManager } from '../../../services/events';
 import { WORKSPACE_CHANGED } from '../../../services/workspace';
 import { t } from '../../../services/i18n';
+import type { SidebarViewName } from '../../../contracts';
 import { SidebarSection } from '../../sidebar_section';
+import type { SidebarView } from '../../sidebar';
 import { TreeNode } from './node';
 import { setTreeHost, type TreeHost } from './ops';
 import { fileName } from '../../../services/workspace';
@@ -28,12 +30,14 @@ import { fileName } from '../../../services/workspace';
 /** Emitted with the file content when the user opens a document from the tree. */
 export const DOCUMENT_OPENED = 'document_opened';
 
-export class WorkspaceTree extends SidebarSection implements TreeHost {
+export class WorkspaceTree extends SidebarSection implements SidebarView, TreeHost {
+  readonly id: SidebarViewName = 'workspace';
   readonly root: string = '';
   private rootNode: TreeNode | null = null;
 
   constructor() {
     super(t('sidebar.workspace'));
+    this.element.setAttribute('data-sidebar-view', this.id);
     this.content.dataset.workspaceTree = 'true';
     this.renderEmptyState();
     setTreeHost(this);

@@ -11,5 +11,6 @@
 export { SavedStatus, StackStatus } from './document';
 export { ExportProgressStatus } from './export_progress';
 export { LayoutStatus } from './layout';
+export { SidebarViewStatus } from './sidebar_view';
 export { VersionStatus } from './version';
 export { WordsCountStatus } from './words';

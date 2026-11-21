@@ -15,13 +15,17 @@ import {
   ExportProgressStatus,
   LayoutStatus,
   SavedStatus,
+  SidebarViewStatus,
   StackStatus,
   VersionStatus,
   WordsCountStatus
 } from './ui/status_bar/index';
 import { MarkdownEditor } from './ui/editor_panel';
 import { Sidebar } from './ui/sidebar';
-import { registerSidebarCommand } from './ui/sidebar_commands';
+import { SidebarNavigation } from './ui/sidebar_navigation';
+import { SidebarToggle } from './ui/sidebar_toggle';
+import { registerSidebarCommands } from './ui/sidebar_commands';
+import { TableOfContents } from './ui/table_of_contents';
 import { WorkspaceTree } from './ui/workspace';
 import { ContentShell } from './ui/content_shell';
 import { ResizeHandle } from './ui/resize_handle';
@@ -87,6 +91,16 @@ function createAppShell(): MarkdownEditor {
   const wordsCount = new WordsCountStatus();
   const sidebar = new Sidebar();
   const workspaceTree = new WorkspaceTree();
+  const tableOfContents = new TableOfContents({
+    headings: () => editor.headings(),
+    navigate: (offset) => editor.revealOffset(offset)
+  });
+  const sidebarNavigation = new SidebarNavigation(sidebar, {
+    workspace: workspaceTree,
+    contents: tableOfContents
+  });
+  const sidebarToggle = new SidebarToggle();
+  const sidebarViewStatus = new SidebarViewStatus();
   const contentShell = new ContentShell();
   const resizeHandle = new ResizeHandle((width) => {
     sidebar.setWidth(width);
@@ -99,7 +113,7 @@ function createAppShell(): MarkdownEditor {
     void showEditorContextMenu(request);
   });
   registerTablePickerCommand(tablePicker, editorActionAnchor(editor.element));
-  registerSidebarCommand(sidebar);
+  registerSidebarCommands(sidebarNavigation);
   const layoutStatus = new LayoutStatus();
   const savedStatus = new SavedStatus();
   const stackStatus = new StackStatus();
@@ -108,7 +122,7 @@ function createAppShell(): MarkdownEditor {
 
   titleBar?.mount(root);
   sidebar.mount(contentShell.element);
-  sidebar.addSection(workspaceTree);
+  sidebarNavigation.start();
   resizeHandle.mount(contentShell.element);
   editor.mount(contentShell.element);
   contentShell.mount(root);
@@ -126,13 +140,14 @@ function createAppShell(): MarkdownEditor {
     titleBar.addComponent(new FootnoteToolbar(), 'center');
     titleBar.addComponent(new TableToolbar(tablePicker), 'center');
     titleBar.addComponent(new SessionToolbar(stackPopover), 'right');
-    sidebar.attachToTitleBar(titleBar.element);
+    titleBar.addComponent(sidebarToggle, 'left');
   }
 
   statusBar.addComponent(wordsCount, 'right');
   statusBar.addComponent(layoutStatus, 'right');
   statusBar.addComponent(stackStatus, 'right');
   statusBar.addComponent(savedStatus, 'right');
+  statusBar.addComponent(sidebarViewStatus, 'left');
   // What is running belongs at the status bar's left, before the document's own facts.
   statusBar.addComponent(exportProgress, 'left');
   // And the versions of the note on screen follow it.

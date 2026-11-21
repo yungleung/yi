@@ -119,6 +119,14 @@ read its owner for its initial value, but changes arrive as facts such as
 `document_session_changed`, `editor_layout_changed`, `versions_changed` or
 `export_activity_changed`; callers never toggle another widget directly.
 
+The sidebar follows the same container rule. `ui/sidebar.ts` is a shell that owns width and
+visibility and mounts exactly one `SidebarView`; `WorkspaceTree` and `TableOfContents` are separate
+implementations that retain their own state and are attached only while selected. The title-bar
+visibility control and the far-left status-bar view switch are separate chrome components. They
+request `view:toggleSidebar` and `view:toggleSidebarView`, and both redraw from the typed
+`sidebar_changed` fact owned by `SidebarNavigation`. The shared `SidebarState` vocabulary lives in
+`src/contracts/sidebar.ts`.
+
 ### One fact, one home
 
 | Fact | Home |

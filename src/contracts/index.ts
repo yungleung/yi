@@ -16,3 +16,4 @@ export type {
   EditorReplaceRange,
   EditorSeenView
 } from './editor';
+export type { SidebarState, SidebarViewName } from './sidebar';

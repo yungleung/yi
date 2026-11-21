@@ -52,6 +52,7 @@ import { Completions } from './editing/completions';
 import { installEditorInteractions } from './editing/editor_interactions';
 import { handleEditorKey, type KeyHost } from './editing/keys';
 import { MarkdownEditorState } from './document/state';
+import type { HeadingTarget } from './document/heading_index';
 import { VirtualBlockRenderer } from './virtual_block_renderer';
 import {
   applyEditorHistory,
@@ -413,6 +414,18 @@ export class WysiwygMarkdownEditor extends BaseComponent implements MarkdownImag
   /** The raw markdown source. */
   getContent(): string {
     return this.state.getText();
+  }
+
+  /** Every heading in document order, with the level the contents view renders. */
+  headings(): readonly HeadingTarget[] {
+    return this.state.headingTargets();
+  }
+
+  /** Mounts the block at `offset`, puts the caret there, and returns the keyboard to it. */
+  revealOffset(offset: number): void {
+    this.renderer.revealOffset(offset);
+    restoreCaret(this.context, offset);
+    this.focusText();
   }
 
   /**

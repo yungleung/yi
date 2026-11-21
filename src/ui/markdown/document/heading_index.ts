@@ -22,6 +22,7 @@ export interface HeadingTarget {
   to: number;
   title: string;
   explicit: boolean;
+  level: number;
 }
 
 /** Every heading target in document order. */
@@ -46,6 +47,7 @@ function headingTarget(entry: ReferenceEntry): HeadingTarget {
     from: entry.from,
     to: entry.to,
     title: entry.title,
-    explicit: entry.explicit
+    explicit: entry.explicit,
+    level: entry.level ?? 1
   };
 }

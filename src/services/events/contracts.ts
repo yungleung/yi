@@ -26,7 +26,8 @@ import type { SessionState } from '../session';
 import type { ExportActivityState } from '../export_activity';
 import type {
   EditorChangeReason,
-  EditorDocumentChanged
+  EditorDocumentChanged,
+  SidebarState
 } from '../../contracts';
 
 /** Why the document's committed text or revision changed. */
@@ -56,6 +57,8 @@ export interface AppEvents {
   document_changed: DocumentChanged;
   /** Which layout the editor is drawn in now. */
   editor_layout_changed: 'page' | 'auto';
+  /** Which view the sidebar shell has loaded, and whether it is visible. */
+  sidebar_changed: SidebarState;
   /** The system selected a different keyboard input source. */
   input_source_changed: null;
   /** The bibliography was reloaded, so anything showing a citation must render again. */
@@ -107,6 +110,9 @@ export interface AppEvents {
 /** The one document-change fact emitted by the live editor. */
 export const DOCUMENT_CHANGED = 'document_changed' as const;
 
+/** The sidebar's loaded view or visibility changed. */
+export const SIDEBAR_CHANGED = 'sidebar_changed' as const;
+
 /** One event's name. */
 export type AppEventName = keyof AppEvents;
 
@@ -131,6 +137,7 @@ export const EVENT_BOUNDARIES: Readonly<
   hint: 'local',
   document_changed: 'local',
   editor_layout_changed: 'local',
+  sidebar_changed: 'local',
   input_source_changed: 'inbound',
   citation_updated: 'local',
   export_activity_changed: 'local',

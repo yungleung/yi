@@ -13,8 +13,12 @@
   if (titleBar) {
     check(
       'the custom title bar owns the workspace toggle',
-      toggle?.parentElement === titleBar && titleBar.contains(toggle),
-      toggle?.parentElement?.className ?? null
+      titleBar.contains(toggle) && !sidebar?.contains(toggle),
+      {
+        parent: toggle?.parentElement?.className ?? null,
+        inTitleBar: titleBar.contains(toggle),
+        inSidebar: sidebar?.contains(toggle) ?? false
+      }
     );
   } else {
     check(
