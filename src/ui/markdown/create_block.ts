@@ -46,7 +46,7 @@ class BlockView implements BlockComponent {
   constructor(node: BlockNode, children: RootContent[]) {
     this.node = node;
     const callout = readCallout(node.text);
-    const theorem = containsTheorem(children);
+    const theorem = containsNodeType(children, 'theorem');
     // The block is built with itself named as the one being built, so a node
     // inside it can tell whether its own source is the one being shown (see
     // `source_mode/`).
@@ -109,6 +109,13 @@ class BlockView implements BlockComponent {
     if (callout !== null) {
       element.classList.add('markdown-callout-block');
     }
+    // A picture's height is its file's aspect ratio, not a line count. Keep an image-bearing
+    // block laid out while it is mounted: WebKit can otherwise replace an offscreen picture's
+    // remembered height with the small containment placeholder during a nearby edit, then grow it
+    // back as it enters the viewport. That moves every character below it twice.
+    if (containsNodeType(children, 'image')) {
+      element.classList.add('markdown-image-block');
+    }
     // The heading's level marker sits outside its own content box. The block owns that gutter so
     // content-visibility does not clip the marker or its hover target (`styles.css`).
     if (children.some((child) => child.type === 'heading')) {
@@ -150,14 +157,16 @@ class BlockView implements BlockComponent {
   }
 }
 
-/** Whether a parsed block contains a theorem at any nesting depth. */
-function containsTheorem(children: RootContent[]): boolean {
-  return children.some((child) =>
-    child.type === 'theorem' ||
-    containsTheorem(
-      Array.isArray((child as { children?: RootContent[] }).children)
-        ? (child as { children: RootContent[] }).children
-        : []
-    )
+/** Whether a parsed block contains `type` at any nesting depth. */
+function containsNodeType(children: RootContent[], type: string): boolean {
+  return children.some(
+    (child) =>
+      child.type === type ||
+      containsNodeType(
+        Array.isArray((child as { children?: RootContent[] }).children)
+          ? (child as { children: RootContent[] }).children
+          : [],
+        type
+      )
   );
 }

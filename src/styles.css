@@ -845,6 +845,15 @@ body {
   contain-intrinsic-size: auto calc(60px * var(--md-page-scale));
 }
 
+/* A file's height is not the line estimate the containment placeholder uses. WebKit can rewrite
+   an offscreen picture block's remembered size to that placeholder during a nearby edit, then
+   grow it back as the picture enters view; the document below the picture moves both times. The
+   virtual renderer has already bounded this to the mounted window, so image-bearing blocks stay
+   laid out and keep the height their picture really has. */
+.markdown-block.markdown-image-block {
+  content-visibility: visible;
+}
+
 /* What a fenced block is called, in its own corner: `YAML Frontmatter`, `latex`, or a fenced code
    block's language — which is a button, because that is the one thing about such a block the reader
    may want to change (see `nodes/fence/label.ts`). It is chrome rather than text: the offsets

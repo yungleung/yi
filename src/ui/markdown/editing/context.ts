@@ -187,6 +187,10 @@ export function applyEdit(
 
   showSourceAt(context, target);
   context.renderer.renderChanged();
+  const edited = context.state.getBlockAtOffset(target);
+  if (edited) {
+    context.renderer.keepBlockLaidOut(edited.lineStart);
+  }
   restoreCaret(context, target);
   keepScroll(context, anchor);
   context.onChanged?.(kind);

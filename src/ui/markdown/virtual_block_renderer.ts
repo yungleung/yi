@@ -234,6 +234,19 @@ export class VirtualBlockRenderer {
   }
 
   /**
+   * Keeps one mounted block laid out for the rest of its edit burst.
+   *
+   * Example: replacing text through the structural path creates a new paragraph element; keeping
+   * that element visible before the frame paints prevents `content-visibility: auto` from drawing
+   * its containment placeholder for one frame while the deferred measurement runs.
+   */
+  keepBlockLaidOut(lineStart: number): void {
+    this.cache
+      .mountedAt(lineStart)
+      ?.style.setProperty('content-visibility', 'visible');
+  }
+
+  /**
    * Records that a block's mounted element now holds what the block holds, after
    * somebody patched it in place rather than rebuilding it (`format/dom.ts`, for a
    * formatting command).
