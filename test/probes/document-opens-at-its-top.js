@@ -21,7 +21,7 @@
   // Short paragraphs, many of them: the mounted window is then a narrow band, and where it starts
   // says plainly whether the document is at its top.
   const text = Array.from(
-    { length: 80 },
+    { length: 240 },
     (_, index) => `Paragraph number ${index} with a sentence or two of ordinary prose in it.`
   ).join('\n\n');
   const scroller = t.scroller();
