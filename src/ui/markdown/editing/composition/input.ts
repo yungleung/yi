@@ -46,6 +46,13 @@ export interface CompositionInput {
    */
   composing(): boolean;
   /**
+   * Consumes the duplicate Enter a composition can deliver after `compositionend`.
+   *
+   * Example: the composing Enter commits `ni`; the same physical key arrives once more with
+   * `isComposing: false`. That second keydown belongs to the method and inserts no line.
+   */
+  consumeRepeatedEnter(): boolean;
+  /**
    * Whether the input method is holding a word — composing one now, or having let one go a
    * moment ago. A key that edits *that word* (Backspace) belongs to the method rather than to
    * the editor, and the event cannot be asked: the key that emptied the word arrives with the
@@ -153,6 +160,8 @@ export function installCompositionInput(
    * the author types does.
    */
   let keyAfterCommit = false;
+  /** Whether the physical Enter that began a composition may deliver one more keydown. */
+  let methodEnterPending = false;
   // The composing text is written into the line at the caret, and the block it lands in has
   // to be measured again — a longer word can wrap the line (see `view.ts`).
   const view = createCompositionView(onLayoutChanged);
@@ -236,6 +245,7 @@ export function installCompositionInput(
   element.addEventListener('compositionstart', () => {
     composing = true;
     keyAfterCommit = false;
+    methodEnterPending = false;
     nativeBurstActive = false;
     drawMarked();
   });
@@ -262,15 +272,22 @@ export function installCompositionInput(
       drawMarked();
       return;
     }
-    // The space that chose the candidate, delivered once more as ordinary text: it is the
-    // method's key, and typing it would leave a space after every Chinese word.
-    if (
+    // The seam is a composition field, not a document line. Outside composition the editor
+    // owns Enter and prevents its default; inside composition Enter commits the method's
+    // value. Any native line-break input is therefore a repeated method key, whatever its
+    // delay relative to keydown/keyup.
+    if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+      element.value = committedValue;
+      clearLater();
+      return;
+    }
+    const methodSpaceRepeated =
       pendingText() === ' ' &&
       performance.now() - committedAt < MOMENT_MS &&
-      !keyAfterCommit
-    ) {
-      // Keep the field editable until the current event is over, but remove this
-      // method-owned suffix from what the next event will see.
+      !keyAfterCommit;
+    if (methodSpaceRepeated) {
+      // Remove the method-owned suffix from what the next event will see, but keep the field
+      // editable until the current event is over.
       element.value = committedValue;
       clearLater();
       return;
@@ -299,6 +316,7 @@ export function installCompositionInput(
     element.value = '';
     committedValue = '';
     routedLetters = [];
+    methodEnterPending = false;
     nativeBurstActive = false;
     resetCompositionKeyboard(element);
   };
@@ -315,6 +333,7 @@ export function installCompositionInput(
     composing = false;
     committedAt = 0;
     keyAfterCommit = false;
+    methodEnterPending = false;
     routedLetters = [];
     nativeBurstActive = false;
     committedValue = '';
@@ -331,6 +350,9 @@ export function installCompositionInput(
   host.addEventListener(
     'keydown',
     (event) => {
+      if (event.key === 'Enter' && (composing || event.isComposing)) {
+        methodEnterPending = true;
+      }
       if (
         event.keyCode === 229 &&
         !event.shiftKey &&
@@ -345,6 +367,15 @@ export function installCompositionInput(
       }
       if (event.key.length === 1 && performance.now() - committedAt < MOMENT_MS) {
         keyAfterCommit = true;
+      }
+    },
+    true
+  );
+  host.addEventListener(
+    'keyup',
+    (event) => {
+      if (event.key === 'Enter') {
+        methodEnterPending = false;
       }
     },
     true
@@ -383,6 +414,13 @@ export function installCompositionInput(
   return {
     element,
     composing: () => composing,
+    consumeRepeatedEnter: () => {
+      if (!methodEnterPending) {
+        return false;
+      }
+      methodEnterPending = false;
+      return true;
+    },
     markedText,
     keepKeyboard,
     regainKeyboard,

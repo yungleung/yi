@@ -1190,6 +1190,12 @@ composes nothing and passes every letter through; `test/probes/input-method-pass
 key that carries no character is the editor's only while no composition is active. WebKit can send
 the `Enter` that confirms a CJK candidate with `isComposing: false`, so the seam's `composing()` state
 owns every key while marked text is in flight; an Enter after `compositionend` still starts a line.
+The seam commits the input method's own default value from the hidden field; it does not reinterpret
+`compositionend.data` into a candidate the system did not choose. If that default is the marked
+pinyin, the pinyin is what commits. WebKit can deliver that same Enter again as an `insertLineBreak`
+input or a non-composing `keydown` after the composition ends. The composition field never accepts
+native line-break input; the key router treats Enter as the method's while `markedText()` is true and
+also consumes the one repeated Enter until keyup, still without an editor newline.
 Caps Lock alone is not a delegation signal: in the English source its key is ordinary editor input,
 and sending it to the seam leaves stale native context when the reader then switches to Chinese. A
 printable keydown after a commit also proves that the next space is the author's rather than the
