@@ -159,6 +159,19 @@
       }
     );
     check(
+      'the guide includes Zotero and JabRef citation workflows',
+      [
+        '## Citation library workflows',
+        '### Zotero',
+        '### JabRef',
+        'Settings → Citation',
+        '[@smith2020]',
+        '[@jones2019]',
+        'cite-method: natbib'
+      ].every((needle) => text.includes(needle)),
+      { length: text.length }
+    );
+    check(
       'and the guide needs no pictures from the reader’s workspace',
       rendered.querySelectorAll('img').length === 0,
       rendered.querySelectorAll('img').length
@@ -195,6 +208,15 @@
           lang: localizedText.match(/^lang: (.+)$/m)?.[1] ?? null
         }
       );
+      if (code === 'zh-Hans') {
+        check(
+          'the Simplified Chinese guide includes both citation-library workflows',
+          ['## 文献库工作流', '### Zotero', '### JabRef', 'Settings → Citation'].every(
+            (needle) => localizedText.includes(needle)
+          ),
+          { length: localizedText.length }
+        );
+      }
     }
     i18n.setLanguage('en');
     await invoke('plugin:event|emit', { event: 'documentation' });

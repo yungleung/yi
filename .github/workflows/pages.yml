@@ -3,6 +3,14 @@ name: pages
 on:
   push:
     branches: [main]
+    paths:
+      - ".github/workflows/pages.yml"
+      - "package-lock.json"
+      - "package.json"
+      - "scripts/build-site.mjs"
+      - "site/**"
+      - "src/ui/documentation/en.md"
+      - "src/ui/documentation/zh-Hans.md"
   workflow_dispatch:
 
 permissions:

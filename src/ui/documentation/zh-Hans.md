@@ -140,6 +140,85 @@ Yi 在 `\begin{document}` 时调用这个 hook，随后应用笔记配置的类�
 语言列表。按 Enter 接受高亮语言；按 Escape 关闭列表且不修改围栏；按空格关闭列表、写入空格，
 并让光标留在开围栏行，以便继续输入 `{#lst:sample}` 等属性。准备编写正文时再向下移动。
 
+## 文献库工作流
+
+Yi 不直接连接文献管理器。请先从 Zotero 或 JabRef 导出文献库，再在 **Settings → Citation** 中
+选择该文件。同一个文件为 `@` 补全、编辑器中的格式化引用和导出文档中的参考文献提供数据。
+Citation 设置接受 `.bib` 和 CSL `.json` 文件。
+
+仓库中的[双条目示例文献库](https://github.com/yungleung/yi/blob/main/test/fixtures/workspace/zotero.bib)
+包含 `smith2020` 和 `jones2019`。任一工作流选择该文件后，都可以复现下面的示例。
+
+### 选择 CSL JSON 还是 BibTeX
+
+如果文献管理器能导出 **CSL JSON**，并且你希望使用 Yi 常规的 CSL/citeproc 路径，请选择该格式。
+Zotero 无需安装额外插件即可导出 CSL JSON，它也会保留引用样式使用的字段。
+
+如果文献库原本就是 **BibTeX**，或需要稳定、可移植的引用键，或 LaTeX/PDF 模板包要求原生 BibTeX，
+请选择 `.bib`。JabRef 的原生文献库格式就是 BibTeX。Better BibTeX 为 Zotero 增加 BibTeX
+导出，并允许配置和固定引用键。
+
+格式选择属于整个工作流，不需要逐条笔记切换；切换文献库文件时，笔记中的 `[@键]` 可以保持不变，
+但键必须与导出的文献库完全一致。
+
+### CSL/citeproc 还是原生 BibTeX
+
+**Yi 的常规路径使用 CSL/citeproc。** Yi 读取所选的 `.bib` 或 CSL JSON，用
+**Settings → Citation** 中的样式显示引用，并在导出时把文献库和样式交给 Pandoc。导出的 HTML、
+EPUB、Word 或 PDF 包含格式化引用和参考文献列表。普通笔记应使用这条路径。
+
+**原生 BibTeX 模板包是另一条路径。** 它的 defaults 使用 `cite-method: natbib`，不包含
+`citeproc`，并指定 `bibliography: references.bib` 之类的目标。Yi 保留外部 BibTeX/BibLaTeX
+所需命令，只把笔记实际引用的条目写入导出源码树。参见[原生 BibTeX](#原生-bibtex)和
+[LaTeX 模板示例](https://github.com/yungleung/yi/tree/main/examples/templates/latex)。仅在模板或
+期刊要求原生引用命令时使用此路径。
+
+### Zotero
+
+1. 如需 `.bib` 文件，请安装 [Better BibTeX](https://retorque.re/zotero-better-bibtex/)；Zotero
+   内置的 CSL JSON 导出不需要插件。
+2. 在 Zotero 中选择整个文献库、分类或条目，然后按范围选择 **File → Export Library…**、
+   **Export Collection…** 或 **Export Items…**。
+3. 常规 Yi 路径选择 **CSL JSON**；需要 `.bib` 时选择 **Better BibTeX**。如果引用键必须长期稳定，
+   请在笔记中使用它们之前配置或固定 Better BibTeX 引用键。
+4. 把文件保存到 Yi 可读取的位置，最好位于笔记所在工作区内。文件可以放在应用能访问的任意位置；
+   本指南不假设 Zotero 数据的存储路径。
+5. 在 Yi 中打开 **Settings → Citation**，选择导出的文件和用于显示、导出的 CSL 样式。
+
+Zotero 侧的详细步骤见 [Zotero 导出文档](https://www.zotero.org/support/export)和
+[Better BibTeX 导出文档](https://retorque.re/zotero-better-bibtex/exporting/)。
+
+### JabRef
+
+1. 打开文献库并确认引用键。把键写入笔记前，先通过 JabRef 的引用键生成器生成或检查键；复制条目的
+   键比根据标题猜测更可靠。
+2. 导出整个文献库时使用 **File → Save library as…** 保存为 `.bib`；只导出部分条目时，先选择
+   条目，再使用 **File → Export** 选择 BibTeX 格式。
+3. 把 `.bib` 文件保存到 Yi 可读取的位置，最好位于笔记所在工作区内。Yi 不依赖 JabRef 自身数据库
+   的存储位置。
+4. 在 Yi 的 **Settings → Citation** 中选择该文件和显示样式。
+
+JabRef 工作流直接使用 BibTeX。如果你的 JabRef 版本也提供 CSL JSON 导出，并且你更希望只使用
+CSL 路径，可以选择该文件，只要其中的引用键与笔记中的键一致。参见
+[JabRef 导出文档](https://docs.jabref.org/collaborative-work/export)。
+
+### 验证导出结果
+
+选择示例文献库后，创建包含以下内容的笔记：
+
+```markdown
+# 文献引用工作流
+
+软件质量依赖严格的代码评审 [@smith2020]。
+
+更全面的质量保证讨论见 [@jones2019]。
+```
+
+选择 **File → Export**，导出为 HTML 或 PDF。输出应包含格式化后的括号引用，以及列出所引文献的
+References 部分。PDF 还需要 Pandoc 和 TeX 引擎，见[安装 Pandoc 与 TeX](#安装-pandoc-与-tex)。
+如果输出仍显示字面量 `[@smith2020]`，请检查所选文献库是否包含该键，以及
+**Settings → Citation** 是否仍指向正确文件。
+
 ## Callout（提示框）
 
 GitHub 风格提示框的写法：
