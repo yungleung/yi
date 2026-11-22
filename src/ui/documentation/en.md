@@ -617,6 +617,95 @@ Yi calls the hook at `\begin{document}`, then applies the note's configured labe
 list numbering to match their table counter must configure both counters with the same reset level;
 Yi cannot infer a class's table reset rules automatically.
 
+## Citation library workflows
+
+Yi does not connect directly to a reference manager. Export a library from Zotero or JabRef, then
+choose that file in **Settings → Citation**. The same source supplies `@` completion, the formatted
+citations in the editor, and the bibliography in exported documents. The Citation tab accepts
+`.bib` and CSL `.json` files.
+
+The committed [two-entry fixture bibliography](https://github.com/yungleung/yi/blob/main/test/fixtures/workspace/zotero.bib)
+defines `smith2020` and `jones2019`. The example below is reproducible after either workflow selects
+that file.
+
+### Choose CSL JSON or BibTeX
+
+Use **CSL JSON** when your reference manager exports it and you want one library to drive Yi's
+normal CSL/citeproc path. Zotero provides this format without another plugin. CSL JSON also keeps
+the field vocabulary used by citation styles.
+
+Use **BibTeX** when your library already lives in that format, when you need stable portable
+citation keys, or when a LaTeX/PDF template package asks for native BibTeX. JabRef's native library
+format is BibTeX. Better BibTeX adds BibTeX export to Zotero and lets you control and pin its
+citation keys.
+
+The choice is per workflow, not per note: keep the existing `[@key]` citations when changing the
+bibliography file. A key must match the exported library exactly.
+
+### CSL/citeproc or native BibTeX
+
+**The normal Yi path uses CSL/citeproc.** Yi reads the selected `.bib` or CSL JSON library, formats
+each citation with the style chosen in **Settings → Citation**, and passes the library and style to
+Pandoc during export. The exported HTML, EPUB, Word, or PDF contains the rendered citations and a
+reference list. This is the path to use for ordinary notes.
+
+**A native BibTeX template package is different.** Its defaults use `cite-method: natbib`, omit
+`citeproc`, and name a target such as `bibliography: references.bib`. Yi leaves citation commands
+for the external BibTeX/BibLaTeX run and writes only the cited entries into the exported source
+tree. See [native BibTeX source](#native-bibtex-source) and the
+[LaTeX template example](https://github.com/yungleung/yi/tree/main/examples/templates/latex).
+Use this path only when the template or publisher requires native citation commands.
+
+### Zotero
+
+1. Install [Better BibTeX](https://retorque.re/zotero-better-bibtex/) if you need a `.bib` file;
+   Zotero's built-in CSL JSON export needs no plugin.
+2. In Zotero, select the library, collection, or items to use. Choose **File → Export Library…**,
+   **Export Collection…**, or **Export Items…** as appropriate.
+3. Choose **CSL JSON** for the normal Yi path, or **Better BibTeX** for a `.bib` file. Configure or
+   pin the Better BibTeX citation keys before citing them in notes if those keys must stay stable.
+4. Save the exported file where Yi can read it, preferably inside the note's workspace. The path may
+   be anywhere the app can access; the guide does not assume where Zotero stores its data.
+5. In Yi, open one of these notes and choose **Settings → Citation**. Select the exported file and
+   the CSL style Yi should use for display and export.
+
+See [Zotero's export documentation](https://www.zotero.org/support/export) and
+[Better BibTeX's export documentation](https://retorque.re/zotero-better-bibtex/exporting/) for the
+reference-manager side of this workflow.
+
+### JabRef
+
+1. Open the library and verify the citation keys, using JabRef's citation-key generator before you
+   write those keys into notes. Copying an entry's key is safer than guessing a title-based key.
+2. For the whole library, choose **File → Save library as…** and keep a `.bib` file. For a subset,
+   select the entries and use **File → Export** with a BibTeX export format.
+3. Save the `.bib` file where Yi can read it, preferably inside the note's workspace. Yi does not
+   depend on JabRef's own database location.
+4. In Yi, select that file and the display style in **Settings → Citation**.
+
+JabRef's BibTeX file is the direct choice for this workflow. If your version also offers a CSL JSON
+export and you prefer the CSL-only route, select that file instead as long as its citation keys are
+the same ones written in the note. See
+[JabRef's export documentation](https://docs.jabref.org/collaborative-work/export).
+
+### Test the exported result
+
+With the fixture bibliography selected, create a note containing:
+
+```markdown
+# Citation workflow
+
+Software quality depends on disciplined review [@smith2020].
+
+For a broader quality-assurance view, see [@jones2019].
+```
+
+Choose **File → Export**, select HTML or PDF, and export the note. The output contains the formatted
+parenthetical citations and a References section with the works cited. PDF additionally requires
+Pandoc and a TeX engine, as described in [Install Pandoc and TeX](#install-pandoc-and-tex). If the
+output keeps `[@smith2020]` literal, verify that the selected library contains that key and that
+**Settings → Citation** still names the file.
+
 ## Callouts
 
 GitHub-style alerts create callouts:

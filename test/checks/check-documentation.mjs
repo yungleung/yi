@@ -342,6 +342,36 @@ for (const [code, name, title] of localized) {
   );
 }
 
+for (const [file, heading, nativeLink] of [
+  ['en.md', '## Citation library workflows', '[native BibTeX source](#native-bibtex-source)'],
+  ['zh-Hans.md', '## 文献库工作流', '[原生 BibTeX](#原生-bibtex)']
+]) {
+  const text = readFileSync(`src/ui/documentation/${file}`, 'utf8');
+  check(
+    `${file} explains Zotero and JabRef citation workflows`,
+    text.includes(heading) &&
+      text.includes('### Zotero') &&
+      text.includes('### JabRef') &&
+      text.includes('Settings → Citation') &&
+      text.includes('CSL JSON') &&
+      text.includes('Better BibTeX') &&
+      text.includes('File → Export Library…') &&
+      text.includes('File → Export') &&
+      text.includes('File → Save library as…') &&
+      text.includes('citeproc') &&
+      text.includes('[@smith2020]') &&
+      text.includes('[@jones2019]')
+  );
+  check(
+    `${file} links the reproducible bibliography and native BibTeX path`,
+    text.includes(
+      'https://github.com/yungleung/yi/blob/main/test/fixtures/workspace/zotero.bib'
+    ) &&
+      text.includes('cite-method: natbib') &&
+      text.includes(nativeLink)
+  );
+}
+
 if (failures.length > 0) {
   console.error(failures.join('\n'));
   process.exit(1);

@@ -6,6 +6,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { parse } from 'yaml';
 
 const failures = [];
 const check = (name, pass) => {
@@ -22,8 +23,8 @@ const build = spawnSync(process.execPath, ['scripts/build-site.mjs'], { encoding
 check('the site build succeeds', build.status === 0);
 
 for (const [language, required] of [
-  ['en', ['Package YAML', 'Template packages', 'A4']],
-  ['zh-Hans', ['包内 YAML', '模板包', 'A4']]
+  ['en', ['Citation library workflows', 'Package YAML', 'Template packages', 'A4']],
+  ['zh-Hans', ['文献库工作流', '包内 YAML', '模板包', 'A4']]
 ]) {
   const path = `_site/documentation/${language}.html`;
   check(`${language} documentation exists`, existsSync(path));
@@ -70,6 +71,25 @@ for (const [language, required] of [
     );
   }
 }
+
+const pages = parse(readFileSync('.github/workflows/pages.yml', 'utf8'));
+const publishPaths = pages.on?.push?.paths ?? [];
+const expectedPublishPaths = [
+  '.github/workflows/pages.yml',
+  'package-lock.json',
+  'package.json',
+  'scripts/build-site.mjs',
+  'site/**',
+  'src/ui/documentation/en.md',
+  'src/ui/documentation/zh-Hans.md'
+];
+check(
+  'Pages publishes only when a site dependency changes',
+  pages.on?.push?.branches?.includes('main') &&
+    expectedPublishPaths.every((path) => publishPaths.includes(path)) &&
+    !publishPaths.includes('**')
+);
+check('Pages can still be published manually', Object.hasOwn(pages.on ?? {}, 'workflow_dispatch'));
 
 if (failures.length > 0) {
   console.error(failures.join('\n'));
