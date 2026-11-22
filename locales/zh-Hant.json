@@ -43,6 +43,7 @@
   "update.available.notes": "檢視版本說明",
   "update.available.yes": "安裝並重新啟動",
   "update.available.no": "暫時不要",
+  "update.current.title": "沒有可用更新",
   "update.current": "你正在使用最新版本的 Yi。",
   "update.failed": "無法檢查更新：{message}",
   "toolbar.bold": "粗體",

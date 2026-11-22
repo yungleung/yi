@@ -43,6 +43,7 @@
   "update.available.notes": "Ver notas da versão",
   "update.available.yes": "Instalar e reiniciar",
   "update.available.no": "Agora não",
+  "update.current.title": "Nenhuma atualização disponível",
   "update.current": "Você está usando a versão mais recente do Yi.",
   "update.failed": "Não foi possível verificar atualizações: {message}",
   "toolbar.bold": "Negrito",

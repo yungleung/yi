@@ -73,7 +73,8 @@ The flow is:
 
 1. Ask GitHub Releases for an update through the configured
    `https://github.com/yungleung/yi/releases/latest/download/latest.json` endpoint.
-2. If none exists, do nothing for a startup check and show an "up to date" hint for a manual check.
+2. If none exists, do nothing for a startup check and open a native informational dialog for a
+   manual check.
 3. If one exists, show its version and release notes and ask before downloading.
 4. Install only after confirmation.
 5. Relaunch after installation on macOS and Linux. Windows may terminate the app during install,

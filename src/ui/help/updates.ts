@@ -1,6 +1,5 @@
 /**
- * Connects the update domain to the Help menu, prompt, hint and message
- * surfaces.
+ * Connects the update domain to the Help menu and native dialog surfaces.
  *
  * Example: the native `check_for_updates` event reaches
  * `help:checkForUpdates`, and an available release asks before installation.
@@ -14,7 +13,6 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { registerCommand } from '../../commands/runtime';
 import { t } from '../../services/i18n';
-import { showHint } from '../../services/hints';
 import { showMessage } from '../../services/messages';
 import {
   releaseNotesExcerpt,
@@ -66,7 +64,10 @@ class HelpUpdatePresenter implements UpdatePresenter {
   }
 
   current(): void {
-    showHint(t('update.current'), null);
+    void message(t('update.current'), {
+      title: t('update.current.title'),
+      kind: 'info'
+    }).catch(() => undefined);
   }
 
   failed(message: string): void {
