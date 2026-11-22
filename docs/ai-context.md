@@ -1357,7 +1357,8 @@ type trees in the graph and cannot compile.
 The update check waits for Tauri to report an installed bundle type. Development binaries on Linux
 and Windows report no bundle type; asking the updater would fall back to the AppImage artifact and
 replace the executable being developed. macOS reports `app` for its development app and keeps its
-existing updater behavior.
+existing updater behavior. A manual check with no newer release opens a native informational dialog;
+startup checks with no release stay silent.
 
 Setting those up — the MCP server and CLI that drive the app, and the skills this
 project uses (`tauri-mcp-cli`, the official `daisyui` one) — is in `README.md`

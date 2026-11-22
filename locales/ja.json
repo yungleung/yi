@@ -43,6 +43,7 @@
   "update.available.notes": "リリースノートを見る",
   "update.available.yes": "インストールして再起動",
   "update.available.no": "後で",
+  "update.current.title": "利用可能なアップデートはありません",
   "update.current": "最新バージョンの Yi を使用しています。",
   "update.failed": "アップデートを確認できませんでした：{message}",
   "toolbar.bold": "太字",

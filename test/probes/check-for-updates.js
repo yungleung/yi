@@ -1,6 +1,6 @@
 /**
  * The native Help item reaches the update command, and a manual check with no
- * newer release reports that quietly without opening a modal.
+ * newer release opens the native informational dialog.
  *
  * @covers src/commands/triggers/native_menu.ts, src/ui/help/updates.ts
  */
@@ -11,6 +11,7 @@
   const before = t.hintsNow();
   const realFetch = window.fetch;
   const updaterCalls = [];
+  const nativeDialogs = [];
   let bundleType = 'appimage';
 
   window.fetch = async (input, init) => {
@@ -24,6 +25,15 @@
       });
     }
     if (!url.includes('plugin:updater|check')) {
+      if (url.includes('plugin:dialog|message')) {
+        nativeDialogs.push(
+          typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body ?? null
+        );
+        return new Response(JSON.stringify('Ok'), {
+          status: 200,
+          headers: { 'content-type': 'application/json', 'Tauri-Response': 'ok' }
+        });
+      }
       return await realFetch.call(window, input, init);
     }
     updaterCalls.push({
@@ -68,22 +78,32 @@
 
     await window.__TAURI_INTERNALS__.invoke('plugin:event|emit', { event: 'check_for_updates' });
     for (let attempt = 0; attempt < 30; attempt += 1) {
-      if (updaterCalls.length > 0 && t.newHint(before, () => true)) {
+      if (updaterCalls.length > 0 && nativeDialogs.length > 0) {
         break;
       }
       await t.sleep(100);
     }
-    const hint = t.newHint(before, (text) => text.includes('latest version of Yi'));
     check('the menu asks the updater for a release', updaterCalls.length === 1, updaterCalls);
     check(
-      'a current manual check says the app is current',
-      hint?.textContent === 'You are using the latest version of Yi.',
-      hint?.textContent ?? null
+      'a current manual check opens one native dialog',
+      nativeDialogs.length === 1,
+      nativeDialogs.length
     );
+    const currentDialog = nativeDialogs[0] ?? null;
     check(
-      'a current manual check opens no modal',
-      document.querySelector('[data-prompt]')?.classList.contains('hidden') !== false,
-      document.querySelector('[data-prompt]')?.className ?? null
+      'the native dialog says the app is current',
+      currentDialog?.title === 'No Updates Available' &&
+        currentDialog?.message === 'You are using the latest version of Yi.',
+      currentDialog
+    );
+    const unusedSurfaces = {
+      hint: t.newHint(before, () => true)?.textContent ?? null,
+      prompt: document.querySelector('[data-prompt]:not(.hidden)')
+    };
+    check(
+      'a current manual check leaves the in-page hint and prompt unused',
+      unusedSurfaces.hint === null && unusedSurfaces.prompt === null,
+      unusedSurfaces
     );
   } finally {
     window.fetch = realFetch;
